@@ -3,9 +3,11 @@ import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 
 import { type PatientSearchConfig } from '../config-schema';
+import { usePatientChartAccess } from '../patient-chart-access';
 import { isPatientSearchTermValid, normalizePatientSearchTerm } from '../patient-search-constants';
 import { useActiveVisitPatientUuids, useInfinitePatientSearch } from '../patient-search.resource';
 import { PatientSearchContext, usePatientSearchContext2 } from '../patient-search-context';
+import RecentlyViewedPatients from '../recently-viewed-patients.component';
 import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
@@ -31,6 +33,9 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
+  const canAccessPatientChart = usePatientChartAccess();
+  const showRecentPatients =
+    !activeQuery && !isEmbeddedSelection && config.search.showRecentlySearchedPatients && canAccessPatientChart;
 
   useEffect(() => {
     setActiveQuery(normalizePatientSearchTerm(query));
@@ -163,18 +168,22 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           [styles.patientSearchResultsDesktop]: !inTabletOrOverlay,
         })}
       >
-        <PatientSearchComponent
-          query={activeQuery}
-          paginationResetKey={paginationResetKey}
-          stickyPagination={stickyPagination}
-          inTabletOrOverlay={inTabletOrOverlay}
-          isLoading={isLoading || activeVisitFilterIsLoading}
-          isValidating={isValidating}
-          hasMore={hasMore}
-          fetchError={fetchError ?? activeVisitsError ?? null}
-          searchResults={visibleResults ?? []}
-          showAddPatient={!isEmbeddedSelection}
-        />
+        {showRecentPatients ? (
+          <RecentlyViewedPatients />
+        ) : (
+          <PatientSearchComponent
+            query={activeQuery}
+            paginationResetKey={paginationResetKey}
+            stickyPagination={stickyPagination}
+            inTabletOrOverlay={inTabletOrOverlay}
+            isLoading={isLoading || activeVisitFilterIsLoading}
+            isValidating={isValidating}
+            hasMore={hasMore}
+            fetchError={fetchError ?? activeVisitsError ?? null}
+            searchResults={visibleResults ?? []}
+            showAddPatient={!isEmbeddedSelection}
+          />
+        )}
       </div>
       {inTabletOrOverlay && (
         <RefineSearch

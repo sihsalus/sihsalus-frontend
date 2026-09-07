@@ -1,4 +1,11 @@
-import { getDefaultsFromConfigSchema, navigate, useConfig, useDebounce, useSession } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  navigate,
+  userHasAccess,
+  useConfig,
+  useDebounce,
+  useSession,
+} from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession, renderWithRouter } from 'test-utils';
@@ -17,6 +24,7 @@ describe('CompactPatientSearchComponent', () => {
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     mockUseDebounce.mockImplementation((value) => value);
     mockUseSession.mockReturnValue(mockSession.data);
+    vi.mocked(userHasAccess).mockReturnValue(true);
   });
 
   it('renders a compact search bar', () => {
@@ -51,6 +59,13 @@ describe('CompactPatientSearchComponent', () => {
 
     const searchResultsContainer = screen.getByTestId('floatingSearchResultsContainer');
     expect(searchResultsContainer).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recently viewed patients' })).toBeInTheDocument();
+  });
+
+  it('hides recent charts when the user cannot open the chart', () => {
+    vi.mocked(userHasAccess).mockReturnValue(false);
+    renderWithRouter(CompactPatientSearchComponent, { isSearchPage: false, initialSearchTerm: '' });
+    expect(screen.queryByRole('heading', { name: 'Recently viewed patients' })).not.toBeInTheDocument();
   });
 
   it('navigates to the advanced search page with the correct query string when the Search button is clicked', async () => {

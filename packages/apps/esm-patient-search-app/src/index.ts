@@ -16,6 +16,11 @@ export const root = getAsyncLifecycle(() => import('./root.component'), options)
 
 export const patientSearchIcon = getAsyncLifecycle(() => import('./patient-search-icon'), options);
 
+export const recentlyViewedPatientTracker = getAsyncLifecycle(
+  () => import('./recently-viewed-patient-tracker.component'),
+  options,
+);
+
 // This extension renders the a Patient-Search Button, which when clicked, opens the search bar in an overlay.
 export const patientSearchButton = getAsyncLifecycle(
   () => import('./patient-search-button/patient-search-button.component'),

@@ -13,12 +13,8 @@ import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
 import { usePatientChartAccess } from '../patient-chart-access';
 import { isPatientSearchTermValid, limitPatientSearchTerm } from '../patient-search-constants';
-import {
-  isForbiddenUserPropertiesError,
-  useInfinitePatientSearch,
-  useRecentlyViewedPatients,
-  useRestPatients,
-} from '../patient-search.resource';
+import { useInfinitePatientSearch, useRestPatients } from '../patient-search.resource';
+import { useRecentlyViewedPatients } from '../recently-viewed-patients.store';
 import PatientSearchBar from '../patient-search-bar/patient-search-bar.component';
 import { PatientSearchContext } from '../patient-search-context';
 
@@ -58,12 +54,8 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   const patientSearchResponse = useInfinitePatientSearch(debouncedSearchTerm, config.includeDead, shouldSearch);
   const { data: searchedPatients } = patientSearchResponse;
 
-  const {
-    error: errorFetchingUserProperties,
-    mutateUserProperties,
-    recentlyViewedPatientUuids,
-    updateRecentlyViewedPatients,
-  } = useRecentlyViewedPatients(showRecentlySearchedPatients);
+  const showRecentPatients = showRecentlySearchedPatients && canAccessPatientChart;
+  const { recentlyViewedPatientUuids } = useRecentlyViewedPatients(showRecentPatients);
 
   const recentPatientSearchResponse = useRestPatients(recentlyViewedPatientUuids, !hasCurrentSearchTerm);
   const { data: recentPatients, fetchError } = recentPatientSearchResponse;
@@ -82,31 +74,6 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
     onPatientSelect?.();
   }, [onPatientSelect]);
 
-  const addViewedPatientAndCloseSearchResults = useCallback(
-    async (patientUuid: string) => {
-      handleCloseSearchResults();
-      try {
-        await updateRecentlyViewedPatients(patientUuid);
-        await mutateUserProperties();
-      } catch (error) {
-        if (isForbiddenUserPropertiesError(error)) {
-          return;
-        }
-
-        showSnackbar({
-          kind: 'error',
-          title: t('errorUpdatingRecentlyViewedPatients', 'Error updating recently viewed patients'),
-          subtitle: getUserFacingErrorMessage(
-            error,
-            t('errorCopy', 'Sorry, there was an error. Please try again or contact the site administrator.'),
-            { logContext: 'Error updating recently viewed patients' },
-          ),
-        });
-      }
-    },
-    [handleCloseSearchResults, mutateUserProperties, updateRecentlyViewedPatients, t],
-  );
-
   const handlePatientSelection = useCallback(
     (evt: React.KeyboardEvent<HTMLElement>, index: number) => {
       const patient = patientsForKeyboardNavigation?.[index];
@@ -116,7 +83,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
         }
 
         evt.preventDefault();
-        void addViewedPatientAndCloseSearchResults(patient.uuid);
+        handleCloseSearchResults();
         navigate({
           to: interpolateString(config.search.patientChartUrl, {
             patientUuid: patient.uuid,
@@ -124,12 +91,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
         });
       }
     },
-    [
-      addViewedPatientAndCloseSearchResults,
-      canAccessPatientChart,
-      config.search.patientChartUrl,
-      patientsForKeyboardNavigation,
-    ],
+    [handleCloseSearchResults, canAccessPatientChart, config.search.patientChartUrl, patientsForKeyboardNavigation],
   );
 
   const isEventFromFocusedResult = useCallback((event: React.KeyboardEvent<HTMLElement>, index: number) => {
@@ -172,19 +134,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
         ),
       });
     }
-
-    if (errorFetchingUserProperties && !isForbiddenUserPropertiesError(errorFetchingUserProperties)) {
-      showSnackbar({
-        kind: 'error',
-        title: t('errorFetchingUserProperties', 'Error fetching user properties'),
-        subtitle: getUserFacingErrorMessage(
-          errorFetchingUserProperties,
-          t('errorCopy', 'Sorry, there was an error. Please try again or contact the site administrator.'),
-          { logContext: 'Error fetching patient search user properties' },
-        ),
-      });
-    }
-  }, [fetchError, errorFetchingUserProperties, t]);
+  }, [fetchError, t]);
 
   const handleSubmit = useCallback(
     (submittedSearchTerm: string) => {
@@ -214,7 +164,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   return (
     <PatientSearchContext.Provider
       value={{
-        patientClickSideEffect: addViewedPatientAndCloseSearchResults,
+        patientClickSideEffect: handleCloseSearchResults,
       }}
     >
       <div
@@ -239,7 +189,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
           </div>
         )}
 
-        {!isSearchPage && !hasCurrentSearchTerm && showRecentlySearchedPatients && (
+        {!isSearchPage && !hasCurrentSearchTerm && showRecentPatients && (
           <div className={styles.floatingSearchResultsContainer} data-testid="floatingSearchResultsContainer">
             <RecentlySearchedPatients ref={bannerContainerRef} {...recentPatientSearchResponse} />
           </div>

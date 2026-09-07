@@ -1,11 +1,12 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
 import { isPatientSearchTermValid, normalizePatientSearchTerm } from './patient-search-constants';
 import { isValidSearchedPatient } from './patient-search-result.utils';
-import type { PatientSearchResponse, SearchedPatient, User } from './types';
+import { useRecentlyViewedPatients } from './recently-viewed-patients.store';
+import type { PatientSearchResponse, SearchedPatient } from './types';
 
 type InfinitePatientSearchResponse = FetchResponse<{
   results: Array<SearchedPatient>;
@@ -40,13 +41,11 @@ function getResponseStatus(error: unknown) {
   return statusFromMessage ? Number(statusFromMessage) : undefined;
 }
 
-export function isForbiddenUserPropertiesError(error: unknown) {
-  const responseStatus = getResponseStatus(error);
-
-  return responseStatus === 403;
-}
-
-async function fetchRecentlyViewedPatient(url: string): Promise<FetchResponse<SearchedPatient> | null> {
+async function fetchRecentlyViewedPatient([, , url]: [
+  number,
+  string,
+  string,
+]): Promise<FetchResponse<SearchedPatient> | null> {
   try {
     return await openmrsFetch<SearchedPatient>(url);
   } catch (error) {
@@ -61,8 +60,6 @@ async function fetchRecentlyViewedPatient(url: string): Promise<FetchResponse<Se
     throw error;
   }
 }
-
-const userPropertiesWritePrivileges = ['Edit Users', 'Manage Users', 'Edit User Properties'];
 
 /**
  * A custom React hook for implementing infinite scrolling patient search.
@@ -94,7 +91,10 @@ export function useInfinitePatientSearch(
   const getUrl = useCallback(
     (
       page: number,
-      prevPageData: FetchResponse<{ results: Array<SearchedPatient>; links: Array<{ rel: 'prev' | 'next' }> }>,
+      prevPageData: FetchResponse<{
+        results: Array<SearchedPatient>;
+        links: Array<{ rel: 'prev' | 'next' }>;
+      }>,
     ) => {
       if (prevPageData && !prevPageData?.data?.links.some((link) => link.rel === 'next')) {
         return null;
@@ -159,9 +159,9 @@ export async function getActiveVisitPatientUuids() {
       startIndex: String(startIndex),
       v: 'custom:(uuid,patient:(uuid))',
     });
-    const response = await openmrsFetch<{ results?: Array<ActiveVisitPatientReference> }>(
-      `${restBaseUrl}/visit?${searchParams.toString()}`,
-    );
+    const response = await openmrsFetch<{
+      results?: Array<ActiveVisitPatientReference>;
+    }>(`${restBaseUrl}/visit?${searchParams.toString()}`);
     const page = response.data?.results ?? [];
     let addedVisits = 0;
 
@@ -194,82 +194,6 @@ export function useActiveVisitPatientUuids(enabled: boolean) {
 }
 
 /**
- * A custom React hook for managing and retrieving the list of recently viewed patients.
- * Recent patient UUIDs are read from the active session to avoid requiring user-management privileges.
- *
- * @param showRecentlySearchedPatients - A boolean flag to enable/disable the feature. Defaults to false.
- * @returns An object containing:
- *   - error: Always null; the hook does not fetch the user resource.
- *   - isLoadingPatients: Always false; recently viewed patients are read from session data.
- *   - recentlyViewedPatientUuids: Array of UUIDs of recently viewed patients
- *   - updateRecentlyViewedPatients: Function to persist a new patient UUID when permitted
- *   - mutateUserProperties: Compatibility no-op retained for existing consumers
- */
-export function useRecentlyViewedPatients(showRecentlySearchedPatients: boolean = false) {
-  const { user } = useSession();
-  const userUuid = user?.uuid;
-  const url = userUuid ? `${restBaseUrl}/user/${userUuid}` : null;
-  const userProperties = user?.userProperties as User['userProperties'] | undefined;
-  const sessionPatientsVisited = showRecentlySearchedPatients ? userProperties?.patientsVisited : undefined;
-  const canPersistUserProperties = useMemo(
-    () => (user ? userPropertiesWritePrivileges.some((privilege) => userHasAccess(privilege, user)) : false),
-    [user],
-  );
-
-  const initialPatientsVisited = useMemo(
-    () => sessionPatientsVisited?.split(',').filter(Boolean) ?? [],
-    [sessionPatientsVisited],
-  );
-  const [patientsVisited, setPatientsVisited] = useState(initialPatientsVisited);
-
-  useEffect(() => {
-    setPatientsVisited(initialPatientsVisited);
-  }, [initialPatientsVisited]);
-
-  const updateRecentlyViewedPatients = useCallback(
-    (patientUuid: string) => {
-      if (!showRecentlySearchedPatients || !url) {
-        return Promise.resolve();
-      }
-
-      const uniquePatients = Array.from(new Set([patientUuid, ...patientsVisited]));
-      const mostRecentPatients = uniquePatients.slice(0, 10);
-      setPatientsVisited(mostRecentPatients);
-
-      if (!canPersistUserProperties) {
-        return Promise.resolve();
-      }
-
-      const newUserProperties = { ...userProperties, patientsVisited: mostRecentPatients.join(',') };
-
-      return openmrsFetch(url, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: {
-          userProperties: newUserProperties,
-        },
-      });
-    },
-    [canPersistUserProperties, patientsVisited, showRecentlySearchedPatients, url, userProperties],
-  );
-
-  const mutateUserProperties = useCallback(() => Promise.resolve(), []);
-
-  return useMemo(
-    () => ({
-      error: null,
-      isLoadingPatients: false,
-      recentlyViewedPatientUuids: patientsVisited,
-      updateRecentlyViewedPatients,
-      mutateUserProperties,
-    }),
-    [mutateUserProperties, patientsVisited, updateRecentlyViewedPatients],
-  );
-}
-
-/**
  * A custom React hook for fetching patient data from a REST API based on a list of patient UUIDs.
  *
  * @param patientUuids - An array of patient UUIDs to fetch data for. If null, no data will be fetched.
@@ -294,15 +218,20 @@ export function useRestPatients(
   resultsToFetch: number = 10,
   customRepresentation: string = patientSearchCustomRepresentation,
 ) {
+  const { cacheGeneration } = useRecentlyViewedPatients();
   const getPatientUrl = useCallback(
     (index: number) => {
       if (patientUuids && index < patientUuids.length) {
-        return `${restBaseUrl}/patient/${patientUuids[index]}?v=${customRepresentation}`;
+        return [
+          cacheGeneration,
+          patientUuids.join(','),
+          `${restBaseUrl}/patient/${patientUuids[index]}?v=${customRepresentation}`,
+        ] as [number, string, string];
       } else {
         return null;
       }
     },
-    [patientUuids, customRepresentation],
+    [cacheGeneration, patientUuids, customRepresentation],
   );
 
   const shouldFetch = isSearching && patientUuids !== null && patientUuids.length > 0;
@@ -311,11 +240,16 @@ export function useRestPatients(
     FetchResponse<SearchedPatient> | null,
     Error
   >(shouldFetch ? getPatientUrl : null, fetchRecentlyViewedPatient, {
-    keepPreviousData: true,
-    initialSize: patientUuids ? Math.min(resultsToFetch, patientUuids.length) : 0,
+    keepPreviousData: false,
+    initialSize: resultsToFetch,
   });
 
-  const mappedData = data?.flatMap((res) => (res?.data ? [res.data] : [])) ?? null;
+  const mappedData =
+    shouldFetch && !error
+      ? (data?.flatMap((res) =>
+          isValidSearchedPatient(res?.data) && patientUuids.includes(res.data.uuid) ? [res.data] : [],
+        ) ?? null)
+      : [];
 
   return useMemo(
     () => ({

@@ -11,7 +11,7 @@ import styles from './patient-search.scss';
 
 interface RecentPatientSearchProps extends PatientSearchResponse {}
 
-const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientSearchProps>(
+const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearchProps>(
   ({ data: searchResults, fetchError, hasMore, isLoading, isValidating, setPage }, ref) => {
     const { t } = useTranslation();
     const observer = useRef(null);
@@ -83,7 +83,7 @@ const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientS
           <div className={styles.searchResults}>
             <div className={styles.resultsText}>
               <span className={styles.resultsTextCount}>
-                {t('recentSearchResultsCount', '{{count}} recent search result', {
+                {t('recentlyViewedPatientsCount', '{{count}} recently viewed patient', {
                   count: searchResults.length,
                 })}
               </span>
@@ -104,7 +104,7 @@ const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientS
       );
     }
 
-    if (searchResults?.length === 0) {
+    if (!searchResults?.length) {
       return (
         <div className={styles.searchResultsContainer}>
           <div className={styles.searchResults}>
@@ -112,11 +112,14 @@ const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientS
               <Tile className={styles.emptySearchResultsTile}>
                 <EmptyDataIllustration />
                 <p className={styles.emptyResultText}>
-                  {t('noPatientChartsFoundMessage', 'Sorry, no patient charts were found')}
+                  {t('noRecentlyViewedPatients', 'No recently viewed patient charts are available in this session.')}
                 </p>
                 <p className={styles.actionText}>
                   <span>
-                    {t('trySearchWithPatientUniqueID', "Try to search again using the patient's unique ID number")}
+                    {t(
+                      'recentlyViewedPatientsEmptyHelp',
+                      'Find a patient by name or identifier and open their chart to see them here.',
+                    )}
                   </span>
                 </p>
               </Tile>
@@ -127,5 +130,21 @@ const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientS
     }
   },
 );
+
+const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientSearchProps>((props, ref) => {
+  const { t } = useTranslation();
+  return (
+    <section aria-label={t('recentlyViewedPatients', 'Recently viewed patients')}>
+      <h2 className={styles.recentPatientsHeading}>{t('recentlyViewedPatients', 'Recently viewed patients')}</h2>
+      <p className={styles.recentPatientsHelp}>
+        {t(
+          'recentlyViewedPatientsHelp',
+          'Reopen a chart while waiting for results. The last 10 patients are kept for this session only.',
+        )}
+      </p>
+      <RecentPatientResults {...props} ref={ref} />
+    </section>
+  );
+});
 
 export default RecentlySearchedPatients;

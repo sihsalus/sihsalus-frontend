@@ -47,6 +47,18 @@
   flex: 1;
 }
 
+.recentPatientsHeading {
+  @include type.type-style('heading-compact-02');
+  color: var(--cds-text-primary);
+  margin: layout.$spacing-05 layout.$spacing-05 layout.$spacing-03;
+}
+
+.recentPatientsHelp {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin: 0 layout.$spacing-05 layout.$spacing-05;
+}
+
 .validationIcon {
   flex: 1;
   justify-content: center;

@@ -40,7 +40,34 @@ Los resultados se muestran de 10 en 10. Cada cambio de página devuelve el foco 
 
 El filtro de atributos textuales usa coincidencia parcial para facilitar búsquedas operativas, por ejemplo `SAMU` encuentra `SAMU Loreto`.
 
-## Integraciones
+## Pacientes vistos recientemente
+
+El acceso «Pacientes recientes» de la cabecera lleva a la lista «Pacientes vistos recientemente»;
+también aparece al abrir el buscador compacto sin texto y en la búsqueda completa/tablet sin consulta.
+Muestra las últimas 10 historias abiertas, sin duplicados y con la apertura más reciente primero.
+El médico puede reabrir una historia mientras espera resultados; la lista no indica que haya resultados
+pendientes ni sustituye el seguimiento clínico.
+
+- `recently-viewed-patient-tracker` usa el slot existente `patient-header-slot`, que recibe el paciente
+  FHIR ya cargado. Abrir la historia desde búsqueda, colas, visitas u otra entrada actualiza la misma lista;
+  seleccionar un paciente en un formulario sin abrir la historia no lo registra.
+- Se conserva la configuración `search.showRecentlySearchedPatients` por compatibilidad. Deshabilitarla
+  oculta los accesos y detiene el registro. Se mantiene `app:hoja.clinica`; la cabecera conserva además
+  el privilegio existente `app:opciones.busquedaPaciente`.
+- Solo los UUID se mantienen en memoria de esta pestaña. No se escribe en `userProperties`, almacenamiento
+  local, almacenamiento de sesión ni backend. Recargar la página, cerrar sesión, cambiar de cuenta,
+  ubicación o permisos limpia el historial. El observador de sesión permanece activo aunque la búsqueda
+  esté cerrada. No se importan listas históricas de `patientsVisited`.
+- Los datos visibles se leen con `GET /ws/rest/v1/patient/{uuid}` bajo el contexto de acceso actual.
+  Las claves de caché separan sesiones y orden de la lista; una lectura anterior no se conserva al cambiar
+  de contexto. `403` y `404` omiten ese paciente; `401` y fallos de servidor muestran un error seguro.
+  No requiere permisos para editar usuarios ni crea consultas, órdenes o datos clínicos.
+- QA mínimo: abrir dos historias por entradas diferentes, reabrir la primera y confirmar orden/deduplicación;
+  reabrir desde el listado con clic y teclado en escritorio/tablet; verificar lista vacía, fallo de lectura,
+  flag apagado, acceso denegado y limpieza por cierre/cambio de sesión. Usar solo pacientes sintéticos en
+  DEV/QLTY coordinado, verificando el SHA desplegado.
+
+## Integraciones del buscador
 
 - API de búsqueda y datos básicos del paciente.
 - Componentes compactos, overlays y extensiones del buscador.

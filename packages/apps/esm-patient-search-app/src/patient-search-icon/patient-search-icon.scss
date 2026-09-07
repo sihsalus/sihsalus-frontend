@@ -13,6 +13,25 @@
   @include brand-01(background-color);
 }
 
+.recentPatientsButton:global(.cds--header__action) {
+  inline-size: auto;
+  max-inline-size: none;
+  padding: 0 1rem;
+  gap: 0.5rem;
+  white-space: nowrap;
+
+  span {
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 48rem) {
+  .recentPatientsButton:global(.cds--header__action) {
+    padding-inline: 0.5rem;
+    gap: 0.25rem;
+  }
+}
+
 .activeSearchIconButton {
   @include brand-02(background-color);
 }

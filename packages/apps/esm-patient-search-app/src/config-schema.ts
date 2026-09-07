@@ -14,7 +14,7 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: true,
       _description:
-        'When enabled, displays a list of recently searched patients in the initial search results, providing quick access to frequently accessed patient records.',
+        'When enabled, offers the last 10 patient charts opened in this browser session. Requires chart access; clears on logout, account, location or permission changes. The legacy configuration key is retained for compatibility.',
     },
     disableTabletSearchOnKeyUp: {
       _type: Type.Boolean,

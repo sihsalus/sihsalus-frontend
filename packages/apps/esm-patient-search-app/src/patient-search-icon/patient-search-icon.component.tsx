@@ -1,11 +1,13 @@
 import { HeaderGlobalAction } from '@carbon/react';
-import { Close, Search } from '@carbon/react/icons';
-import { isDesktop, navigate, useLayoutType, useOnClickOutside } from '@openmrs/esm-framework';
+import { Close, RecentlyViewed, Search } from '@carbon/react/icons';
+import { isDesktop, navigate, useConfig, useLayoutType, useOnClickOutside } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import CompactPatientSearchComponent from '../compact-patient-search/compact-patient-search.component';
+import type { PatientSearchConfig } from '../config-schema';
+import { usePatientChartAccess } from '../patient-chart-access';
 import PatientSearchOverlay from '../patient-search-overlay/patient-search-overlay.component';
 import { getPatientSearchReturnUrl } from '../search-return-url';
 
@@ -16,6 +18,8 @@ type PatientSearchLaunchProps = {};
 const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const config = useConfig<PatientSearchConfig>();
+  const canAccessPatientChart = usePatientChartAccess();
   const { page } = useParams();
   const isSearchPage = useMemo(() => page === 'search', [page]);
   const [searchParams] = useSearchParams();
@@ -73,6 +77,24 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
 
   return (
     <div className={styles.patientSearchIconWrapper} ref={ref}>
+      {!showSearchInput && config.search.showRecentlySearchedPatients && canAccessPatientChart && (
+        <HeaderGlobalAction
+          aria-label={t('recentPatients', 'Recent patients')}
+          className={styles.recentPatientsButton}
+          onClick={() => {
+            if (!isSearchPage) {
+              globalThis.sessionStorage.setItem(
+                'searchReturnUrl',
+                `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`,
+              );
+            }
+            navigate({ to: `${globalThis.spaBase}/search` });
+          }}
+        >
+          <RecentlyViewed size={20} />
+          <span>{t('recentPatients', 'Recent patients')}</span>
+        </HeaderGlobalAction>
+      )}
       {showSearchInput ? (
         <>
           {isDesktop(layout) ? (

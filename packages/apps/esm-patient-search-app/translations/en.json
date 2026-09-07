@@ -1,4 +1,11 @@
 {
+  "recentPatients": "Recent patients",
+  "recentlyViewedPatients": "Recently viewed patients",
+  "recentlyViewedPatientsHelp": "Reopen a chart while waiting for results. The last 10 patients are kept for this session only.",
+  "recentlyViewedPatientsCount_one": "{{count}} recently viewed patient",
+  "recentlyViewedPatientsCount_other": "{{count}} recently viewed patients",
+  "noRecentlyViewedPatients": "No recently viewed patient charts are available in this session.",
+  "recentlyViewedPatientsEmptyHelp": "Find a patient by name or identifier and open their chart to see them here.",
   "addPatient": "Add patient",
   "age": "Age",
   "ageUnit": "Unit",

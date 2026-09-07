@@ -1,4 +1,11 @@
-import { getDefaultsFromConfigSchema, isDesktop, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  isDesktop,
+  navigate,
+  userHasAccess,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -40,11 +47,31 @@ describe('PatientSearchLaunch', () => {
     expect(screen.getByRole('button', { name: /search patient/i })).toBeInTheDocument();
   });
 
+  it('offers a named recent-patients entry that opens the empty-query search page', async () => {
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    vi.mocked(userHasAccess).mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<PatientSearchLaunch />);
+    await user.click(screen.getByRole('button', { name: 'Recent patients' }));
+    expect(navigate).toHaveBeenCalledWith({
+      to: `${globalThis.spaBase}/search`,
+    });
+  });
+
+  it('hides the recent-patients entry when chart access is denied', () => {
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    vi.mocked(userHasAccess).mockReturnValue(false);
+    render(<PatientSearchLaunch />);
+    expect(screen.queryByRole('button', { name: 'Recent patients' })).not.toBeInTheDocument();
+  });
+
   it('toggles search input when search button is clicked', async () => {
     const user = userEvent.setup();
     render(<PatientSearchLaunch />);
 
-    const searchButton = screen.getByRole('button', { name: /search patient/i });
+    const searchButton = screen.getByRole('button', {
+      name: /search patient/i,
+    });
 
     await user.click(searchButton);
     const closeButton = await screen.findByTestId('closeSearchIcon');
@@ -74,7 +101,9 @@ describe('PatientSearchLaunch', () => {
 
     render(<PatientSearchLaunch />);
 
-    const searchButton = screen.getByRole('button', { name: /search patient/i });
+    const searchButton = screen.getByRole('button', {
+      name: /search patient/i,
+    });
 
     await user.click(searchButton);
     expect(await screen.findByTestId('closeSearchIcon')).toBeInTheDocument();

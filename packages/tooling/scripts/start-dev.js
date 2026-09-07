@@ -12,12 +12,19 @@ const dotenvResult = require('dotenv').config({ path: envPath, quiet: true });
 const chalk = require('chalk');
 const { createSpaStaticOptions, isSpaIndexRequestPath } = require('../openmrs/spa-static-options');
 const { formatSpaArtifactIssue, inspectSpaArtifacts } = require('./spa-artifact-manifest');
+const { normalizeDevBackendUrl } = require('./dev-backend-url');
 const logInfo = (msg) => console.log(`${chalk.green.bold('[start-dev]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[start-dev]')} ${chalk.yellow(msg)}`);
 const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk.red(msg)}`);
 
 const defaultBackend = 'http://gidis-hsc-dev.inf.pucp.edu.pe';
-const backend = process.env.SIHSALUS_BACKEND_URL || defaultBackend;
+let backend;
+try {
+  backend = normalizeDevBackendUrl(process.env.SIHSALUS_BACKEND_URL || defaultBackend);
+} catch (error) {
+  logFail(error.message);
+  process.exit(1);
+}
 const backendSource = hadBackendBeforeDotenv ? 'shell' : dotenvResult.parsed?.SIHSALUS_BACKEND_URL ? '.env' : 'default';
 const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';

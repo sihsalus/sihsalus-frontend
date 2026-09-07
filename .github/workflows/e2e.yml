@@ -60,11 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - suite: clinical
-            command: yarn test:e2e
-          - suite: laboratory
-            command: yarn playwright test -c e2e/laboratory/playwright.config.ts
+        suite: [clinical, laboratory]
     permissions:
       contents: read
     steps:
@@ -103,7 +99,7 @@ jobs:
       # Playwright's webServer config starts `yarn start` and waits for the
       # login page before running the suite.
       - name: Run E2E tests
-        run: ${{ matrix.command }}
+        run: yarn test:e2e:suite ${{ matrix.suite }}
 
       - name: Upload Playwright report
         if: failure()

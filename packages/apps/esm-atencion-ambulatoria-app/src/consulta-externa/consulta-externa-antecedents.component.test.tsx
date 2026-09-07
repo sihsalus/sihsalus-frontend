@@ -59,4 +59,12 @@ describe('ConsultaExternaAntecedents', () => {
       expect.arrayContaining([expect.any(String)]),
     );
   });
+
+  it('does not load antecedents when the read guard denies access', () => {
+    mockRequirePrivilege.mockReturnValueOnce(null);
+    render(<ConsultaExternaAntecedents patientUuid="synthetic-patient-uuid" />);
+
+    expect(mockUseClinicalEncounter).not.toHaveBeenCalled();
+    expect(screen.queryByText('Medical history')).not.toBeInTheDocument();
+  });
 });

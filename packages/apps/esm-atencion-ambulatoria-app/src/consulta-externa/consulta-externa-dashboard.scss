@@ -52,6 +52,26 @@
   justify-content: flex-end;
 }
 
+.historyHint {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
+  padding: layout.$spacing-03 layout.$spacing-05;
+}
+
+.externalReports {
+  p {
+    @include type.type-style("body-01");
+    margin-bottom: layout.$spacing-04;
+  }
+}
+
+.externalReportActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+}
+
 .widgetContainer {
   padding: layout.$spacing-05 0;
 }

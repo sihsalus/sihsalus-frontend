@@ -139,7 +139,11 @@ export default function OrderBasketSearchResults({
           {t('clearSearchResults', 'Clear Results')}
         </Button>
       </div>
-      <div className={styles.resultsContainer}>
+      <div
+        className={styles.resultsContainer}
+        role="list"
+        aria-label={t('medicationSearchResults', 'Medication search results')}
+      >
         {drugs?.map((drug) => (
           <DrugSearchResultItem
             key={drug.uuid}

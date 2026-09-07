@@ -18,7 +18,11 @@ yarn test:e2e:contracts
 and an explicit environment. It reuses the exact DEV/QLTY base gate; it does not
 invent credentials, fall back to another target, or create a provider. Absolute
 REST URLs remain bound to the configured target regardless of the supplied
-context's base URL.
+context's base URL. Every request, including build-info, explicitly uses
+`maxRedirects: 0` and `maxRetries: 0` regardless of context defaults. Each request
+is a single attempt to its approved destination; non-success responses retain
+the existing safe failure and journal behavior. Recovery is an explicit caller
+action, never an automatic transport replay.
 
 In addition to the base gate's connection/account/location settings, require:
 

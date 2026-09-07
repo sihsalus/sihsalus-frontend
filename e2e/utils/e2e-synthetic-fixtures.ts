@@ -169,7 +169,11 @@ export class SyntheticFixtures {
   }
   private async request(method: 'get' | 'post' | 'delete', resource: string, data?: unknown): Promise<APIResponse> {
     try {
-      const response = await this.api[method](this.url(resource), method === 'get' ? undefined : { data });
+      const response = await this.api[method](this.url(resource), {
+        maxRedirects: 0,
+        maxRetries: 0,
+        ...(method === 'get' ? {} : { data }),
+      });
       if ([401, 403].includes(response.status()))
         throw new FixtureAuthorizationError('FIXTURE_AUTHORIZATION_FAILED_RETAIN_JOURNAL');
       return response;
@@ -358,7 +362,7 @@ export class SyntheticFixtures {
     check(['outpatient', 'appointments'].includes(label), 'FIXTURE_LABEL_INVALID');
     let build: APIResponse;
     try {
-      build = await this.api.get(`${this.config.spaBaseUrl}/build-info.json`);
+      build = await this.api.get(`${this.config.spaBaseUrl}/build-info.json`, { maxRedirects: 0, maxRetries: 0 });
     } catch {
       throw new FixtureError('FIXTURE_BUILD_UNAVAILABLE');
     }

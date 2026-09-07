@@ -68,7 +68,8 @@ function response(status: number, value: unknown = {}) {
     json: async () => structuredClone(value),
   } as APIResponse;
 }
-type Call = { method: string; url: URL; data?: unknown };
+type TransportOptions = { maxRedirects?: number; maxRetries?: number };
+type Call = { method: string; url: URL; data?: unknown; options?: TransportOptions };
 class Backend {
   entities = new Map<string, Entity>();
   calls: Call[] = [];
@@ -80,12 +81,14 @@ class Backend {
     return `00000000-0000-4000-8000-${String(++this.sequence).padStart(12, '0')}`;
   }
   api = {
-    get: vi.fn(async (url: string) => this.handle({ method: 'get', url: new URL(url) })),
-    post: vi.fn(async (url: string, options: { data: unknown }) =>
-      this.handle({ method: 'post', url: new URL(url), data: options.data }),
+    get: vi.fn(async (url: string, options?: TransportOptions) =>
+      this.handle({ method: 'get', url: new URL(url), options }),
     ),
-    delete: vi.fn(async (url: string, options: { data: unknown }) =>
-      this.handle({ method: 'delete', url: new URL(url), data: options.data }),
+    post: vi.fn(async (url: string, options: TransportOptions & { data: unknown }) =>
+      this.handle({ method: 'post', url: new URL(url), data: options.data, options }),
+    ),
+    delete: vi.fn(async (url: string, options: TransportOptions & { data: unknown }) =>
+      this.handle({ method: 'delete', url: new URL(url), data: options.data, options }),
     ),
   } as unknown as APIRequestContext;
   handle(call: Call): APIResponse {
@@ -223,6 +226,94 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
     await fixtures.cleanup();
     expect(backend.deletes()).toHaveLength(4);
     expect(JSON.stringify(journal.value)).not.toContain('unit-test-only');
+  });
+
+  it('pins single-attempt transport for build, metadata, creation, verification and cleanup', async () => {
+    const { fixtures, backend } = harness();
+    await fixtures.create('outpatient');
+    await fixtures.cleanup();
+
+    expect(new Set(backend.calls.map(({ method }) => method))).toEqual(new Set(['get', 'post', 'delete']));
+    expect(backend.calls[0]?.url.pathname).toBe('/openmrs/spa/build-info.json');
+    for (const call of backend.calls) {
+      expect(call.options).toMatchObject({ maxRedirects: 0, maxRetries: 0 });
+      if (call.method === 'get') expect(call.options).not.toHaveProperty('data');
+    }
+  });
+
+  it.each([
+    ['get', '/build-info.json'],
+    ['get', '/session'],
+    ['post', '/patient'],
+  ])('rejects a %s %s redirect without delegating it to the injected context', async (method, suffix) => {
+    const { fixtures, backend } = harness();
+    const followRedirect = vi.fn();
+    backend.override = (call) => {
+      if (call.method !== method || !call.url.pathname.endsWith(suffix)) return undefined;
+      // In-memory context double: omitted options inherit its redirect behavior.
+      if (call.options?.maxRedirects === 0) return response(307);
+      followRedirect();
+      return undefined;
+    };
+
+    await expect(fixtures.create('outpatient')).rejects.toThrow('FIXTURE_HTTP_307_RETAIN_JOURNAL');
+    expect(followRedirect).not.toHaveBeenCalled();
+    expect(backend.posts('visit')).toHaveLength(0);
+    if (method === 'get') expect(backend.calls.some((call) => call.method === 'post')).toBe(false);
+  });
+
+  it.each([
+    'patient',
+    'visit',
+  ] as const)('overrides context retries after a lost %s POST response and preserves explicit recovery', async (resource) => {
+    const { fixtures, backend, journal } = harness();
+    const postOnce = backend.api.post;
+    backend.api.post = vi.fn(async (url, options) => {
+      try {
+        return await postOnce(url, options);
+      } catch (error) {
+        if ((options?.maxRetries ?? 2) > 0) return postOnce(url, options);
+        throw error;
+      }
+    });
+    backend.loseResponse = resource;
+
+    await expect(fixtures.create('outpatient')).rejects.toThrow('FIXTURE_NETWORK_FAILURE_RETAIN_JOURNAL');
+    expect(backend.posts(resource)).toHaveLength(1);
+    expect(journal.records()[0]?.cleaned).not.toBe(true);
+    const resumed = new SyntheticFixtures(backend.api, journal, environment);
+    await resumed.create('outpatient');
+    expect(backend.posts(resource)).toHaveLength(1);
+    await resumed.cleanup();
+    expect(journal.records()[0]?.cleaned).toBe(true);
+  });
+
+  it('does not inherit DELETE retries or proceed to parents after a lost cleanup response', async () => {
+    const { fixtures, backend, journal } = harness();
+    const created = await fixtures.create('outpatient');
+    const deleteOnce = backend.api.delete;
+    let loseResponse = true;
+    backend.api.delete = vi.fn(async (url, options) => {
+      try {
+        const result = await deleteOnce(url, options);
+        if (loseResponse) {
+          loseResponse = false;
+          throw new Error('Synthetic response lost after cleanup');
+        }
+        return result;
+      } catch (error) {
+        if ((options?.maxRetries ?? 2) > 0) return deleteOnce(url, options);
+        throw error;
+      }
+    });
+
+    await expect(fixtures.cleanup()).rejects.toThrow('FIXTURE_CLEANUP_FAILED_RETAIN_JOURNAL');
+    expect(backend.deletes()).toHaveLength(1);
+    expect(backend.deletes()[0]?.url.pathname).toBe(`/openmrs/ws/rest/v1/visit/${created.visitUuid}`);
+    expect(journal.records()[0]?.cleaned).not.toBe(true);
+    await fixtures.cleanup();
+    expect(backend.deletes()).toHaveLength(2);
+    expect(journal.records()[0]?.cleaned).toBe(true);
   });
 
   it.each([

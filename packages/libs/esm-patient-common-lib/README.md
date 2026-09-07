@@ -5,6 +5,27 @@ This is a library of components and utilities shared across widgets in the patie
 - Custom components for card headers, error and empty states and pagination.
 - Custom hooks for managing workspaces, concept metadata and pagination.
 
+## Order basket preparation and signing
+
+Each mounted basket consumer may register a preparation callback for its order
+group. Signing uses the current callback of the latest mounted owner for the
+target patient, falling back to a mounted unscoped owner. Callback updates do
+not replace the shared dispatcher or trigger competing store updates. An owner
+is removed on unmount; no active owner means signing must be blocked. Clinical
+callbacks must therefore remain available through the basket panel, not only
+through a form that closes before signing.
+
+For an existing encounter, all order payloads are prepared before the first
+POST. A missing or rejecting preparer returns every unsent draft through the
+error list so callers retain the entire basket and display safe review guidance.
+That guidance reuses Patient Orders' translated `orderSubmissionFailedItemMessage`.
+After successful preflight, per-order backend failures retain the existing
+partial-success behavior. New-encounter signing still prepares the complete
+embedded order list before submitting the encounter. Regression coverage must
+include callback changes and unmounts with concurrent consumers, zero writes
+after any preflight failure, retention of all unsent items, and partial backend
+failure without replaying successful writes.
+
 ## Financiador de persona a visita
 
 `src/financiador/financiador.resource.ts` es el punto compartido para copiar la afiliación administrativa

@@ -2,6 +2,18 @@ import { Type, validator } from '@openmrs/esm-framework';
 import { DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES } from './add-drug-order/special-prescription';
 
 export const configSchema = {
+  singleDoseFrequencyUuid: {
+    _type: Type.String,
+    _default: '',
+    _description:
+      'UUID of the reviewed OpenMRS OrderFrequency for one administration only (not once daily). The STAT single-dose preset is unavailable until this UUID exists in orderentryconfig. Do not configure a frequency based on its name or frequencyPerDay alone.',
+    _validators: [
+      validator(
+        (value: string) => !value || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
+        'Must be empty or an OrderFrequency UUID',
+      ),
+    ],
+  },
   daysDurationUnit: {
     uuid: {
       _type: Type.ConceptUuid,
@@ -102,6 +114,7 @@ export const configSchema = {
 };
 
 export interface ConfigObject {
+  singleDoseFrequencyUuid: string;
   daysDurationUnit: {
     uuid: string;
     display: string;

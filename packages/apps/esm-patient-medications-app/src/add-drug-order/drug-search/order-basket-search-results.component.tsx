@@ -16,6 +16,7 @@ import classNames from 'classnames';
 import { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { prepMedicationOrderPostData, useActivePatientOrders } from '../../api/api';
+import { useOrderConfig } from '../../api/order-config';
 import { type ConfigObject } from '../../config-schema';
 import {
   type DrugSearchResult,
@@ -164,12 +165,27 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
 }) => {
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
+  const { orderConfigObject, error: orderConfigError, isLoading: orderConfigLoading } = useOrderConfig();
+  const singleDoseFrequencyAvailable =
+    !orderConfigError &&
+    !orderConfigLoading &&
+    Boolean(
+      orderConfigObject?.orderFrequencies?.some((frequency) => frequency.valueCoded === config.singleDoseFrequencyUuid),
+    );
   const session = useSession();
   const orderingProviderUuid = session?.currentProvider?.uuid;
   const prepareMedicationOrderPostData = useCallback(
     (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
-      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, config.careSettingUuid),
-    [config.careSettingUuid, orderingProviderUuid],
+      prepMedicationOrderPostData(
+        order,
+        patientUuid,
+        encounterUuid,
+        orderingProviderUuid,
+        config.careSettingUuid,
+        config.singleDoseFrequencyUuid,
+        singleDoseFrequencyAvailable,
+      ),
+    [config.careSettingUuid, config.singleDoseFrequencyUuid, orderingProviderUuid, singleDoseFrequencyAvailable],
   );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,

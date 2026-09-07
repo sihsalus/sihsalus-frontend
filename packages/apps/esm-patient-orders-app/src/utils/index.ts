@@ -30,6 +30,9 @@ export function buildMedicationOrder(order: Order, action?: OrderAction) {
     display: order.drug?.display,
     previousOrder: action !== 'NEW' ? order.uuid : null,
     action: action,
+    urgency: order.urgency,
+    urgencyCode: order.urgency,
+    scheduledDate: order.scheduledDate ? new Date(order.scheduledDate) : undefined,
     drug: order.drug,
     dosage: order.dose,
     unit: {
@@ -52,10 +55,12 @@ export function buildMedicationOrder(order: Order, action?: OrderAction) {
     asNeededCondition: order.asNeededCondition,
     startDate: action === 'DISCONTINUE' ? order.dateActivated : new Date(),
     duration: order.duration,
-    durationUnit: {
-      valueCoded: order.durationUnits?.uuid,
-      value: order.durationUnits?.display,
-    },
+    durationUnit: order.durationUnits
+      ? {
+          valueCoded: order.durationUnits.uuid,
+          value: order.durationUnits.display,
+        }
+      : null,
     pillsDispensed: order.quantity,
     numRefills: order.numRefills,
     indication: order.orderReasonNonCoded,

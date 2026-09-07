@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
+import { StrictMode } from 'react';
 
 import { getPatientChartStore } from '../store/patient-chart-store';
-import { _resetOrderBasketStore } from './store';
+import { _resetOrderBasketStore, orderBasketStore } from './store';
 import { type OrderBasketItem, type PostDataPrepFunction } from './types';
 import { useOrderBasket } from './useOrderBasket';
 
@@ -23,8 +24,8 @@ const preparePostData: PostDataPrepFunction = (order, patientUuid, encounterUuid
   patient: patientUuid,
 });
 
-const patientA = { id: 'patient-a' } as fhir.Patient;
-const patientB = { id: 'patient-b' } as fhir.Patient;
+const patientA = { id: 'patient-a' } as fhir.Patient & { id: string };
+const patientB = { id: 'patient-b' } as fhir.Patient & { id: string };
 
 describe('useOrderBasket', () => {
   beforeEach(() => {
@@ -91,5 +92,92 @@ describe('useOrderBasket', () => {
 
     expect(patientAResult.current.orders).toEqual([]);
     expect(patientBResult.current.orders).toEqual([mockLabOrderBasketItem]);
+  });
+
+  it('uses current validation after metadata moves from loading to available and then fails', () => {
+    const { rerender } = renderHook(
+      ({ available }) =>
+        useOrderBasket(patientA, 'medications', (order, patientUuid, encounterUuid, orderingProviderUuid) => {
+          if (!available) throw new Error('Synthetic metadata is unavailable');
+          return { ...preparePostData(order, patientUuid, encounterUuid), orderer: orderingProviderUuid };
+        }),
+      { initialProps: { available: false } },
+    );
+    const prepare = orderBasketStore.getState().postDataPrepFunctions.medications;
+    expect(() => prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a')).toThrow('metadata is unavailable');
+
+    rerender({ available: true });
+    expect(orderBasketStore.getState().postDataPrepFunctions.medications).toBe(prepare);
+    expect(prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a', 'current-provider')).toMatchObject({
+      patient: patientA.id,
+      encounter: 'encounter-a',
+      orderer: 'current-provider',
+    });
+
+    rerender({ available: false });
+    expect(() => prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a')).toThrow('metadata is unavailable');
+  });
+
+  it('keeps one dispatcher for concurrent consumers and restores the current remaining owner on unmount', () => {
+    const storeWrite = vi.spyOn(orderBasketStore, 'setState');
+    const first = renderHook(
+      ({ orderer }) =>
+        useOrderBasket(patientA, 'medications', (order, patientUuid, encounterUuid) => ({
+          ...preparePostData(order, patientUuid, encounterUuid),
+          orderer,
+        })),
+      { initialProps: { orderer: 'first-owner' }, wrapper: StrictMode },
+    );
+    const second = renderHook(
+      ({ orderer }) =>
+        useOrderBasket(patientA, 'medications', (order, patientUuid, encounterUuid) => ({
+          ...preparePostData(order, patientUuid, encounterUuid),
+          orderer,
+        })),
+      { initialProps: { orderer: 'second-owner' }, wrapper: StrictMode },
+    );
+    const observer = renderHook(() => useOrderBasket(patientA, 'medications'));
+    const prepare = orderBasketStore.getState().postDataPrepFunctions.medications;
+    const writesAfterMount = storeWrite.mock.calls.length;
+    expect(prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a').orderer).toBe('second-owner');
+
+    first.rerender({ orderer: 'first-current' });
+    second.rerender({ orderer: 'second-current' });
+    expect(prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a').orderer).toBe('second-current');
+    expect(storeWrite).toHaveBeenCalledTimes(writesAfterMount);
+
+    second.unmount();
+    expect(prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a').orderer).toBe('first-current');
+    act(() => {
+      first.result.current.setOrders([mockDrugOrderBasketItem]);
+      first.result.current.clearOrders();
+    });
+    expect(observer.result.current.orders).toEqual([]);
+    expect(orderBasketStore.getState().postDataPrepFunctions.medications).toBe(prepare);
+    expect(prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a').orderer).toBe('first-current');
+    first.unmount();
+    expect(() => prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a')).toThrow('No active order preparation');
+    observer.unmount();
+    storeWrite.mockRestore();
+  });
+
+  it('selects the target patient owner instead of a later consumer for another patient', () => {
+    renderHook(() =>
+      useOrderBasket(patientA, 'medications', (order, patientUuid, encounterUuid) => ({
+        ...preparePostData(order, patientUuid, encounterUuid),
+        orderer: 'provider-for-a',
+      })),
+    );
+    const second = renderHook(() =>
+      useOrderBasket(patientB, 'medications', (order, patientUuid, encounterUuid) => ({
+        ...preparePostData(order, patientUuid, encounterUuid),
+        orderer: 'provider-for-b',
+      })),
+    );
+    const prepare = orderBasketStore.getState().postDataPrepFunctions.medications;
+    expect(prepare(mockDrugOrderBasketItem, patientA.id, 'encounter-a').orderer).toBe('provider-for-a');
+    expect(prepare(mockDrugOrderBasketItem, patientB.id, 'encounter-b').orderer).toBe('provider-for-b');
+    second.unmount();
+    expect(() => prepare(mockDrugOrderBasketItem, patientB.id, 'encounter-b')).toThrow('No active order preparation');
   });
 });

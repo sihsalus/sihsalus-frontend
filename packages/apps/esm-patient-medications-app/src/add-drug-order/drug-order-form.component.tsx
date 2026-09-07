@@ -12,6 +12,8 @@ import {
   InlineNotification,
   Layer,
   NumberInput,
+  Select,
+  SelectItem,
   TextArea,
   TextInput,
   Toggle,
@@ -205,15 +207,33 @@ export function DrugOrderForm({
   const watchedUnitValue = watchedUnit?.value;
   const watchedDosage = watch('dosage');
   const watchedFrequency = watch('frequency');
+  const watchedUrgency = watch('urgency');
+  const isSingleDose = Boolean(
+    medicationConfig.singleDoseFrequencyUuid &&
+      watchedFrequency?.valueCoded === medicationConfig.singleDoseFrequencyUuid,
+  );
+  const singleDoseFrequency = orderConfigObject?.orderFrequencies?.find(
+    (frequency) => frequency.valueCoded === medicationConfig.singleDoseFrequencyUuid,
+  );
   const watchedDuration = watch('duration');
   const watchedDurationUnit = watch('durationUnit');
   const watchedIsFreeText = watch('isFreeTextDosage');
   const watchedAsNeeded = watch('asNeeded');
   const watchedQuantityUnits = watch('quantityUnits');
   const watchedPillsDispensed = watch('pillsDispensed');
+  const watchedNumRefills = watch('numRefills');
+  const singleDoseConflict =
+    isSingleDose &&
+    (watchedDuration != null ||
+      watchedDurationUnit != null ||
+      watchedAsNeeded ||
+      Boolean(watch('asNeededCondition')?.trim()) ||
+      watchedNumRefills !== 0 ||
+      watchedIsFreeText);
   const hasAutoSelectedDurationUnitRef = useRef(Boolean(initialOrderBasketItem?.durationUnit));
   const isExistingOrder = initialOrderBasketItem?.action === 'REVISE' || initialOrderBasketItem?.action === 'RENEW';
-  const showFreeTextDosage = !requireOutpatientQuantity || Boolean(initialOrderBasketItem?.isFreeTextDosage);
+  const showFreeTextDosage =
+    !isSingleDose && (!requireOutpatientQuantity || Boolean(initialOrderBasketItem?.isFreeTextDosage));
   const [isManualOverride, setIsManualOverride] = useState(
     initialOrderBasketItem?.isQuantityManual ?? (isExistingOrder && initialOrderBasketItem?.pillsDispensed != null),
   );
@@ -221,6 +241,14 @@ export function DrugOrderForm({
   const calculatedQuantity = useMemo(() => {
     if (watchedIsFreeText || watchedAsNeeded) {
       return null;
+    }
+    if (isSingleDose) {
+      return watchedDosage > 0 &&
+        Number.isFinite(watchedDosage) &&
+        watchedUnit?.valueCoded &&
+        watchedQuantityUnits?.valueCoded === watchedUnit.valueCoded
+        ? Math.ceil(watchedDosage)
+        : null;
     }
     if (
       watchedDosage == null ||
@@ -242,6 +270,7 @@ export function DrugOrderForm({
     const result = Math.ceil(watchedDosage * watchedFrequency.frequencyPerDay * durationDays);
     return result > 0 && Number.isFinite(result) ? result : null;
   }, [
+    isSingleDose,
     watchedIsFreeText,
     watchedAsNeeded,
     watchedDosage,
@@ -274,7 +303,34 @@ export function DrugOrderForm({
     setIsManualOverride(false);
   }, [calculatedQuantity, setValue]);
 
+  const clearRepeatingRegimen = () => {
+    const options = { shouldDirty: true, shouldValidate: true };
+    setValue('isFreeTextDosage', false, options);
+    setValue('freeTextDosage', '', options);
+    setValue('asNeeded', false, options);
+    setValue('asNeededCondition', '', options);
+    setValue('duration', null, options);
+    setValue('durationUnit', null, options);
+    setValue('numRefills', 0, options);
+    setValue('pillsDispensed', null, options);
+    setIsManualOverride(false);
+  };
+
+  const applyStatSingleDose = () => {
+    if (!singleDoseFrequency) {
+      return;
+    }
+    const options = { shouldDirty: true, shouldValidate: true };
+    setValue('urgency', 'STAT', options);
+    setValue('frequency', singleDoseFrequency, options);
+    setValue('startDate', new Date(), options);
+    clearRepeatingRegimen();
+  };
+
   const handleFormSubmission = async (data: MedicationOrderFormData) => {
+    if (isSingleDose && (!singleDoseFrequency || errorFetchingOrderConfig)) {
+      return;
+    }
     const newBasketItem = {
       ...initialOrderBasketItem,
       drug: data.drug,
@@ -294,6 +350,9 @@ export function DrugOrderForm({
       numRefills: data.numRefills,
       indication: data.indication,
       frequency: data.frequency,
+      urgency: data.urgency,
+      urgencyCode: data.urgency,
+      scheduledDate: data.urgency === 'ON_SCHEDULED_DATE' ? initialOrderBasketItem?.scheduledDate : undefined,
       startDate: data.startDate,
       action: initialOrderBasketItem?.action ?? 'NEW',
       commonMedicationName: data.drug.display,
@@ -545,6 +604,85 @@ export function DrugOrderForm({
               />
             )}
             <section className={styles.formSection}>
+              <h3 className={styles.sectionHeader}>{t('medicationTiming', 'When to administer')}</h3>
+              <Grid className={styles.gridRow}>
+                <Column lg={8} md={4} sm={4}>
+                  <InputWrapper>
+                    <Controller
+                      name="urgency"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Select
+                          {...field}
+                          onChange={(event) => {
+                            field.onChange(event);
+                            if (isSingleDose && event.target.value === 'STAT') {
+                              setValue('startDate', new Date(), { shouldDirty: true, shouldValidate: true });
+                            }
+                          }}
+                          id="medicationUrgency"
+                          labelText={t('medicationUrgency', 'Urgency')}
+                          invalid={Boolean(fieldState.error)}
+                          invalidText={fieldState.error?.message}
+                        >
+                          <SelectItem value="ROUTINE" text={t('medicationRoutine', 'Routine')} />
+                          <SelectItem value="STAT" text={t('medicationStat', 'STAT — immediately')} />
+                          {initialOrderBasketItem?.scheduledDate && (
+                            <SelectItem
+                              value="ON_SCHEDULED_DATE"
+                              text={t('medicationScheduled', 'On the scheduled date')}
+                            />
+                          )}
+                        </Select>
+                      )}
+                    />
+                  </InputWrapper>
+                </Column>
+                <Column lg={8} md={4} sm={4}>
+                  <InputWrapper>
+                    <Button
+                      kind="tertiary"
+                      type="button"
+                      onClick={applyStatSingleDose}
+                      disabled={!singleDoseFrequency || !!errorFetchingOrderConfig}
+                    >
+                      {t('statSingleDose', 'STAT — administer once now')}
+                    </Button>
+                  </InputWrapper>
+                </Column>
+              </Grid>
+              <p className={styles.requiredFieldsNote}>
+                {isSingleDose
+                  ? t(
+                      'singleDoseInstructions',
+                      'One administration only. No repeat interval, treatment duration, as-needed use or refills. Confirm the quantity needed for this dose.',
+                    )
+                  : t(
+                      'medicationUrgencyHelp',
+                      'Urgency determines when to start. Frequency determines whether the dose is repeated.',
+                    )}
+              </p>
+              {!singleDoseFrequency && (
+                <p className={styles.requiredFieldsNote}>
+                  {t(
+                    'singleDoseUnavailable',
+                    'Single-dose prescribing is unavailable. Contact Pharmacy to enable the reviewed single-dose frequency.',
+                  )}
+                </p>
+              )}
+              {singleDoseConflict && (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t(
+                    'singleDoseRegimenError',
+                    'A single dose requires structured dosing, no treatment duration, no as-needed use and zero refills.',
+                  )}
+                />
+              )}
+            </section>
+            <section className={styles.formSection}>
               <Grid className={styles.gridRow}>
                 <Column lg={12} md={6} sm={4}>
                   <h3 className={styles.sectionHeader}>{t('dosageInstructions', 'Dosage instructions')}</h3>
@@ -642,6 +780,17 @@ export function DrugOrderForm({
                           name="frequency"
                           type="comboBox"
                           id="editFrequency"
+                          handleAfterChange={(frequency: MedicationFrequency) => {
+                            if (
+                              medicationConfig.singleDoseFrequencyUuid &&
+                              frequency?.valueCoded === medicationConfig.singleDoseFrequencyUuid
+                            ) {
+                              clearRepeatingRegimen();
+                              if (watchedUrgency === 'STAT') {
+                                setValue('startDate', new Date(), { shouldDirty: true, shouldValidate: true });
+                              }
+                            }
+                          }}
                           items={orderFrequencies}
                           shouldFilterItem={filterItemsBySynonymNames}
                           placeholder={t('editFrequencyComboBoxTitle', 'Frequency')}
@@ -681,6 +830,7 @@ export function DrugOrderForm({
                                 type="checkbox"
                                 id="prn"
                                 labelText={t('takeAsNeeded', 'Take as needed')}
+                                disabled={isSingleDose}
                               />
                             </FormGroup>
                           </InputWrapper>
@@ -703,7 +853,7 @@ export function DrugOrderForm({
                               placeholder={t('prnReasonPlaceholder', 'Reason to take medicine')}
                               rows={3}
                               maxLength={255}
-                              disabled={!watch('asNeeded')}
+                              disabled={isSingleDose || !watch('asNeeded')}
                             />
                           </InputWrapper>
                         </Column>
@@ -726,6 +876,7 @@ export function DrugOrderForm({
                           <OpenmrsDatePicker
                             {...field}
                             maxDate={new Date()}
+                            isDisabled={isSingleDose && watchedUrgency === 'STAT'}
                             id="startDatePicker"
                             labelText={<RequiredFieldLabel label={t('startDate', 'Start date')} />}
                             size={isTablet ? 'lg' : 'sm'}
@@ -737,59 +888,69 @@ export function DrugOrderForm({
                     </InputWrapper>
                   </div>
                 </Column>
-                <Column lg={8} md={2} sm={4} className={styles.linkedInput}>
-                  <InputWrapper>
-                    {!isTablet ? (
-                      <ControlledFieldInput
-                        control={control}
-                        name="duration"
-                        type="number"
-                        id="durationInput"
-                        integer
-                        label={
-                          <RequiredFieldLabel label={t('duration', 'Duration')} required={requireOutpatientQuantity} />
-                        }
-                        min={1}
-                        aria-required={requireOutpatientQuantity || undefined}
-                        step={1}
-                        allowEmpty
-                      />
-                    ) : (
-                      <CustomNumberInput
-                        control={control}
-                        isTablet={isTablet}
-                        setValue={setValue}
-                        name="duration"
-                        labelText={
-                          <RequiredFieldLabel label={t('duration', 'Duration')} required={requireOutpatientQuantity} />
-                        }
-                        min={1}
-                        required={requireOutpatientQuantity}
-                      />
-                    )}
-                  </InputWrapper>
-                </Column>
-                <Column className={styles.durationUnit} lg={8} md={2} sm={4}>
-                  <InputWrapper>
-                    <ControlledFieldInput
-                      control={control}
-                      name="durationUnit"
-                      type="comboBox"
-                      id="durationUnitPlaceholder"
-                      titleText={
-                        <RequiredFieldLabel
-                          label={t('durationUnit', 'Duration unit')}
+                {!isSingleDose && (
+                  <Column lg={8} md={2} sm={4} className={styles.linkedInput}>
+                    <InputWrapper>
+                      {!isTablet ? (
+                        <ControlledFieldInput
+                          control={control}
+                          name="duration"
+                          type="number"
+                          id="durationInput"
+                          integer
+                          label={
+                            <RequiredFieldLabel
+                              label={t('duration', 'Duration')}
+                              required={requireOutpatientQuantity}
+                            />
+                          }
+                          min={1}
+                          aria-required={requireOutpatientQuantity || undefined}
+                          step={1}
+                          allowEmpty
+                        />
+                      ) : (
+                        <CustomNumberInput
+                          control={control}
+                          isTablet={isTablet}
+                          setValue={setValue}
+                          name="duration"
+                          labelText={
+                            <RequiredFieldLabel
+                              label={t('duration', 'Duration')}
+                              required={requireOutpatientQuantity}
+                            />
+                          }
+                          min={1}
                           required={requireOutpatientQuantity}
                         />
-                      }
-                      aria-required={requireOutpatientQuantity || undefined}
-                      items={durationUnits}
-                      itemToString={(item: CommonMedicationValueCoded) => item?.value}
-                      placeholder={t('durationUnitPlaceholder', 'Duration Unit')}
-                      shouldFilterItem={filterItemsByName}
-                    />
-                  </InputWrapper>
-                </Column>
+                      )}
+                    </InputWrapper>
+                  </Column>
+                )}
+                {!isSingleDose && (
+                  <Column className={styles.durationUnit} lg={8} md={2} sm={4}>
+                    <InputWrapper>
+                      <ControlledFieldInput
+                        control={control}
+                        name="durationUnit"
+                        type="comboBox"
+                        id="durationUnitPlaceholder"
+                        titleText={
+                          <RequiredFieldLabel
+                            label={t('durationUnit', 'Duration unit')}
+                            required={requireOutpatientQuantity}
+                          />
+                        }
+                        aria-required={requireOutpatientQuantity || undefined}
+                        items={durationUnits}
+                        itemToString={(item: CommonMedicationValueCoded) => item?.value}
+                        placeholder={t('durationUnitPlaceholder', 'Duration Unit')}
+                        shouldFilterItem={filterItemsByName}
+                      />
+                    </InputWrapper>
+                  </Column>
+                )}
               </Grid>
             </section>
             <section className={styles.formSection}>
@@ -852,45 +1013,47 @@ export function DrugOrderForm({
                     />
                   </InputWrapper>
                 </Column>
-                <Column lg={8} md={3} sm={4}>
-                  <InputWrapper>
-                    {!isTablet ? (
-                      <ControlledFieldInput
-                        control={control}
-                        name="numRefills"
-                        type="number"
-                        id="prescriptionRefills"
-                        integer
-                        min={0}
-                        label={
-                          <RequiredFieldLabel
-                            label={t('prescriptionRefills', 'Number of refills')}
-                            required={requireOutpatientQuantity}
-                          />
-                        }
-                        aria-required={requireOutpatientQuantity || undefined}
-                        max={99}
-                        allowEmpty
-                      />
-                    ) : (
-                      <CustomNumberInput
-                        control={control}
-                        isTablet={isTablet}
-                        setValue={setValue}
-                        name="numRefills"
-                        labelText={
-                          <RequiredFieldLabel
-                            label={t('prescriptionRefills', 'Number of refills')}
-                            required={requireOutpatientQuantity}
-                          />
-                        }
-                        max={99}
-                        min={0}
-                        required={requireOutpatientQuantity}
-                      />
-                    )}
-                  </InputWrapper>
-                </Column>
+                {!isSingleDose && (
+                  <Column lg={8} md={3} sm={4}>
+                    <InputWrapper>
+                      {!isTablet ? (
+                        <ControlledFieldInput
+                          control={control}
+                          name="numRefills"
+                          type="number"
+                          id="prescriptionRefills"
+                          integer
+                          min={0}
+                          label={
+                            <RequiredFieldLabel
+                              label={t('prescriptionRefills', 'Number of refills')}
+                              required={requireOutpatientQuantity}
+                            />
+                          }
+                          aria-required={requireOutpatientQuantity || undefined}
+                          max={99}
+                          allowEmpty
+                        />
+                      ) : (
+                        <CustomNumberInput
+                          control={control}
+                          isTablet={isTablet}
+                          setValue={setValue}
+                          name="numRefills"
+                          labelText={
+                            <RequiredFieldLabel
+                              label={t('prescriptionRefills', 'Number of refills')}
+                              required={requireOutpatientQuantity}
+                            />
+                          }
+                          max={99}
+                          min={0}
+                          required={requireOutpatientQuantity}
+                        />
+                      )}
+                    </InputWrapper>
+                  </Column>
+                )}
               </Grid>
               <Grid className={styles.gridRow}>
                 <Column lg={16} md={6} sm={4}>
@@ -925,6 +1088,7 @@ export function DrugOrderForm({
                 unit: watchedUnit,
                 route: watch('route'),
                 frequency: watchedFrequency,
+                urgency: watchedUrgency,
               },
             }}
           />
@@ -937,7 +1101,12 @@ export function DrugOrderForm({
               kind="primary"
               type="submit"
               size="xl"
-              disabled={!!errorFetchingOrderConfig || isSubmitting || drugAlreadyPrescribedForNewOrder}
+              disabled={
+                !!errorFetchingOrderConfig ||
+                isSubmitting ||
+                drugAlreadyPrescribedForNewOrder ||
+                (isSingleDose && !singleDoseFrequency)
+              }
             >
               {saveButtonText}
             </Button>

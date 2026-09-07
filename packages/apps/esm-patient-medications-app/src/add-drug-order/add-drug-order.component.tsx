@@ -24,6 +24,7 @@ import {
 import { type ComponentProps, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { prepMedicationOrderPostData } from '../api/api';
+import { useOrderConfig } from '../api/order-config';
 import { type ConfigObject } from '../config-schema';
 import styles from './add-drug-order.scss';
 import { DrugOrderForm } from './drug-order-form.component';
@@ -70,13 +71,26 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { careSettingUuid, drugCategoryConceptSets } = useConfig<ConfigObject>();
+  const { careSettingUuid, drugCategoryConceptSets, singleDoseFrequencyUuid } = useConfig<ConfigObject>();
+  const { orderConfigObject, error: orderConfigError, isLoading: orderConfigLoading } = useOrderConfig();
+  const singleDoseFrequencyAvailable =
+    !orderConfigError &&
+    !orderConfigLoading &&
+    Boolean(orderConfigObject?.orderFrequencies?.some((frequency) => frequency.valueCoded === singleDoseFrequencyUuid));
   const session = useSession();
   const orderingProviderUuid = session?.currentProvider?.uuid;
   const prepareMedicationOrderPostData = useCallback(
     (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
-      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, careSettingUuid),
-    [careSettingUuid, orderingProviderUuid],
+      prepMedicationOrderPostData(
+        order,
+        patientUuid,
+        encounterUuid,
+        orderingProviderUuid,
+        careSettingUuid,
+        singleDoseFrequencyUuid,
+        singleDoseFrequencyAvailable,
+      ),
+    [careSettingUuid, orderingProviderUuid, singleDoseFrequencyUuid, singleDoseFrequencyAvailable],
   );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
@@ -213,6 +227,8 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
                 finalizedOrder?.encounterUuid,
                 orderToEditOrdererUuid ?? orderingProviderUuid,
                 careSettingUuid,
+                singleDoseFrequencyUuid,
+                singleDoseFrequencyAvailable,
               ),
             );
             mutateOrders();
@@ -265,6 +281,8 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     [
       careSettingUuid,
       closeWorkspace,
+      singleDoseFrequencyUuid,
+      singleDoseFrequencyAvailable,
       mutateOrders,
       orderingProviderUuid,
       patientUuid,

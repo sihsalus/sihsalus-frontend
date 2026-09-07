@@ -47,14 +47,15 @@ export function drugOrderBasketItemToFormValue(item: DrugOrderBasketItem, startD
     numRefills: item?.numRefills ?? null,
     indication: item?.indication ?? '',
     frequency: item?.frequency ?? null,
+    urgency: item?.urgencyCode ?? item?.urgency ?? 'ROUTINE',
     startDate,
   };
 }
 
-function useCreateMedicationOrderFormSchema() {
+export function useCreateMedicationOrderFormSchema() {
   const { t } = useTranslation();
   const { requireOutpatientQuantity } = useRequireOutpatientQuantity();
-  const { requireIndication } = useConfig<ConfigObject>();
+  const { requireIndication, singleDoseFrequencyUuid } = useConfig<ConfigObject>();
 
   const schema = useMemo(() => {
     const comboSchema = {
@@ -69,6 +70,9 @@ function useCreateMedicationOrderFormSchema() {
     };
 
     const baseSchemaFields = {
+      urgency: z.string().refine((value) => ['ROUTINE', 'STAT', 'ON_SCHEDULED_DATE'].includes(value), {
+        message: t('medicationUrgencyRequired', 'Select the prescription urgency'),
+      }),
       drug: z
         .object(
           {
@@ -122,18 +126,10 @@ function useCreateMedicationOrderFormSchema() {
       duration: z
         .number()
         .nullable()
-        .refine((value) => !requireOutpatientQuantity || value !== null, {
-          message: t('durationRequiredErrorMessage', 'Treatment duration is required'),
-        })
         .refine((value) => value === null || value > 0, {
           message: t('durationGreaterThanZeroErrorMessage', 'Duration must be greater than 0'),
         }),
-      durationUnit: z
-        .object({ ...comboSchema })
-        .nullable()
-        .refine((value) => !requireOutpatientQuantity || Boolean(value), {
-          message: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
-        }),
+      durationUnit: z.object({ ...comboSchema }).nullable(),
       indication: requireIndication
         ? z.string().refine((value) => value.trim().length > 0, {
             message: t('indicationErrorMessage', 'Indication is required'),
@@ -215,8 +211,39 @@ function useCreateMedicationOrderFormSchema() {
       .superRefine((data, context) => {
         const hasDuration = typeof data.duration === 'number';
         const hasDurationUnit = Boolean(data.durationUnit);
+        const isSingleDose = Boolean(singleDoseFrequencyUuid && data.frequency?.valueCoded === singleDoseFrequencyUuid);
 
-        if (!requireOutpatientQuantity && hasDurationUnit && !hasDuration) {
+        if (isSingleDose) {
+          if (data.urgency === 'STAT' && data.startDate.toDateString() !== new Date().toDateString()) {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t(
+                'singleDoseStatStartDate',
+                'An immediate single dose must start today. Apply the STAT single-dose preset to review this prescription.',
+              ),
+              path: ['startDate'],
+            });
+          }
+          for (const [path, invalid] of [
+            ['duration', hasDuration || hasDurationUnit],
+            ['asNeeded', data.asNeeded || Boolean(data.asNeededCondition?.trim())],
+            ['numRefills', data.numRefills !== 0],
+            ['isFreeTextDosage', data.isFreeTextDosage],
+          ] as const) {
+            if (invalid) {
+              context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: t(
+                  'singleDoseRegimenError',
+                  'A single dose requires structured dosing, no treatment duration, no as-needed use and zero refills.',
+                ),
+                path: [path],
+              });
+            }
+          }
+        }
+
+        if (!isSingleDose && (requireOutpatientQuantity || hasDurationUnit) && !hasDuration) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
             message: t('durationRequiredErrorMessage', 'Treatment duration is required'),
@@ -224,7 +251,7 @@ function useCreateMedicationOrderFormSchema() {
           });
         }
 
-        if (!requireOutpatientQuantity && hasDuration && !hasDurationUnit) {
+        if (!isSingleDose && (requireOutpatientQuantity || hasDuration) && !hasDurationUnit) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
             message: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
@@ -240,7 +267,7 @@ function useCreateMedicationOrderFormSchema() {
           });
         }
       });
-  }, [requireIndication, requireOutpatientQuantity, t]);
+  }, [requireIndication, requireOutpatientQuantity, singleDoseFrequencyUuid, t]);
 
   return schema;
 }

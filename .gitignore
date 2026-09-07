@@ -41,6 +41,7 @@ packages/libs/*/src/**/*.d.ts.map
 
 # Playwright
 e2e/storage-state.json
+e2e/.runtime-notifications-dev-state.json
 e2e/**/storageState.json
 e2e/**/storage-state.json
 test-results/

@@ -9,7 +9,7 @@ aislamiento, cleanup o aceptación aún no están verificados y no deben ejecuta
 
 [`suite-catalog.json`](suite-catalog.json) es la fuente única de organización.
 Cada configuración Playwright y cada `*.spec.ts` deben pertenecer exactamente a
-una de sus 12 suites. El contrato local falla si aparece una configuración o un
+una de sus 13 suites. El contrato local falla si aparece una configuración o un
 spec sin dueño, si hay solapamientos o si `typecheck`/`ci` dejan de coincidir con
 la configuración real.
 
@@ -18,23 +18,32 @@ pueda ejecutarse sin las credenciales, datos sintéticos y ambiente coordinado
 que exija su preflight. `quarantined` conserva el código como inventario, pero
 lo rechaza de forma explícita hasta resolver la razón registrada en el catálogo.
 
-| ID                 | Configuración                               | Specs                        | Estado       | Gate | Typecheck | CI navegador |
-| ------------------ | ------------------------------------------- | ---------------------------- | ------------ | ---- | --------- | ------------ |
-| `billing`          | `e2e/billing/playwright.config.ts`          | `e2e/billing/specs`          | quarantined  | no   | no        | no           |
-| `clinical`         | `playwright.config.ts`                      | `e2e/tests`                  | **runnable** | sí   | sí        | sí           |
-| `cohort-builder`   | `e2e/cohort-builder/playwright.config.ts`   | `e2e/cohort-builder/specs`   | quarantined  | no   | sí        | no           |
-| `dispensing`       | `e2e/dispensing/playwright.config.ts`       | `e2e/dispensing/specs`       | quarantined  | no   | no        | no           |
-| `dyaku`            | `e2e/dyaku/playwright.config.ts`            | `e2e/dyaku/specs`            | quarantined  | no   | sí        | no           |
-| `fast-data-entry`  | `e2e/fast-data-entry/playwright.config.ts`  | `e2e/fast-data-entry/specs`  | quarantined  | no   | no        | no           |
-| `form-builder`     | `e2e/form-builder/playwright.config.ts`     | `e2e/form-builder/specs`     | quarantined  | no   | no        | no           |
-| `laboratory`       | `e2e/laboratory/playwright.config.ts`       | `e2e/laboratory/specs`       | **runnable** | sí   | sí        | sí           |
-| `offline-laptop`   | `e2e/offline-laptop/playwright.config.ts`   | `e2e/offline-laptop/specs`   | **runnable** | sí   | sí        | no           |
-| `patient-imaging`  | `e2e/patient-imaging/playwright.config.ts`  | `e2e/patient-imaging/specs`  | quarantined  | no   | sí        | no           |
-| `stock-management` | `e2e/stock-management/playwright.config.ts` | `e2e/stock-management/specs` | quarantined  | no   | sí        | no           |
-| `user-onboarding`  | `e2e/user-onboarding/playwright.config.ts`  | `e2e/user-onboarding/specs`  | quarantined  | no   | sí        | no           |
+| ID                  | Configuración                                | Specs                         | Estado       | Gate | Typecheck | CI navegador |
+| ------------------- | -------------------------------------------- | ----------------------------- | ------------ | ---- | --------- | ------------ |
+| `billing`           | `e2e/billing/playwright.config.ts`           | `e2e/billing/specs`           | quarantined  | no   | no        | no           |
+| `clinical`          | `playwright.config.ts`                       | `e2e/tests`                   | **runnable** | sí   | sí        | sí           |
+| `clinical-recovery` | `e2e/clinical-recovery/playwright.config.ts` | `e2e/clinical-recovery/specs` | quarantined  | no   | sí        | no           |
+| `cohort-builder`    | `e2e/cohort-builder/playwright.config.ts`    | `e2e/cohort-builder/specs`    | quarantined  | no   | sí        | no           |
+| `dispensing`        | `e2e/dispensing/playwright.config.ts`        | `e2e/dispensing/specs`        | quarantined  | no   | no        | no           |
+| `dyaku`             | `e2e/dyaku/playwright.config.ts`             | `e2e/dyaku/specs`             | quarantined  | no   | sí        | no           |
+| `fast-data-entry`   | `e2e/fast-data-entry/playwright.config.ts`   | `e2e/fast-data-entry/specs`   | quarantined  | no   | no        | no           |
+| `form-builder`      | `e2e/form-builder/playwright.config.ts`      | `e2e/form-builder/specs`      | quarantined  | no   | no        | no           |
+| `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | sí           |
+| `offline-laptop`    | `e2e/offline-laptop/playwright.config.ts`    | `e2e/offline-laptop/specs`    | **runnable** | sí   | sí        | no           |
+| `patient-imaging`   | `e2e/patient-imaging/playwright.config.ts`   | `e2e/patient-imaging/specs`   | quarantined  | no   | sí        | no           |
+| `stock-management`  | `e2e/stock-management/playwright.config.ts`  | `e2e/stock-management/specs`  | quarantined  | no   | sí        | no           |
+| `user-onboarding`   | `e2e/user-onboarding/playwright.config.ts`   | `e2e/user-onboarding/specs`   | quarantined  | no   | sí        | no           |
 
 Los scripts de verificación en `e2e/scripts/` y las capturas en
 `e2e/screenshots/` no son suites Playwright y no pertenecen al catálogo.
+
+La nueva [recuperación clínica](clinical-recovery/README.md) conserva propuestas
+de firma de órdenes y notificaciones en cuarentena. El runner, su global setup,
+los hooks y la función de notificaciones bloquean su ejecución; no hay un bypass
+por variable de ambiente. Sus specs TypeScript tienen cobertura de tipos, pero
+el prototipo de notificaciones en JavaScript solo tiene comprobación sintáctica
+y pruebas del bloqueo, no validación clínica. No se promueve ninguna suite ni
+se agrega a CI de navegador.
 
 ```sh
 # Suite clínica principal (compatible con el comando histórico)

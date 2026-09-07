@@ -28,12 +28,13 @@ function createChildProcess(closeCode = 0, signal = null) {
   return child;
 }
 
-test('catalogs all 12 Playwright suites with explicit execution metadata', () => {
+test('catalogs all 13 Playwright suites with explicit execution metadata', () => {
   assert.deepEqual(
     catalog.suites.map(({ id }) => id),
     [
       'billing',
       'clinical',
+      'clinical-recovery',
       'cohort-builder',
       'dispensing',
       'dyaku',
@@ -78,6 +79,7 @@ test('records typecheck coverage consistently with e2e/tsconfig.json', async () 
   const typecheckedSuites = catalog.suites.filter(({ typecheck }) => typecheck).map(({ id }) => id);
   assert.deepEqual(typecheckedSuites, [
     'clinical',
+    'clinical-recovery',
     'cohort-builder',
     'dyaku',
     'laboratory',
@@ -117,6 +119,7 @@ test('ignores modular authentication state and JUnit output paths without creati
     'e2e/laboratory/storageState.json',
     'e2e/laboratory/storage-state.json',
     'e2e/laboratory/results.xml',
+    'e2e/.runtime-notifications-dev-state.json',
   ]) {
     const result = spawnSync('git', ['check-ignore', '--quiet', '--no-index', generatedPath], {
       cwd: repositoryRoot,
@@ -129,7 +132,7 @@ test('ignores modular authentication state and JUnit output paths without creati
 test('owns every Playwright config and every spec exactly once', async () => {
   const coverage = await runner.validateCatalogCoverage(catalog, repositoryRoot);
 
-  assert.equal(coverage.configFiles.length, 12);
+  assert.equal(coverage.configFiles.length, 13);
   assert.equal(new Set(coverage.configFiles).size, coverage.configFiles.length);
   assert.ok(coverage.specFiles.length > 0);
   assert.equal(new Set(coverage.specFiles).size, coverage.specFiles.length);
@@ -202,6 +205,46 @@ test('fails closed for missing, unknown and quarantined suite IDs', () => {
   assert.throws(() => runner.selectRunnableSuite(catalog, []), /Uso: yarn test:e2e:suite/);
   assert.throws(() => runner.selectRunnableSuite(catalog, ['does-not-exist']), /Suite E2E desconocida/);
   assert.throws(() => runner.selectRunnableSuite(catalog, ['billing']), /está en cuarentena/);
+  assert.throws(() => runner.selectRunnableSuite(catalog, ['clinical-recovery']), /está en cuarentena/);
+});
+
+test('rejects the recovered clinical CLI before attempting Playwright discovery', () => {
+  const result = spawnSync(process.execPath, [runnerPath, 'clinical-recovery', '--list'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    env: { PATH: process.env.PATH ?? '' },
+    timeout: 15_000,
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /clinical-recovery.*está en cuarentena/);
+  assert.equal(result.stdout, '');
+});
+
+test('can inventory the recovered proposals without executing their setup or ESM smoke', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      require.resolve('@playwright/test/cli'),
+      'test',
+      '--config',
+      'e2e/clinical-recovery/playwright.config.ts',
+      '--list',
+      '--reporter=list',
+    ],
+    {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+      env: { PATH: process.env.PATH ?? '' },
+      timeout: 30_000,
+    },
+  );
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 0);
+  assert.equal(result.stderr, '');
+  assert.match(result.stdout, /Total: 2 tests in 2 files/);
+  assert.match(result.stdout, /signed-orders.spec.ts/);
+  assert.match(result.stdout, /runtime-notifications.spec.ts/);
 });
 
 test('rejects every Playwright config override form', () => {

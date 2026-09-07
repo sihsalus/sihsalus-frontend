@@ -62,6 +62,47 @@ describe('Missing catalog item draft', () => {
     expect(screen.getByRole('button', { name: 'Copy draft for Pharmacy' })).toBeEnabled();
   });
 
+  it('copies the edited draft on a successful retry after a clipboard failure without persistence', async () => {
+    const user = await openDraft();
+    const copy = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockRejectedValueOnce(new Error('Synthetic private clipboard failure'))
+      .mockResolvedValue(undefined);
+    const writeStorage = vi.spyOn(Storage.prototype, 'setItem');
+    const input = screen.getByRole('textbox', { name: 'Item to request' });
+    const copyButton = screen.getByRole('button', { name: 'Copy draft for Pharmacy' });
+    await user.type(input, 'Synthetic original catalog draft');
+    await user.click(copyButton);
+
+    expect(copy).toHaveBeenNthCalledWith(
+      1,
+      'Catalog review request — NOT a prescription\n\nSynthetic original catalog draft',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Select and copy the preview manually.');
+    expect(copyButton).toBeEnabled();
+    expect(input).not.toHaveAttribute('readonly');
+
+    await user.clear(input);
+    await user.type(input, 'Synthetic revised catalog draft');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('textbox', { name: 'Draft for review (not sent)' })).toHaveValue(
+      'Catalog review request — NOT a prescription\n\nSynthetic revised catalog draft',
+    );
+    await user.click(copyButton);
+
+    expect(copy).toHaveBeenCalledTimes(2);
+    expect(copy).toHaveBeenNthCalledWith(
+      2,
+      'Catalog review request — NOT a prescription\n\nSynthetic revised catalog draft',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Draft copied. It has not been sent to Pharmacy.');
+    expect(screen.queryByText(/Synthetic private clipboard failure/)).not.toBeInTheDocument();
+    expect(copyButton).toBeEnabled();
+    expect(input).not.toHaveAttribute('readonly');
+    expect(openmrsFetch).not.toHaveBeenCalled();
+    expect(writeStorage).not.toHaveBeenCalled();
+  });
+
   it('degrades to manual copying when the clipboard API is unavailable', async () => {
     const user = await openDraft();
     vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue(undefined);

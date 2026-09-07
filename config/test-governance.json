@@ -23,16 +23,6 @@
       "expiresOn": "2026-12-31"
     },
     {
-      "workspace": "@sihsalus/esm-help-menu-app",
-      "path": "packages/apps/esm-help-menu-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "low",
-      "priority": "P2",
-      "missing": ["test-files"],
-      "reason": "El menú de ayuda no tiene pruebas de apertura, navegación entre contenido ni estados de error.",
-      "expiresOn": "2027-02-28"
-    },
-    {
       "workspace": "@sihsalus/esm-psicologia-app",
       "path": "packages/apps/esm-psicologia-app",
       "owner": "sihsalus@pucp.edu.pe",

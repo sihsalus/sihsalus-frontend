@@ -50,7 +50,7 @@ import {
   peruSisEessNameAttributeTypeUuid,
   peruSisTypeDescriptionAttributeTypeUuid,
 } from './peru-registration-config';
-import { registrationErrorCodes } from './registration-errors';
+import { RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
@@ -606,6 +606,49 @@ describe('FormManager', () => {
 
       expect(mockSavePatient).toHaveBeenCalledTimes(1);
       expect(mockDeleteRelationship).toHaveBeenCalledWith('relationship-uuid');
+    });
+
+    it('uses the resolved person when rechecking an already completed companion transaction', () => {
+      const transaction = new SavePatientTransactionManager();
+      const companionRelationshipType = 'companion-type-uuid/aIsToB';
+      const relationship = {
+        action: 'UPDATE' as const,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        isCompanion: false,
+        relatedPersonUuid: '',
+        relationshipType: companionRelationshipType,
+        uuid: 'relationship-uuid',
+      };
+      transaction.relationshipRows['relationship-uuid'] = {
+        companionCompleted: true,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        relatedPersonUuid: 'resolved-person-uuid',
+        companionSignature: JSON.stringify({
+          action: 'UPDATE',
+          companionRelationshipType,
+          companionRelationshipUuid: 'companion-relationship-uuid',
+          isCompanion: false,
+          relatedPersonUuid: 'resolved-person-uuid',
+        }),
+      };
+
+      expect(() =>
+        FormManager.assertRelationshipDeleteAccess(
+          [relationship],
+          getSessionWithPrivileges(),
+          companionRelationshipType,
+          transaction,
+        ),
+      ).not.toThrow();
+      expect(() =>
+        FormManager.assertRelationshipDeleteAccess(
+          [{ ...relationship, relatedPersonUuid: 'different-person-uuid' }],
+          getSessionWithPrivileges(),
+          companionRelationshipType,
+          transaction,
+        ),
+      ).toThrow(RegistrationDomainError);
+      expect(mockDeleteRelationship).not.toHaveBeenCalled();
     });
 
     it('also rejects removing the persisted companion relationship before writing patient data', async () => {

@@ -10,6 +10,7 @@ describe('visit note clinical concept defaults', () => {
       biologicalFunctionsConceptUuid: '9011adf4-2b9f-4ecb-a44c-cb5642e4e015',
       soapSubjectiveConceptUuid: 'f0000202-0000-4000-8000-000000000202',
       soapPlanConceptUuid: 'f0000201-0000-4000-8000-000000000201',
+      therapeuticIndicationsConceptUuid: 'b762afd0-dfc6-430d-8963-0be05f77a12a',
       // These defaults intentionally match the datatypes provisioned by SIHSALUS content.
       labOrdersConceptUuid: 'f0000204-0000-4000-8000-000000000204',
       prescriptionsConceptUuid: 'f0000215-0000-4000-8000-000000000215',
@@ -23,6 +24,7 @@ describe('visit note clinical concept defaults', () => {
       defaultVisitNoteClinicalConceptUuids.biologicalFunctionsConceptUuid,
       defaultVisitNoteClinicalConceptUuids.soapSubjectiveConceptUuid,
       defaultVisitNoteClinicalConceptUuids.soapPlanConceptUuid,
+      defaultVisitNoteClinicalConceptUuids.therapeuticIndicationsConceptUuid,
     ];
 
     expect(new Set(independentlyPersistedConceptUuids).size).toBe(independentlyPersistedConceptUuids.length);

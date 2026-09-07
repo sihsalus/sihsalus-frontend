@@ -293,13 +293,13 @@ export async function runStart(args: StartArgs) {
     logInfo(`SPA available at ${pageUrl}`);
 
     if (open) {
-      const open = require('open');
-
-      open(pageUrl, { wait: false }).catch(() => {
-        logWarn(
-          `Unable to open "${pageUrl}" in browser. If you are running in a headless environment, please do not use the --open flag.`,
-        );
-      });
+      void import('open')
+        .then(({ default: openBrowser }) => openBrowser(pageUrl, { wait: false }))
+        .catch(() => {
+          logWarn(
+            `Unable to open "${pageUrl}" in browser. If you are running in a headless environment, please do not use the --open flag.`,
+          );
+        });
     }
   });
 

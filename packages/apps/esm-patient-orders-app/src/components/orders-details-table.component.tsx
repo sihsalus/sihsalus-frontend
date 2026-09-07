@@ -539,12 +539,25 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 
     // Filtrado por grupo de pruebas
     if (selectedLabsetUuid && fetchedLabsets) {
-      const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
-      const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
+      const isRelatedLabset = (orderConceptUuid: string | undefined) => {
+        if (!orderConceptUuid || !selectedLabsetUuid) return true;
+        if (orderConceptUuid === selectedLabsetUuid) return true;
 
-      result = result.filter(
-        (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
-      );
+        const targetSet = fetchedLabsets.find((s) => s.uuid === selectedLabsetUuid);
+        const targetMembers = targetSet ? getMemberUuids(targetSet) : [];
+        if (targetMembers.includes(orderConceptUuid)) return true;
+
+        const orderSet = fetchedLabsets.find((s) => s.uuid === orderConceptUuid);
+        if (orderSet) {
+          const orderMembers = getMemberUuids(orderSet);
+          if (orderMembers.includes(selectedLabsetUuid)) return true;
+          if (targetMembers.some((mUuid) => orderMembers.includes(mUuid))) return true;
+        }
+
+        return false;
+      };
+
+      result = result.filter((order) => isRelatedLabset(order.concept?.uuid));
     }
 
     // Filtrado por estado

@@ -44,10 +44,6 @@ interface ConditionFormProps extends DefaultPatientWorkspaceProps {
 const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
   const isCreating = formContext === 'creating';
 
-  const clinicalStatusValidation = z.string().refine((clinicalStatus) => !isCreating || !!clinicalStatus, {
-    message: t('clinicalStatusRequired', 'A clinical status is required'),
-  });
-
   const antecedentScopeValidation = z.enum(['personal', 'family', 'social']);
 
   const personalCategoryValidation = z.string().optional();
@@ -57,7 +53,7 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
   return z
     .object({
       abatementDateTime: z.date().optional().nullable(),
-      clinicalStatus: clinicalStatusValidation,
+      clinicalStatus: z.string(),
       conditionName: conditionNameValidation,
       onsetDateTime: z
         .date()
@@ -70,6 +66,14 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
       freeText: z.string().optional(),
     })
     .superRefine((data, ctx) => {
+      if (isCreating && data.antecedentScope === 'personal' && !data.clinicalStatus) {
+        ctx.addIssue({
+          path: ['clinicalStatus'],
+          code: z.ZodIssueCode.custom,
+          message: t('clinicalStatusRequired', 'A clinical status is required'),
+        });
+      }
+
       // Require condition name when creating a personal antecedent that is not free text.
       if (isCreating && data.antecedentScope === 'personal' && data.personalCategory !== 'other') {
         if (!data.conditionName) {
@@ -175,7 +179,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
       launchPatientWorkspace(patientFormEntryWorkspace, {
         workspaceTitle: t('socialHistory', 'Social History'),
         formInfo: {
-          encounterUuid: config?.clinicalEncounterUuid,
+          encounterUuid: '',
           formUuid: config?.formsList?.clinicalEncounterFormUuid,
           patientUuid,
           visitTypeUuid: '',

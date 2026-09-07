@@ -21,6 +21,8 @@
   "clinicalSummaryLoadErrorTitle": "No se pudo cargar el resumen clínico",
   "clinicalSummaryLoading": "Cargando el resumen clínico de Consulta Externa...",
   "clinicalSummaryReadOnlyDescription": "Esta sección resume lo registrado en Consulta Externa y no puede editarse aquí.",
+  "therapeuticIndications": "Indicaciones no farmacológicas",
+  "therapeuticIndicationsPlaceholder": "Dieta, ejercicio, hábitos saludables, seguimiento u otras indicaciones para el paciente",
   "codigoPrestacional": "Codigo Prestacional",
   "codigoPrestacionalInputLabel": "Indique el Código Prestacional",
   "codigoPrestacionalPlaceholder": "Buscar Código Prestacional",

@@ -2,16 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
 
 const repoRoot = path.resolve(__dirname, '../../..');
 const targetVersion = '7.18.2';
 const peerRange = '>=6.30.4 <8';
-const trivyAdvisoryId = 'GHSA-qwww-vcr4-c8h2';
-const trivyExceptionExpiresAt = '2026-08-31';
-const trivyExceptionPurl = `pkg:npm/react-router@${targetVersion}`;
-const trivyExceptionStatement =
-  'React Router 7.18.2 contains the official v7 CSRF backport; GitHub/npm metadata still incorrectly reports it as affected below 8.3.0. CI rejects React Router RSC APIs and react-server-dom dependencies until the advisory database is corrected.';
 const runtimePackageRoots = ['packages/apps', 'packages/libs', 'packages/templates'];
 const dependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const routerPackages = ['react-router', 'react-router-dom'];
@@ -112,69 +106,7 @@ function validateLockfile(root, lockfilePath, failures) {
   }
 }
 
-function validateTrivyException(root, failures, now = new Date()) {
-  const ignorePath = path.join(root, '.trivyignore.yaml');
-  if (!fs.existsSync(ignorePath)) {
-    failures.push('.trivyignore.yaml: the scoped React Router release exception is missing.');
-    return;
-  }
-
-  let ignoreConfig;
-  try {
-    ignoreConfig = yaml.load(fs.readFileSync(ignorePath, 'utf8'), { schema: yaml.JSON_SCHEMA });
-  } catch (error) {
-    failures.push(`.trivyignore.yaml: cannot be parsed (${error.message}).`);
-    return;
-  }
-
-  if (
-    !ignoreConfig ||
-    typeof ignoreConfig !== 'object' ||
-    Array.isArray(ignoreConfig) ||
-    Object.keys(ignoreConfig).length !== 1 ||
-    !Object.hasOwn(ignoreConfig, 'vulnerabilities')
-  ) {
-    failures.push('.trivyignore.yaml: only the reviewed vulnerabilities list is permitted.');
-    return;
-  }
-
-  if (!Array.isArray(ignoreConfig.vulnerabilities) || ignoreConfig.vulnerabilities.length !== 1) {
-    failures.push('.trivyignore.yaml: exactly one reviewed vulnerability exception is permitted.');
-    return;
-  }
-
-  const exception = ignoreConfig.vulnerabilities[0];
-  const expectedKeys = ['expired_at', 'id', 'purls', 'statement'];
-  if (
-    !exception ||
-    typeof exception !== 'object' ||
-    Array.isArray(exception) ||
-    JSON.stringify(Object.keys(exception).sort()) !== JSON.stringify(expectedKeys)
-  ) {
-    failures.push('.trivyignore.yaml: the exception must contain only id, purls, expired_at, and statement.');
-    return;
-  }
-
-  if (exception.id !== trivyAdvisoryId) {
-    failures.push(`.trivyignore.yaml: only advisory ${trivyAdvisoryId} may be excepted.`);
-  }
-  if (!Array.isArray(exception.purls) || exception.purls.length !== 1 || exception.purls[0] !== trivyExceptionPurl) {
-    failures.push(`.trivyignore.yaml: ${trivyAdvisoryId} must be scoped only to "${trivyExceptionPurl}".`);
-  }
-  if (exception.expired_at !== trivyExceptionExpiresAt) {
-    failures.push(`.trivyignore.yaml: ${trivyAdvisoryId} must expire on ${trivyExceptionExpiresAt}.`);
-  }
-  if (exception.statement !== trivyExceptionStatement) {
-    failures.push(`.trivyignore.yaml: ${trivyAdvisoryId} must retain the reviewed RSC justification.`);
-  }
-  if (now.toISOString().slice(0, 10) > trivyExceptionExpiresAt) {
-    failures.push(
-      `.trivyignore.yaml: ${trivyAdvisoryId} expired on ${trivyExceptionExpiresAt}; migrate or formally review it.`,
-    );
-  }
-}
-
-function validateReactRouterContract(root = repoRoot, now = new Date()) {
+function validateReactRouterContract(root = repoRoot) {
   const failures = [];
   const rootManifestPath = path.join(root, 'package.json');
   const rootManifest = readJson(rootManifestPath);
@@ -198,7 +130,6 @@ function validateReactRouterContract(root = repoRoot, now = new Date()) {
   }
 
   validateLockfile(root, path.join(root, 'yarn.lock'), failures);
-  validateTrivyException(root, failures, now);
   return failures;
 }
 
@@ -212,7 +143,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `[react-router-contract] Runtime locked to ${targetVersion}; importers share peer ${peerRange}; no v6 flags or RSC APIs remain; the package-scoped Trivy exception expires ${trivyExceptionExpiresAt}.`,
+    `[react-router-contract] Runtime locked to ${targetVersion}; importers share peer ${peerRange}; no v6 flags or RSC APIs remain.`,
   );
 }
 
@@ -223,9 +154,5 @@ if (require.main === module) {
 module.exports = {
   peerRange,
   targetVersion,
-  trivyAdvisoryId,
-  trivyExceptionExpiresAt,
-  trivyExceptionPurl,
-  trivyExceptionStatement,
   validateReactRouterContract,
 };

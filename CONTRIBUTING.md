@@ -68,6 +68,29 @@ git switch -c fix/area-description origin/main
 - Review open issues and PRs to avoid duplicating work.
 - Identify affected packages and consumers before changing a shared contract.
 
+#### Preserve local work before integration
+
+Record the original branch and HEAD, `git status --short`, staged and unstaged
+diffs, untracked paths, and `git worktree list`. Inspect stash metadata without
+restoring it into a shared worktree. A PR's commits do not necessarily contain
+the user's local edits, and a clean worktree does not prove those edits were
+integrated.
+
+Prefer an isolated branch and worktree. If authorized work requires relocating
+local changes, first make and verify a recoverable backup covering tracked and
+untracked files. Record its location and original SHA privately; a patch alone
+does not preserve untracked files. Keep secrets and authentication state out of
+Git and public evidence. Protect any necessary local backup containing private
+configuration with restricted permissions.
+
+When using a stash, record its immutable object ID and purpose rather than
+relying on `stash@{0}`, which changes as other stashes are created. Do not pop,
+drop, or overwrite the original backup until restoration or integration has
+been verified and cleanup is authorized. Compare the recovered files and
+commit ancestry, not just PR titles. Separate duplicated or unrelated changes
+without losing their original source; close a PR as superseded only when the
+replacement and remaining scope are clear.
+
 ### 2. Define scope and risk
 
 Before implementation, you must be able to answer:
@@ -104,6 +127,11 @@ and these rules when applicable:
   messages to users. Keep technical detail only in safe logging.
 - User-visible text must use i18n and maintain both `en.json` and `es.json`. A
   raw translation key in the UI is a defect.
+- Navigation order is a product contract, not a side effect of module load
+  order. Use the existing extension-slot ordering mechanism and document its
+  canonical owner. Keep related tasks adjacent without changing privileges,
+  online/offline visibility, routes, or patient context. Cover duplicate or
+  unknown IDs, optional modules, and allowed/denied access in regression tests.
 - Do not assume a FHIR resource or OMOD works merely because an endpoint exists.
   Document the dependency, version, fallback, and missing-capability behavior.
 - Do not save clinical data without an active visit or encounter when the flow
@@ -129,6 +157,22 @@ yarn install --immutable
 Follow the [Quick Start](README.md#quick-start) to build and serve the SPA. Never
 commit `.env`, credentials, or private configuration. Self-signed certificates
 are allowed only through explicit configuration in controlled environments.
+
+Each worktree used for validation needs its own `node_modules` directory and
+an immutable install for that branch. Never symlink the whole directory from
+another worktree: workspace links can resolve sources or build outputs from
+the wrong branch. Check real paths when reusing a temporary environment. A
+package-manager download cache may be shared; workspace installations may not.
+Documentation-only work may use an existing formatter without installing a
+second dependency tree.
+
+Use fail-fast execution (`set -e` in a shell script, or checked exit codes) for
+dependent commands. Never continue from a failed merge or install into tests,
+commits, or publication. Verify there are no unmerged paths before validation.
+Limit concurrent builds/tests on constrained machines. If a timeout occurs,
+record it and rerun the unchanged case with less contention before deciding
+whether the test or implementation needs repair; do not hide it by weakening
+assertions or increasing timeouts without evidence.
 
 ## Proportional validation
 
@@ -179,6 +223,23 @@ manual smoke test or Playwright against a coordinated non-production
 environment. The E2E workflow runs with the `e2e` label or manual dispatch; see
 [e2e/README.md](e2e/README.md).
 
+Before any remote test writes, confirm the explicitly authorized target,
+authenticated test session, required privileges, metadata, and deployed build
+SHA. DEV and QLTY evidence is environment-specific and is not interchangeable.
+A reachable login page or a session endpoint returning HTTP 200 does not prove
+authentication. On 401/403, stop dependent writes and request an authorized
+test account through the local secret mechanism; never guess credentials or
+paste them into issues, PRs, or chat.
+
+Synthetic fixture setup must remain recoverable after partial failure. Persist
+a minimal, access-restricted cleanup journal as resources are created, scope it
+to the exact test target, and verify fixture ownership before deletion or voiding.
+Retain unresolved state and report failed cleanup instead of swallowing errors
+or removing the journal. Account for paginated dependent resources. Exercise
+partial setup, retry, and cleanup failure locally before running a new fixture
+harness against a shared backend. Never weaken a clinical acceptance criterion
+merely to match whichever medication or concept happens to exist.
+
 For every applicable validation, record:
 
 - the exact command or case;
@@ -189,10 +250,21 @@ For every applicable validation, record:
   pre-existing, reproduce it on `origin/main` or link prior evidence. Otherwise,
   write `not verified as pre-existing`.
 
+Distinguish actually executed tests from cache hits and zero-test exits. After
+resolving conflicts or integrating another branch, review and validate the
+resulting diff again. Previous SHA evidence can explain provenance, but cannot
+be presented as a current-SHA clinical smoke. If credentials, content, or an
+external service block a required check, finish safe local validation, retain
+the draft, and identify the exact external blocker and next owner/action.
+
 ## Tests and regressions
 
 - A fix must include a test that fails for the original defect whenever
   technically feasible.
+- New workspaces must declare a `test` script and include at least one
+  discoverable test. Do not add `--passWithNoTests`. Time-bounded legacy gaps
+  are recorded in `config/test-governance.json`; remove the exception when a
+  test lands instead of renewing it by default.
 - Test behavior and contract boundaries, not only snapshots or implementation
   details.
 - Permission changes require both allowed and denied paths.
@@ -244,7 +316,8 @@ Before publishing or updating the PR:
 7. Mark the PR as draft when decisions, access, backend/content, or clinical
    validation remain pending.
 8. Request the `e2e` label and coordinate QLTY when the risk requires it.
-9. Do not merge. Leave the PR ready for maintainer review and decision.
+9. Leave the PR for maintainer review and decision. Preparation alone does not
+   authorize a merge; follow the separate authorized-integration procedure below.
 
 When using GitHub CLI, first prepare a file containing the completed template:
 
@@ -265,3 +338,28 @@ CI runs the declared scripts and controls, but some tests allow
 `--passWithNoTests`, and E2E runs only with a label or manual dispatch. CI does
 not replace clinical, backend/content, or role-based validation. A green check
 is technical evidence, not deployment authorization.
+
+## Authorized integration and handoff
+
+Only after explicit authorization covering the merge and its release effects:
+
+1. Resolve the exact PR head and base; review the complete diff, conversations,
+   required domain/clinical approvals, and checks for that head. An older green
+   run, skipped E2E, or a mergeable status is insufficient. Do not bypass checks
+   or protections. Recheck the head immediately before merging.
+2. Merge focused changes in dependency order. Revalidate any conflict resolution
+   or changed combination. A major dependency bump is neither automatically
+   safe nor automatically incompatible: check supported runtime, public types,
+   consumers, packaging, and applicable tests; record a concrete incompatibility
+   before closing a dependency PR on that basis.
+3. Monitor the resulting `main` CI, then the release workflow and relevant
+   environment health as separate outcomes. Verify the SHA actually built, not
+   only the workflow-run label. If the branch advances while an image is built,
+   the stale-head guard may correctly refuse promotion; wait for the newer
+   authorized pipeline rather than forcing an older release. A merge does not
+   authorize manual infrastructure repairs or a different deployment.
+4. Report merged PRs, drafts and blockers, failing/skipped checks, deployment
+   evidence, and the location of preserved local work. Return to `main` when
+   requested only after the worktree is clean or the changes are safely isolated;
+   fast-forward it without discarding work. Do not promise a bug-free system or
+   describe pending clinical validation as complete.

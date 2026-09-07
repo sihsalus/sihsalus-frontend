@@ -23,6 +23,27 @@ type TipoNts = DiagnosisEntry['tipoNts'];
 
 interface ConceptMapping {
   display?: string;
+  conceptReferenceTerm?: {
+    code?: string;
+    display?: string;
+    conceptSource?: {
+      name?: string;
+      display?: string;
+    };
+  };
+}
+
+interface ConceptName {
+  display?: string;
+  name?: string;
+  conceptNameType?: string;
+}
+
+interface CodedDiagnosisConcept {
+  uuid?: string;
+  display: string;
+  mappings?: ConceptMapping[];
+  names?: ConceptName[];
 }
 
 interface EncounterObs {
@@ -36,7 +57,7 @@ interface EncounterDiagnosis {
   uuid: string;
   display: string;
   diagnosis: {
-    coded?: { uuid?: string; display: string; mappings?: ConceptMapping[] };
+    coded?: CodedDiagnosisConcept;
     nonCoded?: string;
   };
   certainty?: string;
@@ -48,6 +69,56 @@ interface Encounter {
   encounterDatetime: string;
   diagnoses: EncounterDiagnosis[];
   obs: EncounterObs[];
+}
+
+const cie10CodePattern = /^[A-Z][0-9][A-Z0-9.]{1,5}$/i;
+const cie10SourcePattern = /icd[-\s]?10|cie[-\s]?10/i;
+
+function getMappingSource(mapping: ConceptMapping): string {
+  return (
+    mapping.conceptReferenceTerm?.conceptSource?.name?.trim() ||
+    mapping.conceptReferenceTerm?.conceptSource?.display?.trim() ||
+    mapping.display?.split(':', 1)[0]?.trim() ||
+    ''
+  );
+}
+
+function getMappingCode(mapping: ConceptMapping): string | undefined {
+  const structuredCode = mapping.conceptReferenceTerm?.code?.trim();
+  if (structuredCode) {
+    return structuredCode;
+  }
+
+  const display = mapping.conceptReferenceTerm?.display?.trim() ?? mapping.display?.trim();
+  if (!display) {
+    return undefined;
+  }
+
+  const separatorIndex = display.lastIndexOf(':');
+  return (separatorIndex >= 0 ? display.slice(separatorIndex + 1) : display).trim() || undefined;
+}
+
+export function getCie10Code(coded?: CodedDiagnosisConcept): string | null {
+  if (!coded) {
+    return null;
+  }
+
+  const mappedCode = (coded.mappings ?? []).find((mapping) => {
+    const code = getMappingCode(mapping);
+    return cie10SourcePattern.test(getMappingSource(mapping)) && Boolean(code && cie10CodePattern.test(code));
+  });
+  const mappingCode = mappedCode ? getMappingCode(mappedCode) : undefined;
+  if (mappingCode) {
+    return mappingCode.toLocaleUpperCase('es-PE');
+  }
+
+  const shortName = (coded.names ?? []).find((name) => {
+    const value = (name.display ?? name.name)?.trim();
+    return name.conceptNameType === 'SHORT' && Boolean(value && cie10CodePattern.test(value));
+  });
+  const shortNameCode = (shortName?.display ?? shortName?.name)?.trim();
+
+  return shortNameCode ? shortNameCode.toLocaleUpperCase('es-PE') : null;
 }
 
 function getTipoDxDisplay(value: EncounterObs['value']): string | null {
@@ -103,7 +174,7 @@ export function useDiagnosisHistory(
         url:
           `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
           `&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),` +
-          `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display))),certainty,rank),` +
+          `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display,conceptReferenceTerm:(code,display,conceptSource:(name,display))),names:(display,name,conceptNameType))),certainty,rank),` +
           `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&order=desc`,
         expectedFormUuid: formUuid,
         expectedVisitTypeUuid: visitTypeUuid,
@@ -130,9 +201,7 @@ export function useDiagnosisHistory(
     });
 
     return (encounter.diagnoses ?? []).map((dx) => {
-      const mappings = dx.diagnosis?.coded?.mappings ?? [];
-      const cie10Mapping = mappings.find((m: ConceptMapping) => m.display?.startsWith('ICD-10'));
-      const cie10Code = cie10Mapping?.display?.split(': ')?.[1] ?? null;
+      const cie10Code = getCie10Code(dx.diagnosis?.coded);
 
       const codedUuid = dx.diagnosis?.coded?.uuid ?? '';
       const tipoNts = getTipoNtsFromValue(tipoMap[codedUuid], concepts) ?? getTipoNtsFromCertainty(dx.certainty) ?? 'P';

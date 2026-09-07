@@ -42,7 +42,6 @@ interface TestTypeSearchResultItemProps {
   orderTypeUuid: string;
   testType: TestType;
   openOrderForm: (searchResult: TestOrderBasketItem) => void;
-  returnToOrderBasket: () => void;
 }
 
 let lastSelectedLabset = 'ALL';
@@ -341,7 +340,6 @@ function TestTypeSearchResults({
                     orderTypeUuid={orderTypeUuid}
                     openOrderForm={openLabForm}
                     testType={testType}
-                    returnToOrderBasket={cancelOrder}
                   />
                 ))}
               </div>
@@ -395,7 +393,6 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   testType,
   openOrderForm,
   orderTypeUuid,
-  returnToOrderBasket,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -438,16 +435,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
     labOrder.isOrderIncomplete = selectedPriority.requiresScheduledDate ? !labOrder.scheduledDate : false;
 
     setOrders([...orders, labOrder]);
-    returnToOrderBasket();
-  }, [
-    orders,
-    setOrders,
-    createLabOrder,
-    returnToOrderBasket,
-    testType,
-    priorityConfigs,
-    session.currentProvider?.uuid,
-  ]);
+  }, [orders, setOrders, createLabOrder, testType, priorityConfigs, session.currentProvider?.uuid]);
 
   const removeFromBasket = useCallback(() => {
     setOrders(orders.filter((order) => order.testType.conceptUuid !== testType.conceptUuid));
@@ -455,7 +443,9 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
 
   return (
     <Tile
-      className={classNames(styles.searchResultTile, { [styles.tabletSearchResultTile]: isTablet })}
+      className={classNames(styles.searchResultTile, {
+        [styles.tabletSearchResultTile]: isTablet,
+      })}
       role="listitem"
     >
       <div className={classNames(styles.searchResultTileContent, styles.text02)}>

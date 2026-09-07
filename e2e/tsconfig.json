@@ -12,6 +12,8 @@
     "global-setup.ts",
     "tests/**/*.ts",
     "utils/**/*.ts",
+    "clinical-recovery/**/*.ts",
+    "laboratory/**/*.ts",
     "offline-laptop/**/*.ts",
     "cohort-builder/**/*.ts",
     "dyaku/**/*.ts",

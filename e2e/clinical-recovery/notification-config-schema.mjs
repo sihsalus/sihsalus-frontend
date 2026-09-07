@@ -1,0 +1,20 @@
+// Historical metadata for reviewing the quarantined proposal only.
+// Replace with an approved, explicit environment contract before any activation.
+export const recoveredNotificationMetadata = Object.freeze({
+  HSC_LOCATION_UUID: '35d2234e-129a-4c40-abb2-1ae0b72c1602',
+  OTHER_FACILITY_UUID: '35d2234e-129a-4c40-abb2-1ae0b72c1603',
+  IDENTIFIER_TYPE_UUID: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+  LAB_ROLE_UUID: '2049b153-6d8c-4bc1-96ab-f34f0ca43285',
+  PHARMACY_ROLE_UUID: '29c9d9b4-0925-417f-9343-bf9d97ac02ba',
+  LOGIN_ROLE_UUID: 'dfba6e33-d5d6-43a6-8add-66f00dbb56b4',
+  PREFERRED_VISIT_TYPE_UUID: '7b0f5697-27e3-40c4-8bae-f4049abfb4ed',
+  ENCOUNTER_TYPE_UUID: '39da3525-afe4-45ff-8977-c53b7b359158',
+  ENCOUNTER_ROLE_UUID: '240b26f9-dd88-4172-823d-4a8bfeb7841f',
+  OUTPATIENT_CARE_SETTING_UUID: '6f0c9a92-6f24-11e3-af88-005056821db0',
+  TEST_ORDER_TYPE_UUID: '52a447d3-a64a-11e3-9aeb-50e549534c5e',
+  DRUG_ORDER_TYPE_UUID: '131168f4-15f5-102d-96e4-000c29c2a5d7',
+  LAB_TEST_CONCEPT_UUID: '354230bd-e709-4c1c-bc6e-81e43f71d59d',
+  UNRELATED_OBS_CONCEPT_UUID: '531d4215-51c7-49fc-a39a-0364e4211fa4',
+  PREFERRED_DRUG_UUID: '09e58895-e7f0-4649-b7c0-e665c5c08e93',
+  QUANTITY_UNITS_UUID: 'bd1e9059-62b4-4967-a804-a63eda4f8657',
+});

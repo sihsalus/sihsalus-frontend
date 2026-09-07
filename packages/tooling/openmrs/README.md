@@ -4,7 +4,8 @@ The one stop CLI for using the OpenMRS 3.0 Frontend app.
 
 ## Prerequisites
 
-You need Node.js with NPM. We recommend using version 16.17 (LTS) or later.
+This SIH Salus fork requires Node.js 24 or later; use the repository's supported
+Node 24 and Yarn versions for development and validation.
 
 ## Installation
 
@@ -23,6 +24,11 @@ The `--help` flag can also be applied to any command below, resulting in detaile
 > For developers.
 
 Starts the app shell configured for the SPA reference application. Includes a default import map working against a working snapshot on the CDN.
+
+With `--open`, the CommonJS CLI loads the browser launcher's ESM default export
+only after the server is listening. A module-loading or browser-launch failure
+must leave the server running and show the existing safe warning. Headless
+environments should omit `--open`.
 
 Example:
 

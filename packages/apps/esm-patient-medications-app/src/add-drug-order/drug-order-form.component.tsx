@@ -49,7 +49,7 @@ import {
 import classNames from 'classnames';
 import { capitalize } from 'lodash-es';
 import { type ChangeEvent, type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Control, Controller, type FieldErrors, useController } from 'react-hook-form';
+import { type Control, Controller, useController } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useActivePatientOrders, useRequireOutpatientQuantity } from '../api';
 import { useOrderConfig } from '../api/order-config';
@@ -304,12 +304,6 @@ export function DrugOrderForm({
     await onSave(newBasketItem);
   };
 
-  const handleFormSubmissionError = (errors: FieldErrors<MedicationOrderFormData>) => {
-    if (errors) {
-      console.error('Error in drug order form', errors);
-    }
-  };
-
   const drugDosingUnits: Array<DosingUnit> = useMemo(
     () =>
       orderConfigObject?.drugDosingUnits ?? [
@@ -513,7 +507,7 @@ export function DrugOrderForm({
         <ExtensionSlot name="allergy-list-pills-slot" state={{ patientUuid: patient?.id }} />
         <Form
           className={styles.orderForm}
-          onSubmit={handleSubmit(handleFormSubmission, handleFormSubmissionError)}
+          onSubmit={handleSubmit(handleFormSubmission)}
           id="drugOrderForm"
         >
           <div>

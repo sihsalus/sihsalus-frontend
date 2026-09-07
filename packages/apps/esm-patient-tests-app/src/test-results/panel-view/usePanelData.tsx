@@ -17,6 +17,11 @@ import {
 } from '../loadPatientTestData/helpers';
 import { extractMetaInformation, getConceptUuid, isLabConcept } from './helper';
 
+const getObsDate = (obs: FHIRObservationResource) => {
+  const dt = obs?.effectiveDateTime || obs?.issued || (obs as any)?.meta?.lastUpdated;
+  return dt ? Date.parse(dt) : 0;
+};
+
 export function useObservations() {
   const { patientUuid } = usePatient();
   const getUrl = useCallback(
@@ -32,7 +37,7 @@ export function useObservations() {
       url += `&patient=${patientUuid}`;
       url += `&_count=100`;
       if (pageIndex) {
-        url += `&_getpagesoffset=${pageIndex * 10}`;
+        url += `&_getpagesoffset=${pageIndex * 100}`;
       }
       return url;
     },
@@ -42,8 +47,8 @@ export function useObservations() {
     FetchResponse<FhirResponse<FHIRObservationResource>>,
     Error
   >(getUrl, openmrsFetch, {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
+    revalidateIfStale: true,
+    revalidateOnFocus: true,
   });
 
   useEffect(() => {
@@ -57,7 +62,7 @@ export function useObservations() {
     const observations: Array<FHIRObservationResource> = data
       ? []
           .concat(...data.map((resp) => resp.data.entry?.map((e) => e.resource) ?? []))
-          .sort((obs1, obs2) => Date.parse(obs2.effectiveDateTime) - Date.parse(obs1.effectiveDateTime))
+          .sort((obs1, obs2) => getObsDate(obs2) - getObsDate(obs1))
       : null;
     return {
       observations,
@@ -233,19 +238,41 @@ export default function usePanelData() {
     [fhirObservations, conceptData, creatorMap, orderNumberMap],
   );
 
+  const deduplicatedObservations = useMemo(() => {
+    if (!observations) return [];
+    const seen = new Set<string>();
+    return observations.filter((obs) => {
+      const key = obs.id
+        ? obs.id
+        : `${obs.orderNumber || ''}-${getConceptUuid(obs)}-${obs.effectiveDateTime || obs.issued}-${obs.value}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [observations]);
+
   const groupedObservations: Record<string, Array<ObsRecord>> = useMemo(() => {
-    const groups = {};
-    if (observations) {
-      observations.forEach((obs) => {
-        if (groups[getConceptUuid(obs)]) {
-          groups[getConceptUuid(obs)].push(obs);
-        } else {
-          groups[getConceptUuid(obs)] = [obs];
+    const groups: Record<string, Array<ObsRecord>> = {};
+    if (deduplicatedObservations) {
+      deduplicatedObservations.forEach((obs) => {
+        const conceptUuid = getConceptUuid(obs);
+        if (!groups[conceptUuid]) {
+          groups[conceptUuid] = [];
+        }
+        const isDuplicateInGroup = groups[conceptUuid].some(
+          (existing: ObsRecord) =>
+            existing.id === obs.id ||
+            (obs.orderNumber && existing.orderNumber === obs.orderNumber && existing.value === obs.value),
+        );
+        if (!isDuplicateInGroup) {
+          groups[conceptUuid].push(obs);
         }
       });
     }
     return groups;
-  }, [observations]);
+  }, [deduplicatedObservations]);
 
   const individualObservations = useMemo(
     () => (observations ? observations.filter((obs) => !obs.hasMember) : []),

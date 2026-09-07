@@ -20,6 +20,8 @@ Cobertura frontend actual:
 - Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
 - Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
 
+El historial de condiciones usa la paginación FHIR completa. Crear o editar una condición exige un proveedor clínico asociado a la sesión; el backend deriva el registrador desde la sesión autenticada y la edición conserva la fecha original de registro.
+
 Vacíos conocidos:
 
 - Falta convertir el placeholder de gestante adolescente en formulario real cuando content incorpore la ficha diferenciada.

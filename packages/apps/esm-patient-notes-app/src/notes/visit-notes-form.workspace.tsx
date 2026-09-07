@@ -244,6 +244,7 @@ const createSchema = (_t: TFunction) => {
     secondaryDiagnosisSearch: z.string().optional(),
     codigoPrestacional: z.string().optional(),
     nextAppointment: z.date().nullable().optional(),
+    therapeuticIndications: z.string().optional(),
     clinicalNote: z.string().optional(),
     images: z.array(z.any()).optional(),
   });
@@ -326,6 +327,7 @@ const VisitNotesFormContent: React.FC<
     clinicianEncounterRole,
     encounterNoteTextConceptUuid,
     codigoPrestacionalConceptUuid,
+    therapeuticIndicationsConceptUuid,
     nextAppointmentConceptUuid,
     encounterTypeUuid,
     formConceptUuid,
@@ -582,6 +584,12 @@ const VisitNotesFormContent: React.FC<
         ? getEncounterCodigoPrestacionalValue()
         : "",
       nextAppointment: isEditing ? getEncounterNextAppointmentValue() : null,
+      therapeuticIndications: isEditing
+        ? getEncounterObsValue(
+            therapeuticIndicationsConceptUuid,
+            "therapeutic-indications",
+          )
+        : "",
       clinicalNote: isEditing
         ? getEncounterObsValue(encounterNoteTextConceptUuid)
         : "",
@@ -620,6 +628,27 @@ const VisitNotesFormContent: React.FC<
     dirtyFields.codigoPrestacional,
     isEditing,
     selectedCodigoPrestacional,
+    setValue,
+    watch,
+  ]);
+
+  useEffect(() => {
+    const therapeuticIndications =
+      clinicalContext?.therapeuticIndications?.trim();
+    if (
+      isOutpatientVisit &&
+      !isEditing &&
+      therapeuticIndications &&
+      !dirtyFields.therapeuticIndications &&
+      !watch("therapeuticIndications")
+    ) {
+      setValue("therapeuticIndications", therapeuticIndications);
+    }
+  }, [
+    clinicalContext?.therapeuticIndications,
+    dirtyFields.therapeuticIndications,
+    isEditing,
+    isOutpatientVisit,
     setValue,
     watch,
   ]);
@@ -985,7 +1014,13 @@ const VisitNotesFormContent: React.FC<
       if (submitInProgressRef.current) return;
       submitInProgressRef.current = true;
 
-      const { noteDate, nextAppointment, clinicalNote, images } = data;
+      const {
+        noteDate,
+        nextAppointment,
+        therapeuticIndications,
+        clinicalNote,
+        images,
+      } = data;
 
       try {
         if (isCanonicalVerificationBlocked) {
@@ -1109,6 +1144,14 @@ const VisitNotesFormContent: React.FC<
             undefined,
             [{ conceptUuid: legacyNextAppointmentConceptUuid }],
           ),
+          ...(isOutpatientVisit
+            ? reconcileObservation(
+                encounterObs,
+                therapeuticIndicationsConceptUuid,
+                therapeuticIndications,
+                "therapeutic-indications",
+              )
+            : []),
         ];
         const tipoObsList = reconcileDiagnosisTypeObservations(
           combinedDiagnoses,
@@ -1276,6 +1319,7 @@ const VisitNotesFormContent: React.FC<
       mutateAttachments,
       mutateVisitNotes,
       nextAppointmentConceptUuid,
+      therapeuticIndicationsConceptUuid,
       onAfterSave,
       patientUuid,
       selectedCodigoPrestacional?.uuid,
@@ -1684,6 +1728,42 @@ const VisitNotesFormContent: React.FC<
               isLoading={isClinicalContextLoading}
               isValidating={isClinicalContextValidating}
             />
+            {isOutpatientVisit ? (
+              <Row className={styles.row}>
+                <Column sm={1}>
+                  <span className={styles.columnLabel}>
+                    {t(
+                      "therapeuticIndications",
+                      "Non-pharmacological instructions",
+                    )}
+                  </span>
+                </Column>
+                <Column sm={3}>
+                  <Controller
+                    name="therapeuticIndications"
+                    control={control}
+                    render={({ field }) => (
+                      <ResponsiveWrapper>
+                        <TextArea
+                          {...field}
+                          id="therapeuticIndications"
+                          rows={3}
+                          labelText={t(
+                            "therapeuticIndications",
+                            "Non-pharmacological instructions",
+                          )}
+                          placeholder={t(
+                            "therapeuticIndicationsPlaceholder",
+                            "Diet, exercise, healthy habits, follow-up, or other instructions for the patient",
+                          )}
+                          value={field.value ?? ""}
+                        />
+                      </ResponsiveWrapper>
+                    )}
+                  />
+                </Column>
+              </Row>
+            ) : null}
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>

@@ -178,6 +178,74 @@ describe('outpatient visit summary PDF', () => {
     expect(bytes.byteLength).toBeGreaterThan(1_000);
   });
 
+  it('renders the legacy objective as physical examination without an outpatient SOAP section', async () => {
+    const legacyPhysicalExamSummary: OutpatientVisitSummary = {
+      ...summary,
+      physicalExam: {
+        generalState: null,
+        consciousness: null,
+        skinAndAppendages: null,
+        headAndNeck: null,
+        respiratory: null,
+        cardiovascular: null,
+        abdomenAndDigestive: null,
+        genitourinary: null,
+        musculoskeletal: null,
+        neurological: null,
+        otherFindings: null,
+      },
+    };
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await createOutpatientVisitSummaryPdf(legacyPhysicalExamSummary, labels, 'es-PE');
+      const renderedText = drawText.mock.calls.map(([text]) => text);
+
+      expect(renderedText).toContain('physicalExam');
+      expect(renderedText).toContain('otherObjectiveFindings: ');
+      expect(renderedText).toContain('Objetivo');
+      expect(renderedText).not.toContain('soap');
+      expect(renderedText).not.toContain('subjective: Subjetivo');
+      expect(renderedText).not.toContain('assessment: Apreciación');
+      expect(renderedText).not.toContain('plan: Plan');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
+  it('prints a laboratory result only when it is attached to the summarized order', async () => {
+    const summaryWithLaboratoryResult: OutpatientVisitSummary = {
+      ...summary,
+      orders: [
+        {
+          uuid: 'lab-order',
+          category: 'laboratory',
+          name: 'Prueba de embarazo',
+          details: null,
+          result: 'Negativo',
+          orderer: 'Dra. Demo',
+          asNeeded: false,
+          asNeededCondition: null,
+          orderReasonNonCoded: null,
+          numRefills: null,
+        },
+      ],
+    };
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await createOutpatientVisitSummaryPdf(summaryWithLaboratoryResult, labels, 'es-PE');
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      expect(renderedText).toContain('Prueba de embarazo');
+      expect(renderedText).toContain('laboratoryResult: Negativo');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
   it('keeps the printable manual completion path when colegiatura is not yet recorded', async () => {
     const incompleteResponsibility = {
       ...summary,

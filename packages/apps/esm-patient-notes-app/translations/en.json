@@ -21,6 +21,8 @@
   "clinicalSummaryLoadErrorTitle": "The clinical summary could not be loaded",
   "clinicalSummaryLoading": "Loading the outpatient clinical summary...",
   "clinicalSummaryReadOnlyDescription": "This section summarizes records from outpatient care and cannot be edited here.",
+  "therapeuticIndications": "Non-pharmacological instructions",
+  "therapeuticIndicationsPlaceholder": "Diet, exercise, healthy habits, follow-up, or other instructions for the patient",
   "codigoPrestacional": "Codigo Prestacional",
   "codigoPrestacionalInputLabel": "Indique el Código Prestacional",
   "codigoPrestacionalPlaceholder": "Buscar Código Prestacional",

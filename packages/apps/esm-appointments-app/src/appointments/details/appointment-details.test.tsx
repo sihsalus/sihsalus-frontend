@@ -95,6 +95,10 @@ test('renders appointment details correctly', async () => {
   expect(screen.getByText(/Some comments/i)).toBeInTheDocument();
   expect(screen.getByText(/Responsible provider/i)).toBeInTheDocument();
   expect(screen.getByText(/Dr James Cook/i)).toBeInTheDocument();
+  expect(screen.getByText('UPSS:', { exact: true })).toBeInTheDocument();
+  expect(screen.getByText('HIV Clinic')).toBeInTheDocument();
+  expect(screen.getByText(/Appointment type/i)).toBeInTheDocument();
+  expect(screen.getByText('No programada presencial')).toBeInTheDocument();
   expect(screen.getByText(/Appointment History/i)).toBeInTheDocument();
   expect(screen.getByText(/Completed/i)).toBeInTheDocument();
   expect(screen.getByText('1', { exact: true })).toBeInTheDocument();

@@ -7,11 +7,7 @@ import {
   toOmrsIsoString,
   useVisit,
 } from '@openmrs/esm-framework';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  launchPatientWorkspace,
-} from '@openmrs/esm-patient-common-lib';
+import { fetchVisitInsurance, getSisFinancingState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteVisits2 } from '../visits-widget/visit.resource';
@@ -27,9 +23,26 @@ interface EndVisitDialogProps {
 }
 
 interface VisitEncounterSummary {
+  uuid?: string;
   diagnoses?: Array<{
     rank?: number;
     voided?: boolean;
+    diagnosis?: {
+      coded?: {
+        mappings?: Array<{
+          display?: string;
+          conceptReferenceTerm?: {
+            code?: string;
+            conceptSource?: { name?: string; display?: string };
+          };
+        }>;
+        names?: Array<{
+          display?: string;
+          name?: string;
+          conceptNameType?: string;
+        }>;
+      };
+    };
   }>;
   obs?: Array<{
     formFieldPath?: string;
@@ -41,6 +54,38 @@ interface VisitEncounterSummary {
 interface RequiredVisitSummaryValidation {
   hasCodigoPrestacional: boolean;
   hasPrimaryDiagnosis: boolean;
+}
+
+const cie10CodePattern = /^[A-Z][0-9][A-Z0-9.]{1,5}$/i;
+const cie10SourcePattern = /icd[-\s]?10|cie[-\s]?10/i;
+const encounterPageSize = 100;
+
+function diagnosisHasCataloguedCie10Code(diagnosis: NonNullable<VisitEncounterSummary['diagnoses']>[number]): boolean {
+  const coded = diagnosis.diagnosis?.coded;
+  const hasMappedCode = coded?.mappings?.some((mapping) => {
+    const source =
+      mapping.conceptReferenceTerm?.conceptSource?.name?.trim() ||
+      mapping.conceptReferenceTerm?.conceptSource?.display?.trim() ||
+      mapping.display?.split(':', 1)[0]?.trim() ||
+      '';
+    const display = mapping.display?.trim() ?? '';
+    const separatorIndex = display.lastIndexOf(':');
+    const code =
+      mapping.conceptReferenceTerm?.code?.trim() ||
+      (separatorIndex >= 0 ? display.slice(separatorIndex + 1).trim() : '');
+
+    return cie10SourcePattern.test(source) && cie10CodePattern.test(code);
+  });
+  if (hasMappedCode) {
+    return true;
+  }
+
+  return Boolean(
+    coded?.names?.some((name) => {
+      const value = (name.display ?? name.name)?.trim() ?? '';
+      return name.conceptNameType === 'SHORT' && cie10CodePattern.test(value);
+    }),
+  );
 }
 
 function getObsTextValue(obs: NonNullable<VisitEncounterSummary['obs']>[number]) {
@@ -60,15 +105,46 @@ async function validateRequiredVisitSummaryFields(
   patientUuid: string,
   visitUuid: string,
 ): Promise<RequiredVisitSummaryValidation> {
-  const customRepresentation = 'custom:(uuid,diagnoses:(rank,voided),obs:(formFieldPath,value,display))';
-  const { data } = await openmrsFetch<{ results: Array<VisitEncounterSummary> }>(
-    `${restBaseUrl}/encounter?patient=${patientUuid}&visit=${visitUuid}&v=${customRepresentation}&limit=50`,
-  );
-  const encounters = data?.results ?? [];
+  const customRepresentation =
+    'custom:(uuid,diagnoses:(rank,voided,diagnosis:(coded:(mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display))),names:(display,name,conceptNameType)))),obs:(formFieldPath,value,display))';
+  const baseUrl = `${restBaseUrl}/encounter?patient=${patientUuid}&visit=${visitUuid}&v=${customRepresentation}`;
+  const encounters: Array<VisitEncounterSummary> = [];
+  const seenEncounterUuids = new Set<string>();
+  let startIndex = 0;
+
+  while (true) {
+    const { data } = await openmrsFetch<{
+      results?: Array<VisitEncounterSummary>;
+      totalCount?: number;
+    }>(`${baseUrl}&limit=${encounterPageSize}&startIndex=${startIndex}&totalCount=true`);
+    const page = data?.results ?? [];
+    let newEncounterCount = 0;
+    page.forEach((encounter) => {
+      if (!encounter.uuid || !seenEncounterUuids.has(encounter.uuid)) {
+        encounters.push(encounter);
+        newEncounterCount += 1;
+        if (encounter.uuid) {
+          seenEncounterUuids.add(encounter.uuid);
+        }
+      }
+    });
+
+    const totalCount = data?.totalCount;
+    const hasMoreByTotal = typeof totalCount === 'number' && encounters.length < totalCount;
+    if (!page.length || (!hasMoreByTotal && page.length < encounterPageSize)) {
+      break;
+    }
+    if (!newEncounterCount) {
+      throw new Error('Encounter pagination did not advance while validating the visit summary.');
+    }
+    startIndex += page.length;
+  }
 
   return {
     hasPrimaryDiagnosis: encounters.some((encounter) =>
-      encounter.diagnoses?.some((diagnosis) => diagnosis.rank === 1 && !diagnosis.voided),
+      encounter.diagnoses?.some(
+        (diagnosis) => diagnosis.rank === 1 && !diagnosis.voided && diagnosisHasCataloguedCie10Code(diagnosis),
+      ),
     ),
     hasCodigoPrestacional: encounters.some((encounter) =>
       encounter.obs?.some(
@@ -150,9 +226,31 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       void mutateInfiniteVisits();
 
       if (shouldGenerateFua) {
-        await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
-          method: 'POST',
-        });
+        try {
+          await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
+            method: 'POST',
+          });
+        } catch (error: unknown) {
+          getUserFacingErrorMessage(
+            error,
+            t(
+              'visitEndedFuaPendingDescription',
+              'The visit was closed, but FUA generation could not be confirmed. Check FUA Management before retrying.',
+            ),
+            { logContext: 'Generate FUA after visit closure' },
+          );
+          closeModal();
+          showSnackbar({
+            isLowContrast: true,
+            kind: 'warning',
+            subtitle: t(
+              'visitEndedFuaPendingDescription',
+              'The visit was closed, but FUA generation could not be confirmed. Check FUA Management before retrying.',
+            ),
+            title: t('visitEndedFuaPending', 'Visit ended; verify FUA'),
+          });
+          return;
+        }
       }
 
       closeModal();
@@ -169,16 +267,13 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       });
     } catch (error: unknown) {
       showSnackbar({
-        title: t('errorEndingVisitOrGeneratingFUA', 'Error ending visit or generating FUA'),
+        title: t('errorEndingVisit', 'Error ending visit'),
         kind: 'error',
         isLowContrast: false,
         subtitle: getUserFacingErrorMessage(
           error,
-          t(
-            'errorEndingVisitOrGeneratingFUAMessage',
-            'No se pudo finalizar la consulta o generar el FUA. Intente nuevamente.',
-          ),
-          { logContext: 'End visit and generate FUA' },
+          t('errorEndingVisitMessage', 'The visit could not be confirmed as ended. Verify its status before retrying.'),
+          { logContext: 'End visit' },
         ),
       });
     } finally {

@@ -165,7 +165,7 @@ export const configSchema = {
     identifierSourceUuid: {
       _type: Type.String,
       _description:
-        'Fuente idgen (SequentialIdentifierGenerator) que emite el correlativo de la Receta Única. Vacío desactiva la emisión: sin numeración de servidor solo se imprime la hoja informativa. El log de idgen (fecha, usuario, comentario) es el registro de auditoría de emisión.',
+        'Fuente idgen (SequentialIdentifierGenerator) que emite el correlativo de la Receta Única. Vacío desactiva la emisión: sin numeración de servidor solo se imprime la hoja informativa. El log de idgen (fecha, usuario, comentario) es el registro de auditoría de emisión. Generar el correlativo exige el privilegio nativo Edit Patient Identifiers en el rol del emisor; sin él idgen responde 403.',
       _default: '',
     },
     validityDays: {

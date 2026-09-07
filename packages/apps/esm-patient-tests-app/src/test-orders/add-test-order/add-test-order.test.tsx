@@ -93,7 +93,12 @@ function renderAddLabOrderWorkspace(props: Partial<ComponentProps<typeof AddLabO
       {...props}
     />,
   );
-  return { mockCloseWorkspace, mockPromptBeforeClosing, mockCloseWorkspaceWithSavedChanges, ...view };
+  return {
+    mockCloseWorkspace,
+    mockPromptBeforeClosing,
+    mockCloseWorkspaceWithSavedChanges,
+    ...view,
+  };
 }
 
 mockUseConfig.mockReturnValue({
@@ -133,6 +138,11 @@ describe('AddLabOrder', () => {
   beforeEach(() => {
     _resetOrderBasketStore();
     mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+    mockUseTestTypes.mockReturnValue({
+      testTypes: mockTestTypes,
+      isLoading: false,
+      error: null,
+    });
   });
 
   test('fails closed when the session has no clinical provider', () => {
@@ -175,7 +185,9 @@ describe('AddLabOrder', () => {
     await user.click(priority);
     await user.selectOptions(priority, statPriority.conceptUuid);
 
-    const additionalInstructions = screen.getByRole('textbox', { name: 'Additional instructions' });
+    const additionalInstructions = screen.getByRole('textbox', {
+      name: 'Additional instructions',
+    });
     expect(additionalInstructions).toBeInTheDocument();
     await user.type(additionalInstructions, 'plz do it thx');
     const submit = screen.getByRole('button', { name: 'Save order' });
@@ -201,7 +213,7 @@ describe('AddLabOrder', () => {
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('order-basket');
   });
 
-  test('from lab search, click add directly to order basket', async () => {
+  test('adds a test to the basket without closing search so more tests can be selected', async () => {
     const user = userEvent.setup();
     const { result: hookResult } = renderHook(() =>
       useOrderBasket('test-lab-order-type-uuid', ((x) => x) as unknown as PostDataPrepFunction),
@@ -210,7 +222,9 @@ describe('AddLabOrder', () => {
     await user.type(screen.getByRole('searchbox'), 'cd4');
     await screen.findByText('CD4 COUNT');
 
-    const cd4AddToBasketButton = screen.getByRole('button', { name: /add to basket/i });
+    const cd4AddToBasketButton = screen.getByRole('button', {
+      name: /add to basket/i,
+    });
     await user.click(cd4AddToBasketButton);
 
     const defaultPriority = configSchema.priorityConfigs._default[0];
@@ -225,8 +239,43 @@ describe('AddLabOrder', () => {
       ]);
     });
 
-    expect(mockCloseWorkspace).toHaveBeenCalled();
-    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('order-basket');
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+    expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /remove from basket/i })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
+
+  test('adds several independent tests before returning to the basket', async () => {
+    const user = userEvent.setup();
+    const secondTestType = {
+      conceptUuid: 'test-lab-uuid-3',
+      label: 'HEMOGLOBIN',
+      synonyms: ['HEMOGLOBIN', 'HGB'],
+    };
+    mockUseTestTypes.mockReturnValue({
+      testTypes: [...mockTestTypes, secondTestType],
+      isLoading: false,
+      error: null,
+    });
+    const { result: hookResult } = renderHook(() =>
+      useOrderBasket('test-lab-order-type-uuid', ((x) => x) as unknown as PostDataPrepFunction),
+    );
+    const { mockCloseWorkspace } = renderAddLabOrderWorkspace();
+
+    const [firstAddButton] = screen.getAllByRole('button', {
+      name: /add to basket/i,
+    });
+    await user.click(firstAddButton);
+    await user.click(screen.getByRole('button', { name: /add to basket/i }));
+
+    await waitFor(() => {
+      expect(hookResult.current.orders.map((order) => order.testType.conceptUuid)).toEqual([
+        mockTestTypes[0].conceptUuid,
+        secondTestType.conceptUuid,
+      ]);
+    });
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('button', { name: /remove from basket/i })).toHaveLength(2);
   });
 
   test('back to order basket', async () => {

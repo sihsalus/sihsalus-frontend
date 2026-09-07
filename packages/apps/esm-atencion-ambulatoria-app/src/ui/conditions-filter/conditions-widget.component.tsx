@@ -11,6 +11,7 @@ import {
 } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
 import {
+  getUserFacingErrorMessage,
   OpenmrsDatePicker,
   ResponsiveWrapper,
   showSnackbar,
@@ -102,6 +103,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const displayName = matchingCondition?.display ?? conditionToEdit?.display;
   const editableClinicalStatus = matchingCondition?.clinicalStatus ?? conditionToEdit?.clinicalStatus;
   const editableAbatementDateTime = matchingCondition?.abatementDateTime ?? conditionToEdit?.abatementDateTime;
+  const editableRecordedDate = matchingCondition?.recordedDate ?? conditionToEdit?.recordedDate;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
@@ -124,7 +126,10 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     const selected =
       selectedCondition ||
       (personalCategory === 'other' && freeText
-        ? { uuid: config?.conditionFreeTextFallbackConceptUuid, display: freeText }
+        ? {
+            uuid: config?.conditionFreeTextFallbackConceptUuid,
+            display: freeText,
+          }
         : null);
 
     if (!selected) {
@@ -138,6 +143,20 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       return;
     }
 
+    const providerUuid = session?.currentProvider?.uuid;
+    if (!providerUuid) {
+      setIsSubmittingForm(false);
+      setErrorCreating?.(
+        new Error(
+          t(
+            'clinicalProviderRequiredForAntecedent',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
     type ExtendedFormFields = FormFields & { category?: string; note?: string };
 
     const payload: ExtendedFormFields = {
@@ -147,7 +166,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       abatementDateTime: getValues('abatementDateTime') ? dayjs(getValues('abatementDateTime')).format() : null,
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
-      userId: session?.user?.uuid,
+      providerUuid,
       antecedentType: personalCategory as AntecedentTypeCode,
       note: personalCategory === 'other' ? freeText : undefined,
     };
@@ -163,9 +182,17 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       });
 
       closeWorkspaceWithSavedChanges();
-    } catch (error) {
+    } catch (error: unknown) {
       setIsSubmittingForm(false);
-      setErrorCreating(error);
+      setErrorCreating?.(
+        new Error(
+          getUserFacingErrorMessage(
+            error,
+            t('antecedentSaveFailed', 'The antecedent could not be saved. Please try again.'),
+            { logContext: 'Create antecedent condition' },
+          ),
+        ),
+      );
     }
   }, [
     closeWorkspaceWithSavedChanges,
@@ -174,7 +201,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     mutate,
     patientUuid,
     selectedCondition,
-    session?.user?.uuid,
+    session?.currentProvider?.uuid,
     setErrorCreating,
     setIsSubmittingForm,
     t,
@@ -184,6 +211,20 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   ]);
 
   const handleUpdate = useCallback(async () => {
+    const providerUuid = session?.currentProvider?.uuid;
+    if (!providerUuid) {
+      setIsSubmittingForm(false);
+      setErrorUpdating?.(
+        new Error(
+          t(
+            'clinicalProviderRequiredForAntecedent',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
     if (!conditionToEdit?.id || !matchingCondition?.conceptId || !displayName) {
       // Sin el antecedente resuelto el PUT saldría con conceptId/display
       // indefinidos y corrompería el registro clínico.
@@ -209,7 +250,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
         : null,
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
-      userId: session?.user?.uuid,
+      providerUuid,
+      recordedDate: editableRecordedDate,
       antecedentType: personalCategory as AntecedentTypeCode,
       note: personalCategory === 'other' ? freeText : undefined,
     };
@@ -225,9 +267,17 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       });
 
       closeWorkspaceWithSavedChanges();
-    } catch (error) {
+    } catch (error: unknown) {
       setIsSubmittingForm(false);
-      setErrorUpdating(error);
+      setErrorUpdating?.(
+        new Error(
+          getUserFacingErrorMessage(
+            error,
+            t('antecedentUpdateFailed', 'The antecedent could not be updated. Please try again.'),
+            { logContext: 'Update antecedent condition' },
+          ),
+        ),
+      );
     }
   }, [
     closeWorkspaceWithSavedChanges,
@@ -239,11 +289,12 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     matchingCondition?.conceptId,
     mutate,
     patientUuid,
-    session?.user?.uuid,
+    session?.currentProvider?.uuid,
     setErrorUpdating,
     setIsSubmittingForm,
     t,
     editableAbatementDateTime,
+    editableRecordedDate,
     personalCategory,
     freeText,
   ]);
@@ -259,7 +310,6 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     if (isSubmittingForm) {
       if (Object.keys(errors).length > 0) {
         setIsSubmittingForm(false);
-        Object.entries(errors).map((key, err) => console.error(`${key}: ${err} `));
         return;
       }
       isEditing ? handleUpdate() : handleCreate();
@@ -304,14 +354,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                       placeholder={t('searchAntecedents', 'Search antecedents')}
                       ref={searchInputRef}
                       renderIcon={errors?.conditionName && ((props) => <WarningFilled fill="red" {...props} />)}
-                      value={(() => {
-                        if (selectedCondition) {
-                          return selectedCondition.display;
-                        }
-                        if (debouncedSearchTerm) {
-                          return value;
-                        }
-                      })()}
+                      value={selectedCondition?.display ?? value ?? ''}
                     />
                   </ResponsiveWrapper>
                 )}

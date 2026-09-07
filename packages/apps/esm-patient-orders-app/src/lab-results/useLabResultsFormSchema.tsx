@@ -53,6 +53,7 @@ const createSingleConceptSchema = (labOrderConcept: LabOrderConcept) => {
   return z.object({
     [labOrderConcept.uuid]: zodObject,
     [`${labOrderConcept.uuid}-comment`]: z.string().optional(),
+    'order-comment': z.string().optional(),
   });
 };
 
@@ -62,13 +63,14 @@ const createSingleConceptSchema = (labOrderConcept: LabOrderConcept) => {
  * @returns A Zod schema object for the set of concepts.
  */
 const createSetMembersSchema = (labOrderConcepts: Array<LabOrderConcept>): z.ZodObject<SchemaRecord> => {
-  const schema = z.object(
-    labOrderConcepts.reduce<SchemaRecord>((acc, member) => {
+  const schema = z.object({
+    'order-comment': z.string().optional(),
+    ...labOrderConcepts.reduce<SchemaRecord>((acc, member) => {
       acc[member.uuid] = createSchema(member);
       acc[`${member.uuid}-comment`] = z.string().optional();
       return acc;
     }, {}),
-  );
+  });
 
   return schema;
 };

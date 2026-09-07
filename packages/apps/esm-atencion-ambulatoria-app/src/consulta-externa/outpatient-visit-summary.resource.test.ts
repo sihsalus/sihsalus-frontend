@@ -124,6 +124,12 @@ const source: VisitSummarySource = {
           formFieldNamespace: 'visit-notes',
           formFieldPath: 'tipo-dx-coded-diagnosis',
         },
+        {
+          uuid: 'lab-result-obs',
+          concept: { uuid: 'pregnancy-test', display: 'Prueba de embarazo' },
+          order: { uuid: 'lab-order' },
+          value: 'Negativo',
+        },
       ],
       diagnoses: [
         {
@@ -204,7 +210,9 @@ describe('outpatient visit summary contract', () => {
   it('propagates the server Date header from the verified visit read', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: { uuid: 'visit-uuid' },
-      headers: { get: (name: string) => (name.toLowerCase() === 'date' ? 'Tue, 26 Aug 2026 14:00:00 GMT' : null) },
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'date' ? 'Tue, 26 Aug 2026 14:00:00 GMT' : null),
+      },
     } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
 
     await expect(fetchOutpatientVisitSummarySource('visit-uuid')).resolves.toMatchObject({
@@ -290,7 +298,10 @@ describe('outpatient visit summary contract', () => {
     expect(orders?.[0]).toEqual(
       expect.objectContaining({
         uuid: 'drug-order-uuid',
-        drug: expect.objectContaining({ display: 'Medicamento sintético', strength: '100 mg' }),
+        drug: expect.objectContaining({
+          display: 'Medicamento sintético',
+          strength: '100 mg',
+        }),
         dose: 1,
       }),
     );
@@ -322,6 +333,7 @@ describe('outpatient visit summary contract', () => {
     expect(representation).toContain('encounterRole:(uuid,display)');
     expect(representation).toContain('conceptReferenceTerm:(code,conceptSource:(name,display))');
     expect(representation).toContain('diagnoses:(');
+    expect(representation).toContain('formFieldPath,order:(uuid)');
     expect(representation).toContain('orders:FULL');
     expect(representation).not.toContain('orders:(');
     expect(representation).not.toContain('drug:(');
@@ -410,6 +422,7 @@ describe('outpatient visit summary contract', () => {
         uuid: 'lab-order',
         category: 'laboratory',
         name: 'Prueba de embarazo',
+        result: 'Negativo',
       }),
     ]);
     expect(summary.hasClinicalContent).toBe(true);
@@ -632,7 +645,10 @@ describe('outpatient visit summary contract', () => {
     const legacy = build({
       source: {
         ...source,
-        encounters: source.encounters?.map((encounter) => ({ ...encounter, form: { uuid: 'legacy-form' } })),
+        encounters: source.encounters?.map((encounter) => ({
+          ...encounter,
+          form: { uuid: 'legacy-form' },
+        })),
       },
     });
 
@@ -688,7 +704,12 @@ describe('outpatient visit summary contract', () => {
         encounters: [
           {
             ...canonicalEncounter,
-            encounterProviders: [{ ...clinician, encounterRole: { uuid: 'nurse-role', display: 'Nurse' } }],
+            encounterProviders: [
+              {
+                ...clinician,
+                encounterRole: { uuid: 'nurse-role', display: 'Nurse' },
+              },
+            ],
           },
         ],
       },
@@ -722,7 +743,12 @@ describe('outpatient visit summary contract', () => {
     const originalClinician = canonicalEncounter?.encounterProviders?.[0];
     if (!canonicalEncounter || !originalClinician) throw new Error('The synthetic fixture requires a clinician.');
     const encounterProviders = additionalClinicians.length === 0 ? [] : [originalClinician, ...additionalClinicians];
-    const summary = build({ source: { ...source, encounters: [{ ...canonicalEncounter, encounterProviders }] } });
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [{ ...canonicalEncounter, encounterProviders }],
+      },
+    });
 
     expect(summary).toMatchObject({
       clinicalRecordCompleteness: 'canonical-incomplete',
@@ -747,7 +773,9 @@ describe('outpatient visit summary contract', () => {
             diagnoses: [
               {
                 ...primaryDiagnosis,
-                diagnosis: { coded: { ...primaryDiagnosis.diagnosis.coded, mappings: [] } },
+                diagnosis: {
+                  coded: { ...primaryDiagnosis.diagnosis.coded, mappings: [] },
+                },
               },
             ],
           },
@@ -784,7 +812,10 @@ describe('outpatient visit summary contract', () => {
                     ...primaryDiagnosis.diagnosis.coded,
                     mappings: [],
                     names: [
-                      { display: 'CEFALEA', conceptNameType: 'FULLY_SPECIFIED' },
+                      {
+                        display: 'CEFALEA',
+                        conceptNameType: 'FULLY_SPECIFIED',
+                      },
                       { display: 'r51', conceptNameType: 'SHORT' },
                     ],
                   },
@@ -796,7 +827,9 @@ describe('outpatient visit summary contract', () => {
       },
     });
 
-    expect(summary).toMatchObject({ clinicalRecordCompleteness: 'canonical-complete' });
+    expect(summary).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-complete',
+    });
     expect(summary.diagnoses[0].cie10Code).toBe('R51');
   });
 
@@ -835,7 +868,9 @@ describe('outpatient visit summary contract', () => {
       },
     });
 
-    expect(summary).toMatchObject({ clinicalRecordCompleteness: 'canonical-complete' });
+    expect(summary).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-complete',
+    });
     expect(summary.diagnoses[0].cie10Code).toBe('R51-MINSA');
   });
 

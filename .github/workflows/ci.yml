@@ -44,6 +44,17 @@ jobs:
       - name: Validate Workspace Registrations
         run: yarn validate:workspaces
 
+      # Every workspace must have discoverable tests or a time-bounded entry in
+      # the test-debt register. Compare with the Git base so neither new debt
+      # exceptions nor new --passWithNoTests suppressions can enter silently.
+      - name: Validate Test Governance
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            yarn validate:test-governance --base "origin/${{ github.base_ref }}"
+          else
+            yarn validate:test-governance --base "${{ github.event.before }}"
+          fi
+
       # Clinical and administrative entry points must fail closed in the UI.
       # Backend authorization remains authoritative, but no critical route,
       # extension, modal, or workspace may be published without a guard.

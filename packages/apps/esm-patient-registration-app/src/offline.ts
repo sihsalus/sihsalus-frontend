@@ -1,6 +1,7 @@
 import {
   fhirBaseUrl,
   getConfig,
+  getSessionStore,
   makeUrl,
   messageOmrsServiceWorker,
   navigate,
@@ -117,6 +118,17 @@ export async function syncPatientRegistration(
   queuedPatient: PatientRegistration,
   options: SyncProcessOptions<PatientRegistration>,
 ) {
+  const sessionState = getSessionStore().getState();
+  const activeUser = sessionState.loaded ? sessionState.session.user : undefined;
+  if (
+    !sessionState.loaded ||
+    !sessionState.session.authenticated ||
+    !activeUser ||
+    activeUser.uuid !== options.userId
+  ) {
+    throw new Error('The queued patient registration is not owned by the active session.');
+  }
+
   await FormManager.savePatientFormOnline(
     queuedPatient._patientRegistrationData.isNewPatient,
     queuedPatient._patientRegistrationData.formValues,
@@ -126,7 +138,10 @@ export async function syncPatientRegistration(
     queuedPatient._patientRegistrationData.currentLocation,
     queuedPatient._patientRegistrationData.identifierTypes ?? [],
     queuedPatient._patientRegistrationData.initialIdentifierValues,
-    queuedPatient._patientRegistrationData.currentUser,
+    {
+      ...queuedPatient._patientRegistrationData.currentUser,
+      user: activeUser,
+    },
     queuedPatient._patientRegistrationData.config,
     queuedPatient._patientRegistrationData.savePatientTransactionManager,
     options.abort,

@@ -176,6 +176,13 @@ Patient registration depends on metadata loaded at runtime: address template, re
 
 Queued registration writes share the queue synchronization abort signal, including the patient-photo attachment fallback.
 An interrupted upload must remain associated with the original queue owner and must not start under a later session.
+At synchronization time, registration requires a loaded, authenticated session for the queue owner and passes that
+session's current user and privileges to the save handler. The queued provider and registration context are preserved;
+the queued session snapshot is not mutated. Loading, expired, missing-user, or different-user sessions fail before the
+save handler runs and leave the item available for a later authenticated retry through the shared queue.
+Validate this contract with `yarn workspace @sihsalus/esm-patient-registration-app test src/offline.test.ts` and the
+shared offline queue tests. Before merging, also verify reconnection, session expiry, and changed permissions using
+synthetic registrations in coordinated DEV/QLTY; unit tests do not replace that smoke test.
 Existing-patient offline refreshes require confirmed fresh network responses. A stale cached success cannot complete the
 refresh, and each stable cache entry is replaced only after its corresponding network response succeeds.
 

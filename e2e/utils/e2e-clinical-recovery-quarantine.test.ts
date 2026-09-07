@@ -1,23 +1,57 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadRecoveryConfig } from '../clinical-recovery/config-schema';
 import globalSetup from '../clinical-recovery/global-setup';
 import { blockClinicalRecovery, clinicalRecoveryQuarantineMessage } from '../clinical-recovery/quarantine.mjs';
-import { runRecoveredNotificationSmoke } from '../clinical-recovery/runtime-notifications-dev-smoke.mjs';
 
-const browser = vi.hoisted(() => ({ launch: vi.fn(), newContext: vi.fn() }));
+const sideEffects = vi.hoisted(() => {
+  const forbidden = () => {
+    throw new Error('Quarantined recovery must not inspect metadata or perform side effects.');
+  };
+  return {
+    launch: vi.fn(forbidden),
+    newContext: vi.fn(forbidden),
+    existsSync: vi.fn(forbidden),
+    writeFileSync: vi.fn(forbidden),
+    readMetadata: vi.fn(forbidden),
+    fetch: vi.fn(forbidden),
+  };
+});
 vi.mock('@playwright/test', () => ({
-  chromium: { launch: browser.launch },
-  request: { newContext: browser.newContext },
+  chromium: { launch: sideEffects.launch },
+  request: { newContext: sideEffects.newContext },
 }));
+vi.mock('node:fs', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:fs')>()),
+  existsSync: sideEffects.existsSync,
+  writeFileSync: sideEffects.writeFileSync,
+}));
+vi.mock('../clinical-recovery/notification-config-schema.mjs', () => ({
+  recoveredNotificationMetadata: new Proxy({}, { get: sideEffects.readMetadata }),
+}));
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', sideEffects.fetch);
+});
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
 describe('clinical recovery hard quarantine', () => {
+  it('imports the notification proposal without inspecting metadata or starting a smoke', async () => {
+    vi.resetModules();
+    const proposal = await import('../clinical-recovery/runtime-notifications-dev-smoke.mjs');
+
+    expect(proposal.runRecoveredNotificationSmoke).toBeTypeOf('function');
+    for (const effect of Object.values(sideEffects)) {
+      expect(effect).not.toHaveBeenCalled();
+    }
+  });
+
   it('rejects before configuration is inspected', () => {
     const environment = new Proxy<NodeJS.ProcessEnv>(
       {},
@@ -40,9 +74,11 @@ describe('clinical recovery hard quarantine', () => {
     vi.stubEnv('SIHSALUS_E2E_TARGET', target);
     vi.stubEnv('E2E_SKIP_AUTH', 'true');
     vi.stubEnv('E2E_ALLOW_QUARANTINED', 'true');
+    const { runRecoveredNotificationSmoke } = await import('../clinical-recovery/runtime-notifications-dev-smoke.mjs');
     await expect(runRecoveredNotificationSmoke()).rejects.toThrow(clinicalRecoveryQuarantineMessage);
-    expect(browser.launch).not.toHaveBeenCalled();
-    expect(browser.newContext).not.toHaveBeenCalled();
+    for (const effect of Object.values(sideEffects)) {
+      expect(effect).not.toHaveBeenCalled();
+    }
   });
 
   it('rejects direct CLI invocation without exposing configured values', () => {

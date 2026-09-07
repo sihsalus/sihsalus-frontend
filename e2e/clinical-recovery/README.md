@@ -77,7 +77,11 @@ node --check e2e/clinical-recovery/runtime-notifications-dev-smoke.mjs
 ```
 
 Unit regressions exercise the unconditional guards and assert that mocked
-browser/API constructors are never called. CLI guard checks must exit nonzero
+browser/API constructors, metadata reads and recovery-file access are never
+called. Import checks register the proposals without executing clinical code;
+the spec hooks and notification test body are checked independently of global
+setup. The configuration contract also keeps authentication state, web servers
+and browser artifacts disabled. CLI guard checks must exit nonzero
 with a sanitized quarantine message. That expected rejection is a guard test,
 not a passed clinical E2E run.
 

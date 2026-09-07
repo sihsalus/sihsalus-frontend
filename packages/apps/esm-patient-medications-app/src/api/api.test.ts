@@ -1,9 +1,9 @@
 import { toOmrsIsoString } from '@openmrs/esm-framework';
-import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
+import { type DrugOrderBasketItem, type Order } from '@openmrs/esm-patient-common-lib';
 import { renderHook } from '@testing-library/react';
 import useSWRImmutable from 'swr/immutable';
 
-import { prepMedicationOrderPostData, useRequireOutpatientQuantity } from './api';
+import { buildMedicationOrder, prepMedicationOrderPostData, useRequireOutpatientQuantity } from './api';
 
 vi.mock('swr/immutable', () => ({
   default: vi.fn(),
@@ -50,6 +50,143 @@ describe('prepMedicationOrderPostData', () => {
         patient: 'patient-uuid',
       }),
     );
+  });
+
+  it.each([
+    { numRefills: 1 },
+    { asNeeded: true },
+    { asNeededCondition: 'Repeat if needed' },
+    { duration: 7 },
+    { durationUnit: { valueCoded: 'days', value: 'Days' } },
+    { isFreeTextDosage: true },
+    { startDate: new Date('2000-01-01T12:00:00.000Z') },
+  ])('rejects a conflicting once draft at basket signing: %o', (conflict) => {
+    expect(() =>
+      prepMedicationOrderPostData(
+        {
+          ...baseOrder,
+          frequency: { valueCoded: 'synthetic-once-frequency', value: 'One administration' },
+          urgency: 'STAT',
+          duration: null,
+          durationUnit: null,
+          startDate: new Date(),
+          ...conflict,
+        },
+        'synthetic-patient',
+        'synthetic-encounter',
+        'synthetic-provider',
+        'synthetic-care-setting',
+        'synthetic-once-frequency',
+        true,
+      ),
+    ).toThrow('The single-dose prescription must be reviewed before signing.');
+  });
+
+  it.each([
+    'NEW',
+    'RENEW',
+    'REVISE',
+  ] as const)('sends STAT and native once frequency independently for %s', (action) => {
+    const result = prepMedicationOrderPostData(
+      {
+        ...baseOrder,
+        action,
+        urgency: 'STAT',
+        frequency: {
+          valueCoded: 'synthetic-once-frequency',
+          value: 'Once',
+          frequencyPerDay: null,
+        },
+        duration: null,
+        durationUnit: null,
+        pillsDispensed: 1,
+        startDate: new Date(),
+      },
+      'synthetic-patient',
+      'synthetic-encounter',
+      'synthetic-provider',
+      'synthetic-care-setting',
+      'synthetic-once-frequency',
+      true,
+    );
+
+    expect(result).toMatchObject({
+      urgency: 'STAT',
+      frequency: 'synthetic-once-frequency',
+      dose: 1,
+      quantity: 1,
+      numRefills: 0,
+      asNeeded: false,
+      duration: null,
+    });
+    expect(result.durationUnits).toBeUndefined();
+    expect(result.dateActivated).toBeUndefined();
+    expect(result).not.toHaveProperty('dateStopped');
+    expect(result).not.toHaveProperty('autoExpireDate');
+  });
+
+  it.each([
+    'ROUTINE',
+    'STAT',
+    'ON_SCHEDULED_DATE',
+  ])('preserves %s when an existing daily order is revised', (urgency) => {
+    const savedOrder = {
+      uuid: 'synthetic-order',
+      drug: baseOrder.drug,
+      urgency,
+      scheduledDate: urgency === 'ON_SCHEDULED_DATE' ? '2026-09-08T12:00:00.000Z' : null,
+      frequency: { uuid: 'daily-frequency', display: 'Once daily' },
+      duration: 7,
+      durationUnits: { uuid: 'days', display: 'Days' },
+      quantity: 7,
+      encounter: {
+        uuid: 'synthetic-encounter',
+        visit: { uuid: 'synthetic-visit' },
+      },
+    } as unknown as Order;
+    const draft = buildMedicationOrder(savedOrder, 'REVISE');
+    const payload = prepMedicationOrderPostData(draft, 'synthetic-patient', 'synthetic-encounter');
+
+    expect(draft).toMatchObject({
+      urgency,
+      urgencyCode: urgency,
+      frequency: { valueCoded: 'daily-frequency' },
+    });
+    expect(payload).toMatchObject({
+      urgency,
+      frequency: 'daily-frequency',
+      duration: 7,
+      durationUnits: 'days',
+      quantity: 7,
+    });
+    expect(payload.scheduledDate).toBe(draft.scheduledDate ? toOmrsIsoString(draft.scheduledDate) : undefined);
+  });
+
+  it.each([
+    'NEW',
+    'REVISE',
+    'RENEW',
+  ] as const)('blocks %s of a once order when the configured frequency is unavailable', (action) => {
+    const order = {
+      ...baseOrder,
+      action,
+      urgency: 'STAT',
+      frequency: { valueCoded: 'synthetic-once-frequency', value: 'Once' },
+      duration: null,
+      durationUnit: null,
+      startDate: new Date(),
+    };
+    expect(() =>
+      prepMedicationOrderPostData(
+        order,
+        'synthetic-patient',
+        'synthetic-encounter',
+        'synthetic-provider',
+        'synthetic-care-setting',
+        'synthetic-once-frequency',
+        false,
+      ),
+    ).toThrow('The single-dose prescription must be reviewed before signing.');
   });
 
   // Regression tests: orders starting today must not carry an explicit dateActivated.

@@ -25,6 +25,7 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y 
 - La tarjeta de interconsultas abre `request-interconsulta-workspace` como child workspace de la canasta. El formulario agrega la solicitud a la canasta; no la publica antes de que el profesional use `Firmar y cerrar`.
 - El formulario de interconsulta distingue un consultorio/servicio local de un especialista externo o remoto. La segunda opción sigue siendo una orden de interconsulta y no inicia referencia, contrarreferencia ni traslado.
 - Cada agrupación de órdenes generales registra su transformador con el `careSettingUuid` configurado. El transformador también acepta el `careSetting` conservado en una orden y bloquea el envío si ninguno está disponible; nunca debe publicar una orden clínica sin ámbito asistencial.
+- Al modificar medicamentos desde el historial general, el borrador conserva `urgency`, la fecha programada y la ausencia de una unidad de duración. La frecuencia codificada se conserva de forma independiente: una orden STAT diaria no se convierte en dosis única. La configuración y validación de dosis única pertenecen a `esm-patient-medications-app`.
 
 ## Dependencias backend/content
 

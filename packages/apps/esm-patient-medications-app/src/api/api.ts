@@ -149,6 +149,8 @@ export const prepMedicationOrderPostData = (
   encounterUuid: string | null,
   orderingProviderUuid?: string,
   careSettingUuid?: string,
+  singleDoseFrequencyUuid?: string,
+  singleDoseFrequencyAvailable = false,
 ): DrugOrderPost => {
   const orderer = orderingProviderUuid ?? order.orderer;
   const startDate = order.startDate
@@ -162,9 +164,33 @@ export const prepMedicationOrderPostData = (
   // encounterDatetime and fails the dateActivated >= encounterDatetime validation.
   const dateActivated = startDate && !isSameCalendarDay(startDate, new Date()) ? toOmrsIsoString(startDate) : undefined;
 
+  // Drafts can be signed from the basket or renewed without reopening the form.
+  // Enforce the reviewed single-dose contract at that boundary as well.
+  if (
+    order.action !== 'DISCONTINUE' &&
+    singleDoseFrequencyUuid &&
+    order.frequency?.valueCoded === singleDoseFrequencyUuid
+  ) {
+    const urgency = order.urgencyCode ?? order.urgency;
+    if (
+      !singleDoseFrequencyAvailable ||
+      order.asNeeded ||
+      order.asNeededCondition?.trim() ||
+      order.numRefills !== 0 ||
+      order.duration != null ||
+      order.durationUnit != null ||
+      order.isFreeTextDosage ||
+      (urgency === 'STAT' && (!startDate || !isSameCalendarDay(startDate, new Date())))
+    ) {
+      throw new Error('The single-dose prescription must be reviewed before signing.');
+    }
+  }
+
   if (order.action === 'NEW') {
     return {
       action: 'NEW',
+      urgency: order.urgencyCode ?? order.urgency ?? 'ROUTINE',
+      scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : undefined,
       patient: patientUuid,
       type: 'drugorder',
       careSetting: careSettingUuid,
@@ -194,6 +220,8 @@ export const prepMedicationOrderPostData = (
     return {
       action: 'NEW',
       previousOrder: order.previousOrder,
+      urgency: order.urgencyCode ?? order.urgency ?? 'ROUTINE',
+      scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : undefined,
       patient: patientUuid,
       type: 'drugorder',
       careSetting: careSettingUuid,
@@ -222,6 +250,8 @@ export const prepMedicationOrderPostData = (
   } else if (order.action === 'REVISE') {
     return {
       action: 'REVISE',
+      urgency: order.urgencyCode ?? order.urgency ?? 'ROUTINE',
+      scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : undefined,
       patient: patientUuid,
       type: 'drugorder',
       previousOrder: order.previousOrder,
@@ -280,6 +310,9 @@ export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrd
     display: order.drug.display,
     previousOrder: action !== 'NEW' ? order.uuid : null,
     action: action,
+    urgency: order.urgency,
+    urgencyCode: order.urgency,
+    scheduledDate: order.scheduledDate ? parseDate(order.scheduledDate) : undefined,
     drug: order.drug,
     dosage: order.dose ?? null,
     unit: order.doseUnits

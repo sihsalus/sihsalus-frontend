@@ -36,6 +36,9 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
       <div className={styles.orderBasketItemTile}>
         <div className={styles.orderContent}>
           <OrderActionLabel orderBasketItem={orderBasketItem} />
+          {(orderBasketItem.urgencyCode ?? orderBasketItem.urgency) === 'STAT' && (
+            <Tag type="red">{t('medicationStat', 'STAT — immediately')}</Tag>
+          )}
           {orderBasketItem.isFreeTextDosage ? (
             <div className={styles.orderTitle}>
               <span className={styles.drugName}>{orderBasketItem.drug?.display}</span>
@@ -90,7 +93,7 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
                 <span className={styles.orderErrorText}>
                   <WarningIcon size={16} /> &nbsp;{' '}
                   <span className={styles.label01}>{t('error', 'Error').toUpperCase()}</span> &nbsp;
-                  {orderBasketItem.orderError.responseBody?.error?.message ?? orderBasketItem.orderError.message}
+                  {t('errorSavingDrugOrderMessage', 'The medication order could not be saved. Please try again.')}
                 </span>
               </>
             )}

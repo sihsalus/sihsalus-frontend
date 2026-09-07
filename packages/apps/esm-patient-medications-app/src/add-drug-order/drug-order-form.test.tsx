@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse } from 'test-utils';
 import { useRequireOutpatientQuantity } from '../api/api';
+import { prepMedicationOrderPostData } from '../api/api';
 import { type ConfigObject, configSchema } from '../config-schema';
 import DrugOrderForm from './drug-order-form.component';
 import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
@@ -48,8 +49,23 @@ vi.mock('../api/order-config', async () => ({
         { valueCoded: '1734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Years' },
       ],
       orderFrequencies: [
-        { valueCoded: 'once-daily-uuid', value: 'Once daily', frequencyPerDay: 1.0, names: ['OD', 'Once daily'] },
-        { valueCoded: 'twice-daily-uuid', value: 'Twice daily', frequencyPerDay: 2.0, names: ['BD', 'Twice daily'] },
+        {
+          valueCoded: '11111111-1111-4111-8111-111111111111',
+          value: 'One administration',
+          frequencyPerDay: null,
+        },
+        {
+          valueCoded: 'once-daily-uuid',
+          value: 'Once daily',
+          frequencyPerDay: 1.0,
+          names: ['OD', 'Once daily'],
+        },
+        {
+          valueCoded: 'twice-daily-uuid',
+          value: 'Twice daily',
+          frequencyPerDay: 2.0,
+          names: ['BD', 'Twice daily'],
+        },
       ],
     },
     isLoading: false,
@@ -107,6 +123,250 @@ function getRequiredFieldLabels() {
       .trim(),
   );
 }
+
+describe('STAT single-dose prescriptions', () => {
+  const onceUuid = '11111111-1111-4111-8111-111111111111';
+  const tablet = {
+    valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    value: 'Tablet',
+  };
+  const completeOrder = (overrides: Partial<DrugOrderBasketItem> = {}) =>
+    createNewOrderBasketItem({
+      dosage: 2,
+      unit: tablet,
+      quantityUnits: tablet,
+      route: {
+        valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'Oral',
+      },
+      frequency: {
+        valueCoded: 'once-daily-uuid',
+        value: 'Once daily',
+        frequencyPerDay: 1,
+      },
+      duration: 7,
+      durationUnit: {
+        valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'Days',
+      },
+      pillsDispensed: 14,
+      numRefills: 2,
+      indication: 'Synthetic test indication',
+      ...overrides,
+    });
+
+  beforeEach(() => {
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      singleDoseFrequencyUuid: onceUuid,
+    });
+  });
+
+  it('submits one immediate dose, clearing repeating and PRN fields and the old quantity', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(
+      completeOrder({
+        asNeeded: true,
+        asNeededCondition: 'Synthetic PRN reason',
+        isQuantityManual: true,
+      }),
+      onSave,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'STAT — administer once now' }));
+
+    expect(screen.getByRole('combobox', { name: 'Urgency' })).toHaveValue('STAT');
+    expect(screen.getByRole('combobox', { name: /frequency/i })).toHaveValue('One administration');
+    expect(screen.getByRole('checkbox', { name: /take as needed/i })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /take as needed/i })).toBeDisabled();
+    expect(screen.queryByRole('spinbutton', { name: /duration/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', { name: /refills/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('spinbutton', { name: /quantity to dispense/i })).toHaveValue(2));
+    // Happy DOM rejects valid decimal steps (2 with min/step 0.01); submit through the form's schema.
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect(draft).toMatchObject({
+      urgency: 'STAT',
+      urgencyCode: 'STAT',
+      frequency: { valueCoded: onceUuid },
+      asNeeded: false,
+      asNeededCondition: '',
+      numRefills: 0,
+      duration: null,
+      durationUnit: null,
+      pillsDispensed: 2,
+      isQuantityManual: false,
+    });
+    expect(prepMedicationOrderPostData(draft, 'synthetic-patient', 'synthetic-encounter')).toMatchObject({
+      urgency: 'STAT',
+      frequency: onceUuid,
+      dose: 2,
+      quantity: 2,
+      numRefills: 0,
+      asNeeded: false,
+      duration: null,
+    });
+  });
+
+  it.each([
+    '',
+    '22222222-2222-4222-8222-222222222222',
+  ])('disables the preset when the configured UUID %s is unavailable', (uuid) => {
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      singleDoseFrequencyUuid: uuid,
+    });
+    renderDrugOrderForm(completeOrder());
+    expect(screen.getByRole('button', { name: 'STAT — administer once now' })).toBeDisabled();
+    expect(screen.getByText(/Single-dose prescribing is unavailable/)).toBeInTheDocument();
+  });
+
+  it('does not reinterpret a daily STAT order as one administration when editing', async () => {
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder({ action: 'REVISE', urgency: 'STAT', urgencyCode: 'STAT' }), onSave);
+    expect(screen.getByRole('spinbutton', { name: /duration/i })).toHaveValue(7);
+    expect(screen.getByRole('combobox', { name: /frequency/i })).toHaveValue('Once daily');
+    expect(screen.getByRole('checkbox', { name: /take as needed/i })).toBeEnabled();
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      urgency: 'STAT',
+      frequency: { valueCoded: 'once-daily-uuid' },
+      duration: 7,
+      numRefills: 2,
+    });
+  });
+
+  it('preserves once semantics and manual quantity when reopening an existing single-dose order', async () => {
+    const onSave = vi.fn();
+    renderDrugOrderForm(
+      completeOrder({
+        action: 'REVISE',
+        urgency: 'STAT',
+        frequency: { valueCoded: onceUuid, value: 'One administration' },
+        duration: null,
+        durationUnit: null,
+        numRefills: 0,
+        pillsDispensed: 3,
+      }),
+      onSave,
+    );
+    expect(screen.getByRole('spinbutton', { name: /quantity to dispense/i })).toHaveValue(3);
+    expect(screen.queryByRole('spinbutton', { name: /duration/i })).not.toBeInTheDocument();
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      urgency: 'STAT',
+      frequency: { valueCoded: onceUuid },
+      duration: null,
+      numRefills: 0,
+      pillsDispensed: 3,
+    });
+  });
+
+  it('requires a manually reviewed dispense quantity when units do not match', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(
+      completeOrder({
+        unit: { valueCoded: 'synthetic-mg', value: 'mg' },
+        isQuantityManual: true,
+      }),
+      onSave,
+    );
+    await user.click(screen.getByRole('button', { name: 'STAT — administer once now' }));
+    expect(screen.getByRole('spinbutton', { name: /quantity to dispense/i })).not.toHaveValue();
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    expect(await screen.findByText('Quantity to dispense is required')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('requires duration again when the clinician changes a single dose to daily dosing', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder(), onSave);
+    await user.click(screen.getByRole('button', { name: 'STAT — administer once now' }));
+    const frequency = screen.getByRole('combobox', { name: /frequency/i });
+    await user.clear(frequency);
+    await user.type(frequency, 'Once daily');
+    await user.click(screen.getByRole('option', { name: 'Once daily' }));
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    expect(await screen.findByText('Treatment duration is required')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'frequency-first',
+    'urgency-first',
+  ])('sets today when configuring a backdated single dose manually: %s', async (sequence) => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    renderDrugOrderForm(completeOrder({ startDate: yesterday }), onSave);
+    const selectFrequency = async () => {
+      const frequency = screen.getByRole('combobox', { name: /frequency/i });
+      await user.clear(frequency);
+      await user.type(frequency, 'One administration');
+      await user.click(screen.getByRole('option', { name: 'One administration' }));
+    };
+    const selectUrgency = () => user.selectOptions(screen.getByRole('combobox', { name: 'Urgency' }), 'STAT');
+    if (sequence === 'frequency-first') {
+      await selectFrequency();
+      await selectUrgency();
+    } else {
+      await selectUrgency();
+      await selectFrequency();
+    }
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect((draft.startDate as Date).toDateString()).toBe(new Date().toDateString());
+    expect(
+      prepMedicationOrderPostData(draft, 'synthetic-patient', 'synthetic-encounter').dateActivated,
+    ).toBeUndefined();
+  });
+
+  it('blocks submission of an existing once draft when its configured frequency is no longer available', () => {
+    const onSave = vi.fn();
+    const missingOnce = '22222222-2222-4222-8222-222222222222';
+    mockUseConfig.mockReturnValue({ ...defaultConfig, singleDoseFrequencyUuid: missingOnce });
+    renderDrugOrderForm(
+      completeOrder({
+        action: 'REVISE',
+        urgency: 'STAT',
+        frequency: { valueCoded: missingOnce, value: 'One administration' },
+        duration: null,
+        durationUnit: null,
+        numRefills: 0,
+      }),
+      onSave,
+    );
+    expect(screen.getByRole('button', { name: 'Save order' })).toBeDisabled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('applies single-dose restrictions when selecting the native frequency directly without changing urgency', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder(), onSave);
+    const frequency = screen.getByRole('combobox', { name: /frequency/i });
+    await user.clear(frequency);
+    await user.type(frequency, 'One administration');
+    await user.click(screen.getByRole('option', { name: 'One administration' }));
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      urgency: 'ROUTINE',
+      frequency: { valueCoded: onceUuid },
+      duration: null,
+      numRefills: 0,
+    });
+  });
+});
 
 describe('DrugOrderForm - required field indicators', () => {
   it('marks every required field configured for a structured outpatient order', () => {
@@ -806,7 +1066,12 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     const onSave = vi.fn();
     renderDrugOrderForm(createNewOrderBasketItem(), onSave);
 
-    await user.type(screen.getByRole('textbox', { name: /diagnosis or reason for prescription/i }), '   ');
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /diagnosis or reason for prescription/i,
+      }),
+      '   ',
+    );
     await user.click(screen.getByRole('button', { name: /save order/i }));
 
     expect(await screen.findByText('Indication is required')).toBeInTheDocument();

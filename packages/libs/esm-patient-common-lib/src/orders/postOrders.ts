@@ -1,4 +1,11 @@
-import { type OpenmrsResource, openmrsFetch, parseDate, restBaseUrl, type Visit } from '@openmrs/esm-framework';
+import {
+  type OpenmrsResource,
+  openmrsFetch,
+  parseDate,
+  restBaseUrl,
+  translateFrom,
+  type Visit,
+} from '@openmrs/esm-framework';
 
 import { getPatientUuidFromStore } from '../store/patient-chart-store';
 
@@ -86,24 +93,44 @@ export async function postOrders(encounterUuid: string, abortController: AbortCo
     return [];
   }
 
-  const erroredItems: Array<OrderBasketItem> = [];
-  for (const grouping in patientItems) {
-    const orders = patientItems[grouping];
-    for (let i = 0; i < orders.length; i++) {
-      const order = orders[i];
-      const dataPrepFn = postDataPrepFunctions[grouping];
-
-      if (typeof dataPrepFn !== 'function') {
-        console.warn(`The postDataPrep function registered for ${grouping} orders is not a function`);
-        continue;
+  const pendingItems = Object.values(patientItems).flat();
+  const preparedOrders: Array<{ order: OrderBasketItem; body: OrderPost }> = [];
+  try {
+    // Validate every draft before writing any order. Otherwise a later invalid
+    // draft can strand successful writes in a basket that still contains them.
+    for (const [grouping, orders] of Object.entries(patientItems)) {
+      for (const order of orders) {
+        const dataPrepFn = postDataPrepFunctions[grouping];
+        if (typeof dataPrepFn !== 'function') {
+          throw new Error('Order preparation is unavailable.');
+        }
+        preparedOrders.push({ order, body: dataPrepFn(order, patientUuid, encounterUuid) });
       }
+    }
+  } catch {
+    // The basket retains only returned items, so ALL unsent orders must remain
+    // here, including drafts that passed preflight. Never expose validator text.
+    const message = translateFrom(
+      '@sihsalus/esm-patient-orders-app',
+      'orderSubmissionFailedItemMessage',
+      'Could not submit this order. Review the data and try again.',
+    );
+    return pendingItems.map((order) => ({
+      ...order,
+      orderError: new Error(message),
+      extractedOrderError: { message, fieldErrors: [message], globalErrors: [] },
+    }));
+  }
 
-      await postOrder(dataPrepFn(order, patientUuid, encounterUuid), abortController).catch((error) => {
-        erroredItems.push({
-          ...order,
-          orderError: error,
-          extractedOrderError: extractErrorDetails(error),
-        });
+  const erroredItems: Array<OrderBasketItem> = [];
+  for (const { order, body } of preparedOrders) {
+    try {
+      await postOrder(body, abortController);
+    } catch (error) {
+      erroredItems.push({
+        ...order,
+        orderError: error as OrderBasketItem['orderError'],
+        extractedOrderError: extractErrorDetails(error as OrderErrorObject),
       });
     }
   }

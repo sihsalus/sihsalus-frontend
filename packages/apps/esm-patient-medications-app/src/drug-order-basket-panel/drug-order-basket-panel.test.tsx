@@ -1,4 +1,4 @@
-import { useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,14 +10,19 @@ import {
   mockSessionDataResponse,
 } from 'test-utils';
 import { getTemplateOrderBasketItem } from '../add-drug-order/drug-search/drug-search.resource';
+import { useOrderConfig } from '../api/order-config';
+import { type ConfigObject, configSchema } from '../config-schema';
 import DrugOrderBasketPanel, { type DrugOrderBasketPanelExtensionProps } from './drug-order-basket-panel.extension';
 
 const mockUseOrderBasket = vi.fn();
 const mockUseSession = vi.mocked(useSession);
+const mockUseOrderConfig = vi.mocked(useOrderConfig);
+
+vi.mock('../api/order-config', () => ({ useOrderConfig: vi.fn() }));
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
-  useOrderBasket: () => mockUseOrderBasket(),
+  useOrderBasket: (...args) => mockUseOrderBasket(...args),
 }));
 
 const testProps: DrugOrderBasketPanelExtensionProps = {
@@ -28,6 +33,59 @@ const testProps: DrugOrderBasketPanelExtensionProps = {
 describe('OrderBasketPanel', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+    vi.mocked(useConfig).mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUseOrderConfig.mockReturnValue({
+      isLoading: false,
+      error: null,
+      orderConfigObject: { orderFrequencies: [] },
+    } as ReturnType<typeof useOrderConfig>);
+  });
+
+  test('rechecks current once-frequency availability when preparing a renewal for signing', () => {
+    const onceUuid = '11111111-1111-4111-8111-111111111111';
+    vi.mocked(useConfig).mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as ConfigObject),
+      singleDoseFrequencyUuid: onceUuid,
+    });
+    mockUseOrderBasket.mockReturnValue({ orders: [] });
+    mockUseOrderConfig.mockReturnValue({
+      isLoading: true,
+      error: null,
+      orderConfigObject: { orderFrequencies: [] },
+    } as ReturnType<typeof useOrderConfig>);
+    const { rerender } = render(<DrugOrderBasketPanel {...testProps} />);
+    const onceOrder = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      action: 'RENEW',
+      frequency: { valueCoded: onceUuid, value: 'One administration' },
+      urgency: 'STAT',
+      numRefills: 0,
+    } as DrugOrderBasketItem;
+    const prepare = () => mockUseOrderBasket.mock.lastCall[2](onceOrder, 'synthetic-patient', 'synthetic-encounter');
+    expect(prepare).toThrow('The single-dose prescription must be reviewed before signing.');
+
+    const available = { orderFrequencies: [{ valueCoded: onceUuid, value: 'One administration' }] };
+    mockUseOrderConfig.mockReturnValue({ isLoading: false, error: null, orderConfigObject: available } as ReturnType<
+      typeof useOrderConfig
+    >);
+    rerender(<DrugOrderBasketPanel {...testProps} />);
+    expect(prepare()).toMatchObject({ urgency: 'STAT', frequency: onceUuid, numRefills: 0 });
+
+    mockUseOrderConfig.mockReturnValue({
+      isLoading: false,
+      error: new Error('Synthetic unavailable catalog'),
+      orderConfigObject: available,
+    } as ReturnType<typeof useOrderConfig>);
+    rerender(<DrugOrderBasketPanel {...testProps} />);
+    expect(prepare).toThrow('The single-dose prescription must be reviewed before signing.');
+
+    mockUseOrderConfig.mockReturnValue({
+      isLoading: false,
+      error: null,
+      orderConfigObject: { orderFrequencies: [] },
+    } as ReturnType<typeof useOrderConfig>);
+    rerender(<DrugOrderBasketPanel {...testProps} />);
+    expect(prepare).toThrow('The single-dose prescription must be reviewed before signing.');
   });
 
   test('renders an empty state when no items are selected in the order basket', () => {
@@ -35,6 +93,29 @@ describe('OrderBasketPanel', () => {
     render(<DrugOrderBasketPanel {...testProps} />);
     expect(screen.getByRole('heading', { name: /Drug orders \(0\)/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Add/i })).toBeInTheDocument();
+  });
+
+  test.each([
+    { message: 'Synthetic private transport detail' },
+    {
+      message: 'Synthetic private transport detail',
+      responseBody: { error: { message: 'Synthetic private backend detail' } },
+    },
+  ])('shows safe guidance instead of technical signing errors (%#)', (orderError) => {
+    const order = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      urgency: 'STAT',
+      urgencyCode: 'STAT',
+      orderError,
+    } as DrugOrderBasketItem;
+    mockUseOrderBasket.mockReturnValue({ orders: [order] });
+
+    render(<DrugOrderBasketPanel {...testProps} />);
+
+    expect(screen.getByText('The medication order could not be saved. Please try again.')).toBeVisible();
+    expect(screen.queryByText(/Synthetic private/)).not.toBeInTheDocument();
+    expect(screen.getByText('STAT — immediately')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Remove from basket/i })).toBeEnabled();
   });
 
   test('launches the drug order form from the order basket state callback', async () => {

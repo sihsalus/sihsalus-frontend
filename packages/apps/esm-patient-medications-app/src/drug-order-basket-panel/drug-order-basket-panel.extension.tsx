@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { prepMedicationOrderPostData } from '../api/api';
+import { useOrderConfig } from '../api/order-config';
 import type { ConfigObject } from '../config-schema';
 import styles from './drug-order-basket-panel.scss';
 import OrderBasketItemTile from './order-basket-item-tile.component';
@@ -33,6 +34,13 @@ function DrugOrderBasketPanelExtension({
 }: DrugOrderBasketPanelExtensionProps) {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const { orderConfigObject, error: orderConfigError, isLoading: orderConfigLoading } = useOrderConfig();
+  const singleDoseFrequencyAvailable =
+    !orderConfigError &&
+    !orderConfigLoading &&
+    Boolean(
+      orderConfigObject?.orderFrequencies?.some((frequency) => frequency.valueCoded === config.singleDoseFrequencyUuid),
+    );
   const session = useSession();
   const orderingProviderUuid = session?.currentProvider?.uuid;
   const canAddOrders = canCreateOrders && Boolean(orderingProviderUuid);
@@ -41,8 +49,16 @@ function DrugOrderBasketPanelExtension({
   const responsiveSize = isTablet ? 'md' : 'sm';
   const prepareMedicationOrderPostData = useCallback(
     (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
-      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, config.careSettingUuid),
-    [config.careSettingUuid, orderingProviderUuid],
+      prepMedicationOrderPostData(
+        order,
+        patientUuid,
+        encounterUuid,
+        orderingProviderUuid,
+        config.careSettingUuid,
+        config.singleDoseFrequencyUuid,
+        singleDoseFrequencyAvailable,
+      ),
+    [config.careSettingUuid, config.singleDoseFrequencyUuid, orderingProviderUuid, singleDoseFrequencyAvailable],
   );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,

@@ -117,6 +117,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
           <div>
             <div className={styles.bodyLong01}>
               <strong>{capitalize(medication.drug?.display)}</strong>{' '}
+              {medication.urgency === 'STAT' && <Tag type="red">{t('medicationStat', 'STAT — immediately')}</Tag>}
               {medication.drug?.strength && <>&mdash; {medication.drug?.strength.toLowerCase()}</>}{' '}
               {medication.drug?.dosageForm?.display && <>&mdash; {medication.drug.dosageForm.display.toLowerCase()}</>}
               {medication.dateStopped && (

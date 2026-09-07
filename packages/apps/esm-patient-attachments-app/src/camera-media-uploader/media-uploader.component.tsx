@@ -1,6 +1,6 @@
-import { FileUploaderDropContainer, InlineNotification } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
-import { useCallback, useContext, useState } from 'react';
+import { FileUploaderDropContainer, InlineLoading, InlineNotification } from '@carbon/react';
+import { type UploadedFile, useConfig } from '@openmrs/esm-framework';
+import { type DragEvent, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../constants';
 import { readFileAsString } from '../utils';
@@ -37,10 +37,24 @@ const MediaUploaderComponent = () => {
   } = useContext(CameraMediaUploaderContext);
   const maxFileSize = getEffectiveMaxFileSizeMb(configuredMaxFileSize, maxFileSizeMb);
   const [errorNotification, setErrorNotification] = useState<ErrorNotification | null>(null);
+  const [isReading, setIsReading] = useState(false);
+  const readingRef = useRef(false);
+  const activeRef = useRef(true);
   const uploadsEnabled = allowedExtensions.length > 0;
 
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+
   const upload = useCallback(
-    (files: Array<File>) => {
+    async (files: Array<File>) => {
+      if (readingRef.current || files.length === 0) {
+        return;
+      }
+      setErrorNotification(null);
       if (!uploadsEnabled) {
         setErrorNotification({
           title: t('attachmentUploadUnavailableTitle', 'Attachment upload unavailable'),
@@ -52,15 +66,28 @@ const MediaUploaderComponent = () => {
         return;
       }
 
-      files.forEach((file) => {
+      if (!multipleFiles && files.length > 1) {
+        setErrorNotification({
+          title: t('uploadError', 'Error uploading file'),
+          subtitle: t('singleAttachmentOnly', 'Select one file at a time for this attachment.'),
+        });
+        return;
+      }
+
+      for (const file of files) {
         if (file.size > maxFileSize * 1024 * 1024) {
           setErrorNotification({
             title: t('fileSizeLimitExceededText', 'File size limit exceeded'),
-            subtitle: `The file "${file.name}" ${t(
-              'fileSizeLimitExceeded',
-              'exceeds the size limit of',
-            )} ${maxFileSize} MB.`,
+            subtitle: t(
+              'attachmentFileTooLarge',
+              'The file "{{fileName}}" exceeds the size limit of {{fileSize}} MB.',
+              {
+                fileName: file.name,
+                fileSize: maxFileSize,
+              },
+            ),
           });
+          return;
         } else if (!isAllowedAttachmentFileName(file.name, allowedExtensions)) {
           setErrorNotification({
             title: t('unsupportedFileType', 'Unsupported file type'),
@@ -73,26 +100,48 @@ const MediaUploaderComponent = () => {
               },
             ),
           });
-        } else {
-          // Convert MBs to bytes
-          readFileAsString(file).then((base64Content) => {
-            setFilesToUpload((uriData) => [
-              ...uriData,
-              {
-                base64Content,
-                file,
-                fileName: file.name,
-                fileType:
-                  file.type.split('/')[0] === 'image' ? 'image' : file.type.split('/')[1] === 'pdf' ? 'pdf' : 'other',
-                fileDescription: '',
-                status: 'uploading',
-              },
-            ]);
+          return;
+        }
+      }
+
+      readingRef.current = true;
+      setIsReading(true);
+      try {
+        const batch = await Promise.all(
+          files.map(
+            async (file): Promise<UploadedFile> => ({
+              base64Content: await readFileAsString(file),
+              file,
+              fileName: file.name,
+              fileType:
+                file.type.split('/')[0] === 'image' ? 'image' : file.type.split('/')[1] === 'pdf' ? 'pdf' : 'other',
+              fileDescription: '',
+              status: 'uploading',
+            }),
+          ),
+        );
+        if (activeRef.current) {
+          // Publish the entire selection together: the parent opens review on the first state update.
+          setFilesToUpload((previousFiles) => [...previousFiles, ...batch]);
+        }
+      } catch {
+        if (activeRef.current) {
+          setErrorNotification({
+            title: t('attachmentReadFailedTitle', 'Files could not be read'),
+            subtitle: t(
+              'attachmentReadFailed',
+              'No files were added. Check that the selected files can be opened and select them again.',
+            ),
           });
         }
-      });
+      } finally {
+        readingRef.current = false;
+        if (activeRef.current) {
+          setIsReading(false);
+        }
+      }
     },
-    [allowedExtensions, maxFileSize, setFilesToUpload, t, uploadsEnabled],
+    [allowedExtensions, maxFileSize, multipleFiles, setFilesToUpload, t, uploadsEnabled],
   );
 
   return (
@@ -131,15 +180,29 @@ const MediaUploaderComponent = () => {
         })}
         .
       </p>
+      {multipleFiles && (
+        <p className="cds--label-description">
+          {t(
+            'attachmentBatchInstructions',
+            'You can select several files together, then review each file before uploading.',
+          )}
+        </p>
+      )}
+      {isReading && <InlineLoading description={t('attachmentReadingFiles', 'Preparing selected files')} />}
       <div className={styles.uploadFile}>
         <FileUploaderDropContainer
           accept={allowedExtensions.map((extension) => `.${extension}`)}
-          disabled={!uploadsEnabled}
+          disabled={!uploadsEnabled || isReading}
           labelText={t('fileSizeInstructions', 'Drag and drop files here or click to upload')}
           tabIndex={0}
           multiple={multipleFiles}
-          onAddFiles={(_evt, { addedFiles }) => {
-            upload(addedFiles);
+          onAddFiles={(event, { addedFiles }) => {
+            // Carbon can truncate single-file drops or omit extensionless files before this callback.
+            const selectedFiles =
+              event.target instanceof HTMLInputElement
+                ? event.target.files
+                : (event as DragEvent<HTMLElement>).dataTransfer?.files;
+            upload(selectedFiles?.length ? Array.from(selectedFiles) : addedFiles);
           }}
         />
       </div>

@@ -1,25 +1,25 @@
 import { type Attachment, type AttachmentResponse, attachmentUrl, formatDate } from '@openmrs/esm-framework';
 
 export function readFileAsString(file: File) {
-  return new Promise<string>((resolve) => {
+  return new Promise<string>((resolve, reject) => {
+    const rejectRead = () => reject(new Error('Attachment file could not be read.'));
     if (file) {
       const reader = new FileReader();
 
       reader.addEventListener('load', () => {
-        if (typeof reader.result === 'string') {
+        if (typeof reader.result === 'string' && reader.result.length > 0) {
           resolve(reader.result);
         } else {
-          resolve('');
+          rejectRead();
         }
       });
 
-      reader.addEventListener('error', () => {
-        resolve('');
-      });
+      reader.addEventListener('error', rejectRead);
+      reader.addEventListener('abort', rejectRead);
 
       reader.readAsDataURL(file);
     } else {
-      resolve('');
+      rejectRead();
     }
   });
 }

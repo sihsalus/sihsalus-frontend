@@ -67,6 +67,10 @@ const PatientChart: React.FC = () => {
   const { isLoading: isLoadingPatient, patient } = usePatient(patientUuid);
   const { currentVisit, mutate: mutateVisitContext } = useVisitOrOfflineVisit(patientUuid);
   const state = useMemo(() => ({ patient, patientUuid }), [patient, patientUuid]);
+  const patientHeaderState = useMemo(
+    () => ({ ...state, isPatientChart: Boolean(state.patientUuid && state.patient?.id === state.patientUuid) }),
+    [state],
+  );
   const { workspaceWindowState, active } = useWorkspaces();
   const [layoutMode, setLayoutMode] = useState<LayoutMode>();
   const launchedWorkspaceGroupKey = useRef<WorkspaceGroupLaunchKey | null>(null);
@@ -216,7 +220,7 @@ const PatientChart: React.FC = () => {
           ) : (
             <>
               <aside>
-                <ExtensionSlot name="patient-header-slot" state={state} />
+                <ExtensionSlot name="patient-header-slot" state={patientHeaderState} />
                 <ExtensionSlot name="patient-highlights-bar-slot" state={state} />
                 <ExtensionSlot name="patient-info-slot" state={state} />
               </aside>

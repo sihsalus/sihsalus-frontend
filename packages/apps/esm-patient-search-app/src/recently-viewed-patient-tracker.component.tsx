@@ -4,13 +4,15 @@ import { useEffect, useRef } from 'react';
 import type { PatientSearchConfig } from './config-schema';
 import { useRecentlyViewedPatients } from './recently-viewed-patients.store';
 
-/** The chart supplies this slot with the successfully loaded FHIR patient. */
+/** Only the chart marks its header; contextual forms reuse the same slot. */
 export default function RecentlyViewedPatientTracker({
   patient,
   patientUuid,
+  isPatientChart,
 }: {
   patient?: fhir.Patient;
   patientUuid?: string;
+  isPatientChart?: boolean;
 }) {
   const config = useConfig<PatientSearchConfig>();
   const { recordViewedPatient, cacheGeneration } = useRecentlyViewedPatients(
@@ -22,10 +24,15 @@ export default function RecentlyViewedPatientTracker({
     if (chartScope.current.patientUuid !== patientUuid) {
       chartScope.current = { patientUuid, cacheGeneration };
     }
-    if (patientUuid && patient?.id === patientUuid && chartScope.current.cacheGeneration === cacheGeneration) {
+    if (
+      isPatientChart === true &&
+      patientUuid &&
+      patient?.id === patientUuid &&
+      chartScope.current.cacheGeneration === cacheGeneration
+    ) {
       recordViewedPatient(patientUuid);
     }
-  }, [cacheGeneration, patient?.id, patientUuid, recordViewedPatient]);
+  }, [cacheGeneration, isPatientChart, patient?.id, patientUuid, recordViewedPatient]);
 
   return null;
 }

@@ -26,6 +26,14 @@ Un cambio pequeno aqui puede romper multiples apps porque muchas extensiones dep
 - El left sidebar debe mostrar labels traducidos; keys como `caseMonitoringEncounters` son defectos.
 - El right sidebar debe conservar acciones criticas: ordenes, FUA, notas de visita, formularios y listas de pacientes.
 
+### Apertura de historias recientes
+
+El chart añade `isPatientChart: true` únicamente al estado de su `patient-header-slot`, después de cargar
+un paciente FHIR cuyo ID coincide con el UUID de la ruta. Esta señal permite que Patient Search registre
+la apertura en el historial de la sesión sin confundirla con un formulario de citas u otro consumidor del
+mismo slot. Los demás slots conservan su contexto sin esa marca. Los formularios contextuales no deben
+emitirla; no concede permisos ni sustituye las barreras de sesión, paciente y acceso del tracker.
+
 ### Orden del menú de historia clínica
 
 El orden SIH Salus se mantiene en un solo lugar:

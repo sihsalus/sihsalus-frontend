@@ -6,6 +6,13 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 
 ## Funcionalidad
 
+- Libro de aperturas: una fila por `visit`, no por encuentro clínico ni por cita futura.
+- Vista inicial **Hoy**, según America/Lima; **Histórico** permite rango inclusivo de fechas o todo el histórico.
+- Filtros por tipo de atención (`visitType`), UPSS y estado, además de búsqueda libre. Incluye aperturas activas y finalizadas, ordenadas de más reciente a más antigua.
+- Se recorren todas las páginas REST del periodo antes de mostrar resultados o permitir exportar. `admissionReportPageSize` controla el lote REST, no el límite del histórico. La tabla se pagina de forma independiente y el CSV incluye todos los resultados filtrados.
+- El permiso de consulta sigue siendo `app:home.libroAtenciones`: debe asignarse al rol Admision en el content package. No concede edición, fusión de pacientes ni acceso adicional a la historia clínica. El enlace existente del slot `homepage-dashboard-slot` se muestra al recibir ese permiso; no se duplica ni se altera el orden global.
+- Dependencias: REST `visit` con `includeInactive`, `fromStartDate`, `toStartDate`, `startIndex` y enlaces de paginación; privilegios de lectura de visitas, pacientes y relaciones. Una página fallida no se presenta como un informe completo.
+
 - Registro/listado de atenciones por tipo de visita y UPSS en `/home/care-logbook`.
 - Fusion de historias clinicas duplicadas en `/home/care-logbook/merge`, delegando al flujo legacy de OpenMRS `findDuplicatePatients.htm`, que luego abre `mergePatients.form` para comparar y fusionar los pacientes seleccionados.
 - Programacion de turnos desde `/home/care-logbook/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.

@@ -3,6 +3,7 @@ import {
   DataTableSkeleton,
   InlineNotification,
   Layer,
+  Pagination,
   Select,
   SelectItem,
   SkeletonText,
@@ -116,9 +117,26 @@ function CareLogbookTableEmptyState({ title, helper }: CareLogbookTableEmptyStat
 export default function AdmissionHome() {
   const { t } = useTranslation(moduleName);
   const config = useConfig() as AdmissionConfig;
-  const { admissions, error, isLoading } = useAdmissions(config.admissionReportPageSize ?? 50);
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const [period, setPeriod] = useState('today');
+  const [from, setFrom] = useState(today);
+  const [to, setTo] = useState(today);
+  const range = period === 'today' ? { from: today, to: today } : { from, to };
+  const invalidRange = Boolean(range.from && range.to && range.from > range.to);
+  const { admissions, error, isLoading } = useAdmissions(config.admissionReportPageSize ?? 50, range);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const availableServices = Array.from(new Set(admissions.map((item) => item.service).filter(Boolean))).sort();
+  const availableLocations = Array.from(new Set(admissions.map((item) => item.location).filter(Boolean))).sort();
   const sexLabels = useMemo(
     () => ({
       female: t('femaleInitial', 'F'),
@@ -164,10 +182,19 @@ export default function AdmissionHome() {
 
       const matchesStatus = statusFilter === 'all' || admission.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      return (
+        !invalidRange &&
+        matchesSearch &&
+        matchesStatus &&
+        (serviceFilter === 'all' || admission.service === serviceFilter) &&
+        (locationFilter === 'all' || admission.location === locationFilter)
+      );
     });
-  }, [admissions, searchTerm, sexLabels, statusFilter]);
-  const hasActiveFilters = Boolean(searchTerm.trim()) || statusFilter !== 'all';
+  }, [admissions, searchTerm, sexLabels, statusFilter, serviceFilter, locationFilter, invalidRange]);
+  const hasActiveFilters =
+    Boolean(searchTerm.trim()) || statusFilter !== 'all' || serviceFilter !== 'all' || locationFilter !== 'all';
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredAdmissions.length / pageSize)));
+  const visibleAdmissions = filteredAdmissions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const reportSummary = useMemo(
     () => ({
@@ -298,7 +325,69 @@ export default function AdmissionHome() {
             <section
               className={styles.controls}
               aria-label={t('admissionReportFilters', 'Filtros del libro de atenciones')}
+              onChange={() => setPage(1)}
             >
+              <Select
+                id="admission-period"
+                labelText={t('period', 'Periodo')}
+                value={period}
+                onChange={(event) => setPeriod(event.target.value)}
+              >
+                <SelectItem value="today" text={t('today', 'Hoy')} />
+                <SelectItem value="history" text={t('history', 'Histórico')} />
+              </Select>
+              {period === 'history' && (
+                <>
+                  <TextInput
+                    id="admission-from"
+                    type="date"
+                    labelText={t('fromDate', 'Desde')}
+                    value={from}
+                    onChange={(event) => setFrom(event.target.value)}
+                  />
+                  <TextInput
+                    id="admission-to"
+                    type="date"
+                    labelText={t('toDate', 'Hasta')}
+                    value={to}
+                    onChange={(event) => setTo(event.target.value)}
+                    invalid={invalidRange}
+                    invalidText={t('invalidDateRange', 'La fecha final debe ser igual o posterior a la inicial')}
+                  />
+                  <Button
+                    kind="ghost"
+                    onClick={() => {
+                      setFrom('');
+                      setTo('');
+                      setPage(1);
+                    }}
+                  >
+                    {t('allHistory', 'Todo el histórico')}
+                  </Button>
+                </>
+              )}
+              <Select
+                id="admission-service"
+                labelText={t('visitType', 'Tipo de visita')}
+                value={serviceFilter}
+                onChange={(event) => setServiceFilter(event.target.value)}
+              >
+                <SelectItem value="all" text={t('allVisitTypes', 'Todos los tipos de atención')} />
+                {availableServices.map((service) => (
+                  <SelectItem key={service} value={service} text={service} />
+                ))}
+              </Select>
+              <Select
+                id="admission-location"
+                labelText={t('location', 'UPSS')}
+                value={locationFilter}
+                onChange={(event) => setLocationFilter(event.target.value)}
+              >
+                <SelectItem value="all" text={t('allLocations', 'Todas las UPSS')} />
+                {availableLocations.map((location) => (
+                  <SelectItem key={location} value={location} text={location} />
+                ))}
+              </Select>
               <TextInput
                 id="admission-report-search"
                 labelText={t(
@@ -397,7 +486,7 @@ export default function AdmissionHome() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {filteredAdmissions.map((admission, index) => (
+                        {visibleAdmissions.map((admission, index) => (
                           <TableRow key={admission.uuid}>
                             <TableCell>{formatDateTime(admission.startDatetime)}</TableCell>
                             <TableCell>{admission.medicalRecordNumber}</TableCell>
@@ -428,13 +517,26 @@ export default function AdmissionHome() {
                             <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
                             <TableCell>{admission.service}</TableCell>
                             <TableCell>{admission.location}</TableCell>
-                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
                             <TableCell>{admission.communicationCondition}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </TableContainer>
+                  <Pagination
+                    page={currentPage}
+                    pageSize={pageSize}
+                    pageSizes={[25, 50, 100]}
+                    totalItems={filteredAdmissions.length}
+                    itemsPerPageText={t('itemsPerPage', 'Elementos por página')}
+                    backwardText={t('previousPage', 'Página anterior')}
+                    forwardText={t('nextPage', 'Página siguiente')}
+                    onChange={({ page, pageSize }) => {
+                      setPage(page);
+                      setPageSize(pageSize);
+                    }}
+                  />
                   {!error && filteredAdmissions.length === 0 ? (
                     <CareLogbookTableEmptyState
                       title={

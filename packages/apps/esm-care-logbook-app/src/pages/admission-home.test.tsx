@@ -77,6 +77,54 @@ describe('AdmissionHome', () => {
     mockUseConfig.mockReturnValue({ admissionReportPageSize: 75 });
   });
 
+  it('starts with today in Lima, allows date history and rejects inverted ranges', () => {
+    mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: false });
+    renderAdmissionHome();
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Lima',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: today, to: today });
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'history' } });
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-01-01' } });
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2026-01-31' } });
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '2026-01-01', to: '2026-01-31' });
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2025-12-31' } });
+    expect(screen.getByText('La fecha final debe ser igual o posterior a la inicial')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Todo el histórico' }));
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '', to: '' });
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'today' } });
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: today, to: today });
+  });
+
+  it('filters the complete dataset by type and UPSS, including rows after the first table page', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: Array.from({ length: 26 }, (_, index) =>
+        createAdmission({
+          uuid: `visit-${index}`,
+          patientName: `Synthetic ${index}`,
+          service: index === 25 ? 'Emergencia' : 'Consulta externa',
+          location: index === 25 ? 'Topico' : 'Admision Central',
+        }),
+      ),
+      error: undefined,
+      isLoading: false,
+    });
+    renderAdmissionHome();
+    expect(screen.queryByRole('cell', { name: 'Synthetic 25' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(screen.getByRole('cell', { name: 'Synthetic 25' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Tipo de visita'), { target: { value: 'Emergencia' } });
+    expect(screen.getByRole('cell', { name: 'Synthetic 25' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: 'Synthetic 0' })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('UPSS'), { target: { value: 'Admision Central' } });
+    expect(screen.queryByRole('cell', { name: 'Synthetic 25' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeDisabled();
+  });
+
   it('renders the care encounters by UPSS report with accreditation columns', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
@@ -168,7 +216,10 @@ describe('AdmissionHome', () => {
       'href',
       '/openmrs/spa/home/care-logbook/patient/patient-1',
     );
-    expect(mockUseAdmissions).toHaveBeenCalledWith(75);
+    expect(mockUseAdmissions).toHaveBeenCalledWith(
+      75,
+      expect.objectContaining({ from: expect.any(String), to: expect.any(String) }),
+    );
   });
 
   it('renders exact age with years, months, and days in a single age column', () => {
@@ -349,7 +400,10 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    expect(mockUseAdmissions).toHaveBeenCalledWith(50);
+    expect(mockUseAdmissions).toHaveBeenCalledWith(
+      50,
+      expect.objectContaining({ from: expect.any(String), to: expect.any(String) }),
+    );
   });
 
   it('shows only the table skeleton while care encounters are loading', () => {

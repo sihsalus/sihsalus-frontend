@@ -4,6 +4,7 @@ export const configSchema = {
   admissionReportPageSize: {
     _type: Type.Number,
     _default: 50,
-    _description: 'Number of recent care encounters shown in the UPSS care report.',
+    _description:
+      'REST batch size (1–200) for the care logbook. All pages in the selected period are loaded; this is not a report limit.',
   },
 };

@@ -52,12 +52,6 @@
   justify-content: flex-end;
 }
 
-.historyHint {
-  @include type.type-style("body-compact-01");
-  color: $text-02;
-  padding: layout.$spacing-03 layout.$spacing-05;
-}
-
 .externalReports {
   p {
     @include type.type-style("body-01");
@@ -112,9 +106,15 @@
     justify-content: flex-start;
     width: 100%;
 
-    > button {
+    > button,
+    .historyTooltip {
       flex: 1 1 auto;
       max-width: none;
+    }
+
+    .historyTooltip button {
+      max-width: none;
+      width: 100%;
     }
   }
 

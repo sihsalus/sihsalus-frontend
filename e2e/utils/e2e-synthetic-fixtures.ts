@@ -291,17 +291,14 @@ export class SyntheticFixtures {
   private async preflight(): Promise<'REQUIRED' | 'NOT_USED'> {
     const session = await this.get<{
       authenticated?: boolean;
-      currentProvider?: { uuid?: string; retired?: boolean };
+      currentProvider?: { uuid?: string };
       sessionLocation?: { uuid?: string };
-      user?: { retired?: boolean; privileges?: Array<{ name?: string; retired?: boolean }> };
-    }>(
-      'session?v=custom:(authenticated,currentProvider:(uuid,retired),sessionLocation:(uuid),user:(retired,privileges:(name,retired)))',
-    );
+      user?: { uuid?: string; privileges?: Array<{ name?: string; retired?: boolean }> };
+    }>('session');
     check(
       session.authenticated === true &&
+        uuidPattern.test(session.user?.uuid ?? '') &&
         uuidPattern.test(session.currentProvider?.uuid ?? '') &&
-        session.currentProvider?.retired === false &&
-        session.user?.retired === false &&
         session.sessionLocation?.uuid === this.config.locationUuid,
       'FIXTURE_SESSION_OR_LOCATION_UNVERIFIED',
     );
@@ -309,6 +306,19 @@ export class SyntheticFixtures {
     check(
       this.privileges.every((privilege) => assigned.has(privilege)),
       'FIXTURE_REQUIRED_PRIVILEGES_MISSING',
+    );
+    // SessionController ignores v and returns references without retirement state.
+    // Verify only this authenticated test account/provider, never global lists.
+    const user = await this.get<{ uuid?: string; retired?: boolean }>(
+      `user/${session.user?.uuid}?v=custom:(uuid,retired)`,
+    );
+    check(user?.uuid === session.user?.uuid && user.retired === false, 'FIXTURE_USER_INACTIVE_OR_MISMATCH');
+    const provider = await this.get<{ uuid?: string; retired?: boolean }>(
+      `provider/${session.currentProvider?.uuid}?v=custom:(uuid,retired)`,
+    );
+    check(
+      provider?.uuid === session.currentProvider?.uuid && provider.retired === false,
+      'FIXTURE_PROVIDER_INACTIVE_OR_MISMATCH',
     );
     const location = await this.get<{ uuid?: string; retired?: boolean }>(
       `location/${this.config.locationUuid}?v=custom:(uuid,retired)`,

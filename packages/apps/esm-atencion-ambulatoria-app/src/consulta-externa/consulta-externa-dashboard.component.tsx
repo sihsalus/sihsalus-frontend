@@ -1,4 +1,4 @@
-import { Button, Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
+import { Button, Layer, Tab, TabList, TabPanel, TabPanels, Tabs, Tooltip } from '@carbon/react';
 import {
   Activity,
   ArrowRight,
@@ -11,7 +11,7 @@ import {
 } from '@carbon/react/icons';
 import { ExtensionSlot, navigate } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React, { useCallback, useId, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { consultaExternaPrivilege, moduleName, patientVisitsPrivilege } from '../utils/constants';
 import Anamnesis from './anamnesis.component';
@@ -33,7 +33,6 @@ interface ConsultaExternaDashboardProps {
 const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation(moduleName);
   const [selectedTab, setSelectedTab] = useState(0);
-  const historyHintId = useId();
 
   const handleNavigateToTab = useCallback((tabId: ConsultaExternaTabId) => {
     setSelectedTab(getConsultaExternaTabIndex(tabId));
@@ -47,31 +46,32 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
           <h1 className={styles.dashboardHeading}>{t('consultaExterna', 'Consulta Externa')}</h1>
           <div className={styles.dashboardActions}>
             <RequirePrivilege privilege={patientVisitsPrivilege} hideUnauthorized>
-              <Button
-                kind="tertiary"
-                size="sm"
-                renderIcon={Time}
-                aria-describedby={historyHintId}
-                onClick={() =>
-                  navigate({
-                    to: `\${openmrsSpaBase}/patient/${patientUuid}/chart/Visits`,
-                  })
-                }
+              <Tooltip
+                align="bottom-start"
+                closeOnActivation
+                className={styles.historyTooltip}
+                description={t(
+                  'previousConsultationsHelp',
+                  'Choose a consultation by date in Previous consultations to review its notes, diagnoses, orders and results. Opening the history does not change the active consultation.',
+                )}
               >
-                {t('previousConsultations', 'Previous consultations')}
-              </Button>
+                <Button
+                  kind="tertiary"
+                  size="sm"
+                  renderIcon={Time}
+                  onClick={() =>
+                    navigate({
+                      to: `\${openmrsSpaBase}/patient/${patientUuid}/chart/Visits`,
+                    })
+                  }
+                >
+                  {t('previousConsultations', 'Previous consultations')}
+                </Button>
+              </Tooltip>
             </RequirePrivilege>
             <OutpatientVisitSummaryDownload patientUuid={patientUuid} onNavigateToTab={handleNavigateToTab} />
           </div>
         </header>
-        <RequirePrivilege privilege={patientVisitsPrivilege} hideUnauthorized>
-          <p id={historyHintId} className={styles.historyHint}>
-            {t(
-              'previousConsultationsHelp',
-              'Choose a consultation by date in Previous consultations to review its notes, diagnoses, orders and results. Opening the history does not change the active consultation.',
-            )}
-          </p>
-        </RequirePrivilege>
         <Layer className={styles.tabsContainer}>
           <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
             <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>

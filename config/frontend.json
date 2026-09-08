@@ -230,10 +230,10 @@
       "patient-chart-dashboard-slot": {
         "order": [
           "charts-summary-dashboard",
+          "results-summary-dashboard",
           "consulta-externa-dashboard-link",
           "patient-appointments-summary-dashboard",
           "encounters-summary-dashboard",
-          "results-summary-dashboard",
           "allergies-summary-dashboard",
           "conditions-summary-dashboard",
           "social-history-dashboard-link",

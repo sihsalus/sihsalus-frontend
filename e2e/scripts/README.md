@@ -17,12 +17,17 @@ new head SHA first, then remove and re-add that exact label to authorize one
 inventory of the reviewed SHA. Adding another label does not trigger the inventory.
 
 It inventories authenticated-session privileges, frontend build SHA, O3 Forms
-version/start state, the exact configured Anamnesis/SOAP form metadata, identifier
+version/start state, REST and Patient Documents version/start state from the same
+module inventory request, the exact configured Anamnesis/SOAP form metadata, identifier
 sources/types, visit types and encounter types. It never reads patients, persons
 or global providers, generates identifiers, creates fixtures, follows redirects,
 or saves credentials/cookies/screenshots/raw responses. Authentication failures
 stop subsequent requests. Output is restricted to allowlisted technical fields;
 `clinicalValidation` remains `NOT_RUN`, including when the inventory succeeds.
+Missing module/start metadata is reported as unknown, not healthy. An inventory
+success does not prove all modules started: inspect each reported state. O3 can
+start while Patient Documents fails its minimum-version dependency, even when
+the general OpenMRS health endpoint succeeds.
 
 REST 3.5.0's `/session` controller ignores `v` and uses a fixed user representation
 without retirement flags. The inventory still requires `authenticated: true` and

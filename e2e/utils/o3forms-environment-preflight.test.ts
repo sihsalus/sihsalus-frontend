@@ -237,6 +237,54 @@ describe('O3 Forms DEV-only read-only environment preflight', () => {
     expect(report.o3forms).toEqual({ version: '2.3.0', started: null });
   });
 
+  it.each([true, false, undefined])('reports the consumer start state independently of O3: %s', async (started) => {
+    const get = vi.fn(async (value: string) =>
+      value.includes('/module?')
+        ? {
+            results: [
+              { uuid: 'o3forms', version: '2.3.0-sihsalus.1', started: true },
+              { uuid: 'webservices.rest', version: '3.5.0-sihsalus.1', started: true },
+              { uuid: 'patientdocuments', version: '2.3.0', started, private: 'DO_NOT_LOG' },
+            ],
+          }
+        : fixture(value),
+    );
+    const report = await inventoryEnvironment({ get });
+    expect(report.o3forms).toEqual({ version: '2.3.0-sihsalus.1', started: true });
+    expect(report.dependentModules).toEqual([
+      { uuid: 'webservices.rest', version: '3.5.0-sihsalus.1', started: true },
+      { uuid: 'patientdocuments', version: '2.3.0', started: started ?? null },
+    ]);
+    expect(get.mock.calls.filter(([value]) => value.includes('/module?'))).toHaveLength(1);
+    expect(JSON.stringify(report)).not.toContain('DO_NOT_LOG');
+    expect(report.clinicalValidation).toBe('NOT_RUN');
+  });
+
+  it('reports absent dependent modules as unknown, not started', async () => {
+    const report = await inventoryEnvironment({ get: async (value) => fixture(value) });
+    expect(report.dependentModules).toEqual([
+      { uuid: 'webservices.rest', version: null, started: null },
+      { uuid: 'patientdocuments', version: null, started: null },
+    ]);
+  });
+
+  it('rejects ambiguous duplicate dependent module identities', async () => {
+    await expect(
+      inventoryEnvironment({
+        get: async (value) =>
+          value.includes('/module?')
+            ? {
+                results: [
+                  { uuid: 'o3forms', version: '2.3.0', started: true },
+                  { uuid: 'patientdocuments', version: '2.3.0', started: true },
+                  { uuid: 'patientdocuments', version: '2.3.0', started: false },
+                ],
+              }
+            : fixture(value),
+      }),
+    ).rejects.toThrow('INVALID_METADATA');
+  });
+
   it('paginates metadata using its own allowlisted URL instead of a server-supplied next URL', async () => {
     const get = vi.fn(async (value: string) => {
       const url = new URL(value);

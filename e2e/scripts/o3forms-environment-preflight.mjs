@@ -221,6 +221,20 @@ export async function inventoryEnvironment(client, onMetadata = () => {}) {
     version: matches[0].version,
     started: typeof matches[0].started === 'boolean' ? matches[0].started : null,
   });
+  emit(
+    'dependentModules',
+    ['webservices.rest', 'patientdocuments'].map((uuid) => {
+      const dependencies = modules.filter((module) => module.uuid === uuid);
+      check(dependencies.length <= 1, 'INVALID_METADATA');
+      const dependency = dependencies[0];
+      check(!dependency || /^[0-9A-Za-z.+-]{1,80}$/.test(dependency.version ?? ''), 'INVALID_METADATA');
+      return {
+        uuid,
+        version: dependency?.version ?? null,
+        started: typeof dependency?.started === 'boolean' ? dependency.started : null,
+      };
+    }),
+  );
   const forms = [];
   for (const name of formNames) {
     const candidates = await allMetadata(client, 'form', name);

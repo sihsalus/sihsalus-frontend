@@ -58,8 +58,28 @@ const CommonDataTable: React.FC<CommonDataTableProps> = ({ title, data, descript
     return value as React.ReactNode;
   };
 
+  const sortRow: React.ComponentProps<typeof DataTable>['sortRow'] = (
+    a,
+    b,
+    { key, sortDirection, sortStates, locale, compare },
+  ) => {
+    const unwrap = (cell: unknown): string | number => {
+      const value = getDisplayValue(cell);
+      if (key === 'value' && (typeof value === 'number' || typeof value === 'string')) {
+        // Comparators remain part of the displayed result; sort by their bound.
+        const number = String(value).match(/^\s*[<>≤≥]?=?\s*([-+]?\d+(?:[.,]\d+)?(?:e[-+]?\d+)?)(?:\s|$)/i);
+        if (number) return Number(number[1].replace(',', '.'));
+      }
+      return String(value ?? '');
+    };
+    const first = unwrap(a);
+    const second = unwrap(b);
+    const order = typeof first === typeof second ? compare(first, second, locale) : typeof first === 'number' ? -1 : 1;
+    return sortDirection === sortStates.DESC ? -order : order;
+  };
+
   return (
-    <DataTable rows={data} headers={tableHeaders} size="sm" useZebraStyles>
+    <DataTable rows={data} headers={tableHeaders} size="sm" useZebraStyles sortRow={sortRow}>
       {({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
         <TableContainer
           className={classNames(styles.tableContainer, isTablet ? styles.tablet : styles.desktop)}
@@ -87,10 +107,14 @@ const CommonDataTable: React.FC<CommonDataTableProps> = ({ title, data, descript
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row, i) => {
+              {rows.map((row) => {
                 const { key, ...rowProps } = getRowProps({ row });
                 return (
-                  <TypedTableRow key={key} interpretation={getInterpretation(data[i]?.value)} {...rowProps}>
+                  <TypedTableRow
+                    key={key}
+                    interpretation={getInterpretation(row.cells.find((cell) => cell.info.header === 'value')?.value)}
+                    {...rowProps}
+                  >
                     {row.cells.map((cell) => {
                       const interpretation = getInterpretation(cell.value);
                       return interpretation ? (
@@ -117,19 +141,19 @@ const TypedTableRow: React.FC<
 > = ({ interpretation, ...props }) => {
   switch (interpretation) {
     case 'OFF_SCALE_HIGH':
-      return <TableRow {...props} className={styles['off-scale-high']} />;
+      return <TableRow {...props} className={styles.offScaleHigh} />;
 
     case 'CRITICALLY_HIGH':
-      return <TableRow {...props} className={styles['critically-high']} />;
+      return <TableRow {...props} className={styles.criticallyHigh} />;
 
     case 'HIGH':
       return <TableRow {...props} className={styles['high']} />;
 
     case 'OFF_SCALE_LOW':
-      return <TableRow {...props} className={styles['off-scale-low']} />;
+      return <TableRow {...props} className={styles.offScaleLow} />;
 
     case 'CRITICALLY_LOW':
-      return <TableRow {...props} className={styles['critically-low']} />;
+      return <TableRow {...props} className={styles.criticallyLow} />;
 
     case 'LOW':
       return <TableRow {...props} className={styles['low']} />;

@@ -240,6 +240,7 @@ describe('STAT single-dose prescriptions', () => {
     expect(screen.getByRole('combobox', { name: /frequency/i })).toHaveValue('One administration');
     expect(screen.getByRole('checkbox', { name: /take as needed/i })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: /take as needed/i })).toBeDisabled();
+    expect(screen.queryByRole('switch', { name: /free.?text dosage/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('spinbutton', { name: /duration/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('spinbutton', { name: /refills/i })).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('spinbutton', { name: /quantity to dispense/i })).toHaveValue(2));
@@ -679,10 +680,92 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(screen.queryByText(/auto-calculated/i)).not.toBeInTheDocument();
   });
 
-  it('does not offer free-text dosage for a new outpatient prescription', () => {
-    renderDrugOrderForm(createNewOrderBasketItem());
+  it('saves a new outpatient prescription with free-text dosage and a manual dispense quantity', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const tablet = { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' };
+    const days = { valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' };
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        dosage: 2,
+        unit: tablet,
+        route: { valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' },
+        frequency: { valueCoded: 'once-daily-uuid', value: 'Once daily', frequencyPerDay: 1 },
+        duration: 7,
+        durationUnit: days,
+        quantityUnits: tablet,
+        numRefills: 0,
+        indication: 'Synthetic test indication',
+      }),
+      onSave,
+    );
 
-    expect(screen.queryByRole('switch', { name: /free.?text dosage/i })).not.toBeInTheDocument();
+    const quantity = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    expect(quantity).toHaveValue(14);
+    const toggle = screen.getByRole('switch', { name: /free.?text dosage/i });
+    expect(toggle).not.toBeChecked();
+    await user.click(toggle);
+    await user.type(screen.getByPlaceholderText(/free-text dosage/i), 'Synthetic dosing instructions');
+
+    expect(quantity).not.toHaveValue();
+    expect(screen.queryByText(/auto-calculated/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+    expect(await screen.findByText('Quantity to dispense is required')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+
+    await user.type(quantity, '21');
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect(draft).toMatchObject({
+      action: 'NEW',
+      isFreeTextDosage: true,
+      freeTextDosage: 'Synthetic dosing instructions',
+      dosage: null,
+      unit: null,
+      route: null,
+      frequency: null,
+      duration: 7,
+      durationUnit: days,
+      pillsDispensed: 21,
+      quantityUnits: tablet,
+      numRefills: 0,
+      isQuantityManual: true,
+    });
+    expect(prepMedicationOrderPostData(draft, 'synthetic-patient', 'synthetic-encounter')).toMatchObject({
+      drug: mockDrugSearchResultApiData[0].uuid,
+      dosingType: 'org.openmrs.FreeTextDosingInstructions',
+      dosingInstructions: 'Synthetic dosing instructions',
+      dose: null,
+      doseUnits: undefined,
+      route: undefined,
+      frequency: undefined,
+      quantity: 21,
+      quantityUnits: tablet.valueCoded,
+      duration: 7,
+      durationUnits: days.valueCoded,
+    });
+  });
+
+  it('requires structured dosing again after turning off free-text dosage', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(createNewOrderBasketItem(), onSave);
+
+    const toggle = screen.getByRole('switch', { name: /free.?text dosage/i });
+    await user.click(toggle);
+    await user.type(screen.getByPlaceholderText(/free-text dosage/i), 'Synthetic dosing instructions');
+    await user.click(toggle);
+
+    expect(screen.queryByPlaceholderText(/free-text dosage/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /dose unit/i })).toHaveValue('Tablet');
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+    expect(await screen.findByText('Dosage is required')).toBeInTheDocument();
+    expect(screen.getByText('Route is required')).toBeInTheDocument();
+    expect(screen.getByText('Frequency is required')).toBeInTheDocument();
+    expect(screen.queryByText('Add free dosage note')).not.toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it('does not auto-calculate when quantity unit differs from dose unit', async () => {
@@ -1138,17 +1221,12 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it('rejects legacy free-text dosage containing only whitespace', async () => {
+  it('rejects new outpatient free-text dosage containing only whitespace', async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
-    renderDrugOrderForm(
-      createNewOrderBasketItem({
-        isFreeTextDosage: true,
-        freeTextDosage: '',
-      }),
-      onSave,
-    );
+    renderDrugOrderForm(createNewOrderBasketItem(), onSave);
 
+    await user.click(screen.getByRole('switch', { name: /free.?text dosage/i }));
     await user.type(screen.getByPlaceholderText(/free-text dosage/i), '   ');
     await user.click(screen.getByRole('button', { name: /save order/i }));
 

@@ -232,8 +232,7 @@ export function DrugOrderForm({
       watchedIsFreeText);
   const hasAutoSelectedDurationUnitRef = useRef(Boolean(initialOrderBasketItem?.durationUnit));
   const isExistingOrder = initialOrderBasketItem?.action === 'REVISE' || initialOrderBasketItem?.action === 'RENEW';
-  const showFreeTextDosage =
-    !isSingleDose && (!requireOutpatientQuantity || Boolean(initialOrderBasketItem?.isFreeTextDosage));
+  const showFreeTextDosage = !isSingleDose;
   const [isManualOverride, setIsManualOverride] = useState(
     initialOrderBasketItem?.isQuantityManual ?? (isExistingOrder && initialOrderBasketItem?.pillsDispensed != null),
   );
@@ -428,14 +427,14 @@ export function DrugOrderForm({
   }, [orderConfigObject]);
 
   useEffect(() => {
-    if (isExistingOrder || watchedUnit || !drug?.dosageForm?.uuid) {
+    if (isExistingOrder || watchedIsFreeText || watchedUnit || !drug?.dosageForm?.uuid) {
       return;
     }
     const matchingUnit = drugDosingUnits.find((unit) => unit.valueCoded === drug.dosageForm.uuid);
     if (matchingUnit) {
       setValue('unit', matchingUnit, { shouldValidate: true });
     }
-  }, [drug?.dosageForm?.uuid, drugDosingUnits, isExistingOrder, setValue, watchedUnit]);
+  }, [drug?.dosageForm?.uuid, drugDosingUnits, isExistingOrder, setValue, watchedIsFreeText, watchedUnit]);
 
   useEffect(() => {
     if (isExistingOrder || !requireOutpatientQuantity || watchedQuantityUnits || !drug?.dosageForm?.uuid) {

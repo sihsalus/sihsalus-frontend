@@ -8,6 +8,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import CompactPatientSearchComponent from '../compact-patient-search/compact-patient-search.component';
 import type { PatientSearchConfig } from '../config-schema';
 import { usePatientChartAccess } from '../patient-chart-access';
+import { recentPatientsRoute } from '../patient-search-constants';
 import PatientSearchOverlay from '../patient-search-overlay/patient-search-overlay.component';
 import { getPatientSearchReturnUrl } from '../search-return-url';
 
@@ -81,15 +82,7 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
         <HeaderGlobalAction
           aria-label={t('recentPatients', 'Recent patients')}
           className={styles.recentPatientsButton}
-          onClick={() => {
-            if (!isSearchPage) {
-              globalThis.sessionStorage.setItem(
-                'searchReturnUrl',
-                `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`,
-              );
-            }
-            navigate({ to: `${globalThis.spaBase}/search` });
-          }}
+          onClick={() => navigate({ to: `${globalThis.spaBase}/${recentPatientsRoute}` })}
         >
           <RecentlyViewed size={20} />
           <span>{t('recentPatients', 'Recent patients')}</span>

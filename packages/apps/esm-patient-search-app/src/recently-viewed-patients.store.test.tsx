@@ -56,6 +56,93 @@ describe('recent chart session store', () => {
     storageWrite.mockRestore();
   });
 
+  it('records an authenticated REST session without a server sessionId', () => {
+    const { session } = sessionStore.getState();
+    const restSession = { ...session };
+    Reflect.deleteProperty(restSession, 'sessionId');
+    sessionStore.setState({ loaded: true, session: restSession });
+    record('synthetic-direct-chart');
+    expect(store.getSnapshot().patientUuids).toEqual(['synthetic-direct-chart']);
+  });
+
+  it('preserves history across equivalent refreshes without a server ID, but not logout and login of the same user', () => {
+    const restSession = { ...mockSession.data, authenticated: true };
+    Reflect.deleteProperty(restSession, 'sessionId');
+    sessionStore.setState({ loaded: true, session: restSession });
+    record('synthetic-before-refresh');
+    const generation = store.getSnapshot().generation;
+    sessionStore.setState({
+      loaded: true,
+      session: {
+        ...restSession,
+        user: {
+          ...restSession.user,
+          roles: [...restSession.user.roles].reverse(),
+          privileges: [...restSession.user.privileges].reverse(),
+        },
+      },
+    });
+    expect(store.getSnapshot()).toEqual({ generation, patientUuids: ['synthetic-before-refresh'] });
+
+    sessionStore.setState({ loaded: true, session: { authenticated: false, sessionId: '' } });
+    expect(store.getSnapshot().patientUuids).toEqual([]);
+    sessionStore.setState({ loaded: true, session: restSession });
+    store.record('synthetic-stale-before-logout', generation);
+    expect(store.getSnapshot().patientUuids).toEqual([]);
+    record('synthetic-after-login');
+    expect(store.getSnapshot().patientUuids).toEqual(['synthetic-after-login']);
+  });
+
+  it.each(['roles', 'privileges'] as const)('fails closed when the REST user has no %s array', (field) => {
+    record('synthetic-before-incomplete-session');
+    const { session } = sessionStore.getState();
+    const user = { ...session.user };
+    Reflect.deleteProperty(user, field);
+    sessionStore.setState({ loaded: true, session: { ...session, user } });
+    record('synthetic-incomplete-session');
+    expect(store.getSnapshot().patientUuids).toEqual([]);
+  });
+
+  it('does not retain a previous authenticated payload while session loading is false', () => {
+    record('synthetic-before-loading');
+    const loadingState = { ...sessionStore.getState() };
+    // Deliberately model an inconsistent runtime payload outside the typed union.
+    Reflect.set(loadingState, 'loaded', false);
+    sessionStore.setState(loadingState);
+    record('synthetic-during-loading');
+    expect(store.getSnapshot().patientUuids).toEqual([]);
+  });
+
+  it.each([
+    'account',
+    'location',
+    'permissions',
+    'loading',
+    'logout',
+  ] as const)('clears a session without server ID on observed %s and rejects old callbacks', (change) => {
+    const restSession = { ...mockSession.data, authenticated: true };
+    Reflect.deleteProperty(restSession, 'sessionId');
+    sessionStore.setState({ loaded: true, session: restSession });
+    record('synthetic-patient-before-change');
+    expect(store.getSnapshot().patientUuids).toEqual(['synthetic-patient-before-change']);
+    const oldGeneration = store.getSnapshot().generation;
+
+    if (change === 'loading') sessionStore.setState({ loaded: false, session: null });
+    else if (change === 'logout')
+      sessionStore.setState({ loaded: true, session: { authenticated: false, sessionId: '' } });
+    else {
+      const nextSession = { ...restSession };
+      if (change === 'account') nextSession.user = { ...restSession.user, uuid: 'synthetic-other-account' };
+      if (change === 'location')
+        nextSession.sessionLocation = { ...restSession.sessionLocation, uuid: 'synthetic-other-location' };
+      if (change === 'permissions') nextSession.user = { ...restSession.user, roles: [] };
+      sessionStore.setState({ loaded: true, session: nextSession });
+    }
+    expect(store.getSnapshot().patientUuids).toEqual([]);
+    store.record('synthetic-late-callback', oldGeneration);
+    expect(store.getSnapshot().patientUuids).toEqual([]);
+  });
+
   it.each(['account', 'session', 'location', 'permissions'] as const)('clears immediately on %s change', (change) => {
     record('synthetic-patient-a');
     const generation = store.getSnapshot().generation;

@@ -4,9 +4,10 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 
 import { useRestPatients } from './patient-search.resource';
-import { useRecentlyViewedPatients } from './recently-viewed-patients.store';
+import { isRecentPatientRequestCurrent, useRecentlyViewedPatients } from './recently-viewed-patients.store';
 
 vi.mock('./recently-viewed-patients.store', () => ({
+  isRecentPatientRequestCurrent: vi.fn(),
   useRecentlyViewedPatients: vi.fn(),
 }));
 
@@ -31,6 +32,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
+  vi.mocked(isRecentPatientRequestCurrent).mockImplementation(
+    (generation) => generation === vi.mocked(useRecentlyViewedPatients)().cacheGeneration,
+  );
   vi.mocked(useRecentlyViewedPatients).mockReturnValue({
     cacheGeneration: 1,
     recentlyViewedPatientUuids: [],

@@ -47,15 +47,18 @@ describe('PatientSearchLaunch', () => {
     expect(screen.getByRole('button', { name: /search patient/i })).toBeInTheDocument();
   });
 
-  it('offers a named recent-patients entry that opens the empty-query search page', async () => {
+  it('opens the dedicated recent-patients page without persisting the previous patient route', async () => {
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     vi.mocked(userHasAccess).mockReturnValue(true);
+    const storageWrite = vi.spyOn(Storage.prototype, 'setItem');
     const user = userEvent.setup();
     render(<PatientSearchLaunch />);
     await user.click(screen.getByRole('button', { name: 'Recent patients' }));
     expect(navigate).toHaveBeenCalledWith({
-      to: `${globalThis.spaBase}/search`,
+      to: `${globalThis.spaBase}/recent-patients`,
     });
+    expect(storageWrite).not.toHaveBeenCalled();
+    storageWrite.mockRestore();
   });
 
   it('hides the recent-patients entry when chart access is denied', () => {

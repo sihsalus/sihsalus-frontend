@@ -1,4 +1,5 @@
 import { InlineLoading, Layer, Loading, Tile } from '@carbon/react';
+import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,12 +10,15 @@ import CompactPatientBanner from './compact-patient-banner.component';
 import Loader from './loader.component';
 import styles from './patient-search.scss';
 
-interface RecentPatientSearchProps extends PatientSearchResponse {}
+interface RecentPatientSearchProps extends PatientSearchResponse {
+  standalone?: boolean;
+}
 
-const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearchProps>(
-  ({ data: searchResults, fetchError, hasMore, isLoading, isValidating, setPage }, ref) => {
+export const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearchProps>(
+  ({ data: searchResults, fetchError, hasMore, isLoading, isValidating, setPage, standalone = false }, ref) => {
     const { t } = useTranslation();
     const observer = useRef(null);
+    const resultsClassName = classNames(styles.searchResults, { [styles.standaloneResults]: standalone });
 
     const loadingIconRef = useCallback(
       (node: HTMLDivElement | null) => {
@@ -61,7 +65,7 @@ const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearc
 
     if (fetchError) {
       return (
-        <div className={styles.searchResults}>
+        <div className={resultsClassName}>
           <Layer>
             <Tile className={styles.emptySearchResultsTile}>
               <EmptyDataIllustration />
@@ -80,7 +84,7 @@ const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearc
     if (searchResults?.length) {
       return (
         <div className={styles.searchResultsContainer}>
-          <div className={styles.searchResults}>
+          <div className={resultsClassName}>
             <div className={styles.resultsText}>
               <span className={styles.resultsTextCount}>
                 {t('recentlyViewedPatientsCount', '{{count}} recently viewed patient', {
@@ -107,7 +111,7 @@ const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearc
     if (!searchResults?.length) {
       return (
         <div className={styles.searchResultsContainer}>
-          <div className={styles.searchResults}>
+          <div className={resultsClassName}>
             <Layer>
               <Tile className={styles.emptySearchResultsTile}>
                 <EmptyDataIllustration />
@@ -118,7 +122,7 @@ const RecentPatientResults = React.forwardRef<HTMLDivElement, RecentPatientSearc
                   <span>
                     {t(
                       'recentlyViewedPatientsEmptyHelp',
-                      'Find a patient by name or identifier and open their chart to see them here.',
+                      'Open a patient chart from search, a queue, a visit or a direct link to see it here.',
                     )}
                   </span>
                 </p>
@@ -139,7 +143,7 @@ const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientS
       <p className={styles.recentPatientsHelp}>
         {t(
           'recentlyViewedPatientsHelp',
-          'Reopen a chart while waiting for results. The last 10 patients are kept for this session only.',
+          'The last 10 patient charts opened in this tab, from any entry point. Reopen a chart while waiting for results.',
         )}
       </p>
       <RecentPatientResults {...props} ref={ref} />

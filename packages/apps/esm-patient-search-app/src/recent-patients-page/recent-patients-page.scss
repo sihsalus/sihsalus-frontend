@@ -1,0 +1,31 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.page {
+  max-width: 80rem;
+  margin-inline: auto;
+  padding: layout.$spacing-06;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+
+  h1 {
+    @include type.type-style('heading-04');
+  }
+}
+
+.description {
+  @include type.type-style('body-01');
+  margin-block: layout.$spacing-05 layout.$spacing-06;
+}
+
+@media (max-width: 48rem) {
+  .page {
+    padding: layout.$spacing-05;
+  }
+}

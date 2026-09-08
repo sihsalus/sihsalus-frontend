@@ -10,7 +10,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## Límites funcionales
 
-- Proporciona búsqueda compacta, overlay y página de resultados.
+- Proporciona búsqueda compacta, overlay, página de resultados y una pantalla independiente de historias recientes.
 - Facilita la selección de paciente para otros módulos del portal.
 - En selección contextual, los resultados ocultan las acciones clínicas ajenas al flujo; solo muestran acciones adicionales habilitadas explícitamente por la integración.
 - En búsqueda standalone, la tarjeta solo navega a la hoja clínica con `app:hoja.clinica`. Sin ese privilegio permanece informativa y no navega por clic ni teclado; esto no deshabilita el callback de una selección contextual.
@@ -42,9 +42,12 @@ El filtro de atributos textuales usa coincidencia parcial para facilitar búsque
 
 ## Pacientes vistos recientemente
 
-El acceso «Pacientes recientes» de la cabecera lleva a la lista «Pacientes vistos recientemente»;
-también aparece al abrir el buscador compacto sin texto y en la búsqueda completa/tablet sin consulta.
-Muestra las últimas 10 historias abiertas, sin duplicados y con la apertura más reciente primero.
+El acceso «Pacientes recientes» de la cabecera navega a la pantalla independiente
+`/recent-patients`, tanto en escritorio como en tablet. No abre el overlay ni la página de búsqueda,
+no necesita una consulta y ofrece un enlace explícito a «Buscar paciente». La búsqueda sin texto
+conserva su vista previa de recientes como acceso complementario.
+Muestra las últimas 10 historias abiertas en esta pestaña desde cualquier entrada, sin duplicados
+y con la apertura más reciente primero; no es una lista de pacientes buscados.
 El médico puede reabrir una historia mientras espera resultados; la lista no indica que haya resultados
 pendientes ni sustituye el seguimiento clínico.
 
@@ -52,22 +55,36 @@ pendientes ni sustituye el seguimiento clínico.
   `isPatientChart === true` que emite el chart, además del paciente FHIR cargado con el mismo UUID.
   El slot también se usa en formularios de citas y otros contextos: la ausencia de la marca o el valor
   `false` no registra ni reordena pacientes. Abrir la historia desde búsqueda, colas, visitas u otra entrada
-  actualiza la misma lista; seleccionar un paciente en un formulario sin abrir la historia no lo registra.
+  actualiza la misma lista, incluidos los enlaces directos y la navegación atrás/adelante del navegador.
+  Seleccionar un paciente en un formulario sin abrir la historia no lo registra. Los enlaces de la pantalla
+  independiente conservan el UUID de cada fila y no ejecutan callbacks de selección contextual.
 - Se conserva la configuración `search.showRecentlySearchedPatients` por compatibilidad. Deshabilitarla
-  oculta los accesos y detiene el registro. Se mantiene `app:hoja.clinica`; la cabecera conserva además
-  el privilegio existente `app:opciones.busquedaPaciente`.
+  oculta los accesos y detiene el registro. La ruta directa muestra una explicación y un enlace a búsqueda
+  sin leer recientes. La pantalla exige `app:opciones.busquedaPaciente` y `app:hoja.clinica` antes de montar
+  los lectores; la cabecera conserva ambos permisos. El tracker mantiene el permiso de historia clínica
+  y su contrato online/offline existente.
 - Solo los UUID se mantienen en memoria de esta pestaña. No se escribe en `userProperties`, almacenamiento
-  local, almacenamiento de sesión ni backend. Recargar la página, cerrar sesión, cambiar de cuenta,
-  ubicación o permisos limpia el historial. El observador de sesión permanece activo aunque la búsqueda
-  esté cerrada. No se importan listas históricas de `patientsVisited`.
+  local, almacenamiento de sesión ni backend; el botón de recientes tampoco guarda la URL de la historia
+  anterior. Recargar la página o los cambios observados de autenticación, cuenta, ubicación, roles o
+  privilegios limpian el historial; una sesión en carga o incompleta falla cerrada. El observador permanece
+  activo aunque la búsqueda esté cerrada y rechaza callbacks de generaciones anteriores. Una actualización
+  autenticada equivalente conserva la lista, pero salir y volver a entrar con la misma cuenta no la restaura.
+  El `sessionId` del servidor se usa como discriminante adicional si está presente, sin exigirlo ni fabricarlo:
+  la respuesta de sesión REST 3.5.0 no lo incluye. Sin ese ID no pueden detectarse rotaciones de sesión
+  invisibles para el frontend. No se importan listas históricas de `patientsVisited`.
 - Los datos visibles se leen con `GET /ws/rest/v1/patient/{uuid}` bajo el contexto de acceso actual.
   Las claves de caché separan sesiones y orden de la lista; una lectura anterior no se conserva al cambiar
-  de contexto. `403` y `404` omiten ese paciente; `401` y fallos de servidor muestran un error seguro.
+  de contexto. Cada lectura del lote comprueba la generación vigente antes de iniciar HTTP: un lote antiguo
+  no inicia lecturas adicionales tras un cambio observado de sesión. Las respuestas y errores tardíos se
+  descartan; esto no cancela una petición HTTP que ya comenzó. En el contexto vigente, `403` y `404` omiten
+  ese paciente; `401` y fallos de servidor muestran un error seguro.
   No requiere permisos para editar usuarios ni crea consultas, órdenes o datos clínicos.
-- QA mínimo: abrir dos historias por entradas diferentes, reabrir la primera y confirmar orden/deduplicación;
-  reabrir desde el listado con clic y teclado en escritorio/tablet; verificar lista vacía, fallo de lectura,
-  flag apagado, acceso denegado y limpieza por cierre/cambio de sesión. Usar solo pacientes sintéticos en
-  DEV/QLTY coordinado, verificando el SHA desplegado.
+- QA mínimo: abrir dos historias por entradas diferentes sin pasar por búsqueda, usar atrás/adelante y
+  reabrir la primera para confirmar orden/deduplicación; entrar directamente a `/recent-patients` y reabrir
+  cada historia con clic y teclado en escritorio/tablet. Verificar lista vacía, carga, fallo de lectura,
+  flag apagado, ambos permisos y limpieza por cierre/cambio de sesión incluso sin `sessionId` en la respuesta.
+  Las pruebas locales de router, tracker, store y lecturas usan sesiones/pacientes sintéticos; no sustituyen
+  el smoke clínico en DEV/QLTY coordinado con dos pacientes reservados y verificación del SHA desplegado.
 
 ## Integraciones del buscador
 

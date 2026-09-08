@@ -1,4 +1,5 @@
 import { launchWorkspace2, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import { workspace2Store } from '@openmrs/esm-framework/src/internal';
 import { usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -204,6 +205,7 @@ export function useConsultaExternaFormLauncher({
   const patientChartContext = usePatientChartStore(patientUuid);
   const { requireAmbulatoryVisit } = useAmbulatoryVisitGuard({ patientUuid, ambulatoryVisitTypeUuid });
   const launchInProgressRef = useRef(false);
+  const openedFormRef = useRef<{ identity: string; args: Parameters<typeof launchWorkspace2> } | null>(null);
 
   const showLaunchError = useCallback(
     (subtitle: string) =>
@@ -233,20 +235,48 @@ export function useConsultaExternaFormLauncher({
     launchInProgressRef.current = true;
     void (async () => {
       try {
+        const identity = JSON.stringify([
+          patientUuid,
+          currentVisit.uuid,
+          currentVisit.startDatetime,
+          currentVisit.stopDatetime,
+          currentVisit.visitType.uuid,
+          formIdentifier,
+          encounterTypeUuid,
+          ambulatoryVisitTypeUuid,
+          entryMode,
+        ]);
+        const previous = openedFormRef.current;
+        // Experimental store access is read-only. The header X and workspace
+        // replacement bypass mutateForm, so only the canonical instance proves
+        // that an earlier form remains open. Restore through the public API.
+        const canRestore =
+          previous?.identity === identity &&
+          workspace2Store.getState().openedWindows.some((window) =>
+            window.openedWorkspaces.some(
+              (workspace) => workspace.workspaceName === patientFormEntryWorkspace && workspace.props === previous.args[1],
+            ),
+          );
+        if (canRestore) {
+          if ((await launchWorkspace2(...previous.args)) !== true) {
+            throw new ConsultaExternaLaunchError('verification-failed');
+          }
+          return;
+        }
+
         const form = await resolvePublishedForm(formIdentifier, encounterTypeUuid);
         const encounterUuid =
           entryMode === 'one-per-visit'
             ? await findSingleEncounterForVisit(patientUuid, currentVisit.uuid, encounterTypeUuid, form.uuid)
             : undefined;
         const handleFormClose = () => {
-          launchInProgressRef.current = false;
           try {
             void Promise.resolve(mutate?.()).catch(() => undefined);
           } catch {
             // Cache refresh is best-effort after a safe workspace close.
           }
         };
-        const didOpen = await launchWorkspace2(
+        const launchArgs: Parameters<typeof launchWorkspace2> = [
           patientFormEntryWorkspace,
           {
             workspaceTitle: form.display ?? form.name,
@@ -268,13 +298,13 @@ export function useConsultaExternaFormLauncher({
             visitContext: currentVisit,
             mutateVisitContext: patientChartContext.mutateVisitContext,
           },
-        );
+        ];
+        const didOpen = await launchWorkspace2(...launchArgs);
         if (didOpen !== true) {
           throw new ConsultaExternaLaunchError('verification-failed');
         }
-        // A successful launch stays locked until mutateForm runs on workspace close.
+        openedFormRef.current = { identity, args: launchArgs };
       } catch (error) {
-        launchInProgressRef.current = false;
         if (error instanceof ConsultaExternaLaunchError && error.code === 'multiple-encounters') {
           showLaunchError(
             t(
@@ -297,9 +327,14 @@ export function useConsultaExternaFormLauncher({
             ),
           );
         }
+      } finally {
+        // Suppress overlapping resolutions/restores, not all future clicks.
+        // A real close is established from the workspace store on the next click.
+        launchInProgressRef.current = false;
       }
     })();
   }, [
+    ambulatoryVisitTypeUuid,
     encounterTypeUuid,
     entryMode,
     formIdentifier,

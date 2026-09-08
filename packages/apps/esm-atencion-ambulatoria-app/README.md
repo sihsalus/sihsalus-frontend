@@ -94,6 +94,16 @@ El dashboard muestra una cabecera compacta propia para garantizar que `Consulta 
 
 Anamnesis y examen físico son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; el workspace crea un encounter nuevo adjunto a la visita ambulatoria verificada y persiste únicamente destino, especialidad, prioridad, condición de salida, transporte y motivo. Paciente, visita, triaje, diagnósticos, tratamiento y profesional no se duplican.
 
+El lanzador bloquea clics simultáneos mientras resuelve o abre el formulario, pero
+no depende de `mutateForm` para detectar el cierre: la X del workspace y su
+reemplazo por otro formulario no ejecutan ese callback. Consulta en modo de solo
+lectura el store experimental `workspace2Store` del entrypoint interno del
+framework. Si la misma instancia y las identidades de paciente, visita y
+formulario siguen vigentes, restaura mediante la API pública `launchWorkspace2`
+con los argumentos originales, sin reemplazar cambios sin guardar. Después de un
+cierre o reemplazo vuelve a verificar visita, formulario y encounter antes de
+abrir. Este contrato no diagnostica ni corrige errores de descarga del esquema.
+
 El catálogo inicial de destinos se configura en `referralDestinations` con nombre y código RENIPRESS; la selección conserva ambos en el encounter histórico. La exportación **Hoja de Referencia Institucional** se genera localmente a partir de la visita y deja vacíos para llenado manual los bloques de responsable de la referencia, responsable del establecimiento, personal que acompaña, personal que recibe, firmas y sellos.
 
 ## Resumen de atención ambulatoria

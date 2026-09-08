@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchClobData, fetchOpenMRSForm } from '../api';
 import { formEngineAppName } from '../globals';
 import { getRegisteredFormSchemaTransformers } from '../registry/registry';
@@ -25,43 +25,82 @@ export function useFormJson(
   isLoading: boolean;
   formError: Error | undefined;
 } {
-  const [formJson, setFormJson] = useState<FormSchema | null>(null);
-  const [error, setError] = useState(validateFormsArgs(formUuid, rawFormJson));
+  // Wrappers can normalize the same cached schema into a new object on render.
+  // A logical session change must hide old data immediately; an equivalent
+  // object must not unmount a dirty form merely because its reference changed.
+  const rawFormIdentity =
+    isPlainObject(rawFormJson) && typeof rawFormJson.uuid === 'string' && rawFormJson.uuid
+      ? rawFormJson.uuid
+      : rawFormJson;
+  const session = useMemo(
+    () => ({ formUuid, rawFormIdentity, encounterUuid, formSessionIntent }),
+    [formUuid, rawFormIdentity, encounterUuid, formSessionIntent],
+  );
+  const argsError = useMemo(() => validateFormsArgs(formUuid, rawFormJson), [formUuid, rawFormJson]);
+  const [loaded, setLoaded] = useState<{
+    session: object;
+    formJson: FormSchema | null;
+    error: Error | undefined;
+  }>(() => ({ session, formJson: null, error: argsError }));
 
   useEffect(() => {
     let disposed = false;
 
     const setFormJsonWithTranslations = (nextFormJson: FormSchema): void => {
+      if (disposed) {
+        return;
+      }
       if (nextFormJson.translations) {
         const language = window.i18next.language;
         window.i18next.addResourceBundle(language, formEngineAppName, nextFormJson.translations, true, true);
       }
-      if (!disposed) {
-        setFormJson(nextFormJson);
-      }
+      setLoaded({ session, formJson: nextFormJson, error: undefined });
     };
+
+    setLoaded((previous) => {
+      if (previous.session === session && previous.error === argsError) {
+        return previous;
+      }
+      return {
+        session,
+        formJson: !argsError && previous.session === session ? previous.formJson : null,
+        error: argsError,
+      };
+    });
+
+    if (argsError) {
+      return;
+    }
 
     void loadFormJson(formUuid, rawFormJson, formSessionIntent, preFilledQuestions)
       .then((loadedFormJson) => {
-        setFormJsonWithTranslations({ ...loadedFormJson, encounter: encounterUuid });
+        setFormJsonWithTranslations({
+          ...loadedFormJson,
+          encounter: encounterUuid,
+        });
       })
-      .catch((caughtError: unknown) => {
+      .catch(() => {
         if (!disposed) {
-          const normalizedError = caughtError instanceof Error ? caughtError : new Error('Error loading form JSON');
-          console.error(normalizedError);
-          setError(new Error(`Error loading form JSON: ${normalizedError.message}`));
+          console.error('Failed to load form schema.');
+          setLoaded({
+            session,
+            formJson: null,
+            error: new Error('Error loading form JSON'),
+          });
         }
       });
 
     return (): void => {
       disposed = true;
     };
-  }, [encounterUuid, formSessionIntent, formUuid, preFilledQuestions, rawFormJson]);
+  }, [argsError, encounterUuid, formSessionIntent, formUuid, preFilledQuestions, rawFormJson, session]);
+
+  const current = loaded.session === session && !argsError ? loaded : { formJson: null, error: argsError };
 
   return {
-    formJson,
-    isLoading: !formJson && !error,
-    formError: error,
+    formJson: current.formJson,
+    isLoading: !current.formJson && !current.error,
+    formError: current.error,
   };
 }
 

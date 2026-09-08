@@ -1,9 +1,10 @@
 # Recoverable synthetic fixture foundation
 
-Status: **draft, not wired into global setup, teardown, a CLI command, or browser
-CI**. Importing the utilities does not run a remote test. This is a reviewed
-recovery of the useful provisioning intent from the local backup, not permission
-to execute it, promote a suite, or create accounts in DEV/QLTY.
+Status: **draft, not wired into global setup, teardown, or browser CI**.
+The separate [supervised O3 Forms adapter](scripts/O3FORMS_SUPERVISED.md) provides
+an explicit opt-in CLI and retains the requirements below; it has not passed
+remote clinical acceptance. Importing these utilities does not run a remote
+test, promote a suite, or create accounts in DEV/QLTY.
 
 Follow [CONTRIBUTING](../CONTRIBUTING.md) and the [E2E gate](README.md). Local
 tests use an in-memory API double and private temporary files only:
@@ -113,8 +114,8 @@ metadata deliberately blocks cleanup for review rather than guessing a new one.
   clinical orders as separate, still-unapproved workflows. This journal does
   not cover temporary users, roles, or concurrent runtime notification captures.
 
-No current-SHA DEV/QLTY validation is claimed by this foundation. Explicitly
-authorized integration of this disconnected utility does not add an adapter,
-setup/teardown hook or CLI, activate a suite, or waive CONTRIBUTING requirements.
+No current-SHA DEV/QLTY clinical validation is claimed by this foundation.
+The supervised O3 Forms adapter does not activate global setup/teardown or a
+browser CI suite, and does not waive CONTRIBUTING or durable recovery requirements.
 Keep any activation or adapter PR in draft until an accountable owner has reviewed
 the activation contract above and the required environment-specific evidence.

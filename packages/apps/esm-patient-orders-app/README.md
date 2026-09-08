@@ -74,6 +74,12 @@ corregir un resultado se debe completar la orden y volver a abrirla; un panel ad
 la revisión de una sola observación por guardado. La validación en DEV/QLTY debe
 cubrir fallo parcial, reintento fallido/exitoso, reapertura, valores cero y comentarios.
 
+El límite de una observación por guardado cuenta cambios reales respecto al resultado
+persistido, no campos que se tocaron y luego se devolvieron a su valor original.
+Se comparan valores numéricos normalizados (incluido cero), UUIDs de respuestas
+codificadas y texto/comentarios sin eliminar espacios significativos. Deshacer una
+edición no debe impedir guardar la única corrección restante del panel.
+
 La modificación de medicamentos tiene una brecha de composición: `medicamentos.editar` hace visible la acción, pero esta abre `order-basket`, registrado con `ordenes.editar`. Hasta alinear ambos guards, el rol que complete el flujo necesita los dos privilegios; no debe interpretarse la visibilidad del comando como autorización end-to-end.
 
 Los guards de UI no autorizan la mutación en el backend. Los roles todavía necesitan los privilegios OpenMRS de Orders y la visita/encounter válidos para la operación.

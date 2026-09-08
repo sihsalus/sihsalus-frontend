@@ -1417,6 +1417,21 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('yearsEstimateRequired');
   });
 
+  it('treats months-only age as a minor and requires a responsible relationship', async () => {
+    const values = {
+      ...validFormValues,
+      birthdate: new Date(),
+      birthdateEstimated: true,
+      yearsEstimated: '' as const,
+      monthsEstimated: 6,
+    };
+    expect(isMinorPatient(values)).toBe(true);
+    const error = await validateFormValues(values);
+    expect(error.errors).toContain('responsibleRelationshipRequiredForMinor');
+    expect(error.errors).not.toContain('yearsEstimateRequired');
+    expect(error.errors).not.toContain('estimatedAgeOverMaximum');
+  });
+
   it('should throw an error when monthEstimated is negative', async () => {
     const invalidFormValues = {
       ...validFormValues,

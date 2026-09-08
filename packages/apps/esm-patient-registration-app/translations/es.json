@@ -507,6 +507,6 @@
   "updatePatientSuccessSnackbarSubtitle": "La información del paciente ha sido actualizada exitosamente",
   "updatePatientSuccessSnackbarTitle": "Detalles del Paciente Actualizados",
   "Vigente": "Vigente",
-  "yearsEstimateRequired": "Los años estimados son obligatorios",
+  "yearsEstimateRequired": "Ingrese la edad aproximada en años y/o meses",
   "yes": "Sí"
 }

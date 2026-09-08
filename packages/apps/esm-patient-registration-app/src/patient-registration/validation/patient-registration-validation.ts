@@ -231,9 +231,15 @@ function getAttributeValue(values: FormValues | undefined, attributeTypeUuid: Fi
   return attributeTypeUuid ? values?.attributes?.[attributeTypeUuid] : undefined;
 }
 
-export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdateEstimated' | 'yearsEstimated'>) {
+export function isMinorPatient(
+  values: Pick<FormValues, 'birthdate' | 'birthdateEstimated' | 'yearsEstimated'> &
+    Partial<Pick<FormValues, 'monthsEstimated'>>,
+) {
   if (values.birthdateEstimated) {
-    return typeof values.yearsEstimated === 'number' && values.yearsEstimated < 18;
+    return (
+      (typeof values.yearsEstimated === 'number' && values.yearsEstimated < 18) ||
+      ((values.yearsEstimated === '' || values.yearsEstimated == null) && typeof values.monthsEstimated === 'number')
+    );
   }
 
   if (!values.birthdate) {
@@ -518,7 +524,9 @@ export function getValidationSchema(
       then: Yup.number()
         .transform(transformPlainInteger)
         .typeError(t('estimatedAgeInvalid', 'Estimated age must be a whole number between 0 and 140'))
-        .required(t('yearsEstimateRequired', 'Estimated years required'))
+        .test('estimated-age-required', t('yearsEstimateRequired', 'Estimated years required'), function (years) {
+          return years != null || (this.parent.monthsEstimated != null && this.parent.monthsEstimated !== '');
+        })
         .integer(t('estimatedYearsMustBeInteger', 'Estimated years must be a whole number'))
         .min(0, t('negativeYears', 'Estimated years cannot be negative'))
         .max(MAX_PATIENT_AGE_YEARS, t('nonsensicalYears', 'Estimated years cannot be more than 140')),
@@ -540,7 +548,7 @@ export function getValidationSchema(
           'estimated-age-not-over-maximum',
           t('estimatedAgeOverMaximum', 'Estimated age cannot be more than 140 years'),
           function (months) {
-            const years = Number(this.parent.yearsEstimated);
+            const years = Number(this.parent.yearsEstimated ?? 0);
             return years < MAX_PATIENT_AGE_YEARS || !months;
           },
         ),

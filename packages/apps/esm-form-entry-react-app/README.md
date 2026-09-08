@@ -27,8 +27,11 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 El esquema compilado se obtiene de `GET /ws/rest/v1/o3/forms/{formUuid}`. El
 manifest mantiene `o3forms >=2.3.0` y admite además exactamente
-`2.3.0-sihsalus.1`, el parche de la distro para locales nulos al cargar
-traducciones. SemVer considera ese sufijo una pre-release inferior a `2.3.0`;
+`2.3.0-sihsalus.1`, el parche publicado por
+[`sihsalus/openmrs-module-o3forms`](https://github.com/sihsalus/openmrs-module-o3forms/releases/tag/2.3.0-sihsalus.1)
+para locales nulos al cargar traducciones. Infraestructura consume su binario
+versionado y verificado, sin compilar ni parchear O3 Forms. SemVer considera ese
+sufijo una pre-release inferior a `2.3.0`;
 la excepción explícita evita un aviso de incompatibilidad para ese artefacto sin
 admitir otras pre-releases de la misma versión ni modificar el comparador global.
 Los requisitos de FHIR2 y REST permanecen intactos.

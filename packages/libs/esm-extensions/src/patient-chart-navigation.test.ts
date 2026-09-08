@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type Session, sessionStore } from '@openmrs/esm-api';
 import { configInternalStore, type ExtensionSlotConfig, provide } from '@openmrs/esm-config';
@@ -95,9 +95,10 @@ describe('SIH Salus patient chart navigation policy', () => {
     expect([...configuredOrder].sort()).toEqual(visibleExtensions.map(({ name }) => name).sort());
   });
 
-  it('places appointments with the current-care entries before specialized and administrative screens', () => {
-    expect(names().slice(0, 4)).toEqual([
+  it('places vitals after the summary and keeps appointments with the current-care entries', () => {
+    expect(names().slice(0, 5)).toEqual([
       summaryId,
+      'results-summary-dashboard',
       'consulta-externa-dashboard-link',
       appointmentsId,
       'encounters-summary-dashboard',

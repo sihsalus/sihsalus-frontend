@@ -45,8 +45,8 @@ ni del orden de carga de los microfrontends. Los números `order` de cada
 
 | Bloque de orden            | Accesos, en secuencia                                                                          |
 | -------------------------- | ---------------------------------------------------------------------------------------------- |
-| Atención y agenda          | Resumen, Consulta externa, Citas, Consultas                                                    |
-| Contexto clínico           | Signos vitales, Alergias, Antecedentes, Historia social, Ficha familiar                        |
+| Atención y agenda          | Resumen, Signos vitales y biometría, Consulta externa, Citas, Consultas                        |
+| Contexto clínico           | Alergias, Antecedentes, Historia social, Ficha familiar                                        |
 | Tratamiento y estudios     | Medicamentos, Órdenes, Resultados, Imágenes, Procedimientos, Adjuntos                          |
 | Prevención y continuidad   | Vacunación, Tamizajes, Programas, Seguimiento de casos, Pérdida de seguimiento, Interconsultas |
 | Atención especializada     | CRED, Salud materna, Odontología, Psicología, Terapia física                                   |

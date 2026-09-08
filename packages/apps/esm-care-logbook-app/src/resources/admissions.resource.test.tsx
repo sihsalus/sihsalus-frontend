@@ -4,6 +4,7 @@ import React from 'react';
 import { SWRConfig } from 'swr';
 
 import {
+  fetchAdmissionPages,
   useActiveVisitSummary,
   useAdmissions,
   usePatientDetail,
@@ -21,6 +22,54 @@ describe('admissions resources', () => {
   beforeEach(() => {
     mockOpenmrsFetch.mockReset();
     mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as Awaited<ReturnType<typeof openmrsFetch>>);
+  });
+
+  it('loads every page using the configured endpoint, deduplicating visits', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { results: [{ uuid: 'a' }], links: [{ rel: 'next', uri: 'https://untrusted.invalid/visit' }] },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [{ uuid: 'a' }, { uuid: 'b' }] } } as Awaited<
+      ReturnType<typeof openmrsFetch>
+    >);
+    const result = await fetchAdmissionPages('/ws/rest/v1/visit?limit=1');
+    expect(result.data.results?.map((visit) => visit.uuid)).toEqual(['a', 'b']);
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, '/ws/rest/v1/visit?limit=1&startIndex=1');
+  });
+
+  it('rejects a failed later page instead of returning a partial report', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [{ uuid: 'a' }], links: [{ rel: 'next' }] } } as Awaited<
+      ReturnType<typeof openmrsFetch>
+    >);
+    mockOpenmrsFetch.mockRejectedValueOnce(new Error('Unavailable'));
+    await expect(fetchAdmissionPages('/ws/rest/v1/visit?limit=1')).rejects.toThrow('Unavailable');
+  });
+
+  it('stops pagination when the server repeats a page', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [{ uuid: 'a' }], links: [{ rel: 'next' }] } } as Awaited<
+      ReturnType<typeof openmrsFetch>
+    >);
+    await expect(fetchAdmissionPages('/ws/rest/v1/visit?limit=1')).rejects.toThrow('pagination did not advance');
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('queries inclusive Lima date boundaries and sorts newest visits first across pages', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { results: [{ uuid: 'old', startDatetime: '2026-09-08T05:00:00Z' }], links: [{ rel: 'next' }] },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { results: [{ uuid: 'new', startDatetime: '2026-09-09T04:59:59Z' }] },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useAdmissions(1, { from: '2026-09-08', to: '2026-09-08' }), { wrapper });
+    await waitFor(() => expect(result.current.admissions).toHaveLength(2));
+    expect(result.current.admissions.map((visit) => visit.uuid)).toEqual(['new', 'old']);
+    const url = new URL(String(mockOpenmrsFetch.mock.calls[0][0]), 'http://localhost');
+    expect(url.searchParams.get('fromStartDate')).toBe('2026-09-08T00:00:00.000-0500');
+    expect(url.searchParams.get('toStartDate')).toBe('2026-09-08T23:59:59.999-0500');
+  });
+
+  it('does not fetch an inverted date range', () => {
+    renderHook(() => useAdmissions(50, { from: '2026-09-09', to: '2026-09-08' }), { wrapper });
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
   it('loads and maps the admission report rows from visits', async () => {

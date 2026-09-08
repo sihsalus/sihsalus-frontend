@@ -91,6 +91,7 @@ interface Visit {
 
 interface VisitResponse {
   results?: Visit[];
+  links?: { rel: string; uri: string }[];
 }
 
 export interface AdmissionRow {
@@ -342,22 +343,25 @@ async function fetchRelationshipsForPatients(patientUuids: string[]) {
   const relationshipsByPatient: Record<string, VisitRelationship[]> = {};
   const failedPatientUuids: string[] = [];
 
-  await Promise.all(
-    patientUuids.map(async (patientUuid) => {
-      try {
-        const { data } = await openmrsFetch<{ results?: VisitRelationship[] }>(
-          `${restBaseUrl}/relationship?person=${patientUuid}&v=${relationshipRepresentation}`,
-        );
-        relationshipsByPatient[patientUuid] = data.results ?? [];
-      } catch (error) {
-        // A single patient's failure shouldn't blank the whole logbook, but it
-        // must not masquerade as "patient has no relationships" either.
-        console.warn(`Failed to load relationships for patient ${patientUuid}.`, error);
-        failedPatientUuids.push(patientUuid);
-        relationshipsByPatient[patientUuid] = [];
-      }
-    }),
-  );
+  // A historical report must not launch one simultaneous request per patient.
+  for (let offset = 0; offset < patientUuids.length; offset += 5) {
+    await Promise.all(
+      patientUuids.slice(offset, offset + 5).map(async (patientUuid) => {
+        try {
+          const { data } = await openmrsFetch<{ results?: VisitRelationship[] }>(
+            `${restBaseUrl}/relationship?person=${patientUuid}&v=${relationshipRepresentation}`,
+          );
+          relationshipsByPatient[patientUuid] = data.results ?? [];
+        } catch (error) {
+          // A single patient's failure shouldn't blank the whole logbook, but it
+          // must not masquerade as "patient has no relationships" either.
+          console.warn(`Failed to load relationships for patient ${patientUuid}.`, error);
+          failedPatientUuids.push(patientUuid);
+          relationshipsByPatient[patientUuid] = [];
+        }
+      }),
+    );
+  }
 
   if (patientUuids.length > 0 && failedPatientUuids.length === patientUuids.length) {
     // Every request failed: this is a systemic error (network/backend), so report
@@ -416,9 +420,37 @@ const visitRepresentation =
 const relationshipRepresentation =
   'custom:(display,uuid,personA:(uuid,display),personB:(uuid,display),relationshipType:(uuid,display,description,aIsToB,bIsToA))';
 
-export function useAdmissions(limit: number) {
-  const url = `${restBaseUrl}/visit?includeInactive=true&v=${visitRepresentation}&limit=${limit}`;
-  const { data, error, isLoading } = useSWR<{ data: VisitResponse }, Error>(url, openmrsFetch);
+export interface AdmissionDateRange {
+  from?: string;
+  to?: string;
+}
+
+export async function fetchAdmissionPages(url: string): Promise<{ data: VisitResponse }> {
+  const visits = new Map<string, Visit>();
+  let startIndex = 0;
+  while (true) {
+    // Only request the configured REST endpoint; never follow a server-supplied absolute URL.
+    const response = await openmrsFetch<VisitResponse>(startIndex ? `${url}&startIndex=${startIndex}` : url);
+    const rows = response.data.results ?? [];
+    const previousSize = visits.size;
+    for (const visit of rows) visits.set(visit.uuid, visit);
+    if (!response.data.links?.some((link) => link.rel === 'next')) break;
+    if (!rows.length || visits.size === previousSize) throw new Error('Visit pagination did not advance');
+    startIndex += rows.length;
+  }
+  return { data: { results: Array.from(visits.values()) } };
+}
+
+export function useAdmissions(limit: number, range: AdmissionDateRange = {}) {
+  const pageSize = Number.isFinite(limit) ? Math.max(1, Math.min(200, Math.floor(limit))) : 50;
+  let url = `${restBaseUrl}/visit?includeInactive=true&v=${visitRepresentation}&limit=${pageSize}`;
+  if (range.from) url += `&fromStartDate=${encodeURIComponent(`${range.from}T00:00:00.000-0500`)}`;
+  if (range.to) url += `&toStartDate=${encodeURIComponent(`${range.to}T23:59:59.999-0500`)}`;
+  const invalidRange = !!(range.from && range.to && range.from > range.to);
+  const { data, error, isLoading } = useSWR<{ data: VisitResponse }, Error>(
+    invalidRange ? null : url,
+    fetchAdmissionPages,
+  );
   const visits = data?.data.results ?? [];
   const patientUuids = Array.from(new Set(visits.map((visit) => visit.patient?.uuid).filter(Boolean))).sort();
   const relationshipsKey = patientUuids.length ? `admission-relationships:${patientUuids.join(',')}` : null;
@@ -427,7 +459,11 @@ export function useAdmissions(limit: number) {
   >(relationshipsKey, () => fetchRelationshipsForPatients(patientUuids));
 
   return {
-    admissions: visits.map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? ''])),
+    admissions: visits
+      .map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? '']))
+      .sort(
+        (a, b) => (Date.parse(b.startDatetime ?? '') || 0) - (Date.parse(a.startDatetime ?? '') || 0),
+      ),
     error,
     isLoading: isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient),
   };

@@ -280,6 +280,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
       const dirtyKeys = Object.keys(dirtyFields);
       const updates = new Map<string, Record<string, unknown>>();
       const missingConceptUuids = new Set<string>();
+      const resultConcepts = new Map(flattenLeafConcepts(concept).map((member) => [member.uuid, member]));
 
       for (const dirtyKey of dirtyKeys) {
         const isOrderComment = dirtyKey === 'order-comment';
@@ -297,9 +298,21 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
 
         const update = updates.get(obs.uuid) ?? { obsDatetime: new Date().toISOString() };
         if (dirtyKey.endsWith('-comment') || isOrderComment) {
-          update.comment = String(formValues[dirtyKey] ?? '');
+          const comment = String(formValues[dirtyKey] ?? '');
+          if (comment === String(obs.comment ?? '')) continue;
+          update.comment = comment;
         } else {
           const value = formValues[dirtyKey];
+          const resultConcept = resultConcepts.get(conceptUuid);
+          const savedValue = isCoded(resultConcept)
+            ? obs.value?.uuid
+            : isNumeric(resultConcept) && obs.value != null
+              ? parseFloat(String(obs.value))
+              : obs.value;
+          // Values loaded through setValue do not become RHF defaults, so an
+          // edit reverted to its saved value may still be dirty. Count only
+          // net changes, using the same coded/numeric values as hydration.
+          if ((value ?? '') === (savedValue ?? '')) continue;
           update.value =
             typeof value === 'string' && value.length === 36 && value.includes('-') ? { uuid: value } : value;
         }

@@ -887,6 +887,171 @@ describe('LabResultsForm', () => {
     expect(testProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
   });
 
+  test.each([
+    { kind: 'numeric', savedValue: 2, restoredValue: '2', datatype: 'Numeric', hl7: 'NM' },
+    { kind: 'numeric string', savedValue: '2.00', restoredValue: '2', datatype: 'Numeric', hl7: 'NM' },
+    { kind: 'zero', savedValue: 0, restoredValue: '0', datatype: 'Numeric', hl7: 'NM' },
+    { kind: 'text', savedValue: 'Original', restoredValue: 'Original', datatype: 'Text', hl7: 'ST' },
+    {
+      kind: 'coded',
+      savedValue: { uuid: 'synthetic-answer-a', display: 'Respuesta A' },
+      restoredValue: 'synthetic-answer-a',
+      datatype: 'Coded',
+      hl7: 'CWE',
+    },
+  ])('saves one net panel correction after undoing a $kind edit', async ({
+    savedValue,
+    restoredValue,
+    datatype,
+    hl7,
+  }) => {
+    const user = userEvent.setup();
+    mockUseOrderConceptByUuid.mockReturnValue({
+      concept: {
+        uuid: 'concept-uuid',
+        display: 'Panel Sintético',
+        set: true,
+        setMembers: [
+          {
+            uuid: 'first-member-uuid',
+            display: 'Primer miembro',
+            datatype: { display: 'Numeric', hl7Abbreviation: 'NM' },
+            setMembers: [],
+            allowDecimal: false,
+          },
+          {
+            uuid: 'second-member-uuid',
+            display: 'Segundo miembro',
+            datatype: { display: datatype, hl7Abbreviation: hl7 },
+            setMembers: [],
+            allowDecimal: false,
+            answers: [
+              { uuid: 'synthetic-answer-a', display: 'Respuesta A' },
+              { uuid: 'synthetic-answer-b', display: 'Respuesta B' },
+            ],
+          },
+        ],
+        datatype: { display: 'N/A', hl7Abbreviation: 'N/A' },
+      } as LabOrderConcept,
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'panel-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Panel Sintético' },
+        groupMembers: [
+          {
+            uuid: 'first-observation-uuid',
+            concept: { uuid: 'first-member-uuid', display: 'Primer miembro' },
+            value: 1,
+          },
+          {
+            uuid: 'second-observation-uuid',
+            concept: { uuid: 'second-member-uuid', display: 'Segundo miembro' },
+            value: savedValue,
+          },
+        ],
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    const firstInput = screen.getByLabelText(/Primer miembro/i);
+    const secondInput = screen.getByLabelText(/Segundo miembro/i);
+    await waitFor(() => {
+      expect(firstInput).toHaveValue(1);
+      expect(secondInput).toHaveValue(datatype === 'Numeric' ? Number(restoredValue) : restoredValue);
+    });
+    await user.clear(firstInput);
+    await user.type(firstInput, '10');
+    if (datatype === 'Coded') {
+      await user.selectOptions(secondInput, 'synthetic-answer-b');
+      await user.selectOptions(secondInput, restoredValue);
+    } else {
+      await user.clear(secondInput);
+      await user.type(secondInput, '20');
+      await user.clear(secondInput);
+      await user.type(secondInput, restoredValue);
+    }
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() =>
+      expect(mockUpdateObservation).toHaveBeenCalledExactlyOnceWith(
+        'first-observation-uuid',
+        expect.objectContaining({ value: 10 }),
+      ),
+    );
+    expect(testProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce();
+  });
+
+  test.each([
+    { field: 'value', savedComment: undefined },
+    { field: 'comment', savedComment: undefined },
+    { field: 'comment', savedComment: 'Comentario original' },
+  ])('does not revise an observation after undoing its $field edit ($savedComment)', async ({
+    field,
+    savedComment,
+  }) => {
+    const user = userEvent.setup();
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'saved-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Test Concept' },
+        value: 50,
+        comment: savedComment,
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    const input =
+      field === 'value'
+        ? screen.getByLabelText('Test Concept (0 - 100 mg/dL)')
+        : screen.getByLabelText('Observaciones');
+    const restoredValue = field === 'value' ? '50' : (savedComment ?? '');
+    await user.clear(input);
+    await user.type(input, '60');
+    await user.clear(input);
+    if (restoredValue) await user.type(input, restoredValue);
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() => expect(testProps.closeWorkspace).toHaveBeenCalledOnce());
+    expect(mockUpdateObservation).not.toHaveBeenCalled();
+    expect(updateOrderResult).not.toHaveBeenCalled();
+  });
+
+  test('keeps an intentional deletion of a saved comment', async () => {
+    const user = userEvent.setup();
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'saved-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Test Concept' },
+        value: 50,
+        comment: 'Comentario original',
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    await user.clear(screen.getByLabelText('Observaciones'));
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() =>
+      expect(mockUpdateObservation).toHaveBeenCalledExactlyOnceWith('saved-observation-uuid', {
+        comment: '',
+        obsDatetime: expect.any(String),
+      }),
+    );
+    expect(testProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce();
+  });
+
   test('retries only order completion when a saved result has a pending order', async () => {
     const user = userEvent.setup();
     mockUseCompletedLabResults.mockReturnValue({

@@ -37,7 +37,7 @@ any clinical `run`; local mocks alone are not activation evidence.
 | Variable                          | Required value                                         |
 | --------------------------------- | ------------------------------------------------------ |
 | `E2E_O3FORMS_SUPERVISED_TARGET`   | The same explicitly coordinated `DEV` or `QLTY` target |
-| `E2E_O3FORMS_EXPECTED_VERSION`    | `2.3.0-sihsalus.1`                                     |
+| `E2E_O3FORMS_EXPECTED_VERSION`    | `2.3.1-sihsalus.1`                                     |
 | `E2E_O3FORMS_ENCOUNTER_TYPE_UUID` | Reviewed deployed Consulta Externa encounter type      |
 | `E2E_O3FORMS_JOURNAL_DIRECTORY`   | Absolute canonical private directory, unique per run   |
 
@@ -49,9 +49,16 @@ not assumed from content JSON UUIDs. The current supported Anamnesis contract
 uses the required `motivoConsulta` textarea. Unknown contracts fail closed.
 
 The frontend SHA is verified through `build-info.json` and the exact installed
-O3 Forms version and `started: true` through REST. Backend image digest/core version and rollback
-readiness must additionally be recorded by the deployment operator; this script
-does not prove those from the module version alone.
+O3 Forms version and `started: true` through REST. The same inventory must also
+contain exactly one REST and one Patient Documents module, each with explicit
+`started: true`, before loading schemas or creating fixtures. Missing, duplicate
+or stopped module states fail closed. This protects the observed regression in
+which `2.3.0-sihsalus.1` started but Patient Documents did not; that rejected patch
+cannot be used for acceptance. `2.3.1-sihsalus.1` still requires publication,
+deployment and successful environment-specific validation before acceptance can
+be claimed. Backend image digest/core version and rollback readiness must
+additionally be recorded by the deployment operator; this script does not prove
+those from the module version alone.
 
 ## Local preparation
 

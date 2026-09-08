@@ -268,6 +268,27 @@ describe('O3 Forms DEV-only read-only environment preflight', () => {
     ]);
   });
 
+  it('can inventory the corrected patch without treating started modules as clinical acceptance', async () => {
+    const report = await inventoryEnvironment({
+      get: async (value) =>
+        value.includes('/module?')
+          ? {
+              results: [
+                { uuid: 'o3forms', version: '2.3.1-sihsalus.1', started: true },
+                { uuid: 'webservices.rest', version: '3.5.0-sihsalus.1', started: true },
+                { uuid: 'patientdocuments', version: '2.3.0', started: true },
+              ],
+            }
+          : fixture(value),
+    });
+    expect(report.o3forms).toEqual({ version: '2.3.1-sihsalus.1', started: true });
+    expect(report.dependentModules).toEqual([
+      { uuid: 'webservices.rest', version: '3.5.0-sihsalus.1', started: true },
+      { uuid: 'patientdocuments', version: '2.3.0', started: true },
+    ]);
+    expect(report.clinicalValidation).toBe('NOT_RUN');
+  });
+
   it('rejects ambiguous duplicate dependent module identities', async () => {
     await expect(
       inventoryEnvironment({

@@ -26,19 +26,19 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 ### Compatibilidad con O3 Forms
 
 El esquema compilado se obtiene de `GET /ws/rest/v1/o3/forms/{formUuid}`. El
-manifest mantiene `o3forms >=2.3.0` y admite además exactamente
-`2.3.0-sihsalus.1`, el parche publicado por
-[`sihsalus/openmrs-module-o3forms`](https://github.com/sihsalus/openmrs-module-o3forms/releases/tag/2.3.0-sihsalus.1)
-para locales nulos al cargar traducciones. Infraestructura consume su binario
-versionado y verificado, sin compilar ni parchear O3 Forms. SemVer considera ese
-sufijo una pre-release inferior a `2.3.0`;
-la excepción explícita evita un aviso de incompatibilidad para ese artefacto sin
-admitir otras pre-releases de la misma versión ni modificar el comparador global.
-Los requisitos de FHIR2 y REST permanecen intactos.
+manifest mantiene `o3forms >=2.3.0`, sin excepciones. El comparador global existente
+incluye pre-releases: `2.3.1-sihsalus.1` supera ese mínimo, mientras que
+`2.3.0-sihsalus.1` es inferior y se rechaza. Este último artefacto se retiró de DEV
+porque impedía arrancar Patient Documents; no debe rehabilitarse mediante una
+excepción del frontend. El parche corregido para locales nulos se prepara en
+[`sihsalus/openmrs-module-o3forms`](https://github.com/sihsalus/openmrs-module-o3forms).
+Infraestructura debe consumir su binario publicado, versionado y verificado, sin
+compilar ni parchear O3 Forms. No se modifica el comparador global ni los requisitos
+de FHIR2 y REST.
 
 Esta declaración no instala ni despliega el parche, no cambia el formato del
 esquema y no oculta errores de descarga o compilación del backend. La comprobación
-del módulo arrancado y la apertura de formularios sintéticos contra la imagen
+de O3 Forms, REST y Patient Documents arrancados y la apertura de formularios sintéticos contra la imagen
 corregida siguen siendo validaciones independientes. El test del manifest usa el
 comparador real de `@openmrs/esm-utils`, no el stub del framework que siempre
 devuelve `true`.

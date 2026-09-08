@@ -46,7 +46,7 @@ const environment = {
   E2E_USER_ADMIN_PASSWORD: 'local-double-only',
   E2E_LOGIN_DEFAULT_LOCATION_UUID: id(1),
   E2E_O3FORMS_SUPERVISED_TARGET: 'DEV',
-  E2E_O3FORMS_EXPECTED_VERSION: '2.3.0-sihsalus.1',
+  E2E_O3FORMS_EXPECTED_VERSION: '2.3.1-sihsalus.1',
   E2E_FIXTURE_EXPECTED_SHA: 'a'.repeat(40),
   E2E_FIXTURE_IDENTIFIER_SOURCE_UUID: id(2),
   E2E_FIXTURE_IDENTIFIER_TYPE_UUID: id(3),
@@ -63,6 +63,11 @@ const metadata = {
   observationConcepts: [id(8)],
 };
 const owned = { patientUuid: id(10), visitUuid: id(11) };
+const startedModules = [
+  { uuid: 'o3forms', version: '2.3.1-sihsalus.1', started: true },
+  { uuid: 'webservices.rest', version: '3.5.0-sihsalus.1', started: true },
+  { uuid: 'patientdocuments', version: '2.3.0', started: true },
+];
 const encounter: Encounter = {
   uuid: id(12),
   voided: false,
@@ -84,8 +89,7 @@ function fakeApi(
     expect(url.origin).toBe('https://gidis-hsc-dev.inf.pucp.edu.pe');
     let value: unknown;
     if (url.pathname.endsWith('/build-info.json')) value = { gitSha: 'a'.repeat(40) };
-    else if (url.pathname.endsWith('/module'))
-      value = { results: [{ uuid: 'o3forms', version: '2.3.0-sihsalus.1', started: true }] };
+    else if (url.pathname.endsWith('/module')) value = { results: startedModules };
     else if (url.pathname.endsWith('/session'))
       value = {
         authenticated: true,
@@ -308,6 +312,7 @@ describe('supervised O3 Forms adapter (local doubles only)', () => {
     { E2E_API_BASE_URL: 'https://production.example.test/openmrs' },
     { E2E_BASE_URL: 'http://127.0.0.1:8080/openmrs/spa' },
     { E2E_O3FORMS_EXPECTED_VERSION: '2.3.0' },
+    { E2E_O3FORMS_EXPECTED_VERSION: '2.3.0-sihsalus.1' },
     { E2E_FIXTURE_EXPECTED_SHA: 'latest' },
     { E2E_O3FORMS_ENCOUNTER_TYPE_UUID: '' },
     { E2E_FIXTURE_REQUIRED_PRIVILEGES: '["Get Patients"]' },
@@ -321,6 +326,44 @@ describe('supervised O3 Forms adapter (local doubles only)', () => {
     expect(mock.post).not.toHaveBeenCalled();
     expect(mock.remove).not.toHaveBeenCalled();
     expect(mock.get.mock.calls.filter(([url]) => url.includes('/o3/forms/'))).toHaveLength(2);
+    expect(mock.get.mock.calls.filter(([url]) => new URL(url).pathname.endsWith('/module'))).toHaveLength(1);
+  });
+  it.each([
+    'webservices.rest',
+    'patientdocuments',
+  ])('rejects stopped, missing, unknown or duplicated %s before dependent reads and writes', async (moduleId) => {
+    const otherModules = startedModules.filter((module) => module.uuid !== moduleId);
+    for (const results of [
+      otherModules,
+      [...otherModules, { uuid: moduleId, started: false }],
+      [...otherModules, { uuid: moduleId }],
+      [...otherModules, { uuid: moduleId, started: 'true' }],
+      [...startedModules, { uuid: moduleId, started: true }],
+    ]) {
+      const mock = fakeApi((url, normal) => (url.pathname.endsWith('/module') ? { results } : normal));
+      await expect(preflightO3Forms(mock.api, config)).rejects.toThrow('O3_DEPENDENT_MODULE_NOT_STARTED_OR_UNVERIFIED');
+      expect(mock.get.mock.calls.map(([url]) => new URL(url).pathname)).toEqual([
+        '/openmrs/spa/build-info.json',
+        '/openmrs/ws/rest/v1/module',
+      ]);
+      expect(mock.post).not.toHaveBeenCalled();
+      expect(mock.remove).not.toHaveBeenCalled();
+    }
+  });
+  it('rejects the withdrawn patch even when all reported modules are started', async () => {
+    const mock = fakeApi((url, normal) =>
+      url.pathname.endsWith('/module')
+        ? {
+            results: startedModules.map((module) =>
+              module.uuid === 'o3forms' ? { ...module, version: '2.3.0-sihsalus.1' } : module,
+            ),
+          }
+        : normal,
+    );
+    await expect(preflightO3Forms(mock.api, config)).rejects.toThrow('O3_DEPLOYED_MODULE_MISMATCH');
+    expect(mock.get).toHaveBeenCalledTimes(2);
+    expect(mock.post).not.toHaveBeenCalled();
+    expect(mock.remove).not.toHaveBeenCalled();
   });
   it("supports the deployed catalog's CIEL identifiers without treating them as patient UUIDs", async () => {
     const concept = '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -342,8 +385,8 @@ describe('supervised O3 Forms adapter (local doubles only)', () => {
   it.each([
     ['/build-info.json', { gitSha: 'b'.repeat(40) }],
     ['/module', { results: [{ uuid: 'o3forms', version: '2.3.0' }] }],
-    ['/module', { results: [{ uuid: 'o3forms', version: '2.3.0-sihsalus.1', started: false }] }],
-    ['/module', { results: [{ uuid: 'o3forms', version: '2.3.0-sihsalus.1' }] }],
+    ['/module', { results: [{ uuid: 'o3forms', version: '2.3.1-sihsalus.1', started: false }] }],
+    ['/module', { results: [{ uuid: 'o3forms', version: '2.3.1-sihsalus.1' }] }],
     ['/session', { authenticated: false }],
     ['/form', { results: [] }],
     ['/form', { results: [], links: [{ rel: 'next' }] }],

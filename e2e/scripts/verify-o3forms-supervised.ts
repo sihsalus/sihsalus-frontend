@@ -35,6 +35,7 @@ function isConceptIdentifier(value: string): boolean {
   return uuid.test(value) || (value.length === 36 && /^[0-9]+A+$/.test(value));
 }
 const forms = ['CE-ANAM-001-ANAMNESIS', 'CE-SOAP-001-NOTA SOAP'] as const;
+const expectedO3FormsVersion = '2.3.1-sihsalus.1';
 export const physicalExamActionName =
   /^(?:Registrar (?:registros de )?examen físico|Record physical examination(?: records)?)$/i;
 const requiredPrivileges = [
@@ -74,7 +75,7 @@ export function loadO3SmokeConfig(environment: NodeJS.ProcessEnv, mode: string) 
   check(new URL(base.spaBaseUrl).origin === new URL(base.apiBaseUrl).origin, 'O3_DEPLOYED_SPA_REQUIRED');
   check(environment.NODE_TLS_REJECT_UNAUTHORIZED !== '0', 'O3_GLOBAL_TLS_BYPASS_FORBIDDEN');
   check([undefined, 'true', 'false'].includes(environment.SIHSALUS_ALLOW_SELF_SIGNED_TLS), 'O3_TLS_OPTION_INVALID');
-  check(environment.E2E_O3FORMS_EXPECTED_VERSION === '2.3.0-sihsalus.1', 'O3_PATCH_VERSION_REQUIRED');
+  check(environment.E2E_O3FORMS_EXPECTED_VERSION === expectedO3FormsVersion, 'O3_PATCH_VERSION_REQUIRED');
   const expectedSha = required(environment, 'E2E_FIXTURE_EXPECTED_SHA');
   check(/^[a-f0-9]{40}$/i.test(expectedSha), 'O3_BUILD_SHA_INVALID');
   for (const key of [
@@ -136,8 +137,14 @@ export async function preflightO3Forms(api: APIRequestContext, config: Config): 
     'O3_MODULE_LIST_INCOMPLETE',
   );
   const installed = modules.results.filter((module) => module.uuid === 'o3forms');
-  check(installed.length === 1 && installed[0]?.version === '2.3.0-sihsalus.1', 'O3_DEPLOYED_MODULE_MISMATCH');
+  check(installed.length === 1 && installed[0]?.version === expectedO3FormsVersion, 'O3_DEPLOYED_MODULE_MISMATCH');
   check(installed[0]?.started === true, 'O3_MODULE_NOT_STARTED_OR_UNVERIFIED');
+  // O3 can start while a required consumer fails its minimum-version dependency.
+  // General backend health and the O3 start flag alone are not acceptance evidence.
+  for (const moduleId of ['webservices.rest', 'patientdocuments']) {
+    const matches = modules.results.filter((module) => module.uuid === moduleId);
+    check(matches.length === 1 && matches[0]?.started === true, 'O3_DEPENDENT_MODULE_NOT_STARTED_OR_UNVERIFIED');
+  }
   const session = await json<{
     authenticated?: boolean;
     currentProvider?: Reference;

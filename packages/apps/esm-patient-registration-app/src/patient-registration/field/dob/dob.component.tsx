@@ -30,6 +30,9 @@ export const calcBirthdate = (
   dateOfBirth: RegistrationConfig['fieldConfigurations']['dateOfBirth'],
   referenceDate = new Date(),
 ) => {
+  if (yearDelta === '' && monthDelta === '') {
+    return null;
+  }
   const { enabled, month, dayOfMonth } = dateOfBirth.useEstimatedDateOfBirth;
   const years = Number(yearDelta);
   const months = Number(monthDelta);
@@ -141,6 +144,7 @@ export const DobField: React.FC = () => {
     (ev: ChangeEvent<HTMLInputElement>) => {
       if (!ev.target.value.trim()) {
         setFieldValue('yearsEstimated', '');
+        setFieldValue('birthdate', calcBirthdate('', monthsEstimateMeta.value, dateOfBirth));
         return;
       }
 
@@ -158,6 +162,7 @@ export const DobField: React.FC = () => {
     (ev: ChangeEvent<HTMLInputElement>) => {
       if (!ev.target.value.trim()) {
         setFieldValue('monthsEstimated', '');
+        setFieldValue('birthdate', calcBirthdate(yearsEstimateMeta.value, '', dateOfBirth));
         return;
       }
 
@@ -172,11 +177,7 @@ export const DobField: React.FC = () => {
   );
 
   const updateBirthdate = useCallback(() => {
-    const months = +monthsEstimateMeta.value % 12;
-    const years = +yearsEstimateMeta.value + Math.floor(monthsEstimateMeta.value / 12);
-    setFieldValue('yearsEstimated', years);
-    setFieldValue('monthsEstimated', months > 0 ? months : '');
-    setFieldValue('birthdate', calcBirthdate(years, months, dateOfBirth));
+    setFieldValue('birthdate', calcBirthdate(yearsEstimateMeta.value, monthsEstimateMeta.value, dateOfBirth));
     setFieldTouched('yearsEstimated', true, false);
     setFieldTouched('monthsEstimated', true, false);
     setFieldTouched('birthdate', true, false);
@@ -233,7 +234,7 @@ export const DobField: React.FC = () => {
                 value={yearsEstimated.value}
                 min={0}
                 max={estimatedYearsConstraints.max}
-                required
+                required={monthsEstimated.value === ''}
                 onBlur={(e) => {
                   yearsEstimated.onBlur(e);
                   setFieldTouched('yearsEstimated', true, false);

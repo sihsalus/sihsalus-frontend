@@ -505,6 +505,6 @@
   "updatePatientSuccessSnackbarSubtitle": "The patient's information has been successfully updated",
   "updatePatientSuccessSnackbarTitle": "Patient Details Updated",
   "Vigente": "Active",
-  "yearsEstimateRequired": "Estimated years required",
+  "yearsEstimateRequired": "Enter an estimated age in years and/or months",
   "yes": "Yes"
 }

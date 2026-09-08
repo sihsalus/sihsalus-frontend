@@ -64,6 +64,14 @@ Identidad documental y promoción (implementado):
 
 Para el análisis completo de identidad documental, RENIEC/SIS, promoción de `Person` a `Patient`, búsqueda de responsables y casos de proveedores/doctores como `Person`, ver [responsible-person-identity-and-promotion.md](./docs/responsible-person-identity-and-promotion.md).
 
+## Edad aproximada
+
+La edad aproximada admite solo años, solo meses (0 a 11), o ambos. Un campo vacío
+equivale a cero únicamente cuando el otro está informado; ambos vacíos requieren
+completar la edad. Al cambiar o borrar valores se recalcula la fecha de nacimiento
+y se conserva `birthdateEstimated: true` en el payload. Una edad expresada solo
+en meses mantiene la exigencia de responsable para menores.
+
 ## Identificadores temporales
 
 El identificador temporal debe generarse con el tipo/fuente configurada de OpenMRS/IdGen. No debe construirse en frontend con lógica ad hoc. Cuando luego aparece DNI u otro documento civil, se agrega como identificador adicional y se actualiza el estado de identificación; no se elimina automáticamente el código temporal porque sirve para reconciliación y auditoría.

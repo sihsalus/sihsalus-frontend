@@ -9,14 +9,16 @@ import {
 import { uniq } from 'lodash-es';
 
 import {
-  addUserDataToCache,
+  assessValue,
   extractObservationReferenceRanges,
   extractMetaInformation,
+  extractRangesFromRangeStr,
   getEntryConceptClassUuid,
-  getUserDataFromCache,
   loadObsEntries,
   loadPresentConcepts,
 } from './helpers';
+
+export type PatientResultsData = Record<string, PatientData[string] & { name: string }>;
 
 const isTestConcept = (concept: ConceptRecord): boolean =>
   concept.conceptClass?.name === 'Test' || concept.conceptClass?.name === 'LabSet';
@@ -38,7 +40,7 @@ function parseSingleObsData(
     } else {
       // is a single test
       const conceptMeta = metaInfomation[entry.conceptClass];
-      const obsRanges = extractObservationReferenceRanges(entry as any);
+      const obsRanges = extractObservationReferenceRanges(entry);
       const hasObsRanges =
         obsRanges &&
         (obsRanges.lowNormal !== undefined || obsRanges.hiNormal !== undefined || obsRanges.range !== undefined);
@@ -54,25 +56,41 @@ function parseSingleObsData(
                 : conceptMeta?.range),
           }
         : conceptMeta;
+      // A range supplied as text must also replace the catalog's normal bounds.
+      if (obsRanges?.range && obsRanges.lowNormal === undefined && obsRanges.hiNormal === undefined) {
+        const { lowNormal, hiNormal } = extractRangesFromRangeStr(obsRanges.range);
+        entry.meta = { ...entry.meta, lowNormal, hiNormal };
+      }
+      entry.meta = {
+        ...entry.meta,
+        units: entry.valueQuantity?.unit ?? entry.meta?.units ?? conceptMeta?.units,
+      };
+      entry.meta.assessValue = assessValue(entry.meta);
     }
 
     if (entry.valueQuantity) {
-      entry.value = `${entry.valueQuantity.value}`;
-      delete entry.valueQuantity;
+      const { value, comparator } = entry.valueQuantity as {
+        value?: number;
+        comparator?: string;
+      };
+      entry.value = value === undefined ? '--' : `${comparator ? `${comparator} ` : ''}${value}`;
     }
 
     if (entry.valueCodeableConcept) {
-      entry.value = entry.valueCodeableConcept.coding[0]?.display ?? entry.valueCodeableConcept.text ?? '';
-      delete entry.valueCodeableConcept;
+      entry.value = entry.valueCodeableConcept.coding?.[0]?.display ?? entry.valueCodeableConcept.text ?? '--';
+    }
+
+    if (typeof entry.valueString === 'string') {
+      entry.value = entry.valueString;
     }
 
     entry.name = testConceptNameMap[entry.conceptClass];
   };
 }
 
-async function reloadData(patientUuid: string) {
-  const entries = await loadObsEntries(patientUuid);
-  const allConcepts = await loadPresentConcepts(entries);
+async function loadPatientData(patientUuid: string, signal?: AbortSignal): Promise<PatientResultsData> {
+  const entries = await loadObsEntries(patientUuid, signal);
+  const allConcepts = await loadPresentConcepts(entries, signal);
 
   const testConcepts = allConcepts.filter(isTestConcept);
   const testConceptUuids: ConceptUuid[] = testConcepts.map((x) => x.uuid);
@@ -141,18 +159,19 @@ async function reloadData(patientUuid: string) {
       }
     });
 
-  const sortedObs: PatientData = Object.fromEntries(
+  const sortedObs: PatientResultsData = Object.fromEntries(
     Object.entries(obsByClass)
       // remove concepts that did not have any observations
       .filter((x) => x[1].length)
-      // replace the uuid key with the display name and sort the observations by date
+      // Keep concept identity separate from its translated display name.
       .map(([uuid, val]) => {
         const concept = testConcepts.find((item) => item.uuid === uuid);
         const display = concept?.display ?? uuid;
         const type = concept?.conceptClass?.display === 'LabSet' ? 'LabSet' : 'Test';
         return [
-          display,
+          uuid,
           {
+            name: display,
             entries: val.sort((ent1, ent2) => Date.parse(ent2.effectiveDateTime) - Date.parse(ent1.effectiveDateTime)),
             type,
             uuid,
@@ -161,16 +180,7 @@ async function reloadData(patientUuid: string) {
       }),
   );
 
-  if (entries.length > 0) {
-    addUserDataToCache(patientUuid, sortedObs, entries[0].id);
-  }
-
   return sortedObs;
-}
-
-function loadPatientData(patientUuid: string): [PatientData | undefined, Promise<PatientData>] {
-  const [cachedPatientData, shouldReload] = getUserDataFromCache(patientUuid);
-  return [cachedPatientData, shouldReload.then((reload) => (reload ? reloadData(patientUuid) : cachedPatientData))];
 }
 
 export default loadPatientData;

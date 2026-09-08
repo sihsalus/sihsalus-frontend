@@ -49,9 +49,9 @@ const CommonOverview: React.FC<CommonOverviewProps> = ({
   const [activeCardUuid, setActiveCardUuid] = React.useState('');
 
   const headers = [
-    { key: 'name', header: 'Test Name' },
-    { key: 'value', header: 'Value' },
-    { key: 'range', header: 'Reference Range' },
+    { key: 'name', header: t('testName', 'Test name') },
+    { key: 'value', header: t('value', 'Value') },
+    { key: 'range', header: t('referenceRange', 'Reference range') },
   ];
 
   const isActiveCard = useCallback(
@@ -74,7 +74,7 @@ const CommonOverview: React.FC<CommonOverviewProps> = ({
       {(() => {
         const cards = overviewData.map(([title, type, data, effectiveDateTime, issuedDateTime, uuid]) => (
           <article
-            key={uuid}
+            key={`${uuid}-${data[0]?.id ?? effectiveDateTime.getTime()}`}
             className={insertSeparator ? '' : `${styles.card} ${isActiveCard(uuid) ? styles.activeCard : ''}`}
           >
             <CommonDataTable
@@ -151,7 +151,7 @@ const InfoTooltip = ({ effectiveDateTime, issuedDateTime }) => {
   const { t } = useTranslation();
   return (
     <Toggletip align="bottom" className={styles.tooltipContainer}>
-      <ToggletipButton label="Additional information">
+      <ToggletipButton label={t('additionalInformation', 'Additional information')}>
         <Information />
       </ToggletipButton>
       <ToggletipContent>

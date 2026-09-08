@@ -11,6 +11,8 @@ import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import usePatientResultsData from '../loadPatientTestData/usePatientResultsData';
+import { type PatientResultsData } from '../loadPatientTestData/loadPatientData';
+import ResultsLoadError from './results-load-error.component';
 
 import CommonOverview from './common-overview.component';
 import styles from './external-overview.scss';
@@ -18,9 +20,9 @@ import { type OverviewPanelEntry, parseSingleEntry } from './useOverviewData';
 
 const resultsToShow = 3;
 
-function getFilteredOverviewData(sortedObs: PatientData, filter: (filterProps: PanelFilterProps) => boolean) {
-  return Object.entries(sortedObs)
-    .flatMap(([panelName, { entries, type, uuid }]) => {
+function getFilteredOverviewData(sortedObs: PatientResultsData, filter: (filterProps: PanelFilterProps) => boolean) {
+  return Object.values(sortedObs)
+    .flatMap(({ name: panelName, entries, type, uuid }) => {
       return entries.map((e) => [e, uuid, type, panelName] as PanelFilterProps);
     })
     .filter(filter)
@@ -38,16 +40,16 @@ function getFilteredOverviewData(sortedObs: PatientData, filter: (filterProps: P
 }
 
 function useFilteredOverviewData(patientUuid: string, filter: (filterProps: PanelFilterProps) => boolean = () => true) {
-  const { sortedObs, loaded, error } = usePatientResultsData(patientUuid);
+  const { sortedObs, loaded, error, isOffline, retry } = usePatientResultsData(patientUuid);
 
   const overviewData = useMemo(() => getFilteredOverviewData(sortedObs, filter), [filter, sortedObs]);
 
-  return { overviewData, loaded, error };
+  return { overviewData, loaded, error, isOffline, retry };
 }
 
 const ExternalOverview: React.FC<ExternalOverviewProps> = ({ patientUuid, filter }) => {
   const { t } = useTranslation();
-  const { overviewData, loaded } = useFilteredOverviewData(patientUuid, filter);
+  const { overviewData, loaded, error, isOffline, retry } = useFilteredOverviewData(patientUuid, filter);
 
   const cardTitle = t('recentResults', 'Recent Results');
   const handleSeeAll = useCallback(() => {
@@ -56,7 +58,9 @@ const ExternalOverview: React.FC<ExternalOverviewProps> = ({ patientUuid, filter
 
   return (
     <RecentResultsGrid>
-      {loaded ? (
+      {error || isOffline ? (
+        <ResultsLoadError retry={retry} isOffline={isOffline} />
+      ) : loaded ? (
         <>
           {(() => {
             if (overviewData.length) {
@@ -64,12 +68,15 @@ const ExternalOverview: React.FC<ExternalOverviewProps> = ({ patientUuid, filter
                 <div className={styles.widgetCard}>
                   <div className={styles.externalOverviewHeader}>
                     <h4 className={classNames(styles.productiveHeading03, styles.text02)}>{cardTitle}</h4>
+                    <Button kind="ghost" onClick={retry}>
+                      {t('refreshData', 'Refresh data')}
+                    </Button>
                     <Button
                       kind="ghost"
                       renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => (
                         <ArrowRightIcon size={16} {...props} />
                       )}
-                      iconDescription="See all results"
+                      iconDescription={t('seeAllResults', 'See all results')}
                       onClick={handleSeeAll}
                     >
                       {t('seeAllResults', 'See all results')}

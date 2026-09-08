@@ -1,6 +1,7 @@
 import { type OBSERVATION_INTERPRETATION, type ObsRecord, type PatientData } from '@openmrs/esm-patient-common-lib';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
+import { extractObservationInterpretation } from '../loadPatientTestData/helpers';
 import usePatientResultsData from '../loadPatientTestData/usePatientResultsData';
 
 export interface OverviewPanelData {
@@ -26,12 +27,22 @@ const getOverviewValue = (entry: ObsRecord) => {
   const value = entry.value ?? '--';
   const normalizedValue = typeof value === 'number' || typeof value === 'string' ? value : String(value);
   const interpretationInput = typeof normalizedValue === 'number' ? `${normalizedValue}` : normalizedValue;
-  const interpretation = entry.meta?.assessValue ? entry.meta.assessValue(interpretationInput) : '--';
+  const hasComparator = Boolean((entry.valueQuantity as { comparator?: string } | undefined)?.comparator);
+  const interpretation =
+    extractObservationInterpretation(entry) ??
+    (hasComparator ? '--' : (entry.meta?.assessValue?.(interpretationInput) ?? '--'));
+  const units = entry.valueQuantity?.unit ?? entry.meta?.units;
 
   return {
     interpretation,
-    value: normalizedValue,
+    value: units && normalizedValue !== '--' ? `${normalizedValue} ${units}` : normalizedValue,
   };
+};
+
+const getOverviewRange = (entry: ObsRecord) => {
+  const range = entry.meta?.range;
+  const units = entry.valueQuantity?.unit ?? entry.meta?.units;
+  return range ? `${range}${units && !range.trimEnd().endsWith(units) ? ` ${units}` : ''}` : '--';
 };
 
 export function parseSingleEntry(
@@ -45,7 +56,7 @@ export function parseSingleEntry(
       {
         id: entry.id,
         name: panelName,
-        range: entry.meta?.range || '--',
+        range: getOverviewRange(entry),
         interpretation: overviewValue.interpretation,
         value: overviewValue,
       },
@@ -57,7 +68,7 @@ export function parseSingleEntry(
         id: groupMember.id,
         key: groupMember.id,
         name: groupMember.name ?? groupMember.id,
-        range: groupMember.meta?.range || '--',
+        range: getOverviewRange(groupMember),
         interpretation: overviewValue.interpretation,
         value: overviewValue,
       };
@@ -66,13 +77,11 @@ export function parseSingleEntry(
 }
 
 function useOverviewData(patientUuid: string) {
-  const { sortedObs, loaded, error } = usePatientResultsData(patientUuid);
-  const [overviewData, setDisplayData] = useState<Array<OverviewPanelEntry>>([]);
-
-  useEffect(() => {
-    setDisplayData(
-      Object.entries(sortedObs)
-        .flatMap(([panelName, { entries, type, uuid }]): Array<OverviewPanelEntry> => {
+  const { sortedObs, loaded, error, isOffline, retry } = usePatientResultsData(patientUuid);
+  const overviewData = useMemo(
+    () =>
+      Object.values(sortedObs)
+        .flatMap(({ name: panelName, entries, type, uuid }): Array<OverviewPanelEntry> => {
           const newestEntry = entries[0];
 
           if (!newestEntry) {
@@ -91,10 +100,10 @@ function useOverviewData(patientUuid: string) {
           ];
         })
         .sort(([, , , date1], [, , , date2]) => date2.getTime() - date1.getTime()),
-    );
-  }, [sortedObs]);
+    [sortedObs],
+  );
 
-  return { overviewData, loaded, error };
+  return { overviewData, loaded, error, isOffline, retry };
 }
 
 export default useOverviewData;

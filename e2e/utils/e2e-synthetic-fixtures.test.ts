@@ -8,6 +8,7 @@ const source = '22222222-2222-4222-8222-222222222222';
 const identifierType = '33333333-3333-4333-8333-333333333333';
 const visitType = '44444444-4444-4444-8444-444444444444';
 const provider = '55555555-5555-4555-8555-555555555555';
+const testUser = '66666666-6666-4666-8666-666666666666';
 const sha = '0123456789abcdef0123456789abcdef01234567';
 const environment: NodeJS.ProcessEnv = {
   E2E_GATE_TARGET: 'DEV',
@@ -100,10 +101,12 @@ class Backend {
     if (resource === 'session')
       return response(200, {
         authenticated: true,
-        currentProvider: { uuid: provider, retired: false },
+        currentProvider: { uuid: provider },
         sessionLocation: { uuid: location },
-        user: { retired: false, privileges: [{ name: 'Fixture Test Permission' }] },
+        user: { uuid: testUser, privileges: [{ name: 'Fixture Test Permission' }] },
       });
+    if (resource === `user/${testUser}`) return response(200, { uuid: testUser, retired: false });
+    if (resource === `provider/${provider}`) return response(200, { uuid: provider, retired: false });
     if (resource === `location/${location}`) return response(200, { uuid: location, retired: false });
     if (resource === `idgen/identifiersource/${source}`)
       return response(200, { uuid: source, retired: false, identifierType: { uuid: identifierType } });
@@ -239,6 +242,73 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
       expect(call.options).toMatchObject({ maxRedirects: 0, maxRetries: 0 });
       if (call.method === 'get') expect(call.options).not.toHaveProperty('data');
     }
+  });
+
+  it('verifies only the exact session user and provider before creating or cleaning fixtures', async () => {
+    const { fixtures, backend } = harness();
+    await fixtures.create('outpatient');
+    const creation = backend.calls.slice();
+    await fixtures.cleanup();
+    const cleanup = backend.calls.slice(creation.length);
+    for (const calls of [creation, cleanup]) {
+      const firstWrite = calls.findIndex(({ method }) => method !== 'get');
+      expect(firstWrite).toBeGreaterThan(0);
+      for (const resource of [`user/${testUser}`, `provider/${provider}`]) {
+        const matches = calls.filter(({ url }) => url.pathname.endsWith(`/${resource}`));
+        expect(matches).toHaveLength(1);
+        const lookup = matches[0];
+        expect(lookup?.method).toBe('get');
+        expect(lookup?.url.search).toBe('?v=custom:(uuid,retired)');
+        expect(lookup?.options).toMatchObject({ maxRedirects: 0, maxRetries: 0 });
+        expect(calls.indexOf(lookup as Call)).toBeLessThan(firstWrite);
+      }
+      expect(calls.some(({ url }) => /\/(user|provider)$/.test(url.pathname))).toBe(false);
+    }
+  });
+
+  describe.each(['create', 'cleanup'] as const)('%s exact session-identity preflight', (operation) => {
+    describe.each([
+      ['user', testUser, 'FIXTURE_USER_INACTIVE_OR_MISMATCH'],
+      ['provider', provider, 'FIXTURE_PROVIDER_INACTIVE_OR_MISMATCH'],
+    ] as const)('%s metadata', (resource, identity, failureCode) => {
+      const prepare = async () => {
+        const state = harness();
+        if (operation === 'cleanup') await state.fixtures.create('outpatient');
+        return { ...state, firstCall: state.backend.calls.length };
+      };
+      const run = (fixtures: SyntheticFixtures) =>
+        operation === 'create' ? fixtures.create('outpatient') : fixtures.cleanup();
+
+      it.each([401, 403])('stops immediately on HTTP %s without any dependent writes', async (status) => {
+        const { fixtures, backend, journal, firstCall } = await prepare();
+        backend.override = ({ url }) =>
+          url.pathname.endsWith(`/${resource}/${identity}`) ? response(status) : undefined;
+        await expect(run(fixtures)).rejects.toThrow('FIXTURE_AUTHORIZATION_FAILED_RETAIN_JOURNAL');
+        const calls = backend.calls.slice(firstCall);
+        expect(calls.every(({ method }) => method === 'get')).toBe(true);
+        expect(calls.at(-1)?.url.pathname).toBe(`/openmrs/ws/rest/v1/${resource}/${identity}`);
+        expect(journal.records().some(({ cleaned }) => cleaned)).toBe(false);
+      });
+
+      it.each([
+        ['retired', { retired: true }],
+        ['missing retirement state', {}],
+        ['non-boolean retirement state', { retired: 'false' }],
+        ['different UUID', { uuid: location, retired: false }],
+        ['missing UUID', { uuid: undefined, retired: false }],
+      ])('rejects %s without provisioning or cleanup writes', async (_kind, metadata) => {
+        const { fixtures, backend, journal, firstCall } = await prepare();
+        backend.override = ({ url }) =>
+          url.pathname.endsWith(`/${resource}/${identity}`)
+            ? response(200, { uuid: identity, ...(metadata as object) })
+            : undefined;
+        await expect(run(fixtures)).rejects.toThrow(failureCode);
+        const calls = backend.calls.slice(firstCall);
+        expect(calls.every(({ method }) => method === 'get')).toBe(true);
+        expect(calls.at(-1)?.url.pathname).toBe(`/openmrs/ws/rest/v1/${resource}/${identity}`);
+        expect(journal.records().some(({ cleaned }) => cleaned)).toBe(false);
+      });
+    });
   });
 
   it.each([
@@ -405,9 +475,9 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
       '/session',
       {
         authenticated: true,
-        currentProvider: { uuid: provider, retired: false },
+        currentProvider: { uuid: provider },
         sessionLocation: { uuid: location },
-        user: { retired: false, privileges: [] },
+        user: { uuid: testUser, privileges: [] },
       },
     ],
     [`/visittype/${visitType}`, { uuid: visitType, retired: true }],

@@ -1,12 +1,19 @@
 import { type APIRequestContext } from '@playwright/test';
 import { describe, expect, it, vi } from 'vitest';
+import outpatientEnglish from '../../packages/apps/esm-atencion-ambulatoria-app/translations/en.json';
+import outpatientSpanish from '../../packages/apps/esm-atencion-ambulatoria-app/translations/es.json';
+import chartEnglish from '../../packages/apps/esm-patient-chart-app/translations/en.json';
+import chartSpanish from '../../packages/apps/esm-patient-chart-app/translations/es.json';
 import {
   allowEncounterWrite,
   collectOwnedObservationConcepts,
   type Encounter,
+  finishO3BrowserAcceptance,
   loadO3SmokeConfig,
   O3SmokeError,
+  physicalExamActionName,
   preflightO3Forms,
+  readO3Resource,
   runOwnedO3Acceptance,
   verifyEncounter,
 } from '../scripts/verify-o3forms-supervised';
@@ -17,6 +24,8 @@ const privileges = [
   'app:hoja.clinica.consultaExterna',
   'app:hoja.clinica.consultaExterna.editar',
   'app:hoja.clinica.formulariosClinicos',
+  'Get Users',
+  'Get Providers',
   'Add Patients',
   'Delete Patients',
   'Delete People',
@@ -65,7 +74,10 @@ const encounter: Encounter = {
   obs: [{ voided: false, concept: { uuid: id(8) }, value: 'SYNTHETIC' }],
 };
 
-function fakeApi(override: (url: URL, value: unknown) => unknown = (_url, value) => value) {
+function fakeApi(
+  override: (url: URL, value: unknown) => unknown = (_url, value) => value,
+  statusFor: (url: URL) => number = () => 200,
+) {
   const get = vi.fn(async (input: string, options: unknown) => {
     expect(options).toMatchObject({ maxRedirects: 0, maxRetries: 0 });
     const url = new URL(input);
@@ -77,10 +89,12 @@ function fakeApi(override: (url: URL, value: unknown) => unknown = (_url, value)
     else if (url.pathname.endsWith('/session'))
       value = {
         authenticated: true,
-        currentProvider: { uuid: id(9), retired: false },
+        currentProvider: { uuid: id(9) },
         sessionLocation: { uuid: id(1) },
-        user: { retired: false, privileges: privileges.map((name) => ({ name, retired: false })) },
+        user: { uuid: id(15), privileges: privileges.map((name) => ({ name })) },
       };
+    else if (url.pathname.endsWith(`/user/${id(15)}`)) value = { uuid: id(15), retired: false };
+    else if (url.pathname.endsWith(`/provider/${id(9)}`)) value = { uuid: id(9), retired: false };
     else if (url.pathname.includes('/encountertype/')) value = { uuid: id(5), retired: false };
     else if (url.pathname.endsWith('/form'))
       value = {
@@ -117,7 +131,7 @@ function fakeApi(override: (url: URL, value: unknown) => unknown = (_url, value)
       };
     else if (url.pathname.includes('/concept/')) value = { uuid: id(8), retired: false };
     else throw new Error('unexpected mock request');
-    return { ok: () => true, status: () => 200, json: async () => override(url, value) };
+    return { ok: () => statusFor(url) === 200, status: () => statusFor(url), json: async () => override(url, value) };
   });
   const post = vi.fn();
   const remove = vi.fn();
@@ -125,6 +139,80 @@ function fakeApi(override: (url: URL, value: unknown) => unknown = (_url, value)
 }
 
 describe('supervised O3 Forms adapter (local doubles only)', () => {
+  it('matches the actual translated empty-state and populated physical-exam actions without broad alternatives', () => {
+    for (const [chart, outpatient] of [
+      [chartEnglish, outpatientEnglish],
+      [chartSpanish, outpatientSpanish],
+    ] as const) {
+      // EmptyState composes the chart namespace's record prefix with lowercase displayText.
+      expect(physicalExamActionName.test(`${chart.record} ${outpatient.physicalExamRecords.toLowerCase()}`)).toBe(true);
+      expect(physicalExamActionName.test(outpatient.recordPhysicalExam)).toBe(true);
+      expect(physicalExamActionName.test(`prefix ${outpatient.recordPhysicalExam}`)).toBe(false);
+      expect(physicalExamActionName.test(`${outpatient.recordPhysicalExam} suffix`)).toBe(false);
+    }
+    expect(physicalExamActionName.test('Registrar signos vitales')).toBe(false);
+  });
+  it('uses exact user/provider reads when realistic session references omit active states', async () => {
+    const mock = fakeApi();
+    await expect(preflightO3Forms(mock.api, config)).resolves.toEqual(metadata);
+    const paths = mock.get.mock.calls.map(([url]) => new URL(url).pathname);
+    expect(paths).toContain(`/openmrs/ws/rest/v1/user/${id(15)}`);
+    expect(paths).toContain(`/openmrs/ws/rest/v1/provider/${id(9)}`);
+    expect(paths).not.toContain('/openmrs/ws/rest/v1/user');
+    expect(paths).not.toContain('/openmrs/ws/rest/v1/provider');
+  });
+  it.each([
+    [`/user/${id(15)}`, { uuid: id(15), retired: true }],
+    [`/user/${id(15)}`, { uuid: id(15) }],
+    [`/user/${id(15)}`, { uuid: id(99), retired: false }],
+    [`/provider/${id(9)}`, { uuid: id(9), retired: true }],
+    [`/provider/${id(9)}`, { uuid: id(9) }],
+    [`/provider/${id(9)}`, { uuid: id(99), retired: false }],
+  ])('rejects inactive, missing or mismatched state for %s before dependent metadata', async (suffix, value) => {
+    const mock = fakeApi((url, normal) => (url.pathname.endsWith(suffix) ? value : normal));
+    await expect(preflightO3Forms(mock.api, config)).rejects.toThrow(/O3_TEST_(USER|PROVIDER)_ACTIVE_STATE_UNVERIFIED/);
+    expect(mock.get.mock.calls.some(([url]) => url.includes('/encountertype/') || url.includes('/o3/forms/'))).toBe(
+      false,
+    );
+  });
+  it.each([401, 403])('stops further metadata reads after HTTP %i from the exact user lookup', async (status) => {
+    const mock = fakeApi(undefined, (url) => (url.pathname.endsWith(`/user/${id(15)}`) ? status : 200));
+    await expect(preflightO3Forms(mock.api, config)).rejects.toThrow('O3_AUTHORIZATION_FAILED');
+    expect(mock.get.mock.calls.some(([url]) => url.includes('/provider/') || url.includes('/o3/forms/'))).toBe(false);
+  });
+  it.each([401, 403])('closes the browser and forbids cleanup after direct persistence API HTTP %i', async (status) => {
+    const calls: string[] = [];
+    const responseJson = vi.fn();
+    const api = {
+      get: vi.fn(async () => {
+        calls.push('persistence-read');
+        return { status: () => status, ok: () => false, json: responseJson };
+      }),
+    } as unknown as APIRequestContext;
+    const browser = {
+      close: vi.fn(async () => {
+        calls.push('browser-closed');
+      }),
+    };
+    const fixtures = {
+      create: vi.fn(async () => owned),
+      cleanup: vi.fn(async () => {
+        calls.push('cleanup');
+      }),
+    };
+    await expect(
+      runOwnedO3Acceptance(fixtures, async () => {
+        try {
+          await readO3Resource(api, config, `encounter/${id(12)}`);
+        } catch (error) {
+          await finishO3BrowserAcceptance(browser, true, false, error);
+        }
+      }),
+    ).rejects.toThrow('O3_WRITES_STOPPED_RETAIN_JOURNAL');
+    expect(calls).toEqual(['persistence-read', 'browser-closed']);
+    expect(fixtures.cleanup).not.toHaveBeenCalled();
+    expect(responseJson).not.toHaveBeenCalled();
+  });
   it('verifies TLS unless explicitly waived for the exact approved non-production target', () => {
     expect(loadO3SmokeConfig(environment, 'preflight').ignoreHTTPSErrors).toBe(false);
     expect(

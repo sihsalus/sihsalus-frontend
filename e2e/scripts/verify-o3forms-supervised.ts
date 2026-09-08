@@ -35,11 +35,15 @@ function isConceptIdentifier(value: string): boolean {
   return uuid.test(value) || (value.length === 36 && /^[0-9]+A+$/.test(value));
 }
 const forms = ['CE-ANAM-001-ANAMNESIS', 'CE-SOAP-001-NOTA SOAP'] as const;
+export const physicalExamActionName =
+  /^(?:Registrar (?:registros de )?examen físico|Record physical examination(?: records)?)$/i;
 const requiredPrivileges = [
   'app:hoja.clinica',
   'app:hoja.clinica.consultaExterna',
   'app:hoja.clinica.consultaExterna.editar',
   'app:hoja.clinica.formulariosClinicos',
+  'Get Users',
+  'Get Providers',
   'Add Patients',
   'Delete Patients',
   'Delete People',
@@ -118,6 +122,8 @@ async function json<T>(api: APIRequestContext, config: Config, resource: string)
   return response.json() as Promise<T>;
 }
 
+export { json as readO3Resource };
+
 export async function preflightO3Forms(api: APIRequestContext, config: Config): Promise<Metadata> {
   const build = await api.get(`${config.spaBaseUrl}/build-info.json`, { maxRedirects: 0, maxRetries: 0 });
   check(build.ok() && (await build.json()).gitSha === config.expectedSha, 'O3_DEPLOYED_SHA_MISMATCH');
@@ -136,22 +142,34 @@ export async function preflightO3Forms(api: APIRequestContext, config: Config): 
     authenticated?: boolean;
     currentProvider?: Reference;
     sessionLocation?: Reference;
-    user?: { retired?: boolean; privileges?: Array<{ name?: string; retired?: boolean }> };
+    user?: { uuid?: string; privileges?: Array<{ name?: string; retired?: boolean }> };
   }>(
     api,
     config,
-    'session?v=custom:(authenticated,currentProvider:(uuid,retired),sessionLocation:(uuid),user:(retired,privileges:(name,retired)))',
+    'session?v=custom:(authenticated,currentProvider:(uuid),sessionLocation:(uuid),user:(uuid,privileges:(name)))',
   );
   check(
     session.authenticated === true &&
       uuid.test(session.currentProvider?.uuid ?? '') &&
-      session.currentProvider?.retired === false &&
-      session.user?.retired === false &&
+      uuid.test(session.user?.uuid ?? '') &&
       session.sessionLocation?.uuid === config.locationUuid,
     'O3_TEST_SESSION_UNVERIFIED',
   );
+  // SessionController uses its own representation and does not expose retired states.
+  // Read only the exact authenticated identities, never a provider/user collection.
+  const user = await json<Reference>(api, config, `user/${session.user?.uuid}?v=custom:(uuid,retired)`);
+  check(user.uuid === session.user?.uuid && user.retired === false, 'O3_TEST_USER_ACTIVE_STATE_UNVERIFIED');
+  const provider = await json<Reference>(
+    api,
+    config,
+    `provider/${session.currentProvider?.uuid}?v=custom:(uuid,retired)`,
+  );
+  check(
+    provider.uuid === session.currentProvider?.uuid && provider.retired === false,
+    'O3_TEST_PROVIDER_ACTIVE_STATE_UNVERIFIED',
+  );
   const assigned = new Set(
-    session.user.privileges?.filter((privilege) => !privilege.retired).map((privilege) => privilege.name),
+    session.user?.privileges?.filter((privilege) => !privilege.retired).map((privilege) => privilege.name),
   );
   check(
     requiredPrivileges.every((privilege) => assigned.has(privilege)),
@@ -396,6 +414,7 @@ async function browserAcceptance(
   let schemaResponses = 0;
   let authorizationFailed = false;
   let acceptanceFailed = false;
+  let acceptanceError: unknown;
   const observationPolicy = {
     allowedConcepts: new Set(metadata.observationConcepts),
     ownedObservationConcepts: new Map<string, string>(),
@@ -485,7 +504,7 @@ async function browserAcceptance(
     }
     await openAnamnesis();
     await tabs.getByRole('tab', { name: /^Examen físico$/i }).click();
-    await page.getByRole('button', { name: /Registrar examen físico|Record physical exam/i }).click();
+    await page.getByRole('button', { name: physicalExamActionName }).click();
     await expect(
       page
         .getByRole('banner', { name: /Workspace Header|Encabezado del espacio de trabajo/i })
@@ -544,9 +563,20 @@ async function browserAcceptance(
       await persisted(value);
     }
     check(schemaResponses >= 2 && !failedRequest && !encounteredError, 'O3_BROWSER_ACCEPTANCE_FAILED');
-  } catch {
+  } catch (error) {
     acceptanceFailed = true;
+    acceptanceError = error;
   }
+  await finishO3BrowserAcceptance(browser, acceptanceFailed, authorizationFailed, acceptanceError);
+}
+
+/** Close the browser before propagating either browser or direct-API authorization failures. */
+export async function finishO3BrowserAcceptance(
+  browser: Pick<Browser, 'close'> | undefined,
+  acceptanceFailed: boolean,
+  authorizationFailed: boolean,
+  acceptanceError?: unknown,
+): Promise<void> {
   if (browser) {
     try {
       await browser.close();
@@ -554,7 +584,9 @@ async function browserAcceptance(
       throw new O3SmokeError('O3_BROWSER_SHUTDOWN_UNVERIFIED_RETAIN_JOURNAL');
     }
   }
-  check(!authorizationFailed, 'O3_AUTHORIZATION_FAILED_RETAIN_JOURNAL');
+  const directApiAuthorizationFailed =
+    acceptanceError instanceof O3SmokeError && acceptanceError.message === 'O3_AUTHORIZATION_FAILED';
+  check(!authorizationFailed && !directApiAuthorizationFailed, 'O3_AUTHORIZATION_FAILED_RETAIN_JOURNAL');
   check(!acceptanceFailed, 'O3_BROWSER_ACCEPTANCE_FAILED');
 }
 

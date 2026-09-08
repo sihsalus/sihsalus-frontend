@@ -40,6 +40,17 @@ authoritative. A configurable privilege list is not proof that its contents are
 complete: the environment/domain reviewer must approve that list before any
 adapter is enabled.
 
+The REST session endpoint returns reference representations and ignores `v`;
+absence of `retired` there is not proof that an account or provider is active.
+Before creation and cleanup, the foundation validates the authenticated session's
+user/provider UUIDs, then reads only `user/{current-test-user-uuid}` and
+`provider/{current-test-provider-uuid}` with `custom:(uuid,retired)`. Both exact
+identities must match and explicitly return `retired: false`. No global user or
+provider list is queried. Review permission to read these two technical records
+as part of the environment's complete privilege configuration. Missing,
+mismatched or retired metadata blocks writes; HTTP 401/403 stops subsequent
+requests and retains the journal for authorized recovery.
+
 At most one patient/visit pair exists for each label, `outpatient` and
 `appointments`, in a journal. Creation uses an official generated identifier and
 an inline synthetic person, without DNI, addresses, or separate person creation.

@@ -24,6 +24,14 @@ or saves credentials/cookies/screenshots/raw responses. Authentication failures
 stop subsequent requests. Output is restricted to allowlisted technical fields;
 `clinicalValidation` remains `NOT_RUN`, including when the inventory succeeds.
 
+REST 3.5.0's `/session` controller ignores `v` and uses a fixed user representation
+without retirement flags. The inventory still requires `authenticated: true` and
+rejects explicit retirement; omitted flags are reported as `retired: null` and
+`privilegesRetirementKnown: false`, never as proof of an active account or privilege.
+Missing authentication metadata, an unauthenticated session and an explicitly
+retired account have separate fixed error codes. These read-only observations do
+not relax the supervised clinical/fixture write gates.
+
 ## Credentials and target environment
 
 Credentials are mandatory and must be provided through environment variables.

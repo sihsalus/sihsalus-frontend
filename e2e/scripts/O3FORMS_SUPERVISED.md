@@ -25,6 +25,15 @@ Read [the fixture foundation contract](../SYNTHETIC_FIXTURES.md) before use.
 Configure all five `E2E_FIXTURE_*` settings documented there, with a reviewed
 complete create/read/void privilege list. The adapter also requires:
 
+OpenMRS REST `SessionController1_9` uses a fixed session representation, so this
+adapter verifies authentication and canonical user/provider identities first,
+then reads only those exact resources using `user/{uuid}` and `provider/{uuid}`.
+Both must return the same UUID and explicit `retired: false`; omitted states are
+not treated as active. The account's reviewed privilege list must include
+`Get Users` and `Get Providers`. No user/provider collection or first-available
+fallback is permitted. These checks and the fixture preflight must pass before
+any clinical `run`; local mocks alone are not activation evidence.
+
 | Variable                          | Required value                                         |
 | --------------------------------- | ------------------------------------------------------ |
 | `E2E_O3FORMS_SUPERVISED_TARGET`   | The same explicitly coordinated `DEV` or `QLTY` target |
@@ -116,6 +125,10 @@ if cleanup succeeds. A cleanup failure also fails the command and retains state.
 The foundation voids observations, orders, encounters and visits before its
 owned synthetic patient/person and verifies each outcome. Journals remain even
 after successful cleanup; do not delete them as routine CI cleanup.
+
+HTTP 401/403 from direct API persistence verification is treated identically to
+an authorization failure seen by the browser: close the browser, retain the
+journal, and stop cleanup writes until authorized recovery is coordinated.
 
 Record statuses separately: preflight, browser flow, create/edit persistence,
 cleanup, frontend SHA, backend image digest and module version, for **each**

@@ -156,7 +156,12 @@ describe('O3 Forms DEV-only read-only environment preflight', () => {
     expect(report.o3forms).toEqual({ version: '2.3.0', started: true });
     expect(report.clinicalValidation).toBe('NOT_RUN');
     expect(JSON.stringify(report)).not.toContain('DO_NOT_LOG');
-    expect(report.session).toEqual({ authenticated: true, privileges: ['Get Forms'] });
+    expect(report.session).toEqual({
+      authenticated: true,
+      retired: false,
+      privilegesRetirementKnown: true,
+      privileges: ['Get Forms'],
+    });
     expect(report.forms).toHaveLength(2);
     for (const [value] of get.mock.calls) validateMetadataUrl(value, readPreflightConfig(environment));
     expect(
@@ -169,6 +174,50 @@ describe('O3 Forms DEV-only read-only environment preflight', () => {
   it('stops every dependent request after an unauthenticated session', async () => {
     const get = vi.fn(async () => ({ authenticated: false, user: { display: 'DO_NOT_LOG' } }));
     await expect(inventoryEnvironment({ get })).rejects.toThrow('UNAUTHENTICATED');
+    expect(get).toHaveBeenCalledOnce();
+  });
+
+  it('accepts the real REST 3.5.0 session representation but reports unexposed retirement flags as unknown', async () => {
+    const get = vi.fn(async (value: string) =>
+      value.includes('/session?')
+        ? {
+            authenticated: true,
+            user: {
+              uuid: uuid(3),
+              display: 'DO_NOT_LOG',
+              username: 'DO_NOT_LOG',
+              privileges: [{ uuid: uuid(4), display: 'Get Forms', name: 'Get Forms' }],
+              person: { uuid: uuid(5), display: 'DO_NOT_LOG' },
+            },
+          }
+        : fixture(value),
+    );
+    const report = await inventoryEnvironment({ get });
+    expect(report.session).toEqual({
+      authenticated: true,
+      retired: null,
+      privilegesRetirementKnown: false,
+      privileges: ['Get Forms'],
+    });
+    expect(report.clinicalValidation).toBe('NOT_RUN');
+    expect(JSON.stringify(report)).not.toContain('DO_NOT_LOG');
+  });
+
+  it('distinguishes missing authentication metadata from a false authentication result', async () => {
+    const get = vi.fn(async () => ({ user: { privileges: [] } }));
+    await expect(inventoryEnvironment({ get })).rejects.toThrow('SESSION_AUTH_METADATA_MISSING');
+    expect(get).toHaveBeenCalledOnce();
+  });
+
+  it('blocks explicit retirement even when the session is authenticated', async () => {
+    const get = vi.fn(async () => ({ authenticated: true, user: { retired: true, privileges: [] } }));
+    await expect(inventoryEnvironment({ get })).rejects.toThrow('SESSION_USER_RETIRED');
+    expect(get).toHaveBeenCalledOnce();
+  });
+
+  it('does not silently accept malformed retirement metadata', async () => {
+    const get = vi.fn(async () => ({ authenticated: true, user: { retired: 'false', privileges: [] } }));
+    await expect(inventoryEnvironment({ get })).rejects.toThrow('INVALID_METADATA');
     expect(get).toHaveBeenCalledOnce();
   });
 

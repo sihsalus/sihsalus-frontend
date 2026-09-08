@@ -24,6 +24,8 @@ const errorCodes = new Set([
   'INVALID_JSON',
   'RESPONSE_TOO_LARGE',
   'UNAUTHENTICATED',
+  'SESSION_AUTH_METADATA_MISSING',
+  'SESSION_USER_RETIRED',
   'INVALID_METADATA',
   'INCOMPLETE_METADATA',
 ]);
@@ -187,12 +189,28 @@ export async function inventoryEnvironment(client, onMetadata = () => {}) {
     onMetadata(section, data);
   };
   const session = await client.get(resourceUrl('session'));
-  check(session?.authenticated === true && session.user?.retired === false, 'UNAUTHENTICATED');
-  check(Array.isArray(session.user.privileges), 'INVALID_METADATA');
+  check(typeof session?.authenticated === 'boolean', 'SESSION_AUTH_METADATA_MISSING');
+  check(session.authenticated === true, 'UNAUTHENTICATED');
+  check(session.user && typeof session.user === 'object' && Array.isArray(session.user.privileges), 'INVALID_METADATA');
+  check(session.user.retired === undefined || typeof session.user.retired === 'boolean', 'INVALID_METADATA');
+  check(session.user.retired !== true, 'SESSION_USER_RETIRED');
+  check(
+    session.user.privileges.every(
+      (entry) => entry && (entry.retired === undefined || typeof entry.retired === 'boolean'),
+    ),
+    'INVALID_METADATA',
+  );
   const privileges = session.user.privileges
     .filter((entry) => entry.retired !== true)
     .map((entry) => metadataLabel(entry.name));
-  emit('session', { authenticated: true, privileges: [...new Set(privileges)].sort() });
+  // REST 3.5.0 /session ignores v and omits retirement flags in its fixed representation.
+  // This GET-only inventory reports unknown flags; it is not an active-account/clinical-write gate.
+  emit('session', {
+    authenticated: true,
+    retired: typeof session.user.retired === 'boolean' ? session.user.retired : null,
+    privilegesRetirementKnown: session.user.privileges.every((entry) => typeof entry.retired === 'boolean'),
+    privileges: [...new Set(privileges)].sort(),
+  });
   const build = await client.get(`${devOrigin}/openmrs/spa/build-info.json`);
   check(/^[0-9a-f]{40}$/.test(build?.gitSha ?? ''), 'INVALID_METADATA');
   emit('frontendBuild', { gitSha: build.gitSha });

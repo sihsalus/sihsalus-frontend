@@ -46,7 +46,7 @@ export const loadObsEntries = async (patientUuid: string, signal?: AbortSignal):
   let url: string | undefined = `${endpoint.href}?${queries}`;
   const visited = new Set<string>();
   const observations = new Map<string, ObsRecord>();
-  let received = 0;
+  let expectedTotal: number | undefined;
 
   while (url) {
     if (visited.has(url)) throw loadError();
@@ -55,30 +55,42 @@ export const loadObsEntries = async (patientUuid: string, signal?: AbortSignal):
     if (
       page?.resourceType !== 'Bundle' ||
       (page.entry !== undefined && !Array.isArray(page.entry)) ||
+      (page.link !== undefined && !Array.isArray(page.link)) ||
       (page.total !== undefined && (!Number.isSafeInteger(page.total) || page.total < 0))
     )
       throw loadError();
 
+    if (page.total !== undefined) {
+      if (expectedTotal !== undefined && expectedTotal !== page.total) throw loadError();
+      expectedTotal = page.total;
+    }
     const entries = page.entry ?? [];
     const previousCount = observations.size;
     for (const { resource } of entries) {
-      if (!resource?.id) throw loadError();
+      if (!resource?.id || observations.has(resource.id)) throw loadError();
       observations.set(resource.id, resource);
     }
-    received += entries.length;
+    if (expectedTotal !== undefined && observations.size > expectedTotal) throw loadError();
     const next = page.link?.find(({ relation }) => relation === 'next')?.url;
 
     if (next) {
       const nextUrl = new URL(next, url);
       // FHIR pagination links may name the backend behind the SPA proxy.
-      // Keep requests on the configured API origin and observation endpoint.
-      if (nextUrl.pathname !== endpoint.pathname) throw loadError();
-      if (nextUrl.searchParams.has('patient') && nextUrl.searchParams.get('patient') !== patientUuid) throw loadError();
-      nextUrl.host = endpoint.host;
-      nextUrl.protocol = endpoint.protocol;
-      url = nextUrl.href;
-    } else if (page.total !== undefined && received < page.total) {
-      queries.set('_getpagesoffset', String(received));
+      // Cursors may be rooted at the FHIR base. Keep their path/query opaque
+      // within that API and send them through the configured SPA proxy.
+      const fhirPath = endpoint.pathname.slice(0, -'/Observation'.length);
+      if (
+        !['http:', 'https:'].includes(nextUrl.protocol) ||
+        nextUrl.username ||
+        nextUrl.password ||
+        nextUrl.hash ||
+        (nextUrl.pathname !== fhirPath && !nextUrl.pathname.startsWith(`${fhirPath}/`)) ||
+        nextUrl.searchParams.getAll('patient').some((patient) => patient !== patientUuid)
+      )
+        throw loadError();
+      url = new URL(`${nextUrl.pathname}${nextUrl.search}`, endpoint.origin).href;
+    } else if (expectedTotal !== undefined && observations.size < expectedTotal) {
+      queries.set('_getpagesoffset', String(observations.size));
       url = `${endpoint.href}?${queries}`;
     } else {
       url = undefined;
@@ -203,9 +215,11 @@ export const assessValue =
 type ObservationReferenceRange = {
   low?: {
     value?: number;
+    unit?: string;
   };
   high?: {
     value?: number;
+    unit?: string;
   };
   type?: {
     coding?: Array<{
@@ -279,24 +293,34 @@ export function extractObservationReferenceRanges(observation: ObservationWithFh
   let hasRangeValue = false;
 
   for (const referenceRange of referenceRanges) {
-    const coding = referenceRange.type?.coding?.[0];
+    const coding = referenceRange.type?.coding?.find(
+      ({ system }) =>
+        system === 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' ||
+        system === 'http://fhir.openmrs.org/ext/obs/reference-range',
+    );
     const system = coding?.system ?? '';
     const code = normalizeDisplayValue(coding?.code);
     const low = referenceRange.low?.value;
     const high = referenceRange.high?.value;
 
-    if (referenceRange.text) {
-      ranges.range = referenceRange.text;
-      hasRangeValue = true;
-    }
-
-    if (system === 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' && code === 'normal') {
-      if (typeof low === 'number') {
-        ranges.lowNormal = low;
-        hasRangeValue = true;
-      }
-      if (typeof high === 'number') {
-        ranges.hiNormal = high;
+    // FHIR R4 defaults an absent type to normal. An absent bound is unbounded;
+    // it must not inherit the opposite bound from the concept dictionary.
+    if (
+      !referenceRange.type ||
+      (system === 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' && code === 'normal')
+    ) {
+      if (low !== undefined || high !== undefined || referenceRange.text) {
+        const textBounds = extractRangesFromRangeStr(referenceRange.text);
+        ranges.lowNormal = low ?? (high === undefined ? textBounds.lowNormal : undefined);
+        ranges.hiNormal = high ?? (low === undefined ? textBounds.hiNormal : undefined);
+        ranges.range = referenceRange.text ?? formatNumericReferenceRange(low, high);
+        ranges.units = referenceRange.low?.unit ?? referenceRange.high?.unit ?? observation.valueQuantity?.unit;
+        const lowUnits = referenceRange.low?.unit ?? observation.valueQuantity?.unit;
+        const highUnits = referenceRange.high?.unit ?? observation.valueQuantity?.unit;
+        if (!referenceRange.text && low !== undefined && high !== undefined && lowUnits !== highUnits) {
+          ranges.range = `${low}${lowUnits ? ` ${lowUnits}` : ''} – ${high}${highUnits ? ` ${highUnits}` : ''}`;
+          ranges.units = '';
+        }
         hasRangeValue = true;
       }
     }
@@ -328,8 +352,57 @@ export function extractObservationReferenceRanges(observation: ObservationWithFh
     return undefined;
   }
 
-  ranges.units = observation.valueQuantity?.unit;
   return ranges;
+}
+
+function formatNumericReferenceRange(low?: number, high?: number): string | undefined {
+  if (low !== undefined && high !== undefined) return `${low} – ${high}`;
+  if (low !== undefined) return `≥ ${low}`;
+  if (high !== undefined) return `≤ ${high}`;
+  return undefined;
+}
+
+export interface ResultMetaInfo extends ObsMetaInfo {
+  /** Units belonging to the displayed reference range, independent of the result. */
+  rangeUnits?: string;
+}
+
+export function getResultMeta(observation: ObservationWithFhirMetadata, conceptMeta: ObsMetaInfo = {}): ResultMetaInfo {
+  const obsRanges = extractObservationReferenceRanges(observation);
+  const hasNormalRange = obsRanges?.range !== undefined;
+  const units = observation.valueQuantity?.unit ?? conceptMeta.units;
+  const rangeUnits = hasNormalRange ? (obsRanges.units ?? units) : conceptMeta.units;
+  const rangeText = observation.referenceRange?.find((range) => range.text && range.text === obsRanges?.range)?.text;
+  // Preserve free text verbatim. Only calculate from numeric text whose unit is
+  // absent or explicitly matches; arbitrary prose is not a numeric reference.
+  const numericText =
+    units && rangeText?.trim().endsWith(units) ? rangeText.trim().slice(0, -units.length).trim() : rangeText?.trim();
+  const canAssessText =
+    !rangeText ||
+    observation.referenceRange?.some(
+      (range) => range.text === rangeText && (range.low?.value !== undefined || range.high?.value !== undefined),
+    ) ||
+    /^(?:-?\d+(?:[.,]\d+)?\s*[-–—]\s*-?\d+(?:[.,]\d+)?|[<>]\s*-?\d+(?:[.,]\d+)?)$/.test(numericText);
+  const sameUnits = (a?: string, b?: string) => (a?.trim() ?? '') === (b?.trim() ?? '');
+  const catalogCompatible = sameUnits(units, conceptMeta.units);
+  const observationCompatible =
+    canAssessText &&
+    sameUnits(units, rangeUnits) &&
+    (observation.referenceRange?.every((range) =>
+      [range.low?.unit, range.high?.unit].every((boundUnits) => !boundUnits || sameUnits(units, boundUnits)),
+    ) ??
+      true);
+  const meta: ResultMetaInfo = {
+    // Catalog thresholds must not classify a quantity in another unit, even
+    // when a compatible observation-specific normal range is available.
+    ...(catalogCompatible ? conceptMeta : { datatype: conceptMeta.datatype }),
+    ...obsRanges,
+    units,
+    rangeUnits: rangeText ? '' : (rangeUnits ?? ''),
+    range: hasNormalRange ? obsRanges.range : conceptMeta.range,
+  };
+  meta.assessValue = (hasNormalRange ? observationCompatible : catalogCompatible) ? assessValue(meta) : () => '--';
+  return meta;
 }
 
 export function extractObservationInterpretation(
@@ -363,9 +436,7 @@ export function extractMetaInformation(concepts: Array<ConceptRecord>): Record<C
         datatype: concept.datatype?.display,
       };
 
-      if (typeof concept.hiNormal === 'number' && typeof concept.lowNormal === 'number') {
-        meta.range = `${concept.lowNormal} – ${concept.hiNormal}`;
-      }
+      meta.range = formatNumericReferenceRange(concept.lowNormal, concept.hiNormal);
 
       meta.assessValue = assessValue(meta);
 

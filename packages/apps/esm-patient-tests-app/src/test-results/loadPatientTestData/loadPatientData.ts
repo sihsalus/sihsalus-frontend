@@ -9,11 +9,9 @@ import {
 import { uniq } from 'lodash-es';
 
 import {
-  assessValue,
-  extractObservationReferenceRanges,
   extractMetaInformation,
-  extractRangesFromRangeStr,
   getEntryConceptClassUuid,
+  getResultMeta,
   loadObsEntries,
   loadPresentConcepts,
 } from './helpers';
@@ -25,7 +23,7 @@ const isTestConcept = (concept: ConceptRecord): boolean =>
 
 function parseSingleObsData(
   testConceptNameMap: Record<ConceptUuid, string>,
-  memberRefs: Record<ObsUuid, [ObsRecord[], number]>,
+  memberRefs: Record<ObsUuid, Array<[ObsRecord[], number]>>,
   metaInfomation: Record<ConceptUuid, ObsMetaInfo>,
 ) {
   return (entry: ObsRecord) => {
@@ -35,37 +33,13 @@ function parseSingleObsData(
       // is a panel
       entry.members = new Array(entry.hasMember.length);
       entry.hasMember.forEach((memb, i) => {
-        memberRefs[memb.reference.split('/')[1]] = [entry.members, i];
+        const memberUuid = memb.reference.split('/')[1];
+        memberRefs[memberUuid] ??= [];
+        memberRefs[memberUuid].push([entry.members, i]);
       });
     } else {
       // is a single test
-      const conceptMeta = metaInfomation[entry.conceptClass];
-      const obsRanges = extractObservationReferenceRanges(entry);
-      const hasObsRanges =
-        obsRanges &&
-        (obsRanges.lowNormal !== undefined || obsRanges.hiNormal !== undefined || obsRanges.range !== undefined);
-
-      entry.meta = hasObsRanges
-        ? {
-            ...conceptMeta,
-            ...obsRanges,
-            range:
-              obsRanges.range ??
-              (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined
-                ? `${obsRanges.lowNormal} – ${obsRanges.hiNormal}`
-                : conceptMeta?.range),
-          }
-        : conceptMeta;
-      // A range supplied as text must also replace the catalog's normal bounds.
-      if (obsRanges?.range && obsRanges.lowNormal === undefined && obsRanges.hiNormal === undefined) {
-        const { lowNormal, hiNormal } = extractRangesFromRangeStr(obsRanges.range);
-        entry.meta = { ...entry.meta, lowNormal, hiNormal };
-      }
-      entry.meta = {
-        ...entry.meta,
-        units: entry.valueQuantity?.unit ?? entry.meta?.units ?? conceptMeta?.units,
-      };
-      entry.meta.assessValue = assessValue(entry.meta);
+      entry.meta = getResultMeta(entry, metaInfomation[entry.conceptClass]);
     }
 
     if (entry.valueQuantity) {
@@ -104,7 +78,7 @@ async function loadPatientData(patientUuid: string, signal?: AbortSignal): Promi
   const singleEntries: ObsRecord[] = [];
 
   // a record of observation uuids that are members of panels, mapped to the place where to put them
-  const memberRefs: Record<ObsUuid, [ObsRecord[], number]> = {};
+  const memberRefs: Record<ObsUuid, Array<[ObsRecord[], number]>> = {};
   const parseEntry = parseSingleObsData(testConceptNameMap, memberRefs, metaInfomation);
 
   entries.forEach((entry) => {
@@ -124,11 +98,9 @@ async function loadPatientData(patientUuid: string, signal?: AbortSignal): Promi
 
   singleEntries.forEach((entry) => {
     const { id } = entry;
-    const memRef = memberRefs[id];
-
-    if (memRef) {
-      memRef[0][memRef[1]] = entry;
-    }
+    memberRefs[id]?.forEach(([members, index]) => {
+      members[index] = entry;
+    });
 
     if (obsByClass[entry.conceptClass]) {
       obsByClass[entry.conceptClass].push(entry);

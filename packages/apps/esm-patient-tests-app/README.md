@@ -47,24 +47,44 @@ entry after a transport failure; it is not a strict network-only guarantee. A
 coordinated smoke must include an already populated service-worker cache and a
 backend outage. Changing the shared service-worker strategy is outside this PR.
 
-FHIR `Bundle.total` is optional. Pagination follows `next` links on the configured
-Observation endpoint, preserving the SPA proxy origin, with the existing offset
-fallback when a total is provided without links. Failed or repeated pages fail
-closed. Concepts remain keyed by UUID, with separate display names, so equal
-labels do not overwrite distinct tests.
+FHIR `Bundle.total` is optional. Pagination follows opaque `next` paths and
+queries within the configured FHIR API, including cursors at the FHIR root,
+preserving the SPA proxy origin. Links outside that API or naming another patient
+are rejected. The offset fallback retains the first advertised total when later
+pages omit it. Failed, overlapping, non-progressing pages or changing totals fail
+closed with retry; a server must provide a consistent history to complete the
+load. Concepts remain keyed by UUID, with separate display names, so equal labels
+do not overwrite distinct tests. Each panel retains every referenced single test,
+including observations shared by multiple panels.
 
 The summary preserves textual/coded values, quantity comparators and units. It
-prefers the server interpretation, otherwise evaluates the combined observation
-and concept ranges. Limited quantities such as `< 5` retain their comparator and
-have no calculated interpretation unless the server supplies one. These
-read-only changes do not modify observations, visits, orders, permissions or
+prefers the server interpretation, otherwise evaluates compatible observation
+and concept ranges. An observation reference range without `type` defaults to
+normal per [FHIR R4](https://hl7.org/fhir/R4/observation-definitions.html#Observation.referenceRange.type).
+One-sided normal ranges display `≤ high` or `≥ low`; the absent side never
+inherits a catalog limit. Range and quantity units are kept separately. A catalog
+range in mg/dL remains in mg/dL when the result is in mmol/L, and cannot classify
+that value. No unit conversion or equivalence is inferred; catalog critical and
+absolute thresholds are also excluded when their units differ. Free-text ranges
+are preserved verbatim, with calculated interpretation limited to explicit
+numeric bounds or numeric text in matching/unspecified units. Limited quantities
+such as `< 5` retain their comparator and have no calculated interpretation unless
+the server supplies one. These read-only changes do not modify observations,
+visits, orders, permissions or
 Netlab/attachment navigation.
+
+Sorting a summary table keeps each row's normal, high, low, critical or off-scale
+highlight attached to that observation. Value sorting compares numeric magnitudes
+(including negative/decimal values and comparator bounds), followed by text in
+ascending order, and reverses that order for descending. This only changes row
+order; it does not convert units or turn a limited quantity into an exact result.
 
 Regression coverage includes identity changes and late responses, corrected
 values, refresh/retry, offline/reconnect, HTTP/network/JSON failures, paginated
 histories with and without totals, metadata recovery, duplicate labels, text,
-coded text, comparators, units, interpretation and Spanish column labels. Before
-rollout, coordinate clinical review and a synthetic DEV/QLTY smoke with the
+coded text, comparators, units, interpretation, range boundaries, sorting,
+shared panel members, opaque cursors, incomplete-history retry and Spanish column
+labels. Before rollout, coordinate clinical review and a synthetic DEV/QLTY smoke with the
 intended roles and deployed content, including corrected results and pagination.
 Local tests and builds do not substitute for that validation.
 

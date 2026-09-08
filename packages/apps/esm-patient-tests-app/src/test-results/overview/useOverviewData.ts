@@ -1,7 +1,7 @@
 import { type OBSERVATION_INTERPRETATION, type ObsRecord, type PatientData } from '@openmrs/esm-patient-common-lib';
 import { useMemo } from 'react';
 
-import { extractObservationInterpretation } from '../loadPatientTestData/helpers';
+import { extractObservationInterpretation, type ResultMetaInfo } from '../loadPatientTestData/helpers';
 import usePatientResultsData from '../loadPatientTestData/usePatientResultsData';
 
 export interface OverviewPanelData {
@@ -41,7 +41,7 @@ const getOverviewValue = (entry: ObsRecord) => {
 
 const getOverviewRange = (entry: ObsRecord) => {
   const range = entry.meta?.range;
-  const units = entry.valueQuantity?.unit ?? entry.meta?.units;
+  const units = (entry.meta as ResultMetaInfo)?.rangeUnits ?? entry.meta?.units;
   return range ? `${range}${units && !range.trimEnd().endsWith(units) ? ` ${units}` : ''}` : '--';
 };
 

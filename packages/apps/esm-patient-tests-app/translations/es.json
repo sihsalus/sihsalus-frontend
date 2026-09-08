@@ -1,4 +1,8 @@
 {
+  "additionalInformation": "Información adicional",
+  "retry": "Reintentar",
+  "testResultsLoadError": "No se pudieron cargar los resultados. Vuelva a intentarlo.",
+  "testResultsOffline": "Conéctese a la red para cargar los resultados actualizados.",
   "add": "Agregar",
   "addAllToBasket": "Agregar todos",
   "additionalInstructions": "Instrucciones adicionales",

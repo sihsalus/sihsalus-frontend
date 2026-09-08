@@ -26,6 +26,48 @@ It provides tabular and chart-based overviews of the test results available for 
 
 The reusable recent-results card is registered in `consulta-externa-pruebas-complementarias-slot` for the **Pruebas complementarias** tab in Consulta Externa. The host passes the active `patientUuid`; the extension keeps its FHIR loading, empty state, and navigation to the complete Results dashboard. This Consulta Externa registration requires `app:hoja.clinica.resultados` and remains read-only.
 
+### Recent-results loading and interpretation
+
+The recent-results summaries load a complete FHIR laboratory history and its REST
+concept metadata on mount and after an explicit refresh/retry. They do not reuse
+the previous module-level patient or concept caches: an observation UUID alone
+cannot detect corrected values, and failed metadata must not survive a retry.
+This increases read requests when reopening the card; repeated concept UUIDs are
+still fetched only once per load. The registered full Results viewer uses its
+existing separate loader.
+
+A patient change immediately hides the previous patient's results and aborts the
+superseded load. HTTP, JSON, metadata and pagination failures produce translated
+feedback and a retry action, never an empty or partial success. The summaries
+require connectivity; offline mode hides the table and requests a connection,
+and reconnecting reloads the current patient. Browser fetches use `no-store` and
+the existing service-worker `network-only-or-cache-only` strategy, which does not
+populate the service-worker cache. That strategy can still read an existing cache
+entry after a transport failure; it is not a strict network-only guarantee. A
+coordinated smoke must include an already populated service-worker cache and a
+backend outage. Changing the shared service-worker strategy is outside this PR.
+
+FHIR `Bundle.total` is optional. Pagination follows `next` links on the configured
+Observation endpoint, preserving the SPA proxy origin, with the existing offset
+fallback when a total is provided without links. Failed or repeated pages fail
+closed. Concepts remain keyed by UUID, with separate display names, so equal
+labels do not overwrite distinct tests.
+
+The summary preserves textual/coded values, quantity comparators and units. It
+prefers the server interpretation, otherwise evaluates the combined observation
+and concept ranges. Limited quantities such as `< 5` retain their comparator and
+have no calculated interpretation unless the server supplies one. These
+read-only changes do not modify observations, visits, orders, permissions or
+Netlab/attachment navigation.
+
+Regression coverage includes identity changes and late responses, corrected
+values, refresh/retry, offline/reconnect, HTTP/network/JSON failures, paginated
+histories with and without totals, metadata recovery, duplicate labels, text,
+coded text, comparators, units, interpretation and Spanish column labels. Before
+rollout, coordinate clinical review and a synthetic DEV/QLTY smoke with the
+intended roles and deployed content, including corrected results and pagination.
+Local tests and builds do not substitute for that validation.
+
 IMPORTANT NOTE: To have data show up in this view, your concepts just need to have "Type: Test" or "Type: LabSet".
 If you are seeing strange things showing up, like Temperature, in the Test Results viewer, then you probably just need to change the Type for your Temperature concept to something other than "Test", such as "Finding."
 

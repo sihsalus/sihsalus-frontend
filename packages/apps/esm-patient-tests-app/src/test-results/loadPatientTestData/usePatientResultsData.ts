@@ -1,36 +1,59 @@
-import { type PatientData } from '@openmrs/esm-patient-common-lib';
-import React from 'react';
+import { useConnectivity } from '@openmrs/esm-framework';
+import { useCallback, useEffect, useState } from 'react';
 
-import loadPatientData from './loadPatientData';
+import loadPatientData, { type PatientResultsData } from './loadPatientData';
 
 type LoadingState = {
-  sortedObs: PatientData;
+  patientUuid: string;
+  attempt: number;
+  sortedObs: PatientResultsData;
   loaded: boolean;
-  error: object | undefined;
+  error?: Error;
 };
 
-const usePatientResultsData = (patientUuid: string): LoadingState => {
-  const [state, setState] = React.useState<LoadingState>({
+const usePatientResultsData = (patientUuid: string) => {
+  const isOnline = useConnectivity();
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<LoadingState>({
+    patientUuid,
+    attempt,
     sortedObs: {},
     loaded: false,
-    error: undefined,
   });
+  const retry = useCallback(() => {
+    setAttempt((value) => value + 1);
+  }, []);
 
-  React.useEffect(() => {
-    let unmounted = false;
-    if (patientUuid) {
-      const [data, reloadedDataPromise] = loadPatientData(patientUuid);
-      if (data) setState({ sortedObs: data, loaded: true, error: undefined });
-      reloadedDataPromise.then((reloadedData) => {
-        if (reloadedData !== data && !unmounted) setState({ sortedObs: reloadedData, loaded: true, error: undefined });
-      });
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({ patientUuid, attempt, sortedObs: {}, loaded: false });
+    if (patientUuid && isOnline) {
+      loadPatientData(patientUuid, controller.signal).then(
+        (sortedObs) => {
+          if (!controller.signal.aborted) setState({ patientUuid, attempt, sortedObs, loaded: true });
+        },
+        () => {
+          if (!controller.signal.aborted) {
+            setState({
+              patientUuid,
+              attempt,
+              sortedObs: {},
+              loaded: true,
+              error: new Error('Test results could not be loaded.'),
+            });
+          }
+        },
+      );
     }
-    return () => {
-      unmounted = true;
-    };
-  }, [patientUuid]);
+    return () => controller.abort();
+  }, [patientUuid, attempt, isOnline]);
 
-  return state;
+  // Hide the previous identity synchronously, before the loading effect runs.
+  const current =
+    state.patientUuid === patientUuid && state.attempt === attempt && isOnline
+      ? state
+      : { patientUuid, sortedObs: {}, loaded: false, error: undefined };
+  return { ...current, isOffline: !isOnline, retry };
 };
 
 export default usePatientResultsData;

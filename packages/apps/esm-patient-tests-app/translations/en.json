@@ -1,4 +1,8 @@
 {
+  "additionalInformation": "Additional information",
+  "retry": "Retry",
+  "testResultsLoadError": "Test results could not be loaded. Try again.",
+  "testResultsOffline": "Connect to the network to load current test results.",
   "add": "Add",
   "addAllToBasket": "Agregar todos",
   "additionalInstructions": "Additional instructions",

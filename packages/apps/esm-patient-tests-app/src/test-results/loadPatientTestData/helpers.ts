@@ -1,151 +1,107 @@
-import { restBaseUrl } from '@openmrs/esm-framework';
+import { omrsOfflineCachingStrategyHttpHeaderName, restBaseUrl } from '@openmrs/esm-framework';
 import {
   type ConceptRecord,
   type ConceptUuid,
   type OBSERVATION_INTERPRETATION,
   type ObsMetaInfo,
   type ObsRecord,
-  type PatientData,
 } from '@openmrs/esm-patient-common-lib';
 
 const PAGE_SIZE = 300;
-const CHUNK_PREFETCH_COUNT = 1;
 
 interface FhirObservationBundle {
-  total: number;
-  entry?: Array<{
-    resource: ObsRecord;
-  }>;
+  resourceType: 'Bundle';
+  total?: number;
+  entry?: Array<{ resource: ObsRecord }>;
+  link?: Array<{ relation: string; url: string }>;
 }
 
-const retrieveFromIterator = <T>(iteratorOrIterable: IterableIterator<T>, length: number): Array<T> => {
-  const iterator = iteratorOrIterable[Symbol.iterator]();
-  return Array.from({ length }, () => iterator.next().value).filter((value): value is T => value !== undefined);
-};
+const loadError = () => new Error('Test results could not be loaded.');
 
-const PATIENT_DATA_CACHE_SIZE = 5;
-let patientResultsDataCache: Record<string, [PatientData, number, string]> = {};
-
-/**
- * Adds given user testresults data to a cache
- *
- * @param patientUuid
- * @param data {PatientData}
- * @param indicator UUID of the newest observation
- */
-export function addUserDataToCache(patientUuid: string, data: PatientData, indicator: string) {
-  patientResultsDataCache[patientUuid] = [data, Date.now(), indicator];
-  const currentStateEntries = Object.entries(patientResultsDataCache);
-
-  if (currentStateEntries.length > PATIENT_DATA_CACHE_SIZE) {
-    currentStateEntries.sort(([, [, dateA]], [, [, dateB]]) => dateB - dateA);
-
-    patientResultsDataCache = Object.fromEntries(currentStateEntries.slice(0, PATIENT_DATA_CACHE_SIZE));
-  }
+async function fetchResultsJson<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(url, {
+    signal,
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+      [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+    },
+  });
+  if (!response.ok) throw loadError();
+  return response.json() as Promise<T>;
 }
 
-async function getLatestObsUuid(patientUuid: string): Promise<string> {
-  const request = fhirObservationRequests({
+/** Loads a complete history; failed pages must never become a partial success. */
+export const loadObsEntries = async (patientUuid: string, signal?: AbortSignal): Promise<Array<ObsRecord>> => {
+  const endpoint = new URL(`${globalThis.openmrsBase}/ws/fhir2/R4/Observation`, window.location.href);
+  const queries = new URLSearchParams({
     patient: patientUuid,
     category: 'laboratory',
     _sort: '-_date',
     _summary: 'data',
     _format: 'json',
-    _count: '1',
+    _count: String(PAGE_SIZE),
+    _getpagesoffset: '0',
   });
-  const firstRequest = request.next().value as Promise<FhirObservationBundle>;
-  const result = await firstRequest;
-  return result?.entry?.[0]?.resource?.id;
-}
+  let url: string | undefined = `${endpoint.href}?${queries}`;
+  const visited = new Set<string>();
+  const observations = new Map<string, ObsRecord>();
+  let received = 0;
 
-/**
- * Retrieves cached user testresults data
- * Checks the indicator against the backend while doing so
- *
- * @param { string } patientUuid
- * @param { PatientData } data
- * @param { string } indicator UUID of the newest observation
- */
-export function getUserDataFromCache(patientUuid: string): [PatientData | undefined, Promise<boolean>] {
-  const [data] = patientResultsDataCache[patientUuid] || [];
+  while (url) {
+    if (visited.has(url)) throw loadError();
+    visited.add(url);
+    const page = await fetchResultsJson<FhirObservationBundle>(url, signal);
+    if (
+      page?.resourceType !== 'Bundle' ||
+      (page.entry !== undefined && !Array.isArray(page.entry)) ||
+      (page.total !== undefined && (!Number.isSafeInteger(page.total) || page.total < 0))
+    )
+      throw loadError();
 
-  return [
-    data,
-    data
-      ? getLatestObsUuid(patientUuid).then((obsUuid) => obsUuid !== patientResultsDataCache?.[patientUuid]?.[2])
-      : Promise.resolve(true),
-  ];
-}
+    const entries = page.entry ?? [];
+    const previousCount = observations.size;
+    for (const { resource } of entries) {
+      if (!resource?.id) throw loadError();
+      observations.set(resource.id, resource);
+    }
+    received += entries.length;
+    const next = page.link?.find(({ relation }) => relation === 'next')?.url;
 
-/**
- * Iterator
- * @param queries
- */
-function* fhirObservationRequests(queries: Record<string, string>) {
-  const fhirPathname = `${globalThis.openmrsBase}/ws/fhir2/R4/Observation`;
-  const path =
-    fhirPathname +
-    '?' +
-    Object.entries(queries)
-      .map(([q, v]) => q + '=' + v)
-      .join('&');
+    if (next) {
+      const nextUrl = new URL(next, url);
+      // FHIR pagination links may name the backend behind the SPA proxy.
+      // Keep requests on the configured API origin and observation endpoint.
+      if (nextUrl.pathname !== endpoint.pathname) throw loadError();
+      if (nextUrl.searchParams.has('patient') && nextUrl.searchParams.get('patient') !== patientUuid) throw loadError();
+      nextUrl.host = endpoint.host;
+      nextUrl.protocol = endpoint.protocol;
+      url = nextUrl.href;
+    } else if (page.total !== undefined && received < page.total) {
+      queries.set('_getpagesoffset', String(received));
+      url = `${endpoint.href}?${queries}`;
+    } else {
+      url = undefined;
+    }
 
-  const pathWithPageOffset = (offset: number) => path + '&_getpagesoffset=' + offset * PAGE_SIZE;
-  let offsetCounter = 0;
-  while (true) {
-    yield fetch(pathWithPageOffset(offsetCounter++)).then((res) => res.json() as Promise<FhirObservationBundle>);
-  }
-}
-
-/**
- * Load all patient testresult observations in parallel
- *
- * @param { string } patientUuid
- * @returns { Promise<Array<ObsRecord>> }
- */
-export const loadObsEntries = async (patientUuid: string): Promise<Array<ObsRecord>> => {
-  const requests = fhirObservationRequests({
-    patient: patientUuid,
-    category: 'laboratory',
-    _sort: '-_date',
-    _summary: 'data',
-    _format: 'json',
-    _count: '' + PAGE_SIZE,
-  });
-
-  let responses = await Promise.all(retrieveFromIterator(requests, CHUNK_PREFETCH_COUNT));
-
-  const total = responses[0]?.total ?? 0;
-
-  if (responses.length === 0 || total === 0) {
-    return [];
+    if ((url || entries.length > 0) && observations.size === previousCount) throw loadError();
   }
 
-  if (total > CHUNK_PREFETCH_COUNT * PAGE_SIZE) {
-    const missingRequestsCount = Math.ceil(total / PAGE_SIZE) - CHUNK_PREFETCH_COUNT;
-    responses = [...responses, ...(await Promise.all(retrieveFromIterator(requests, missingRequestsCount)))];
-  }
-
-  return responses
-    .slice(0, Math.ceil(total / PAGE_SIZE))
-    .flatMap((res) => (res.entry ?? []).map((entry) => entry.resource));
+  return [...observations.values()];
 };
 
 export const getEntryConceptClassUuid = (entry: ObsRecord): string => entry.code?.coding?.[0]?.code ?? '';
 
-const conceptCache: Record<ConceptUuid, Promise<ConceptRecord>> = {};
-/**
- * fetch all concepts for all given observation entries
- */
-export function loadPresentConcepts(entries: Array<ObsRecord>): Promise<Array<ConceptRecord>> {
+/** Deduplicate within this load; a failed or obsolete concept response is never reused on retry. */
+export function loadPresentConcepts(entries: Array<ObsRecord>, signal?: AbortSignal): Promise<Array<ConceptRecord>> {
   return Promise.all(
-    [...new Set(entries.map(getEntryConceptClassUuid))].map((conceptUuid) => {
-      if (!conceptCache[conceptUuid]) {
-        conceptCache[conceptUuid] = fetch(`${globalThis.openmrsBase}${restBaseUrl}/concept/${conceptUuid}?v=full`).then(
-          (res) => res.json(),
-        );
-      }
-      return conceptCache[conceptUuid];
+    [...new Set(entries.map(getEntryConceptClassUuid))].filter(Boolean).map(async (conceptUuid) => {
+      const concept = await fetchResultsJson<ConceptRecord>(
+        `${globalThis.openmrsBase}${restBaseUrl}/concept/${encodeURIComponent(conceptUuid)}?v=full`,
+        signal,
+      );
+      if (concept?.uuid !== conceptUuid || !concept.conceptClass) throw loadError();
+      return concept;
     }),
   );
 }

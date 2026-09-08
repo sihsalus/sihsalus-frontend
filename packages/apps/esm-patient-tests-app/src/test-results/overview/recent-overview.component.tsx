@@ -9,6 +9,7 @@ import { navigateToResults, navigateToTimeline, navigateToTrendline } from '../h
 import CommonOverview from './common-overview.component';
 import styles from './recent-overview.scss';
 import useOverviewData from './useOverviewData';
+import ResultsLoadError from './results-load-error.component';
 
 const RECENT_COUNT = 5;
 
@@ -21,11 +22,13 @@ const RecentOverview: React.FC<RecentOverviewProps> = ({ patientUuid, basePath }
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const cardTitle = t('recentResults', 'Recent Results');
-  const { overviewData, loaded } = useOverviewData(patientUuid);
+  const { overviewData, loaded, error, isOffline, retry } = useOverviewData(patientUuid);
 
   return (
     <RecentResultsGrid>
-      {loaded ? (
+      {error || isOffline ? (
+        <ResultsLoadError retry={retry} isOffline={isOffline} />
+      ) : loaded ? (
         <>
           {(() => {
             if (overviewData.length) {
@@ -37,7 +40,7 @@ const RecentOverview: React.FC<RecentOverviewProps> = ({ patientUuid, basePath }
                     <Button
                       kind="ghost"
                       onClick={() => navigateToResults(basePath)}
-                      iconDescription="See all results"
+                      iconDescription={t('seeAllResults', 'See all results')}
                       renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => (
                         <ArrowRightIcon size={24} {...props} />
                       )}

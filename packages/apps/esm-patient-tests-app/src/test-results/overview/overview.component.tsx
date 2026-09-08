@@ -4,6 +4,7 @@ import React from 'react';
 
 import CommonOverview from './common-overview.component';
 import useOverviewData from './useOverviewData';
+import ResultsLoadError from './results-load-error.component';
 
 const defaultOpenTimeline = (patientUuid, panelUuid) => {
   const url = `/patient/${patientUuid}/testresults/timeline/${panelUuid}`;
@@ -25,11 +26,13 @@ export const Overview: React.FC<LabResultProps & LabResultParams> = ({
   openTimeline = (panelUuid) => defaultOpenTimeline(patientUuid, panelUuid),
   openTrendline,
 }) => {
-  const { overviewData, loaded } = useOverviewData(patientUuid);
+  const { overviewData, loaded, error, isOffline, retry } = useOverviewData(patientUuid);
 
   return (
     <>
-      {loaded ? (
+      {error || isOffline ? (
+        <ResultsLoadError retry={retry} isOffline={isOffline} />
+      ) : loaded ? (
         <CommonOverview overviewData={overviewData} openTimeline={openTimeline} openTrendline={openTrendline} />
       ) : (
         <DataTableSkeleton columnCount={3} />

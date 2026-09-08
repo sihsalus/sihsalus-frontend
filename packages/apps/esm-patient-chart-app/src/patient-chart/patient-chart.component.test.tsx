@@ -8,6 +8,7 @@ const mockSetLeftNav = vi.fn();
 const mockUnsetLeftNav = vi.fn();
 const mockStoreSetState = vi.fn();
 const mockMutateVisitContext = vi.fn();
+const mockExtensionSlot = vi.fn((_props: { name: string; state?: Record<string, unknown> }) => null);
 let mockIsLoadingPatient = false;
 let mockPatientUuid = 'patient-uuid';
 let mockPatient = {
@@ -19,7 +20,7 @@ let mockCurrentVisit: { uuid: string } | null = {
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  ExtensionSlot: () => null,
+  ExtensionSlot: (props: { name: string; state?: Record<string, unknown> }) => mockExtensionSlot(props),
   setCurrentVisit: (...args: Array<unknown>) => mockSetCurrentVisit(...args),
   setLeftNav: (...args: Array<unknown>) => mockSetLeftNav(...args),
   unsetLeftNav: (...args: Array<unknown>) => mockUnsetLeftNav(...args),
@@ -71,6 +72,35 @@ describe('PatientChart', () => {
     mockCurrentVisit = {
       uuid: 'active-visit-uuid',
     };
+  });
+
+  it('marks only its patient header as an actual chart opening after the patient loads', () => {
+    mockIsLoadingPatient = true;
+    const { rerender } = render(<PatientChart />);
+    expect(mockExtensionSlot).not.toHaveBeenCalledWith(expect.objectContaining({ name: 'patient-header-slot' }));
+
+    mockIsLoadingPatient = false;
+    rerender(<PatientChart />);
+
+    expect(mockExtensionSlot).toHaveBeenCalledWith({
+      name: 'patient-header-slot',
+      state: { patient: mockPatient, patientUuid: mockPatientUuid, isPatientChart: true },
+    });
+    const otherSlots = mockExtensionSlot.mock.calls
+      .map(([props]) => props)
+      .filter(({ name }) => name !== 'patient-header-slot');
+    expect(otherSlots.length).toBeGreaterThan(0);
+    for (const { state } of otherSlots) expect(state).not.toHaveProperty('isPatientChart');
+  });
+
+  it('does not mark a header while the loaded patient belongs to a different chart', () => {
+    mockPatient = { id: 'synthetic-previous-patient' };
+    render(<PatientChart />);
+
+    expect(mockExtensionSlot).toHaveBeenCalledWith({
+      name: 'patient-header-slot',
+      state: { patient: mockPatient, patientUuid: mockPatientUuid, isPatientChart: false },
+    });
   });
 
   // Regression test: useVisit only promotes the active visit into the visit context

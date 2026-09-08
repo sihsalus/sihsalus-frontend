@@ -21,10 +21,11 @@ beforeEach(() => {
 });
 
 it('records a chart only after the slot patient matches the opened route', () => {
-  const { rerender } = render(<RecentlyViewedPatientTracker patientUuid="synthetic-patient-a" />);
+  const { rerender } = render(<RecentlyViewedPatientTracker isPatientChart patientUuid="synthetic-patient-a" />);
   expect(recordViewedPatient).not.toHaveBeenCalled();
   rerender(
     <RecentlyViewedPatientTracker
+      isPatientChart
       patientUuid="synthetic-patient-a"
       patient={{ resourceType: 'Patient', id: 'old-patient' }}
     />,
@@ -32,6 +33,7 @@ it('records a chart only after the slot patient matches the opened route', () =>
   expect(recordViewedPatient).not.toHaveBeenCalled();
   rerender(
     <RecentlyViewedPatientTracker
+      isPatientChart
       patientUuid="synthetic-patient-a"
       patient={{ resourceType: 'Patient', id: 'synthetic-patient-a' }}
     />,
@@ -39,6 +41,7 @@ it('records a chart only after the slot patient matches the opened route', () =>
   expect(recordViewedPatient).toHaveBeenCalledWith('synthetic-patient-a');
   rerender(
     <RecentlyViewedPatientTracker
+      isPatientChart
       patientUuid="synthetic-patient-b"
       patient={{ resourceType: 'Patient', id: 'synthetic-patient-b' }}
     />,
@@ -48,6 +51,7 @@ it('records a chart only after the slot patient matches the opened route', () =>
 
 it('does not copy a chart still mounted from a previous session into the next account', () => {
   const props = {
+    isPatientChart: true,
     patientUuid: 'synthetic-patient-a',
     patient: { resourceType: 'Patient' as const, id: 'synthetic-patient-a' },
   };

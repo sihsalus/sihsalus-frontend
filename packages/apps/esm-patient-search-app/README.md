@@ -48,9 +48,11 @@ Muestra las últimas 10 historias abiertas, sin duplicados y con la apertura má
 El médico puede reabrir una historia mientras espera resultados; la lista no indica que haya resultados
 pendientes ni sustituye el seguimiento clínico.
 
-- `recently-viewed-patient-tracker` usa el slot existente `patient-header-slot`, que recibe el paciente
-  FHIR ya cargado. Abrir la historia desde búsqueda, colas, visitas u otra entrada actualiza la misma lista;
-  seleccionar un paciente en un formulario sin abrir la historia no lo registra.
+- `recently-viewed-patient-tracker` usa el slot existente `patient-header-slot` y exige la marca explícita
+  `isPatientChart === true` que emite el chart, además del paciente FHIR cargado con el mismo UUID.
+  El slot también se usa en formularios de citas y otros contextos: la ausencia de la marca o el valor
+  `false` no registra ni reordena pacientes. Abrir la historia desde búsqueda, colas, visitas u otra entrada
+  actualiza la misma lista; seleccionar un paciente en un formulario sin abrir la historia no lo registra.
 - Se conserva la configuración `search.showRecentlySearchedPatients` por compatibilidad. Deshabilitarla
   oculta los accesos y detiene el registro. Se mantiene `app:hoja.clinica`; la cabecera conserva además
   el privilegio existente `app:opciones.busquedaPaciente`.

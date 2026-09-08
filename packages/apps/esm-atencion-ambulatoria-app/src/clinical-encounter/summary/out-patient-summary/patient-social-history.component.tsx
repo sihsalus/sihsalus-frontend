@@ -24,7 +24,6 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
-import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
 import { patientFormEntryWorkspace, socialHistoryEditPrivilege } from '../../../utils/constants';
@@ -45,6 +44,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   isLoading,
   error,
   isValidating,
+  mutate,
 }) => {
   const { t } = useTranslation();
   const {
@@ -56,13 +56,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('socialHistory', 'Social History'),
-      mutateForm: mutate(
-        (key) => typeof key === 'string' && key.startsWith('/openmrs/ws/rest/v1/kenyaemr/flags'),
-        undefined,
-        {
-          revalidate: true,
-        },
-      ),
+      mutateForm: () => mutate(),
       formInfo: {
         encounterUuid: encounterUUID,
         formUuid: clinicalEncounterFormUuid,

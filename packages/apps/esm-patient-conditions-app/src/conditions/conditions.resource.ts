@@ -28,11 +28,12 @@ export interface FHIRConditionResponse {
 
 export interface FHIRCondition {
   clinicalStatus: {
-    coding: Array<CodingData>;
+    coding?: Array<CodingData>;
     display: string;
   };
   code: {
-    coding: Array<CodingData>;
+    coding?: Array<CodingData>;
+    text?: string;
   };
   id: string;
   onsetDateTime?: string;
@@ -188,13 +189,14 @@ export function useConditionsSearch(conditionToLookup: string) {
 }
 
 function mapConditionProperties(condition: FHIRCondition): Condition {
-  const status = condition?.clinicalStatus?.coding[0]?.code;
+  const status = condition?.clinicalStatus?.coding?.[0]?.code;
+  const coding = condition?.code?.coding?.[0];
   const categoryText = getConditionCategoryDisplay(condition?.category);
   const antecedentType = getAntecedentTypeFromCondition(condition?.category, condition?.note);
   return {
     clinicalStatus: status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '',
-    conceptId: condition?.code?.coding[0]?.code,
-    display: condition?.code?.coding[0]?.display,
+    conceptId: coding?.code ?? '',
+    display: coding?.display || condition?.code?.text || '--',
     abatementDateTime: condition?.abatementDateTime,
     onsetDateTime: condition?.onsetDateTime,
     recordedDate: condition?.recordedDate,

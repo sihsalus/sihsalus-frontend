@@ -35,7 +35,13 @@ La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de 
 
 La pestaña **Antecedentes**, situada antes de **Anamnesis**, reutiliza las vistas existentes de antecedentes médicos y sociales. La lectura está protegida por `app:hoja.clinica.historiaSocial`; las acciones de registro conservan los permisos de edición originales. La cabecera incluye **Consultas previas** solo para usuarios con `app:hoja.clinica.visitas` y abre el dashboard histórico canónico, sin duplicar ni cambiar la visita activa.
 
+La tabla de antecedentes médicos conserva el resto del historial cuando un diagnóstico antiguo no trae su representación codificada: muestra `--` en esa celda en lugar de bloquear la pantalla. No infiere un diagnóstico ni modifica el registro histórico.
+
+Los formularios de antecedentes médicos y sociales reciben una función que actualiza la consulta del historial al completar el cierre desde el formulario. Abrir el formulario no dispara esa actualización. La X del workspace mantiene su contrato de cierre y no ejecuta ese callback.
+
 Los antecedentes personales cargan todas las páginas del historial FHIR. Para crear o editar exigen que la sesión tenga un proveedor clínico; el backend deriva el registrador desde la sesión autenticada y la edición conserva `recordedDate`. Al abrir un antecedente social nuevo se envía `encounterUuid` vacío: el UUID configurado identifica el tipo de encounter y no debe tratarse como un encounter existente.
+
+El lector de antecedentes personales tolera que falten los arrays `coding`: conserva `code.text` cuando existe y usa `--` si no hay descripción, sin inventar concepto ni estado clínico. Las vistas por conjunto de conceptos mantienen su filtro: un registro sin código no impide mostrar los miembros válidos del conjunto.
 
 La pestaña **Pruebas complementarias** monta `consulta-externa-pruebas-complementarias-slot` con el `patientUuid` activo. `@sihsalus/esm-patient-tests-app` aporta en ese slot la misma tarjeta de resultados recientes que usa la historia clínica, protegida por `app:hoja.clinica.resultados`; Consulta Externa no duplica su consulta FHIR ni su lógica de navegación. La tarjeta es de solo lectura y **Ver todos los resultados** abre el dashboard completo de resultados.
 

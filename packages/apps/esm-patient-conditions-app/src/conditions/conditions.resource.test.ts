@@ -1,4 +1,6 @@
 import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { renderHook } from '@testing-library/react';
+import useSWR from 'swr';
 
 import {
   createCondition,
@@ -7,7 +9,10 @@ import {
   type FormFields,
   syncConditionCache,
   updateCondition,
+  useConditions,
 } from './conditions.resource';
+
+vi.mock('swr', () => ({ default: vi.fn() }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -23,6 +28,42 @@ const basePayload: FormFields = {
 describe('conditions FHIR resource', () => {
   beforeEach(() => {
     mockOpenmrsFetch.mockResolvedValue({ status: 200 } as FetchResponse);
+  });
+
+  it('loads a text-only antecedent without requiring coding arrays', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {
+        data: {
+          total: 1,
+          entry: [
+            {
+              resource: {
+                resourceType: 'Condition',
+                id: 'synthetic-text-antecedent',
+                clinicalStatus: { text: 'Unspecified' },
+                code: { text: 'Synthetic historical antecedent' },
+              },
+            },
+          ],
+        },
+      },
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useConditions('synthetic-patient'));
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.conditions).toEqual([
+      expect.objectContaining({
+        id: 'synthetic-text-antecedent',
+        conceptId: '',
+        display: 'Synthetic historical antecedent',
+        clinicalStatus: '',
+      }),
+    ]);
   });
 
   it('lets the backend derive the recorder and omits empty dates', async () => {

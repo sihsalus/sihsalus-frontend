@@ -3,10 +3,16 @@ import { renderHook } from '@testing-library/react';
 import useSWRInfinite from 'swr/infinite';
 
 import { getActiveVisitPatientUuids, useInfinitePatientSearch, useRestPatients } from './patient-search.resource';
+import { isRecentPatientRequestCurrent } from './recently-viewed-patients.store';
 
 vi.mock('swr/infinite', () => ({
   default: vi.fn(),
 }));
+
+vi.mock('./recently-viewed-patients.store', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./recently-viewed-patients.store')>();
+  return { ...actual, isRecentPatientRequestCurrent: vi.fn() };
+});
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseSWRInfinite = vi.mocked(useSWRInfinite);
@@ -14,6 +20,7 @@ const mockUseSWRInfinite = vi.mocked(useSWRInfinite);
 describe('patient search resource', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isRecentPatientRequestCurrent).mockReturnValue(true);
     mockUseSWRInfinite.mockReturnValue({
       data: undefined,
       error: undefined,
@@ -121,6 +128,7 @@ describe('patient search resource', () => {
     await expect(
       fetcher([0, 'patient-a,missing-patient', '/openmrs/ws/rest/v1/patient/missing-patient']),
     ).resolves.toBeNull();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
     expect(result.current.data).toEqual([patient]);
     expect(result.current.fetchError).toBeUndefined();
   });
@@ -134,6 +142,29 @@ describe('patient search resource', () => {
     await expect(
       fetcher([0, 'patient-outside-current-upss', '/openmrs/ws/rest/v1/patient/patient-outside-current-upss']),
     ).resolves.toBeNull();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not start a recent-patient read for a stale generation', async () => {
+    renderHook(() => useRestPatients(['patient-a']));
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (key: [number, string, string]) => Promise<unknown>;
+    vi.mocked(isRecentPatientRequestCurrent).mockReturnValue(false);
+
+    await expect(fetcher([0, 'patient-a', '/openmrs/ws/rest/v1/patient/patient-a'])).resolves.toBeNull();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it.each(['response', 'error'])('discards a late %s from an old recent-patient generation', async (outcome) => {
+    renderHook(() => useRestPatients(['patient-a']));
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (key: [number, string, string]) => Promise<unknown>;
+    mockOpenmrsFetch.mockImplementationOnce(async () => {
+      vi.mocked(isRecentPatientRequestCurrent).mockReturnValue(false);
+      if (outcome === 'error') throw { response: { status: 500 } };
+      return { data: { uuid: 'patient-a' } } as Awaited<ReturnType<typeof openmrsFetch>>;
+    });
+
+    await expect(fetcher([0, 'patient-a', '/openmrs/ws/rest/v1/patient/patient-a'])).resolves.toBeNull();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
   });
 
   it('does not suppress server errors while loading recently viewed patients', async () => {

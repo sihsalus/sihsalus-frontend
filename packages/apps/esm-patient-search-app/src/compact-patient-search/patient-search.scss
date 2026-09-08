@@ -22,6 +22,11 @@
   overflow-y: auto;
 }
 
+.standaloneResults {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .loadingIcon {
   padding: layout.$spacing-05 0;
   display: flex;

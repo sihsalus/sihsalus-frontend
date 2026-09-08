@@ -17,12 +17,19 @@ export function createRecentlyViewedPatientsStore(sessionStore = getSessionStore
   };
 
   const syncSession = () => {
-    const { session } = sessionStore.getState();
+    const { loaded, session } = sessionStore.getState();
     const user = session?.user;
     const nextScope =
-      session?.authenticated && session.sessionId && user && userHasAccess(patientChartPrivilege, user)
+      loaded &&
+      session?.authenticated &&
+      user?.uuid &&
+      Array.isArray(user.privileges) &&
+      Array.isArray(user.roles) &&
+      userHasAccess(patientChartPrivilege, user)
         ? JSON.stringify([
-            session.sessionId,
+            // REST 3.5.0 does not return a sessionId. Use it when a backend does,
+            // but never require or invent one: observed session changes own the epoch.
+            session.sessionId || null,
             user.uuid,
             session.sessionLocation?.uuid,
             user.privileges.map(({ name }) => name).sort(),
@@ -45,6 +52,7 @@ export function createRecentlyViewedPatientsStore(sessionStore = getSessionStore
 
   return {
     getSnapshot: () => snapshot,
+    isCurrentGeneration: (generation: number) => Boolean(scope) && generation === snapshot.generation,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -70,6 +78,10 @@ let recentPatientsStore: ReturnType<typeof createRecentlyViewedPatientsStore>;
 function getRecentPatientsStore() {
   recentPatientsStore ??= createRecentlyViewedPatientsStore();
   return recentPatientsStore;
+}
+
+export function isRecentPatientRequestCurrent(generation: number) {
+  return getRecentPatientsStore().isCurrentGeneration(generation);
 }
 
 export function useRecentlyViewedPatients(enabled = false) {

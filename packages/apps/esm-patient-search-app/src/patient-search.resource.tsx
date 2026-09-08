@@ -5,7 +5,7 @@ import useSWRInfinite from 'swr/infinite';
 
 import { isPatientSearchTermValid, normalizePatientSearchTerm } from './patient-search-constants';
 import { isValidSearchedPatient } from './patient-search-result.utils';
-import { useRecentlyViewedPatients } from './recently-viewed-patients.store';
+import { isRecentPatientRequestCurrent, useRecentlyViewedPatients } from './recently-viewed-patients.store';
 import type { PatientSearchResponse, SearchedPatient } from './types';
 
 type InfinitePatientSearchResponse = FetchResponse<{
@@ -41,14 +41,25 @@ function getResponseStatus(error: unknown) {
   return statusFromMessage ? Number(statusFromMessage) : undefined;
 }
 
-async function fetchRecentlyViewedPatient([, , url]: [
+async function fetchRecentlyViewedPatient([generation, , url]: [
   number,
   string,
   string,
 ]): Promise<FetchResponse<SearchedPatient> | null> {
+  // SWR can continue an older sequential batch after its React key changes.
+  // Check the live session before each read, not just when creating the batch.
+  if (!isRecentPatientRequestCurrent(generation)) {
+    return null;
+  }
+
   try {
-    return await openmrsFetch<SearchedPatient>(url);
+    const response = await openmrsFetch<SearchedPatient>(url);
+    return isRecentPatientRequestCurrent(generation) ? response : null;
   } catch (error) {
+    if (!isRecentPatientRequestCurrent(generation)) {
+      return null;
+    }
+
     // A recently viewed patient can have been removed or become inaccessible after the
     // user changed role or UPSS. This is only a user preference: it must not prevent the
     // remaining recent patients or the global search from loading. Authentication and

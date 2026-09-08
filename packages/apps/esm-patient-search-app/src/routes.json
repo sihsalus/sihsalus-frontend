@@ -8,6 +8,10 @@
     {
       "component": "root",
       "route": "search"
+    },
+    {
+      "component": "root",
+      "route": "recent-patients"
     }
   ],
   "extensions": [

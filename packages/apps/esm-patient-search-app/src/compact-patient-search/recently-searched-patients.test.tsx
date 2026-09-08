@@ -101,7 +101,9 @@ describe('RecentlySearchedPatients', () => {
 
     expect(screen.getByRole('heading', { name: 'Recently viewed patients' })).toBeInTheDocument();
     expect(screen.getByText(/No recently viewed patient charts are available in this session/i)).toBeInTheDocument();
-    expect(screen.getByText(/Find a patient by name or identifier/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Open a patient chart from search, a queue, a visit or a direct link/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/recent search result/i)).not.toBeInTheDocument();
   });
 

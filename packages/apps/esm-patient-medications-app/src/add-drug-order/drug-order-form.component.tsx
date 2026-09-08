@@ -237,18 +237,20 @@ export function DrugOrderForm({
   const [isManualOverride, setIsManualOverride] = useState(
     initialOrderBasketItem?.isQuantityManual ?? (isExistingOrder && initialOrderBasketItem?.pillsDispensed != null),
   );
+  const singleDoseQuantity =
+    watchedDosage > 0 &&
+    Number.isFinite(watchedDosage) &&
+    watchedUnit?.valueCoded &&
+    watchedQuantityUnits?.valueCoded === watchedUnit.valueCoded
+      ? Math.ceil(watchedDosage)
+      : null;
 
   const calculatedQuantity = useMemo(() => {
     if (watchedIsFreeText || watchedAsNeeded) {
       return null;
     }
     if (isSingleDose) {
-      return watchedDosage > 0 &&
-        Number.isFinite(watchedDosage) &&
-        watchedUnit?.valueCoded &&
-        watchedQuantityUnits?.valueCoded === watchedUnit.valueCoded
-        ? Math.ceil(watchedDosage)
-        : null;
+      return singleDoseQuantity;
     }
     if (
       watchedDosage == null ||
@@ -271,6 +273,7 @@ export function DrugOrderForm({
     return result > 0 && Number.isFinite(result) ? result : null;
   }, [
     isSingleDose,
+    singleDoseQuantity,
     watchedIsFreeText,
     watchedAsNeeded,
     watchedDosage,
@@ -312,7 +315,9 @@ export function DrugOrderForm({
     setValue('duration', null, options);
     setValue('durationUnit', null, options);
     setValue('numRefills', 0, options);
-    setValue('pillsDispensed', null, options);
+    // The estimate can equal the previous one, so the auto-calculation effect
+    // may not run again. Apply the reviewed single-dose quantity explicitly.
+    setValue('pillsDispensed', requireOutpatientQuantity ? singleDoseQuantity : null, options);
     setIsManualOverride(false);
   };
 

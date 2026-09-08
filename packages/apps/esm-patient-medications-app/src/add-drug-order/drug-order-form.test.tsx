@@ -162,6 +162,66 @@ describe('STAT single-dose prescriptions', () => {
     });
   });
 
+  it.each([
+    ['the previous calculated quantity is equal', 1, 1],
+    ['the preset is applied twice', 7, 2],
+  ] as const)('keeps the single-dose quantity when %s', async (_scenario, duration, presetClicks) => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder({ duration, pillsDispensed: duration * 2, isQuantityManual: false }), onSave);
+    const quantity = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    expect(quantity).toHaveValue(duration * 2);
+
+    const preset = screen.getByRole('button', { name: 'STAT — administer once now' });
+    for (let click = 0; click < presetClicks; click++) {
+      await user.click(preset);
+      expect(quantity).toHaveValue(2);
+    }
+
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      urgency: 'STAT',
+      frequency: { valueCoded: onceUuid },
+      dosage: 2,
+      unit: tablet,
+      quantityUnits: tablet,
+      pillsDispensed: 2,
+      isQuantityManual: false,
+      asNeeded: false,
+      numRefills: 0,
+      duration: null,
+      durationUnit: null,
+    });
+  });
+
+  it('preserves a manual single-dose quantity after the preset when the dose changes', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder(), onSave);
+    await user.click(screen.getByRole('button', { name: 'STAT — administer once now' }));
+    const quantity = screen.getByRole('spinbutton', { name: /quantity to dispense/i });
+    expect(quantity).toHaveValue(2);
+    await user.clear(quantity);
+    await user.type(quantity, '4');
+    const dose = screen.getByRole('spinbutton', { name: /dose/i });
+    await user.clear(dose);
+    await user.type(dose, '3');
+
+    expect(quantity).toHaveValue(4);
+    expect(screen.getByText(/apply calculated quantity \(3\)/i)).toBeInTheDocument();
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      dosage: 3,
+      pillsDispensed: 4,
+      isQuantityManual: true,
+      frequency: { valueCoded: onceUuid },
+      duration: null,
+      numRefills: 0,
+    });
+  });
+
   it('submits one immediate dose, clearing repeating and PRN fields and the old quantity', async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();

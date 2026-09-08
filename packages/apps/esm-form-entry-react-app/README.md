@@ -23,6 +23,23 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Hooks, store y componentes de renderizado compartidos.
 - Módulos consumidores que montan formularios clínicos sobre este motor.
 
+### Compatibilidad con O3 Forms
+
+El esquema compilado se obtiene de `GET /ws/rest/v1/o3/forms/{formUuid}`. El
+manifest mantiene `o3forms >=2.3.0` y admite además exactamente
+`2.3.0-sihsalus.1`, el parche de la distro para locales nulos al cargar
+traducciones. SemVer considera ese sufijo una pre-release inferior a `2.3.0`;
+la excepción explícita evita un aviso de incompatibilidad para ese artefacto sin
+admitir otras pre-releases de la misma versión ni modificar el comparador global.
+Los requisitos de FHIR2 y REST permanecen intactos.
+
+Esta declaración no instala ni despliega el parche, no cambia el formato del
+esquema y no oculta errores de descarga o compilación del backend. La comprobación
+del módulo arrancado y la apertura de formularios sintéticos contra la imagen
+corregida siguen siendo validaciones independientes. El test del manifest usa el
+comparador real de `@openmrs/esm-utils`, no el stub del framework que siempre
+devuelve `true`.
+
 ## Offline contract
 
 Before a new encounter payload is queued, the producer copies the client-generated, stable queue content UUID into the

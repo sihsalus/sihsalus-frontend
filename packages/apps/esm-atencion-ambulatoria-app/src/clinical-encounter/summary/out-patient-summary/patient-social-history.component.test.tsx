@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { UserHasAccess, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import type { ReactNode } from 'react';
@@ -64,8 +64,9 @@ describe('OutPatientSocialHistory privileges', () => {
     );
   });
 
-  it('creates a new encounter when Add is selected', async () => {
+  it('opens a new encounter and refreshes its history when the form closes', async () => {
     const user = userEvent.setup();
+    const mutate = vi.fn().mockResolvedValue(undefined);
     vi.mocked(UserHasAccess).mockImplementation(({ children }: { children?: ReactNode }) => children);
 
     render(
@@ -75,7 +76,7 @@ describe('OutPatientSocialHistory privileges', () => {
         isLoading={false}
         error={undefined as never}
         isValidating={false}
-        mutate={vi.fn() as never}
+        mutate={mutate}
       />,
     );
 
@@ -91,5 +92,16 @@ describe('OutPatientSocialHistory privileges', () => {
         }),
       }),
     );
+    expect(mutate).not.toHaveBeenCalled();
+    const { mutateForm } = vi.mocked(launchPatientWorkspace).mock.calls[0][1] as {
+      mutateForm: () => Promise<unknown>;
+    };
+    expect(mutateForm).toEqual(expect.any(Function));
+
+    await act(async () => {
+      await mutateForm();
+    });
+
+    expect(mutate).toHaveBeenCalledExactlyOnceWith();
   });
 });

@@ -1,7 +1,7 @@
 import { openmrsFetch, useFhirFetchAll } from '@openmrs/esm-framework';
 import { buildAntecedentTypeCategory, buildAntecedentTypeNote } from '@openmrs/esm-patient-common-lib';
 import { renderHook, waitFor } from '@testing-library/react';
-import { createCondition, updateCondition, useConditionsFromConceptSet } from './conditions.resource';
+import { createCondition, updateCondition, useConditions, useConditionsFromConceptSet } from './conditions.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseFhirFetchAll = vi.mocked(useFhirFetchAll);
@@ -44,6 +44,68 @@ describe('useConditionsFromConceptSet', () => {
       isValidating: false,
       mutate: vi.fn(),
     } as never);
+  });
+
+  it('keeps coded antecedents readable when another condition has no coding arrays', async () => {
+    mockUseFhirFetchAll.mockReturnValue({
+      data: [
+        {
+          id: 'synthetic-text-only',
+          code: { text: 'Synthetic recorded history' },
+          clinicalStatus: { text: 'Unspecified' },
+        },
+        fhirCondition({
+          id: 'synthetic-coded',
+          conceptId: 'synthetic-member',
+          display: 'Synthetic coded history',
+          onsetDateTime: '2026-09-01T00:00:00.000Z',
+        }).resource,
+      ],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never);
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { setMembers: [{ uuid: 'synthetic-member' }] },
+    } as never);
+
+    const { result } = renderHook(() =>
+      useConditionsFromConceptSet('synthetic-patient-missing-coding', 'synthetic-concept-set'),
+    );
+
+    await waitFor(() =>
+      expect(result.current.conditions).toEqual([
+        expect.objectContaining({ id: 'synthetic-coded', display: 'Synthetic coded history' }),
+      ]),
+    );
+  });
+
+  it('loads text-only antecedents in the form without inventing a clinical code or status', () => {
+    mockUseFhirFetchAll.mockReturnValue({
+      data: [
+        {
+          id: 'synthetic-text-only',
+          code: { text: 'Synthetic recorded history' },
+          clinicalStatus: { text: 'Unspecified' },
+        },
+      ],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never);
+
+    const { result } = renderHook(() => useConditions('synthetic-patient-text-only'));
+
+    expect(result.current.conditions).toEqual([
+      expect.objectContaining({
+        id: 'synthetic-text-only',
+        display: 'Synthetic recorded history',
+        conceptId: '',
+        clinicalStatus: '',
+      }),
+    ]);
   });
 
   it('incluye los antecedentes de texto libre y los muestra con el texto del clínico', async () => {

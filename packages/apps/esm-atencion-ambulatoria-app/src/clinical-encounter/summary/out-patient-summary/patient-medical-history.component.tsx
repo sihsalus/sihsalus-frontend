@@ -24,7 +24,6 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
-import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
 import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../../../utils/constants';
@@ -44,6 +43,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
   isLoading,
   error,
   isValidating,
+  mutate,
 }) => {
   const { t } = useTranslation();
   const {
@@ -54,13 +54,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('medicalHistory', 'Medical History'),
-      mutateForm: mutate(
-        (key) => typeof key === 'string' && key.startsWith('/openmrs/ws/rest/v1/kenyaemr/flags'),
-        undefined,
-        {
-          revalidate: true,
-        },
-      ),
+      mutateForm: () => mutate(),
       formInfo: {
         encounterUuid: encounterUUID,
         formUuid: clinicalEncounterFormUuid,
@@ -112,7 +106,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
         surgicalHistory: getObsFromEncounter(encounter, concepts.surgicalHistoryUuid),
         bloodTransfusion: getObsFromEncounter(encounter, concepts.bloodTransfusionUuid),
         accidentOrTrauma: getObsFromEncounter(encounter, concepts.accidentTraumaUuid),
-        finalDiagnosis: encounter.diagnoses?.length ? encounter.diagnoses[0].diagnosis.coded.display : '--',
+        finalDiagnosis: encounter.diagnoses?.[0]?.diagnosis?.coded?.display ?? '--',
       };
     })
     .filter((row) => row !== null);

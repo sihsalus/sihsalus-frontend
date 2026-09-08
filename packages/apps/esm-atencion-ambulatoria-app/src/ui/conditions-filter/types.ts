@@ -13,11 +13,12 @@ export interface FHIRConditionResponse {
 
 export interface FHIRCondition {
   clinicalStatus: {
-    coding: Array<CodingData>;
+    coding?: Array<CodingData>;
     display: string;
   };
   code: {
-    coding: Array<CodingData>;
+    coding?: Array<CodingData>;
+    text?: string;
   };
   id: string;
   onsetDateTime: string;

@@ -6,9 +6,9 @@
     "paths": {
       "@openmrs/esm-globals": ["../../../node_modules/@openmrs/esm-globals/dist/index.d.ts"],
       "@openmrs/esm-globals/*": ["../../../node_modules/@openmrs/esm-globals/dist/*"],
-      "@mocks/*": ["../../test-utils/mocks/*"],
-      "@tools/test-helpers": ["../../test-utils/index"]
+      "test-utils/*": ["../../test-utils/*"],
+      "test-utils": ["../../test-utils/index"]
     }
   },
-  "include": ["src/**/*", "test-utils/**/*", "../../tools/setup-tests.ts"]
+  "include": ["src/**/*", "test-utils/**/*"]
 }

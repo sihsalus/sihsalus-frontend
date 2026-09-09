@@ -1,7 +1,7 @@
-import { type InpatientRequest } from '@openmrs/esm-ward-app/src/types';
-import { mockLocationInpatientWard } from './locations.mock';
-import { mockPatientAlice } from './patient.mock';
-import { mockVisitAlice } from './visits.mock';
+import { mockLocationInpatientWard } from 'test-utils/mocks/locations.mock';
+import { mockPatientAlice } from 'test-utils/mocks/patient.mock';
+import { mockVisitAlice } from 'test-utils/mocks/visits.mock';
+import { type InpatientRequest } from '../../src/types';
 
 export const mockInpatientRequestAlice: InpatientRequest = {
   patient: mockPatientAlice,
@@ -28,7 +28,7 @@ export const mockInpatientRequestAlice: InpatientRequest = {
       display: 'Misc',
     },
     set: false,
-    version: null,
+    version: undefined,
     retired: false,
     names: [
       {

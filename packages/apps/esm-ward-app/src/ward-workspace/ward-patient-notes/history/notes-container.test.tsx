@@ -1,6 +1,6 @@
 import { useEmrConfiguration } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import { emrConfigurationMock } from '__mocks__';
+import { emrConfigurationMock } from '../../../../test-utils/mocks';
 import { type PatientNote } from '../types';
 import PatientNotesHistory from './notes-container.component';
 

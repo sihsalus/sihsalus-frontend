@@ -1,3 +1,5 @@
+import { useConfig, useSession } from '@openmrs/esm-framework';
+import { render, screen } from '@testing-library/react';
 import {
   adjustmentOpeationTypeMock,
   disposalOperationTypeMock,
@@ -8,9 +10,7 @@ import {
   stockIssueOperationtypeMock,
   stockTakeOperationTypeMock,
   tranferOutOperationTypeMock,
-} from '@mocks';
-import { useConfig, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+} from '../../../test-utils/mocks/operation-type.mock';
 import { useStockOperationTypes } from '../../stock-lookups/stock-lookups.resource';
 import { useStockOperations } from '../stock-operations.resource';
 import useParties from './hooks/useParties';

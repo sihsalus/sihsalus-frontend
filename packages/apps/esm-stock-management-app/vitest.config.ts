@@ -1,8 +1,3 @@
 import { defineAppVitestConfig } from '../../tooling/configs/vitest-config';
 
-export default defineAppVitestConfig(__dirname, {
-  aliases: {
-    '@mocks': '../../test-utils/mocks',
-    '@tools': './tools',
-  },
-});
+export default defineAppVitestConfig(__dirname);

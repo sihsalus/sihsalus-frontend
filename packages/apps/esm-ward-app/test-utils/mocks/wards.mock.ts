@@ -1,10 +1,6 @@
-import {
-  type AdmissionLocationFetchResponse,
-  type BedType,
-  type InpatientAdmission,
-} from '../../apps/esm-ward-app/src/types';
-import { mockLocationInpatientWard } from './locations.mock';
-import { mockPatientAlice, mockPatientBrian } from './patient.mock';
+import { mockLocationInpatientWard } from 'test-utils/mocks/locations.mock';
+import { mockPatientAlice, mockPatientBrian } from 'test-utils/mocks/patient.mock';
+import { type AdmissionLocationFetchResponse, type BedType, type InpatientAdmission } from '../../src/types';
 
 export const mockBedType: BedType = {
   uuid: '0000-bed-type',

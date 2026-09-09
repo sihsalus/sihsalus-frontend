@@ -1,7 +1,7 @@
-import { type Encounter } from '../../apps/esm-ward-app/src/types';
-import { mockPatientAlice } from './patient.mock';
-import { mockLocationSurgery } from './queue-entry.mock';
-import { mockVisitAlice } from './visits.mock';
+import { mockPatientAlice } from 'test-utils/mocks/patient.mock';
+import { mockLocationSurgery } from 'test-utils/mocks/queue-entry.mock';
+import { mockVisitAlice } from 'test-utils/mocks/visits.mock';
+import { type Encounter } from '../../src/types';
 
 export const mockEncounterAlice: Encounter = {
   uuid: 'asdf',

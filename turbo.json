@@ -57,6 +57,7 @@
         "$TURBO_ROOT$/config/frontend.json",
         "$TURBO_ROOT$/packages/apps/*/src/routes.json",
         "__mocks__/**",
+        "test-utils/**",
         "declarations.d.ts",
         "$TURBO_ROOT$/packages/test-utils/**",
         "$TURBO_ROOT$/packages/tooling/configs/**",
@@ -81,6 +82,7 @@
       "inputs": [
         "src/**",
         "__mocks__/**",
+        "test-utils/**",
         "declarations.d.ts",
         "$TURBO_ROOT$/packages/test-utils/**",
         "vitest.config.ts",
@@ -89,13 +91,14 @@
       "outputs": ["coverage/**"]
     },
     "lint": {
-      "inputs": ["src/**/*.{ts,tsx}", "$TURBO_ROOT$/biome.json"]
+      "inputs": ["src/**/*.{ts,tsx}", "test-utils/**/*.{ts,tsx}", "$TURBO_ROOT$/biome.json"]
     },
     "typescript": {
       "dependsOn": ["build", "^build", "^typescript"],
       "inputs": [
         "src/**",
         "declarations.d.ts",
+        "test-utils/**",
         "$TURBO_ROOT$/packages/test-utils/**",
         "$TURBO_ROOT$/packages/tooling/scripts/setup-tests.ts",
         "tsconfig.json",

@@ -40,8 +40,6 @@
       "@openmrs/esm-translations/src/public": ["../../../node_modules/@openmrs/esm-translations/dist/public"],
       "@openmrs/esm-utils": ["../../../node_modules/@openmrs/esm-utils/dist/index"],
       "test-utils/*": ["../../test-utils/*"],
-      "mocks/*": ["./__mocks__/*"],
-      "tools/*": ["./tools/*"],
       "test-utils": ["../../test-utils/index"],
       "@openmrs/*": ["../../apps/*"]
     },
@@ -49,5 +47,5 @@
     "skipLibCheck": true,
     "target": "esnext"
   },
-  "include": ["src/**/*", "e2e/**/*", "test-utils/**/*", "../../tools/setup-tests.ts"]
+  "include": ["src/**/*", "e2e/**/*", "test-utils/**/*"]
 }

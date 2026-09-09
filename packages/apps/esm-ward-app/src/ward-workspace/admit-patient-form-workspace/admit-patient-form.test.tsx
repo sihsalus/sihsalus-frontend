@@ -7,9 +7,9 @@ import {
 } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { mockInpatientRequestAlice, mockLocationInpatientWard, mockPatientAlice } from '__mocks__';
-import { renderWithSwr } from 'test-utils';
-import { mockWardPatientGroupDetails, mockWardViewContext } from '../../../mock';
+import { mockLocationInpatientWard, mockPatientAlice, renderWithSwr } from 'test-utils';
+import { mockWardPatientGroupDetails, mockWardViewContext } from '../../../test-utils/mock';
+import { mockInpatientRequestAlice } from '../../../test-utils/mocks';
 import { useAssignedBedByPatient } from '../../hooks/useAssignedBedByPatient';
 import useWardLocation from '../../hooks/useWardLocation';
 import type { WardPatient, WardPatientWorkspaceProps, WardViewContext } from '../../types';

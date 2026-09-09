@@ -78,6 +78,12 @@ import {
   shouldPersistPeruInsuranceAttribute,
 } from './peru-registration-config';
 import { isRegistrationDomainError, RegistrationDomainError, registrationErrorCodes } from './registration-errors';
+import {
+  assertRegistrationTransactionCanResume,
+  hasRegistrationProgress,
+  type PersistRegistrationTransaction,
+  runRegistrationWrite,
+} from './registration-transaction';
 import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
@@ -253,6 +259,7 @@ export type SavePatientForm = (
   config: RegistrationConfig,
   savePatientTransactionManager: SavePatientTransactionManager,
   abortController?: AbortController,
+  persistTransaction?: PersistRegistrationTransaction,
 ) => Promise<string | null>;
 
 export class FormManager {
@@ -303,12 +310,24 @@ export class FormManager {
       },
     };
 
-    await queueSynchronizationItem(patientRegistration, syncItem, {
-      id: values.patientUuid,
-      displayName: 'Patient registration',
-      patientUuid: syncItem.fhirPatient.id,
-      dependencies: [],
-    });
+    await queueSynchronizationItem(
+      patientRegistration,
+      syncItem,
+      {
+        id: values.patientUuid,
+        displayName: 'Patient registration',
+        patientUuid: syncItem.fhirPatient.id,
+        dependencies: [],
+      },
+      {
+        reconcileContent(existing, proposed) {
+          if (hasRegistrationProgress(existing?._patientRegistrationData.savePatientTransactionManager)) {
+            throw new Error('A partially synchronized registration cannot be replaced.');
+          }
+          return proposed;
+        },
+      },
+    );
 
     return null;
   };
@@ -326,9 +345,11 @@ export class FormManager {
     config,
     savePatientTransactionManager,
     abortController,
+    persistTransaction,
   ) => {
     savePatientTransactionManager ??= new SavePatientTransactionManager();
     ensureTransactionState(savePatientTransactionManager);
+    assertRegistrationTransactionCanResume(savePatientTransactionManager, persistTransaction);
     const signal = abortController?.signal;
     const personUuidToPromote = isNewPatient ? values.personUuidToPromote : undefined;
 
@@ -366,6 +387,7 @@ export class FormManager {
       identifierTypes,
       savePatientTransactionManager,
       signal,
+      persistTransaction,
     );
 
     let effectivePatientUuidMap = patientUuidMap;
@@ -441,24 +463,45 @@ export class FormManager {
             data: { uuid: savePatientTransactionManager.savedPatientUuid },
             ok: true,
           } as FetchResponse)
-        : await savePatient(
-            createdPatient,
-            isNewPatient && !savePatientTransactionManager.patientSaved ? undefined : values.patientUuid,
-            signal,
+        : await runRegistrationWrite(
+            savePatientTransactionManager,
+            'patient',
+            async () => {
+              const response = await savePatient(
+                createdPatient,
+                isNewPatient && !savePatientTransactionManager.patientSaved ? undefined : values.patientUuid,
+                signal,
+              );
+              if (persistTransaction && (!response.ok || response.data?.uuid !== values.patientUuid)) {
+                throw new Error('The queued patient registration could not be confirmed.');
+              }
+              if (response.ok) {
+                savePatientTransactionManager.patientSaved = true;
+                savePatientTransactionManager.patientPayloadSignature = patientPayloadSignature;
+                savePatientTransactionManager.savedPatientUuid = response.data.uuid;
+                if (isNewPatient && !patientWasAlreadySaved) {
+                  savePatientTransactionManager.newPatientIdentifierSignature = getIdentifierFormSignature(
+                    values.identifiers,
+                  );
+                }
+              }
+              return response;
+            },
+            persistTransaction,
           );
 
     if (savePatientResponse.ok) {
-      savePatientTransactionManager.patientSaved = true;
-      savePatientTransactionManager.patientPayloadSignature = patientPayloadSignature;
-      savePatientTransactionManager.savedPatientUuid = savePatientResponse.data.uuid;
-      if (isNewPatient && !patientWasAlreadySaved) {
-        savePatientTransactionManager.newPatientIdentifierSignature = getIdentifierFormSignature(values.identifiers);
-      }
-
       for (const name of FormManager.getDeletedNames(values, patientUuidMap)) {
         if (!savePatientTransactionManager.deletedNameUuids[name.nameUuid]) {
-          await deletePersonName(name.nameUuid, name.personUuid, signal);
-          savePatientTransactionManager.deletedNameUuids[name.nameUuid] = true;
+          await runRegistrationWrite(
+            savePatientTransactionManager,
+            `name:${name.nameUuid}`,
+            async () => {
+              await deletePersonName(name.nameUuid, name.personUuid, signal);
+              savePatientTransactionManager.deletedNameUuids[name.nameUuid] = true;
+            },
+            persistTransaction,
+          );
         }
       }
 
@@ -468,6 +511,7 @@ export class FormManager {
         patientUuidMap,
         savePatientTransactionManager,
         signal,
+        persistTransaction,
       );
 
       await this.saveRelationships(
@@ -480,6 +524,7 @@ export class FormManager {
         },
         savePatientTransactionManager,
         signal,
+        persistTransaction,
       );
 
       await this.saveObservations(
@@ -490,31 +535,48 @@ export class FormManager {
         config,
         savePatientTransactionManager,
         signal,
+        persistTransaction,
       );
 
       if (capturePhotoProps?.imageData && !savePatientTransactionManager.photoSaved) {
         const { patientPhotoConceptUuid } = await getConfig<StyleguideConfigObject>('@openmrs/esm-styleguide');
         const savePhotoAsAttachment = async () => {
           try {
-            await savePatientPhotoAsAttachment(savePatientResponse.data.uuid, capturePhotoProps.imageData, signal);
-            savePatientTransactionManager.photoSaved = true;
+            await runRegistrationWrite(
+              savePatientTransactionManager,
+              'photo',
+              async () => {
+                await savePatientPhotoAsAttachment(savePatientResponse.data.uuid, capturePhotoProps.imageData, signal);
+                savePatientTransactionManager.photoSaved = true;
+              },
+              persistTransaction,
+            );
           } catch (attachmentError) {
+            if (persistTransaction) throw attachmentError;
             console.warn('Patient photo could not be saved as an attachment.', attachmentError);
           }
         };
 
         if (patientPhotoConceptUuid) {
           try {
-            await savePatientPhoto(
-              savePatientResponse.data.uuid,
-              capturePhotoProps.imageData,
-              `${restBaseUrl}/obs`,
-              capturePhotoProps.dateTime || new Date().toISOString(),
-              patientPhotoConceptUuid,
-              signal,
+            await runRegistrationWrite(
+              savePatientTransactionManager,
+              'photo',
+              async () => {
+                await savePatientPhoto(
+                  savePatientResponse.data.uuid,
+                  capturePhotoProps.imageData,
+                  `${restBaseUrl}/obs`,
+                  capturePhotoProps.dateTime || new Date().toISOString(),
+                  patientPhotoConceptUuid,
+                  signal,
+                );
+                savePatientTransactionManager.photoSaved = true;
+              },
+              persistTransaction,
             );
-            savePatientTransactionManager.photoSaved = true;
           } catch (error) {
+            if (persistTransaction) throw error;
             console.warn('Patient photo could not be saved. Continuing after patient registration succeeded.', error);
             await savePhotoAsAttachment();
           }
@@ -658,6 +720,7 @@ export class FormManager {
     } = {},
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
+    persistTransaction?: PersistRegistrationTransaction,
   ) {
     const thisPatientUuid = savePatientResponse.data.uuid;
     const results: Array<unknown> = [];
@@ -665,7 +728,14 @@ export class FormManager {
     for (const relationship of relationships ?? []) {
       if (relationship.relationshipType && relationship.action) {
         results.push(
-          await FormManager.saveRelationshipForRow(relationship, thisPatientUuid, options, transactionManager, signal),
+          await FormManager.saveRelationshipForRow(
+            relationship,
+            thisPatientUuid,
+            options,
+            transactionManager,
+            signal,
+            persistTransaction,
+          ),
         );
       }
     }
@@ -724,6 +794,7 @@ export class FormManager {
     },
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
+    persistTransaction?: PersistRegistrationTransaction,
   ) {
     const { relationshipType, uuid: relationshipUuid, action, isCompanion, companionRelationshipUuid } = relationship;
     let { relatedPersonUuid } = relationship;
@@ -739,18 +810,22 @@ export class FormManager {
         mobilePhoneAttributeTypeUuid: options.mobilePhoneAttributeTypeUuid,
         phoneAttributeTypeUuid: options.phoneAttributeTypeUuid,
       });
-      const savePersonResponse = signal
-        ? await savePerson(responsiblePerson, signal)
-        : await savePerson(responsiblePerson);
-      relatedPersonUuid = savePersonResponse?.data?.uuid;
-
-      if (!relatedPersonUuid) {
-        throw new RegistrationDomainError(
-          registrationErrorCodes.responsiblePersonCreationFailed,
-          'The backend did not return a person UUID for the new responsible person.',
-        );
-      }
-      state.relatedPersonUuid = relatedPersonUuid;
+      await runRegistrationWrite(
+        transactionManager,
+        `responsible-person:${transactionKey}`,
+        async () => {
+          const response = signal ? await savePerson(responsiblePerson, signal) : await savePerson(responsiblePerson);
+          relatedPersonUuid = response?.data?.uuid;
+          if (!relatedPersonUuid) {
+            throw new RegistrationDomainError(
+              registrationErrorCodes.responsiblePersonCreationFailed,
+              'The backend did not return a person UUID for the new responsible person.',
+            );
+          }
+          state.relatedPersonUuid = relatedPersonUuid;
+        },
+        persistTransaction,
+      );
     }
 
     if (!relatedPersonUuid && action !== 'DELETE') {
@@ -777,43 +852,53 @@ export class FormManager {
     }
 
     if (!state.mainCompleted) {
-      switch (action) {
-        case 'ADD': {
-          const response = signal
-            ? await saveRelationship(relationshipToSave, signal)
-            : await saveRelationship(relationshipToSave);
-          state.mainRelationshipUuid = response?.data?.uuid;
-          state.mainCompleted = true;
-          break;
-        }
-        case 'UPDATE':
-          if (!relationshipUuid) {
-            throw new RegistrationDomainError(
-              registrationErrorCodes.relationshipUpdateInvalid,
-              'An existing relationship UUID is required for update.',
-            );
-          }
-          if (signal) {
-            await updateRelationship(relationshipUuid, relationshipToSave, signal);
-          } else {
-            await updateRelationship(relationshipUuid, relationshipToSave);
-          }
-          state.mainCompleted = true;
-          break;
-        case 'DELETE':
-          if (relationshipUuid) {
-            if (signal) {
-              await deleteRelationship(relationshipUuid, signal);
-            } else {
-              await deleteRelationship(relationshipUuid);
+      await runRegistrationWrite(
+        transactionManager,
+        `relationship:${transactionKey}`,
+        async () => {
+          switch (action) {
+            case 'ADD': {
+              const response = signal
+                ? await saveRelationship(relationshipToSave, signal)
+                : await saveRelationship(relationshipToSave);
+              if (persistTransaction && !response?.data?.uuid) {
+                throw new Error('The queued relationship could not be confirmed.');
+              }
+              state.mainRelationshipUuid = response?.data?.uuid;
+              state.mainCompleted = true;
+              break;
             }
+            case 'UPDATE':
+              if (!relationshipUuid) {
+                throw new RegistrationDomainError(
+                  registrationErrorCodes.relationshipUpdateInvalid,
+                  'An existing relationship UUID is required for update.',
+                );
+              }
+              if (signal) {
+                await updateRelationship(relationshipUuid, relationshipToSave, signal);
+              } else {
+                await updateRelationship(relationshipUuid, relationshipToSave);
+              }
+              state.mainCompleted = true;
+              break;
+            case 'DELETE':
+              if (relationshipUuid) {
+                if (signal) {
+                  await deleteRelationship(relationshipUuid, signal);
+                } else {
+                  await deleteRelationship(relationshipUuid);
+                }
+              }
+              state.mainCompleted = true;
+              break;
+            default:
+              break;
           }
-          state.mainCompleted = true;
-          break;
-        default:
-          break;
-      }
-      state.mainSignature = mainSignature;
+          state.mainSignature = mainSignature;
+        },
+        persistTransaction,
+      );
     }
 
     // The primary responsible person is persisted through the companion relationship
@@ -848,21 +933,50 @@ export class FormManager {
           personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
           relationshipType: companionType,
         };
-        const response = signal
-          ? await saveRelationship(companionRelationship, signal)
-          : await saveRelationship(companionRelationship);
-        state.companionRelationshipUuid = response?.data?.uuid;
-        state.companionRemoved = false;
-        state.companionCompleted = true;
+        await runRegistrationWrite(
+          transactionManager,
+          `companion:${transactionKey}`,
+          async () => {
+            const response = signal
+              ? await saveRelationship(companionRelationship, signal)
+              : await saveRelationship(companionRelationship);
+            if (persistTransaction && !response?.data?.uuid) {
+              throw new Error('The queued companion relationship could not be confirmed.');
+            }
+            state.companionRelationshipUuid = response?.data?.uuid;
+            state.companionRemoved = false;
+            state.companionCompleted = true;
+            state.companionSignature = getCompanionRelationshipTransactionSignature(
+              relationship,
+              relatedPersonUuid,
+              options.companionRelationshipType,
+              state.companionRelationshipUuid,
+            );
+          },
+          persistTransaction,
+        );
       } else if (!state.companionCompleted && !wantsCompanion && effectiveCompanionRelationshipUuid) {
-        if (signal) {
-          await deleteRelationship(effectiveCompanionRelationshipUuid, signal);
-        } else {
-          await deleteRelationship(effectiveCompanionRelationshipUuid);
-        }
-        state.companionRelationshipUuid = undefined;
-        state.companionRemoved = true;
-        state.companionCompleted = true;
+        await runRegistrationWrite(
+          transactionManager,
+          `companion:${transactionKey}`,
+          async () => {
+            if (signal) {
+              await deleteRelationship(effectiveCompanionRelationshipUuid, signal);
+            } else {
+              await deleteRelationship(effectiveCompanionRelationshipUuid);
+            }
+            state.companionRelationshipUuid = undefined;
+            state.companionRemoved = true;
+            state.companionCompleted = true;
+            state.companionSignature = getCompanionRelationshipTransactionSignature(
+              relationship,
+              relatedPersonUuid,
+              options.companionRelationshipType,
+              undefined,
+            );
+          },
+          persistTransaction,
+        );
       } else if (mainRelationshipIsCompanion || effectiveCompanionRelationshipUuid || !wantsCompanion) {
         state.companionCompleted = true;
       }
@@ -885,6 +999,7 @@ export class FormManager {
     config: RegistrationConfig,
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
+    persistTransaction?: PersistRegistrationTransaction,
   ) {
     const observations = Object.entries(obss ?? {})
       .filter(([, value]) => value !== '')
@@ -908,9 +1023,16 @@ export class FormManager {
       form: config.registrationObs.registrationFormUuid,
       obs: observations,
     };
-    const response = await saveEncounter(encounterToSave, signal);
-    transactionManager.observationsSaved = true;
-    return response;
+    return runRegistrationWrite(
+      transactionManager,
+      'observations',
+      async () => {
+        const response = await saveEncounter(encounterToSave, signal);
+        transactionManager.observationsSaved = true;
+        return response;
+      },
+      persistTransaction,
+    );
   }
 
   static assertObservationConfiguration(
@@ -958,6 +1080,7 @@ export class FormManager {
     identifierTypes: ReadonlyArray<PatientIdentifierType>,
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
+    persistTransaction?: PersistRegistrationTransaction,
   ): Promise<Array<PatientIdentifier>> {
     ensureTransactionState(transactionManager);
     const initializeIdentifierRow = (
@@ -994,64 +1117,89 @@ export class FormManager {
         getIdentifierLocationPayload(identifier.identifierTypeUuid, identifierTypes, location),
       ]),
     );
-    const identifierTypeRequests = activeIdentifierEntries
-      /* Since default identifier-types will be present on the form and are also in the not-required state,
-        therefore we might be running into situations when there's no value and no source associated,
-        hence filtering these fields out.
-      */
-      .map(async ([identifierFieldName, patientIdentifier]) => {
-        const { identifierTypeUuid, identifierValue, identifierUuid, selectedSource, preferred, autoGeneration } =
-          patientIdentifier;
+    // Finish and persist each write before starting the next identifier. A
+    // rejected Promise.all would otherwise leave writes running after failure.
+    const identifiers: Array<PatientIdentifier> = [];
+    for (const [identifierFieldName, patientIdentifier] of activeIdentifierEntries) {
+      const { identifierTypeUuid, identifierValue, identifierUuid, selectedSource, preferred, autoGeneration } =
+        patientIdentifier;
 
-        const autoGenerationManualEntry =
-          autoGeneration && selectedSource?.autoGenerationOption?.manualEntryEnabled && !!identifierValue;
+      const autoGenerationManualEntry =
+        autoGeneration && selectedSource?.autoGenerationOption?.manualEntryEnabled && !!identifierValue;
 
-        let identifier = identifierValue;
-        if (autoGeneration && !autoGenerationManualEntry) {
-          identifier = transactionManager.generatedIdentifiers[identifierFieldName];
-          if (!identifier) {
-            identifier = (await generateIdentifier(selectedSource.uuid, signal)).data.identifier;
-            transactionManager.generatedIdentifiers[identifierFieldName] = identifier;
-          }
+      let identifier = identifierValue;
+      if (autoGeneration && !autoGenerationManualEntry) {
+        identifier = transactionManager.generatedIdentifiers[identifierFieldName];
+        if (!identifier) {
+          await runRegistrationWrite(
+            transactionManager,
+            `generate-identifier:${identifierFieldName}`,
+            async () => {
+              identifier = (await generateIdentifier(selectedSource.uuid, signal)).data.identifier;
+              if (persistTransaction && !identifier) {
+                throw new Error('The queued identifier generation could not be confirmed.');
+              }
+              transactionManager.generatedIdentifiers[identifierFieldName] = identifier;
+            },
+            persistTransaction,
+          );
         }
+      }
 
-        const identifierToCreate = {
-          uuid: identifierUuid,
-          identifier,
-          identifierType: identifierTypeUuid,
-          ...identifierLocationPayloads.get(identifierFieldName),
-          preferred,
-        };
+      const identifierToCreate = {
+        uuid: identifierUuid,
+        identifier,
+        identifierType: identifierTypeUuid,
+        ...identifierLocationPayloads.get(identifierFieldName),
+        preferred,
+      };
 
-        if (!isNewPatient) {
-          const state = initializeIdentifierRow(identifierFieldName, initialIdentifierValues?.[identifierFieldName]);
+      if (!isNewPatient) {
+        const state = initializeIdentifierRow(identifierFieldName, initialIdentifierValues?.[identifierFieldName]);
 
-          if (!state.existsOnServer) {
-            const response = await addPatientIdentifier(
-              patientUuid,
-              { ...identifierToCreate, uuid: undefined },
-              signal,
-            );
-            state.existsOnServer = true;
-            state.persistedValue = identifier;
-            state.resourceUuid = response?.data?.uuid;
-          } else if (state.persistedValue !== identifier) {
-            if (!state.resourceUuid) {
-              throw new RegistrationDomainError(
-                registrationErrorCodes.identifierRetryUpdateUnavailable,
-                `No se puede modificar el identificador ${identifierFieldName} durante este reintento. Recargue el paciente e intente nuevamente.`,
-                { technicalDetails: { identifierFieldName } },
+        if (!state.existsOnServer) {
+          await runRegistrationWrite(
+            transactionManager,
+            `add-identifier:${identifierFieldName}`,
+            async () => {
+              const response = await addPatientIdentifier(
+                patientUuid,
+                { ...identifierToCreate, uuid: undefined },
+                signal,
               );
-            }
-            await updatePatientIdentifier(patientUuid, state.resourceUuid, identifierToCreate.identifier, signal);
-            state.persistedValue = identifier;
+              if (persistTransaction && !response?.data?.uuid) {
+                throw new Error('The queued identifier could not be confirmed.');
+              }
+              state.existsOnServer = true;
+              state.persistedValue = identifier;
+              state.resourceUuid = response?.data?.uuid;
+            },
+            persistTransaction,
+          );
+        } else if (state.persistedValue !== identifier) {
+          if (!state.resourceUuid) {
+            throw new RegistrationDomainError(
+              registrationErrorCodes.identifierRetryUpdateUnavailable,
+              `No se puede modificar el identificador ${identifierFieldName} durante este reintento. Recargue el paciente e intente nuevamente.`,
+              { technicalDetails: { identifierFieldName } },
+            );
           }
-
-          identifierToCreate.uuid = state.resourceUuid;
+          await runRegistrationWrite(
+            transactionManager,
+            `update-identifier:${identifierFieldName}`,
+            async () => {
+              await updatePatientIdentifier(patientUuid, state.resourceUuid, identifierToCreate.identifier, signal);
+              state.persistedValue = identifier;
+            },
+            persistTransaction,
+          );
         }
 
-        return identifierToCreate;
-      });
+        identifierToCreate.uuid = state.resourceUuid;
+      }
+
+      identifiers.push(identifierToCreate);
+    }
 
     /*
       If there was initially an identifier assigned to the patient,
@@ -1059,8 +1207,6 @@ export class FormManager {
       this means that the identifier is meant to be deleted, hence we need
       to delete the respective identifiers.
     */
-
-    const identifiers = await Promise.all(identifierTypeRequests);
 
     if (patientUuid && !isNewPatient) {
       for (const [identifierFieldName, state] of Object.entries(transactionManager.identifierRows)) {
@@ -1075,8 +1221,18 @@ export class FormManager {
           );
         }
         if (!transactionManager.deletedIdentifierUuids[state.resourceUuid]) {
-          await deletePatientIdentifier(patientUuid, state.resourceUuid, signal);
-          transactionManager.deletedIdentifierUuids[state.resourceUuid] = true;
+          await runRegistrationWrite(
+            transactionManager,
+            `delete-identifier:${state.resourceUuid}`,
+            async () => {
+              await deletePatientIdentifier(patientUuid, state.resourceUuid, signal);
+              transactionManager.deletedIdentifierUuids[state.resourceUuid] = true;
+              state.existsOnServer = false;
+              state.persistedValue = undefined;
+              state.resourceUuid = undefined;
+            },
+            persistTransaction,
+          );
         }
         state.existsOnServer = false;
         state.persistedValue = undefined;
@@ -1242,6 +1398,7 @@ export class FormManager {
     patientUuidMap: PatientUuidMapType,
     transactionManager: SavePatientTransactionManager,
     signal?: AbortSignal,
+    persistTransaction?: PersistRegistrationTransaction,
   ) {
     if (isNewPatient || !values.patientUuid) {
       return;
@@ -1271,8 +1428,15 @@ export class FormManager {
         continue;
       }
 
-      await deletePersonAttribute(values.patientUuid, attributeUuid, signal);
-      transactionManager.deletedAttributeUuids[attributeUuid] = true;
+      await runRegistrationWrite(
+        transactionManager,
+        `delete-attribute:${attributeUuid}`,
+        async () => {
+          await deletePersonAttribute(values.patientUuid, attributeUuid, signal);
+          transactionManager.deletedAttributeUuids[attributeUuid] = true;
+        },
+        persistTransaction,
+      );
     }
   }
 
@@ -1370,6 +1534,8 @@ export class FormManager {
 }
 
 export class SavePatientTransactionManager {
+  offlineSyncStarted = false;
+  pendingWrites: Record<string, true> = {};
   deletedAttributeUuids: Record<string, boolean> = {};
   deletedIdentifierUuids: Record<string, boolean> = {};
   deletedNameUuids: Record<string, boolean> = {};

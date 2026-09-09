@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { getLoggedInUser } from '@openmrs/esm-api';
 import { OfflineDb } from './offline-db';
@@ -59,11 +59,140 @@ vi.mock('@openmrs/esm-api', () => ({
   getSessionStore: vi.fn(() => mockSessionStore),
 }));
 
+const requestLock =
+  vi.fn<(name: string, options: LockOptions, callback: LockGrantedCallback<unknown>) => Promise<unknown>>();
+beforeEach(() => {
+  let held = false;
+  requestLock.mockImplementation(async (name, _options, callback) => {
+    if (held) return callback(null);
+    held = true;
+    try {
+      return await callback({ name, mode: 'exclusive' } as Lock);
+    } finally {
+      held = false;
+    }
+  });
+  vi.stubGlobal('navigator', { locks: { request: requestLock } });
+});
+
 afterEach(async () => {
   // We want each test case to start fresh with a clean sync queue.
   await new OfflineDb().syncQueue.clear();
   setCurrentUser(mockUserId);
   getOfflineSynchronizationStore().setState({ synchronization: undefined });
+  vi.unstubAllGlobals();
+});
+
+describe('synchronization across tabs and dependencies', () => {
+  it.each([
+    'unavailable',
+    'held by another tab',
+    'rejected by the browser',
+  ])('preserves the queue without dispatch when the origin lock is %s', async (condition) => {
+    const process = vi.fn(async () => undefined);
+    setupOfflineSync('locked-item', [], process);
+    await queueSynchronizationItem('locked-item', defaultMockSyncItem);
+    if (condition === 'unavailable') {
+      vi.stubGlobal('navigator', {});
+    } else if (condition === 'held by another tab') {
+      requestLock.mockImplementation(async (_name, _options, callback) => callback(null));
+    } else {
+      requestLock.mockRejectedValue(new Error('Synthetic lock failure'));
+    }
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    expect(process).not.toHaveBeenCalled();
+    expect(await getSynchronizationItems('locked-item')).toHaveLength(1);
+    expect(getOfflineSynchronizationStore().getState().synchronization).toBeUndefined();
+  });
+
+  it('holds the origin lock until synchronization settles and allows a subsequent retry', async () => {
+    let inLock = false;
+    requestLock.mockImplementation(async (name, options, callback) => {
+      expect(name).toBe('openmrs-offline-synchronization');
+      expect(options).toEqual({ mode: 'exclusive', ifAvailable: true });
+      inLock = true;
+      try {
+        return await callback({ name, mode: 'exclusive' } as Lock);
+      } finally {
+        inLock = false;
+      }
+    });
+    const process = vi.fn(async () => {
+      expect(inLock).toBe(true);
+      if (process.mock.calls.length === 1) throw new Error('Synthetic rejection');
+    });
+    setupOfflineSync('lock-lifetime', [], process);
+    await queueSynchronizationItem('lock-lifetime', defaultMockSyncItem);
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    expect(inLock).toBe(false);
+    await runSynchronization();
+    expect(inLock).toBe(false);
+    expect(await getSynchronizationItems('lock-lifetime')).toHaveLength(0);
+  });
+
+  it('keeps a dependent item queued when its explicit parent failed and completes both on retry', async () => {
+    const parent = vi.fn(async () => ({ uuid: 'synthetic-parent' }));
+    parent.mockRejectedValueOnce(new Error('Synthetic parent failure'));
+    const child = vi.fn(async () => undefined);
+    setupOfflineSync('dependency-parent', [], parent);
+    setupOfflineSync('dependency-child', ['dependency-parent'], child);
+    await queueSynchronizationItem('dependency-parent', defaultMockSyncItem, { id: 'parent' });
+    await queueSynchronizationItem('dependency-child', defaultMockSyncItem, {
+      id: 'child',
+      dependencies: [{ id: 'parent', type: 'dependency-parent' }],
+    });
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    expect(child).not.toHaveBeenCalled();
+    expect(await getSynchronizationItems('dependency-child')).toHaveLength(1);
+    await runSynchronization();
+    expect(child).toHaveBeenCalledWith(
+      defaultMockSyncItem,
+      expect.objectContaining({
+        dependencies: [{ uuid: 'synthetic-parent' }],
+      }),
+    );
+    expect(await getSynchronizationItems('dependency-child')).toHaveLength(0);
+  });
+
+  it('blocks only the child of the failed row, not unrelated children of the same type', async () => {
+    setupOfflineSync('partial-parent', [], async ({ value }: MockSyncItem) => {
+      if (value === 1) throw new Error('Synthetic parent failure');
+    });
+    const child = vi.fn(async () => undefined);
+    setupOfflineSync('partial-child', ['partial-parent'], child);
+    for (const value of [1, 2]) {
+      await queueSynchronizationItem('partial-parent', { value }, { id: String(value) });
+      await queueSynchronizationItem(
+        'partial-child',
+        { value },
+        {
+          id: String(value),
+          dependencies: [{ id: String(value), type: 'partial-parent' }],
+        },
+      );
+    }
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    expect(child).toHaveBeenCalledOnce();
+    expect(child).toHaveBeenCalledWith({ value: 2 }, expect.objectContaining({ dependencies: [undefined] }));
+    expect(await getSynchronizationItems('partial-child')).toEqual([{ value: 1 }]);
+  });
+
+  it('retries a child whose parent was already synchronized and removed by an earlier run', async () => {
+    const parent = vi.fn(async () => undefined);
+    const child = vi.fn(async () => undefined).mockRejectedValueOnce(new Error('Synthetic child failure'));
+    setupOfflineSync('completed-parent', [], parent);
+    setupOfflineSync('retry-child', ['completed-parent'], child);
+    await queueSynchronizationItem('completed-parent', defaultMockSyncItem, { id: 'parent' });
+    await queueSynchronizationItem('retry-child', defaultMockSyncItem, {
+      dependencies: [{ type: 'completed-parent', id: 'parent' }],
+    });
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    expect(await getSynchronizationItems('completed-parent')).toHaveLength(0);
+    await runSynchronization();
+    expect(parent).toHaveBeenCalledOnce();
+    expect(child).toHaveBeenCalledTimes(2);
+    expect(await getSynchronizationItems('retry-child')).toHaveLength(0);
+  });
 });
 
 function setCurrentUser(userId: string) {

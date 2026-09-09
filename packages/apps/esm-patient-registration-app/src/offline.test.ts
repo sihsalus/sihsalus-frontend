@@ -124,6 +124,7 @@ describe('patient registration offline cache and synchronization', () => {
       index: 0,
       items: [queuedPatient],
       dependencies: [],
+      updateContent: vi.fn(async (update) => update(queuedPatient)),
     } as SyncProcessOptions<PatientRegistration>;
 
     await syncPatientRegistration(queuedPatient, options);
@@ -158,6 +159,7 @@ describe('patient registration offline cache and synchronization', () => {
       index: 0,
       items: [queuedPatient],
       dependencies: [],
+      updateContent: vi.fn(async (update) => update(queuedPatient)),
     } as SyncProcessOptions<PatientRegistration>;
 
     await expect(syncPatientRegistration(queuedPatient, options)).rejects.toThrow(
@@ -199,6 +201,7 @@ describe('patient registration offline cache and synchronization', () => {
       index: 0,
       items: [queuedPatient],
       dependencies: [],
+      updateContent: vi.fn(async (update) => update(queuedPatient)),
     } as SyncProcessOptions<PatientRegistration>;
 
     await expect(syncPatientRegistration(queuedPatient, options)).rejects.toThrow(
@@ -225,6 +228,7 @@ describe('patient registration offline cache and synchronization', () => {
       index: 0,
       items: [queuedPatient],
       dependencies: [],
+      updateContent: vi.fn(async (update) => update(queuedPatient)),
     } as SyncProcessOptions<PatientRegistration>;
     const saveError = new Error('Synthetic save failure');
     const savePatientFormOnline = vi.spyOn(FormManager, 'savePatientFormOnline').mockRejectedValueOnce(saveError);

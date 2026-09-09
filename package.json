@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",
+    "@openmrs/esm-offline": "workspace:*",
     "@playwright/test": "^1.58.2",
     "@swc/core": "1.15.21",
     "@testing-library/dom": "^10.4.1",
@@ -93,7 +94,9 @@
     "swc-loader": "0.2.7",
     "turbo": "2.9.16",
     "typescript": "6.0.3",
-    "vitest": "4.1.7"
+    "vitest": "4.1.7",
+    "workbox-routing": "6.6.0",
+    "workbox-strategies": "6.6.0"
   },
   "lint-staged": {
     "*.{css,js,json,tsx}": "biome check --write",

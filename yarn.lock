@@ -9171,6 +9171,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-registration-app@workspace:packages/apps/esm-patient-registration-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@openmrs/esm-offline": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9755,6 +9756,7 @@ __metadata:
   resolution: "@sihsalus/sihsalus-esm@workspace:."
   dependencies:
     "@biomejs/biome": "npm:2.4.12"
+    "@openmrs/esm-offline": "workspace:*"
     "@playwright/test": "npm:^1.58.2"
     "@swc/core": "npm:1.15.21"
     "@testing-library/dom": "npm:^10.4.1"
@@ -9790,6 +9792,8 @@ __metadata:
     turbo: "npm:2.9.16"
     typescript: "npm:6.0.3"
     vitest: "npm:4.1.7"
+    workbox-routing: "npm:6.6.0"
+    workbox-strategies: "npm:6.6.0"
   languageName: unknown
   linkType: soft
 

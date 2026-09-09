@@ -46,6 +46,38 @@ interface TestTypeSearchResultItemProps {
 
 let lastSelectedLabset = 'ALL';
 
+const orderableLabsetConceptUuids = [
+  '228ced89-758e-4e0b-982e-155c01ed50f7', // Hematología
+  '20df74e8-192d-4c30-8e5c-d9989c8a33d8', // Bioquímica
+  '8ed15668-238d-4f19-947f-2237cb5d793f', // Inmunología
+  '48ea717c-cc7c-4dc1-a018-9c0d439ee178', // Microbiología
+  '0a84d7d3-2d86-4415-a12f-dc2a307ddba1', // Coproanálisis
+  '29f4a2ac-d212-4ada-961c-b3d64101b390', // Grupo Sanguíneo y Factor Rh
+  '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  'ea88fc4e-e3d9-4d2b-9cdd-c5be0490615a', // Lámina periférica
+  '2220fe2e-37ad-465a-a49b-881369ad93cd', // Bilirrubina
+  '9c7b89d6-7adc-4450-8e91-bd2115d28992', // Proteínas totales y albúmina
+  'ef0a9d25-658b-466b-9b7e-4571673b28b0', // Prueba KOH
+  '476ced01-24e8-43c0-a9f0-81327f6734f7', // Parasitología
+  '4df83426-dfdf-4085-8db3-8ceedd268327', // Reacción inflamatoria
+  '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen orina
+  'c5cedfda-c2b7-4c85-b420-ecf0b53cba08', // Sedimento urinario
+];
+
+const wholeTestConceptUuids = [
+  '29f4a2ac-d212-4ada-961c-b3d64101b390', // Grupo Sanguíneo y Factor Rh
+  '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  '167e043c-eae0-44d4-984f-1124ec6607ad', // Hemograma
+  'ea88fc4e-e3d9-4d2b-9cdd-c5be0490615a', // Lámina periférica
+  '2220fe2e-37ad-465a-a49b-881369ad93cd', // Bilirrubina
+  '9c7b89d6-7adc-4450-8e91-bd2115d28992', // Proteínas totales y albúmina
+  'ef0a9d25-658b-466b-9b7e-4571673b28b0', // Prueba KOH
+  '476ced01-24e8-43c0-a9f0-81327f6734f7', // Parasitología
+  '4df83426-dfdf-4085-8db3-8ceedd268327', // Reacción inflamatoria
+  '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen orina
+  'c5cedfda-c2b7-4c85-b420-ecf0b53cba08', // Sedimento urinario
+];
+
 export function TestTypeSearch({
   openLabForm,
   orderTypeUuid,
@@ -57,11 +89,9 @@ export function TestTypeSearch({
   const debouncedSearchTerm = useDebounce(searchTerm);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const config = useConfig<ConfigObject>();
-  const resultsViewerConcepts = config?.resultsViewerConcepts ?? [];
   const conceptUuids = useMemo(() => {
-    return resultsViewerConcepts.map((c) => c.conceptUuid);
-  }, [resultsViewerConcepts]);
+    return orderableLabsetConceptUuids;
+  }, []);
 
   const fetchConcepts = useCallback((urls: Array<string>) => {
     return Promise.all(urls.map((url) => openmrsFetch<{ uuid: string; display: string }>(url).then((res) => res.data)));
@@ -181,6 +211,14 @@ function TestTypeSearchResults({
   const isSpecificLabsetSelected = useMemo(() => {
     return orderableConceptSets?.length === 1 && !orderConfig.labOrderableConcepts.includes(orderableConceptSets[0]);
   }, [orderableConceptSets, orderConfig.labOrderableConcepts]);
+
+  const isWholeTestSelected = useMemo(() => {
+    return (
+      isSpecificLabsetSelected &&
+      orderableConceptSets?.length === 1 &&
+      wholeTestConceptUuids.includes(orderableConceptSets[0])
+    );
+  }, [isSpecificLabsetSelected, orderableConceptSets]);
 
   const createLabOrder = useCallback(
     (orderableConcept: TestType) => {
@@ -312,7 +350,7 @@ function TestTypeSearchResults({
                   })}
               </span>
               <div className={styles.headerActions}>
-                {isSpecificLabsetSelected &&
+                {isWholeTestSelected &&
                   testTypes.length > 0 &&
                   !testTypes.some((test) => test.approximateMatch) && (
                     <Button

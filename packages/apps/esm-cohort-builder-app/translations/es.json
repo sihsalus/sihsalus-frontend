@@ -26,6 +26,8 @@
   "cohortViewError": "Error al ver la cohorte",
   "completedBetween": "Completado entre",
   "composition": "Composición",
+  "compositionOf": "Composición de {{composition}}",
+  "compositionSyntaxHelp": "Use números del historial, AND, OR, NOT y paréntesis. Ejemplo: (1 OR 2) AND NOT 3.",
   "compositionExplanationOne": "Esta consulta combina múltiples cohortes usando los operadores lógicos: AND, OR y NOT.",
   "compositionExplanationThree": "Ejemplo: si el historial #1 es una cohorte de pacientes masculinos, y el historial #2 es una cohorte de pacientes con edades entre 23 y 35 años; entonces '1 AND 2' dará una cohorte de pacientes masculinos con edades entre 23 y 35 años.",
   "compositionExplanationTwo": "Para usar esta consulta, necesita resultados previos en el historial de búsqueda. Esos resultados existentes se pueden combinar para obtener la composición.",

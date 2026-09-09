@@ -20,7 +20,7 @@ const Composition: React.FC<SearchByProps> = ({ onSubmit }) => {
 
   const handleCompositionQuery = (composition: string) => {
     setCompositionQuery(composition);
-    setDescription('Composition of ' + composition);
+    setDescription(t('compositionOf', 'Composition of {{composition}}', { composition }));
   };
 
   const submit = async () => {
@@ -53,6 +53,10 @@ const Composition: React.FC<SearchByProps> = ({ onSubmit }) => {
     <>
       <TextInput
         labelText={t('composition', 'Composition')}
+        helperText={t(
+          'compositionSyntaxHelp',
+          'Use search history numbers, AND, OR, NOT and parentheses. Example: (1 OR 2) AND NOT 3.',
+        )}
         data-testid="composition-query"
         id="composition-query"
         onChange={(e) => handleCompositionQuery(e.target.value)}

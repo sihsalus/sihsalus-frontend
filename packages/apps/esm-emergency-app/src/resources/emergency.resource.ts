@@ -215,7 +215,12 @@ export function useEmergencyQueueEntries(
     return resolveStoreBackedUuid(statusUuid, serviceQueuesFilters.statusUuid);
   }, [resolveStoreBackedUuid, serviceQueuesFilters.statusUuid, statusUuid]);
 
-  const { queues: availableQueues, isLoading: isLoadingQueues } = useEmergencyQueues(actualLocationUuid);
+  const {
+    queues: availableQueues,
+    isLoading: isLoadingQueues,
+    error: queuesError,
+  } = useEmergencyQueues(actualLocationUuid);
+  const queueValidationError = queueUuid ? queuesError : undefined;
   const actualQueueUuid = useMemo(() => {
     if (!queueUuid) {
       return undefined;
@@ -224,7 +229,7 @@ export function useEmergencyQueueEntries(
     return availableQueues.some((queue) => queue.uuid === queueUuid) ? queueUuid : undefined;
   }, [availableQueues, queueUuid]);
   const shouldWaitForQueueValidation = Boolean(queueUuid && actualLocationUuid && isLoadingQueues);
-  const shouldSkipMissingQueue = Boolean(queueUuid && actualLocationUuid && !isLoadingQueues && !actualQueueUuid);
+  const shouldSkipMissingQueue = Boolean(queueUuid && !isLoadingQueues && !actualQueueUuid);
 
   // Custom representation - same as Service Queues for full compatibility
   const customRepresentation =
@@ -255,7 +260,7 @@ export function useEmergencyQueueEntries(
   // Include actualLocationUuid in SWR key to ensure cache updates when filters change
   // Note: actualStatusUuid is intentionally excluded to avoid cache issues when status is not used
   const swrKey = useMemo(() => {
-    if (shouldWaitForQueueValidation || shouldSkipMissingQueue) {
+    if (shouldWaitForQueueValidation || shouldSkipMissingQueue || queueValidationError) {
       return null;
     }
 
@@ -272,6 +277,7 @@ export function useEmergencyQueueEntries(
     actualQueueUuid,
     shouldWaitForQueueValidation,
     shouldSkipMissingQueue,
+    queueValidationError,
   ]);
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<
@@ -290,10 +296,10 @@ export function useEmergencyQueueEntries(
   }, [mutate]);
 
   return {
-    queueEntries: shouldSkipMissingQueue ? [] : data?.data?.results || [],
-    totalCount: shouldSkipMissingQueue ? 0 : data?.data?.totalCount || 0,
-    isLoading: isLoading || shouldWaitForQueueValidation,
-    error,
+    queueEntries: shouldSkipMissingQueue || queueValidationError ? [] : data?.data?.results || [],
+    totalCount: shouldSkipMissingQueue || queueValidationError ? 0 : data?.data?.totalCount || 0,
+    isLoading: !queueValidationError && (isLoading || shouldWaitForQueueValidation),
+    error: queueValidationError ?? error,
     isValidating,
     mutate,
   };

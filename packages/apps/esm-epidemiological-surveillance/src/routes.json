@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "epidemiological-surveillance",
+      "privileges": "app:home.epidemiologicalSurveillance"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "epidemiological-surveillance-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "epidemiologicalSurveillanceDashboardLink",
+      "privileges": "app:home.epidemiologicalSurveillance",
+      "meta": {
+        "name": "epidemiological-surveillance",
+        "title": "epidemiologicalSurveillance"
+      },
+      "order": 60
+    }
+  ]
+}

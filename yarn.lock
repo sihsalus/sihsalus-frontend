@@ -8186,6 +8186,35 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@sihsalus/esm-epidemiological-surveillance@workspace:packages/apps/esm-epidemiological-surveillance":
+  version: 0.0.0-use.local
+  resolution: "@sihsalus/esm-epidemiological-surveillance@workspace:packages/apps/esm-epidemiological-surveillance"
+  dependencies:
+    "@openmrs/esm-framework": "workspace:*"
+    "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
+    "@types/react": "npm:^18.3.21"
+    "@types/react-dom": "npm:^18.3.0"
+    openmrs: "workspace:*"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-i18next: "npm:^17.0.11"
+    react-router-dom: "npm:7.18.2"
+    typescript: "npm:6.0.3"
+    vitest: "npm:^4.1.7"
+  peerDependencies:
+    "@carbon/react": 1.x
+    "@openmrs/esm-framework": "*"
+    react: 18.x
+    react-dom: 18.x
+    react-i18next: 16.x
+    react-router-dom: ">=6.30.4 <8"
+    rxjs: 6.x
+    single-spa: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@sihsalus/esm-fast-data-entry-app@workspace:packages/apps/esm-fast-data-entry-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-fast-data-entry-app@workspace:packages/apps/esm-fast-data-entry-app"

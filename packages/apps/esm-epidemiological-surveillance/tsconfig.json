@@ -1,0 +1,4 @@
+{
+  "extends": "../../tooling/tsconfig.app.json",
+  "include": ["src/**/*", "../../tools/setup-tests.ts"]
+}

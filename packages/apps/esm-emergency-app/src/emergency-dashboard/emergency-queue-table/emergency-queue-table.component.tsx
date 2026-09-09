@@ -52,6 +52,11 @@ interface EmergencyQueueTableProps {
   queueUuid?: string;
 }
 
+interface QueueFilterOption {
+  uuid: string;
+  display: string;
+}
+
 const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
@@ -65,9 +70,12 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     queueUuid,
   );
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatusUuid, setSelectedStatusUuid] = useState<string | null>(null);
-  const [selectedPriorityUuid, setSelectedPriorityUuid] = useState<string | null>(null);
-  const [selectedProviderUuid, setSelectedProviderUuid] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<QueueFilterOption | null>(null);
+  const [selectedPriority, setSelectedPriority] = useState<QueueFilterOption | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<QueueFilterOption | null>(null);
+  const selectedStatusUuid = selectedStatus?.uuid;
+  const selectedPriorityUuid = selectedPriority?.uuid;
+  const selectedProviderUuid = selectedProvider?.uuid;
   const [selectedIdentificationStatus, setSelectedIdentificationStatus] = useState<string | null>(null);
   const [selectedWaitTimeRange, setSelectedWaitTimeRange] = useState<string | null>(null);
   const [currentPageSize, setPageSize] = useState(10);
@@ -136,19 +144,12 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
   );
 
   const hasActiveFilters =
+    searchTerm.trim() ||
     selectedStatusUuid ||
     selectedPriorityUuid ||
     selectedProviderUuid ||
     selectedIdentificationStatus ||
     selectedWaitTimeRange;
-
-  const clearAllFilters = useCallback(() => {
-    setSelectedStatusUuid(null);
-    setSelectedPriorityUuid(null);
-    setSelectedProviderUuid(null);
-    setSelectedIdentificationStatus(null);
-    setSelectedWaitTimeRange(null);
-  }, []);
 
   // Filter queue entries based on all criteria simultaneously (AND logic)
   const filteredQueueEntries = useMemo(() => {
@@ -193,7 +194,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     }
 
     if (searchTerm.trim()) {
-      const searchTermLowercase = searchTerm.toLowerCase();
+      const searchTermLowercase = searchTerm.trim().toLowerCase();
       entries = entries.filter((queueEntry) => {
         return columns.some((column) => {
           const filterableValue = column.getFilterableValue?.(queueEntry);
@@ -250,9 +251,22 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     results: paginatedQueueEntries,
     currentPage,
     paginated,
+    totalPages,
   } = usePagination(sortedQueueEntries, currentPageSize);
 
   useEffect(() => {
+    if (currentPage > totalPages) {
+      goTo(totalPages);
+    }
+  }, [currentPage, totalPages, goTo]);
+
+  const clearAllFilters = useCallback(() => {
+    setSearchTerm('');
+    setSelectedStatus(null);
+    setSelectedPriority(null);
+    setSelectedProvider(null);
+    setSelectedIdentificationStatus(null);
+    setSelectedWaitTimeRange(null);
     goTo(1);
   }, [goTo]);
 
@@ -349,15 +363,12 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                         <Dropdown
                           id="statusFilter"
                           items={[{ uuid: '', display: t('any', 'Any') }, ...availableStatuses]}
+                          selectedItem={selectedStatus}
                           itemToString={(item) => (item ? item.display : '')}
-                          label={
-                            selectedStatusUuid
-                              ? (availableStatuses.find((s) => s.uuid === selectedStatusUuid)?.display ??
-                                t('all', 'All'))
-                              : t('all', 'All')
-                          }
+                          label={t('all', 'All')}
                           onChange={({ selectedItem }) => {
-                            setSelectedStatusUuid(selectedItem?.uuid || null);
+                            setSelectedStatus(selectedItem?.uuid ? selectedItem : null);
+                            goTo(1);
                           }}
                           size={isDesktop(layout) ? 'sm' : 'lg'}
                           titleText={t('showPatientsWithStatus', 'Show patients with status:')}
@@ -368,32 +379,30 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                         <Dropdown
                           id="priorityFilter"
                           items={[{ uuid: '', display: t('any', 'Any') }, ...availablePriorities]}
+                          selectedItem={selectedPriority}
                           itemToString={(item) => (item ? item.display : '')}
-                          label={
-                            selectedPriorityUuid
-                              ? (availablePriorities.find((p) => p.uuid === selectedPriorityUuid)?.display ??
-                                t('all', 'All'))
-                              : t('all', 'All')
-                          }
-                          onChange={({ selectedItem }) => setSelectedPriorityUuid(selectedItem?.uuid || null)}
+                          label={t('all', 'All')}
+                          onChange={({ selectedItem }) => {
+                            setSelectedPriority(selectedItem?.uuid ? selectedItem : null);
+                            goTo(1);
+                          }}
                           size={isDesktop(layout) ? 'sm' : 'lg'}
                           titleText={t('filterByPriority', 'Prioridad:')}
                           type="inline"
                         />
                       </div>
-                      {availableProviders.length > 0 && (
+                      {(availableProviders.length > 0 || selectedProvider) && (
                         <div className={styles.filterContainer}>
                           <Dropdown
                             id="providerFilter"
                             items={[{ uuid: '', display: t('any', 'Any') }, ...availableProviders]}
+                            selectedItem={selectedProvider}
                             itemToString={(item) => (item ? item.display : '')}
-                            label={
-                              selectedProviderUuid
-                                ? (availableProviders.find((p) => p.uuid === selectedProviderUuid)?.display ??
-                                  t('all', 'All'))
-                                : t('all', 'All')
-                            }
-                            onChange={({ selectedItem }) => setSelectedProviderUuid(selectedItem?.uuid || null)}
+                            label={t('all', 'All')}
+                            onChange={({ selectedItem }) => {
+                              setSelectedProvider(selectedItem?.uuid ? selectedItem : null);
+                              goTo(1);
+                            }}
                             size={isDesktop(layout) ? 'sm' : 'lg'}
                             titleText={t('filterByProvider', 'Prestador:')}
                             type="inline"
@@ -408,8 +417,16 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                             ...availableIdentificationStatuses.map((status) => ({ id: status, label: status })),
                           ]}
                           itemToString={(item) => item?.label ?? ''}
+                          selectedItem={
+                            selectedIdentificationStatus
+                              ? { id: selectedIdentificationStatus, label: selectedIdentificationStatus }
+                              : null
+                          }
                           label={selectedIdentificationStatus || t('all', 'All')}
-                          onChange={({ selectedItem }) => setSelectedIdentificationStatus(selectedItem?.id || null)}
+                          onChange={({ selectedItem }) => {
+                            setSelectedIdentificationStatus(selectedItem?.id || null);
+                            goTo(1);
+                          }}
                           size={isDesktop(layout) ? 'sm' : 'lg'}
                           titleText={t('filterByIdentificationStatus', 'Identificación:')}
                           type="inline"
@@ -419,6 +436,9 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                         <Dropdown
                           id="waitTimeFilter"
                           items={[{ id: '', label: t('any', 'Any') }, ...waitTimeRangeOptions]}
+                          selectedItem={
+                            waitTimeRangeOptions.find((range) => range.id === selectedWaitTimeRange) ?? null
+                          }
                           itemToString={(item) => (item ? item.label : '')}
                           label={
                             selectedWaitTimeRange
@@ -426,7 +446,10 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                                 t('all', 'All'))
                               : t('all', 'All')
                           }
-                          onChange={({ selectedItem }) => setSelectedWaitTimeRange(selectedItem?.id || null)}
+                          onChange={({ selectedItem }) => {
+                            setSelectedWaitTimeRange(selectedItem?.id || null);
+                            goTo(1);
+                          }}
                           size={isDesktop(layout) ? 'sm' : 'lg'}
                           titleText={t('filterByWaitTime', 'Tiempo de espera:')}
                           type="inline"
@@ -445,7 +468,11 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                       <TableToolbarSearch
                         className={styles.search}
                         expanded
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                        value={searchTerm}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setSearchTerm(e.target.value);
+                          goTo(1);
+                        }}
                         placeholder={t('searchThisList', 'Paciente, HCE, documento, responsable...')}
                         size={isDesktop(layout) ? 'md' : 'lg'}
                         persistent
@@ -504,8 +531,8 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                   onChange={({ pageSize, page }) => {
                     if (pageSize !== currentPageSize) {
                       setPageSize(pageSize);
-                    }
-                    if (page !== currentPage) {
+                      goTo(1);
+                    } else if (page !== currentPage) {
                       goTo(page);
                     }
                   }}

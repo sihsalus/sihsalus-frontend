@@ -182,6 +182,11 @@ El resumen tipo IPS prioriza una vista compacta para continuidad de atencion: pr
 
 ## Dependencias compartidas
 
+La sincronización conserva `stopDatetime` cuando la visita offline ya tiene una fecha de cierre, tanto si está
+serializada como texto como si es un `Date`. Para una visita encolada sin cierre se mantiene el cierre al sincronizar.
+La consulta fresca de estado vital comparte el `AbortSignal` de la sincronización; cancelarla debe interrumpir esa
+lectura antes del POST. Validar cierre, reconexión y cancelación con datos sintéticos en DEV/QLTY antes del rollout.
+
 - `esm-styleguide` para workspaces, action menus y componentes Carbon compartidos.
 - `esm-patient-banner-app` para datos visibles del paciente.
 - `esm-patient-orders-app`, `esm-fua-app`, `esm-patient-notes-app`, `esm-patient-forms-app`, `esm-patient-list-management-app` y otros módulos que inyectan acciones.

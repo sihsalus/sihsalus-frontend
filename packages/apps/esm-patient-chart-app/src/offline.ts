@@ -26,13 +26,13 @@ export function setupOfflineVisitsSync() {
   setupOfflineSync<OfflineVisit>(visitSyncType, ['patient-registration'], async (visit, options) => {
     const visitPayload = {
       ...visit,
-      stopDatetime: new Date(),
+      stopDatetime: visit.stopDatetime ?? new Date(),
     };
 
     // A queued visit may have been created from an old cached patient snapshot.
     // Throwing here keeps the synchronization item queued with its last error,
     // so a later retry can verify the patient again without writing meanwhile.
-    await assertFreshPatientIsAlive(visit.patient);
+    await assertFreshPatientIsAlive(visit.patient, options.abort.signal);
 
     const res = await saveVisit(visitPayload, options.abort);
     if (!res.ok) {

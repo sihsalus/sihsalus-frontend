@@ -108,6 +108,10 @@ un botón que volvería a fallar. Emergencia conserva su política no bloqueante
 
 ## Offline visit queue contract
 
+`useOfflineVisit` keys its data, error and loading state by patient UUID. Changing the requested patient immediately
+returns an empty loading state, including the first committed render before effects run; late reads for the previous
+patient cannot overwrite the new context. Consumers must not receive a previous patient's visit under a new UUID.
+
 Automatic offline-visit creation refreshes local state only after a successful queue write, preventing rejected writes
 from becoming automatic retry loops. Queue write and refresh failures are consumed without rendering session, storage,
 endpoint, or patient details. Callers that explicitly create an offline visit remain responsible for handling the

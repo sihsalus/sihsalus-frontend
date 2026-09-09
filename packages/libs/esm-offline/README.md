@@ -21,6 +21,13 @@ the authenticated user's UUID even when a caller knows another row's numeric ID.
   queue-operation error after the started handlers settle; consumers must handle that rejection and refresh the queue.
   Registered handlers must pass `options.abort.signal` to every network request; the queue checks ownership before and
   after a handler but cannot preempt arbitrary handler code that ignores its abort controller.
+- Synchronization also requires an exclusive Web Lock for the origin. A second tab, an unavailable Web Locks API,
+  or a browser lock failure rejects before processing rows. There is no in-memory-only fallback. The lock lasts until
+  all started handlers settle and is released by the browser when the tab closes.
+- An item with an explicit dependency cannot run while a matching row for that user, type, and descriptor ID remains
+  queued. Failed parents retain their children; unrelated successful parents can still release their own children.
+  A parent removed by an earlier completed run need not return a result again. Consumers must continue to tolerate
+  an absent dependency result on retry, including handlers that deliberately return no value.
 - A handler may use its item-scoped `options.updateContent(updater)` capability to persist a durable partial-progress
   checkpoint. The update runs atomically against the latest stored content, so concurrent suboperations merge instead
   of overwriting one another. The capability can modify only the row currently owned by that synchronization and
@@ -41,9 +48,14 @@ This contract does not partition CacheStorage, service-worker routes, the app sh
 It therefore does not make account switching in one browser profile safe and does not remove the operational
 requirement for one managed browser/OS profile per clinical user while broader offline storage isolation remains open.
 
+Roll out the queue and service worker together and close all older tabs before resuming synchronization. Older clients
+do not acquire the origin lock or understand new consumer checkpoints. Preserve pending queues during upgrades and
+rollback; uncertain writes made by an older client require backend reconciliation before retrying with either version.
+
 ## Consumer compatibility
 
-Existing arguments remain compatible; `SyncProcessOptions.updateContent` is additive and optional. Consumers already
+Existing arguments remain compatible; `SyncProcessOptions.updateContent` is additive and optional. Synchronization
+requires a secure context and a managed browser with Web Locks (the coordinated offline acceptance gate targets Chrome and Edge). Consumers already
 using the current-user helpers require no database migration. Code using `getFullSynchronizationItemsFor` or the internal
 `queueSynchronizationItemFor` helper must request only the authenticated user. Callers of `runSynchronization` must
 handle its fixed rejection and refresh the current-user list. UIs should also refresh after a generic edit/delete
@@ -67,3 +79,9 @@ handler; original handler exceptions never cross the public synchronization boun
 writes the response under the stable offline URL only after receiving a successful network response. A failed,
 non-successful, or canceled request rejects with a fixed non-sensitive error and leaves any existing cached response
 untouched. Callers remain responsible for registering the stable URL as a dynamic offline route.
+
+The repository service worker sends GET requests with both `cache: 'no-store'` and the
+`network-only-or-cache-only` header through Workbox's `NetworkOnly` route. A warm offline cache cannot turn
+a failed fresh clinical read into a successful response. Other offline reads, navigation, precaching and explicit
+`network-first` caching retain the upstream behavior. Unique refresh URLs remain compatible with older workers,
+but callers without that compatibility measure require the updated worker to be active.

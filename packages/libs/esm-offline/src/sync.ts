@@ -118,7 +118,6 @@ interface SyncResultBag {
 const db = new OfflineDb();
 const handlers: Record<string, SyncHandler> = {};
 const offlineQueueOperationUnavailableMessage = 'Offline queue operation is unavailable.';
-let synchronizationInProgress = false;
 
 const syncStore = createGlobalStore<OfflineSynchronizationStore>('offline-synchronization', {});
 
@@ -131,12 +130,25 @@ export function getOfflineSynchronizationStore() {
  * Visible counts and progress are limited to the same owner.
  */
 export async function runSynchronization() {
-  if (synchronizationInProgress) {
+  try {
+    // IndexedDB is shared by every tab, whereas a module variable is not.
+    // Do not queue a later run that could start under a different session.
+    const locks = globalThis.navigator?.locks;
+    if (!locks) {
+      throw createOfflineQueueOperationError();
+    }
+    await locks.request('openmrs-offline-synchronization', { mode: 'exclusive', ifAvailable: true }, async (lock) => {
+      if (!lock) {
+        throw createOfflineQueueOperationError();
+      }
+      await synchronizeOwnedQueue();
+    });
+  } catch {
     throw createOfflineQueueOperationError();
   }
+}
 
-  synchronizationInProgress = true;
-
+async function synchronizeOwnedQueue() {
   const promises: Record<string, Promise<void>> = {};
   const handlerQueue = Object.entries(handlers);
   const maxIter = handlerQueue.length;
@@ -249,7 +261,6 @@ export async function runSynchronization() {
   } finally {
     abortController.signal.removeEventListener('abort', handleAbort);
     unsubscribeFromSession?.();
-    synchronizationInProgress = false;
     syncStore.setState({ synchronization: undefined });
   }
 }
@@ -294,6 +305,21 @@ async function processHandler(
     const [key, item, { id, dependencies = [] }] = items[i];
 
     try {
+      // A completed handler promise does not mean that all its rows succeeded.
+      // A dependency removed by an earlier successful run is already satisfied;
+      // a still-queued row (including a replacement) must finish before this item.
+      for (const dependency of dependencies) {
+        if (
+          !dependsOn.includes(dependency.type) ||
+          (await db.syncQueue
+            .where('[userId+type]')
+            .equals([userId, dependency.type])
+            .and((queued) => queued.descriptor.id === dependency.id)
+            .count()) > 0
+        ) {
+          throw createOfflineQueueOperationError();
+        }
+      }
       if (!ownsActiveSynchronization()) {
         throw createOfflineQueueOperationError();
       }

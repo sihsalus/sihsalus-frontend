@@ -16,51 +16,23 @@ export const configSchema = {
     },
     _default: [
       {
-        conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e',
+        conceptUuid: '228ced89-758e-4e0b-982e-155c01ed50f7', // Hematología
         defaultOpen: false,
       },
       {
-        conceptUuid: 'c5cedfda-c2b7-4c85-b420-ecf0b53cba08',
+        conceptUuid: '20df74e8-192d-4c30-8e5c-d9989c8a33d8', // Bioquímica
         defaultOpen: false,
       },
       {
-        conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35',
-        defaultOpen: false,
-      },
-      /*{
-        conceptUuid: 'df144cc2-6718-4005-9881-f39eafd73315',
-        defaultOpen: false,
-      },*/
-      {
-        conceptUuid: '339febfd-699e-4a26-927f-1f9a7780bb5e',
+        conceptUuid: '8ed15668-238d-4f19-947f-2237cb5d793f', // Inmunología
         defaultOpen: false,
       },
       {
-        conceptUuid: '241eb982-1fdd-4183-a2b5-763f5ce2d528',
-        defaultOpen: false,
-      },
-      /*{
-        conceptUuid: '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',
-        defaultOpen: false,
-      },*/
-      {
-        conceptUuid: '654b11a8-a326-45c9-885e-2fae6143404a',
+        conceptUuid: '48ea717c-cc7c-4dc1-a018-9c0d439ee178', // Microbiología
         defaultOpen: false,
       },
       {
-        conceptUuid: '968c8a41-ab1b-426c-86ee-761b88c26e40',
-        defaultOpen: false,
-      },
-      {
-        conceptUuid: 'ef0a9d25-658b-466b-9b7e-4571673b28b0',
-        defaultOpen: false,
-      },
-      {
-        conceptUuid: '7969c932-60db-4a38-8723-2f3a5bba8c16',
-        defaultOpen: false,
-      },
-      {
-        conceptUuid: 'bb3af485-89b6-4c04-848c-8d024a6b4a7a',
+        conceptUuid: '0a84d7d3-2d86-4415-a12f-dc2a307ddba1', // Coproanálisis
         defaultOpen: false,
       },
     ],

@@ -1,6 +1,7 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { addStoredSearchHistory, clearStoredSearchHistory } from '../../search-history-store';
 import Composition from './composition.component';
 
 const mockCompositionQuery = {
@@ -60,13 +61,15 @@ const mockCompositionQuery = {
   },
 };
 
-vi.mock('./composition.utils', async () => {
-  const original = await vi.importActual('./composition.utils');
-  return {
-    ...original,
-    createCompositionQuery: vi.fn().mockImplementation(() => mockCompositionQuery),
-    isCompositionValid: vi.fn().mockImplementation((query) => query === '1 and 2'),
-  };
+beforeEach(() => {
+  clearStoredSearchHistory();
+  mockCompositionQuery.query.rowFilters.forEach((rowFilter, index) => {
+    addStoredSearchHistory(`Synthetic search ${index + 1}`, [], {
+      ...mockCompositionQuery.query,
+      rowFilters: [rowFilter],
+      customRowFilterCombination: '1',
+    });
+  });
 });
 
 describe('Composition', () => {
@@ -101,6 +104,19 @@ describe('Composition', () => {
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(mockSubmit).toHaveBeenCalledWith(mockCompositionQuery, `Composition of ${compositionQuery}`);
+  });
+
+  it('keeps the form usable when a referenced search is missing', async () => {
+    const user = userEvent.setup();
+    const mockSubmit = vi.fn();
+    render(<Composition onSubmit={mockSubmit} />);
+
+    await user.type(screen.getByRole('textbox', { name: /^composition$/i }), '1 AND 3');
+    await user.click(screen.getByRole('button', { name: /search/i }));
+
+    expect(mockSubmit).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'Composition is not valid' }));
+    expect(screen.getByRole('button', { name: /search/i })).toBeEnabled();
   });
 
   it('should handle reset functionality', async () => {

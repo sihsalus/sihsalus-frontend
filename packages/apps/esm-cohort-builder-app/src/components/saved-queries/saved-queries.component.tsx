@@ -1,5 +1,5 @@
 import { DataTable, Pagination, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, usePagination } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import mainStyles from '../../cohort-builder.scss';
@@ -15,9 +15,13 @@ interface SavedQueriesProps {
 
 const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [queries, setQueries] = useState<DefinitionDataRow[]>([]);
+  const { results: paginatedQueries, currentPage: page, totalPages, goTo } = usePagination(queries, pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) goTo(totalPages);
+  }, [page, totalPages, goTo]);
 
   const getTableData = useCallback(async () => {
     const queries = await getQueries();
@@ -59,9 +63,13 @@ const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
     },
   ];
 
-  const handlePagination = ({ page, pageSize }: PaginationData) => {
-    setPage(page);
-    setPageSize(pageSize);
+  const handlePagination = ({ page: nextPage, pageSize: nextPageSize }: PaginationData) => {
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      goTo(1);
+    } else {
+      goTo(nextPage);
+    }
   };
 
   return (
@@ -69,7 +77,7 @@ const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
       <p className={mainStyles.text}>
         {t('savedQueryDescription', 'You can only search for Query Definitions that you have saved using a Name.')}
       </p>
-      <DataTable rows={queries} headers={headers} useZebraStyles>
+      <DataTable rows={paginatedQueries} headers={headers} useZebraStyles>
         {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
           <Table {...getTableProps()}>
             <TableHead>
@@ -83,19 +91,22 @@ const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .slice((page - 1) * pageSize)
-                .slice(0, pageSize)
-                .map((row, index: number) => (
-                  <TableRow {...getRowProps({ row })} key={index}>
-                    {row.cells.map((cell, index) => (
-                      <TableCell key={index}>{cell.value}</TableCell>
+              {rows.map((row) => {
+                const query = queries.find(({ id }) => id === row.id);
+                const { key, ...rowProps } = getRowProps({ row });
+                return (
+                  <TableRow key={key} {...rowProps}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                     <TableCell className={mainStyles.optionCell}>
-                      <SavedQueriesOptions query={queries[index]} onViewQuery={onViewQuery} deleteQuery={deleteQuery} />
+                      {query && (
+                        <SavedQueriesOptions query={query} onViewQuery={onViewQuery} deleteQuery={deleteQuery} />
+                      )}
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -106,8 +117,8 @@ const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
           forwardText={t('nextPage', 'Next page')}
           itemsPerPageText={t('itemsPerPage', 'Items per page:')}
           onChange={handlePagination}
-          page={1}
-          pageSize={10}
+          page={page}
+          pageSize={pageSize}
           pageSizes={[10, 20, 30, 40, 50]}
           size="md"
           totalItems={queries.length}

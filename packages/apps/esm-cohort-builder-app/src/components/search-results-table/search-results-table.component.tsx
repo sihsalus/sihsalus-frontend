@@ -1,5 +1,6 @@
 import { DataTable, Pagination, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
-import React, { useState } from 'react';
+import { usePagination } from '@openmrs/esm-framework';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import mainStyle from '../../cohort-builder.scss';
 import type { PaginationData, Patient } from '../../types';
@@ -11,9 +12,17 @@ interface SearchResultsTableProps {
 }
 
 const SearchResultsTable: React.FC<SearchResultsTableProps> = ({ patients }) => {
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const { t } = useTranslation();
+  const { results: paginatedPatients, currentPage: page, goTo } = usePagination(patients, pageSize);
+  const previousPatients = useRef(patients);
+
+  useEffect(() => {
+    if (previousPatients.current !== patients) {
+      previousPatients.current = patients;
+      goTo(1);
+    }
+  }, [patients, goTo]);
 
   const headers = [
     {
@@ -34,15 +43,19 @@ const SearchResultsTable: React.FC<SearchResultsTableProps> = ({ patients }) => 
     },
   ];
 
-  const handlePagination = ({ page, pageSize }: PaginationData) => {
-    setPage(page);
-    setPageSize(pageSize);
+  const handlePagination = ({ page: nextPage, pageSize: nextPageSize }: PaginationData) => {
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      goTo(1);
+    } else {
+      goTo(nextPage);
+    }
   };
 
   return (
     <div className={styles.container}>
       <p className={mainStyle.heading}>{t('searchResults', 'Search Results')}</p>
-      <DataTable rows={patients} headers={headers} useZebraStyles>
+      <DataTable rows={paginatedPatients} headers={headers} useZebraStyles>
         {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
           <Table {...getTableProps()}>
             <TableHead>
@@ -55,16 +68,16 @@ const SearchResultsTable: React.FC<SearchResultsTableProps> = ({ patients }) => 
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .slice((page - 1) * pageSize)
-                .slice(0, pageSize)
-                .map((row, index) => (
-                  <TableRow {...getRowProps({ row })} key={index}>
-                    {row.cells.map((cell, index) => (
-                      <TableCell key={index}>{cell.value}</TableCell>
+              {rows.map((row) => {
+                const { key, ...rowProps } = getRowProps({ row });
+                return (
+                  <TableRow key={key} {...rowProps}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -75,8 +88,8 @@ const SearchResultsTable: React.FC<SearchResultsTableProps> = ({ patients }) => 
           forwardText={t('nextPage', 'Next page')}
           itemsPerPageText={t('itemsPerPage', 'Items per page:')}
           onChange={handlePagination}
-          page={1}
-          pageSize={10}
+          page={page}
+          pageSize={pageSize}
           pageSizes={[10, 20, 30, 40, 50]}
           size="md"
           totalItems={patients.length}

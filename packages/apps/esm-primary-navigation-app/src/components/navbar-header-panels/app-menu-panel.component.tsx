@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { type ConfigSchema } from '../../config-schema';
 import styles from './app-menu-panel.scss';
 
 interface AppMenuProps {
@@ -13,7 +14,7 @@ interface AppMenuProps {
 }
 
 const AppMenuPanel: React.FC<AppMenuProps> = ({ expanded, hidePanel }) => {
-  const config = useConfig();
+  const config = useConfig<ConfigSchema>();
   const { t } = useTranslation();
 
   useEffect(() => {

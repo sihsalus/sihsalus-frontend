@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, navigate, useAppContext, useConfig } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { type Config, configSchema } from '../config-schema';
@@ -59,12 +59,19 @@ describe('TutorialModal', () => {
       setSteps,
     });
 
-    (window as any).getOpenmrsSpaBase = vi.fn(() => '/spa-base/');
+    vi.stubGlobal(
+      'getOpenmrsSpaBase',
+      vi.fn(() => '/spa-base/'),
+    );
+    vi.stubGlobal('location', { pathname: '/patient-registration' });
   });
 
   afterEach(() => {
-    delete window.location;
-    window.location = { pathname: '/patient-registration' } as any;
+    if (vi.isFakeTimers()) {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+    vi.unstubAllGlobals();
   });
 
   it('renders tutorial titles, descriptions, and walkthrough links', () => {
@@ -82,10 +89,6 @@ describe('TutorialModal', () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/patient-registration' },
-    });
-
     render(<TutorialModal onClose={onClose} />);
 
     const walkthroughButtons = screen.getAllByText('Walkthrough');
@@ -98,21 +101,17 @@ describe('TutorialModal', () => {
     );
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    Object.defineProperty(window.location, 'pathname', {
-      value: '/spa-base/home/service-queues',
-    });
+    window.location.pathname = '/spa-base/home/service-queues';
 
     await waitFor(() => expect(setSteps).toHaveBeenCalledWith(mockTutorialData[0].steps));
     await waitFor(() => expect(setShowTutorial).toHaveBeenCalledWith(true));
   });
 
-  it('starts the tutorial directly without navigating when already on the home page', async () => {
+  it.each(['', '/', '/service-queues'])('starts directly on the home route with suffix "%s"', async (suffix) => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/spa-base/home/service-queues' },
-    });
+    vi.stubGlobal('location', { pathname: `/spa-base/home${suffix}` });
 
     render(<TutorialModal onClose={onClose} />);
 
@@ -125,12 +124,57 @@ describe('TutorialModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    '/spa-base/homepage',
+    '/spa-base/home-other',
+  ])('waits for the home route when starting at %s', (pathname) => {
+    vi.useFakeTimers();
+    vi.stubGlobal('location', { pathname });
+    render(<TutorialModal onClose={vi.fn()} />);
+    fireEvent.click(screen.getAllByText('Walkthrough')[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/spa-base/home' });
+    expect(setSteps).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(100));
+    expect(setSteps).not.toHaveBeenCalled();
+
+    window.location.pathname = '/spa-base/home';
+    act(() => vi.advanceTimersByTime(100));
+    expect(setSteps).toHaveBeenCalledWith(mockTutorialData[0].steps);
+    expect(setShowTutorial).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps waiting for the real home route after the modal closes', () => {
+    vi.useFakeTimers();
+    const { unmount } = render(<TutorialModal onClose={vi.fn()} />);
+    fireEvent.click(screen.getAllByText('Walkthrough')[0]);
+    unmount();
+
+    window.location.pathname = '/spa-base/homepage';
+    act(() => vi.advanceTimersByTime(100));
+    expect(setSteps).not.toHaveBeenCalled();
+
+    window.location.pathname = '/spa-base/home/service-queues';
+    act(() => vi.advanceTimersByTime(100));
+    expect(setSteps).toHaveBeenCalledWith(mockTutorialData[0].steps);
+  });
+
+  it('does not start an expired walkthrough if navigation arrives after the wait limit', () => {
+    vi.useFakeTimers();
+    render(<TutorialModal onClose={vi.fn()} />);
+    fireEvent.click(screen.getAllByText('Walkthrough')[0]);
+    act(() => vi.advanceTimersByTime(10000));
+
+    window.location.pathname = '/spa-base/home';
+    act(() => vi.advanceTimersByTime(100));
+    expect(setSteps).not.toHaveBeenCalled();
+    expect(setShowTutorial).not.toHaveBeenCalled();
+  });
+
   it('passes the correct steps when clicking a non-first tutorial', async () => {
     const user = userEvent.setup();
 
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/spa-base/home/service-queues' },
-    });
+    vi.stubGlobal('location', { pathname: '/spa-base/home/service-queues' });
 
     render(<TutorialModal onClose={vi.fn()} />);
 
@@ -138,5 +182,35 @@ describe('TutorialModal', () => {
     await user.click(walkthroughButtons[1]);
 
     expect(setSteps).toHaveBeenCalledWith(mockTutorialData[1].steps);
+  });
+
+  it('keeps walkthroughs disabled until the tutorial context is available', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    mockUseAppContext.mockReturnValue(undefined);
+
+    const { rerender } = render(<TutorialModal onClose={onClose} />);
+
+    const walkthrough = screen.getAllByText('Walkthrough')[0];
+    expect(walkthrough).toHaveAttribute('aria-disabled', 'true');
+    await user.click(walkthrough);
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(setSteps).not.toHaveBeenCalled();
+    expect(setShowTutorial).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+
+    mockUseAppContext.mockReturnValue({ showTutorial: false, steps: [], setShowTutorial, setSteps });
+    window.location.pathname = '/spa-base/home';
+    rerender(<TutorialModal onClose={onClose} />);
+
+    const enabledWalkthrough = screen.getAllByText('Walkthrough')[0];
+    expect(enabledWalkthrough).not.toHaveAttribute('aria-disabled', 'true');
+    await user.click(enabledWalkthrough);
+
+    expect(setSteps).toHaveBeenCalledWith(mockTutorialData[0].steps);
+    expect(setShowTutorial).toHaveBeenCalledWith(true);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

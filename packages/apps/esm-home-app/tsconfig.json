@@ -1,5 +1,4 @@
 {
-  "extends": "../../tooling/tsconfig.app.json",
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.tsx"]
+  "extends": "../../tooling/tsconfig.strict.json",
+  "include": ["src/**/*"]
 }

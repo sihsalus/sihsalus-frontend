@@ -42,11 +42,11 @@ declare namespace NodeJS {
   }
 }
 
-declare var spaBase: string;
-declare function getOpenmrsSpaBase(): string;
-
-// Minimal ambient declarations for Vitest globals used across tests.
 declare global {
+  var spaBase: string;
+  function getOpenmrsSpaBase(): string;
+
+  // Minimal ambient declarations for Vitest globals used across tests.
   const vi: {
     // vi.Mock is used in a few places for casting; provide a permissive alias.
     Mock: any;

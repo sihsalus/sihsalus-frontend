@@ -30,39 +30,48 @@ export default function ChangeLanguageModal({ close }: ChangeLanguageModalProps)
   const [shouldChangeDefaultLocale, setShouldChangeDefaultLocale] = useState(true);
   const [isChangingLanguage, setIsChangingLanguage] = useState(false);
   const ac = useAbortController();
+  const canChangeLanguage =
+    !isChangingLanguage &&
+    session.authenticated &&
+    !!user &&
+    !!selectedLocale &&
+    allowedLocales.includes(selectedLocale) &&
+    selectedLocale !== session.locale;
 
   const handleSubmit = useCallback(() => {
+    if (!canChangeLanguage || !user || !selectedLocale) {
+      return;
+    }
+
     setIsChangingLanguage(true);
 
-    if (selectedLocale && selectedLocale !== session?.locale) {
-      const formattedLocale = selectedLocale.replace(/-/gi, '_');
-      // On success these reload the page; the failure path must reset the button
-      // and tell the user, or the modal stays stuck in "Changing language".
-      const update = shouldChangeDefaultLocale
-        ? updateUserProperties(
-            user.uuid,
-            {
-              ...(user.userProperties ?? {}),
-              defaultLocale: formattedLocale,
-            },
-            ac,
-          )
-        : updateSessionLocale(formattedLocale, ac);
+    const formattedLocale = selectedLocale.replace(/-/gi, '_');
+    // On success these reload the page; the failure path must reset the button
+    // and tell the user, or the modal stays stuck in "Changing language".
+    const update = shouldChangeDefaultLocale
+      ? updateUserProperties(
+          user.uuid,
+          {
+            ...(user.userProperties ?? {}),
+            defaultLocale: formattedLocale,
+          },
+          ac,
+        )
+      : updateSessionLocale(formattedLocale, ac);
 
-      update.catch((error) => {
-        setIsChangingLanguage(false);
-        showSnackbar({
-          kind: 'error',
-          title: t('changeLanguageFailed', 'Could not change language'),
-          subtitle: getUserFacingErrorMessage(
-            error,
-            t('changeLanguageFailedMessage', 'The language could not be changed. Please try again.'),
-            { logContext: 'Change language' },
-          ),
-        });
+    update.catch((error) => {
+      setIsChangingLanguage(false);
+      showSnackbar({
+        kind: 'error',
+        title: t('changeLanguageFailed', 'Could not change language'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('changeLanguageFailedMessage', 'The language could not be changed. Please try again.'),
+          { logContext: 'Change language' },
+        ),
       });
-    }
-  }, [ac, selectedLocale, session?.locale, shouldChangeDefaultLocale, t, user.userProperties, user.uuid]);
+    });
+  }, [ac, canChangeLanguage, selectedLocale, shouldChangeDefaultLocale, t, user]);
 
   const languageNames = useMemo(
     () =>
@@ -81,7 +90,7 @@ export default function ChangeLanguageModal({ close }: ChangeLanguageModalProps)
             valueSelected={selectedLocale}
             orientation="vertical"
             name="Language options"
-            onChange={(locale) => setSelectedLocale(locale.toString())}
+            onChange={(locale) => setSelectedLocale(locale?.toString())}
           >
             {allowedLocales.map((locale, i) => (
               <RadioButton
@@ -111,12 +120,7 @@ export default function ChangeLanguageModal({ close }: ChangeLanguageModalProps)
         <Button kind="secondary" onClick={close}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button
-          className={styles.submitButton}
-          disabled={isChangingLanguage || selectedLocale === session?.locale}
-          type="submit"
-          onClick={handleSubmit}
-        >
+        <Button className={styles.submitButton} disabled={!canChangeLanguage} type="submit" onClick={handleSubmit}>
           {isChangingLanguage ? (
             <InlineLoading description={t('changingLanguage', 'Changing language') + '...'} />
           ) : (

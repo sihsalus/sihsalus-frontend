@@ -1,18 +1,17 @@
-import { type LoggedInUser, type Session, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { showSnackbar, useSession } from '@openmrs/esm-framework';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { mockSession } from 'test-utils/mocks/session.mock';
 
 import ChangeLanguageModal from './change-language.modal';
+import { updateSessionLocale, updateUserProperties } from './change-language.resource';
 
 const mockUser = {
-  uuid: 'uuid',
+  ...mockSession.data.user,
   userProperties: {
     defaultLocale: 'fr',
   },
 };
-
-const mockUpdateUserProperties = vi.fn((..._args) => Promise.resolve());
-const mockUpdateSessionLocale = vi.fn((..._args) => Promise.resolve());
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -22,11 +21,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
 }));
 
 vi.mock('./change-language.resource', () => ({
-  updateUserProperties: (...args) => mockUpdateUserProperties(...args),
-  updateSessionLocale: (...args) => mockUpdateSessionLocale(...args),
+  updateUserProperties: vi.fn(),
+  updateSessionLocale: vi.fn(),
 }));
 
 const mockUseSession = vi.mocked(useSession);
+const mockUpdateUserProperties = vi.mocked(updateUserProperties);
+const mockUpdateSessionLocale = vi.mocked(updateSessionLocale);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
 describe(`Change Language Modal`, () => {
   beforeEach(() => {
@@ -34,11 +36,12 @@ describe(`Change Language Modal`, () => {
     mockUpdateUserProperties.mockResolvedValue(undefined);
     mockUpdateSessionLocale.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
+      ...mockSession.data,
       authenticated: true,
-      user: mockUser as unknown as LoggedInUser,
+      user: mockUser,
       allowedLocales: ['en', 'fr', 'it', 'pt'],
       locale: 'fr',
-    } as Session);
+    });
   });
 
   it('should correctly displays all allowed locales', () => {
@@ -118,5 +121,156 @@ describe(`Change Language Modal`, () => {
 
     const submitButton = screen.getByRole('button', { name: /change/i });
     expect(submitButton).toBeDisabled();
+  });
+
+  it('disables language changes when the session has no user', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      authenticated: false,
+      sessionId: '',
+      allowedLocales: ['en', 'fr'],
+      locale: 'fr',
+    });
+
+    render(<ChangeLanguageModal close={vi.fn()} />);
+
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+    const submitButton = screen.getByRole('button', { name: /change/i });
+    expect(submitButton).toBeDisabled();
+    await user.click(submitButton);
+
+    expect(mockUpdateUserProperties).not.toHaveBeenCalled();
+    expect(mockUpdateSessionLocale).not.toHaveBeenCalled();
+    expect(screen.queryByText(/changing language\.\.\./i)).not.toBeInTheDocument();
+  });
+
+  it('disables a pending selection when the user loses their session', async () => {
+    const user = userEvent.setup();
+    const close = vi.fn();
+    const { rerender } = render(<ChangeLanguageModal close={close} />);
+
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+    expect(screen.getByRole('button', { name: /change/i })).toBeEnabled();
+
+    mockUseSession.mockReturnValue({ authenticated: false, sessionId: '' });
+    rerender(<ChangeLanguageModal close={close} />);
+
+    const submitButton = screen.getByRole('button', { name: /change/i });
+    expect(submitButton).toBeDisabled();
+    await user.click(submitButton);
+    expect(mockUpdateUserProperties).not.toHaveBeenCalled();
+    expect(mockUpdateSessionLocale).not.toHaveBeenCalled();
+  });
+
+  it('disables changes when authentication expires but user details remain', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      authenticated: false,
+      user: mockUser,
+      allowedLocales: ['en', 'fr'],
+      locale: 'fr',
+    });
+    render(<ChangeLanguageModal close={vi.fn()} />);
+
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+    const submitButton = screen.getByRole('button', { name: /change/i });
+    expect(submitButton).toBeDisabled();
+    await user.click(submitButton);
+
+    expect(mockUpdateUserProperties).not.toHaveBeenCalled();
+    expect(mockUpdateSessionLocale).not.toHaveBeenCalled();
+  });
+
+  it('disables a selected language that is no longer allowed and recovers when it returns', async () => {
+    const user = userEvent.setup();
+    const close = vi.fn();
+    const { rerender } = render(<ChangeLanguageModal close={close} />);
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: mockUser,
+      allowedLocales: ['fr'],
+      locale: 'fr',
+    });
+    rerender(<ChangeLanguageModal close={close} />);
+    const submitButton = screen.getByRole('button', { name: /change/i });
+    expect(submitButton).toBeDisabled();
+    await user.click(submitButton);
+    expect(mockUpdateUserProperties).not.toHaveBeenCalled();
+    expect(mockUpdateSessionLocale).not.toHaveBeenCalled();
+
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: mockUser,
+      allowedLocales: ['en', 'fr'],
+      locale: 'fr',
+    });
+    rerender(<ChangeLanguageModal close={close} />);
+    await user.click(screen.getByRole('button', { name: /change/i }));
+    expect(mockUpdateUserProperties).toHaveBeenCalledWith(mockUser.uuid, { defaultLocale: 'en' }, expect.anything());
+  });
+
+  it('requires a selection when the session has no current locale', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: mockUser,
+      allowedLocales: ['en', 'fr'],
+      locale: undefined,
+    });
+    render(<ChangeLanguageModal close={vi.fn()} />);
+
+    const submitButton = screen.getByRole('button', { name: /change/i });
+    expect(submitButton).toBeDisabled();
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+    expect(submitButton).toBeEnabled();
+    await user.click(submitButton);
+
+    expect(mockUpdateUserProperties).toHaveBeenCalledWith(mockUser.uuid, { defaultLocale: 'en' }, expect.anything());
+  });
+
+  it('saves the locale when the user has no stored preferences', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: { ...mockUser, userProperties: null },
+      allowedLocales: ['en', 'fr'],
+      locale: 'fr',
+    });
+    render(<ChangeLanguageModal close={vi.fn()} />);
+
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+    await user.click(screen.getByRole('button', { name: /change/i }));
+
+    expect(mockUpdateUserProperties).toHaveBeenCalledWith(mockUser.uuid, { defaultLocale: 'en' }, expect.anything());
+  });
+
+  it.each([true, false])('allows retry after a failed language change (save default: %s)', async (saveDefault) => {
+    const user = userEvent.setup();
+    const update = saveDefault ? mockUpdateUserProperties : mockUpdateSessionLocale;
+    update.mockRejectedValueOnce(new Error('Synthetic backend failure'));
+    render(<ChangeLanguageModal close={vi.fn()} />);
+
+    if (!saveDefault) {
+      await user.click(screen.getByRole('checkbox', { name: /save as my default language/i }));
+    }
+    await user.click(screen.getByRole('radio', { name: /english/i }));
+    await user.click(screen.getByRole('button', { name: /change/i }));
+
+    await waitFor(() => {
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Could not change language',
+        subtitle: 'The language could not be changed. Please try again.',
+      });
+    });
+    const retryButton = screen.getByRole('button', { name: /change/i });
+    expect(retryButton).toBeEnabled();
+    expect(screen.queryByText(/changing language\.\.\./i)).not.toBeInTheDocument();
+
+    await user.click(retryButton);
+    expect(update).toHaveBeenCalledTimes(2);
   });
 });

@@ -8,20 +8,28 @@ import HelpMenuPopup from './help-popup.component';
 
 export default function HelpMenu() {
   const { t } = useTranslation();
-  const { user } = useSession();
+  const { authenticated, user } = useSession();
   const helpMenuLabel = t('helpMenu', 'Help menu');
   const [helpMenuOpen, setHelpMenuOpen] = useState(false);
-  const helpMenuButtonRef = useRef(null);
-  const popupRef = useRef(null);
+  const helpMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const helpMenuItems = useAssignedExtensions('help-menu-slot');
+  const canShowHelp = Boolean(authenticated && user && helpMenuItems.length > 0);
 
   const toggleHelpMenu = () => {
     setHelpMenuOpen((prevState) => !prevState);
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    if (!canShowHelp) {
+      setHelpMenuOpen(false);
+    }
+  }, [canShowHelp]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (
+        event.target instanceof Node &&
         helpMenuButtonRef.current &&
         !helpMenuButtonRef.current.contains(event.target) &&
         popupRef.current &&
@@ -39,25 +47,23 @@ export default function HelpMenu() {
     };
   }, []);
 
-  if (helpMenuItems.length === 0) {
+  if (!canShowHelp) {
     return null;
   }
 
   return (
     <>
-      {user && (
-        <Button
-          aria-label={helpMenuLabel}
-          className={styles.helpMenuButton}
-          kind="ghost"
-          onClick={toggleHelpMenu}
-          ref={helpMenuButtonRef}
-          size="md"
-          title={helpMenuLabel}
-        >
-          <Help size={20} />
-        </Button>
-      )}
+      <Button
+        aria-label={helpMenuLabel}
+        className={styles.helpMenuButton}
+        kind="ghost"
+        onClick={toggleHelpMenu}
+        ref={helpMenuButtonRef}
+        size="md"
+        title={helpMenuLabel}
+      >
+        <Help size={20} />
+      </Button>
       {helpMenuOpen && (
         <div id="help-menu-popup" ref={popupRef} className={styles.helpMenuPopup}>
           <HelpMenuPopup />

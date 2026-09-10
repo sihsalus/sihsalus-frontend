@@ -11,6 +11,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
+import { type ConfigSchema } from '../../config-schema';
 import { isDesktop } from '../../utils';
 import Logo from '../logo/logo.component';
 import NotificationsMenuPanel from '../navbar-header-panels/notifications-menu-panel.component';
@@ -19,13 +20,13 @@ import SideMenuPanel from '../navbar-header-panels/side-menu-panel.component';
 import styles from './navbar.scss';
 
 const HeaderItems: React.FC = () => {
-  const config = useConfig();
+  const config = useConfig<ConfigSchema>();
   const session = useSession();
-  const [activeHeaderPanel, setActiveHeaderPanel] = useState<string>(null);
+  const [activeHeaderPanel, setActiveHeaderPanel] = useState<string | null>(null);
   const [isSideMenuExpanded, setIsSideMenuExpanded] = useState(true);
   const layout = useLayoutType();
   const { slotName, mode } = useLeftNavStore();
-  const navMenuItems = useAssignedExtensions(slotName);
+  const navMenuItems = useAssignedExtensions(slotName ?? '');
   const isDesktopLayout = isDesktop(layout);
   const isFixedSideNav = isDesktopLayout && mode === 'normal';
   const isActivePanel = useCallback(

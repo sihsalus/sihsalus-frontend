@@ -20,7 +20,7 @@ screen. The rectangular button will only show up if you run the following
 command in the browser console:
 
 ```js
-localStorage.setItem('openmrs:devtools', true)
+localStorage.setItem("openmrs:devtools", true);
 ```
 
 Now refresh the page and you'll see the rectangle. Note that when the rectangle is
@@ -35,3 +35,9 @@ to accomplish this behavior.
 ## Usage
 
 If you prefer using the browser console instead of a UI to manage module overrides, check out the documentation in that github project.
+
+## Type checking and validation
+
+Source and tests use the shared [strict TypeScript preset](../../tooling/tsconfig.strict.json).
+From the repository root, run `yarn workspace @sihsalus/esm-devtools-app typescript`
+and the same workspace's `lint`, `test`, and `build` scripts.

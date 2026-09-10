@@ -32,3 +32,12 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Los enlaces se abren en otra pestaña con aislamiento del contexto de la SPA.
 - El portal no recibe datos clínicos ni parámetros del paciente.
 - Una caída del portal de ayuda no debe impedir el uso de SIHSALUS.
+
+## Tipado y validación
+
+El código y las pruebas usan [TypeScript estricto](../../tooling/tsconfig.strict.json).
+Desde la raíz, ejecutar `yarn workspace @sihsalus/esm-help-menu-app typescript`
+y los scripts `lint`, `test` y `build` del mismo paquete. Las pruebas del menú
+cubren el cierre al pulsar fuera con ratón o pantalla táctil y su permanencia
+al pulsar dentro. Si desaparecen la sesión autenticada, el usuario o las opciones
+de ayuda, el menú se cierra y permanece cerrado al recuperarse.

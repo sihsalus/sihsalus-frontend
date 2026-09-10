@@ -142,6 +142,13 @@ cola real, con adaptadores sintéticos de registro, formularios, signos vitales 
 triaje. No valida las pantallas ni la persistencia clínica en OpenMRS; esa
 aceptación requiere la matriz DEV/QLTY del runbook.
 
+`yarn typecheck:e2e` y el servidor de `offline-local` preparan sus dependencias
+mediante `yarn build:e2e:offline-local`. Este comando usa el grafo de Turborepo
+para compilar `@openmrs/esm-offline` y sus dependencias antes de consumir sus
+exports y declaraciones de tipos. Ambos funcionan después de una instalación
+limpia, sin depender de builds manuales anteriores; un fallo de preparación
+detiene el chequeo o el arranque del navegador.
+
 ## Cobertura de typecheck
 
 `e2e/tsconfig.json` incluye la suite principal, `utils/` y las suites modulares

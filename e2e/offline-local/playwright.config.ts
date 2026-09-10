@@ -10,7 +10,7 @@ export default defineConfig({
   outputDir: '../../test-results/offline-local',
   use: { baseURL: 'http://127.0.0.1:4183', serviceWorkers: 'allow', trace: 'retain-on-failure' },
   webServer: {
-    command: 'node e2e/offline-local/server.cjs',
+    command: 'yarn build:e2e:offline-local && node e2e/offline-local/server.cjs',
     url: 'http://127.0.0.1:4183/openmrs/spa/',
     stdout: 'pipe',
     cwd: '../..',

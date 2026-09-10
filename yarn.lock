@@ -8977,7 +8977,6 @@ __metadata:
     "@swc/core": "npm:1.15.21"
     "@types/react": "npm:^18.2.14"
     "@types/react-dom": "npm:^18.2.6"
-    css-loader: "npm:^7.1.5"
     dayjs: "npm:1.x"
     dotenv: "npm:^17.3.1"
     i18next: "npm:^26.3.6"
@@ -9651,7 +9650,6 @@ __metadata:
     "@types/file-saver": "npm:^2.0.5"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
-    css-loader: "npm:^7.1.5"
     dayjs: "npm:^1.11.9"
     dompurify: "npm:3.4.13"
     dotenv: "npm:^17.3.1"
@@ -9784,7 +9782,6 @@ __metadata:
     "@swc/core": "npm:1.15.21"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
-    css-loader: "npm:^7.1.5"
     dayjs: "npm:1.x"
     dotenv: "npm:^16.0.3"
     i18next: "npm:^26.3.6"
@@ -13889,7 +13886,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"css-loader@npm:7.1.5, css-loader@npm:^7.1.5":
+"css-loader@npm:7.1.5":
   version: 7.1.5
   resolution: "css-loader@npm:7.1.5"
   dependencies:

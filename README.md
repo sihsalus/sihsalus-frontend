@@ -129,7 +129,19 @@ requiere activar el worker actualizado y cerrar las pestañas de la versión ant
 yarn test                                   # Run all unit tests
 yarn turbo run test --filter='@sihsalus/*' # Test SIH Salus packages only
 yarn test:e2e                               # Run Playwright E2E tests
+yarn test:styles                            # Check compiled CSS/SCSS in Chromium, without a backend
 ```
+
+Run `yarn playwright install chromium` before the first local `yarn test:styles`.
+This command builds the shared Rspack configuration and checks its CSS/SCSS rules
+through Imágenes, Stock and Onboarding, plus the styleguide's CSS extraction.
+It verifies default imports, scoped classes and computed styles using temporary
+fixtures in an offline browser context. CI runs it for every PR and push to
+`main`; it is independent of the clinical E2E suites and their credentials.
+
+Apps using `openmrs/default-rspack-config` obtain `css-loader` from
+`@openmrs/rspack-config`. Keep that dependency in the shared configuration;
+the styleguide declares its own because it has a separate build configuration.
 
 ### Quality
 

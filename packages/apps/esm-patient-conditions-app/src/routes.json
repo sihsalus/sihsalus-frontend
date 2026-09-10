@@ -37,7 +37,7 @@
     },
     {
       "name": "conditions-details-widget",
-      "slot": "patient-chart-conditions-dashboard-slot",
+      "slots": ["patient-chart-conditions-dashboard-slot", "consulta-externa-antecedents-slot"],
       "component": "conditionsDetailedSummary",
       "privileges": "app:hoja.clinica.condiciones",
       "meta": {

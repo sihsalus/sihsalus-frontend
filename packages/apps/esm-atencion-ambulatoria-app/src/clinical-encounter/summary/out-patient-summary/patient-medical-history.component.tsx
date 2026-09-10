@@ -31,6 +31,7 @@ import styles from './patient-history.scss';
 
 interface OutPatientMedicalHistoryProps {
   patientUuid: string;
+  readOnly?: boolean;
   encounters: OpenmrsEncounter[];
   isLoading: boolean;
   error: Error;
@@ -44,13 +45,16 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
   error,
   isValidating,
   mutate,
+  readOnly = false,
 }) => {
   const { t } = useTranslation();
   const {
     concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
-  const headerTitle = t('medicalHistory', 'Medical History');
+  const headerTitle = readOnly
+    ? t('previousMedicalRecords', 'Previous medical records')
+    : t('medicalHistory', 'Medical History');
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('medicalHistory', 'Medical History'),
@@ -117,6 +121,9 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
     return <ErrorState error={error} headerTitle={headerTitle} />;
   }
   if (tableRows.length === 0) {
+    if (readOnly) {
+      return <EmptyState displayText={t('medicalHistory', 'Medical History')} headerTitle={headerTitle} />;
+    }
     return (
       <RequirePrivilege
         privilege={consultaExternaEditPrivilege}
@@ -136,16 +143,18 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
         <div className={styles.backgroundDataFetchingIndicator}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
         </div>
-        <RequirePrivilege privilege={consultaExternaEditPrivilege} hideUnauthorized>
-          <Button
-            kind="ghost"
-            onClick={() => handleOpenOrEditClinicalEncounterForm()}
-            renderIcon={Add}
-            iconDescription={t('add', 'Add')}
-          >
-            {t('add', 'Add')}
-          </Button>
-        </RequirePrivilege>
+        {!readOnly && (
+          <RequirePrivilege privilege={consultaExternaEditPrivilege} hideUnauthorized>
+            <Button
+              kind="ghost"
+              onClick={() => handleOpenOrEditClinicalEncounterForm()}
+              renderIcon={Add}
+              iconDescription={t('add', 'Add')}
+            >
+              {t('add', 'Add')}
+            </Button>
+          </RequirePrivilege>
+        )}
       </CardHeader>
       <DataTable
         size="sm"

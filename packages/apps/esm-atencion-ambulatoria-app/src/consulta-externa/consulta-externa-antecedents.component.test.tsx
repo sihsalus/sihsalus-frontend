@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  getDefaultsFromConfigSchema,
+  useAssignedExtensions,
+  useConfig,
+  usePatient,
+} from '@openmrs/esm-framework';
 import { useClinicalEncounter } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,12 +12,15 @@ import type { PropsWithChildren } from 'react';
 import { type ConfigObject, configSchema } from '../config-schema';
 import ConsultaExternaAntecedents from './consulta-externa-antecedents.component';
 
-const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
-const mockUseClinicalEncounter = vi.mocked(useClinicalEncounter);
-const mockRequirePrivilege = vi.fn(({ children }: PropsWithChildren) => children);
+const grantedPrivileges = new Set<string>();
+const patient: fhir.Patient = { resourceType: 'Patient', id: 'synthetic-patient-uuid' };
+const conditionsPrivilege = 'app:hoja.clinica.condiciones';
+const socialPrivilege = 'app:hoja.clinica.historiaSocial';
+const slotName = 'consulta-externa-antecedents-slot';
 
 vi.mock('@sihsalus/esm-rbac', () => ({
-  RequirePrivilege: (props: PropsWithChildren<{ privilege: string }>) => mockRequirePrivilege(props),
+  RequirePrivilege: ({ children, privilege }: PropsWithChildren<{ privilege: string }>) =>
+    grantedPrivileges.has(privilege) ? children : null,
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
@@ -20,7 +29,11 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 }));
 
 vi.mock('../clinical-encounter/summary/out-patient-summary/patient-medical-history.component', () => ({
-  default: ({ patientUuid }: { patientUuid: string }) => <div data-patient-uuid={patientUuid}>Medical history</div>,
+  default: ({ patientUuid, readOnly }: { patientUuid: string; readOnly?: boolean }) => (
+    <div data-patient-uuid={patientUuid} data-read-only={readOnly}>
+      Previous medical records
+    </div>
+  ),
 }));
 
 vi.mock('../clinical-encounter/summary/out-patient-summary/patient-social-history.component', () => ({
@@ -30,8 +43,21 @@ vi.mock('../clinical-encounter/summary/out-patient-summary/patient-social-histor
 describe('ConsultaExternaAntecedents', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ConfigObject);
-    mockUseClinicalEncounter.mockReturnValue({
+    grantedPrivileges.clear();
+    grantedPrivileges.add(conditionsPrivilege);
+    grantedPrivileges.add(socialPrivilege);
+    vi.mocked(useConfig).mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ConfigObject);
+    vi.mocked(usePatient).mockReturnValue({ patient, patientUuid: patient.id, isLoading: false, error: null });
+    vi.mocked(useAssignedExtensions).mockReturnValue([
+      {
+        id: 'conditions-details-widget',
+        name: 'conditions-details-widget',
+        moduleName: '@sihsalus/esm-patient-conditions-app',
+        meta: {},
+        config: null,
+      },
+    ]);
+    vi.mocked(useClinicalEncounter).mockReturnValue({
       encounters: [],
       error: null,
       isLoading: false,
@@ -40,31 +66,94 @@ describe('ConsultaExternaAntecedents', () => {
     });
   });
 
-  it('loads the existing medical and social history behind the history read privilege', async () => {
-    const user = userEvent.setup();
-    render(<ConsultaExternaAntecedents patientUuid="synthetic-patient-uuid" />);
+  it('mounts canonical antecedents with the current patient and keeps previous records read-only', () => {
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:hoja.clinica.historiaSocial' }),
+    expect(ExtensionSlot).toHaveBeenCalledWith(
+      expect.objectContaining({ name: slotName, state: { patient, patientUuid: patient.id } }),
+      expect.anything(),
     );
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Medical History', 'Social History']);
-    expect(screen.getByText('Medical history')).toHaveAttribute('data-patient-uuid', 'synthetic-patient-uuid');
+    expect(screen.getByText('Previous medical records')).toHaveAttribute('data-read-only', 'true');
+    expect(screen.getByText('Previous medical records')).toHaveAttribute('data-patient-uuid', patient.id);
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Antecedents and problems',
+      'Social History',
+    ]);
+  });
 
+  it('opens canonical antecedents without requiring the unrelated social-history privilege', () => {
+    grantedPrivileges.delete(socialPrivilege);
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
+
+    expect(ExtensionSlot).toHaveBeenCalled();
+    expect(useClinicalEncounter).not.toHaveBeenCalled();
+    expect(screen.queryByText('Previous medical records')).not.toBeInTheDocument();
+  });
+
+  it('preserves access to previous records and social history without granting access to conditions', async () => {
+    grantedPrivileges.delete(conditionsPrivilege);
+    const user = userEvent.setup();
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
+
+    expect(usePatient).not.toHaveBeenCalled();
+    expect(ExtensionSlot).not.toHaveBeenCalled();
+    expect(screen.getByText('Previous medical records')).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Social History' }));
-    expect(screen.getByText('Social history')).toHaveAttribute('data-patient-uuid', 'synthetic-patient-uuid');
-    expect(mockUseClinicalEncounter).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(String),
-      'synthetic-patient-uuid',
-      expect.arrayContaining([expect.any(String)]),
+    expect(screen.getByText('Social history')).toHaveAttribute('data-patient-uuid', patient.id);
+  });
+
+  it('does not load either history when both read privileges are denied', () => {
+    grantedPrivileges.clear();
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
+
+    expect(usePatient).not.toHaveBeenCalled();
+    expect(useClinicalEncounter).not.toHaveBeenCalled();
+    expect(ExtensionSlot).not.toHaveBeenCalled();
+  });
+
+  it('waits for the patient before mounting the extension', () => {
+    vi.mocked(usePatient).mockReturnValue({ patient: null, patientUuid: patient.id, isLoading: true, error: null });
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(ExtensionSlot).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { patient: null, error: new Error('Private backend details') },
+    { patient: null, error: null },
+    { patient: { resourceType: 'Patient' as const, id: 'previous-patient' }, error: null },
+  ])('does not mount with missing, failed or stale patient data: %j', (result) => {
+    vi.mocked(usePatient).mockReturnValue({ ...result, patientUuid: patient.id, isLoading: false });
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
+
+    expect(ExtensionSlot).not.toHaveBeenCalled();
+    expect(screen.getByText('Unable to load antecedents. Reload the page and try again.')).toBeInTheDocument();
+    expect(screen.queryByText('Private backend details')).not.toBeInTheDocument();
+  });
+
+  it('updates the extension state when the patient changes', () => {
+    const { rerender } = render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
+    const nextPatient: fhir.Patient = { resourceType: 'Patient', id: 'next-synthetic-patient' };
+    vi.mocked(usePatient).mockReturnValue({
+      patient: nextPatient,
+      patientUuid: nextPatient.id,
+      isLoading: false,
+      error: null,
+    });
+    rerender(<ConsultaExternaAntecedents patientUuid={nextPatient.id} />);
+
+    expect(ExtensionSlot).toHaveBeenLastCalledWith(
+      expect.objectContaining({ state: { patient: nextPatient, patientUuid: nextPatient.id } }),
+      expect.anything(),
     );
   });
 
-  it('does not load antecedents when the read guard denies access', () => {
-    mockRequirePrivilege.mockReturnValueOnce(null);
-    render(<ConsultaExternaAntecedents patientUuid="synthetic-patient-uuid" />);
+  it('keeps the slot mounted and shows a safe message when no extension is available', () => {
+    vi.mocked(useAssignedExtensions).mockReturnValue([]);
+    render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
 
-    expect(mockUseClinicalEncounter).not.toHaveBeenCalled();
-    expect(screen.queryByText('Medical history')).not.toBeInTheDocument();
+    expect(ExtensionSlot).toHaveBeenCalled();
+    expect(screen.getByText('Unable to load antecedents. Reload the page and try again.')).toBeInTheDocument();
   });
 });

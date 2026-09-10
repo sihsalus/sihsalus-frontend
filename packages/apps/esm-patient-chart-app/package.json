@@ -63,7 +63,7 @@
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.2",
     "@types/uuid": "^9.0.4",
     "eslint": "^10.2.0",
     "openmrs": "workspace:*",

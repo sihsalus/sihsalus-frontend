@@ -45,7 +45,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.2",
     "@rspack/core": "1.7.11",
     "openmrs": "workspace:*",
     "react": "^18.3.1",

@@ -37,6 +37,7 @@
     "lint:all": "biome lint .",
     "test:error-exposure-guard": "node --test packages/tooling/scripts/validate-error-exposure.test.js",
     "test:tooling": "node --test \"packages/tooling/scripts/*.test.js\"",
+    "test:styles": "yarn workspace @openmrs/rspack-config build && node --test packages/tooling/scripts/styles.browser.spec.js",
     "security:audit": "yarn validate:react-router && yarn npm audit --all --recursive --severity high",
     "validate:concepts": "node packages/tooling/scripts/validate-concept-existence.js",
     "validate:error-exposure": "node packages/tooling/scripts/validate-error-exposure.js",

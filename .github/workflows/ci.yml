@@ -182,6 +182,22 @@ jobs:
       - name: Assemble and validate SPA artifact
         run: yarn assemble
 
+  styles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-node-env
+
+      - name: Install Chromium for style contracts
+        run: yarn playwright install --with-deps chromium
+
+      - name: Verify compiled styles in Chromium
+        run: yarn test:styles
+
   security-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 20

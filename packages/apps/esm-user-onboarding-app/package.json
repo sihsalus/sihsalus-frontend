@@ -60,7 +60,6 @@
     "@swc/core": "1.15.21",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
-    "css-loader": "^7.1.5",
     "dayjs": "1.x",
     "dotenv": "^16.0.3",
     "i18next": "^26.3.6",

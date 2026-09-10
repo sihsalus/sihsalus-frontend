@@ -20,7 +20,7 @@ vi.mock('./consulta-externa-antecedents.component', () => ({
 vi.mock('./diagnostico-clasificado.component', () => ({
   default: () => <div>Diagnosis panel</div>,
 }));
-vi.mock('./notas-soap.component', () => ({
+vi.mock('./examen-fisico.component', () => ({
   default: () => <div>Physical exam panel</div>,
 }));
 vi.mock('./outpatient-visit-summary-download.component', () => ({

@@ -192,7 +192,7 @@ export async function findSingleEncounterForVisit(
   return matchingEncounterUuids[0];
 }
 
-/** Anamnesis/SOAP edit one verified encounter; referrals always create a new, visit-attached encounter. */
+/** Anamnesis and physical examination edit one verified encounter; referrals create a new, visit-attached encounter. */
 export function useConsultaExternaFormLauncher({
   patientUuid,
   formIdentifier,

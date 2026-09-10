@@ -230,7 +230,7 @@
   color: $text-02;
 }
 
-.soapSection {
+.clinicalSection {
   margin-bottom: layout.$spacing-05;
 
   h5 {
@@ -248,11 +248,7 @@
   }
 }
 
-.soapSubjective h5 {
-  @include brand-03(border-left-color);
-}
-
-.soapObjective h5 {
+.physicalExamSection h5 {
   border-left-color: $interactive-01;
 }
 
@@ -280,14 +276,6 @@
     overflow-wrap: anywhere;
     white-space: pre-wrap;
   }
-}
-
-.soapAssessment h5 {
-  border-left-color: $text-02;
-}
-
-.soapPlan h5 {
-  border-left-color: $support-02;
 }
 
 // Triage styles

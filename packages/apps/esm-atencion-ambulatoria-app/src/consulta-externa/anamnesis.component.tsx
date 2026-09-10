@@ -67,11 +67,11 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
               </span>
             }
           >
-            <div className={styles.soapSection}>
+            <div className={styles.clinicalSection}>
               <h5>{t('chiefComplaint', 'Motivo de Consulta')}</h5>
               <p>{entry.chiefComplaint || t('noData', 'Sin datos')}</p>
             </div>
-            <div className={styles.soapSection}>
+            <div className={styles.clinicalSection}>
               <h5>{t('currentIllness', 'Enfermedad actual')}</h5>
               <p>
                 <strong>{t('illnessDuration', 'Tiempo de enfermedad')}:</strong>{' '}
@@ -85,7 +85,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
               </p>
               <p>{entry.narrative || t('noData', 'Sin datos')}</p>
             </div>
-            <div className={styles.soapSection}>
+            <div className={styles.clinicalSection}>
               <h5>{t('biologicalFunctions', 'Funciones biológicas')}</h5>
               {entry.biologicalFunctionsSummary ? <p>{entry.biologicalFunctionsSummary}</p> : null}
               <p>

@@ -2,19 +2,19 @@ import { useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConsultaExternaFormLauncher } from '../hooks/useConsultaExternaFormLauncher';
-import { useSoapNotes } from '../hooks/useSoapNotes';
-import ExamenFisico from './notas-soap.component';
+import { usePhysicalExam } from '../hooks/usePhysicalExam';
+import ExamenFisico from './examen-fisico.component';
 
 vi.mock('../hooks/useConsultaExternaFormLauncher', () => ({
   useConsultaExternaFormLauncher: vi.fn(),
 }));
 
-vi.mock('../hooks/useSoapNotes', () => ({
-  useSoapNotes: vi.fn(),
+vi.mock('../hooks/usePhysicalExam', () => ({
+  usePhysicalExam: vi.fn(),
 }));
 
 const mockUseConfig = vi.mocked(useConfig);
-const mockUseSoapNotes = vi.mocked(useSoapNotes);
+const mockUsePhysicalExam = vi.mocked(usePhysicalExam);
 const mockUseConsultaExternaFormLauncher = vi.mocked(useConsultaExternaFormLauncher);
 const mockLaunchForm = vi.fn();
 const pagination = {
@@ -43,21 +43,45 @@ describe('ExamenFisico', () => {
     });
   });
 
-  it('shows only the outpatient physical examination while retaining legacy objective findings', async () => {
+  it.each([
+    {
+      name: 'legacy objective findings',
+      legacyObjective: 'Hallazgo objetivo histórico',
+      generalState: null,
+      otherFindings: null,
+      expectedFindings: ['Hallazgo objetivo histórico'],
+    },
+    {
+      name: 'segmented physical examination findings',
+      legacyObjective: null,
+      generalState: 'Buen estado general',
+      otherFindings: 'Hallazgos regionales sintéticos',
+      expectedFindings: ['Buen estado general', 'Hallazgos regionales sintéticos'],
+    },
+    {
+      name: 'additional findings without other examination sections',
+      legacyObjective: null,
+      generalState: null,
+      otherFindings: 'Hallazgo aislado sintético',
+      expectedFindings: ['Hallazgo aislado sintético'],
+    },
+  ])('shows $name and launches the configured physical examination form', async ({
+    legacyObjective,
+    generalState,
+    otherFindings,
+    expectedFindings,
+  }) => {
     const user = userEvent.setup();
     const mutate = vi.fn();
-    mockUseSoapNotes.mockReturnValue({
-      soapEntries: [
+    mockUsePhysicalExam.mockReturnValue({
+      physicalExamEntries: [
         {
           encounterUuid: 'encounter-uuid',
           encounterDatetime: '2026-09-02T10:00:00.000-05:00',
           provider: 'Dra. Sintética',
-          subjective: 'Relato SOAP que no corresponde mostrar aquí',
-          objective: 'Hallazgo objetivo histórico',
-          assessment: 'Apreciación SOAP que no corresponde mostrar aquí',
-          plan: 'Plan SOAP que no corresponde mostrar aquí',
+          legacyObjective,
           physicalExam: {
-            generalState: null,
+            generalState,
             consciousness: null,
             skinAndAppendages: null,
             headAndNeck: null,
@@ -67,7 +91,7 @@ describe('ExamenFisico', () => {
             genitourinary: null,
             musculoskeletal: null,
             neurological: null,
-            otherFindings: null,
+            otherFindings,
           },
         },
       ],
@@ -82,10 +106,9 @@ describe('ExamenFisico', () => {
     render(<ExamenFisico patientUuid="synthetic-patient-uuid" />);
 
     expect(screen.getByText('Historial de examen físico')).toBeInTheDocument();
-    expect(screen.getByText('Hallazgo objetivo histórico')).toBeInTheDocument();
-    expect(screen.queryByText(/Relato SOAP que no corresponde/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Apreciación SOAP que no corresponde/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Plan SOAP que no corresponde/)).not.toBeInTheDocument();
+    for (const finding of expectedFindings) {
+      expect(screen.getByText(finding)).toBeInTheDocument();
+    }
 
     await user.click(screen.getByRole('button', { name: 'Registrar examen físico' }));
 
@@ -100,32 +123,9 @@ describe('ExamenFisico', () => {
     expect(mockLaunchForm).toHaveBeenCalledOnce();
   });
 
-  it('does not treat a legacy SOAP-only entry as an outpatient physical examination', () => {
-    mockUseSoapNotes.mockReturnValue({
-      soapEntries: [
-        {
-          encounterUuid: 'soap-only-encounter',
-          encounterDatetime: '2026-09-02T09:00:00.000-05:00',
-          provider: 'Dr. Sintético',
-          subjective: 'Solo subjetivo',
-          objective: null,
-          assessment: 'Solo apreciación',
-          plan: 'Solo plan',
-          physicalExam: {
-            generalState: null,
-            consciousness: null,
-            skinAndAppendages: null,
-            headAndNeck: null,
-            respiratory: null,
-            cardiovascular: null,
-            abdomenAndDigestive: null,
-            genitourinary: null,
-            musculoskeletal: null,
-            neurological: null,
-            otherFindings: null,
-          },
-        },
-      ],
+  it('shows the empty state when the history has no physical examinations', () => {
+    mockUsePhysicalExam.mockReturnValue({
+      physicalExamEntries: [],
       isLoading: false,
       isValidating: false,
       error: undefined,
@@ -137,6 +137,5 @@ describe('ExamenFisico', () => {
     render(<ExamenFisico patientUuid="synthetic-patient-uuid" />);
 
     expect(screen.getByText(/There are no registros de examen físico/i)).toBeInTheDocument();
-    expect(screen.queryByText('Solo subjetivo')).not.toBeInTheDocument();
   });
 });

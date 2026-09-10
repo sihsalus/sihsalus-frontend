@@ -236,6 +236,10 @@ No se atribuye a `If-Match` una protección no comprobada en el backend.
   persistidos; la caché no debe retener el original si el backend devuelve otro ID.
 - Una escritura confirmada y una actualización visual fallida son resultados
   distintos. Un fallo de recarga no debe inducir a repetir la creación o anulación.
+  La recarga explícita exige red en todas las páginas mediante `no-store`, la
+  estrategia offline existente y un parámetro único por recorrido. Si falla,
+  conserva el último historial completo e informa el fallo; un snapshot antiguo
+  de caché no confirma que la escritura ya sea visible.
 - Un fallo de red, timeout o error de servidor puede ocurrir después del commit.
   Si no hay confirmación, el formulario o diálogo no anuncia guardado ni anulación
   y no permite repetir la escritura. Conserva las entradas y permite cerrar y

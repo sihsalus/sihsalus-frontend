@@ -26,10 +26,14 @@ export interface ConditionSearchResponse {
   totalCount?: number;
 }
 
+interface ConditionReadOptions {
+  fresh?: boolean;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
-function normalizedPageUrl(url: string, base: string, patientUuid: string): string {
+function normalizedPageUrl(url: string, base: string, patientUuid: string, nonce?: string): string {
   const parsed = new URL(url, base);
   const endpoint = new URL(makeUrl(`${restBaseUrl}/condition`), window.location.href);
   const patientParameters = parsed.searchParams.getAll('patientUuid');
@@ -54,17 +58,31 @@ function normalizedPageUrl(url: string, base: string, patientUuid: string): stri
   parsed.searchParams.set('includeInactive', 'true');
   parsed.searchParams.set('v', 'full');
   parsed.searchParams.set('totalCount', 'true');
+  if (nonce) parsed.searchParams.set('_', nonce);
   if (!parsed.searchParams.has('limit')) parsed.searchParams.set('limit', '100');
   parsed.searchParams.sort();
   return parsed.toString();
 }
 
 /** Validate every REST page, including ownership, before exposing a complete history. */
-export function createConditionsPageFetcher(patientUuid: string) {
+export function createConditionsPageFetcher(patientUuid: string, { fresh = false }: ConditionReadOptions = {}) {
   const links = new Map<string, string | null>();
+  // One nonce per complete traversal also keeps pagination-cycle comparisons stable.
+  const nonce = fresh ? nextFreshRequestNonce() : undefined;
   return async (key: string): Promise<FetchResponse<ConditionSearchResponse>> => {
-    const current = normalizedPageUrl(makeUrl(key), window.location.href, patientUuid);
-    const response = await openmrsFetch<unknown>(current, { rejectOnAuthFailure: true });
+    const current = normalizedPageUrl(makeUrl(key), window.location.href, patientUuid, nonce);
+    const response = await openmrsFetch<unknown>(current, {
+      rejectOnAuthFailure: true,
+      ...(fresh
+        ? {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-store',
+              [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+            },
+          }
+        : {}),
+    });
     const page = response.data;
     if (
       !isRecord(page) ||
@@ -90,7 +108,7 @@ export function createConditionsPageFetcher(patientUuid: string) {
     if (nextLinks.length > 1 || (nextLinks.length === 1 && (!nextLinks[0].uri || !validated.results.length))) {
       throw new Error('Invalid condition pagination link.');
     }
-    const next = nextLinks[0]?.uri ? normalizedPageUrl(nextLinks[0].uri, current, patientUuid) : null;
+    const next = nextLinks[0]?.uri ? normalizedPageUrl(nextLinks[0].uri, current, patientUuid, nonce) : null;
     links.set(current, next);
     const visited = new Set<string>([current]);
     let cursor = next;
@@ -120,7 +138,10 @@ export function usePatientConditions(patientUuid: string) {
     limit: '100',
     totalCount: 'true',
   });
-  const fetcher = useMemo(() => (url: string) => fetchPatientConditions(url, patientUuid), [patientUuid]);
+  const fetcher = useMemo(
+    () => (url: string, options?: ConditionReadOptions) => fetchPatientConditions(url, patientUuid, options),
+    [patientUuid],
+  );
   const url = patientUuid ? `${restBaseUrl}/condition?${query}` : null;
   const {
     data,
@@ -131,8 +152,8 @@ export function usePatientConditions(patientUuid: string) {
   } = useSWR<Array<OpenmrsCondition>, Error>(url, fetcher);
   const mutate = useCallback(async () => {
     if (!url) return;
-    // A promise exposes refresh failures to the caller without replacing the last complete snapshot.
-    return mutateCache(fetcher(url), { revalidate: false, throwOnError: true });
+    // A confirmed write needs a network snapshot; an offline cache cannot confirm the new history is visible.
+    return mutateCache(fetcher(url, { fresh: true }), { revalidate: false, throwOnError: true });
   }, [url, fetcher, mutateCache]);
   const mapped = useMemo(() => {
     if (!data) return null;
@@ -158,9 +179,13 @@ export function usePatientConditions(patientUuid: string) {
 }
 
 /** One SWR value represents all pages; refresh also waits for pages introduced by a write. */
-export async function fetchPatientConditions(url: string, patientUuid: string): Promise<Array<OpenmrsCondition>> {
+export async function fetchPatientConditions(
+  url: string,
+  patientUuid: string,
+  options?: ConditionReadOptions,
+): Promise<Array<OpenmrsCondition>> {
   assertConditionIdentifier(patientUuid);
-  const fetchPage = createConditionsPageFetcher(patientUuid);
+  const fetchPage = createConditionsPageFetcher(patientUuid, options);
   const records = new Map<string, OpenmrsCondition>();
   let next: string | undefined = url;
   let total: number | undefined;
@@ -281,10 +306,14 @@ export async function deleteCondition(conditionId: string, patientUuid: string, 
 }
 
 let freshRequestSequence = 0;
+function nextFreshRequestNonce(): string {
+  return `${Date.now()}-${++freshRequestSequence}`;
+}
+
 async function fetchFreshCondition(conditionId: string, patientUuid: string): Promise<OpenmrsCondition> {
   assertConditionIdentifier(conditionId);
   assertConditionIdentifier(patientUuid);
-  const nonce = `${Date.now()}-${++freshRequestSequence}`;
+  const nonce = nextFreshRequestNonce();
   const { data } = await openmrsFetch<OpenmrsCondition>(`${restBaseUrl}/condition/${conditionId}?v=full&_=${nonce}`, {
     cache: 'no-store',
     rejectOnAuthFailure: true,

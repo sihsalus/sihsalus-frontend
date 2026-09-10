@@ -240,6 +240,91 @@ describe('complete condition history through SWR and the REST pagination protoco
     await waitFor(() => expect(result.current.conditions?.map((condition) => condition.id)).toEqual(['replacement']));
   });
 
+  it('forces every refresh page through the network with one nonce per traversal while preserving ordinary reads', async () => {
+    fetchMock.mockResolvedValueOnce(response(page([resource()], undefined, 1)));
+    const { result } = renderHook(() => usePatientConditions('patient-a'), { wrapper });
+    await waitFor(() => expect(result.current.conditions).toHaveLength(1));
+    expect(fetchMock.mock.calls[0][1]).toEqual({ rejectOnAuthFailure: true });
+    expect(new URL(String(fetchMock.mock.calls[0][0])).searchParams.has('_')).toBe(false);
+
+    fetchMock
+      .mockResolvedValueOnce(response(page([resource()], '?page=2&_=stale-server-nonce', 2)))
+      .mockResolvedValueOnce(response(page([resource('condition-b')], undefined, 2)));
+    await act(async () => {
+      await syncConditionCache(result.current.mutate);
+    });
+    const refreshCalls = fetchMock.mock.calls.slice(1);
+    expect(refreshCalls).toHaveLength(2);
+    for (const [, options] of refreshCalls) {
+      expect(options).toEqual({
+        rejectOnAuthFailure: true,
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-store', 'x-omrs-offline-strategy': 'network-only-or-cache-only' },
+      });
+    }
+    const nonces = refreshCalls.map(([url]) => new URL(String(url)).searchParams.get('_'));
+    expect(nonces[0]).toBeTruthy();
+    expect(nonces[0]).not.toBe('stale-server-nonce');
+    expect(new Set(nonces).size).toBe(1);
+    expect(result.current.conditions).toHaveLength(2);
+
+    fetchMock.mockResolvedValueOnce(response(page([resource('replacement')], undefined, 1)));
+    await act(async () => {
+      await syncConditionCache(result.current.mutate);
+    });
+    const nextNonce = new URL(String(fetchMock.mock.calls.at(-1)?.[0])).searchParams.get('_');
+    expect(nextNonce).toBeTruthy();
+    expect(nextNonce).not.toBe(nonces[0]);
+  });
+
+  it('still detects a refresh cycle when the server changes its cache-busting parameter', async () => {
+    fetchMock.mockResolvedValueOnce(response(page([resource()], undefined, 1)));
+    const { result } = renderHook(() => usePatientConditions('patient-a'), { wrapper });
+    await waitFor(() => expect(result.current.conditions).toHaveLength(1));
+    fetchMock
+      .mockResolvedValueOnce(response(page([resource('condition-b')], '?page=2&_=server-one')))
+      .mockResolvedValueOnce(response(page([resource('condition-c')], '?_=server-two')));
+    await act(async () => {
+      await expect(syncConditionCache(result.current.mutate)).rejects.toThrow(/pagination cycle/i);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result.current.conditions?.map(({ id }) => id)).toEqual(['condition-a']);
+  });
+
+  it('rejects a failed network refresh after a confirmed POST instead of accepting an available old cache', async () => {
+    const networkFailure = new TypeError('Synthetic network unavailable after confirmed write');
+    let ordinaryReads = 0;
+    fetchMock.mockImplementation(async (url, options) => {
+      if (options?.method === 'POST') return response(resource('new-condition'));
+      const headers = new Headers(options?.headers as HeadersInit);
+      const fresh =
+        options?.cache === 'no-store' &&
+        headers.get('Cache-Control') === 'no-store' &&
+        headers.get('x-omrs-offline-strategy') === 'network-only-or-cache-only' &&
+        new URL(String(url)).searchParams.has('_');
+      if (fresh) throw networkFailure;
+      ordinaryReads++;
+      // Simulate the worker returning a previously cached history when freshness is not requested.
+      return response(page([resource()], undefined, 1));
+    });
+    const { result } = renderHook(() => usePatientConditions('patient-a'), { wrapper });
+    await waitFor(() => expect(result.current.conditions).toHaveLength(1));
+    await createCondition({
+      patientId: 'patient-a',
+      providerUuid: 'provider-a',
+      conceptId: 'concept-a',
+      display: 'Synthetic new antecedent',
+      clinicalStatus: 'active',
+    });
+    await act(async () => {
+      await expect(syncConditionCache(result.current.mutate)).rejects.toBe(networkFailure);
+    });
+    expect(ordinaryReads).toBe(1);
+    expect(fetchMock.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result.current.conditions?.map(({ id }) => id)).toEqual(['condition-a']);
+  });
+
   it('waits for a newly introduced page when a confirmed create crosses the page-size boundary', async () => {
     const existing = Array.from({ length: 100 }, (_, i) => resource(`condition-${i}`));
     fetchMock.mockResolvedValueOnce(response(page(existing, undefined, 100)));

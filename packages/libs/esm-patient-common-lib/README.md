@@ -27,8 +27,11 @@ dates retain their precision and timezone; this form allows correcting an existi
 date but requires a replacement instead of erasing it.
 
 The paginated fetcher commits one complete history to SWR and makes refresh await
-every page, including pages introduced by a write. This is required for distinguishing
-a confirmed write from a subsequent refresh failure. The UI must never retry the
+every page, including pages introduced by a write. Explicit refresh requests use
+one unique URL nonce per traversal, `no-store` and the existing offline strategy
+contract to require network data on every page. An old offline snapshot cannot
+confirm that a write is visible. A refresh failure preserves the last complete
+snapshot and remains distinct from a confirmed write; the UI must never retry the
 write solely because refreshing failed.
 
 See [the data contract](../../../docs/clinical/antecedents-data-contract.md) for

@@ -356,5 +356,10 @@
   "waitTime": "Tiempo de espera",
   "weight": "Peso (kg)",
   "years": "años",
-  "yes": "Sí"
+  "yes": "Sí",
+  "emergencyQueueRefreshFailed": "No se pudo actualizar la vista de la cola",
+  "emergencyQueueRefreshFailedMessage": "El cambio se guardó. Actualice la cola para ver su estado actual.",
+  "emergencyWorkspaceOpeningFailed": "No se pudo abrir el formulario",
+  "emergencyWorkspaceOpeningFailedMessage": "El paciente permanece en atención. Reintente abrir el formulario para continuar.",
+  "emergencyWorkspaceRetry": "Reintentar abrir formulario"
 }

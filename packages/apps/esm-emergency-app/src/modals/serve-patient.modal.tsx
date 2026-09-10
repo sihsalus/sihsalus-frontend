@@ -6,7 +6,7 @@
  * - If in Attention Queue → opens the attention form workspace
  */
 
-import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
+import { Button, InlineNotification, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
 import {
   age,
   getUserFacingErrorMessage,
@@ -15,7 +15,7 @@ import {
   showSnackbar,
 } from '@openmrs/esm-framework';
 import { getPreferredIdentifier } from '@openmrs/esm-utils';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WORKSPACES } from '../constants';
 import { useTriageVitalsSavedHandler } from '../emergency-workflow/hooks/useTriageVitalsSavedHandler';
@@ -37,6 +37,17 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
   const { queueStatuses, emergencyTriageQueueUuid, emergencyLocationUuid, triageEncounter } = useEmergencyConfig();
   const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openingFailed, setOpeningFailed] = useState(false);
+  const pendingRef = useRef(false);
+  const statusUpdatedFor = useRef<string>();
+  const activeEntry = useRef<string>(queueEntry.uuid);
+  useEffect(() => {
+    activeEntry.current = queueEntry.uuid;
+    setOpeningFailed(false);
+    return () => {
+      activeEntry.current = undefined;
+    };
+  }, [queueEntry.uuid]);
   const handleTriageVitalsSaved = useTriageVitalsSavedHandler(queueEntry);
 
   const isTriageQueue = queueEntry.queue?.uuid === emergencyTriageQueueUuid;
@@ -48,72 +59,119 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
   const preferredIdentifier = getPreferredIdentifier(identifiers);
   const otherIdentifiers = identifiers.filter((id) => id.uuid !== preferredIdentifier?.uuid);
 
-  const handleServe = useCallback(() => {
+  const handleServe = useCallback(async () => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
     setIsSubmitting(true);
-    updateEmergencyQueueEntry(queueEntry.uuid, {
-      statusUuid: queueStatuses.inService,
-    })
-      .then((response) => {
-        // A null response means the update was reconciled as already applied
-        if (response == null || (response.status >= 200 && response.status < 300)) {
-          showSnackbar({
-            isLowContrast: true,
-            title: t('patientServed', 'Paciente en atención'),
-            kind: 'success',
-            subtitle: t('patientServedSuccessfully', 'El paciente ha sido marcado como en atención'),
-          });
-          void mutateEmergencyQueueEntries();
-          closeModal();
-
-          if (isTriageQueue) {
-            // In triage queue: capture vitals with the shared vitals workspace
-            launchWorkspace2(
-              WORKSPACES.TRIAGE_VITALS_FORM,
-              {
-                encounterTypeUuid: triageEncounter.encounterTypeUuid,
-                locationUuid: emergencyLocationUuid,
-                onVitalsSaved: handleTriageVitalsSaved,
-                profile: 'emergency-triage',
-              },
-              null,
-              { patientUuid: queueEntry.patient.uuid },
-            );
-          } else {
-            // In attention queue: open attention form workspace directly
-            launchWorkspace(WORKSPACES.ATTENTION_FORM, { queueEntry });
+    setOpeningFailed(false);
+    try {
+      if (statusUpdatedFor.current !== queueEntry.uuid && queueEntry.status?.uuid !== queueStatuses.inService) {
+        try {
+          const response = await updateEmergencyQueueEntry(queueEntry.uuid, { statusUuid: queueStatuses.inService });
+          // null means the resource reconciled the update as already applied.
+          if (
+            response !== null &&
+            (!response || !Number.isFinite(response.status) || response.status < 200 || response.status >= 300)
+          ) {
+            throw new Error('Queue update was not confirmed.');
           }
+          statusUpdatedFor.current = queueEntry.uuid;
+        } catch (error) {
+          if (activeEntry.current === queueEntry.uuid) {
+            showSnackbar({
+              title: t('errorServingPatient', 'Error al atender paciente'),
+              kind: 'error',
+              subtitle: getUserFacingErrorMessage(
+                error,
+                t('errorServingPatientMessage', 'No se pudo iniciar la atención. Intente nuevamente.'),
+                { logContext: 'Serve emergency patient' },
+              ),
+            });
+          }
+          return;
         }
-      })
-      .catch((error) => {
-        showSnackbar({
-          title: t('errorServingPatient', 'Error al atender paciente'),
-          kind: 'error',
-          subtitle: getUserFacingErrorMessage(
-            error,
-            t('errorServingPatientMessage', 'No se pudo iniciar la atención. Intente nuevamente.'),
-            { logContext: `Serve emergency patient from queue entry ${queueEntry.uuid}` },
-          ),
-        });
-      })
-      .finally(() => {
-        setIsSubmitting(false);
+        // Refresh failure is independent of the confirmed update and workspace opening.
+        void Promise.resolve()
+          .then(() => mutateEmergencyQueueEntries())
+          .catch(() => {
+            if (activeEntry.current === queueEntry.uuid) {
+              showSnackbar({
+                kind: 'warning',
+                title: t('emergencyQueueRefreshFailed', 'No se pudo actualizar la vista de la cola'),
+                subtitle: t(
+                  'emergencyQueueRefreshFailedMessage',
+                  'El cambio se guardó. Actualice la cola para ver su estado actual.',
+                ),
+              });
+            }
+          });
+      }
+      if (activeEntry.current !== queueEntry.uuid) return;
+      try {
+        if (isTriageQueue) {
+          const opened = await launchWorkspace2(
+            WORKSPACES.TRIAGE_VITALS_FORM,
+            {
+              encounterTypeUuid: triageEncounter.encounterTypeUuid,
+              locationUuid: emergencyLocationUuid,
+              onVitalsSaved: handleTriageVitalsSaved,
+              profile: 'emergency-triage',
+            },
+            null,
+            { patientUuid: queueEntry.patient.uuid },
+          );
+          if (!opened) throw new Error('Workspace opening was not completed.');
+        } else {
+          // The legacy launcher returns void; synchronous launch failures are recoverable here.
+          launchWorkspace(WORKSPACES.ATTENTION_FORM, { queueEntry });
+        }
+      } catch {
+        if (activeEntry.current === queueEntry.uuid) setOpeningFailed(true);
+        return;
+      }
+      if (activeEntry.current !== queueEntry.uuid) return;
+      showSnackbar({
+        isLowContrast: true,
+        title: t('patientServed', 'Paciente en atención'),
+        kind: 'success',
+        subtitle: t('patientServedSuccessfully', 'El paciente ha sido marcado como en atención'),
       });
+      closeModal();
+    } finally {
+      pendingRef.current = false;
+      if (activeEntry.current) setIsSubmitting(false);
+    }
   }, [
     queueEntry,
     queueStatuses.inService,
     isTriageQueue,
+    triageEncounter.encounterTypeUuid,
     emergencyLocationUuid,
+    handleTriageVitalsSaved,
     mutateEmergencyQueueEntries,
     closeModal,
     t,
-    triageEncounter.encounterTypeUuid,
-    handleTriageVitalsSaved,
   ]);
+
+  const closeWhenIdle = () => {
+    if (!pendingRef.current) closeModal();
+  };
 
   return (
     <div>
-      <ModalHeader closeModal={closeModal} title={t('servePatient', 'Atender paciente')} />
+      <ModalHeader closeModal={closeWhenIdle} title={t('servePatient', 'Atender paciente')} />
       <ModalBody className={styles.modalBody}>
+        {openingFailed && (
+          <InlineNotification
+            kind="warning"
+            hideCloseButton
+            title={t('emergencyWorkspaceOpeningFailed', 'No se pudo abrir el formulario')}
+            subtitle={t(
+              'emergencyWorkspaceOpeningFailedMessage',
+              'El paciente permanece en atención. Reintente abrir el formulario para continuar.',
+            )}
+          />
+        )}
         <section className={styles.modalBody}>
           <p className={styles.p}>
             {t('patientName', 'Nombre del paciente')}: &nbsp; {patientName}
@@ -142,11 +200,11 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
         </section>
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeModal} disabled={isSubmitting}>
+        <Button kind="secondary" onClick={closeWhenIdle} disabled={isSubmitting}>
           {t('cancel', 'Cancelar')}
         </Button>
         <Button onClick={handleServe} disabled={isSubmitting}>
-          {t('serve', 'Atender')}
+          {openingFailed ? t('emergencyWorkspaceRetry', 'Reintentar abrir formulario') : t('serve', 'Atender')}
         </Button>
       </ModalFooter>
     </div>

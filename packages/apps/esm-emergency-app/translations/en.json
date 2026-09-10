@@ -356,5 +356,10 @@
   "waitTime": "Wait time",
   "weight": "Weight (kg)",
   "years": "years",
-  "yes": "Yes"
+  "yes": "Yes",
+  "emergencyQueueRefreshFailed": "The queue view could not be refreshed",
+  "emergencyQueueRefreshFailedMessage": "The change was saved. Refresh the queue to see its current status.",
+  "emergencyWorkspaceOpeningFailed": "The form could not be opened",
+  "emergencyWorkspaceOpeningFailedMessage": "The patient remains in service. Retry opening the form to continue.",
+  "emergencyWorkspaceRetry": "Retry opening the form"
 }

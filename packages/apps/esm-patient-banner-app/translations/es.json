@@ -56,5 +56,6 @@
   "status": "Estado",
   "telephoneNumberWithSeparator": "Número de teléfono:",
   "yearAbbreviation": "año",
-  "yearsAbbreviation": "años"
+  "yearsAbbreviation": "años",
+  "neighborhood": "Barrio"
 }

@@ -508,5 +508,9 @@
   "updatePatientSuccessSnackbarTitle": "Detalles del Paciente Actualizados",
   "Vigente": "Vigente",
   "yearsEstimateRequired": "Ingrese la edad aproximada en años y/o meses",
-  "yes": "Sí"
+  "yes": "Sí",
+  "bulkPatientImportManifestSubtitle_one": "SHA-256: {{hash}} · {{count}} fila",
+  "bulkPatientImportManifestSubtitle_many": "SHA-256: {{hash}} · {{count}} filas",
+  "bulkPatientImportManifestSubtitle_other": "SHA-256: {{hash}} · {{count}} filas",
+  "temporaryAffiliationShortLabel": "Afiliación temporal"
 }

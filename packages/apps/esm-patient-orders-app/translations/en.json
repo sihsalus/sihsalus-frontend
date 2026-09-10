@@ -130,7 +130,7 @@
   "searchAgain": "search again",
   "searchFieldOrder": "Search for {{orderType}} order",
   "searchOrderables": "Search orderables",
-  "searchResultsMatchesForTerm_one": "{{count}} results for \"{{searchTerm}}\"",
+  "searchResultsMatchesForTerm_one": "{{count}} result for \"{{searchTerm}}\"",
   "searchResultsMatchesForTerm_other": "{{count}} results for \"{{searchTerm}}\"",
   "searchTable": "Search table",
   "selectOrderType": "Select order type",
@@ -146,5 +146,11 @@
   "trySearchingAgain": "Please try searching again",
   "tryTo": "Try to",
   "updated": "Updated",
-  "usingADifferentTerm": "using a different term"
+  "usingADifferentTerm": "using a different term",
+  "enterObservations": "Enter observations",
+  "observations": "Observations",
+  "orderPlaced": "Order placed",
+  "ordersPlaced": "Orders placed",
+  "ordersCompleted": "Order changes saved",
+  "orderedFor": "Placed order for"
 }

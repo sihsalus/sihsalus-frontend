@@ -86,5 +86,6 @@
   "withActiveConsultation": "Con consulta activa",
   "withoutActiveConsultation": "Sin consulta activa",
   "yearOfBirth": "Año de Nacimiento",
-  "years": "Años"
+  "years": "Años",
+  "recentlyViewedPatientsCount_many": "{{count}} pacientes vistos recientemente"
 }

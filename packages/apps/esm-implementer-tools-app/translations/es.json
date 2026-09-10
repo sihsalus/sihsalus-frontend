@@ -64,5 +64,7 @@
   "updateConfig": "Actualizar configuración",
   "uuidValidationMessage": "El valor debe ser una cadena UUID válida",
   "value": "Valor",
-  "viewModules": "Ver módulos"
+  "viewModules": "Ver módulos",
+  "incompatibleBackendModulesCount_many": "{{count}} módulos backend tienen versiones incompatibles.",
+  "missingBackendModulesCount_many": "Faltan {{count}} módulos backend."
 }

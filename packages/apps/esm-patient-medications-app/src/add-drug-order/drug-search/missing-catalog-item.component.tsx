@@ -2,11 +2,12 @@ import { Accordion, AccordionItem, Button, TextArea } from '@carbon/react';
 import { Copy } from '@carbon/react/icons';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../../dashboard.meta';
 import styles from './order-basket-search.scss';
 
 /** A local administrative draft, deliberately independent of patients, orders and persistence. */
 export default function MissingCatalogItem() {
-  const { t } = useTranslation('@sihsalus/esm-patient-medications-app');
+  const { t } = useTranslation(moduleName);
   const inputId = useId();
   const [description, setDescription] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'failed'>('idle');

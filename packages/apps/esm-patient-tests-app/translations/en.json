@@ -4,7 +4,7 @@
   "testResultsLoadError": "Test results could not be loaded. Try again.",
   "testResultsOffline": "Connect to the network to load current test results.",
   "add": "Add",
-  "addAllToBasket": "Agregar todos",
+  "addAllToBasket": "Add all",
   "additionalInstructions": "Additional instructions",
   "addLabOrderWorkspaceTitle": "Add lab order",
   "addOrderableForOrderType": "Add {{orderTypeDisplay}}",
@@ -79,7 +79,7 @@
   "printTestResults": "Print test results",
   "priority": "Priority",
   "priorityRequired": "Priority is required",
-  "recentOrderWarning": "La orden {{orderName}} fue realizada recientemente",
+  "recentOrderWarning": "{{orderName}} was recently ordered",
   "recentResults": "Recent Results",
   "recentTestResults": "recent test results",
   "referenceNumber": "Reference number",
@@ -139,5 +139,8 @@
   "usingADifferentTerm": "using a different term",
   "value": "Value",
   "view": "View",
-  "viewTimeline": "View timeline"
+  "viewTimeline": "View timeline",
+  "bulkInstructionsLabel": "Instructions for all orders",
+  "bulkInstructionsPlaceholder": "Enter instructions to apply to all orders",
+  "fullLabSet": "Complete panel"
 }

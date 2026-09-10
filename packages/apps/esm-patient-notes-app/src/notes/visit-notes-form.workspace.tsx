@@ -1132,7 +1132,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                   <p>
                     {t(
                       'providerSignatureSource',
-                      'Signature, seal and registration are resolved from the provider profile that records this encounter.',
+                      'The clinician and professional registration number come from their profile. The signature and stamp must be added manually.',
                     )}
                   </p>
                 </Tile>

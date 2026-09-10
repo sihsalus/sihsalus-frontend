@@ -51,7 +51,7 @@
     "semver": "^7.7.3",
     "tar": "^7.5.3",
     "typescript": "6.0.3",
-    "yargs": "^17.6.2"
+    "yargs": "^18.1.0"
   },
   "devDependencies": {
     "@types/express": "^4.11.1",

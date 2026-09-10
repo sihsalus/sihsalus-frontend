@@ -1,276 +1,173 @@
-import { openmrsFetch, useFhirFetchAll } from '@openmrs/esm-framework';
-import { buildAntecedentTypeCategory, buildAntecedentTypeNote } from '@openmrs/esm-patient-common-lib';
-import { renderHook, waitFor } from '@testing-library/react';
+import { openmrsFetch } from '@openmrs/esm-framework';
+import {
+  type AntecedentTypeCode,
+  buildAntecedentTypeNote,
+  mapConditionProperties,
+  type OpenmrsCondition,
+  sortConditions,
+  useConditionConceptSet,
+  usePatientConditions,
+} from '@openmrs/esm-patient-common-lib';
+import { renderHook } from '@testing-library/react';
 import { createCondition, updateCondition, useConditions, useConditionsFromConceptSet } from './conditions.resource';
 
-const mockOpenmrsFetch = vi.mocked(openmrsFetch);
-const mockUseFhirFetchAll = vi.mocked(useFhirFetchAll);
-
-function fhirCondition({
-  id,
-  conceptId,
-  display,
-  onsetDateTime,
-  note,
-  category,
-}: {
-  id: string;
-  conceptId: string;
-  display: string;
-  onsetDateTime: string;
-  note?: ReturnType<typeof buildAntecedentTypeNote>;
-  category?: ReturnType<typeof buildAntecedentTypeCategory>;
-}) {
-  return {
-    resource: {
-      id,
-      code: { coding: [{ code: conceptId, display }] },
-      clinicalStatus: { coding: [{ code: 'active' }] },
-      onsetDateTime,
-      recordedDate: onsetDateTime,
-      note,
-      category,
+vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-patient-common-lib')>()),
+  usePatientConditions: vi.fn(),
+  useConditionConceptSet: vi.fn(),
+}));
+const fetchMock = vi.mocked(openmrsFetch);
+const patientUuid = 'synthetic-patient';
+const details = (type: AntecedentTypeCode, text?: string) => buildAntecedentTypeNote(type, text)?.[0]?.text;
+const source = (uuid: string, overrides: Partial<OpenmrsCondition> = {}): OpenmrsCondition => ({
+  uuid,
+  patient: { uuid: patientUuid },
+  condition: { coded: { uuid: 'member-1', display: 'Synthetic antecedent' } },
+  clinicalStatus: 'ACTIVE',
+  voided: false,
+  ...overrides,
+});
+function mockHistory(records: Array<OpenmrsCondition>) {
+  vi.mocked(usePatientConditions).mockReturnValue({
+    conditions: sortConditions(records.map(mapConditionProperties)),
+    error: undefined,
+    isLoading: false,
+    isValidating: false,
+    mutate: vi.fn(),
+  });
+}
+function mockConceptSet(uuids: Array<string>) {
+  vi.mocked(useConditionConceptSet).mockReturnValue({
+    conceptSet: {
+      uuid: 'synthetic-set',
+      retired: false,
+      setMembers: uuids.map((uuid) => ({ uuid, names: [], retired: false })),
     },
-  };
+    error: undefined,
+    isLoading: false,
+  });
 }
 
-describe('useConditionsFromConceptSet', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseFhirFetchAll.mockReturnValue({
-      data: [],
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      mutate: vi.fn(),
-    } as never);
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockHistory([]);
+  mockConceptSet(['member-1']);
+});
+
+describe('outpatient concept-set adapter', () => {
+  it('keeps coded antecedents readable alongside a native uncoded record', () => {
+    const coded = source('coded');
+    mockHistory([coded, source('native', { condition: { nonCoded: 'Synthetic narrative' } })]);
+    const { result } = renderHook(() => useConditionsFromConceptSet(patientUuid, 'synthetic-set'));
+    expect(result.current.conditions).toEqual([expect.objectContaining({ id: 'coded', source: coded })]);
   });
 
-  it('keeps coded antecedents readable when another condition has no coding arrays', async () => {
-    mockUseFhirFetchAll.mockReturnValue({
-      data: [
-        {
-          id: 'synthetic-text-only',
-          code: { text: 'Synthetic recorded history' },
-          clinicalStatus: { text: 'Unspecified' },
-        },
-        fhirCondition({
-          id: 'synthetic-coded',
-          conceptId: 'synthetic-member',
-          display: 'Synthetic coded history',
-          onsetDateTime: '2026-09-01T00:00:00.000Z',
-        }).resource,
-      ],
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      mutate: vi.fn(),
-    } as never);
-    mockOpenmrsFetch.mockResolvedValue({
-      data: { setMembers: [{ uuid: 'synthetic-member' }] },
-    } as never);
-
-    const { result } = renderHook(() =>
-      useConditionsFromConceptSet('synthetic-patient-missing-coding', 'synthetic-concept-set'),
-    );
-
-    await waitFor(() =>
-      expect(result.current.conditions).toEqual([
-        expect.objectContaining({ id: 'synthetic-coded', display: 'Synthetic coded history' }),
-      ]),
-    );
-  });
-
-  it('loads text-only antecedents in the form without inventing a clinical code or status', () => {
-    mockUseFhirFetchAll.mockReturnValue({
-      data: [
-        {
-          id: 'synthetic-text-only',
-          code: { text: 'Synthetic recorded history' },
-          clinicalStatus: { text: 'Unspecified' },
-        },
-      ],
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      mutate: vi.fn(),
-    } as never);
-
-    const { result } = renderHook(() => useConditions('synthetic-patient-text-only'));
-
+  it('returns native text and an unknown status without inventing a coded concept or an active state', () => {
+    mockHistory([source('native', { condition: { nonCoded: 'Synthetic narrative' }, clinicalStatus: 'UNKNOWN' })]);
+    const { result } = renderHook(() => useConditions(patientUuid));
     expect(result.current.conditions).toEqual([
       expect.objectContaining({
-        id: 'synthetic-text-only',
-        display: 'Synthetic recorded history',
+        id: 'native',
+        display: 'Synthetic narrative',
         conceptId: '',
-        clinicalStatus: '',
+        clinicalStatus: 'Unknown',
       }),
     ]);
   });
 
-  it('incluye los antecedentes de texto libre y los muestra con el texto del clínico', async () => {
-    const bundle = {
-      total: 3,
-      entry: [
-        fhirCondition({
-          id: 'in-set',
-          conceptId: 'member-1',
-          display: 'Asma',
-          onsetDateTime: '2026-01-02T00:00:00.000Z',
-          category: buildAntecedentTypeCategory('pathological'),
-          note: buildAntecedentTypeNote('pathological', null),
-        }),
-        fhirCondition({
-          id: 'free-text',
-          conceptId: 'fallback-1',
-          display: 'Nota de consulta',
-          onsetDateTime: '2026-01-03T00:00:00.000Z',
-          category: buildAntecedentTypeCategory('other'),
-          note: buildAntecedentTypeNote('other', 'Alergia a mariscos'),
-        }),
-        fhirCondition({
-          id: 'foreign',
-          conceptId: 'unrelated-concept',
-          display: 'Diagnóstico ajeno',
-          onsetDateTime: '2026-01-04T00:00:00.000Z',
-        }),
-      ],
-    };
-    const conceptSet = {
-      setMembers: [{ uuid: 'member-1', name: { display: 'Asma', name: 'Asma' } }],
-    };
-
-    mockUseFhirFetchAll.mockReturnValue({
-      data: bundle.entry.map(({ resource }) => resource),
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      mutate: vi.fn(),
-    } as never);
-    mockOpenmrsFetch.mockResolvedValue({ data: conceptSet } as never);
-
-    const { result } = renderHook(() => useConditionsFromConceptSet('patient-c3', 'set-1', 'fallback-1'));
-
-    await waitFor(() => expect(result.current.conditions).not.toBeNull());
-
-    const conditions = result.current.conditions;
-    expect(conditions.map((condition) => condition.id)).toEqual(['free-text', 'in-set']);
-    expect(conditions.find((condition) => condition.id === 'free-text')?.display).toBe('Alergia a mariscos');
+  it('retains configured historical text and displays its clinical note', () => {
+    mockHistory([
+      source('coded', { onsetDate: '2026-01-01' }),
+      source('legacy', {
+        condition: { coded: { uuid: 'legacy-fallback', display: 'Historical note concept' } },
+        onsetDate: '2026-01-02',
+        additionalDetail: details('other', 'Synthetic historical narrative'),
+      }),
+      source('foreign', { condition: { coded: { uuid: 'unrelated', display: 'Unrelated record' } } }),
+    ]);
+    const { result } = renderHook(() => useConditionsFromConceptSet(patientUuid, 'synthetic-set', 'legacy-fallback'));
+    expect(result.current.conditions?.map(({ id }) => id)).toEqual(['legacy', 'coded']);
+    expect(result.current.conditions?.[0].display).toBe('Synthetic historical narrative');
   });
 
-  it('sin fallback configurado conserva el filtro estricto por miembros del set', async () => {
-    const bundle = {
-      total: 1,
-      entry: [
-        fhirCondition({
-          id: 'free-text',
-          conceptId: 'fallback-1',
-          display: 'Nota de consulta',
-          onsetDateTime: '2026-01-03T00:00:00.000Z',
-          note: buildAntecedentTypeNote('other', 'Alergia a mariscos'),
-        }),
-      ],
-    };
-    const conceptSet = {
-      setMembers: [{ uuid: 'member-1', name: { display: 'Asma', name: 'Asma' } }],
-    };
-
-    mockUseFhirFetchAll.mockReturnValue({
-      data: bundle.entry.map(({ resource }) => resource),
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      mutate: vi.fn(),
-    } as never);
-    mockOpenmrsFetch.mockResolvedValue({ data: conceptSet } as never);
-
-    const { result } = renderHook(() => useConditionsFromConceptSet('patient-c3-strict', 'set-1'));
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    await waitFor(() => expect(result.current.conditions).toEqual([]));
+  it('keeps the concept filter strict when no historical fallback is configured', () => {
+    mockHistory([
+      source('legacy', {
+        condition: { coded: { uuid: 'legacy-fallback', display: 'Historical note concept' } },
+        additionalDetail: details('other', 'Synthetic note'),
+      }),
+    ]);
+    const { result } = renderHook(() => useConditionsFromConceptSet(patientUuid, 'synthetic-set'));
+    expect(result.current.conditions).toEqual([]);
   });
 
-  it('filters the complete result set returned by the FHIR paginator', async () => {
-    const conceptSet = {
-      setMembers: [
-        { uuid: 'member-1', name: { display: 'Asma', name: 'Asma' } },
-        { uuid: 'member-2', name: { display: 'Diabetes', name: 'Diabetes' } },
-      ],
-    };
-    mockUseFhirFetchAll.mockReturnValue({
-      data: [
-        fhirCondition({
-          id: 'first-page',
-          conceptId: 'member-1',
-          display: 'Asma',
-          onsetDateTime: '2026-01-01T00:00:00.000Z',
-        }).resource,
-        fhirCondition({
-          id: 'second-page',
-          conceptId: 'member-2',
-          display: 'Diabetes',
-          onsetDateTime: '2026-01-02T00:00:00.000Z',
-        }).resource,
-      ],
-      error: null,
-      isLoading: false,
-      isValidating: false,
-      mutate: vi.fn(),
-    } as never);
-    mockOpenmrsFetch.mockResolvedValue({ data: conceptSet } as never);
+  it('keeps new native other history visible without admitting family, social or unclassified records', () => {
+    const native = source('native-other', {
+      condition: { nonCoded: 'Synthetic personal history' },
+      additionalDetail: details('other', 'Synthetic context'),
+    });
+    mockHistory([
+      native,
+      { ...native, uuid: 'family', additionalDetail: details('family') },
+      { ...native, uuid: 'social', additionalDetail: details('social') },
+      { ...native, uuid: 'unclassified', additionalDetail: undefined },
+      { ...native, uuid: 'note-only', condition: {} },
+      {
+        ...native,
+        uuid: 'foreign-coded',
+        condition: { coded: { uuid: 'foreign', display: 'Foreign concept' }, nonCoded: native.condition.nonCoded },
+      },
+    ]);
+    mockConceptSet([]);
+    const { result } = renderHook(() => useConditionsFromConceptSet(patientUuid, 'synthetic-set'));
+    expect(result.current.conditions).toEqual([
+      expect.objectContaining({ id: 'native-other', source: native, display: 'Synthetic personal history' }),
+    ]);
+  });
 
-    const { result } = renderHook(() => useConditionsFromConceptSet('patient-paginated', 'set-paginated'));
-
-    await waitFor(() => expect(result.current.conditions?.map(({ id }) => id)).toEqual(['second-page', 'first-page']));
-    expect(mockUseFhirFetchAll).toHaveBeenCalledWith(expect.stringContaining('/Condition?patient=patient-paginated'));
+  it('filters the complete sorted REST history and preserves its original records', () => {
+    const older = source('first-page', { onsetDate: '2026-01-01' });
+    const newer = source('second-page', { onsetDate: '2026-01-02' });
+    mockHistory([older, newer]);
+    const { result } = renderHook(() => useConditionsFromConceptSet(patientUuid, 'synthetic-set'));
+    expect(result.current.conditions?.map(({ id }) => id)).toEqual(['second-page', 'first-page']);
+    expect(result.current.conditions?.[0].source).toBe(newer);
+    expect(usePatientConditions).toHaveBeenCalledWith(patientUuid);
   });
 });
 
-describe('condition persistence', () => {
+describe('outpatient persistence adapter', () => {
   const payload = {
     clinicalStatus: 'active',
-    conceptId: 'concept-1',
-    display: 'Asma',
-    patientId: 'patient-1',
-    providerUuid: 'provider-1',
+    conceptId: 'member-1',
+    display: 'Synthetic antecedent',
+    patientId: patientUuid,
+    providerUuid: 'synthetic-provider',
   };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockOpenmrsFetch.mockResolvedValue({ data: {} } as never);
-  });
-
-  it('does not construct a Practitioner reference from a user or provider UUID', async () => {
+  it('lets the authenticated backend derive authorship on create', async () => {
+    fetchMock.mockResolvedValueOnce({ status: 201 } as never);
     await createCondition(payload);
-
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/Condition'),
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/ws/rest/v1/condition',
       expect.objectContaining({
         method: 'POST',
-        body: expect.not.objectContaining({ recorder: expect.anything() }),
+        body: { patient: patientUuid, condition: { coded: 'member-1' }, clinicalStatus: 'ACTIVE' },
       }),
     );
   });
 
-  it('preserves recordedDate when updating a condition', async () => {
-    await updateCondition('condition-1', {
-      ...payload,
-      recordedDate: '2026-01-01T00:00:00.000Z',
-    });
-
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/Condition/condition-1'),
-      expect.objectContaining({
-        method: 'PUT',
-        body: expect.objectContaining({
-          recordedDate: '2026-01-01T00:00:00.000Z',
-        }),
-      }),
+  it('does not overwrite the original recorded date during a status correction', async () => {
+    const original = source('condition-1', { auditInfo: { dateCreated: '2026-01-01T00:00:00.000Z' } });
+    fetchMock.mockResolvedValueOnce({ data: original } as never).mockResolvedValueOnce({ status: 200 } as never);
+    await updateCondition(original.uuid, { ...payload, clinicalStatus: 'inactive', originalCondition: original });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/ws/rest/v1/condition/condition-1',
+      expect.objectContaining({ method: 'POST', body: { clinicalStatus: 'INACTIVE' } }),
     );
   });
 
-  it('fails before POST when the session has no clinical provider', async () => {
+  it('blocks a missing clinical provider before POST', async () => {
     await expect(createCondition({ ...payload, providerUuid: '' })).rejects.toThrow(/clinical provider/i);
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

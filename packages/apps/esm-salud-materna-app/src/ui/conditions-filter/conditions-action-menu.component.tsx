@@ -1,6 +1,7 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { launchWorkspace2, showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { useCallback } from 'react';
+import { isSupportedConditionStatus } from '@openmrs/esm-patient-common-lib';
+import { useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { prenatalCareEditPrivilege } from '../../constants';
 import { type Condition } from './conditions.resource';
@@ -8,24 +9,26 @@ import styles from './conditions-action-menu.scss';
 
 interface conditionsActionMenuProps {
   condition: Condition;
-  patientUuid?: string;
+  patientUuid: string;
 }
 
 export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActionMenuProps) => {
   const { t } = useTranslation();
+  const actionId = useId();
+  const canEditStatus = isSupportedConditionStatus(condition?.clinicalStatus);
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const canEdit = userHasAccess(prenatalCareEditPrivilege, session?.user);
 
-  const launchEditConditionsForm = useCallback(
-    () =>
-      launchWorkspace2('maternal-health-maternal-conditions-form-workspace', {
-        workspaceTitle: t('editCondition', 'Edit a Condition'),
-        condition,
-        formContext: 'editing',
-      }),
-    [condition, t],
-  );
+  const launchEditConditionsForm = useCallback(() => {
+    if (!canEditStatus) return;
+    launchWorkspace2('maternal-health-maternal-conditions-form-workspace', {
+      workspaceTitle: t('editCondition', 'Edit a Condition'),
+      condition,
+      formContext: 'editing',
+      patientUuid,
+    });
+  }, [canEditStatus, condition, patientUuid, t]);
 
   const launchDeleteConditionDialog = (conditionId: string) => {
     const dispose = showModal('maternal-health-condition-delete-confirmation-dialog', {
@@ -35,7 +38,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
     });
   };
 
-  if (!canEdit) {
+  if (!condition || !canEdit) {
     return null;
   }
 
@@ -44,13 +47,14 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
       <OverflowMenu aria-label="Edit or delete condition" size={isTablet ? 'lg' : 'sm'} flipped align="left">
         <OverflowMenuItem
           className={styles.menuItem}
-          id="editCondition"
+          id={`${actionId}-edit`}
+          disabled={!canEditStatus}
           onClick={launchEditConditionsForm}
           itemText={t('edit', 'Edit')}
         />
         <OverflowMenuItem
           className={styles.menuItem}
-          id="deleteCondition"
+          id={`${actionId}-delete`}
           itemText={t('delete', 'Delete')}
           onClick={() => launchDeleteConditionDialog(condition.id)}
           isDelete

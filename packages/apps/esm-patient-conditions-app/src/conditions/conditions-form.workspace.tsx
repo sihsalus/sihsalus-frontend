@@ -1,15 +1,21 @@
-import { Button, ButtonSet, Form, InlineLoading, InlineNotification } from '@carbon/react';
+import { Button, ButtonSet, DataTableSkeleton, Form, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLayoutType, usePatient, Workspace2 } from '@openmrs/esm-framework';
-import type { AntecedentTypeCode } from '@openmrs/esm-patient-common-lib';
 import {
+  type AntecedentTypeCode,
+  antecedentTypeOptions,
+  CONDITION_TEXT_MAX_LENGTH,
   type DefaultPatientWorkspaceProps,
+  isActiveConditionStatus,
+  isConditionForPatient,
+  isSupportedConditionStatus,
   type PatientWorkspace2DefinitionProps,
+  useConditionFormLifecycle,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FormProvider, type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -26,45 +32,147 @@ export interface ConditionFormProps {
   workspaceTitle?: string;
 }
 
-export const createSchema = (formContext: 'creating' | 'editing', t: TFunction, patientBirthDate?: string) => {
+export const createSchema = (
+  formContext: 'creating' | 'editing',
+  t: TFunction,
+  patientBirthDate?: string,
+  originalCondition?: Condition,
+) => {
   const isCreating = formContext === 'creating';
 
-  const clinicalStatusValidation = z.string().refine((clinicalStatus) => !isCreating || !!clinicalStatus, {
+  const clinicalStatusValidation = z.string().refine((clinicalStatus) => isSupportedConditionStatus(clinicalStatus), {
     message: t('clinicalStatusRequired', 'A clinical status is required'),
   });
 
-  const conditionNameValidation = z.string().refine((conditionName) => !isCreating || !!conditionName, {
-    message: t('antecedentRequired', 'An antecedent is required'),
-  });
+  const conditionNameValidation = z.string();
 
-  const antecedentTypeValidation = z.string().refine((antecedentType) => !!antecedentType, {
-    message: t('antecedentTypeRequired', 'An antecedent type is required'),
-  });
+  const antecedentTypeValidation = z
+    .string()
+    .refine((antecedentType) => antecedentTypeOptions.some((option) => option.code === antecedentType), {
+      message: t('antecedentTypeRequired', 'An antecedent type is required'),
+    });
 
-  return z.object({
-    abatementDateTime: z.date().optional().nullable(),
-    antecedentType: antecedentTypeValidation,
-    clinicalStatus: clinicalStatusValidation,
-    conditionName: conditionNameValidation,
-    onsetDateTime: z
-      .date()
-      .nullable()
-      .refine(
-        (onsetDateTime) =>
-          !onsetDateTime ||
-          !patientBirthDate ||
-          !dayjs(onsetDateTime).startOf('day').isBefore(dayjs(patientBirthDate).startOf('day')),
-        {
+  return z
+    .object({
+      abatementDateTime: z.date().optional().nullable(),
+      antecedentType: antecedentTypeValidation,
+      clinicalStatus: clinicalStatusValidation,
+      conditionName: conditionNameValidation,
+      nonCodedText: z.string().optional(),
+      onsetDateTime: z
+        .date()
+        .nullable()
+        .refine(
+          (onsetDateTime) => !onsetDateTime || !dayjs(onsetDateTime).startOf('day').isAfter(dayjs().startOf('day')),
+          {
+            message: t('onsetDateCannotBeInTheFuture', 'Onset date cannot be in the future'),
+          },
+        ),
+    })
+    .superRefine((data, ctx) => {
+      if (
+        !isCreating &&
+        originalCondition &&
+        !originalCondition.conceptId &&
+        originalCondition.antecedentType !== 'definitive-diagnosis' &&
+        data.antecedentType === 'definitive-diagnosis'
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['antecedentType'],
+          message: t('antecedentCodedDiagnosisRequired', 'A definitive diagnosis requires a coded concept.'),
+        });
+      }
+      if (
+        (data.abatementDateTime || originalCondition?.abatementDateTime) &&
+        isActiveConditionStatus(data.clinicalStatus)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['clinicalStatus'],
+          message: t(
+            'antecedentActiveWithEndDate',
+            'An active antecedent cannot have an end date. Review its clinical status and end date.',
+          ),
+        });
+      }
+      if (
+        isCreating &&
+        data.antecedentType !== 'definitive-diagnosis' &&
+        (data.nonCodedText?.trim().length ?? 0) > CONDITION_TEXT_MAX_LENGTH
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['nonCodedText'],
+          message: t('antecedentTextTooLong', 'Shorten the antecedent description or note before saving.'),
+        });
+      }
+      if (
+        data.antecedentType !== 'family' &&
+        data.onsetDateTime &&
+        patientBirthDate &&
+        dayjs(data.onsetDateTime).startOf('day').isBefore(dayjs(patientBirthDate).startOf('day'))
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['onsetDateTime'],
           message: t('onsetDateCannotBeBeforeBirthDate', "Onset date cannot be earlier than the patient's birth date"),
-        },
-      )
-      .refine(
-        (onsetDateTime) => !onsetDateTime || !dayjs(onsetDateTime).startOf('day').isAfter(dayjs().startOf('day')),
-        {
-          message: t('onsetDateCannotBeInTheFuture', 'Onset date cannot be in the future'),
-        },
-      ),
-  });
+        });
+      }
+      if (
+        originalCondition?.onsetDateTime &&
+        /^\d{4}-\d{2}-\d{2}/.test(originalCondition.onsetDateTime) &&
+        !data.onsetDateTime
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['onsetDateTime'],
+          message: t(
+            'antecedentDateCannotBeRemoved',
+            'A recorded date can be corrected but cannot be removed from this form.',
+          ),
+        });
+      }
+      if (
+        originalCondition?.abatementDateTime &&
+        /^\d{4}-\d{2}-\d{2}/.test(originalCondition.abatementDateTime) &&
+        !data.abatementDateTime
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['abatementDateTime'],
+          message: t(
+            'antecedentDateCannotBeRemoved',
+            'A recorded date can be corrected but cannot be removed from this form.',
+          ),
+        });
+      }
+
+      if (
+        isCreating &&
+        !data.conditionName.trim() &&
+        !(data.antecedentType !== 'definitive-diagnosis' && data.nonCodedText?.trim())
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['conditionName'],
+          message: t('antecedentRequired', 'An antecedent is required'),
+        });
+      }
+      if (
+        data.abatementDateTime &&
+        (data.abatementDateTime > new Date() || (data.onsetDateTime && data.abatementDateTime < data.onsetDateTime))
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['abatementDateTime'],
+          message: t(
+            'antecedentEndDateInvalid',
+            'The end date must be on or after the onset date and cannot be in the future.',
+          ),
+        });
+      }
+    });
 };
 
 export type ConditionsFormSchema = z.infer<ReturnType<typeof createSchema>>;
@@ -77,136 +185,226 @@ function isWorkspace2Props(props: ConditionsWorkspaceProps): props is Conditions
   return 'groupProps' in props && 'workspaceProps' in props;
 }
 
-const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
+const ConditionsFormContent: React.FC<ConditionsWorkspaceProps> = (props) => {
   const closeWorkspace = props.closeWorkspace;
-  const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
-  const patientFromGroup = isWorkspace2Props(props) ? props.groupProps.patient : null;
-  const condition = isWorkspace2Props(props) ? props.workspaceProps.condition : props.condition;
-  const formContext = (isWorkspace2Props(props) ? props.workspaceProps.formContext : props.formContext) ?? 'creating';
+  const patientUuid = isWorkspace2Props(props) ? (props.groupProps?.patientUuid ?? '') : props.patientUuid;
+  const patientFromGroup = isWorkspace2Props(props) ? props.groupProps?.patient : null;
+  const condition = isWorkspace2Props(props) ? props.workspaceProps?.condition : props.condition;
+  const formContext = (isWorkspace2Props(props) ? props.workspaceProps?.formContext : props.formContext) ?? 'creating';
   const defaultAntecedentType = isWorkspace2Props(props)
-    ? props.workspaceProps.defaultAntecedentType
+    ? props.workspaceProps?.defaultAntecedentType
     : props.defaultAntecedentType;
   const defaultClinicalStatus = isWorkspace2Props(props)
-    ? props.workspaceProps.defaultClinicalStatus
+    ? props.workspaceProps?.defaultClinicalStatus
     : props.defaultClinicalStatus;
   const lockedAntecedentType = isWorkspace2Props(props)
-    ? props.workspaceProps.lockedAntecedentType
+    ? props.workspaceProps?.lockedAntecedentType
     : props.lockedAntecedentType;
-  const workspaceTitle = isWorkspace2Props(props) ? props.workspaceProps.workspaceTitle : props.workspaceTitle;
+  const workspaceTitle = isWorkspace2Props(props) ? props.workspaceProps?.workspaceTitle : props.workspaceTitle;
   const { t } = useTranslation();
-  const { patient: fetchedPatient } = usePatient(patientUuid);
+  const { patient: fetchedPatient, isLoading: patientLoading, error: patientError } = usePatient(patientUuid);
   const patient = patientFromGroup ?? fetchedPatient;
   const isTablet = useLayoutType() === 'tablet';
-  const { conditions } = useConditions(patientUuid);
-  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const { conditions, isLoading, error: loadingError } = useConditions(patientUuid);
   const [errorCreating, setErrorCreating] = useState(null);
   const [errorUpdating, setErrorUpdating] = useState(null);
   const isEditing = formContext === 'editing';
 
   const matchingCondition = conditions?.find((c) => c?.id === condition?.id);
-  const editableCondition = matchingCondition ?? condition;
+  const editableCondition = matchingCondition;
 
-  const schema = createSchema(formContext, t, patient?.birthDate);
-
-  const defaultValues = {
-    abatementDateTime:
-      isEditing && editableCondition?.abatementDateTime ? new Date(editableCondition.abatementDateTime) : null,
-    antecedentType: isEditing ? (editableCondition?.antecedentType ?? '') : (defaultAntecedentType ?? ''),
-    conditionName: '',
-    clinicalStatus: isEditing
-      ? (editableCondition?.clinicalStatus?.toLowerCase() ?? '')
-      : (defaultClinicalStatus ?? ''),
-    onsetDateTime: isEditing && editableCondition?.onsetDateTime ? new Date(editableCondition.onsetDateTime) : null,
-  };
+  const defaultValues = useMemo(
+    () => ({
+      abatementDateTime:
+        isEditing &&
+        editableCondition?.abatementDateTime &&
+        /^\d{4}-\d{2}-\d{2}/.test(editableCondition.abatementDateTime)
+          ? new Date(editableCondition.abatementDateTime)
+          : null,
+      antecedentType: isEditing ? (editableCondition?.antecedentType ?? '') : (defaultAntecedentType ?? ''),
+      conditionName: '',
+      nonCodedText: '',
+      clinicalStatus: isEditing
+        ? (editableCondition?.clinicalStatus?.toLowerCase() ?? '')
+        : (defaultClinicalStatus ?? ''),
+      onsetDateTime:
+        isEditing && editableCondition?.onsetDateTime && /^\d{4}-\d{2}-\d{2}/.test(editableCondition.onsetDateTime)
+          ? new Date(editableCondition.onsetDateTime)
+          : null,
+    }),
+    [isEditing, editableCondition, defaultAntecedentType, defaultClinicalStatus],
+  );
 
   const methods = useForm<ConditionsFormSchema>({
     mode: 'all',
-    resolver: zodResolver(schema),
+    resolver: (values, context, options) =>
+      zodResolver(createSchema(formContext, t, patient?.birthDate, originalCondition ?? matchingCondition))(
+        values,
+        context,
+        options,
+      ),
     defaultValues,
   });
+
+  const { widgetRef, isSubmittingForm, isSaved, isUncertain, originalCondition, setIsSubmittingForm, submitCondition } =
+    useConditionFormLifecycle({
+      patientUuid,
+      isEditing,
+      matchingCondition,
+      defaultValues,
+      reset: methods.reset,
+      onStart: () => {
+        setErrorCreating(null);
+        setErrorUpdating(null);
+      },
+      onError: () => {
+        setErrorCreating(new Error(t('antecedentSaveFailed', 'The antecedent could not be saved. Please try again.')));
+      },
+    });
 
   const {
     formState: { isDirty },
   } = methods;
 
-  const onSubmit: SubmitHandler<ConditionsFormSchema> = () => {
-    setIsSubmittingForm(true);
-  };
+  const onSubmit: SubmitHandler<ConditionsFormSchema> = submitCondition;
 
   const onError = () => setIsSubmittingForm(false);
 
+  const unsupportedClinicalStatus =
+    isEditing &&
+    Boolean(originalCondition ?? matchingCondition) &&
+    !isSupportedConditionStatus((originalCondition ?? matchingCondition)?.clinicalStatus);
+
   const closeWorkspaceWithSavedChanges = useCallback(() => {
-    closeWorkspace({ discardUnsavedChanges: true });
+    return closeWorkspace({ discardUnsavedChanges: true });
   }, [closeWorkspace]);
 
-  const form = (
-    <>
-      <FormProvider {...methods}>
-        <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
-          <ConditionsWidget
-            closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
-            conditionToEdit={condition}
-            isEditing={isEditing}
-            isSubmittingForm={isSubmittingForm}
-            patientUuid={patientUuid}
-            setErrorCreating={setErrorCreating}
-            setErrorUpdating={setErrorUpdating}
-            setIsSubmittingForm={setIsSubmittingForm}
-            lockedAntecedentType={lockedAntecedentType}
-            patientBirthDate={patient?.birthDate}
-          />
-          <div>
-            {errorCreating ? (
-              <div className={styles.errorContainer}>
-                <InlineNotification
-                  className={styles.error}
-                  role="alert"
-                  kind="error"
-                  lowContrast
-                  title={t('errorCreatingAntecedent', 'Error creating antecedent')}
-                  subtitle={errorCreating?.message}
-                />
-              </div>
-            ) : null}
-            {errorUpdating ? (
-              <div className={styles.errorContainer}>
-                <InlineNotification
-                  className={styles.error}
-                  role="alert"
-                  kind="error"
-                  lowContrast
-                  title={t('errorUpdatingAntecedent', 'Error updating antecedent')}
-                  subtitle={errorUpdating?.message}
-                />
-              </div>
-            ) : null}
-            <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-              <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-                {t('cancel', 'Cancel')}
-              </Button>
-              <Button className={styles.button} disabled={isSubmittingForm} kind="primary" type="submit">
-                {isSubmittingForm ? (
-                  <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
-                ) : (
-                  <span>{t('saveAndClose', 'Save & close')}</span>
-                )}
-              </Button>
-            </ButtonSet>
-          </div>
-        </Form>
-      </FormProvider>
-    </>
-  );
+  const dataUnavailable =
+    unsupportedClinicalStatus ||
+    !patientUuid ||
+    patient?.id !== patientUuid ||
+    (!patientFromGroup && Boolean(patientError)) ||
+    (isEditing &&
+      !isSubmittingForm &&
+      !isSaved &&
+      !isUncertain &&
+      (loadingError ||
+        !(matchingCondition?.conceptId || matchingCondition?.nonCodedText) ||
+        !isConditionForPatient(matchingCondition?.source, patientUuid)));
+
+  const form =
+    (!patientFromGroup && patientLoading) ||
+    (isEditing && isLoading && !isSubmittingForm && !isSaved && !isUncertain) ? (
+      <DataTableSkeleton role="progressbar" />
+    ) : dataUnavailable ? (
+      <InlineNotification
+        kind="error"
+        lowContrast
+        hideCloseButton
+        role="alert"
+        title={
+          unsupportedClinicalStatus
+            ? t('antecedentStatusNotEditable', 'This historical clinical status cannot be edited from this form.')
+            : t('antecedentDataUnavailable', 'The antecedent data could not be loaded. Reopen it and try again.')
+        }
+      />
+    ) : (
+      <>
+        <FormProvider {...methods}>
+          <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
+            <ConditionsWidget
+              ref={widgetRef}
+              closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+              conditionToEdit={originalCondition}
+              isEditing={isEditing}
+              isSubmittingForm={isSubmittingForm || isSaved || isUncertain}
+              patientUuid={patientUuid}
+              setErrorCreating={setErrorCreating}
+              setErrorUpdating={setErrorUpdating}
+              setIsSubmittingForm={setIsSubmittingForm}
+              lockedAntecedentType={lockedAntecedentType}
+              patientBirthDate={patient?.birthDate}
+            />
+            <div>
+              {errorCreating ? (
+                <div className={styles.errorContainer}>
+                  <InlineNotification
+                    className={styles.error}
+                    role="alert"
+                    kind="error"
+                    lowContrast
+                    title={t('errorCreatingAntecedent', 'Error creating antecedent')}
+                    subtitle={errorCreating?.message}
+                  />
+                </div>
+              ) : null}
+              {errorUpdating ? (
+                <div className={styles.errorContainer}>
+                  <InlineNotification
+                    className={styles.error}
+                    role="alert"
+                    kind="error"
+                    lowContrast
+                    title={t('errorUpdatingAntecedent', 'Error updating antecedent')}
+                    subtitle={errorUpdating?.message}
+                  />
+                </div>
+              ) : null}
+              <ButtonSet
+                className={classNames({
+                  [styles.tablet]: isTablet,
+                  [styles.desktop]: !isTablet,
+                })}
+              >
+                <Button
+                  className={styles.button}
+                  kind="secondary"
+                  disabled={isSubmittingForm}
+                  onClick={() => closeWorkspace()}
+                >
+                  {t('cancel', 'Cancel')}
+                </Button>
+                <Button
+                  className={styles.button}
+                  disabled={isSubmittingForm || isSaved || isUncertain}
+                  kind="primary"
+                  type="submit"
+                >
+                  {isUncertain ? (
+                    <span>{t('antecedentSaveUnconfirmed', 'Save unconfirmed')}</span>
+                  ) : isSaved ? (
+                    <span>{t('antecedentSaved', 'Antecedent saved')}</span>
+                  ) : isSubmittingForm ? (
+                    <InlineLoading className={styles.spinner} description={t('saving', 'Saving') + '...'} />
+                  ) : (
+                    <span>{t('saveAndClose', 'Save & close')}</span>
+                  )}
+                </Button>
+              </ButtonSet>
+            </div>
+          </Form>
+        </FormProvider>
+      </>
+    );
 
   if (isWorkspace2Props(props)) {
     return (
-      <Workspace2 title={workspaceTitle ?? t('recordAntecedent', 'Record antecedent')} hasUnsavedChanges={isDirty}>
+      <Workspace2
+        title={workspaceTitle ?? t('recordAntecedent', 'Record antecedent')}
+        hasUnsavedChanges={isDirty && !isSaved && !isUncertain}
+      >
         {form}
       </Workspace2>
     );
   }
 
   return form;
+};
+
+const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
+  const patientUuid = isWorkspace2Props(props) ? props.groupProps?.patientUuid : props.patientUuid;
+  const condition = isWorkspace2Props(props) ? props.workspaceProps?.condition : props.condition;
+  return <ConditionsFormContent key={`${patientUuid}:${condition?.id ?? 'new'}`} {...props} />;
 };
 
 export default ConditionsForm;

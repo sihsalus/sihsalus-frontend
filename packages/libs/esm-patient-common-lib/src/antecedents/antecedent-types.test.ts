@@ -12,6 +12,7 @@ import {
   OPENMRS_ANTECEDENT_CATEGORY_CODE,
   OPENMRS_ANTECEDENT_CATEGORY_DISPLAY,
   OPENMRS_CONDITION_CATEGORY_SYSTEM,
+  updateAntecedentTypeNotes,
 } from './antecedent-types';
 
 describe('antecedent type helpers', () => {
@@ -67,6 +68,30 @@ describe('antecedent type helpers', () => {
   it('hides internal antecedent type note marker from visible note text', () => {
     expect(getConditionNoteText([{ text: '__sihsalus_antecedent_type:other\nFree text' }])).toBe('Free text');
     expect(getConditionNoteText([{ text: '__sihsalus_antecedent_type:pathological' }])).toBeUndefined();
+  });
+
+  it('finds a marker in later notes and displays all annotations without internal markers', () => {
+    const notes = [{ text: 'First annotation' }, { text: '__sihsalus_antecedent_type:family\nSecond annotation' }];
+    expect(getAntecedentTypeFromNote(notes)).toBe('family');
+    expect(getConditionNoteText(notes)).toBe('First annotation\nSecond annotation');
+    expect(updateAntecedentTypeNotes(notes, 'family')).toBe(notes);
+  });
+
+  it('updates the classification while retaining every annotation and author/time', () => {
+    const notes = [
+      {
+        text: '__sihsalus_antecedent_type:family\nFirst annotation',
+        authorString: 'Synthetic professional',
+        time: '2020-01-01',
+      },
+      { text: 'Second annotation', authorReference: { reference: 'Practitioner/synthetic-user' } },
+    ];
+    const updated = updateAntecedentTypeNotes(notes, 'social');
+    expect(updated).toEqual([{ ...notes[0], text: '__sihsalus_antecedent_type:social\nFirst annotation' }, notes[1]]);
+    expect(getAntecedentTypeFromNote(notes)).toBe('family');
+    expect(() => updateAntecedentTypeNotes(notes, 'social', 'Replacement text')).toThrow(
+      /Multiple clinical annotations/,
+    );
   });
 
   it('falls back to category display when the category is not a typed antecedent', () => {

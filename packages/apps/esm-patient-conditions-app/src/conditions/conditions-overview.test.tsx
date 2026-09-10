@@ -35,6 +35,81 @@ describe('ConditionsOverview', () => {
     vi.clearAllMocks();
   });
 
+  it('groups recurrence and relapse as active, remission and resolved as inactive, preserving their labels', async () => {
+    const user = userEvent.setup();
+    mockUseConditions.mockReturnValue({
+      conditions: ['Recurrence', 'Relapse', 'Remission', 'Resolved'].map((clinicalStatus, index) => ({
+        id: `synthetic-status-${index}`,
+        clinicalStatus,
+        conceptId: 'synthetic-concept',
+        display: `Synthetic ${clinicalStatus} history`,
+        source: {
+          uuid: `synthetic-status-${index}`,
+          patient: { uuid: mockPatient.id },
+          condition: { coded: { uuid: 'synthetic-concept' } },
+          clinicalStatus: clinicalStatus.toUpperCase(),
+          voided: false,
+        },
+      })),
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    render(<ConditionsOverview patientUuid={mockPatient.id} />);
+    const filter = screen.getByRole('combobox', { name: /show/i });
+    await user.click(filter);
+    await user.click(screen.getByRole('option', { name: /^active$/i }));
+    expect(screen.getByRole('row', { name: /synthetic recurrence history.*recurrence/i })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /synthetic relapse history.*relapse/i })).toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: /synthetic remission history/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: /synthetic resolved history/i })).not.toBeInTheDocument();
+
+    await user.click(filter);
+    await user.click(screen.getByRole('option', { name: /^inactive$/i }));
+    expect(screen.getByRole('row', { name: /synthetic remission history.*remission/i })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /synthetic resolved history.*resolved/i })).toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: /synthetic recurrence history/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('row', { name: /synthetic relapse history/i })).not.toBeInTheDocument();
+  });
+
+  it('gives separate overview instances distinct accessible status filters', () => {
+    mockUseConditions.mockReturnValue({
+      conditions: [
+        {
+          id: 'synthetic-history',
+          clinicalStatus: 'Active',
+          conceptId: 'synthetic-concept',
+          display: 'Synthetic antecedent',
+          source: {
+            uuid: 'synthetic-history',
+            patient: { uuid: mockPatient.id },
+            condition: { coded: { uuid: 'synthetic-concept', display: 'Synthetic antecedent' } },
+            clinicalStatus: 'ACTIVE',
+            voided: false,
+          },
+        },
+      ],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    render(
+      <>
+        <ConditionsOverview patientUuid={mockPatient.id} />
+        <ConditionsOverview patientUuid={mockPatient.id} />
+      </>,
+    );
+    const filters = screen.getAllByRole('combobox', { name: /show/i });
+    expect(filters).toHaveLength(2);
+    expect(new Set(filters.map((filter) => filter.id)).size).toBe(2);
+    filters.forEach((filter) => {
+      expect(filter.id).not.toBe('');
+      expect(filter).toHaveAccessibleName(/show/i);
+    });
+  });
+
   it('renders an empty state view if antecedents data is unavailable', async () => {
     mockUseConditions.mockReturnValue({
       conditions: [],
@@ -91,6 +166,15 @@ describe('ConditionsOverview', () => {
           id: 'cbffbb42-41b4-4c38-bc14-842ef675df85',
           onsetDateTime: '2021-05-15T21:00:00+00:00',
           recordedDate: '2021-05-17T07:07:43+00:00',
+          source: {
+            uuid: 'cbffbb42-41b4-4c38-bc14-842ef675df85',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'HIV Positive' } },
+            auditInfo: { dateCreated: '2021-05-17T07:07:43+00:00' },
+            onsetDate: '2021-05-15T21:00:00+00:00',
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Active',
@@ -99,6 +183,15 @@ describe('ConditionsOverview', () => {
           id: 'b648963a-8258-4131-a7fc-257f2a347435',
           onsetDateTime: '2021-05-04T21:00:00+00:00',
           recordedDate: '2021-05-05T10:09:33+00:00',
+          source: {
+            uuid: 'b648963a-8258-4131-a7fc-257f2a347435',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '160148AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Malaria, confirmed' } },
+            auditInfo: { dateCreated: '2021-05-05T10:09:33+00:00' },
+            onsetDate: '2021-05-04T21:00:00+00:00',
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Active',
@@ -107,6 +200,15 @@ describe('ConditionsOverview', () => {
           id: '9479e872-c9ca-48cc-82ee-273d67c41187',
           onsetDateTime: '2021-01-27T00:00:00+00:00',
           recordedDate: '2021-01-28T09:09:27+00:00',
+          source: {
+            uuid: '9479e872-c9ca-48cc-82ee-273d67c41187',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '160155AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Malaria sevère' } },
+            auditInfo: { dateCreated: '2021-01-28T09:09:27+00:00' },
+            onsetDate: '2021-01-27T00:00:00+00:00',
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Active',
@@ -115,6 +217,15 @@ describe('ConditionsOverview', () => {
           id: 'c1006bd4-0b21-4305-9eba-c9c647534502',
           onsetDateTime: '2021-01-27T00:00:00+00:00',
           recordedDate: '2021-01-28T09:09:27+00:00',
+          source: {
+            uuid: 'c1006bd4-0b21-4305-9eba-c9c647534502',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '121629AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Anaemia' } },
+            auditInfo: { dateCreated: '2021-01-28T09:09:27+00:00' },
+            onsetDate: '2021-01-27T00:00:00+00:00',
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Active',
@@ -123,6 +234,15 @@ describe('ConditionsOverview', () => {
           id: 'f4ee2cfe-3880-4ea2-a5a6-82aa8a0f6389',
           onsetDateTime: '2020-08-19T00:00:00+00:00',
           recordedDate: '2020-08-19T18:34:48+00:00',
+          source: {
+            uuid: 'f4ee2cfe-3880-4ea2-a5a6-82aa8a0f6389',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '117399AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Hypertension' } },
+            auditInfo: { dateCreated: '2020-08-19T18:34:48+00:00' },
+            onsetDate: '2020-08-19T00:00:00+00:00',
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Active',
@@ -131,6 +251,15 @@ describe('ConditionsOverview', () => {
           id: 'e3a3f9e2-73fe-4793-a2eb-0b4fcd00b271',
           onsetDateTime: '2020-08-19T00:00:00+00:00',
           recordedDate: '2020-08-19T18:42:10+00:00',
+          source: {
+            uuid: 'e3a3f9e2-73fe-4793-a2eb-0b4fcd00b271',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '117399AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Hypertension' } },
+            auditInfo: { dateCreated: '2020-08-19T18:42:10+00:00' },
+            onsetDate: '2020-08-19T00:00:00+00:00',
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Active',
@@ -139,6 +268,15 @@ describe('ConditionsOverview', () => {
           id: '08c4dbcb-b474-4843-8e62-7096ff6dd6a2',
           onsetDateTime: '2020-08-19T00:00:00+00:00',
           recordedDate: '2020-08-19T18:42:25+00:00',
+          source: {
+            uuid: '08c4dbcb-b474-4843-8e62-7096ff6dd6a2',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'ACTIVE',
+            condition: { coded: { uuid: '117399AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Hypertension' } },
+            auditInfo: { dateCreated: '2020-08-19T18:42:25+00:00' },
+            onsetDate: '2020-08-19T00:00:00+00:00',
+            voided: false,
+          },
         },
       ],
       error: null,
@@ -189,6 +327,14 @@ describe('ConditionsOverview', () => {
           display: 'Family history of diabetes',
           id: 'family-history-id',
           recordedDate: '2026-08-04T12:00:00.000Z',
+          source: {
+            uuid: 'family-history-id',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'INACTIVE',
+            condition: { coded: { uuid: 'family-history-concept', display: 'Family history of diabetes' } },
+            auditInfo: { dateCreated: '2026-08-04T12:00:00.000Z' },
+            voided: false,
+          },
         },
         {
           clinicalStatus: 'Inactive',
@@ -197,6 +343,14 @@ describe('ConditionsOverview', () => {
           display: 'Resolved pneumonia',
           id: 'past-diagnosis-id',
           recordedDate: '2026-08-04T12:00:00.000Z',
+          source: {
+            uuid: 'past-diagnosis-id',
+            patient: { uuid: mockPatient.id },
+            clinicalStatus: 'INACTIVE',
+            condition: { coded: { uuid: 'past-diagnosis-concept', display: 'Resolved pneumonia' } },
+            auditInfo: { dateCreated: '2026-08-04T12:00:00.000Z' },
+            voided: false,
+          },
         },
       ],
       error: null,

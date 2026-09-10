@@ -1,6 +1,15 @@
-import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import {
+  Button,
+  InlineLoading,
+  InlineNotification,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  TextArea,
+} from '@carbon/react';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
+import { CONDITION_TEXT_MAX_LENGTH, useConditionDeletion } from '@openmrs/esm-patient-common-lib';
+import React, { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { deleteCondition, useConditions } from './conditions.resource';
 import styles from './delete-condition.scss';
@@ -8,50 +17,110 @@ import styles from './delete-condition.scss';
 interface DeleteConditionModalProps {
   closeDeleteModal: () => void;
   conditionId: string;
-  patientUuid?: string;
+  patientUuid: string;
 }
 
 const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDeleteModal, conditionId, patientUuid }) => {
   const { t } = useTranslation();
+  const reasonId = useId();
+  const [reason, setReason] = useState('');
+  const [reasonTouched, setReasonTouched] = useState(false);
+  const trimmedReason = reason.trim();
+  const reasonInvalid = !trimmedReason || trimmedReason.length > CONDITION_TEXT_MAX_LENGTH;
   const { mutate } = useConditions(patientUuid);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = useCallback(async () => {
-    setIsDeleting(true);
-
-    try {
-      await deleteCondition(conditionId);
-      await mutate();
-
-      closeDeleteModal();
+  const { isDeleting, isDeleted, isUncertain, handleDelete, handleClose } = useConditionDeletion({
+    onDelete: () => deleteCondition(conditionId, patientUuid, trimmedReason),
+    refresh: mutate,
+    canDelete: !reasonInvalid,
+    onClose: closeDeleteModal,
+    onSuccess: () =>
       showSnackbar({
         isLowContrast: true,
         kind: 'success',
         title: t('antecedentDeleted', 'Antecedent deleted'),
-      });
-    } catch (error) {
-      console.error('Error deleting condition: ', error);
-
+      }),
+    onDeleteError: (error) =>
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorDeletingAntecedent', 'Error deleting antecedent'),
-        subtitle: error?.message,
-      });
-    }
-  }, [closeDeleteModal, conditionId, mutate, t]);
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('antecedentDeleteFailed', 'The antecedent could not be deleted. Please try again.'),
+          { logContext: 'Delete antecedent condition' },
+        ),
+      }),
+    onRefreshError: (error) =>
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'warning',
+        title: t('conditionDeletedRefreshFailedTitle', 'Antecedent deleted; refresh needed'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'conditionDeletedRefreshFailed',
+            'The antecedent was deleted, but the history could not be refreshed. Reload the page before making further changes.',
+          ),
+          { logContext: 'Delete antecedent condition refresh' },
+        ),
+      }),
+  });
 
   return (
     <div>
-      <ModalHeader closeModal={closeDeleteModal} title={t('deleteAntecedent', 'Delete antecedent')} />
+      <ModalHeader closeModal={handleClose} title={t('deleteAntecedent', 'Delete antecedent')} />
       <ModalBody>
+        {isUncertain && (
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            role="alert"
+            title={t('conditionDeletionUnconfirmedTitle', 'Removal could not be confirmed')}
+            subtitle={t(
+              'conditionDeletionUnconfirmed',
+              'The request may have been applied. Close this dialog and reload the history before making further changes.',
+            )}
+          />
+        )}
         <p>{t('deleteAntecedentModalConfirmationText', 'Are you sure you want to delete this antecedent?')}</p>
+        <p>
+          {t(
+            'antecedentVoidingNotice',
+            'This removes the antecedent from the current history while retaining the original record.',
+          )}
+        </p>
+        <TextArea
+          id={reasonId}
+          labelText={t('antecedentVoidReason', 'Reason for removal')}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          onBlur={() => setReasonTouched(true)}
+          invalid={reasonTouched && reasonInvalid}
+          invalidText={
+            !trimmedReason
+              ? t('antecedentVoidReasonRequired', 'Enter a reason for removing this antecedent.')
+              : t('antecedentVoidReasonTooLong', 'The reason must contain at most 255 characters.')
+          }
+          required
+          rows={3}
+          maxLength={CONDITION_TEXT_MAX_LENGTH}
+          maxCount={CONDITION_TEXT_MAX_LENGTH}
+          enableCounter
+          disabled={isDeleting || isDeleted || isUncertain}
+        />
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeDeleteModal}>
+        <Button kind="secondary" onClick={handleClose} disabled={isDeleting}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button className={styles.deleteButton} kind="danger" onClick={handleDelete} disabled={isDeleting}>
+        <Button
+          className={styles.deleteButton}
+          kind="danger"
+          onClick={handleDelete}
+          disabled={isDeleting || isDeleted || isUncertain || reasonInvalid}
+        >
           {isDeleting ? (
             <InlineLoading description={t('deleting', 'Deleting') + '...'} />
           ) : (

@@ -5,6 +5,35 @@ This is a library of components and utilities shared across widgets in the patie
 - Custom components for card headers, error and empty states and pagination.
 - Custom hooks for managing workspaces, concept metadata and pagination.
 
+## Antecedents
+
+`src/antecedents` owns the Condition data model, complete-history reader and write
+payloads used by Conditions, Consulta Externa, CRED and Salud Materna. Each view
+retains its clinical filters and permissions. Keep transformations and persistence
+rules here instead of copying a resource implementation into another app.
+
+`Condition.source` retains the full OpenMRS REST record. Both reads and writes use
+this API: the configured FHIR2 translator collapses several clinical statuses and
+its recorder lookup requires unrelated user-administration access. Edits require
+the original source and verify its UUID and patient against a fresh read. Only
+changed clinical fields are submitted. Core's ConditionService retains the previous
+revision and creates a successor attributed to the authenticated editor; it does
+not overwrite the original revision's author or registration date.
+
+Coded conditions carry a concept UUID; native narratives use `condition.nonCoded`.
+Neither a CIE-10 mapping nor a question/text concept substitutes for that UUID.
+Unknown or partial data is never interpreted as a negative antecedent. Unchanged
+dates retain their precision and timezone; this form allows correcting an existing
+date but requires a replacement instead of erasing it.
+
+The paginated fetcher commits one complete history to SWR and makes refresh await
+every page, including pages introduced by a write. This is required for distinguishing
+a confirmed write from a subsequent refresh failure. The UI must never retry the
+write solely because refreshing failed.
+
+See [the data contract](../../../docs/clinical/antecedents-data-contract.md) for
+content/backend evidence and the clinical acceptance requirements.
+
 ## Order basket preparation and signing
 
 Each mounted basket consumer may register a preparation callback for its order

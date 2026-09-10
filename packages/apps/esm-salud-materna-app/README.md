@@ -20,7 +20,7 @@ Cobertura frontend actual:
 - Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
 - Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
 
-El historial de condiciones usa la paginación FHIR completa. Crear o editar una condición exige un proveedor clínico asociado a la sesión; el backend deriva el registrador desde la sesión autenticada y la edición conserva la fecha original de registro.
+El historial de condiciones comparte lectura, creación, corrección y anulación REST, con paginación completa y estados clínicos precisos. Crear o editar una condición exige un proveedor clínico asociado a la sesión. La creación deriva el registrador de la sesión autenticada; la corrección parcial usa REST y conserva la versión original mediante el versionado de core. Cada versión tiene su autor y fecha de registro; la fecha clínica no cambia si no se edita. El UUID del proveedor no identifica al usuario registrador. Este contrato se ha revisado contra core 2.8.9 y REST 3.5.0; la validación con el backend instalado sigue pendiente. Los límites de persistencia, contenido y auditoría se documentan en el [contrato de antecedentes](../../../docs/clinical/antecedents-data-contract.md).
 
 Vacíos conocidos:
 
@@ -41,7 +41,7 @@ Vacíos conocidos:
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.
 - Probar en QLTY el flujo end-to-end de salud materna: abrir formulario, guardar, recargar la historia y confirmar que las tablas/widgets leen el encounter y las obs guardadas.
 - Validar prenatal: historia materna, embarazo actual, atención prenatal, suplementación, plan de parto, psicoprofilaxis y clasificación de riesgo.
-- Validar parto: resumen de labor y puerperio, parto/aborto y partograma con datos reales.
+- Validar parto: resumen de labor y puerperio, parto/aborto y partograma con datos sintéticos en DEV/QLTY autorizado y coordinado.
 - Validar puerperio: puerperio inmediato, controles postnatales y seguimiento.
 - Validar planificación familiar y prevención de cáncer cuando los conceptos clínicos y formularios reales estén completos en content.
 - Confirmar permisos de usuario para crear y editar formularios de salud materna en QLTY, no solo para visualizar dashboards.

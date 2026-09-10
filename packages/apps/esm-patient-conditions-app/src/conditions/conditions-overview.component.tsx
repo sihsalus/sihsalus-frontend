@@ -16,12 +16,10 @@ import {
 } from '@carbon/react';
 import {
   AddIcon,
-  formatDate,
+  formatPartialDate,
   isDesktop as isDesktopLayout,
-  parseDate,
   useConfig,
   useLayoutType,
-  usePagination,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -29,11 +27,13 @@ import {
   ErrorState,
   getAntecedentTypeLabel,
   launchPatientWorkspace,
+  matchesConditionStatusFilter,
   PatientChartPagination,
+  useConditionPagination,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
-import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
+import React, { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../config-schema';
 import { type Condition, useConditions, useConditionsSorting } from './conditions.resource';
@@ -109,6 +109,7 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
 const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, section = 'antecedents' }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
+  const statusFilterId = useId();
   const sectionCopy = getSectionCopy(section, t);
   const displayText = sectionCopy.displayText;
   const headerTitle = sectionCopy.headerTitle;
@@ -140,7 +141,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, se
       return sectionConditions;
     }
 
-    return sectionConditions.filter((condition) => condition.clinicalStatus === filter);
+    return sectionConditions.filter((condition) => matchesConditionStatusFilter(condition.clinicalStatus, filter));
   }, [filter, sectionConditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -187,18 +188,21 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, se
           ? getAntecedentTypeLabel(condition.antecedentType, t)
           : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
-          ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
+          ? formatPartialDate(condition.onsetDateTime, { mode: 'wide', time: 'for today' })
           : '--',
-        status: condition.clinicalStatus,
+        status: t(condition.clinicalStatus.toLowerCase(), condition.clinicalStatus),
       };
     });
   }, [filteredConditions, t]);
 
-  const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
+  const { sortedRows, sortRow, onHeaderClick } = useConditionsSorting(headers, tableRows);
 
-  const { results: paginatedConditions, goTo, currentPage } = usePagination(sortedRows, conditionPageSize);
+  const { results: paginatedConditions, goTo, currentPage } = useConditionPagination(sortedRows, conditionPageSize);
 
-  const handleConditionStatusChange = ({ selectedItem }) => setFilter(selectedItem.id);
+  const handleConditionStatusChange = ({ selectedItem }) => {
+    setFilter(selectedItem.id);
+    goTo(1);
+  };
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" zebra />;
@@ -216,7 +220,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, se
           <div className={styles.rightMostFlexContainer}>
             <div className={styles.filterContainer}>
               <Dropdown
-                id="conditionStatusFilter"
+                id={statusFilterId}
                 initialSelectedItem={{
                   id: defaultFilter,
                   label: t(defaultFilter.toLowerCase(), defaultFilter),
@@ -265,6 +269,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, se
                         const { key, ...headerProps } = getHeaderProps({
                           header,
                           isSortable: header.isSortable,
+                          onClick: onHeaderClick,
                         });
 
                         return (

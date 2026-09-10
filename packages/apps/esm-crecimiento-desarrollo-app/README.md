@@ -23,7 +23,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Vistas de grupo clínico, cuidado del niño sano y plan de inmunización.
 - Configuración y tipos compartidos del frontend.
 
-El historial de condiciones usa la paginación FHIR completa. Crear o editar una condición exige un proveedor clínico asociado a la sesión; el backend deriva el registrador desde la sesión autenticada y la edición conserva la fecha original de registro.
+El historial de condiciones comparte lectura, creación, corrección y anulación REST, con paginación completa y estados clínicos precisos. Crear o editar una condición exige un proveedor clínico asociado a la sesión. La creación deriva el registrador de la sesión autenticada; la corrección parcial usa REST y conserva la versión original mediante el versionado de core. Cada versión tiene su autor y fecha de registro; la fecha clínica no cambia si no se edita. El UUID del proveedor no identifica al usuario registrador. Este contrato se ha revisado contra core 2.8.9 y REST 3.5.0; la validación con el backend instalado sigue pendiente. Los límites de persistencia, contenido y auditoría se documentan en el [contrato de antecedentes](../../../docs/clinical/antecedents-data-contract.md).
 
 ## TODO content/backend
 
@@ -43,7 +43,7 @@ clasificaciones.
 
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.
 - Probar en QLTY el flujo end-to-end de CRED neonatal: abrir formulario, guardar, recargar la historia y confirmar que los widgets leen el encounter y las obs guardadas.
-- Probar balance de líquidos, biometría, evaluación cefalocaudal, alojamiento conjunto y consejería de lactancia con datos reales.
+- Probar balance de líquidos, biometría, evaluación cefalocaudal, alojamiento conjunto y consejería de lactancia con datos sintéticos en DEV/QLTY autorizado y coordinado.
 - Validar que los formularios de nutrición infantil, estimulación temprana y control de niño sano persistan con el `encounterType`, `formUuid` y conceptos esperados.
 - Confirmar permisos de usuario para crear y editar formularios CRED en QLTY, no solo para renderizar los dashboards.
 - Confirmar que todos los formularios guardados en un mismo control comparten `Número de control CRED` y que al reabrir el mismo día/consulta se conserva ese número.

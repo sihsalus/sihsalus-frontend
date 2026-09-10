@@ -47,7 +47,7 @@
     "@openmrs/esm-framework": "*",
     "react": "18.x",
     "react-dom": "18.x",
-    "react-i18next": "^17.0.11"
+    "react-i18next": "^17.0.13"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -74,10 +74,10 @@
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-i18next": "^17.0.11",
+    "react-i18next": "^17.0.13",
     "turbo": "^2.9.14",
     "typescript": "6.0.3",
-    "vite": "8.0.16",
+    "vite": "8.2.2",
     "vitest": "^5.0.0"
   }
 }

@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 
 interface SideMenuPanelProps {
   expanded: boolean;
-  hidePanel: Parameters<typeof useOnClickOutside>[0];
+  hidePanel: () => void;
 }
 
 /**

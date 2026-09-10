@@ -28,4 +28,4 @@ export const Extension = vi.fn().mockImplementation((_props: any) => {
   return <slot />;
 });
 
-export const ExtensionSlot = ({ children }) => <>{children}</>;
+export const ExtensionSlot = ({ children }: React.PropsWithChildren) => <>{children}</>;

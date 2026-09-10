@@ -64,11 +64,9 @@ export default function Dashboard({ basePath, moduleName }: DashboardProps) {
   return (
     <BrowserRouter>
       <Component
-        _extensionContext={{
-          extensionId: componentContext.extension?.extensionId,
-          extensionSlotName: componentContext.extension?.extensionSlotName,
-          extensionSlotModuleName: module,
-        }}
+        _extensionContext={
+          componentContext.extension ? { ...componentContext.extension, extensionSlotModuleName: module } : undefined
+        }
       />
     </BrowserRouter>
   );

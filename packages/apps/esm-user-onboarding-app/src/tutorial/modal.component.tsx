@@ -17,9 +17,16 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
   const tutorialContext = useAppContext<TutorialContext>('tutorial-context');
 
   const handleWalkthroughClick = (index: number) => {
+    if (!tutorialContext) {
+      return;
+    }
+
     const basePath = globalThis.getOpenmrsSpaBase();
     const homePath = `${basePath}home`;
-    const currentPath = globalThis.location.pathname;
+    const isOnHomeRoute = () => {
+      const path = globalThis.location.pathname;
+      return path === homePath || path.startsWith(`${homePath}/`);
+    };
     const tutorial = tutorials[index];
 
     const setTutorialSteps = () => {
@@ -27,7 +34,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
       tutorialContext.setShowTutorial(true);
     };
 
-    if (currentPath.startsWith(homePath)) {
+    if (isOnHomeRoute()) {
       setTutorialSteps();
     } else {
       navigate({ to: homePath });
@@ -37,7 +44,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
       // route guard, manual navigation) it would otherwise run forever.
       let remainingTicks = 100;
       const intervalId = setInterval(() => {
-        if (globalThis.location.pathname.startsWith(homePath)) {
+        if (isOnHomeRoute()) {
           setTutorialSteps();
           clearInterval(intervalId);
         } else if (--remainingTicks <= 0) {
@@ -62,6 +69,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
               <h3 className={styles.tutorialTitle}>{tutorial.title}</h3>
               <p className={styles.tutorialDescription}>{tutorial.description}</p>
               <Link
+                disabled={!tutorialContext}
                 onClick={() => handleWalkthroughClick(index)}
                 className={styles.tutorialLink}
                 renderIcon={() => <ArrowRight aria-label="Arrow Right" />}

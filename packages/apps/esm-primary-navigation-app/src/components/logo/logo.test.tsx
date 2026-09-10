@@ -1,7 +1,7 @@
-import { useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 
-import { type ConfigSchema } from '../../config-schema';
+import { type ConfigSchema, configSchema } from '../../config-schema';
 
 import Logo from './logo.component';
 
@@ -12,12 +12,15 @@ vi.mock('@openmrs/esm-framework', async () => ({
   interpolateUrl: vi.fn((url: string) => url),
 }));
 
-const mockUseConfig = vi.mocked(useConfig);
+const mockUseConfig = vi.mocked(useConfig<ConfigSchema>);
+const defaultConfig: ConfigSchema = getDefaultsFromConfigSchema(configSchema);
 
 describe('Logo', () => {
-  it('should display the Sihsalus wordmark by default', () => {
-    const mockConfig = { logo: { src: null, alt: null, name: null } };
-    mockUseConfig.mockReturnValue(mockConfig as ConfigSchema);
+  it('should display the Sihsalus wordmark when no image or organization name is configured', () => {
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      logo: { ...defaultConfig.logo, src: '', name: '' },
+    });
 
     render(<Logo />);
 
@@ -25,12 +28,10 @@ describe('Logo', () => {
   });
 
   it('should display name', () => {
-    const mockConfig = {
-      logo: { src: null, alt: null, name: 'Some weird EMR', link: null },
-      externalRefLinks: null,
-    };
-
-    mockUseConfig.mockReturnValue(mockConfig as ConfigSchema);
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      logo: { ...defaultConfig.logo, src: '', name: 'Some weird EMR' },
+    });
 
     render(<Logo />);
 
@@ -39,10 +40,11 @@ describe('Logo', () => {
 
   it('should display image logo', () => {
     const mockConfig = {
+      ...defaultConfig,
       logo: {
+        ...defaultConfig.logo,
         src: 'https://someimage.png',
         alt: 'alternative text',
-        name: null,
       },
     };
 
@@ -59,10 +61,11 @@ describe('Logo', () => {
   it('should handle image load errors', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const mockConfig = {
+      ...defaultConfig,
       logo: {
+        ...defaultConfig.logo,
         src: 'invalid-image.png',
         alt: 'alt text',
-        name: null,
       },
     };
 

@@ -40,6 +40,17 @@ yarn  # install dependencies
 yarn start  # start development server
 ```
 
+### Type checking and validation
+
+Source and tests use the shared [strict TypeScript preset](../../tooling/tsconfig.strict.json).
+Walkthrough links stay disabled until the tutorial context is available.
+From the repository root, run `yarn workspace @sihsalus/esm-user-onboarding-app typescript`
+and the same workspace's `lint`, `test`, and `build` scripts. Tests cover both
+starting at home and navigating there, as well as an unavailable tutorial context.
+The tutorial starts only on the home route or its child routes; similarly named
+routes such as `/homepage` do not qualify. Navigation can finish after the modal
+closes, with a ten-second limit on waiting.
+
 ## Configuration
 
 Enable tutorials by setting `showTutorial: true` in your OpenMRS configuration. Customize tutorial content through the `tutorialData` configuration array.
@@ -60,7 +71,7 @@ Each tutorial step supports the following properties:
 ### UI Control Properties
 
 - `hideBackButton`: Hide the back navigation button
-- `hideNextButton`: Hide the next navigation button  
+- `hideNextButton`: Hide the next navigation button
 - `hideFooter`: Hide the entire footer
 - `hideCloseButton`: Hide the close button
 

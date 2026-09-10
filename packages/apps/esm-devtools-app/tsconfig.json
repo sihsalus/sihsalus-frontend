@@ -1,5 +1,5 @@
 {
-  "extends": "../../tooling/tsconfig.app.json",
+  "extends": "../../tooling/tsconfig.strict.json",
   "compilerOptions": {
     "target": "es2015",
     "types": ["fhir", "node", "@testing-library/jest-dom", "vi-namespace"]

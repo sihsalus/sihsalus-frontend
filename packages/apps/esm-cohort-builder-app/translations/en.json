@@ -138,5 +138,10 @@
   "view": "View",
   "whatObservations": "What observations",
   "whatValues": "What values",
-  "withinTheLast": "Within the last"
+  "withinTheLast": "Within the last",
+  "querySaveError": "Error saving the query",
+  "definitionSaveErrorMessage": "The save could not be confirmed. Your entries were kept. Verify the connection before trying again.",
+  "searchItemDeleted": "The search was removed from history",
+  "searchHistoryChanged": "The history has changed. Refresh it before trying again.",
+  "querySaved": "Query saved successfully"
 }

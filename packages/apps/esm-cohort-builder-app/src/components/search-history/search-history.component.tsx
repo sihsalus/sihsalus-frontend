@@ -9,11 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { showModal } from '@openmrs/esm-framework';
+import { showModal, usePagination } from '@openmrs/esm-framework';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import mainStyles from '../../cohort-builder.scss';
-import { clearStoredSearchHistory, replaceStoredSearchHistory } from '../../search-history-store';
+import { clearStoredSearchHistory, removeStoredSearchHistoryEntry } from '../../search-history-store';
 import { type PaginationData, type SearchHistoryItem } from '../../types';
 import EmptyData from '../empty-data/empty-data.component';
 import styles from './search-history.style.scss';
@@ -28,8 +28,12 @@ interface SearchHistoryProps {
 const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHistoryUpdated }) => {
   const { t } = useTranslation();
   const [searchResults, setSearchResults] = useState<SearchHistoryItem[]>([]);
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const { results: visibleResults, currentPage: page, totalPages, goTo } = usePagination(searchResults, pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) goTo(totalPages);
+  }, [page, totalPages, goTo]);
 
   useEffect(() => {
     if (isHistoryUpdated) {
@@ -38,9 +42,13 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHi
     }
   }, [isHistoryUpdated, setIsHistoryUpdated]);
 
-  const handlePagination = ({ page, pageSize }: PaginationData) => {
-    setPage(page);
-    setPageSize(pageSize);
+  const handlePagination = ({ page: nextPage, pageSize: nextPageSize }: PaginationData) => {
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      goTo(1);
+    } else {
+      goTo(nextPage);
+    }
   };
 
   const headers = [
@@ -64,17 +72,12 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHi
   };
 
   const updateSearchHistory = (selectedSearchItem: SearchHistoryItem) => {
-    const updatedSearchResults = [...searchResults].filter(
-      (_searchResult, index) => index !== searchResults.indexOf(selectedSearchItem),
-    );
-    setSearchResults(updatedSearchResults);
-    replaceStoredSearchHistory(
-      updatedSearchResults.map((searchResult) => ({
-        description: searchResult.description,
-        memberIds: searchResult.memberIds,
-        parameters: searchResult.parameters,
-      })),
-    );
+    try {
+      removeStoredSearchHistoryEntry(selectedSearchItem.historyKey);
+    } finally {
+      // Re-read even after a stale confirmation, preserving searches added meanwhile.
+      setSearchResults(getSearchHistory());
+    }
   };
 
   const launchClearSearchHistoryModal = () => {
@@ -95,36 +98,39 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHi
           </Button>
         )}
       </div>
-      <DataTable rows={searchResults} headers={headers} useZebraStyles>
+      <DataTable rows={visibleResults} headers={headers} useZebraStyles>
         {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
           <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
-                {headers.map((header) => (
-                  <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                    {header.header}
-                  </TableHeader>
-                ))}
+                {headers.map((header) => {
+                  const { key, ...headerProps } = getHeaderProps({ header });
+                  return (
+                    <TableHeader key={key} {...headerProps}>
+                      {header.header}
+                    </TableHeader>
+                  );
+                })}
                 <TableHeader className={mainStyles.optionHeader}></TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .slice((page - 1) * pageSize)
-                .slice(0, pageSize)
-                .map((row, index: number) => (
-                  <TableRow key={row.id} {...getRowProps({ row })}>
+              {rows.map((row) => {
+                const searchItem = visibleResults.find((item) => item.id === row.id);
+                const { key, ...rowProps } = getRowProps({ row });
+                return (
+                  <TableRow key={key} {...rowProps}>
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                     <TableCell className={mainStyles.optionCell}>
-                      <SearchHistoryOptions
-                        searchItem={searchResults[index]}
-                        updateSearchHistory={updateSearchHistory}
-                      />
+                      {searchItem && (
+                        <SearchHistoryOptions searchItem={searchItem} updateSearchHistory={updateSearchHistory} />
+                      )}
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -135,8 +141,8 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHi
           forwardText={t('nextPage', 'Next page')}
           itemsPerPageText={t('itemsPerPage', 'Items per page:')}
           onChange={handlePagination}
-          page={1}
-          pageSize={10}
+          page={page}
+          pageSize={pageSize}
           pageSizes={[10, 20, 30, 40, 50]}
           size="md"
           totalItems={searchResults.length}

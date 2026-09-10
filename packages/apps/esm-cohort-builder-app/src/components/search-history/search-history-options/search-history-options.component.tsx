@@ -1,10 +1,11 @@
 import { OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { showModal, showSnackbar } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { downloadCSV } from '../../../cohort-builder.utils';
-import type { Cohort, Patient, SearchHistoryItem } from '../../../types';
+import type { Cohort, SearchHistoryItem } from '../../../types';
+import type { SaveQueryFormData } from './save-query.modal';
 import { createCohort, createQuery } from './search-history-options.resources';
 import styles from './search-history-options.scss';
 
@@ -28,49 +29,30 @@ const createCohortFromSearchItem = async (
   searchItem: SearchHistoryItem,
   t: TFunction,
 ) => {
-  const cohortMembers = searchItem.memberIds ?? searchItem.patients.map((patient: Patient) => parseInt(patient.id, 10));
-
-  const cohort: Cohort = {
-    display: name,
-    memberIds: cohortMembers,
-    description: description,
-    name: name,
-  };
-
-  try {
-    await createCohort(cohort);
-    showSnackbar({
-      title: t('success', 'Success'),
-      kind: 'success',
-      isLowContrast: true,
-      subtitle: t('cohortSaved', 'Cohort created successfully'),
-    });
-  } catch (error) {
-    showSnackbar({
-      title: t('errorCreatingCohort', 'Error creating the cohort'),
-      kind: 'error',
-      isLowContrast: true,
-      subtitle: error?.message,
-    });
+  const cohortMembers = searchItem.memberIds ?? searchItem.patients.map((patient) => Number(patient.id));
+  if (cohortMembers.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+    throw new Error('Invalid cohort membership.');
   }
+  const cohort: Cohort = { display: name, name, description, memberIds: [...cohortMembers] };
+  await createCohort(cohort);
+  showSnackbar({
+    title: t('success', 'Success'),
+    kind: 'success',
+    isLowContrast: true,
+    subtitle: t('cohortSaved', 'Cohort created successfully'),
+  });
 };
 
 const SearchHistoryOptions: React.FC<SearchHistoryOptions> = ({ searchItem, updateSearchHistory }) => {
   const { t } = useTranslation();
-  const [_cohortName, _setCohortName] = useState('');
-  const [_cohortDescription, setCohortDescription] = useState('');
-  const [queryName, setQueryName] = useState('');
-  const [queryDescription, setQueryDescription] = useState('');
 
-  const handleOption = async (option: OptionType) => {
+  const handleOption = (option: OptionType) => {
     const { patients, description } = searchItem;
     switch (option) {
       case Option.SAVE_COHORT:
-        setCohortDescription(description);
         launchSaveCohortModal();
         break;
       case Option.SAVE_QUERY:
-        setQueryDescription(description);
         launchSaveQueryModal();
         break;
       case Option.DOWNLOAD:
@@ -89,40 +71,27 @@ const SearchHistoryOptions: React.FC<SearchHistoryOptions> = ({ searchItem, upda
         title: t('success', 'Success'),
         kind: 'success',
         isLowContrast: true,
-        subtitle: 'the search item is deleted',
+        subtitle: t('searchItemDeleted', 'The search was removed from history'),
       });
-    } catch (error) {
+    } catch {
       showSnackbar({
         title: t('searchItemDeleteError', 'Error deleting the cohort'),
         kind: 'error',
         isLowContrast: true,
-        subtitle: error?.message,
+        subtitle: t('searchHistoryChanged', 'The history has changed. Refresh it before trying again.'),
       });
     }
   };
 
-  const handleSaveQuery = async () => {
-    try {
-      const { parameters } = searchItem;
-      parameters.name = queryName;
-      parameters.description = queryDescription;
-      await createQuery(parameters);
-      setQueryName('');
-      setQueryDescription('');
-      showSnackbar({
-        title: t('success', 'Success'),
-        kind: 'success',
-        isLowContrast: true,
-        subtitle: 'the query is saved',
-      });
-    } catch (error) {
-      showSnackbar({
-        title: t('queryDeleteError', 'Error saving the query'),
-        kind: 'error',
-        isLowContrast: true,
-        subtitle: error?.message,
-      });
-    }
+  const handleSaveQuery = async ({ queryName, queryDescription }: SaveQueryFormData) => {
+    if (!searchItem.parameters) throw new Error('The query definition is unavailable.');
+    await createQuery({ ...searchItem.parameters, name: queryName, description: queryDescription });
+    showSnackbar({
+      title: t('success', 'Success'),
+      kind: 'success',
+      isLowContrast: true,
+      subtitle: t('querySaved', 'Query saved successfully'),
+    });
   };
 
   const launchSaveQueryModal = () => {
@@ -167,6 +136,7 @@ const SearchHistoryOptions: React.FC<SearchHistoryOptions> = ({ searchItem, upda
       <OverflowMenuItem
         className={styles.menuItem}
         data-testid="save-query"
+        disabled={!searchItem.parameters}
         itemText={t('saveQuery', 'Save query')}
         onClick={() => handleOption(Option.SAVE_QUERY)}
       />

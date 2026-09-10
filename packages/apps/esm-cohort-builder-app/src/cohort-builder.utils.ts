@@ -134,21 +134,16 @@ export const queryDescriptionBuilder = (state, conceptName: string) => {
   return `Patients with ${timeModifier} ${conceptName} ${onOrAfterDescription} ${onOrBeforeDescription}`.trim();
 };
 
-const convertToCSV = (patients: Patient[]) => {
+export const convertToCSV = (patients: Patient[]) => {
   const csv =
     'patient_id, full_name, age, gender\n' +
     patients
       .map((patient) => {
-        const orderedPatient = {
-          patientId: patient.patientId,
-          name: patient.name,
-          age: patient.age,
-          gender: patient.gender,
-        };
-
-        return Object.keys(orderedPatient)
-          .map((key) => {
-            return `"${patient[key]}"`;
+        return [patient.patientId ?? patient.id, patient.name, patient.age, patient.gender]
+          .map((value) => {
+            const text = String(value ?? '');
+            const safeText = typeof value === 'string' && /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+            return `"${safeText.replaceAll('"', '""')}"`;
           })
           .join(',');
       })
@@ -157,7 +152,7 @@ const convertToCSV = (patients: Patient[]) => {
   return csv;
 };
 
-export const downloadCSV = (data, filename) => {
+export const downloadCSV = (data: Patient[], filename: string) => {
   const blob = new Blob([convertToCSV(data)], {
     type: 'text/csv;charset=utf-8;',
   });

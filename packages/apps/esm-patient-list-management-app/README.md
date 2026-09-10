@@ -32,4 +32,10 @@ network response replaces the stable cache entry. A failed or canceled refresh p
 response and reports one fixed, non-sensitive failure; stale cache or locally queued data never count as a successful
 refresh.
 
-Clinical responses are still stored in the origin-wide OpenMRS cache. Shared devices must use a dedicated OS/browser profile per authorized user until cache partitioning or verified logout/removal purging is implemented.
+Downloaded clinical responses now require the assigned offline profile and use the owned clinical cache. See the
+[shared offline contract](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup). Keep one managed
+OS/browser profile per clinical user; cleanup preserves pending actions and does not reassign the owner.
+
+Offline download presence is checked through `areOfflineResourcesCached`, which rejects unowned or historical
+responses. [Shared ownership and cleanup rules](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup)
+apply to worker/consumer rollout and rollback.

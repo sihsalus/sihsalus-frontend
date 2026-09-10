@@ -1,4 +1,5 @@
 import {
+  areOfflineResourcesCached,
   fhirBaseUrl,
   getConfig,
   getSessionStore,
@@ -45,9 +46,7 @@ export function setupOffline() {
     displayName: 'Patient registration',
     async isSynced(patientUuid) {
       const expectedUrls = await getPatientUrlsToBeCached(patientUuid);
-      const cache = await caches.open('omrs-spa-cache-v1');
-      const keys = (await cache.keys()).map((key) => key.url);
-      return expectedUrls.every((url) => keys.includes(url));
+      return areOfflineResourcesCached(expectedUrls);
     },
     async sync(patientUuid, abortSignal) {
       const urlsToCache = await getPatientUrlsToBeCached(patientUuid);

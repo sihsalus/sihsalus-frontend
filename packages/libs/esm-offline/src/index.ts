@@ -1,8 +1,10 @@
 export * from './dynamic-offline-data';
 export * from './mode';
-export { getOfflineDb } from './offline-db';
 export * from './offline-cache';
+export { getOfflineDb } from './offline-db';
 export * from './offline-patient-data';
+export { areOfflineResourcesCached, clearOfflineDownloads, getOfflineProfileStatus } from './offline-profile';
+export { getOfflineReadiness, type OfflineReadiness } from './offline-readiness';
 export * from './service-worker';
 export * from './service-worker-http-headers';
 export * from './service-worker-messaging';

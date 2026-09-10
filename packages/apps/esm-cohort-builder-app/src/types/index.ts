@@ -62,6 +62,8 @@ export interface Cohort {
 
 export interface SearchHistoryItem {
   id: string;
+  /** Stable identity within this session; id remains the displayed composition number. */
+  historyKey?: number;
   parameters?: Query;
   results: string;
   description: string;

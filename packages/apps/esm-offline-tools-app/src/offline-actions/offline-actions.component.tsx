@@ -1,3 +1,4 @@
+import { Button, InlineNotification } from '@carbon/react';
 import type { SyncItem } from '@openmrs/esm-framework/src/internal';
 import {
   deleteSynchronizationItem,
@@ -6,7 +7,7 @@ import {
   showSnackbar,
   useStore,
 } from '@openmrs/esm-framework/src/internal';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePendingSyncItems, useSyncItemPatients } from '../hooks/offline-actions';
@@ -24,13 +25,29 @@ export interface OfflineActionsProps {
 const OfflineActions: React.FC<OfflineActionsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const syncStore = useStore(getOfflineSynchronizationStore());
-  const { data: syncItems, mutate } = usePendingSyncItems();
-  const { data: syncItemPatients } = useSyncItemPatients(syncItems);
+  const { data: syncItems, error: queueError, mutate } = usePendingSyncItems();
+  const { data: syncItemPatients, error: patientsError, mutate: refreshPatients } = useSyncItemPatients(syncItems);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const retryPending = useRef(false);
+  const retry = async () => {
+    if (retryPending.current) return;
+    retryPending.current = true;
+    setIsRetrying(true);
+    try {
+      await Promise.allSettled([
+        Promise.resolve().then(() => mutate()),
+        Promise.resolve().then(() => refreshPatients()),
+      ]);
+    } finally {
+      retryPending.current = false;
+      setIsRetrying(false);
+    }
+  };
   const syncItemsToRender = patientUuid
-    ? syncItems?.filter((x) => x.descriptor.patientUuid === patientUuid)
+    ? syncItems?.filter((x) => x.descriptor?.patientUuid === patientUuid)
     : syncItems;
   const syncItemsTableData = getSyncItemsWithPatient(syncItemsToRender, syncItemPatients);
-  const isLoading = !syncItems || !syncItemPatients;
+  const isLoading = !syncItems && !queueError;
   const isSynchronizing = !!syncStore.synchronization;
 
   const deleteSynchronizationItems = (ids: Array<number>) => {
@@ -80,18 +97,39 @@ const OfflineActions: React.FC<OfflineActionsProps> = ({ patientUuid }) => {
 
   return (
     <>
-      {isLoading || syncItems?.length > 0 ? (
+      {(queueError || patientsError) && (
+        <div>
+          <InlineNotification
+            role="alert"
+            kind={queueError ? 'error' : 'warning'}
+            hideCloseButton
+            title={
+              queueError
+                ? t('offlineActionsLoadFailed', 'Pending actions could not be loaded')
+                : t('offlineActionsPatientsLoadFailed', 'Some patient details could not be loaded')
+            }
+            subtitle={t(
+              'offlineActionsLoadFailedMessage',
+              'Your pending actions have not been deleted. Verify your session and connection, then retry.',
+            )}
+          />
+          <Button kind="tertiary" onClick={retry} disabled={isRetrying}>
+            {t('retry', 'Retry')}
+          </Button>
+        </div>
+      )}
+      {isLoading || syncItemsToRender?.length > 0 ? (
         <OfflineActionsTable
           isLoading={isLoading}
           data={syncItemsTableData}
           hiddenHeaders={patientUuid ? ['patient'] : []}
-          disableEditing={isSynchronizing}
+          disableEditing={isSynchronizing || !!queueError}
           disableDelete={false}
           onDelete={deleteSynchronizationItems}
         />
-      ) : (
+      ) : !queueError && syncItems ? (
         <NoActionsEmptyState />
-      )}
+      ) : null}
     </>
   );
 };
@@ -99,7 +137,7 @@ const OfflineActions: React.FC<OfflineActionsProps> = ({ patientUuid }) => {
 function getSyncItemsWithPatient(syncItems: Array<SyncItem> = [], patients: Array<fhir.Patient> = []) {
   return syncItems.map((item) => ({
     item,
-    patient: patients.find((patient) => patient.id === item.descriptor?.patientUuid),
+    patient: patients.find((patient) => patient?.id === item.descriptor?.patientUuid),
   }));
 }
 

@@ -61,3 +61,18 @@ la cola. Las pruebas locales no sustituyen esa validación del backend desplegad
 - Componentes de panel, home de emergencia y flujos modales.
 - Dependencias compartidas para estado, navegación y errores.
 - Registro de pacientes, Patient Search y Libro de Atenciones para continuidad administrativa.
+
+## Recuperación al abrir una atención
+
+El inicio desde la cola confirma primero el estado en el servidor y espera el
+resultado del formulario de triaje compartido. Si su apertura falla o se
+cancela, el modal conserva el estado confirmado y ofrece reintentar solamente
+la apertura. No revierte la cola ni vuelve a enviar una actualización ya
+confirmada. Las peticiones repetidas mientras se abre el formulario se ignoran.
+
+Un error al actualizar la vista de la cola se comunica por separado y no se
+interpreta como fallo del cambio guardado. El launcher de atención v1 conserva
+su contrato sin valor de retorno: se recuperan sus excepciones síncronas; no
+proporciona una confirmación asíncrona equivalente al formulario v2 de triaje.
+La aceptación en DEV/QLTY debe comprobar apertura cancelada, apertura fallida,
+reintento y el estado final de una entrada sintética.

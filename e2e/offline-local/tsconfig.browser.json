@@ -1,0 +1,8 @@
+{
+  "extends": "../../packages/libs/esm-offline/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["queue-client.ts", "session.ts", "contract.ts", "../../packages/tooling/app-shell/offline-profile.ts"],
+  "exclude": []
+}

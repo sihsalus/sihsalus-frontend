@@ -1,3 +1,4 @@
+import './offline-profile';
 import '@openmrs/esm-app-shell/default-service-worker';
 import { registerRoute } from 'workbox-routing';
 import { NetworkOnly } from 'workbox-strategies';

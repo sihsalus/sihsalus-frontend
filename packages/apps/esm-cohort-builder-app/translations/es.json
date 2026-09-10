@@ -139,5 +139,10 @@
   "view": "Ver",
   "whatObservations": "Qué observaciones",
   "whatValues": "Qué valores",
-  "withinTheLast": "En los últimos"
+  "withinTheLast": "En los últimos",
+  "querySaveError": "Error al guardar la consulta",
+  "definitionSaveErrorMessage": "No se pudo confirmar el guardado. Se conservaron los datos ingresados. Verifique la conexión antes de reintentar.",
+  "searchItemDeleted": "Se eliminó la búsqueda del historial",
+  "searchHistoryChanged": "El historial cambió. Actualícelo antes de reintentar.",
+  "querySaved": "Consulta guardada correctamente"
 }

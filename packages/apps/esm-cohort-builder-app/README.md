@@ -60,3 +60,25 @@ endpoints.
 changes, row-specific view/delete actions and smaller replacement datasets.
 Manual acceptance must also check the modal name and affected ID for synthetic
 definitions beyond the first page, then verify deletion and cleanup in DEV/QLTY.
+
+## History actions and saving
+
+History actions use the displayed entry, including after changing page size.
+Removal resolves a stable session identity against the current store, preserves
+searches added while confirmation was open, and renumbers the visible history
+from that same store for composition. Evicted entries cannot delete successors.
+
+History retains only the CSV export columns in memory within the existing
+20-entry limit. Downloads use that original snapshot, without rerunning a query
+whose membership may have changed. CSV quoting and text-cell handling preserve
+column boundaries and prevent spreadsheet evaluation of user-controlled text.
+
+Saving a query or cohort validates trimmed required fields, prevents repeated
+submissions, and keeps the form and its entries when saving cannot be confirmed.
+The shared form closes only after its save callback fulfills. Query metadata
+comes from the submitted form without mutating the source query. No automatic
+POST retries are performed; a lost response still requires checking whether the
+server created the definition before retrying.
+
+Regression cases are in `search-history.regression.test.tsx`,
+`save-history.regression.test.tsx`, and `search-history-store.test.ts`.

@@ -54,6 +54,7 @@ declare module '@openmrs/esm-framework' {
   export function defineConfigSchema(moduleName: string, schema: Record<string, unknown>): void;
   export function getAsyncLifecycle(loader: () => Promise<unknown>, options: Record<string, unknown>): unknown;
   export function isOnline(online?: boolean): boolean;
+  export function areOfflineResourcesCached(urls: string[]): Promise<boolean>;
   export function makeUrl(path: string): string;
   export function showModal(name: string, props: Record<string, unknown>): () => void;
   export function showSnackbar(config: Record<string, unknown>): void;

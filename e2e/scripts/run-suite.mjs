@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 
 export const REPOSITORY_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 export const SUITE_CATALOG_PATH = fileURLToPath(new URL('../suite-catalog.json', import.meta.url));
-export const RUNNABLE_SUITE_IDS = Object.freeze(['clinical', 'laboratory', 'offline-laptop']);
+export const RUNNABLE_SUITE_IDS = Object.freeze(['clinical', 'laboratory', 'offline-laptop', 'offline-local']);
 
 const ROOT_KEYS = ['suites', 'version'];
 const SUITE_KEYS = ['ci', 'config', 'gate', 'id', 'reason', 'specDir', 'status', 'typecheck'];

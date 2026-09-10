@@ -1,3 +1,32 @@
+import 'fake-indexeddb/auto';
+import { OfflineProfileDb } from '../../../libs/esm-offline/src/offline-profile-db';
+
+vi.mock('@openmrs/esm-api', async () => ({
+  ...(await vi.importActual('@openmrs/esm-api')),
+  getSessionStore: () => ({
+    getState: () => ({ loaded: true, session: { authenticated: true, user: { uuid: 'synthetic-cache-owner' } } }),
+  }),
+}));
+beforeEach(async () => {
+  const db = new OfflineProfileDb();
+  await db.profile.put({
+    id: 'profile',
+    ownerId: 'synthetic-cache-owner',
+    activeUserId: 'synthetic-cache-owner',
+    phase: 'active',
+    generation: 0,
+    sessionUrl: 'https://synthetic.test/openmrs/ws/rest/v1/session',
+  });
+  db.close();
+  vi.stubGlobal('navigator', {
+    onLine: true,
+    locks: {
+      request: async (name: string, options: LockOptions, callback: LockGrantedCallback<unknown>) =>
+        callback({ name, mode: options.mode ?? 'exclusive' } as Lock),
+    },
+  });
+});
+
 import {
   getConfig,
   getSessionStore,

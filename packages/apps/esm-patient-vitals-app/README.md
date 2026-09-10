@@ -88,3 +88,6 @@ to hide a failed item.
 - Pediatric reference ranges still need to be regularized in
   `sihsalus-content`; that coordinated follow-up is tracked in
   `docs/clinical/vitals-triage-encounter-contracts.md`.
+
+The vitals package explicitly declares its existing `react-to-print` v3 consumer, so isolated installs can render
+and test the overview without depending on another app to supply that module.

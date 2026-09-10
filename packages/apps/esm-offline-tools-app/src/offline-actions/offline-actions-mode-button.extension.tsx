@@ -22,14 +22,21 @@ const OfflineActionsModeButton: React.FC = () => {
   }, []);
 
   return (
-    <SwitcherItem className={styles.panelItemContainer} aria-label="Offline mode">
+    <SwitcherItem className={styles.panelItemContainer} aria-label={t('enableOfflineUse', 'Enable offline use')}>
       <div>
         <Network_3 size={20} />
         <p onClick={doNotCloseMenu} role="none">
-          {t('offlineReady', 'Offline Ready')}
+          {t('enableOfflineUse', 'Enable offline use')}
         </p>
       </div>
-      <Toggle className={styles.toggle} id="offlineModeSwitch" toggled={active} onToggle={toggle} />
+      <Toggle
+        className={styles.toggle}
+        id="offlineModeSwitch"
+        labelText={t('enableOfflineUse', 'Enable offline use')}
+        hideLabel
+        toggled={active}
+        onToggle={toggle}
+      />
     </SwitcherItem>
   );
 };

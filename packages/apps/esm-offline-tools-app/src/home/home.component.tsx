@@ -6,6 +6,7 @@ import OfflinePatientTable from '../offline-patients/offline-patient-table.compo
 
 import CardsContainer from './cards-container.component';
 import styles from './home.styles.scss';
+import OfflineReadiness from './offline-readiness.component';
 
 /**
  * The offline tool's home/dashboard page.
@@ -19,6 +20,7 @@ const Home: React.FC = () => {
   return (
     <SharedPageLayout header={t('homeHeader', 'Offline home')}>
       <div style={{ backgroundColor: '#ededed' }}>
+        <OfflineReadiness />
         <CardsContainer />
       </div>
 

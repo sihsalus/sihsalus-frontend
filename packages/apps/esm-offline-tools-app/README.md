@@ -39,6 +39,21 @@ refresh.
 Synchronization details render a fixed translated message for failed handlers. Persisted `error.message` values are
 never displayed because legacy IndexedDB records may contain URLs, UUIDs, or clinical data.
 
-Clinical responses and dynamic routes remain origin-wide. Removing a patient from the offline list currently removes
-membership, not every cached response. Shared devices therefore require a dedicated OS/browser profile per authorized
-user until cache partitioning or verified logout/removal purging is implemented.
+The worker now checks ownership before serving clinical downloads. Removing a patient from the offline list still
+removes membership, not every cached response; use the verified cleanup action to remove downloaded copies. Continue
+using a dedicated managed OS/browser profile per clinical user as required by the shared offline contract below.
+
+## Preparation, errors and actions
+
+The menu toggle enables offline use; it does not claim the device is prepared. The home card verifies selected
+patient/form downloads and shows the oldest verified update, incomplete selections, storage reserve and persistence.
+Only an explicit button requests persistent storage. Read failures and failed operations show fixed translated errors
+with retry controls; missing patient metadata does not hide a pending action or leave an endless loading skeleton.
+
+Actions are filtered and sorted across the complete owned collection before pagination. Page size is controlled, and
+a shrinking queue clamps the active page. Selection and deletion use stable queue IDs. Sync errors are displayed as
+an opaque status rather than persisted backend details.
+
+Download cleanup requires confirmation, a fresh owned session and an empty queue; it preserves pending content and
+selected membership. A partial failure remains blocked until verified retry. See the
+[shared offline contract](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup).

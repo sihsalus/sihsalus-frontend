@@ -28,7 +28,7 @@ function createChildProcess(closeCode = 0, signal = null) {
   return child;
 }
 
-test('catalogs all 13 Playwright suites with explicit execution metadata', () => {
+test('catalogs all 14 Playwright suites with explicit execution metadata', () => {
   assert.deepEqual(
     catalog.suites.map(({ id }) => id),
     [
@@ -42,6 +42,7 @@ test('catalogs all 13 Playwright suites with explicit execution metadata', () =>
       'form-builder',
       'laboratory',
       'offline-laptop',
+      'offline-local',
       'patient-imaging',
       'stock-management',
       'user-onboarding',
@@ -65,14 +66,15 @@ test('catalogs all 13 Playwright suites with explicit execution metadata', () =>
   }
 });
 
-test('allows only the three explicitly approved suites', () => {
+test('allows only the four explicitly approved suites', () => {
   const runnableSuites = catalog.suites.filter(({ status }) => status === 'runnable').map(({ id }) => id);
-  assert.deepEqual(runnableSuites, ['clinical', 'laboratory', 'offline-laptop']);
+  assert.deepEqual(runnableSuites, ['clinical', 'laboratory', 'offline-laptop', 'offline-local']);
   assert.deepEqual(runner.RUNNABLE_SUITE_IDS, runnableSuites);
 
   assert.equal(catalog.suites.find(({ id }) => id === 'clinical').ci, true);
   assert.equal(catalog.suites.find(({ id }) => id === 'laboratory').ci, true);
   assert.equal(catalog.suites.find(({ id }) => id === 'offline-laptop').ci, false);
+  assert.equal(catalog.suites.find(({ id }) => id === 'offline-local').ci, false);
 });
 
 test('records typecheck coverage consistently with e2e/tsconfig.json', async () => {
@@ -84,6 +86,7 @@ test('records typecheck coverage consistently with e2e/tsconfig.json', async () 
     'dyaku',
     'laboratory',
     'offline-laptop',
+    'offline-local',
     'patient-imaging',
     'stock-management',
     'user-onboarding',
@@ -132,7 +135,7 @@ test('ignores modular authentication state and JUnit output paths without creati
 test('owns every Playwright config and every spec exactly once', async () => {
   const coverage = await runner.validateCatalogCoverage(catalog, repositoryRoot);
 
-  assert.equal(coverage.configFiles.length, 13);
+  assert.equal(coverage.configFiles.length, 14);
   assert.equal(new Set(coverage.configFiles).size, coverage.configFiles.length);
   assert.ok(coverage.specFiles.length > 0);
   assert.equal(new Set(coverage.specFiles).size, coverage.specFiles.length);

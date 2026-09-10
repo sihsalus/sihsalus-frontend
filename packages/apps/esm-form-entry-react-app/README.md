@@ -68,4 +68,9 @@ registration is checked and every resource attempt finishes. An expected offline
 nor produces a global error notification; the previous cache remains available. An incomplete batch while the client
 is still online produces fixed translated warning feedback without exposing URLs, identifiers, or backend error details.
 
-Clinical cache content remains origin-wide. Shared devices require an isolated OS/browser profile per authorized user until cache partitioning or verified logout/removal purging is implemented.
+Downloaded clinical responses use the assigned offline profile and the shared verified-cleanup contract. Continue
+using one managed OS/browser profile per clinical user; cleanup never deletes pending actions.
+
+Offline download presence is checked through `areOfflineResourcesCached`, which rejects unowned or historical
+responses. [Shared ownership and cleanup rules](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup)
+apply to worker/consumer rollout and rollback.

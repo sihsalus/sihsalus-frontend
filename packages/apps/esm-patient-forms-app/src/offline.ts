@@ -1,4 +1,5 @@
 import {
+  areOfflineResourcesCached,
   launchWorkspace2,
   makeUrl,
   messageOmrsServiceWorker,
@@ -638,9 +639,7 @@ export async function setupDynamicFormDataHandler() {
     async isSynced() {
       const expectedUrls = getCacheableFormUrls();
       const absoluteExpectedUrls = expectedUrls.map((url) => globalThis.location.origin + makeUrl(url));
-      const cache = await caches.open('omrs-spa-cache-v1');
-      const keys = (await cache.keys()).map((key) => key.url);
-      return absoluteExpectedUrls.every((url) => keys.includes(url));
+      return areOfflineResourcesCached(absoluteExpectedUrls);
     },
     async sync(_identifier, abortSignal) {
       const urlsToCache = getCacheableFormUrls();

@@ -131,7 +131,9 @@ test('core translations localize app-shell connectivity status', () => {
 test('repository worker retains the controlled upstream lifecycle entry', () => {
   const source = fs.readFileSync(assertRepoOwnedServiceWorkerSource(), 'utf8');
 
-  assert.ok(source.startsWith("import '@openmrs/esm-app-shell/default-service-worker';\n"));
+  assert.ok(
+    source.startsWith("import './offline-profile';\nimport '@openmrs/esm-app-shell/default-service-worker';\n"),
+  );
 });
 
 test('unset worker source preserves the direct upstream InjectManifest entry', () => {
@@ -303,4 +305,9 @@ test('rejects an app-shell config that can emit an unresolved React global', () 
     () => assertCompatibleAppShellConfig({ plugins: [] }, { frameworkVersion: '9.0.3', swrVersion: '2.4.1' }),
     /must provide React/,
   );
+});
+
+test('source shell resolves explicit workspace imports to TypeScript', () => {
+  const config = getAppShellWebpackConfig();
+  assert.deepEqual(config.resolve.extensionAlias, { '.js': ['.js', '.ts', '.tsx'] });
 });

@@ -15,6 +15,7 @@ function loadRoute() {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText;
   const requireDependency = (name) => {
+    if (name === './offline-profile') return {};
     if (name === '@openmrs/esm-app-shell/default-service-worker') return {};
     if (name === 'workbox-routing') return { registerRoute: (...args) => routes.push(args) };
     if (name === 'workbox-strategies') return { NetworkOnly };

@@ -1,3 +1,4 @@
+import { readOfflineProfile, withOfflineStorageLock } from './offline-profile-db';
 /** @module @category Offline */
 
 import { getLoggedInUser, getSessionStore } from '@openmrs/esm-api';
@@ -505,41 +506,44 @@ export async function queueSynchronizationItemFor<T>(
   const targetId = descriptor && descriptor.id;
 
   try {
-    return await db.transaction('rw', db.syncQueue, async () => {
-      assertSessionOwnedBy(authenticatedUserId);
+    return await withOfflineStorageLock('shared', async () => {
+      if ((await readOfflineProfile())?.phase === 'clearing') throw createOfflineQueueOperationError();
+      return db.transaction('rw', db.syncQueue, async () => {
+        assertSessionOwnedBy(authenticatedUserId);
 
-      let contentToQueue = content;
+        let contentToQueue = content;
 
-      if (targetId !== undefined) {
-        const existingItems = (await db.syncQueue
-          .where('userId')
-          .equals(authenticatedUserId)
-          .and((item) => item.type === type && item.descriptor?.id === targetId)
-          .toArray()) as Array<SyncItem<T>>;
-        if (options.reconcileContent && existingItems.length > 1) {
-          throw createOfflineQueueOperationError();
+        if (targetId !== undefined) {
+          const existingItems = (await db.syncQueue
+            .where('userId')
+            .equals(authenticatedUserId)
+            .and((item) => item.type === type && item.descriptor?.id === targetId)
+            .toArray()) as Array<SyncItem<T>>;
+          if (options.reconcileContent && existingItems.length > 1) {
+            throw createOfflineQueueOperationError();
+          }
+          contentToQueue = options.reconcileContent?.(existingItems[0]?.content, content) ?? content;
+
+          // In case of replacement (i.e., the same descriptor ID), remove the existing
+          // item in the same transaction so a failed add cannot discard pending data.
+          await db.syncQueue
+            .where('userId')
+            .equals(authenticatedUserId)
+            .and((item) => item.type === type && item.descriptor?.id === targetId)
+            .delete();
         }
-        contentToQueue = options.reconcileContent?.(existingItems[0]?.content, content) ?? content;
 
-        // In case of replacement (i.e., the same descriptor ID), remove the existing
-        // item in the same transaction so a failed add cannot discard pending data.
-        await db.syncQueue
-          .where('userId')
-          .equals(authenticatedUserId)
-          .and((item) => item.type === type && item.descriptor?.id === targetId)
-          .delete();
-      }
+        const id = await db.syncQueue.add({
+          type,
+          content: contentToQueue,
+          userId: authenticatedUserId,
+          descriptor: descriptor || {},
+          createdOn: new Date(),
+        });
 
-      const id = await db.syncQueue.add({
-        type,
-        content: contentToQueue,
-        userId: authenticatedUserId,
-        descriptor: descriptor || {},
-        createdOn: new Date(),
+        assertSessionOwnedBy(authenticatedUserId);
+        return id;
       });
-
-      assertSessionOwnedBy(authenticatedUserId);
-      return id;
     });
   } catch {
     throw createOfflineQueueOperationError();

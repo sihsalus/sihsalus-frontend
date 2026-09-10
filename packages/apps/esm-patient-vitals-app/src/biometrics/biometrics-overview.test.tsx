@@ -125,10 +125,7 @@ describe('BiometricsOverview', () => {
 
     const tableRows = getDataRowText().map((row) => row ?? '');
     expect(
-      tableRows.some(
-        (row) =>
-          row.includes('90') && row.includes('186') && row.includes('26.0') && row.includes('95'),
-      ),
+      tableRows.some((row) => row.includes('90') && row.includes('186') && row.includes('26.0') && row.includes('95')),
     ).toBe(true);
     expect(screen.queryByRole('columnheader', { name: /muac/i })).not.toBeInTheDocument();
 

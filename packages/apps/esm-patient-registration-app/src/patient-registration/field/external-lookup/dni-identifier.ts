@@ -43,10 +43,7 @@ export function normalizeIdentityIdentifier(
     return rule.sanitize(normalizedInput);
   }
 
-  return normalizeDocumentNumber(
-    normalizedInput,
-    getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid),
-  );
+  return normalizeDocumentNumber(normalizedInput, getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid));
 }
 
 export function isValidIdentityIdentifier(

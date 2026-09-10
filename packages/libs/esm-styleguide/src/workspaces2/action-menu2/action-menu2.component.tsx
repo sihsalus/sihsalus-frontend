@@ -40,7 +40,12 @@ export function ActionMenu({ workspaceGroup, groupProps, onVisibilityChange }: A
         let element: HTMLElement | null = control;
         while (element && element !== container) {
           const style = window.getComputedStyle(element);
-          if (element.hidden || element.getAttribute('aria-hidden') === 'true' || style.display === 'none' || style.visibility === 'hidden') {
+          if (
+            element.hidden ||
+            element.getAttribute('aria-hidden') === 'true' ||
+            style.display === 'none' ||
+            style.visibility === 'hidden'
+          ) {
             return false;
           }
           element = element.parentElement;

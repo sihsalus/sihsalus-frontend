@@ -26,11 +26,7 @@ export function setupSynchronizingOfflineActionsNotifications() {
           'offlineActionsSynchronizationNotificationStarted',
           'Offline action upload started. Review pending actions for current status.',
         ),
-        action: translateFrom(
-          moduleName,
-          'offlineActionsSynchronizationNotificationCancelUpload',
-          'Cancel upload',
-        ),
+        action: translateFrom(moduleName, 'offlineActionsSynchronizationNotificationCancelUpload', 'Cancel upload'),
         onAction: () => {
           const state = getOfflineSynchronizationStore().getState();
           if (activeSynchronizationIndex === currentSynchronizationIndex) {

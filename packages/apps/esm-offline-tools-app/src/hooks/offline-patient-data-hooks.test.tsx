@@ -148,10 +148,7 @@ describe('offline patient data hooks', () => {
     mergeResponses.mockClear();
 
     let refreshSettled = false;
-    let refreshOutcome!: Promise<
-      | { status: 'fulfilled'; value: unknown }
-      | { status: 'rejected'; error: unknown }
-    >;
+    let refreshOutcome!: Promise<{ status: 'fulfilled'; value: unknown } | { status: 'rejected'; error: unknown }>;
     await act(async () => {
       refreshOutcome = result.current.mutate().then(
         (value) => {

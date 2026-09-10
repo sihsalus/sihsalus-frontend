@@ -681,41 +681,42 @@ describe('Patient registration validation', () => {
     expect(hydratedValues.attributes[insuranceAccreditationCheckedAtAttributeUuid]).toBe(checkedAt);
   });
 
-  it.each(['manual-web', 'setisis', 'siasis-adt'])(
-    'accepts hydrated or imported active E coverage with complete trusted %s evidence',
-    async (method) => {
-      const identifierTypes = [
-        {
-          fieldName: 'temporarySis',
-          format: '^E-[0-9]{8}$',
-          name: 'Afiliación Temporal SIS',
-          uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+  it.each([
+    'manual-web',
+    'setisis',
+    'siasis-adt',
+  ])('accepts hydrated or imported active E coverage with complete trusted %s evidence', async (method) => {
+    const identifierTypes = [
+      {
+        fieldName: 'temporarySis',
+        format: '^E-[0-9]{8}$',
+        name: 'Afiliación Temporal SIS',
+        uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      },
+    ];
+    const hydratedValues = {
+      ...validFormValues,
+      identifiers: {
+        temporarySis: {
+          identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+          identifierValue: 'E-41267525',
+          identifierUuid: 'hydrated-identifier-uuid',
+          initialValue: 'E-41267525',
+          required: false,
         },
-      ];
-      const hydratedValues = {
-        ...validFormValues,
-        identifiers: {
-          temporarySis: {
-            identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
-            identifierValue: 'E-41267525',
-            identifierUuid: 'hydrated-identifier-uuid',
-            initialValue: 'E-41267525',
-            required: false,
-          },
-        },
-        attributes: {
-          [insuranceTypeAttributeUuid]: sisConceptUuid,
-          [insuranceCodeAttributeUuid]: 'E-41267525',
-          [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
-          [insuranceAccreditationCheckedAtAttributeUuid]: '2026-08-24T16:30:00.123Z',
-          [peruInsuranceVerificationMethodAttributeTypeUuid]: method,
-        },
-      };
+      },
+      attributes: {
+        [insuranceTypeAttributeUuid]: sisConceptUuid,
+        [insuranceCodeAttributeUuid]: 'E-41267525',
+        [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+        [insuranceAccreditationCheckedAtAttributeUuid]: '2026-08-24T16:30:00.123Z',
+        [peruInsuranceVerificationMethodAttributeTypeUuid]: method,
+      },
+    };
 
-      expect(await validateFormValues(hydratedValues, identifierTypes)).toBeFalsy();
-      expect(await validateFormValues(hydratedValues, identifierTypes, hydratedValues)).toBeFalsy();
-    },
-  );
+    expect(await validateFormValues(hydratedValues, identifierTypes)).toBeFalsy();
+    expect(await validateFormValues(hydratedValues, identifierTypes, hydratedValues)).toBeFalsy();
+  });
 
   it.each([
     ['missing verification method', {}, '', 'E-41267525'],
@@ -738,47 +739,44 @@ describe('Patient registration validation', () => {
     ['E code without its hyphen', { [insuranceCodeAttributeUuid]: 'E41267525' }, 'manual-web', 'E-41267525'],
     ['E code with a space', { [insuranceCodeAttributeUuid]: 'E 41267525' }, 'manual-web', 'E-41267525'],
     ['short E code', { [insuranceCodeAttributeUuid]: 'E-123' }, 'manual-web', 'E-41267525'],
-  ])(
-    'blocks hydrated/imported active E coverage with %s',
-    async (_caseName, attributeOverrides, method, identifierValue) => {
-      const identifierTypes = [
-        {
-          fieldName: 'temporarySis',
-          format: '^E-[0-9]{8}$',
-          name: 'Afiliación Temporal SIS',
-          uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
-        },
-      ];
-      const identifiers = identifierValue
-        ? {
-            temporarySis: {
-              identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
-              identifierValue,
-              identifierUuid: 'hydrated-identifier-uuid',
-              initialValue: identifierValue,
-              required: false,
-            },
-          }
-        : {};
-      const hydratedValues = {
-        ...validFormValues,
-        identifiers,
-        attributes: {
-          [insuranceTypeAttributeUuid]: sisConceptUuid,
-          [insuranceCodeAttributeUuid]: 'E-41267525',
-          [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
-          [insuranceAccreditationCheckedAtAttributeUuid]: '2026-08-24T16:30:00.123Z',
-          [peruInsuranceVerificationMethodAttributeTypeUuid]: method,
-          ...attributeOverrides,
-        },
-      };
+  ])('blocks hydrated/imported active E coverage with %s', async (_caseName, attributeOverrides, method, identifierValue) => {
+    const identifierTypes = [
+      {
+        fieldName: 'temporarySis',
+        format: '^E-[0-9]{8}$',
+        name: 'Afiliación Temporal SIS',
+        uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      },
+    ];
+    const identifiers = identifierValue
+      ? {
+          temporarySis: {
+            identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+            identifierValue,
+            identifierUuid: 'hydrated-identifier-uuid',
+            initialValue: identifierValue,
+            required: false,
+          },
+        }
+      : {};
+    const hydratedValues = {
+      ...validFormValues,
+      identifiers,
+      attributes: {
+        [insuranceTypeAttributeUuid]: sisConceptUuid,
+        [insuranceCodeAttributeUuid]: 'E-41267525',
+        [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+        [insuranceAccreditationCheckedAtAttributeUuid]: '2026-08-24T16:30:00.123Z',
+        [peruInsuranceVerificationMethodAttributeTypeUuid]: method,
+        ...attributeOverrides,
+      },
+    };
 
-      const importedValidationError = await validateFormValues(hydratedValues, identifierTypes);
-      const reopenedValidationError = await validateFormValues(hydratedValues, identifierTypes, hydratedValues);
-      expect(importedValidationError.errors).toContain('temporarySisSiasisBundleNeedsReview');
-      expect(reopenedValidationError.errors).toContain('temporarySisSiasisBundleNeedsReview');
-    },
-  );
+    const importedValidationError = await validateFormValues(hydratedValues, identifierTypes);
+    const reopenedValidationError = await validateFormValues(hydratedValues, identifierTypes, hydratedValues);
+    expect(importedValidationError.errors).toContain('temporarySisSiasisBundleNeedsReview');
+    expect(reopenedValidationError.errors).toContain('temporarySisSiasisBundleNeedsReview');
+  });
 
   it('does not treat a regular alphabetic insurance code beginning with E as temporary SIS', async () => {
     const formValues = {

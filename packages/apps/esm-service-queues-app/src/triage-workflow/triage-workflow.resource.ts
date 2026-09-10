@@ -96,8 +96,7 @@ function toAppointmentDate(value: AppointmentSummary['startDateTime']): Date | n
   if (value == null) {
     return null;
   }
-  const normalizedValue =
-    typeof value === 'number' && Math.abs(value) < 100_000_000_000 ? value * 1000 : value;
+  const normalizedValue = typeof value === 'number' && Math.abs(value) < 100_000_000_000 ? value * 1000 : value;
   const date = normalizedValue instanceof Date ? new Date(normalizedValue.valueOf()) : new Date(normalizedValue);
   return Number.isNaN(date.valueOf()) ? null : date;
 }
@@ -149,7 +148,9 @@ export function selectAppointmentForQueueEntry(
     const leftDate = toAppointmentDate(left.startDateTime);
     const rightDate = toAppointmentDate(right.startDateTime);
     const leftDistance = leftDate ? Math.abs(leftDate.valueOf() - referenceDate.valueOf()) : Number.POSITIVE_INFINITY;
-    const rightDistance = rightDate ? Math.abs(rightDate.valueOf() - referenceDate.valueOf()) : Number.POSITIVE_INFINITY;
+    const rightDistance = rightDate
+      ? Math.abs(rightDate.valueOf() - referenceDate.valueOf())
+      : Number.POSITIVE_INFINITY;
     return leftDistance - rightDistance;
   })[0];
 }
@@ -246,8 +247,7 @@ export function getTriageState(
   if (!hasAppointmentContext && !isTriageQueue) {
     return 'notRequired';
   }
-  const requiresTriage =
-    isTriageQueue || Boolean(getDestinationQueueUuid(appointment, config));
+  const requiresTriage = isTriageQueue || Boolean(getDestinationQueueUuid(appointment, config));
   if (!requiresTriage) {
     return 'notRequired';
   }
@@ -374,10 +374,7 @@ export function useQueueWorkflowMetadata(queueEntries: Array<QueueEntry>) {
     const fallbackDate = getQueueEntryReferenceDate(entry)?.tz(timeZone).format('YYYY-MM-DD');
     const appointment = appointmentUuid
       ? appointments.data?.get(appointmentUuid)
-      : selectAppointmentForQueueEntry(
-          entry,
-          fallbackDate ? (fallbackAppointments.data?.get(fallbackDate) ?? []) : [],
-        );
+      : selectAppointmentForQueueEntry(entry, fallbackDate ? (fallbackAppointments.data?.get(fallbackDate) ?? []) : []);
     const workflow: QueueWorkflowMetadata = {
       appointmentStartDateTime: normalizeAppointmentStartDateTime(appointment?.startDateTime),
       appointmentUuid: appointmentUuid ?? appointment?.uuid,

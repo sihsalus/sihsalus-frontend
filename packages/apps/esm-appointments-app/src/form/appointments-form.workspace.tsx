@@ -123,7 +123,6 @@ const preventInvalidIntegerPaste =
 const getIntegerValue = (value: string | number, constraints: PlainNumberInputConstraints) =>
   validatePlainNumberInput(value, constraints).parsedValue ?? null;
 
-
 function getConflictErrorMessage(
   responseData: Record<string, unknown> | null | undefined,
   t: (key: string, defaultValue: string) => string,
@@ -658,9 +657,9 @@ const AppointmentsForm: React.FC<
   });
   const isDifferentProviderSelected = Boolean(
     session?.currentProvider?.uuid &&
-    selectedProviderUuid &&
-    selectedProviderUuid !== session.currentProvider.uuid &&
-    selectedProvider,
+      selectedProviderUuid &&
+      selectedProviderUuid !== session.currentProvider.uuid &&
+      selectedProvider,
   );
   const editableAppointmentStatuses = appointment?.status
     ? [
@@ -1615,7 +1614,10 @@ const AppointmentsForm: React.FC<
                 />
               </ResponsiveWrapper>
             ) : null}
-            {isProviderAssignmentEnabled && selectedService && !providers.isLoading && eligibleProviders.length === 0 ? (
+            {isProviderAssignmentEnabled &&
+            selectedService &&
+            !providers.isLoading &&
+            eligibleProviders.length === 0 ? (
               <InlineNotification
                 className={styles.providerNotice}
                 hideCloseButton

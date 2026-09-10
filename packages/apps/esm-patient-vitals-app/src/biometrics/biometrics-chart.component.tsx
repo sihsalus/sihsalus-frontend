@@ -36,7 +36,12 @@ const chartColors = {
   abdominalCircumference: '#6929c4',
 };
 
-const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, conceptUnits, config, showMuac = true }) => {
+const BiometricsChart: React.FC<BiometricsChartProps> = ({
+  patientBiometrics,
+  conceptUnits,
+  config,
+  showMuac = true,
+}) => {
   const { t } = useTranslation();
   const biometricLabelId = useId();
   const isMobileChartLayout = useIsMobileChartLayout();

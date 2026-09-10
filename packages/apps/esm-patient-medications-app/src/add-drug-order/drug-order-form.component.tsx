@@ -568,11 +568,7 @@ export function DrugOrderForm({
           </span>
         </div>
         <ExtensionSlot name="allergy-list-pills-slot" state={{ patientUuid: patient?.id }} />
-        <Form
-          className={styles.orderForm}
-          onSubmit={handleSubmit(handleFormSubmission)}
-          id="drugOrderForm"
-        >
+        <Form className={styles.orderForm} onSubmit={handleSubmit(handleFormSubmission)} id="drugOrderForm">
           <div>
             {errorFetchingOrderConfig && (
               <InlineNotification

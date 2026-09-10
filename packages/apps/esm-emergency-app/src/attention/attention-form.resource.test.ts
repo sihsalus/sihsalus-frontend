@@ -89,7 +89,9 @@ describe('createAttentionEncounter', () => {
   it('fresh-checks the active queue and living patient, writes the deterministic UUID, and verifies persistence', async () => {
     const persisted = persistedEncounter();
     mockEmptyPreflight();
-    mockOpenmrsFetch.mockResolvedValueOnce(response({ uuid: persisted.uuid })).mockResolvedValueOnce(response(persisted));
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ uuid: persisted.uuid }))
+      .mockResolvedValueOnce(response(persisted));
 
     await expect(createAttentionEncounter(input)).resolves.toMatchObject({ data: { uuid: persisted.uuid } });
 
@@ -164,7 +166,9 @@ describe('createAttentionEncounter', () => {
       .mockResolvedValueOnce(response({ results: [] }))
       .mockResolvedValueOnce(response(staleEntry));
 
-    await expect(createAttentionEncounter(input)).rejects.toMatchObject({ code: 'EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED' });
+    await expect(createAttentionEncounter(input)).rejects.toMatchObject({
+      code: 'EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED',
+    });
     expect(mockAssertFreshPatientIsAlive).not.toHaveBeenCalled();
     expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });

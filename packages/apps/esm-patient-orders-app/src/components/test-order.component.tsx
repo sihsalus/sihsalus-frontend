@@ -85,7 +85,12 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
   return result;
 };
 
-const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hideSupplementalPdf, hideObservations }) => {
+const TestOrder: React.FC<TestOrderProps> = ({
+  testOrder,
+  hideInstructions,
+  hideSupplementalPdf,
+  hideObservations,
+}) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const encounterUuid = testOrder?.encounter?.uuid;
@@ -114,7 +119,8 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
     }
 
     // 3. Fallback by concept.uuid (ONLY for COMPLETED or DRAFT orders, NEVER for PENDING / NEW orders)
-    const isCompleted = (testOrder.fulfillerStatus as string) === 'COMPLETED' || (testOrder.fulfillerStatus as string) === 'DRAFT';
+    const isCompleted =
+      (testOrder.fulfillerStatus as string) === 'COMPLETED' || (testOrder.fulfillerStatus as string) === 'DRAFT';
     if (!obs && isCompleted && targetConceptUuid) {
       const byConcept = encounter.obs.filter(
         (o) =>
@@ -175,7 +181,9 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
           id: memberConcept.uuid,
           testType: (
             <div className={styles.testType}>
-              {memberConcept.groupLabel ? `${memberConcept.groupLabel} - ${memberConcept.display}` : memberConcept.display}
+              {memberConcept.groupLabel
+                ? `${memberConcept.groupLabel} - ${memberConcept.display}`
+                : memberConcept.display}
             </div>
           ),
           result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(memberObs?.value) ?? '--'),

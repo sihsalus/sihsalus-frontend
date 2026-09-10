@@ -21,13 +21,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
-import {
-  ErrorState,
-  getUserFacingErrorMessage,
-  showSnackbar,
-  useConfig,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ErrorState, getUserFacingErrorMessage, showSnackbar, useConfig, usePagination } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo, useRef, useState } from 'react';

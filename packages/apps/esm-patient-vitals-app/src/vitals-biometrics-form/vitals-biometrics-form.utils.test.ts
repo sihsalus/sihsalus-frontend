@@ -84,12 +84,10 @@ describe('mergeReferenceRanges', () => {
   });
 
   it('prefers the patient-specific normal range when available', () => {
-    expect(
-      mergeReferenceRanges(
-        { lowNormal: 36, hiNormal: 37.5 },
-        { lowNormal: 36.5, hiNormal: 37.2 },
-      ),
-    ).toMatchObject({ lowNormal: 36.5, hiNormal: 37.2 });
+    expect(mergeReferenceRanges({ lowNormal: 36, hiNormal: 37.5 }, { lowNormal: 36.5, hiNormal: 37.2 })).toMatchObject({
+      lowNormal: 36.5,
+      hiNormal: 37.2,
+    });
   });
 });
 

@@ -64,9 +64,7 @@ export function formatPersonName(value: string | null | undefined, locale = 'es'
 
       return word
         .split(/([-\u2019'])/u)
-        .map((part) =>
-          part === '-' || part === "'" || part === '\u2019' ? part : capitalizeWordPart(part, locale),
-        )
+        .map((part) => (part === '-' || part === "'" || part === '\u2019' ? part : capitalizeWordPart(part, locale)))
         .join('');
     })
     .join(' ');

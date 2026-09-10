@@ -1431,9 +1431,7 @@ describe('Visit form', () => {
 
     renderVisitForm(undefined, {
       requireActiveSisFinancing: true,
-      additionalVisitAttributes: [
-        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: financiadorUuid },
-      ],
+      additionalVisitAttributes: [{ attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: financiadorUuid }],
     });
     await selectVisitType(user);
     await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');

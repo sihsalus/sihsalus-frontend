@@ -139,9 +139,7 @@ describe('registration metadata offline caching', () => {
       new URL(input, globalThis.location.origin).searchParams.has('_bulkPatientImportMetadata'),
     );
     expect(freshCalls).toHaveLength(4);
-    expect(
-      new Set(freshCalls.map(([input]) => new URL(input, globalThis.location.origin).pathname)),
-    ).toEqual(
+    expect(new Set(freshCalls.map(([input]) => new URL(input, globalThis.location.origin).pathname))).toEqual(
       new Set([
         '/openmrs/ws/rest/v1/patientidentifiertype',
         '/openmrs/ws/rest/v1/metadatamapping/termmapping',

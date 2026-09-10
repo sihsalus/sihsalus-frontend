@@ -327,11 +327,7 @@ describe('QueueFields', () => {
 
   it('shows the appointment UPSS instead of the technical queue location', async () => {
     render(
-      <QueueFields
-        currentQueueLocationUuid="1"
-        requestedUpssName="UPSS - CONSULTA EXTERNA"
-        setCallbacks={vi.fn()}
-      />,
+      <QueueFields currentQueueLocationUuid="1" requestedUpssName="UPSS - CONSULTA EXTERNA" setCallbacks={vi.fn()} />,
     );
 
     const upss = await screen.findByRole('textbox', { name: 'UPSS' });

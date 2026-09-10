@@ -11,21 +11,19 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@openmrs/esm-framework', () => ({
-  translateFrom: vi.fn(
-    (moduleName: string, key: string, fallback: string) => {
-      if (moduleName !== '@sihsalus/esm-offline-tools-app') {
-        return fallback;
-      }
+  translateFrom: vi.fn((moduleName: string, key: string, fallback: string) => {
+    if (moduleName !== '@sihsalus/esm-offline-tools-app') {
+      return fallback;
+    }
 
-      const spanishTranslations = {
-        offlineActionsSynchronizationNotificationCancelUpload: 'Cancelar carga',
-        offlineActionsSynchronizationNotificationStarted:
-          'La carga de acciones sin conexión comenzó. Revise las acciones pendientes para ver el estado actual.',
-        offlineActionsSynchronizationNotificationTitle: 'Carga',
-      };
-      return spanishTranslations[key] ?? fallback;
-    },
-  ),
+    const spanishTranslations = {
+      offlineActionsSynchronizationNotificationCancelUpload: 'Cancelar carga',
+      offlineActionsSynchronizationNotificationStarted:
+        'La carga de acciones sin conexión comenzó. Revise las acciones pendientes para ver el estado actual.',
+      offlineActionsSynchronizationNotificationTitle: 'Carga',
+    };
+    return spanishTranslations[key] ?? fallback;
+  }),
 }));
 
 vi.mock('@openmrs/esm-framework/src/internal', () => ({

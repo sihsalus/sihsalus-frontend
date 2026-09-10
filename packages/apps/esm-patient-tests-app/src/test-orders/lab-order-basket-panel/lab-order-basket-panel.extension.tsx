@@ -112,18 +112,24 @@ function LabOrderBasketPanel({
 
   const isRegionalLine = useCallback((line: string) => {
     const normalized = line.trim().toLowerCase();
-    return normalized === 'solo para ser enviado a hospital regional' || normalized === 'solo para ser enviado a hospital regional.';
+    return (
+      normalized === 'solo para ser enviado a hospital regional' ||
+      normalized === 'solo para ser enviado a hospital regional.'
+    );
   }, []);
 
   // Helper to extract custom/bulk instructions excluding hospitalized and regional keywords
-  const getBulkInstructionsFromOrder = useCallback((instructions: string) => {
-    if (!instructions) return '';
-    return instructions
-      .split('\n')
-      .filter((line) => !isHospitalizedLine(line) && !isRegionalLine(line))
-      .join('\n')
-      .trim();
-  }, [isHospitalizedLine, isRegionalLine]);
+  const getBulkInstructionsFromOrder = useCallback(
+    (instructions: string) => {
+      if (!instructions) return '';
+      return instructions
+        .split('\n')
+        .filter((line) => !isHospitalizedLine(line) && !isRegionalLine(line))
+        .join('\n')
+        .trim();
+    },
+    [isHospitalizedLine, isRegionalLine],
+  );
 
   // Inicializar checkboxes basándose en los items que ya están en la canasta
   const [isHospitalized, setIsHospitalized] = useState(() => {
@@ -136,16 +142,17 @@ function LabOrderBasketPanel({
   const [isRegional, setIsRegional] = useState(() => {
     return orders.some((order) => {
       const instr = (order.instructions || '').toLowerCase();
-      return instr.includes('solo para ser enviado a hospital regional') || instr.includes('solo para ser enviado a hospital regional.');
+      return (
+        instr.includes('solo para ser enviado a hospital regional') ||
+        instr.includes('solo para ser enviado a hospital regional.')
+      );
     });
   });
 
   const [bulkInstructions, setBulkInstructions] = useState(() => {
     if (orders.length === 0) return '';
     const firstBulk = getBulkInstructionsFromOrder(orders[0].instructions || '');
-    const allShareFirst = orders.every(
-      (order) => getBulkInstructionsFromOrder(order.instructions || '') === firstBulk,
-    );
+    const allShareFirst = orders.every((order) => getBulkInstructionsFromOrder(order.instructions || '') === firstBulk);
     return allShareFirst ? firstBulk : '';
   });
 

@@ -43,7 +43,9 @@ function useOrderObservationComment(order: any) {
     if (!targetObs && order.fulfillerStatus === 'COMPLETED' && order.concept?.uuid) {
       const byConcept = obsList.filter(
         // biome-ignore lint/suspicious/noExplicitAny: observation representation
-        (o: any) => o?.concept?.uuid === order.concept.uuid || o?.groupMembers?.some((m: any) => m?.concept?.uuid === order.concept.uuid),
+        (o: any) =>
+          o?.concept?.uuid === order.concept.uuid ||
+          o?.groupMembers?.some((m: any) => m?.concept?.uuid === order.concept.uuid),
       );
       if (byConcept.length > 0) {
         targetObs = byConcept[byConcept.length - 1];
@@ -139,10 +141,7 @@ const OrderItemDetails = ({ order }: { order: any }) => {
             }
           />
           <OrderDetailRow label={t('orderNumbers', 'Order number:')} value={order.orderNumber} />
-          <OrderDetailRow
-            label={t('orderDate', 'Order date:')}
-            value={formatDate(parseDate(order.dateActivated))}
-          />
+          <OrderDetailRow label={t('orderDate', 'Order date:')} value={formatDate(parseDate(order.dateActivated))} />
           <OrderDetailRow label={t('orderedBy', 'Ordered By:')} value={order.orderer?.display} />
           <OrderDetailRow
             label={t('orderInstructions', 'Instructions:')}

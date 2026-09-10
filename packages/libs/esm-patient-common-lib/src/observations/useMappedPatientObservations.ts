@@ -48,12 +48,7 @@ interface UseMappedPatientObservationsOptions<Row extends PatientObservationBase
   patientUuid: string;
 }
 
-function fetchPatientObservations({
-  patientUuid,
-  conceptUuids,
-  page,
-  pageSize,
-}: PatientObservationsSwrKey) {
+function fetchPatientObservations({ patientUuid, conceptUuids, page, pageSize }: PatientObservationsSwrKey) {
   const url = `${fhirBaseUrl}/Observation?subject:Patient=${patientUuid}&`;
   const urlSearchParams = new URLSearchParams();
 

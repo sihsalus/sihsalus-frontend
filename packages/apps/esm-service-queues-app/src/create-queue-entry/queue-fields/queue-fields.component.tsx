@@ -17,11 +17,7 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  isTriageFinancingEligible,
-} from '@openmrs/esm-patient-common-lib';
+import { fetchVisitInsurance, getSisFinancingState, isTriageFinancingEligible } from '@openmrs/esm-patient-common-lib';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -361,7 +357,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         />
       )}
       <section className={styles.section}>
-        <div className={styles.sectionTitle}>{requestedUpssName ? t('upss', 'UPSS') : t('queueLocation', 'Queue UPSS')}</div>
+        <div className={styles.sectionTitle}>
+          {requestedUpssName ? t('upss', 'UPSS') : t('queueLocation', 'Queue UPSS')}
+        </div>
         <ResponsiveWrapper>
           {isLoadingQueueLocations ? (
             <SelectSkeleton />

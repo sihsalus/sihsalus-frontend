@@ -124,10 +124,7 @@ const StatefulGroupWorkflow = () => {
   const formState = state.forms['group-form'];
   const saveEncounter = useCallback((encounterUuid) => dispatch({ type: 'SAVE_ENCOUNTER', encounterUuid }), []);
   const updateVisitUuid = useCallback((visitUuid) => dispatch({ type: 'UPDATE_VISIT_UUID', visitUuid }), []);
-  const submitForNext = useCallback(
-    (nextPatientUuid) => dispatch({ type: 'SUBMIT_FOR_NEXT', nextPatientUuid }),
-    [],
-  );
+  const submitForNext = useCallback((nextPatientUuid) => dispatch({ type: 'SUBMIT_FOR_NEXT', nextPatientUuid }), []);
   const resetSubmission = useCallback(() => dispatch({ type: 'SUBMISSION_FAILED' }), []);
 
   return (

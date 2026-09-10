@@ -313,9 +313,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
 
             // Apply labset filter to individual orders if set
             if (selectedLabsetUuid && fetchedLabsets) {
-              labOrdersForPatient = labOrdersForPatient.filter((order) =>
-                isRelatedLabset(order.concept?.uuid),
-              );
+              labOrdersForPatient = labOrdersForPatient.filter((order) => isRelatedLabset(order.concept?.uuid));
               flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) =>
                 isRelatedLabset(order.conceptUuid),
               );

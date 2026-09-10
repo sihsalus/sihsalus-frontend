@@ -139,10 +139,7 @@ describe('FormRenderer', () => {
     });
     render(<FormRenderer {...defaultProps} onBeforeEncounterSave={onBeforeEncounterSave} />);
     expect(screen.getByTestId('form-engine')).toBeInTheDocument();
-    expect(mockFormEngine).toHaveBeenCalledWith(
-      expect.objectContaining({ onBeforeEncounterSave }),
-      expect.anything(),
-    );
+    expect(mockFormEngine).toHaveBeenCalledWith(expect.objectContaining({ onBeforeEncounterSave }), expect.anything());
   });
 
   it('passes encounterUUID for edit mode', () => {

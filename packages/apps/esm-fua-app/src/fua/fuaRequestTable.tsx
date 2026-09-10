@@ -182,7 +182,10 @@ async function fetchFuaRequestPatients(_key: string, visitUuids: Array<string>) 
   return new Map<string, FuaRequestPatientInfo>(patientEntries);
 }
 
-const PatientCell: React.FC<{ visitUuid: string; patientInfo?: FuaRequestPatientInfo }> = ({ visitUuid, patientInfo }) => {
+const PatientCell: React.FC<{ visitUuid: string; patientInfo?: FuaRequestPatientInfo }> = ({
+  visitUuid,
+  patientInfo,
+}) => {
   if (!patientInfo) {
     return <span>—</span>;
   }
@@ -217,10 +220,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     excludeCanceled: true,
   });
   const { estados } = useFuaEstados();
-  const downloadedEstado = useMemo(
-    () => estados.find((estado) => isDownloadedEstado(estado.nombre)),
-    [estados],
-  );
+  const downloadedEstado = useMemo(() => estados.find((estado) => isDownloadedEstado(estado.nombre)), [estados]);
 
   const [searchString, setSearchString] = useState('');
   const [selectedEstadoUuid, setSelectedEstadoUuid] = useState('all');
@@ -237,14 +237,14 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
   const filteredData = useMemo(() => {
     if (!fuaOrders) return [];
     const estadoFilteredOrders =
-      selectedEstadoUuid === 'all'
-        ? fuaOrders
-        : fuaOrders.filter((req) => req.fuaEstado?.uuid === selectedEstadoUuid);
+      selectedEstadoUuid === 'all' ? fuaOrders : fuaOrders.filter((req) => req.fuaEstado?.uuid === selectedEstadoUuid);
 
     if (!searchString) return estadoFilteredOrders;
     if (!patientInfoByVisitUuid) return estadoFilteredOrders;
     const search = searchString.toLowerCase().trim();
-    return estadoFilteredOrders.filter((req) => patientInfoByVisitUuid.get(req.visitUuid)?.searchableText.includes(search));
+    return estadoFilteredOrders.filter((req) =>
+      patientInfoByVisitUuid.get(req.visitUuid)?.searchableText.includes(search),
+    );
   }, [fuaOrders, patientInfoByVisitUuid, searchString, selectedEstadoUuid]);
 
   const pageSizes = [10, 20, 30, 40, 50];
@@ -342,10 +342,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
           showSnackbar({
             kind: 'error',
             title: t('errorUpdatingFuaStatus', 'Error al actualizar estado FUA'),
-            subtitle: t(
-              'downloadedFuaStatusNotFound',
-              'No se encontro un estado FUA con nombre EMITIDO o DESCARGADO.',
-            ),
+            subtitle: t('downloadedFuaStatusNotFound', 'No se encontro un estado FUA con nombre EMITIDO o DESCARGADO.'),
           });
           return;
         }

@@ -350,18 +350,16 @@ function TestTypeSearchResults({
                   })}
               </span>
               <div className={styles.headerActions}>
-                {isWholeTestSelected &&
-                  testTypes.length > 0 &&
-                  !testTypes.some((test) => test.approximateMatch) && (
-                    <Button
-                      kind="ghost"
-                      onClick={addAllToBasket}
-                      size={isTablet ? 'md' : 'sm'}
-                      renderIcon={(props: any) => <ShoppingCartArrowDownIcon size={16} {...props} />}
-                    >
-                      {t('addAllToBasket', 'Agregar todos')}
-                    </Button>
-                  )}
+                {isWholeTestSelected && testTypes.length > 0 && !testTypes.some((test) => test.approximateMatch) && (
+                  <Button
+                    kind="ghost"
+                    onClick={addAllToBasket}
+                    size={isTablet ? 'md' : 'sm'}
+                    renderIcon={(props: any) => <ShoppingCartArrowDownIcon size={16} {...props} />}
+                  >
+                    {t('addAllToBasket', 'Agregar todos')}
+                  </Button>
+                )}
                 {searchTerm && (
                   <Button kind="ghost" onClick={focusAndClearSearchInput} size={isTablet ? 'md' : 'sm'}>
                     {t('clearSearchResults', 'Clear results')}

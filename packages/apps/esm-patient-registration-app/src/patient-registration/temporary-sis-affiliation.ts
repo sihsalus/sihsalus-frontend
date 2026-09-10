@@ -23,9 +23,7 @@ import {
 export const peruTemporarySisSiasisVerificationMethod = SIS_TEMPORARY_AFFILIATION_VERIFICATION_METHOD;
 
 const independentSisVerificationMethods: ReadonlySet<string> = new Set(
-  TRUSTED_SIS_VERIFICATION_METHODS.filter(
-    (method) => method !== SIS_TEMPORARY_AFFILIATION_VERIFICATION_METHOD,
-  ),
+  TRUSTED_SIS_VERIFICATION_METHODS.filter((method) => method !== SIS_TEMPORARY_AFFILIATION_VERIFICATION_METHOD),
 );
 const verifiedAccreditationStatuses = new Set([
   peruInsuranceAccreditationActiveConceptUuid,
@@ -187,10 +185,7 @@ export function requiresSiasisAdtBundleReview(
   const rawMethod = attributes[peruInsuranceVerificationMethodAttributeTypeUuid];
   const claimsSiasisAdt = rawMethod?.trim() === peruTemporarySisSiasisVerificationMethod;
 
-  if (
-    claimsSiasisAdt &&
-    !isCompleteActiveSisBundle(values, identifierTypes, siasisAdtOnlyMethod)
-  ) {
+  if (claimsSiasisAdt && !isCompleteActiveSisBundle(values, identifierTypes, siasisAdtOnlyMethod)) {
     return true;
   }
 

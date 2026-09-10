@@ -43,9 +43,7 @@ describe('serveQueueEntry', () => {
   it('does not post when the authoritative patient guard rejects', async () => {
     mockAssertFreshPatientIsAlive.mockRejectedValue(new Error('deceased patient'));
 
-    await expect(serveQueueEntry('patient-uuid', 'Triage', '42', 'calling')).rejects.toThrow(
-      'deceased patient',
-    );
+    await expect(serveQueueEntry('patient-uuid', 'Triage', '42', 'calling')).rejects.toThrow('deceased patient');
 
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });

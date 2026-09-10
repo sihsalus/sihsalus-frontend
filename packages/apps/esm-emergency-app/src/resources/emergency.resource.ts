@@ -946,8 +946,7 @@ export async function endEmergencyQueueEntry(queueEntryUuid: string) {
   const serverDate =
     parsedResponseDate && !Number.isNaN(parsedResponseDate.valueOf()) ? parsedResponseDate : new Date();
   const startedAt = freshResponse.data.startedAt ? new Date(freshResponse.data.startedAt) : null;
-  const endedAt =
-    startedAt && !Number.isNaN(startedAt.valueOf()) && startedAt > serverDate ? startedAt : serverDate;
+  const endedAt = startedAt && !Number.isNaN(startedAt.valueOf()) && startedAt > serverDate ? startedAt : serverDate;
 
   try {
     await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {

@@ -56,7 +56,9 @@ describe('AttentionFormWorkspace', () => {
     } as Config);
     mockUseMutateEmergencyQueueEntries.mockReturnValue({ mutateEmergencyQueueEntries: vi.fn() });
     mockCreateAttentionEncounter.mockResolvedValue({ data: { uuid: 'encounter-uuid' } } as never);
-    mockEndEmergencyQueueEntry.mockResolvedValue({ data: { ...queueEntry, endedAt: new Date().toISOString() } } as never);
+    mockEndEmergencyQueueEntry.mockResolvedValue({
+      data: { ...queueEntry, endedAt: new Date().toISOString() },
+    } as never);
     mockStopEmergencyVisit.mockResolvedValue({ data: {} } as never);
   });
 

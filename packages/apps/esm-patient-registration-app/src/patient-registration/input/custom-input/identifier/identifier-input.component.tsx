@@ -119,7 +119,10 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
   };
 
   const showEditButton =
-    !isSystemManagedMedicalRecord && !requiredForRegistration && hideInputField && (!!initialValue || manualEntryEnabled);
+    !isSystemManagedMedicalRecord &&
+    !requiredForRegistration &&
+    hideInputField &&
+    (!!initialValue || manualEntryEnabled);
   const showResetButton =
     !isSystemManagedMedicalRecord &&
     ((!!initialValue && initialValue !== identifierValue) || (!hideInputField && manualEntryEnabled));

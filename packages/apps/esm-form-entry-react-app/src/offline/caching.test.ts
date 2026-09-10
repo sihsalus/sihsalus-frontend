@@ -206,9 +206,7 @@ describe('offline form caching', () => {
       `${globalThis.location.origin}/openmrs/ws/rest/v1/form/${formUuid}?v=full`,
       `${globalThis.location.origin}/openmrs/ws/rest/v1/o3/forms/${formUuid}`,
     ];
-    const cachedResponses = new Map(
-      stableUrls.map((url) => [url, new Response('stale form data', { status: 200 })]),
-    );
+    const cachedResponses = new Map(stableUrls.map((url) => [url, new Response('stale form data', { status: 200 })]));
     const cachePut = vi.fn(async (request: RequestInfo | URL, response: Response) => {
       const key = request instanceof Request ? request.url : request.toString();
       cachedResponses.set(key, response.clone());

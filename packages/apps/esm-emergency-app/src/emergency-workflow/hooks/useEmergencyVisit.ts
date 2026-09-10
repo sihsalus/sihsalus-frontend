@@ -55,10 +55,7 @@ export function useEmergencyVisit() {
   const showAdministrativeNotesWarning = useCallback(() => {
     showSnackbar({
       title: t('visitCreatedAdministrativeNotesPending', 'Visita creada, observación pendiente'),
-      subtitle: t(
-        'couldNotSaveAdministrativeNotes',
-        'No se pudo guardar la observación administrativa de emergencia',
-      ),
+      subtitle: t('couldNotSaveAdministrativeNotes', 'No se pudo guardar la observación administrativa de emergencia'),
       kind: 'warning',
     });
   }, [t]);

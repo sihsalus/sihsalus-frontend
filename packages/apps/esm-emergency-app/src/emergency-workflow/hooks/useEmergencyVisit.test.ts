@@ -142,9 +142,9 @@ describe('useEmergencyVisit', () => {
 
     expect(mockAssertFreshPatientIsAlive).not.toHaveBeenCalled();
     expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
-    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST')).toBe(
-      false,
-    );
+    expect(
+      mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST'),
+    ).toBe(false);
   });
 
   it('fresh-checks a living patient immediately before reusing an active visit', async () => {
@@ -202,9 +202,9 @@ describe('useEmergencyVisit', () => {
       code: PATIENT_VITAL_STATUS_UNAVAILABLE,
     });
     expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
-    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST')).toBe(
-      false,
-    );
+    expect(
+      mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST'),
+    ).toBe(false);
   });
 
   it('applies pending administrative notes when a retry recovers an active visit', async () => {
@@ -317,10 +317,7 @@ describe('useEmergencyVisit', () => {
   });
 
   it.each([
-    [
-      'deceased',
-      Object.assign(new Error('deceased during notes'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
-    ],
+    ['deceased', Object.assign(new Error('deceased during notes'), { code: DECEASED_PATIENT_OPERATION_BLOCKED })],
     [
       'vital status unavailable',
       Object.assign(new Error('network unavailable during notes'), { code: PATIENT_VITAL_STATUS_UNAVAILABLE }),

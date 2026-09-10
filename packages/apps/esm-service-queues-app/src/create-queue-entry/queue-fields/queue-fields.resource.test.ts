@@ -1,8 +1,5 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
-import {
-  assertFreshPatientIsAlive,
-  DECEASED_PATIENT_OPERATION_BLOCKED,
-} from '@openmrs/esm-patient-common-lib';
+import { assertFreshPatientIsAlive, DECEASED_PATIENT_OPERATION_BLOCKED } from '@openmrs/esm-patient-common-lib';
 
 import {
   ACTIVE_QUEUE_ENTRY_CONFLICT,
@@ -132,9 +129,9 @@ describe('postQueueEntryWithoutVisit', () => {
       ),
     ).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
 
-    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => init?.method === 'POST' && /\/queue-entry$/.test(String(url)))).toBe(
-      false,
-    );
+    expect(
+      mockOpenmrsFetch.mock.calls.some(([url, init]) => init?.method === 'POST' && /\/queue-entry$/.test(String(url))),
+    ).toBe(false);
   });
 
   it('uses the current time when startedAt is omitted', async () => {

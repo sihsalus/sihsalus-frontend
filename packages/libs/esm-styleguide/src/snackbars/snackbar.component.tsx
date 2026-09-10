@@ -5,10 +5,7 @@ import { getCoreTranslation } from '@openmrs/esm-translations';
 import classnames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './snackbar.module.scss';
-import {
-  NotificationDetailsModal,
-  type NotificationDetailsSection,
-} from '../toasts/notification-details.modal';
+import { NotificationDetailsModal, type NotificationDetailsSection } from '../toasts/notification-details.modal';
 
 // Design documentation for Snackbars https://zeroheight.com/23a080e38/p/683580-notifications/t/468baf
 export interface SnackbarProps {

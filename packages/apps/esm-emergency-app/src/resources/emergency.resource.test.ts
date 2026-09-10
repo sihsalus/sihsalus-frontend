@@ -73,14 +73,9 @@ describe('createEmergencyQueueEntry', () => {
       .mockResolvedValueOnce(response({ uuid: directEntry.uuid }, 201))
       .mockResolvedValueOnce(response({ results: [directEntry] }));
 
-    await expect(createEmergencyQueueEntry(
-      'patient-uuid',
-      'visit-uuid',
-      'priority-i-uuid',
-      'in-service-uuid',
-      'queue-uuid',
-      0,
-    )).resolves.toMatchObject({ data: { uuid: directEntry.uuid } });
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-i-uuid', 'in-service-uuid', 'queue-uuid', 0),
+    ).resolves.toMatchObject({ data: { uuid: directEntry.uuid } });
 
     expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, `${restBaseUrl}/visit-queue-entry`, {
       method: 'POST',
@@ -128,13 +123,7 @@ describe('createEmergencyQueueEntry', () => {
     mockAssertFreshPatientIsAlive.mockRejectedValueOnce(Object.assign(new Error(String(_state)), { code }));
 
     await expect(
-      createEmergencyQueueEntry(
-        'patient-uuid',
-        'visit-uuid',
-        'priority-uuid',
-        'waiting-status-uuid',
-        'queue-uuid',
-      ),
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
     ).rejects.toMatchObject({ code });
 
     expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
@@ -211,9 +200,7 @@ describe('createEmergencyQueueEntry', () => {
   });
 
   it('rejects an authoritative active entry without a UUID', async () => {
-    mockOpenmrsFetch.mockResolvedValueOnce(
-      response({ results: [{ ...createdEmergencyEntry, uuid: undefined }] }),
-    );
+    mockOpenmrsFetch.mockResolvedValueOnce(response({ results: [{ ...createdEmergencyEntry, uuid: undefined }] }));
 
     await expect(
       createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
@@ -498,13 +485,15 @@ describe('endEmergencyQueueEntry', () => {
 
   it('preserves an already-ended entry when it has no transition successor', async () => {
     const freshEndedResponse = response(endedQueueEntry);
-    mockOpenmrsFetch
-      .mockResolvedValueOnce(freshEndedResponse)
-      .mockResolvedValueOnce(response({ results: [] }));
+    mockOpenmrsFetch.mockResolvedValueOnce(freshEndedResponse).mockResolvedValueOnce(response({ results: [] }));
 
     await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).resolves.toBe(freshEndedResponse);
 
-    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === `${restBaseUrl}/queue-entry/${activeQueueEntry.uuid}` && init?.method === 'POST')).toBe(false);
+    expect(
+      mockOpenmrsFetch.mock.calls.some(
+        ([url, init]) => url === `${restBaseUrl}/queue-entry/${activeQueueEntry.uuid}` && init?.method === 'POST',
+      ),
+    ).toBe(false);
   });
 
   it('does not misreport a concurrent transition as a direct close', async () => {

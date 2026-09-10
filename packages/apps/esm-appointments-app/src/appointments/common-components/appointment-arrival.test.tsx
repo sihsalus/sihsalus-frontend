@@ -870,15 +870,15 @@ describe('AppointmentArrivalModal', () => {
       onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
     };
     await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(false);
-      expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
-      expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'No se pudo registrar la llegada',
-          subtitle:
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
+    expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'No se pudo registrar la llegada',
+        subtitle:
           'El paciente no tiene una acreditación SIS vigente. Revise el financiamiento en Admisión o derive al paciente a Caja para regularizar el pago o la cobertura antes del triaje.',
-        }),
-      );
+      }),
+    );
   });
 
   it('allows an already funded triage visit when the optional person backfill is not authorized', async () => {

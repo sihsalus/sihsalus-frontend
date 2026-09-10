@@ -1,17 +1,19 @@
 import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
-import { deleteCondition } from './conditions.resource';
+import { deleteCondition, useConditions } from './conditions.resource';
 import DeleteConditionModal from './delete-condition.modal';
 
 const mockDeleteCondition = vi.mocked(deleteCondition);
 const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseConditions = vi.mocked(useConditions);
+const mutate = vi.fn();
+const reason = 'Synthetic duplicate entry entered in error';
 
-vi.mock('./conditions.resource', async () => ({
-  ...(await vi.importActual('./conditions.resource')),
+vi.mock('./conditions.resource', () => ({
   deleteCondition: vi.fn(),
-  useConditions: vi.fn().mockReturnValue({ mutate: vi.fn() }),
+  useConditions: vi.fn(),
 }));
 
 const defaultProps = {
@@ -20,72 +22,215 @@ const defaultProps = {
   patientUuid: mockPatient.id,
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 describe('<DeleteConditionModal />', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDeleteCondition.mockReset();
+    mutate.mockReset().mockResolvedValue(undefined);
+    mockUseConditions.mockReturnValue({ mutate } as unknown as ReturnType<typeof useConditions>);
   });
 
-  it('renders a modal with the correct elements', () => {
+  it('allows cancellation before a deletion starts', async () => {
+    const user = userEvent.setup();
     render(<DeleteConditionModal {...defaultProps} />);
-
+    await user.type(screen.getByRole('textbox', { name: /reason for removal/i }), reason);
     expect(screen.getByRole('heading', { name: /delete antecedent/i })).toBeInTheDocument();
-    expect(screen.getByText(/are you sure you want to delete this antecedent/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(defaultProps.closeDeleteModal).toHaveBeenCalledOnce();
+    expect(mockDeleteCondition).not.toHaveBeenCalled();
   });
 
-  it('clicking the Cancel button closes the modal', async () => {
+  it('refreshes the history after a successful deletion and closes the modal', async () => {
     const user = userEvent.setup();
-
+    mockDeleteCondition.mockResolvedValue({ status: 204 } as FetchResponse);
     render(<DeleteConditionModal {...defaultProps} />);
+    await user.type(screen.getByRole('textbox', { name: /reason for removal/i }), reason);
+    await user.click(screen.getByRole('button', { name: /delete$/i }));
 
-    const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    await user.click(cancelButton);
-    expect(defaultProps.closeDeleteModal).toHaveBeenCalled();
-  });
-
-  it('clicking the Delete button deletes the condition', async () => {
-    const user = userEvent.setup();
-    mockDeleteCondition.mockResolvedValue({ status: 200, data: {} } as unknown as FetchResponse);
-
-    render(<DeleteConditionModal {...defaultProps} />);
-
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
-    await user.click(deleteButton);
-
-    expect(mockDeleteCondition).toHaveBeenCalledTimes(1);
-    expect(mockDeleteCondition).toHaveBeenCalledWith(defaultProps.conditionId);
-    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
-    expect(mockShowSnackbar).toHaveBeenCalledWith({
+    expect(mockDeleteCondition).toHaveBeenCalledExactlyOnceWith(
+      defaultProps.conditionId,
+      defaultProps.patientUuid,
+      reason,
+    );
+    expect(mutate).toHaveBeenCalledOnce();
+    expect(mockDeleteCondition.mock.invocationCallOrder[0]).toBeLessThan(mutate.mock.invocationCallOrder[0]);
+    expect(mockShowSnackbar).toHaveBeenCalledExactlyOnceWith({
       isLowContrast: true,
       kind: 'success',
       title: 'Antecedent deleted',
     });
+    expect(defaultProps.closeDeleteModal).toHaveBeenCalledOnce();
   });
 
-  it('renders an error message if the delete operation fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it.each([
+    new Error('private backend detail'),
+    null,
+    undefined,
+  ])('keeps the modal usable for retry and hides unexpected deletion errors (%s)', async (error) => {
     const user = userEvent.setup();
-
-    mockDeleteCondition.mockRejectedValue({ message: 'Internal server error', status: 500 });
-
+    mockDeleteCondition.mockRejectedValueOnce(error);
     render(<DeleteConditionModal {...defaultProps} />);
-
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
+    await user.type(screen.getByRole('textbox', { name: /reason for removal/i }), reason);
+    const deleteButton = screen.getByRole('button', { name: /delete$/i });
     await user.click(deleteButton);
 
-    expect(mockDeleteCondition).toHaveBeenCalledTimes(1);
-    expect(mockDeleteCondition).toHaveBeenCalledWith(defaultProps.conditionId);
-    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: /reason for removal/i })).toHaveValue(reason);
+    expect(deleteButton).toBeEnabled();
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeEnabled();
+    expect(defaultProps.closeDeleteModal).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
       title: 'Error deleting antecedent',
-      subtitle: 'Internal server error',
+      subtitle: 'The antecedent could not be deleted. Please try again.',
     });
+
+    mockDeleteCondition.mockResolvedValueOnce({ status: 204 } as FetchResponse);
+    await user.click(deleteButton);
+    expect(mockDeleteCondition).toHaveBeenCalledTimes(2);
+    expect(defaultProps.closeDeleteModal).toHaveBeenCalledOnce();
+  });
+
+  it('reports refresh failure after deletion without inviting a duplicate delete', async () => {
+    const user = userEvent.setup();
+    mockDeleteCondition.mockResolvedValue({ status: 204 } as FetchResponse);
+    mutate.mockRejectedValueOnce(new Error('private refresh response'));
+    render(<DeleteConditionModal {...defaultProps} />);
+    await user.type(screen.getByRole('textbox', { name: /reason for removal/i }), reason);
+    const deleteButton = screen.getByRole('button', { name: /delete$/i });
+    await user.click(deleteButton);
+
+    expect(mockShowSnackbar).toHaveBeenCalledExactlyOnceWith({
+      isLowContrast: false,
+      kind: 'warning',
+      title: 'Antecedent deleted; refresh needed',
+      subtitle:
+        'The antecedent was deleted, but the history could not be refreshed. Reload the page before making further changes.',
+    });
+    expect(defaultProps.closeDeleteModal).toHaveBeenCalledOnce();
+    expect(deleteButton).toBeDisabled();
+    await user.click(deleteButton);
+    expect(mockDeleteCondition).toHaveBeenCalledOnce();
+  });
+
+  it('preserves the reason and blocks another deletion when the acknowledgement is lost', async () => {
+    const user = userEvent.setup();
+    mockDeleteCondition.mockRejectedValueOnce(
+      Object.assign(new Error('Synthetic lost acknowledgement'), { code: 'CONDITION_WRITE_UNCONFIRMED' }),
+    );
+    const { rerender } = render(<DeleteConditionModal {...defaultProps} />);
+    const input = screen.getByRole('textbox', { name: /reason for removal/i });
+    await user.type(input, reason);
+    const deleteButton = screen.getByRole('button', { name: /delete$/i });
+    await user.click(deleteButton);
+
+    const notification = screen
+      .getAllByRole('alert')
+      .find((alert) => alert.textContent?.includes('Removal could not be confirmed'));
+    expect(notification).toHaveTextContent(/close this dialog and reload the history/i);
+    expect(input).toHaveValue(reason);
+    expect(input).toBeDisabled();
+    expect(deleteButton).toBeDisabled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
+    expect(defaultProps.closeDeleteModal).not.toHaveBeenCalled();
+
+    rerender(<DeleteConditionModal {...defaultProps} />);
+    await user.click(deleteButton);
+    expect(mockDeleteCondition).toHaveBeenCalledOnce();
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    expect(cancelButton).toBeEnabled();
+    await user.click(cancelButton);
+    expect(defaultProps.closeDeleteModal).toHaveBeenCalledOnce();
+  });
+
+  it('blocks repeated submission and closing while deletion or refresh is pending', async () => {
+    const user = userEvent.setup();
+    const deletion = deferred<FetchResponse>();
+    const refresh = deferred<undefined>();
+    mockDeleteCondition.mockReturnValue(deletion.promise);
+    mutate.mockReturnValue(refresh.promise);
+    render(<DeleteConditionModal {...defaultProps} />);
+    await user.type(screen.getByRole('textbox', { name: /reason for removal/i }), reason);
+    const deleteButton = screen.getByRole('button', { name: /delete$/i });
+
+    await user.dblClick(deleteButton);
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await user.click(screen.getByRole('button', { name: /close/i }));
+    expect(mockDeleteCondition).toHaveBeenCalledOnce();
+    expect(mutate).not.toHaveBeenCalled();
+    expect(defaultProps.closeDeleteModal).not.toHaveBeenCalled();
     expect(deleteButton).toBeDisabled();
 
-    consoleSpy.mockRestore();
+    await act(async () => deletion.resolve({ status: 204 } as FetchResponse));
+    expect(mutate).toHaveBeenCalledOnce();
+    expect(deleteButton).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /close/i }));
+    expect(defaultProps.closeDeleteModal).not.toHaveBeenCalled();
+
+    await act(async () => refresh.resolve(undefined));
+    expect(defaultProps.closeDeleteModal).toHaveBeenCalledOnce();
+    expect(mockDeleteCondition).toHaveBeenCalledOnce();
+  });
+  it('requires a nonblank reason before allowing an annulment', async () => {
+    const user = userEvent.setup();
+    render(<DeleteConditionModal {...defaultProps} />);
+    const input = screen.getByRole('textbox', { name: /reason for removal/i });
+    const button = screen.getByRole('button', { name: /delete$/i });
+    expect(input).toBeRequired();
+    expect(button).toBeDisabled();
+    fireEvent.change(input, { target: { value: '   \n  ' } });
+    fireEvent.blur(input);
+    expect(screen.getByText('Enter a reason for removing this antecedent.')).toBeInTheDocument();
+    await user.click(button);
+    expect(mockDeleteCondition).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeEnabled();
+  });
+
+  it('sends a trimmed reason and explains that the original record is retained', async () => {
+    const user = userEvent.setup();
+    mockDeleteCondition.mockResolvedValue({ status: 204 } as FetchResponse);
+    render(<DeleteConditionModal {...defaultProps} />);
+    expect(screen.getByText(/while retaining the original record/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: /reason for removal/i }), {
+      target: { value: `  ${reason}  ` },
+    });
+    await user.click(screen.getByRole('button', { name: /delete$/i }));
+    expect(mockDeleteCondition).toHaveBeenCalledExactlyOnceWith(
+      defaultProps.conditionId,
+      defaultProps.patientUuid,
+      reason,
+    );
+  });
+
+  it('rejects an oversized reason and accepts exactly 255 characters', async () => {
+    const user = userEvent.setup();
+    mockDeleteCondition.mockResolvedValue({ status: 204 } as FetchResponse);
+    render(<DeleteConditionModal {...defaultProps} />);
+    const input = screen.getByRole('textbox', { name: /reason for removal/i });
+    const button = screen.getByRole('button', { name: /delete$/i });
+    expect(input).toHaveAttribute('maxlength', '255');
+    fireEvent.change(input, { target: { value: 'a'.repeat(256) } });
+    fireEvent.blur(input);
+    expect(screen.getByText('The reason must contain at most 255 characters.')).toBeInTheDocument();
+    expect(button).toBeDisabled();
+    await user.click(button);
+    expect(mockDeleteCondition).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: 'a'.repeat(255) } });
+    await user.click(button);
+    expect(mockDeleteCondition).toHaveBeenCalledExactlyOnceWith(
+      defaultProps.conditionId,
+      defaultProps.patientUuid,
+      'a'.repeat(255),
+    );
   });
 });

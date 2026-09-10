@@ -13,17 +13,18 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { AddIcon, formatDate, parseDate, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { AddIcon, formatPartialDate, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
   ErrorState,
   getAntecedentTypeLabel,
   launchPatientWorkspace,
+  matchesConditionStatusFilter,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
-import { type ComponentProps, useCallback, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConditionTableHeader, useConditions, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
@@ -79,6 +80,7 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
 
 function ConditionsDetailedTable({ patient, section = 'antecedents' }: ConditionsDetailedSummaryProps) {
   const { t } = useTranslation();
+  const statusFilterId = useId();
   const session = useSession();
   const canEdit = userHasAccess('app:hoja.clinica.condiciones.editar', session?.user);
   const sectionCopy = getSectionCopy(section, t);
@@ -99,7 +101,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
       return sectionConditions;
     }
 
-    return sectionConditions.filter((condition) => condition.clinicalStatus === filter);
+    return sectionConditions.filter((condition) => matchesConditionStatusFilter(condition.clinicalStatus, filter));
   }, [filter, sectionConditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -146,14 +148,14 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
           ? getAntecedentTypeLabel(condition.antecedentType, t)
           : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
-          ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
+          ? formatPartialDate(condition.onsetDateTime, { mode: 'wide', time: 'for today' })
           : '--',
-        status: condition.clinicalStatus,
+        status: t(condition.clinicalStatus.toLowerCase(), condition.clinicalStatus),
       };
     });
   }, [filteredConditions, t]);
 
-  const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
+  const { sortedRows, sortRow, onHeaderClick } = useConditionsSorting(headers, tableRows);
 
   const launchConditionsForm = useCallback(() => {
     const defaultAntecedentType = defaultAntecedentTypeBySection[section];
@@ -185,7 +187,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
           <div className={styles.rightMostFlexContainer}>
             <div className={styles.filterContainer}>
               <Dropdown
-                id="conditionStatusFilter"
+                id={statusFilterId}
                 initialSelectedItem={{
                   id: defaultFilter,
                   label: t(defaultFilter.toLowerCase(), defaultFilter),
@@ -234,6 +236,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
                       {headers.map((header) => {
                         const { key, ...headerProps } = getHeaderProps({
                           header,
+                          onClick: onHeaderClick,
                         });
 
                         return (

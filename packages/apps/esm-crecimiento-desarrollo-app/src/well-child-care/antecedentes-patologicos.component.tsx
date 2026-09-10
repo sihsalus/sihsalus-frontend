@@ -1,4 +1,5 @@
 import { useConfig } from '@openmrs/esm-framework';
+import { type Condition, isPathologicalAntecedentType } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,6 +9,8 @@ import GenericConditionsOverview from '../ui/conditions-filter/generic-condition
 interface AntecedentesPatologicosProps {
   patientUuid: string;
 }
+
+const isPatientPathology = (condition: Condition) => isPathologicalAntecedentType(condition.antecedentType);
 
 const AntecedentesPatologicos: React.FC<AntecedentesPatologicosProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
@@ -25,6 +28,7 @@ const AntecedentesPatologicos: React.FC<AntecedentesPatologicosProps> = ({ patie
     <GenericConditionsOverview
       patientUuid={patientUuid}
       conceptSetUuid={conceptSetConfig.uuid}
+      conditionFilter={isPatientPathology}
       title={t('antecedentesPatologicos', conceptSetConfig.title)}
       workspaceFormId="antecedentes-patologicos-form-workspace"
       enableAdd={true}

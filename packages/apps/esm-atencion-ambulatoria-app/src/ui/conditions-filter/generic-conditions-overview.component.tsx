@@ -15,23 +15,23 @@ import {
 } from '@carbon/react';
 import {
   AddIcon,
-  formatDate,
+  formatPartialDate,
   isDesktop as isDesktopLayout,
   launchWorkspace,
-  parseDate,
   useConfig,
   useLayoutType,
-  usePagination,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
   ErrorState,
   getAntecedentTypeLabel,
+  matchesConditionStatusFilter,
   PatientChartPagination,
+  useConditionPagination,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
+import React, { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
@@ -79,6 +79,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   const config = useConfig<ConfigObject>();
   const { conditionPageSize } = config;
   const { t } = useTranslation();
+  const statusFilterId = useId();
   const displayText = title;
   const headerTitle = title;
   const urlLabel = t('seeAll', 'See all');
@@ -109,7 +110,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
       return conditions;
     }
 
-    return conditions?.filter((condition) => condition.clinicalStatus === filter);
+    return conditions?.filter((condition) => matchesConditionStatusFilter(condition.clinicalStatus, filter));
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -156,18 +157,25 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
           ? getAntecedentTypeLabel(condition.antecedentType, t)
           : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
-          ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
+          ? formatPartialDate(condition.onsetDateTime, { mode: 'wide', time: 'for today' })
           : '--',
-        status: condition.clinicalStatus,
+        status: t(condition.clinicalStatus.toLowerCase(), condition.clinicalStatus),
       };
     });
   }, [filteredConditions, t]);
 
-  const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
+  const { sortedRows, sortRow, onHeaderClick } = useConditionsSorting(headers, tableRows);
 
-  const { results: paginatedConditions, goTo, currentPage } = usePagination(sortedRows, conditionPageSize);
+  const { results: paginatedConditions, goTo, currentPage } = useConditionPagination(sortedRows, conditionPageSize);
+  const conditionsById = useMemo(
+    () => new Map((conditions ?? []).map((condition) => [condition.id, condition])),
+    [conditions],
+  );
 
-  const handleConditionStatusChange = ({ selectedItem }) => setFilter(selectedItem);
+  const handleConditionStatusChange = ({ selectedItem }) => {
+    setFilter(selectedItem ?? 'All');
+    goTo(1);
+  };
 
   if (isLoading) return <DataTableSkeleton role="progressbar" size={isTablet ? 'lg' : 'sm'} zebra />;
   if (error) return <ErrorState error={error} headerTitle={headerTitle} />;
@@ -179,12 +187,13 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
           <div className={styles.rightMostFlexContainer}>
             <div className={styles.filterContainer}>
               <Dropdown
-                id="conditionStatusFilter"
+                id={statusFilterId}
                 initialSelectedItem={'Active'}
                 label=""
                 titleText={t('show', 'Show') + ':'}
                 type="inline"
                 items={['All', 'Active', 'Inactive']}
+                itemToString={(item) => (item ? String(t(item.toLowerCase(), item)) : '')}
                 onChange={handleConditionStatusChange}
                 size={isTablet ? 'lg' : 'sm'}
               />
@@ -227,6 +236,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                           {...getHeaderProps({
                             header,
                             isSortable: header.isSortable,
+                            onClick: onHeaderClick,
                           })}
                         >
                           {renderHeaderLabel(header.header)}
@@ -236,16 +246,21 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row, index) => (
-                      <TableRow key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                        ))}
-                        <TableCell className="cds--table-column-menu">
-                          <ConditionsActionMenu condition={paginatedConditions[index]} patientUuid={patientUuid} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {rows.map((row) => {
+                      const condition = conditionsById.get(row.id);
+                      return (
+                        <TableRow key={row.id}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                          ))}
+                          <TableCell className="cds--table-column-menu">
+                            {condition ? (
+                              <ConditionsActionMenu condition={condition} patientUuid={patientUuid} />
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>

@@ -45,8 +45,13 @@ The REST session endpoint returns reference representations and ignores `v`;
 absence of `retired` there is not proof that an account or provider is active.
 Before creation and cleanup, the foundation validates the authenticated session's
 user/provider UUIDs, then reads only `user/{current-test-user-uuid}` and
-`provider/{current-test-provider-uuid}` with `custom:(uuid,retired)`. Both exact
-identities must match and explicitly return `retired: false`. No global user or
+`provider/{current-test-provider-uuid}` with `custom:(uuid,retired)`; the user
+representation also includes `roles:(name,retired)`. Both exact
+identities must match and explicitly return `retired: false`. An active core
+`System Developer` role on that freshly read user satisfies configured privileges
+according to OpenMRS `User.hasPrivilege`, even when the session lists only
+explicit grants. Other role names, display labels, retired roles or incomplete
+metadata do not qualify. No global user or
 provider list is queried. Review permission to read these two technical records
 as part of the environment's complete privilege configuration. Missing,
 mismatched or retired metadata blocks writes; HTTP 401/403 stops subsequent

@@ -15,19 +15,25 @@ import {
 } from '@carbon/react';
 import {
   AddIcon,
-  formatDate,
+  formatPartialDate,
   isDesktop as isDesktopLayout,
   launchWorkspace2,
-  parseDate,
   useConfig,
   useLayoutType,
-  usePagination,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  isPathologicalAntecedentType,
+  matchesConditionStatusFilter,
+  PatientChartPagination,
+  useConditionPagination,
+} from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
+import React, { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
 import { credAntecedentsEditPrivilege } from '../../constants';
@@ -62,6 +68,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   const config = useConfig<ConfigObject>();
   const { conditionPageSize } = config;
   const { t } = useTranslation();
+  const statusFilterId = useId();
   const displayText = t('antecedentesPatologicos', 'Antecedentes Patológicos del Menor');
   const headerTitle = t('antecedentesPatologicos', 'Antecedentes Patológicos del Menor');
   const urlLabel = t('seeAll', 'See all');
@@ -73,7 +80,16 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   const canEdit = userHasAccess(credAntecedentsEditPrivilege, session?.user);
 
   const conceptSetUuid = config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
-  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const {
+    conditions: conceptSetConditions,
+    error,
+    isLoading,
+    isValidating,
+  } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const conditions = useMemo(
+    () => conceptSetConditions?.filter((condition) => isPathologicalAntecedentType(condition.antecedentType)),
+    [conceptSetConditions],
+  );
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
 
   // Opciones de filtro traducidas
@@ -90,8 +106,9 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
     () =>
       launchWorkspace2('conditions-filter-form-workspace', {
         formContext: 'creating',
+        patientUuid,
       }),
-    [],
+    [patientUuid],
   );
 
   const filteredConditions = useMemo(() => {
@@ -99,7 +116,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
       return conditions;
     }
 
-    return conditions?.filter((condition) => condition.clinicalStatus === filter);
+    return conditions?.filter((condition) => matchesConditionStatusFilter(condition.clinicalStatus, filter));
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -137,23 +154,25 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
         condition: condition.display,
         abatementDateTime: condition.abatementDateTime,
         onsetDateTimeRender: condition.onsetDateTime
-          ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
+          ? formatPartialDate(condition.onsetDateTime, { mode: 'wide', time: 'for today' })
           : '--',
-        status:
-          condition.clinicalStatus === 'Active'
-            ? t('active', 'Active')
-            : condition.clinicalStatus === 'Inactive'
-              ? t('inactive', 'Inactive')
-              : condition.clinicalStatus,
+        status: t(condition.clinicalStatus.toLowerCase(), condition.clinicalStatus),
       };
     });
   }, [filteredConditions, t]);
 
-  const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
+  const { sortedRows, sortRow, onHeaderClick } = useConditionsSorting(headers, tableRows);
 
-  const { results: paginatedConditions, goTo, currentPage } = usePagination(sortedRows, conditionPageSize);
+  const { results: paginatedConditions, goTo, currentPage } = useConditionPagination(sortedRows, conditionPageSize);
+  const conditionsById = useMemo(
+    () => new Map((conditions ?? []).map((condition) => [condition.id, condition])),
+    [conditions],
+  );
 
-  const handleConditionStatusChange = ({ selectedItem }) => setFilter(selectedItem?.key || 'All');
+  const handleConditionStatusChange = ({ selectedItem }) => {
+    setFilter(selectedItem?.key || 'All');
+    goTo(1);
+  };
 
   if (isLoading) return <DataTableSkeleton role="progressbar" size={isDesktop ? 'sm' : 'lg'} zebra />;
   if (error) return <ErrorState error={error} headerTitle={headerTitle} />;
@@ -165,7 +184,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
           <div className={styles.rightMostFlexContainer}>
             <div className={styles.filterContainer}>
               <Dropdown
-                id="conditionStatusFilter"
+                id={statusFilterId}
                 initialSelectedItem={filterOptions.find((option) => option.key === 'Active')}
                 label=""
                 titleText={t('show', 'Show') + ':'}
@@ -207,34 +226,41 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
                 <Table {...getTableProps()} className={styles.table}>
                   <TableHead>
                     <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          key={header.key}
-                          className={classNames(styles.productiveHeading01, styles.text02)}
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                          })}
-                        >
-                          {renderHeaderLabel(header.header)}
-                        </TableHeader>
-                      ))}
+                      {headers.map((header) => {
+                        const { key, ...headerProps } = getHeaderProps({
+                          header,
+                          isSortable: header.isSortable,
+                          onClick: onHeaderClick,
+                        });
+                        return (
+                          <TableHeader
+                            key={key}
+                            className={classNames(styles.productiveHeading01, styles.text02)}
+                            {...headerProps}
+                          >
+                            {renderHeaderLabel(header.header)}
+                          </TableHeader>
+                        );
+                      })}
                       {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row, index) => (
-                      <TableRow key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                        ))}
-                        {canEdit ? (
-                          <TableCell className="cds--table-column-menu">
-                            <ConditionsActionMenu condition={sortedRows[index]} patientUuid={patientUuid} />
-                          </TableCell>
-                        ) : null}
-                      </TableRow>
-                    ))}
+                    {rows.map((row) => {
+                      const condition = conditionsById.get(row.id);
+                      return (
+                        <TableRow key={row.id}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                          ))}
+                          {condition && canEdit ? (
+                            <TableCell className="cds--table-column-menu">
+                              <ConditionsActionMenu condition={condition} patientUuid={patientUuid} />
+                            </TableCell>
+                          ) : null}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>

@@ -1,5 +1,14 @@
 // Modules absorbed from @sihsalus/esm-sihsalus-shared
 export * from './antecedents/antecedent-types';
+export * from './antecedents/condition-concept-set.resource';
+export * from './antecedents/condition-status';
+export * from './antecedents/conditions.resource';
+export * from './antecedents/conditions.types';
+export * from './antecedents/conditions-model';
+export * from './antecedents/use-condition-deletion';
+export * from './antecedents/use-condition-form-lifecycle';
+export * from './antecedents/use-condition-pagination';
+export * from './antecedents/use-condition-table-sorting';
 export * from './cards';
 export * from './clinical-view-group/clinical-view-group.resource';
 export { createClinicalDashboardGroup } from './clinical-view-group/createDashboardGroup';
@@ -43,8 +52,8 @@ export {
 } from './encounters/use-schemas-concept-set';
 export * from './error-state';
 export * from './expression-evaluator';
-export * from './financiador/financiador-access';
 export * from './financiador/financiador.resource';
+export * from './financiador/financiador-access';
 export * from './form-entry/form-entry';
 export * from './form-entry-interop';
 export { default as FormsList } from './forms-selector/forms-list.component';
@@ -66,8 +75,8 @@ export * from './offline/visit';
 export * from './operational-queue/active-queue-entries.resource';
 export * from './orders';
 export * from './pagination';
-export * from './patient-vital-status/patient-vital-status.resource';
 export * from './patient-summary/patient-summary-extension-order';
+export * from './patient-vital-status/patient-vital-status.resource';
 export * from './programs/usePatientProgramEnrollment';
 export * from './results';
 export * from './store/patient-chart-store';

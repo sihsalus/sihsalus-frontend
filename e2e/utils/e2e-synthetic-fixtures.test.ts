@@ -258,12 +258,73 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
         expect(matches).toHaveLength(1);
         const lookup = matches[0];
         expect(lookup?.method).toBe('get');
-        expect(lookup?.url.search).toBe('?v=custom:(uuid,retired)');
+        expect(lookup?.url.search).toBe(
+          resource.startsWith('user/') ? '?v=custom:(uuid,retired,roles:(name,retired))' : '?v=custom:(uuid,retired)',
+        );
         expect(lookup?.options).toMatchObject({ maxRedirects: 0, maxRetries: 0 });
         expect(calls.indexOf(lookup as Call)).toBeLessThan(firstWrite);
       }
       expect(calls.some(({ url }) => /\/(user|provider)$/.test(url.pathname))).toBe(false);
     }
+  });
+
+  describe('backend superuser permission contract', () => {
+    const withRoles = (backend: Backend, roles: unknown, privileges: unknown[] = []) => {
+      backend.override = ({ url }) => {
+        if (url.pathname.endsWith('/session'))
+          return response(200, {
+            authenticated: true,
+            currentProvider: { uuid: provider },
+            sessionLocation: { uuid: location },
+            user: { uuid: testUser, privileges },
+          });
+        if (url.pathname.endsWith(`/user/${testUser}`)) return response(200, { uuid: testUser, retired: false, roles });
+        return undefined;
+      };
+    };
+
+    it.each([
+      { privileges: [] },
+      { privileges: [{ name: 'Unrelated Permission' }] },
+    ])('accepts a verified active System Developer without enumerating every privilege ($privileges)', async ({
+      privileges,
+    }) => {
+      const { fixtures, backend, journal } = harness();
+      withRoles(backend, [{ name: 'System Developer', retired: false }], privileges);
+      await fixtures.create('outpatient');
+      await fixtures.cleanup();
+      expect(backend.posts('patient')).toHaveLength(1);
+      expect(journal.records()[0]?.cleaned).toBe(true);
+    });
+
+    it.each([
+      ['missing roles', undefined],
+      ['null roles', null],
+      ['malformed roles', { name: 'System Developer', retired: false }],
+      ['unrelated role', [{ name: 'Provider', retired: false }]],
+      ['frontend-only alias', [{ name: 'Application: Has Super User Privileges', retired: false }]],
+      ['display-only role', [{ display: 'System Developer', retired: false }]],
+      ['retired role', [{ name: 'System Developer', retired: true }]],
+      ['missing retirement state', [{ name: 'System Developer' }]],
+      ['non-boolean retirement state', [{ name: 'System Developer', retired: 'false' }]],
+      ['null role', [null]],
+    ])('rejects %s when required privileges are absent', async (_kind, roles) => {
+      const { fixtures, backend, journal } = harness();
+      withRoles(backend, roles);
+      await expect(fixtures.create('outpatient')).rejects.toThrow('FIXTURE_REQUIRED_PRIVILEGES_MISSING');
+      expect(backend.calls.every(({ method }) => method === 'get')).toBe(true);
+      expect(journal.records().some(({ cleaned }) => cleaned)).toBe(false);
+    });
+
+    it('rechecks role revocation before cleanup and retains recoverable state', async () => {
+      const { fixtures, backend, journal } = harness();
+      withRoles(backend, [{ name: 'System Developer', retired: false }]);
+      await fixtures.create('outpatient');
+      withRoles(backend, []);
+      await expect(fixtures.cleanup()).rejects.toThrow('FIXTURE_REQUIRED_PRIVILEGES_MISSING');
+      expect(backend.deletes()).toHaveLength(0);
+      expect(journal.records()[0]?.cleaned).not.toBe(true);
+    });
   });
 
   describe.each(['create', 'cleanup'] as const)('%s exact session-identity preflight', (operation) => {

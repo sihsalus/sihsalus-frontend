@@ -25,17 +25,20 @@ export interface FhirCoding {
   code?: string;
   display?: string;
   system?: string;
+  [key: string]: unknown;
 }
 
 export interface FhirConditionCategory {
   coding?: Array<FhirCoding>;
   text?: string;
+  [key: string]: unknown;
 }
 
 export interface FhirConditionNote {
   authorString?: string;
   text?: string;
   time?: string;
+  [key: string]: unknown;
 }
 
 type Translate = (key: string, defaultValue: string) => string;
@@ -101,6 +104,12 @@ export function normalizeAntecedentTypeCode(value?: string | null): AntecedentTy
   }
 
   return antecedentTypeAliases.get(value.trim().toLowerCase());
+}
+
+/** Patient pathology includes prior diagnoses and untyped history, but excludes explicit family and other types. */
+export function isPathologicalAntecedentType(value?: string | null): boolean {
+  const type = normalizeAntecedentTypeCode(value);
+  return type === undefined || type === 'pathological' || type === 'definitive-diagnosis';
 }
 
 export function getAntecedentTypeOption(code?: string | null): AntecedentTypeOption | undefined {
@@ -176,13 +185,17 @@ export function getAntecedentTypeFromCategory(
 }
 
 export function getAntecedentTypeFromNote(notes?: Array<FhirConditionNote>): AntecedentTypeCode | undefined {
-  const noteText = getFirstNoteText(notes);
-  const markerLine = noteText
-    ?.split(/\r?\n/)
-    .find((line) => line.trim().toLowerCase().startsWith(ANTECEDENT_TYPE_NOTE_PREFIX));
-  const [, rawCode] = markerLine?.trim().split(':') ?? [];
-
-  return normalizeAntecedentTypeCode(rawCode);
+  for (const note of notes ?? []) {
+    for (const line of note.text?.split(/\r?\n/) ?? []) {
+      if (line.trim().toLowerCase().startsWith(ANTECEDENT_TYPE_NOTE_PREFIX)) {
+        const code = normalizeAntecedentTypeCode(line.trim().slice(ANTECEDENT_TYPE_NOTE_PREFIX.length));
+        if (code) {
+          return code;
+        }
+      }
+    }
+  }
+  return undefined;
 }
 
 export function getAntecedentTypeFromCondition(
@@ -208,7 +221,36 @@ export function getConditionCategoryDisplay(categories?: Array<FhirConditionCate
 }
 
 export function getConditionNoteText(notes?: Array<FhirConditionNote>): string | undefined {
-  return stripAntecedentTypeFromNoteText(getFirstNoteText(notes));
+  return (
+    notes
+      ?.map((note) => stripAntecedentTypeFromNoteText(note.text))
+      .filter(Boolean)
+      .join('\n') || undefined
+  );
+}
+
+/** Preserve annotations and their metadata when changing the SIH Salus marker. */
+export function updateAntecedentTypeNotes(
+  notes: Array<FhirConditionNote> | undefined,
+  code?: AntecedentTypeCode,
+  noteText?: string,
+): Array<FhirConditionNote> | undefined {
+  const existingType = getAntecedentTypeFromNote(notes);
+  const type = code ?? existingType;
+  const textChanged = noteText !== undefined && noteText.trim() !== (getConditionNoteText(notes) ?? '');
+  if (type === existingType && !textChanged) {
+    return notes;
+  }
+  if (textChanged && (notes?.length ?? 0) > 1) {
+    // A scalar field cannot safely replace independently authored annotations.
+    throw new Error('Multiple clinical annotations cannot be replaced by a single note.');
+  }
+  const existingNotes = notes?.length ? notes : [{}];
+  return existingNotes.map((note, index) => {
+    const text = textChanged ? noteText : stripAntecedentTypeFromNoteText(note.text);
+    const nextText = index === 0 ? buildAntecedentTypeNote(type, text)?.[0]?.text : text;
+    return { ...note, text: nextText ?? '' };
+  });
 }
 
 function stripAntecedentTypeFromNoteText(noteText?: string | null): string | undefined {
@@ -219,8 +261,4 @@ function stripAntecedentTypeFromNoteText(noteText?: string | null): string | und
     .trim();
 
   return visibleText || undefined;
-}
-
-function getFirstNoteText(notes?: Array<FhirConditionNote>): string | undefined {
-  return notes?.map((note) => note?.text).find((text): text is string => Boolean(text?.trim()));
 }

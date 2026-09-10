@@ -34,6 +34,15 @@ const mockCondition: Condition = {
   onsetDateTime: '2023-01-15',
   recordedDate: '2023-01-15',
   id: 'test-condition-id',
+  source: {
+    uuid: 'test-condition-id',
+    patient: { uuid: 'test-patient-uuid' },
+    clinicalStatus: 'ACTIVE',
+    condition: { coded: { uuid: 'test-concept-id', display: 'Test Condition' } },
+    auditInfo: { dateCreated: '2023-01-15' },
+    onsetDate: '2023-01-15',
+    voided: false,
+  },
 };
 
 const defaultProps = {
@@ -81,6 +90,58 @@ describe('ConditionsActionMenu', () => {
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 
+  it.each(['HISTORY_OF', 'UNKNOWN'])('blocks editing status %s without hiding the delete action', async (status) => {
+    const user = userEvent.setup();
+    render(
+      <ConditionsActionMenu
+        {...defaultProps}
+        condition={{
+          ...mockCondition,
+          clinicalStatus: status,
+          source: { ...mockCondition.source, clinicalStatus: status },
+        }}
+      />,
+    );
+    await user.click(screen.getByRole('button'));
+    const editButton = (await screen.findByText('Edit')).closest('button');
+    const deleteButton = screen.getByText('Delete').closest('button');
+    expect(editButton).toBeDisabled();
+    expect(deleteButton).toBeEnabled();
+    await user.click(editButton);
+    expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('gives actions from separate condition rows distinct identifiers', async () => {
+    const user = userEvent.setup();
+    const anotherCondition: Condition = {
+      ...mockCondition,
+      id: 'another-synthetic-condition',
+      source: { ...mockCondition.source, uuid: 'another-synthetic-condition', voided: false },
+    };
+    render(
+      <>
+        <ConditionsActionMenu {...defaultProps} />
+        <ConditionsActionMenu condition={anotherCondition} patientUuid={defaultProps.patientUuid} />
+      </>,
+    );
+    const menus = screen.getAllByRole('button');
+    await user.click(menus[0]);
+    const firstIds = [
+      (await screen.findByText('Edit')).closest('button')?.id,
+      screen.getByText('Delete').closest('button')?.id,
+    ];
+    await user.click(menus[0]);
+    await user.click(menus[1]);
+    const secondIds = [
+      (await screen.findByText('Edit')).closest('button')?.id,
+      screen.getByText('Delete').closest('button')?.id,
+    ];
+    expect(firstIds).toHaveLength(2);
+    expect(secondIds).toHaveLength(2);
+    expect(firstIds.concat(secondIds)).not.toContain('');
+    expect(new Set(firstIds.concat(secondIds)).size).toBe(4);
+  });
+
   it('opens edit form with the specific condition when Edit button is clicked', async () => {
     const user = userEvent.setup();
     const specificCondition: Condition = {
@@ -90,6 +151,15 @@ describe('ConditionsActionMenu', () => {
       onsetDateTime: '2022-03-10',
       recordedDate: '2022-03-10',
       id: 'hypertension-condition-id',
+      source: {
+        uuid: 'hypertension-condition-id',
+        patient: { uuid: 'patient-123' },
+        clinicalStatus: 'ACTIVE',
+        condition: { coded: { uuid: 'hypertension-concept-id', display: 'Hypertension' } },
+        auditInfo: { dateCreated: '2022-03-10' },
+        onsetDate: '2022-03-10',
+        voided: false,
+      },
     };
 
     render(<ConditionsActionMenu condition={specificCondition} patientUuid="patient-123" />);

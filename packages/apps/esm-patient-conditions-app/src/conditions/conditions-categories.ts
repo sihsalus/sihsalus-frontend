@@ -1,9 +1,14 @@
-import type { AntecedentTypeCode } from '@openmrs/esm-patient-common-lib';
+import {
+  type AntecedentTypeCode,
+  type ConditionStatusFilter,
+  isActiveConditionStatus,
+  isPathologicalAntecedentType,
+} from '@openmrs/esm-patient-common-lib';
 import type { Condition } from './conditions.resource';
 
 export type ConditionSection = 'antecedents' | 'other-antecedents' | 'active-problems' | 'past-diagnoses';
-export type ConditionDestination = Exclude<ConditionSection, 'antecedents'> | 'procedures';
-export type ConditionStatusFilter = 'All' | 'Active' | 'Inactive';
+export type ConditionDestination = Exclude<ConditionSection, 'antecedents'>;
+export type { ConditionStatusFilter } from '@openmrs/esm-patient-common-lib';
 
 export const workspaceNamesBySection: Record<ConditionSection, string> = {
   antecedents: 'conditions-form-workspace',
@@ -30,23 +35,15 @@ export const defaultStatusFilterBySection: Record<ConditionSection, ConditionSta
 };
 
 export function getConditionDestination(antecedentType?: string, clinicalStatus?: string): ConditionDestination {
-  if (antecedentType === 'surgical') {
-    return 'procedures';
-  }
-
   if (antecedentType === 'definitive-diagnosis') {
     return 'past-diagnoses';
   }
 
-  if (clinicalStatus?.toLowerCase() === 'active') {
+  if (isPathologicalAntecedentType(antecedentType) && isActiveConditionStatus(clinicalStatus)) {
     return 'active-problems';
   }
 
   return 'other-antecedents';
-}
-
-export function isProcedureOrSurgery(condition: Condition) {
-  return getConditionDestination(condition.antecedentType, condition.clinicalStatus) === 'procedures';
 }
 
 export function isPastDiagnosis(condition: Condition) {
@@ -71,6 +68,6 @@ export function filterConditionsBySection(conditions: Array<Condition>, section:
       return conditions.filter(isGeneralAntecedent);
     case 'antecedents':
     default:
-      return conditions.filter((condition) => !isPastDiagnosis(condition) && !isProcedureOrSurgery(condition));
+      return conditions.filter((condition) => !isPastDiagnosis(condition));
   }
 }

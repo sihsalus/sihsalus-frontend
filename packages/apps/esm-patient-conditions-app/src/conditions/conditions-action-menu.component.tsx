@@ -1,33 +1,34 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { useCallback } from 'react';
+import { isSupportedConditionStatus, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import { useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Condition } from './conditions.resource';
 import styles from './conditions-action-menu.scss';
 
 interface conditionsActionMenuProps {
   condition: Condition;
-  patientUuid?: string;
+  patientUuid: string;
 }
 
 export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActionMenuProps) => {
   const { t } = useTranslation();
+  const actionId = useId();
+  const canEditStatus = isSupportedConditionStatus(condition?.clinicalStatus);
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const canEdit = userHasAccess('app:hoja.clinica.condiciones.editar', session?.user);
 
-  const launchEditConditionsForm = useCallback(
-    () =>
-      launchPatientWorkspace('conditions-form-workspace', {
-        workspaceTitle: t('editAntecedent', 'Edit antecedent'),
-        condition,
-        formContext: 'editing',
-      }),
-    [condition, t],
-  );
+  const launchEditConditionsForm = useCallback(() => {
+    if (!canEditStatus) return;
+    launchPatientWorkspace('conditions-form-workspace', {
+      workspaceTitle: t('editAntecedent', 'Edit antecedent'),
+      condition,
+      formContext: 'editing',
+    });
+  }, [canEditStatus, condition, t]);
 
-  if (!canEdit) {
+  if (!condition || !canEdit) {
     return null;
   }
 
@@ -49,13 +50,14 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
       >
         <OverflowMenuItem
           className={styles.menuItem}
-          id="editCondition"
+          id={`${actionId}-edit`}
+          disabled={!canEditStatus}
           onClick={launchEditConditionsForm}
           itemText={t('edit', 'Edit')}
         />
         <OverflowMenuItem
           className={styles.menuItem}
-          id="deleteCondition"
+          id={`${actionId}-delete`}
           itemText={t('delete', 'Delete')}
           onClick={() => launchDeleteConditionDialog(condition.id)}
           isDelete

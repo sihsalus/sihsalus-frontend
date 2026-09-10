@@ -204,6 +204,21 @@ en esta recuperación de regresiones. Los recursos parciales de fixtures deben
 tener un journal privado, validación de pertenencia y recuperación antes de
 promover un nuevo harness mutante.
 
+El preparador recuperable `SyntheticFixtures` exige los privilegios configurados
+para crear y anular recursos. También reconoce el rol core `System Developer`
+activo, verificado mediante una lectura del usuario exacto de la sesión antes
+de cada operación: OpenMRS concede todos los privilegios a ese rol, aunque
+`getPrivileges()` solo enumera concesiones explícitas
+([contrato `User` de OpenMRS](https://github.com/openmrs/openmrs-core/blob/2.8.9/api/src/main/java/org/openmrs/User.java)).
+Los alias de frontend, etiquetas de presentación, roles retirados o metadatos
+incompletos no sustituyen los permisos. Si se revocan, el preparador detiene
+también el cleanup y conserva su journal privado.
+
+Los dos pacientes reservados configurados en Actions son fixtures persistentes:
+se conservan para las siguientes corridas y se retiran mediante su journal
+privado cuando se sustituyan las variables. No forman parte del cleanup de una
+corrida; cada prueba sigue siendo responsable de anular sus propios recursos.
+
 Al crear datos desde un script, anularlos al terminar. Ojo: `DELETE
 /ws/rest/v1/patient/{uuid}` responde **200 sin anular nada** si no se pasa
 `?reason=`; con `reason` responde 204 y sí anula.

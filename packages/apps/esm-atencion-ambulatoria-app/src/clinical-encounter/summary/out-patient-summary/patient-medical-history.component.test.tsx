@@ -81,4 +81,33 @@ describe('OutPatientMedicalHistory', () => {
 
     expect(mutate).toHaveBeenCalledExactlyOnceWith();
   });
+
+  it.each([false, true])('hides the legacy form action in read-only mode, including empty history: %s', (empty) => {
+    vi.mocked(UserHasAccess).mockImplementation(({ children }: { children?: ReactNode }) => children);
+    const encounter = {
+      uuid: 'synthetic-history-encounter',
+      encounterDatetime: '2026-09-01T12:00:00.000Z',
+      obs: [],
+      diagnoses: [{ diagnosis: { coded: { display: 'Synthetic coded diagnosis' } } }],
+    } as unknown as OpenmrsEncounter;
+
+    render(
+      <OutPatientMedicalHistory
+        patientUuid="synthetic-patient"
+        encounters={empty ? [] : [encounter]}
+        isLoading={false}
+        error={null}
+        isValidating={false}
+        mutate={vi.fn()}
+        readOnly
+      />,
+    );
+
+    expect(screen.getByText('Previous medical records')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(launchPatientWorkspace).not.toHaveBeenCalled();
+    if (!empty) {
+      expect(screen.getByText('Synthetic coded diagnosis')).toBeInTheDocument();
+    }
+  });
 });

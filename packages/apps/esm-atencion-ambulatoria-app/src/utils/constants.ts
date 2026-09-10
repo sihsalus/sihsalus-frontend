@@ -16,6 +16,9 @@ export const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 export const visitNotesFormWorkspace = 'visit-notes-form-workspace';
 export const institutionalReferralWorkspace = 'institutional-referral-form-workspace';
 
+// Same conditions extension as the Antecedents dashboard, with this module owning the slot.
+export const consultaExternaAntecedentsSlot = 'consulta-externa-antecedents-slot';
+
 // ── Privileges ──
 /** Declared by the order-basket workspace in esm-patient-orders-app/src/routes.json. */
 export const consultaExternaPrivilege = 'app:hoja.clinica.consultaExterna';
@@ -27,6 +30,7 @@ export const visitNotesPrivilege = 'app:hoja.clinica.resumenConsulta';
 export const visitNotesEditPrivilege = 'app:hoja.clinica.resumenConsulta.editar';
 export const socialHistoryPrivilege = 'app:hoja.clinica.historiaSocial';
 export const socialHistoryEditPrivilege = 'app:hoja.clinica.historiaSocial.editar';
+export const patientConditionsPrivilege = 'app:hoja.clinica.condiciones';
 /** Declared by the past-visits dashboard in esm-patient-chart-app/src/routes.json. */
 export const patientVisitsPrivilege = 'app:hoja.clinica.visitas';
 /** Declared by Patient Tests and Patient Attachments respectively. */

@@ -1,15 +1,15 @@
 # Pruebas end-to-end
 
-Playwright contra un OpenMRS desplegado. **Nunca contra producción ni con datos
+Playwright contra un OpenMRS desplegado y regresiones locales con servidor sintético. **Nunca contra producción ni con datos
 reales**. Las suites `runnable` exigen datos sintéticos y cleanup verificado por
-su gate. Las suites históricas permanecen `quarantined` precisamente porque su
+su gate. La suite `offline-local` usa exclusivamente un servidor loopback y no requiere credenciales. Las suites históricas permanecen `quarantined` precisamente porque su
 aislamiento, cleanup o aceptación aún no están verificados y no deben ejecutarse.
 
 ## Catálogo y runner
 
 [`suite-catalog.json`](suite-catalog.json) es la fuente única de organización.
 Cada configuración Playwright y cada `*.spec.ts` deben pertenecer exactamente a
-una de sus 13 suites. El contrato local falla si aparece una configuración o un
+una de sus 14 suites. El contrato local falla si aparece una configuración o un
 spec sin dueño, si hay solapamientos o si `typecheck`/`ci` dejan de coincidir con
 la configuración real.
 
@@ -30,6 +30,7 @@ lo rechaza de forma explícita hasta resolver la razón registrada en el catálo
 | `form-builder`      | `e2e/form-builder/playwright.config.ts`      | `e2e/form-builder/specs`      | quarantined  | no   | no        | no           |
 | `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | sí           |
 | `offline-laptop`    | `e2e/offline-laptop/playwright.config.ts`    | `e2e/offline-laptop/specs`    | **runnable** | sí   | sí        | no           |
+| `offline-local`     | `e2e/offline-local/playwright.config.ts`     | `e2e/offline-local/specs`     | **runnable** | sí   | sí        | no           |
 | `patient-imaging`   | `e2e/patient-imaging/playwright.config.ts`   | `e2e/patient-imaging/specs`   | quarantined  | no   | sí        | no           |
 | `stock-management`  | `e2e/stock-management/playwright.config.ts`  | `e2e/stock-management/specs`  | quarantined  | no   | sí        | no           |
 | `user-onboarding`   | `e2e/user-onboarding/playwright.config.ts`   | `e2e/user-onboarding/specs`   | quarantined  | no   | sí        | no           |
@@ -52,6 +53,9 @@ yarn test:e2e
 # Suites ejecutables por ID; los argumentos restantes pasan a Playwright
 yarn test:e2e:suite clinical --project=desktop
 yarn test:e2e:suite laboratory --headed
+
+# Worker y cola reales en Chromium con servidor local sintético
+yarn test:e2e:offline-local
 
 # Gate opt-in de navegador/laptop offline contra DEV/QLTY
 yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
@@ -131,6 +135,12 @@ el chart cacheado de un paciente existente y una visita offline cerrada; no
 cubre registro offline, formularios, signos vitales ni órdenes. La preparación
 por equipo y los criterios de evidencia están en el
 [runbook de aceptación offline](../docs/runbooks/offline-laptop-acceptance.md).
+
+La suite `offline-local` comprueba recarga, aislamiento por propietario, limpieza y
+recuperación tras perder una respuesta de escritura. Usa el worker compilado y la
+cola real, con adaptadores sintéticos de registro, formularios, signos vitales y
+triaje. No valida las pantallas ni la persistencia clínica en OpenMRS; esa
+aceptación requiere la matriz DEV/QLTY del runbook.
 
 ## Cobertura de typecheck
 

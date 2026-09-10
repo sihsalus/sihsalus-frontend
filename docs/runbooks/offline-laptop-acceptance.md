@@ -29,9 +29,8 @@ without an explicit synthetic test and cleanup contract.
 - Do not use InPrivate, Incognito, Guest, or a profile that clears site data on
   exit. Allow service workers, Cache Storage, cookies, and IndexedDB for the
   selected DEV/QLTY origin. This gate never opens or requires production.
-- Assign one managed OS/browser profile to one authorized clinical user. The
-  offline cache and queue belong to the browser profile, not to the OpenMRS
-  login, and logout does not safely remove them. Do not switch clinical accounts
+- Assign one managed OS/browser profile to one authorized clinical user. The updated worker checks the assigned clinical download owner and the queue checks each row owner. Logout blocks
+  clinical cache access but retains downloads and pending work; it is not a verified purge. Do not switch clinical accounts
   inside a profile that contains SIH Salus offline data.
 - A pending offline queue belongs to one browser profile. Never switch to the
   fallback browser, another OS account, or another clinical login while the
@@ -221,3 +220,38 @@ Cleanup then verifies that the patient and every visit are voided. If recovery
 is ambiguous or verification fails, the run is `FAILED`; stop and reconcile
 only the marked synthetic record with an authorized DEV/QLTY operator. Do not
 delete or reconcile any non-synthetic record.
+
+## Local browser regressions and additional clinical workflows
+
+`yarn test:e2e:offline-local` builds the repository service worker and runs Chromium against a server bound only to
+`127.0.0.1:4183`. It reads no environment credentials, uses a fresh browser context per case, and contacts no deployed
+backend. The harness verifies owned reads after reload, network-only failure with a warm cache, another account's
+cache denial, cleanup refusal with pending items, and preservation of the shell after verified removal. Four synthetic
+adapters exercise the real queue for registration/form/vitals/triage-shaped intents through reload, a lost create
+response, and reconciliation without duplicate writes. These adapters do not validate clinical form fields or backend
+semantics. Workspace integration tests separately exercise the real producers and their recovery checkpoints.
+
+Run `yarn typecheck:e2e` as well. The Playwright specs use the existing NodeNext project; the browser client is explicitly
+excluded there and checked by `e2e/offline-local/tsconfig.browser.json` using the shared offline library's bundler configuration.
+Both checks run in that command. Local traces contain only this loopback harness's synthetic data. Never reuse that
+trace policy for the credentialed deployed gate.
+
+Before extending clinical acceptance, coordinate a DEV/QLTY window, confirm the exact deployed SHA and current worker,
+and reserve synthetic patients, identifier source, visit, form, encounter type, concepts, location and roles for each
+workflow. Extend the existing cleanup journal to record every created patient, relationship, encounter and queue entry
+before writing; verify exact ownership and synthetic markers before cleanup. A failed or ambiguous cleanup remains a
+failed case and needs the reserved data reconciled. Do not erase a browser queue to make the test pass.
+
+Record these additional cases individually as PASSED, FAILED, BLOCKED or NOT RUN. The existing deployed automated gate
+continues to cover only the chart and closed visit; the cases below are a coordinated clinical acceptance matrix:
+
+| Workflow           | Required synthetic cases and evidence                                                                                                                                                                                                                                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registration       | Valid new registration with required identifiers; missing metadata blocks submit; save offline, reload, reconnect under the same owner; one patient and intended relationships/observations only. Lost-response and denied-write cases retain durable progress and do not repeat confirmed writes.                                  |
+| Clinical form      | Download schema and metadata; reject incomplete preparation; fill and queue, reload, reconnect; one encounter with the expected visit, form and values. A lost response or mismatched recovered encounter stays pending for reconciliation.                                                                                         |
+| Vital signs        | Valid measurements; empty/note-only and invalid inputs; explicit confirmation outside configured ranges; offline capture survives reload after save. Reconnection preserves the captured time, verifies visit bounds/server time and reconciles exactly one encounter. An incorrect device clock or unknown result remains pending. |
+| Emergency triage   | Cancel/reject workspace opening and retry without another status write; save measurements offline, reload and reconnect. No queue transfer occurs merely because the measurements were stored locally; after confirmed sync, refresh and use **Enviar a atención**. Verify the intended queue, priority and encounter once.         |
+| Owner and recovery | Original owner, logout/relogin, different account, another tab, storage denial/full storage, interruption during refresh and partial cleanup. Confirm pending content remains available only through its owner and cleanup cannot bypass unresolved work.                                                                           |
+
+Preparation evidence and local green tests do not authorize clinical release or substitute for this target-specific
+acceptance. A device still requires the managed-profile checks and operational retention/reconciliation procedure.

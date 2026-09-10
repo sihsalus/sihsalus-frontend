@@ -52,6 +52,7 @@ export interface RegisterDynamicRouteMessage extends OmrsServiceWorkerMessage<'r
 
 export type KnownOmrsServiceWorkerMessages =
   | OnImportMapChangedMessage
+  | OmrsServiceWorkerMessage<'clearOfflineDownloads'>
   | ClearDynamicRoutesMessage
   | RegisterDynamicRouteMessage;
 

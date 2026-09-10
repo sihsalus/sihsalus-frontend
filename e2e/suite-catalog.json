@@ -102,6 +102,16 @@
       "reason": "Gate manual activo; requiere una laptop coordinada, datos sintéticos y DEV o QLTY."
     },
     {
+      "id": "offline-local",
+      "config": "e2e/offline-local/playwright.config.ts",
+      "specDir": "e2e/offline-local/specs",
+      "status": "runnable",
+      "gate": true,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Regresión local del worker y la cola con datos sintéticos; usa solo el servidor de prueba del equipo."
+    },
+    {
       "id": "patient-imaging",
       "config": "e2e/patient-imaging/playwright.config.ts",
       "specDir": "e2e/patient-imaging/specs",

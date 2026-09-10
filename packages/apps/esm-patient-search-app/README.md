@@ -109,3 +109,7 @@ refresh.
 | Barrio de residencia                    | `Barrio`                               |
 
 Si alguno de estos person attribute types no existe en el backend objetivo, el filtro se oculta para no bloquear ni ensuciar la búsqueda.
+
+Offline download presence is checked through `areOfflineResourcesCached`, which rejects unowned or historical
+responses. [Shared ownership and cleanup rules](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup)
+apply to worker/consumer rollout and rollback.

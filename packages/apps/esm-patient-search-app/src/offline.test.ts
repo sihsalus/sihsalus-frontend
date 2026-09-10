@@ -1,4 +1,5 @@
 import {
+  areOfflineResourcesCached,
   messageOmrsServiceWorker,
   refreshOfflineCacheEntry,
   setupDynamicOfflineDataHandler,
@@ -7,6 +8,7 @@ import {
 import { setupOffline } from './offline';
 
 vi.mock('@openmrs/esm-framework', () => ({
+  areOfflineResourcesCached: vi.fn(),
   fetchCurrentPatient: vi.fn().mockResolvedValue(undefined),
   fhirBaseUrl: '/ws/fhir2/R4',
   makeUrl: vi.fn((url: string) => `/openmrs${url}`),
@@ -84,4 +86,14 @@ describe('patient-search patient synchronization', () => {
       abortController.signal,
     );
   });
+});
+
+it('reports preparation only through the owned cache check', async () => {
+  const handler = getPatientHandler();
+  vi.mocked(areOfflineResourcesCached).mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+  await expect(handler.isSynced('synthetic-patient')).resolves.toBe(false);
+  await expect(handler.isSynced('synthetic-patient')).resolves.toBe(true);
+  expect(areOfflineResourcesCached).toHaveBeenCalledWith([
+    `${globalThis.location.origin}/openmrs/ws/fhir2/R4/Patient/synthetic-patient`,
+  ]);
 });

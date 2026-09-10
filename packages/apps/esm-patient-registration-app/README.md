@@ -217,3 +217,7 @@ refresh, and each stable cache entry is replaced only after its corresponding ne
 - Removing or replacing a persisted relationship requires the OpenMRS `Delete Relationships` privilege. Online submission checks it before writing identifiers or demographics, so an unauthorized relationship delete cannot leave a partially updated patient.
 - An expected relationship permission denial is shown as a warning with guidance to ask an authorized user; it still blocks the save. Retry checks use the person UUID already resolved by the transaction when the form row has an empty UUID, while changes to that person still require a fresh permission check.
 - Address quick search is rendered only after the address template is available. This prevents a search-only address section where the user can find an address but cannot see or edit the address fields.
+
+Offline download presence is checked through `areOfflineResourcesCached`, which rejects unowned or historical
+responses. [Shared ownership and cleanup rules](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup)
+apply to worker/consumer rollout and rollback.

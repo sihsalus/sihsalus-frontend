@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import 'fake-indexeddb/auto';
 import { getLoggedInUser } from '@openmrs/esm-api';
 import { OfflineDb } from './offline-db';
+import { OfflineProfileDb } from './offline-profile-db';
 import type { QueueItemDescriptor } from './sync';
 import {
   beginEditSynchronizationItem,
@@ -62,14 +63,15 @@ vi.mock('@openmrs/esm-api', () => ({
 const requestLock =
   vi.fn<(name: string, options: LockOptions, callback: LockGrantedCallback<unknown>) => Promise<unknown>>();
 beforeEach(() => {
-  let held = false;
+  const held = new Set<string>();
   requestLock.mockImplementation(async (name, _options, callback) => {
-    if (held) return callback(null);
-    held = true;
+    if (_options.mode === 'shared') return callback({ name, mode: 'shared' } as Lock);
+    if (held.has(name)) return callback(null);
+    held.add(name);
     try {
       return await callback({ name, mode: 'exclusive' } as Lock);
     } finally {
-      held = false;
+      held.delete(name);
     }
   });
   vi.stubGlobal('navigator', { locks: { request: requestLock } });
@@ -77,7 +79,13 @@ beforeEach(() => {
 
 afterEach(async () => {
   // We want each test case to start fresh with a clean sync queue.
-  await new OfflineDb().syncQueue.clear();
+  const db = new OfflineDb();
+  try {
+    await db.syncQueue.clear();
+  } finally {
+    db.close();
+  }
+  await new OfflineProfileDb().delete();
   setCurrentUser(mockUserId);
   getOfflineSynchronizationStore().setState({ synchronization: undefined });
   vi.unstubAllGlobals();
@@ -108,6 +116,7 @@ describe('synchronization across tabs and dependencies', () => {
   it('holds the origin lock until synchronization settles and allows a subsequent retry', async () => {
     let inLock = false;
     requestLock.mockImplementation(async (name, options, callback) => {
+      if (options.mode === 'shared') return callback({ name, mode: 'shared' } as Lock);
       expect(name).toBe('openmrs-offline-synchronization');
       expect(options).toEqual({ mode: 'exclusive', ifAvailable: true });
       inLock = true;
@@ -837,4 +846,35 @@ describe('runSynchronization', () => {
     });
     expect(JSON.stringify(persistedItem?.lastError)).not.toContain(sensitiveDetails);
   });
+});
+
+it('preserves pending content while an interrupted cleanup blocks enqueue, then allows recovery', async () => {
+  const profileDb = new OfflineProfileDb();
+  try {
+    await profileDb.profile.put({
+      id: 'profile',
+      ownerId: mockUserId,
+      activeUserId: mockUserId,
+      phase: 'active',
+      generation: 1,
+      sessionUrl: 'https://synthetic.test/openmrs/ws/rest/v1/session',
+    });
+    await queueSynchronizationItem(mockSyncItemType, { value: 123 }, defaultMockSyncItemDescriptor);
+    await profileDb.profile.update('profile', { phase: 'clearing', generation: 2 });
+    await expect(
+      queueSynchronizationItem(mockSyncItemType, { value: 456 }, defaultMockSyncItemDescriptor),
+    ).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    expect(await getSynchronizationItems(mockSyncItemType)).toEqual([{ value: 123 }]);
+    await profileDb.profile.update('profile', { phase: 'active' });
+    await queueSynchronizationItem(mockSyncItemType, { value: 456 }, defaultMockSyncItemDescriptor);
+    expect(await getSynchronizationItems(mockSyncItemType)).toEqual([{ value: 456 }]);
+  } finally {
+    profileDb.close();
+  }
+});
+
+it('keeps queue-first online producers available without an offline profile or Web Locks', async () => {
+  vi.stubGlobal('navigator', {});
+  await queueSynchronizationItem(mockSyncItemType, defaultMockSyncItem);
+  expect(await getSynchronizationItems(mockSyncItemType)).toEqual([defaultMockSyncItem]);
 });

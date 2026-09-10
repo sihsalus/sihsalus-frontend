@@ -2,6 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { refreshOfflineCacheEntry } from './offline-cache';
 
+vi.mock('./offline-profile', () => ({
+  captureOfflineProfile: async () => ({ ownerId: 'synthetic' }),
+  storeOfflineResponse: async (url: string, response: Response) => {
+    const cache = await caches.open('omrs-clinical-cache-v1');
+    await cache.put(url, response);
+  },
+}));
+
 describe('refreshOfflineCacheEntry', () => {
   let cachePut: ReturnType<typeof vi.fn>;
   let cachedResponses: Map<string, Response>;

@@ -15,11 +15,12 @@
     "clinical-recovery/**/*.ts",
     "laboratory/**/*.ts",
     "offline-laptop/**/*.ts",
+    "offline-local/**/*.ts",
     "cohort-builder/**/*.ts",
     "dyaku/**/*.ts",
     "patient-imaging/**/*.ts",
     "stock-management/**/*.ts",
     "user-onboarding/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "offline-local/queue-client.ts"]
 }

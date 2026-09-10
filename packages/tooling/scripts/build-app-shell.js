@@ -56,7 +56,11 @@ function getAppShellPackageRoot() {
 
 function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
-  return configFactory({}, { mode: 'production' });
+  const config = configFactory({}, { mode: 'production' });
+  // Workspace SWC output uses explicit .js imports while this build consumes TypeScript sources.
+  // Match the monorepo's existing Rspack resolution contract.
+  config.resolve.extensionAlias = { '.js': ['.js', '.ts', '.tsx'] };
+  return config;
 }
 
 function getRepoOwnedServiceWorkerSource(repositoryRoot = REPOSITORY_ROOT) {

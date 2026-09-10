@@ -1,6 +1,7 @@
 import {
   Button,
   DataTable,
+  type DataTableRenderProps,
   DataTableSkeleton,
   Layer,
   Link,
@@ -27,7 +28,7 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
-import React, { type ChangeEvent, useState } from 'react';
+import React, { type ChangeEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './offline-actions-table.styles.scss';
@@ -57,11 +58,6 @@ const OfflineActionsTable: React.FC<OfflineActionsTableProps> = ({
   onDelete,
 }) => {
   const { t } = useTranslation();
-  const [pageSize, setPageSize] = useState(10);
-  const { results, currentPage, goTo } = usePagination(data);
-  const layout = useLayoutType();
-
-  const toolbarItemSize = isDesktop(layout) ? 'sm' : undefined;
 
   const defaultHeaders: Array<{
     key: OfflineActionsTableHeaders;
@@ -86,21 +82,27 @@ const OfflineActionsTable: React.FC<OfflineActionsTableProps> = ({
   ];
   const headers = defaultHeaders.filter((header) => !hiddenHeaders?.includes(header.key));
 
-  const rows = results.map((syncItem) => {
+  const rows: OfflineActionRow[] = data.map((syncItem) => {
     const patientName = getPatientName(syncItem);
+    const date = syncItem.item.createdOn;
+    const validDate = date instanceof Date && Number.isFinite(date.getTime());
 
     return {
       id: syncItem.item.id.toString(),
-      createdOn: syncItem.item.createdOn?.toLocaleDateString(),
+      createdOn: {
+        value: validDate ? date.toLocaleString() : '-',
+        filterableValue: validDate ? date.toLocaleString() : '-',
+        sortValue: validDate ? date.getTime() : Number.MIN_SAFE_INTEGER,
+      },
       patient: {
         value: <PatientLink patientUuid={syncItem.item.descriptor?.patientUuid} patientName={patientName} />,
-        filterableValue: patientName,
+        filterableValue: patientName ?? '',
       },
       action: {
-        value: <ActionNameLink syncItem={syncItem.item} />,
-        filterableValue: syncItem.item.descriptor.displayName ?? '-',
+        value: <ActionNameLink syncItem={syncItem.item} disabled={disableEditing} />,
+        filterableValue: syncItem.item.descriptor?.displayName ?? '-',
       },
-      error: syncItem.item.lastError?.message ?? '-',
+      error: syncItem.item.lastError ? t('offlineActionsSynchronizationIncomplete', 'Synchronization incomplete') : '-',
     };
   });
 
@@ -109,78 +111,142 @@ const OfflineActionsTable: React.FC<OfflineActionsTableProps> = ({
   }
 
   return (
-    <DataTable rows={rows} headers={headers} filterRows={filterTableRows}>
-      {({
-        rows,
-        headers,
-        getTableProps,
-        getHeaderProps,
-        getRowProps,
-        getTableContainerProps,
-        getSelectionProps,
-        onInputChange,
-        selectedRows,
-      }) => (
-        <TableContainer className={styles.tableContainer} {...getTableContainerProps()}>
-          <div className={styles.tableHeaderContainer}>
-            {selectedRows.length === 0 && (
-              <Layer>
-                <Search
-                  className={styles.tableSearch}
-                  labelText={t('offlinePatientsTableSearchLabel', 'Search this list')}
-                  placeholder={t('offlinePatientsTableSearchPlaceholder', 'Search this list')}
-                  size={toolbarItemSize}
-                  onChange={(e) => onInputChange(e as ChangeEvent<HTMLInputElement>)}
-                />
-              </Layer>
-            )}
-            {selectedRows.length > 0 && (
-              <Button
-                className={styles.tablePrimaryAction}
-                kind="danger"
-                size={toolbarItemSize}
-                disabled={disableEditing || disableDelete}
-                onClick={() => onDelete(selectedRows.map((row) => +row.id))}
-              >
-                {t('offlineActionsTableDeleteActions', 'Delete {{count}} actions', { count: selectedRows.length })}
-              </Button>
-            )}
-          </div>
-          <Table {...getTableProps()} isSortable useZebraStyles>
-            <TableHead>
-              <TableRow>
-                <TableSelectAll {...getSelectionProps()} disabled={disableEditing} />
-                {headers.map((header) => (
-                  <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
-                    {header.header}
-                  </TableHeader>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id} {...getRowProps({ row })}>
-                  <TableSelectRow {...getSelectionProps({ row })} disabled={disableEditing} />
-                  {row.cells.map((cell) => (
-                    <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Pagination
-            pageSizes={[10, 20, 30, 40, 50]}
-            page={currentPage}
-            pageSize={pageSize}
-            totalItems={data.length}
-            onChange={({ page, pageSize }) => {
-              goTo(page);
-              setPageSize(pageSize);
-            }}
-          />
-        </TableContainer>
+    <DataTable<OfflineActionRow, OfflineActionCell[]>
+      rows={rows}
+      headers={headers}
+      filterRows={filterTableRows}
+      isSortable
+      sortRow={(left, right, { sortDirection }) => {
+        const leftText = typeof left === 'object' && left !== null ? (left.sortValue ?? left.filterableValue) : left;
+        const rightText =
+          typeof right === 'object' && right !== null ? (right.sortValue ?? right.filterableValue) : right;
+        const comparison =
+          typeof leftText === 'number' && typeof rightText === 'number'
+            ? leftText - rightText
+            : String(leftText ?? '').localeCompare(String(rightText ?? ''), undefined, { numeric: true });
+        return sortDirection === 'DESC' ? -comparison : comparison;
+      }}
+    >
+      {(tableProps) => (
+        <PaginatedActionsTable
+          {...tableProps}
+          disableEditing={disableEditing}
+          disableDelete={disableDelete}
+          onDelete={onDelete}
+        />
       )}
     </DataTable>
+  );
+};
+
+type OfflineActionCell = string | { value: React.ReactNode; filterableValue: string; sortValue?: number };
+interface OfflineActionRow {
+  id: string;
+  createdOn: OfflineActionCell;
+  patient: OfflineActionCell;
+  action: OfflineActionCell;
+  error: string;
+}
+
+type PaginatedActionsTableProps = DataTableRenderProps<OfflineActionRow, OfflineActionCell[]> &
+  Pick<OfflineActionsTableProps, 'disableEditing' | 'disableDelete' | 'onDelete'>;
+
+const PaginatedActionsTable: React.FC<PaginatedActionsTableProps> = ({
+  rows,
+  headers,
+  getTableProps,
+  getHeaderProps,
+  getRowProps,
+  getTableContainerProps,
+  getSelectionProps,
+  onInputChange,
+  selectedRows,
+  disableEditing,
+  disableDelete,
+  onDelete,
+}) => {
+  const { t } = useTranslation();
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { results: visibleRows, currentPage, totalPages, goTo } = usePagination(rows, pageSize);
+  const layout = useLayoutType();
+  const toolbarItemSize = isDesktop(layout) ? 'sm' : undefined;
+  useEffect(() => {
+    if (currentPage > totalPages) goTo(totalPages);
+  }, [currentPage, totalPages, goTo]);
+
+  return (
+    <TableContainer className={styles.tableContainer} {...getTableContainerProps()}>
+      <div className={styles.tableHeaderContainer}>
+        {selectedRows.length === 0 && (
+          <Layer>
+            <Search
+              className={styles.tableSearch}
+              labelText={t('offlinePatientsTableSearchLabel', 'Search this list')}
+              placeholder={t('offlinePatientsTableSearchPlaceholder', 'Search this list')}
+              size={toolbarItemSize}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                onInputChange(e as ChangeEvent<HTMLInputElement>);
+                goTo(1);
+              }}
+            />
+          </Layer>
+        )}
+        {selectedRows.length > 0 && (
+          <Button
+            className={styles.tablePrimaryAction}
+            kind="danger"
+            size={toolbarItemSize}
+            disabled={disableEditing || disableDelete}
+            onClick={() => onDelete(selectedRows.map((row) => +row.id))}
+          >
+            {t('offlineActionsTableDeleteActions', 'Delete {{count}} actions', { count: selectedRows.length })}
+          </Button>
+        )}
+      </div>
+      <Table {...getTableProps()} useZebraStyles>
+        <TableHead>
+          <TableRow>
+            <TableSelectAll {...getSelectionProps()} disabled={disableEditing} />
+            {headers.map((header) => {
+              const { key, ...props } = getHeaderProps({ header, onClick: () => goTo(1) });
+              return (
+                <TableHeader key={key} {...props} isSortable>
+                  {header.header}
+                </TableHeader>
+              );
+            })}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {visibleRows.map((row) => {
+            const { key, ...rowProps } = getRowProps({ row });
+            return (
+              <TableRow key={key} {...rowProps}>
+                <TableSelectRow {...getSelectionProps({ row })} disabled={disableEditing} />
+                {row.cells.map((cell) => (
+                  <TableCell key={cell.id}>{renderCellValue(cell.value)}</TableCell>
+                ))}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <Pagination
+        pageSizes={[10, 20, 30, 40, 50]}
+        page={currentPage}
+        pageSize={pageSize}
+        totalItems={rows.length}
+        onChange={({ page, pageSize: nextPageSize }) => {
+          if (nextPageSize !== pageSize) {
+            setPageSize(nextPageSize);
+            goTo(1);
+          } else goTo(page);
+        }}
+      />
+    </TableContainer>
   );
 };
 
@@ -195,6 +261,10 @@ const TableSkeleton: React.FC = () => {
   );
 };
 
+function renderCellValue(value: OfflineActionCell): React.ReactNode {
+  return typeof value === 'string' ? value : value?.value;
+}
+
 function getPatientName({ item, patient }: SyncItemWithPatient) {
   const hasPatient = item.descriptor?.patientUuid;
   if (!hasPatient) {
@@ -207,10 +277,10 @@ function getPatientName({ item, patient }: SyncItemWithPatient) {
     : item.descriptor.patientUuid;
 }
 
-function ActionNameLink({ syncItem }: { syncItem: SyncItem }) {
-  const displayName = syncItem.descriptor.displayName ?? '-';
+function ActionNameLink({ syncItem, disabled }: { syncItem: SyncItem; disabled: boolean }) {
+  const displayName = syncItem.descriptor?.displayName ?? '-';
 
-  if (!canBeginEditSynchronizationItemsOfType(syncItem.type)) {
+  if (disabled || !canBeginEditSynchronizationItemsOfType(syncItem.type)) {
     return <>{displayName}</>;
   }
 

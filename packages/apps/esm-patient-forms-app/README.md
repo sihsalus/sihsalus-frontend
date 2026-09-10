@@ -47,10 +47,12 @@ Form-membership updates and background form-refresh batches use one identifier-f
 contexts, with a same-page FIFO fallback where Web Locks are unavailable. A background snapshot and all of its entry
 refreshes settle inside that boundary, so an earlier refresh cannot re-add membership after a serialized removal or
 first-download rollback. The membership is re-read inside each toggle operation, and a failed first download rolls back
-only the membership added by that attempt. The lock is not an authenticated-session owner epoch: an account transition
-during an in-flight download can still change the session used by downstream handlers. Until owner-epoch cancellation
-is implemented, let offline-form updates settle before switching accounts.
+only the membership added by that attempt. Each confirmed cache refresh also captures the shared offline profile generation before HTTP and rejects a late
+write after an observed session transition. Let form updates settle before ending the assigned clinical session.
 
-Previously cached forms remain available when a background refresh fails, but the user is warned that they may be
-outdated. Clinical cache content remains origin-wide; shared devices require an isolated OS/browser profile per
-authorized user until cache partitioning or verified purge behavior exists.
+Previously cached forms remain available to their assigned owner when a background refresh fails, with an outdated-data
+warning. The shared cache ownership and cleanup contract applies; keep one managed profile per clinical user.
+
+Offline download presence is checked through `areOfflineResourcesCached`, which rejects unowned or historical
+responses. [Shared ownership and cleanup rules](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup)
+apply to worker/consumer rollout and rollback.

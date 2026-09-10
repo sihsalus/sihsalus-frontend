@@ -57,6 +57,10 @@ export const clearHistory = vi.fn();
 export const goBackInHistory = vi.fn();
 
 /* esm-offline */
+export const areOfflineResourcesCached = vi.fn();
+export const getOfflineReadiness = vi.fn();
+export const getOfflineProfileStatus = vi.fn();
+export const clearOfflineDownloads = vi.fn();
 export const useConnectivity = vi.fn().mockReturnValue(true);
 export const subscribeConnectivity = vi.fn();
 

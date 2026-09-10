@@ -145,9 +145,13 @@ export async function getDynamicOfflineDataEntriesFor<T extends DynamicOfflineDa
   const db = new OfflineDb();
   const collection = db.dynamicOfflineData.where('users').equals(userId);
 
-  return (await (type ? collection.and((entry) => entry.type === type) : collection)
-    .toArray()
-    .catch(Dexie.errnames.DatabaseClosed, () => [])) as Array<T>;
+  try {
+    return (await (type ? collection.and((entry) => entry.type === type) : collection)
+      .toArray()
+      .catch(Dexie.errnames.DatabaseClosed, () => [])) as Array<T>;
+  } finally {
+    db.close();
+  }
 }
 
 /**

@@ -1,8 +1,8 @@
 /** @module @category Offline */
 import { makeUrl } from '@openmrs/esm-api';
+import { captureOfflineProfile, storeOfflineResponse } from './offline-profile';
 import { omrsOfflineCachingStrategyHttpHeaderName } from './service-worker-http-headers';
 
-const offlineCacheName = 'omrs-spa-cache-v1';
 const offlineRefreshQueryParameter = '_openmrsOfflineRefresh';
 const offlineRefreshErrorMessage = 'The offline resource could not be refreshed from the network.';
 
@@ -16,6 +16,7 @@ export async function refreshOfflineCacheEntry(url: string, signal?: AbortSignal
       throw new Error(offlineRefreshErrorMessage);
     }
 
+    const profile = await captureOfflineProfile();
     const stableUrl = new URL(makeUrl(url), globalThis.location.origin);
     const refreshUrl = new URL(stableUrl);
     refreshUrl.searchParams.set(offlineRefreshQueryParameter, globalThis.crypto.randomUUID());
@@ -36,11 +37,7 @@ export async function refreshOfflineCacheEntry(url: string, signal?: AbortSignal
       throw new Error(offlineRefreshErrorMessage);
     }
 
-    const cache = await globalThis.caches.open(offlineCacheName);
-    if (signal?.aborted) {
-      throw new Error(offlineRefreshErrorMessage);
-    }
-    await cache.put(stableUrl.href, response.clone());
+    await storeOfflineResponse(stableUrl.href, response.clone(), profile, signal);
   } catch {
     throw new Error(offlineRefreshErrorMessage);
   }

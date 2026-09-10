@@ -1,11 +1,13 @@
+import 'fake-indexeddb/auto';
 import {
   launchWorkspace2,
   messageOmrsServiceWorker,
   openmrsFetch,
+  type SyncProcessOptions,
   setupDynamicOfflineDataHandler,
   setupOfflineSync,
-  type SyncProcessOptions,
 } from '@openmrs/esm-framework';
+import { OfflineProfileDb } from '../../../libs/esm-offline/src/offline-profile-db';
 
 import { formEncounterUrl, formEncounterUrlPoc } from './constants';
 import { setupDynamicFormDataHandler, setupPatientFormSync } from './offline';
@@ -156,6 +158,32 @@ function getPatientFormSyncProcess() {
     options: SyncProcessOptions<TestPatientFormContent>,
   ) => Promise<unknown>;
 }
+
+vi.mock('@openmrs/esm-api', async () => ({
+  ...(await vi.importActual('@openmrs/esm-api')),
+  getSessionStore: () => ({
+    getState: () => ({ loaded: true, session: { authenticated: true, user: { uuid: 'synthetic-cache-owner' } } }),
+  }),
+}));
+beforeEach(async () => {
+  const db = new OfflineProfileDb();
+  await db.profile.put({
+    id: 'profile',
+    ownerId: 'synthetic-cache-owner',
+    activeUserId: 'synthetic-cache-owner',
+    phase: 'active',
+    generation: 0,
+    sessionUrl: 'https://synthetic.test/openmrs/ws/rest/v1/session',
+  });
+  db.close();
+  vi.stubGlobal('navigator', {
+    onLine: true,
+    locks: {
+      request: async (name: string, options: LockOptions, callback: LockGrantedCallback<unknown>) =>
+        callback({ name, mode: options.mode ?? 'exclusive' } as Lock),
+    },
+  });
+});
 
 vi.mock('@openmrs/esm-framework', async () => {
   const { refreshOfflineCacheEntry } = await vi.importActual<typeof import('@openmrs/esm-offline/src/public')>(

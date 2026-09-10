@@ -112,7 +112,7 @@
   "orderingProviderRequiredMessage": "This account is not linked to a clinical provider. Use a clinical account or request the association.",
   "orderingProviderRequiredTitle": "Clinical provider required",
   "orderPlaced": "Order placed",
-  "ordersCompleted": "Orders completed",
+  "ordersCompleted": "Order changes saved",
   "ordersDiscontinued": "Orders discontinued",
   "ordersPlaced": "Orders placed",
   "ordersUpdated": "Orders updated",

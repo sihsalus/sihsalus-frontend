@@ -56,5 +56,6 @@
   "status": "Status",
   "telephoneNumberWithSeparator": "Telephone number:",
   "yearAbbreviation": "yr",
-  "yearsAbbreviation": "yrs"
+  "yearsAbbreviation": "yrs",
+  "neighborhood": "Neighborhood"
 }

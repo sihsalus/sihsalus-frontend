@@ -249,7 +249,7 @@ describe('useConsultaExternaFormLauncher', () => {
     expect(mutate).toHaveBeenCalledOnce();
   });
 
-  it('edits the one matching Anamnesis or SOAP encounter instead of creating a duplicate', async () => {
+  it('edits the one matching anamnesis or physical examination encounter instead of creating a duplicate', async () => {
     mockPublishedFormResponse();
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: { results: [matchingEncounter('existing-encounter')] },

@@ -138,6 +138,14 @@ La Epicrisis pertenece al egreso de hospitalización según la NTS 139. Consulta
 
 El formulario identificado históricamente como `CE-SOAP-001-NOTA SOAP` registra el examen general y el examen regional por sistemas mediante campos diferenciados por `formFieldPath`. Ningún campo se completa como “normal” automáticamente. Consulta Externa muestra únicamente esos hallazgos de examen físico; de los registros SOAP históricos solo reutiliza el hallazgo objetivo como compatibilidad de lectura y no presenta Subjetivo, Apreciación ni Plan como secciones ambulatorias.
 
+El historial se implementa en `usePhysicalExam` y `examen-fisico.component.tsx`.
+El hook devuelve `physicalExamEntries` y filtra los encuentros sin hallazgos de
+examen físico antes de paginar, para que las notas que solo contienen relato,
+apreciación o plan no generen páginas vacías. El texto objetivo histórico se
+expone como `legacyObjective`. `formsList.soapNoteForm`, `concepts.soapObjectiveUuid`
+y el `formFieldPath` histórico se conservan como contratos con el contenido
+instalado; no definen un formato SOAP para Consulta Externa.
+
 La generación de ambos documentos falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: los documentos deben generarse antes de finalizarla. Una futura generación histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
 
 ## TODO QA/QLTY

@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useConsultaExternaFormLauncher } from '../hooks/useConsultaExternaFormLauncher';
-import { useSoapNotes } from '../hooks/useSoapNotes';
+import { usePhysicalExam } from '../hooks/usePhysicalExam';
 import { clinicalFormsPrivilege, consultaExternaEditPrivilege } from '../utils/constants';
 import { hasSegmentedPhysicalExam, physicalExamFields } from '../utils/physical-exam';
 import ClinicalHistoryCard from './clinical-history-card.component';
@@ -17,7 +17,7 @@ interface ExamenFisicoProps {
 const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { soapEntries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useSoapNotes(
+  const { physicalExamEntries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = usePhysicalExam(
     patientUuid,
     [
       config.encounterTypes?.externalConsultation,
@@ -38,9 +38,6 @@ const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
     mutate,
     entryMode: 'one-per-visit',
   });
-  const physicalExamEntries = soapEntries.filter(
-    (entry) => hasSegmentedPhysicalExam(entry.physicalExam) || Boolean(entry.objective),
-  );
 
   return (
     <ClinicalHistoryCard
@@ -72,7 +69,7 @@ const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
             }
           >
             {hasSegmentedPhysicalExam(entry.physicalExam) ? (
-              <div className={`${styles.soapSection} ${styles.soapObjective}`}>
+              <div className={`${styles.clinicalSection} ${styles.physicalExamSection}`}>
                 <h5>{t('physicalExam', 'Examen físico')}</h5>
                 <dl className={styles.physicalExamGrid}>
                   {physicalExamFields.map((field) =>
@@ -86,9 +83,9 @@ const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
                 </dl>
               </div>
             ) : (
-              <div className={`${styles.soapSection} ${styles.soapObjective}`}>
+              <div className={`${styles.clinicalSection} ${styles.physicalExamSection}`}>
                 <h5>{t('physicalExam', 'Examen físico')}</h5>
-                <p>{entry.objective || t('noData', 'Sin datos')}</p>
+                <p>{entry.physicalExam.otherFindings || entry.legacyObjective || t('noData', 'Sin datos')}</p>
               </div>
             )}
           </AccordionItem>

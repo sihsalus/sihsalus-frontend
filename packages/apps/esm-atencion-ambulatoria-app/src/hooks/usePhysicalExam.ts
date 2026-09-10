@@ -1,28 +1,22 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
-import {
-  getFormEngineFieldPath,
-  physicalExamFields,
-  type PhysicalExamValues,
-} from '../utils/physical-exam';
+import { getFormEngineFieldPath, type PhysicalExamValues, physicalExamFields } from '../utils/physical-exam';
 import {
   type EncounterTypeSourceInput,
   toEncounterTypeSources,
   useMergedClinicalHistoryPagination,
 } from './useClinicalHistoryPagination';
 
-export interface SoapEntry {
+export interface PhysicalExamEntry {
   encounterUuid: string;
   encounterDatetime: string;
   provider: string | null;
-  subjective: string | null;
-  objective: string | null;
-  assessment: string | null;
-  plan: string | null;
+  /** Compatibility with objective findings recorded before the segmented examination form. */
+  legacyObjective: string | null;
   physicalExam: PhysicalExamValues;
 }
 
-export interface SoapObservation {
+export interface PhysicalExamObservation {
   uuid: string;
   concept: { uuid: string; display: string };
   value: string | { display: string };
@@ -30,15 +24,15 @@ export interface SoapObservation {
   formFieldPath?: string;
 }
 
-export interface SoapEncounter {
+export interface PhysicalExamEncounter {
   uuid: string;
   encounterDatetime: string;
   encounterProviders: Array<{ display: string }>;
-  obs: SoapObservation[];
+  obs: PhysicalExamObservation[];
 }
 
 function getObsValue(
-  obs: SoapObservation[] | undefined,
+  obs: PhysicalExamObservation[] | undefined,
   conceptUuid: string | undefined,
   formFieldPath?: string,
 ): string | null {
@@ -52,7 +46,10 @@ function getObsValue(
   return typeof match.value === 'string' ? match.value : (match.value?.display ?? null);
 }
 
-export function mapSoapEntry(encounter: SoapEncounter, concepts: Record<string, string>): SoapEntry {
+export function mapPhysicalExamEntry(
+  encounter: PhysicalExamEncounter,
+  concepts: Record<string, string>,
+): PhysicalExamEntry {
   const objectiveUuid = concepts?.soapObjectiveUuid;
   const physicalExam = physicalExamFields.reduce((values, field) => {
     values[field.key] = getObsValue(encounter.obs, undefined, getFormEngineFieldPath(field.questionId));
@@ -63,25 +60,19 @@ export function mapSoapEntry(encounter: SoapEncounter, concepts: Record<string, 
     encounterUuid: encounter.uuid,
     encounterDatetime: encounter.encounterDatetime,
     provider: encounter.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
-    subjective: getObsValue(encounter.obs, concepts?.soapSubjectiveUuid),
-    objective:
+    legacyObjective:
       getObsValue(encounter.obs, objectiveUuid, getFormEngineFieldPath('soapObjetivo')) ??
       getObsValue(encounter.obs, objectiveUuid),
-    assessment: getObsValue(encounter.obs, concepts?.soapAssessmentUuid),
-    plan: getObsValue(encounter.obs, concepts?.soapPlanUuid),
     physicalExam,
   };
 }
 
-export function useSoapNotes(
+/** Reads physical examination findings, including the objective portion of historical notes. */
+export function usePhysicalExam(
   patientUuid: string,
   encounterType: EncounterTypeSourceInput | Array<EncounterTypeSourceInput>,
   concepts: Record<string, string>,
 ) {
-  const subjectiveUuid = concepts?.soapSubjectiveUuid;
-  const objectiveUuid = concepts?.soapObjectiveUuid;
-  const assessmentUuid = concepts?.soapAssessmentUuid;
-  const planUuid = concepts?.soapPlanUuid;
   const encounterTypes = toEncounterTypeSources(encounterType);
   const sources = patientUuid
     ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
@@ -92,32 +83,19 @@ export function useSoapNotes(
     : null;
 
   const isRelevant = useCallback(
-    (encounter: SoapEncounter) =>
-      encounter.obs?.some(
-        (obs) =>
-          [subjectiveUuid, objectiveUuid, assessmentUuid, planUuid].filter(Boolean).includes(obs.concept?.uuid) ||
-          physicalExamFields.some(
-            ({ questionId }) => obs.formFieldPath === getFormEngineFieldPath(questionId),
-          ),
-      ),
-    [assessmentUuid, objectiveUuid, planUuid, subjectiveUuid],
+    (encounter: PhysicalExamEncounter) => {
+      const entry = mapPhysicalExamEntry(encounter, concepts);
+      return Boolean(entry.legacyObjective) || Object.values(entry.physicalExam).some(Boolean);
+    },
+    [concepts],
   );
   const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } =
-    useMergedClinicalHistoryPagination<SoapEncounter>(sources, isRelevant);
+    useMergedClinicalHistoryPagination<PhysicalExamEncounter>(sources, isRelevant);
 
-  const soapEntries: SoapEntry[] = data
-    .map((encounter) => mapSoapEntry(encounter, concepts))
-    .filter(
-      (entry) =>
-        entry.subjective ||
-        entry.objective ||
-        entry.assessment ||
-        entry.plan ||
-        Object.values(entry.physicalExam).some(Boolean),
-    );
+  const physicalExamEntries = data.map((encounter) => mapPhysicalExamEntry(encounter, concepts));
 
   return {
-    soapEntries,
+    physicalExamEntries,
     isLoading,
     isValidating,
     error,

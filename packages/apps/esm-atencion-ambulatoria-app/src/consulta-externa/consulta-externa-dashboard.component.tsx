@@ -19,7 +19,7 @@ import ConsultaExternaAntecedents from './consulta-externa-antecedents.component
 import styles from './consulta-externa-dashboard.scss';
 import { type ConsultaExternaTabId, getConsultaExternaTabIndex } from './consulta-externa-tabs';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
-import ExamenFisico from './notas-soap.component';
+import ExamenFisico from './examen-fisico.component';
 import ExternalLabResults from './external-lab-results.component';
 import OutpatientVisitSummaryDownload from './outpatient-visit-summary-download.component';
 import PlanTratamiento from './plan-tratamiento.component';

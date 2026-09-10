@@ -50,6 +50,16 @@ TypeScript-only setup shim. Framework package mocks remain owned by their
 libraries. The lightweight framework stubs are an explicit opt-in for libraries
 whose tests target that contract.
 
+Vitest, its UI, and the coverage provider use version 5 together. Every
+workspace that declares Vitest also declares its Vite peer dependency; the app
+template follows the same rule. Dependabot groups the runner, UI, and coverage
+provider together, including major updates, to preserve their matching peers.
+
+`packages/declarations.d.ts` adapts the existing jest-dom matcher types to
+Vitest 5's `Matchers<R, T>` interface. This preserves the matcher return type
+for synchronous assertions and awaited `resolves`/`rejects` assertions. The
+runtime setup continues to register jest-dom's matchers through `expect.extend`.
+
 ## Validation and caching
 
 Changes to shared test support trigger repository-wide `verify:changed`

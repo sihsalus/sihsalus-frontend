@@ -63,6 +63,7 @@
     "@types/semver": "^7",
     "@types/tar": "^4.0.3",
     "cross-env": "^10.1.0",
-    "vitest": "^4.1.7"
+    "vite": "8.0.16",
+    "vitest": "^5.0.0"
   }
 }

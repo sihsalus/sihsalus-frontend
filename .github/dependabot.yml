@@ -40,13 +40,16 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      # Build/test tooling — low risk, group minor+patch into one PR
+      # Vitest's runner, UI and coverage provider require matching versions.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      # Other build/test tooling — group minor+patch into one PR
       tooling:
         patterns:
           - "@biomejs/*"
           - "@playwright/*"
-          - "@vitest/*"
-          - "vitest"
           - "turbo"
           - "typescript"
           - "prettier"
@@ -73,7 +76,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    # Major bumps are intentionally left ungrouped so each gets its own PR for review.
+    # Other major bumps stay ungrouped so each gets its own PR for review.
 
   # Docker base images (Dockerfile + docker-compose.yml)
   - package-ecosystem: "docker"

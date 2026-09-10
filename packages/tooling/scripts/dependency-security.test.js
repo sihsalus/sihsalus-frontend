@@ -13,9 +13,11 @@ const protectedDependencies = [
   { name: 'browserslist', minimumSafeVersion: '4.28.7' },
   { name: 'fast-uri', minimumSafeVersion: '3.1.6' },
   { name: 'flatted', minimumSafeVersion: '3.4.2' },
+  { name: 'js-yaml', minimumSafeVersion: '4.3.2' },
   { name: 'nanoid', minimumSafeVersion: '3.3.18' },
   { name: 'shell-quote', minimumSafeVersion: '1.8.4' },
   { name: 'sigstore', minimumSafeVersion: '4.1.1' },
+  { name: 'smol-toml', minimumSafeVersion: '1.7.1' },
 ];
 
 function compareVersions(left, right) {

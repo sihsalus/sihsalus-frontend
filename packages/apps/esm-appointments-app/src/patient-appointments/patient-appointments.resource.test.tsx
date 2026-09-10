@@ -86,9 +86,7 @@ describe('usePatientAppointments', () => {
   });
 
   it('recovers from a transient appointment search failure before showing an error', async () => {
-    mockOpenmrsFetch
-      .mockRejectedValueOnce({ response: { status: 503 } })
-      .mockResolvedValueOnce(mockFetchResponse([]));
+    mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 503 } }).mockResolvedValueOnce(mockFetchResponse([]));
 
     const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
       wrapper,

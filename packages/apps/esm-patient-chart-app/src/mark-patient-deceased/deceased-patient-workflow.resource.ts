@@ -57,11 +57,7 @@ function getResponseDate(response: Pick<FetchResponse<unknown>, 'headers'>) {
   return date && !Number.isNaN(date.valueOf()) ? date : new Date();
 }
 
-function getVisitStopDate(
-  visit: ActiveVisitSummary,
-  serverDate: Date,
-  queueEntries: Array<ActiveQueueEntrySummary>,
-) {
+function getVisitStopDate(visit: ActiveVisitSummary, serverDate: Date, queueEntries: Array<ActiveQueueEntrySummary>) {
   const safeServerDate = new Date(serverDate.valueOf() + 999);
   const relevantDatetimes = [
     visit.startDatetime,
@@ -161,9 +157,7 @@ async function closeActiveVisits(patientUuid: string) {
     let madeProgress = false;
     let observedNewTerminalVisit = false;
     results.forEach((result, index) => {
-      const outcome = (
-        result as PromiseFulfilledResult<{ closedQueueEntries: number; transitioned: boolean }>
-      ).value;
+      const outcome = (result as PromiseFulfilledResult<{ closedQueueEntries: number; transitioned: boolean }>).value;
       closedQueueEntries += outcome.closedQueueEntries;
       if (outcome.transitioned) {
         closedVisits += 1;

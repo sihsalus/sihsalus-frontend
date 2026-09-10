@@ -202,7 +202,10 @@ export const SisLookupField = () => {
         title:
           sisIdentifier.kind === 'dni'
             ? t('sisLookupInvalidDni', 'El DNI debe tener 8 dígitos')
-            : t('sisLookupInvalidTemporaryAffiliation', 'La Afiliación Temporal debe tener el formato E- seguido de 8 dígitos'),
+            : t(
+                'sisLookupInvalidTemporaryAffiliation',
+                'La Afiliación Temporal debe tener el formato E- seguido de 8 dígitos',
+              ),
       });
       return null;
     }

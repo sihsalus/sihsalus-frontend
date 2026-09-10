@@ -148,15 +148,10 @@ describe('AppointmentActions', () => {
       mutateVisit: vi.fn(),
     });
 
-    render(
-      <AppointmentActions {...defaultProps} checkInOnly />,
-    );
+    render(<AppointmentActions {...defaultProps} checkInOnly />);
 
     expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument();
-    expect(mockUserHasAccess).toHaveBeenCalledWith(
-      ['app:home.citas', 'app:home.citas.editar'],
-      expect.anything(),
-    );
+    expect(mockUserHasAccess).toHaveBeenCalledWith(['app:home.citas', 'app:home.citas.editar'], expect.anything());
     expect(mockUserHasAccess).not.toHaveBeenCalledWith(
       ['app:home.citas', 'app:home.citas.editar.finalizarAtencion'],
       expect.anything(),

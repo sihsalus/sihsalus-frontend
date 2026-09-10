@@ -118,7 +118,7 @@ describe('outpatient triage workflow', () => {
       accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
       verificationMethod: 'siasis-adt',
-});
+    });
     vi.mocked(getConfig).mockImplementation(async (moduleName) => {
       if (moduleName === '@sihsalus/esm-service-queues-app') {
         return {
@@ -219,7 +219,7 @@ describe('outpatient triage workflow', () => {
       accreditationStatusUuid: SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
       verificationMethod: null,
-};
+    };
 
     expect(getPersonSisState(insurance)).toBe('inactive');
   });
@@ -267,7 +267,7 @@ describe('outpatient triage workflow', () => {
       accreditationStatusUuid: SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
       verificationMethod: null,
-});
+    });
 
     await expect(revalidateCurrentSisState(makeQueueEntry(), false)).resolves.toBe('inactive');
     expect(copyFinanciadorToVisit).not.toHaveBeenCalled();

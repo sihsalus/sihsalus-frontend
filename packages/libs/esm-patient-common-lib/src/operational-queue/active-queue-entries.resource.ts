@@ -36,12 +36,7 @@ function getAuthoritativeQueueEndDate(response: FetchResponse<ActiveQueueEntrySu
       code: 'ACTIVE_QUEUE_ENTRY_VISIT_STOP_INVALID',
     });
   }
-  if (
-    visitStop &&
-    startedAt &&
-    !Number.isNaN(startedAt.valueOf()) &&
-    visitStop.valueOf() < startedAt.valueOf()
-  ) {
+  if (visitStop && startedAt && !Number.isNaN(startedAt.valueOf()) && visitStop.valueOf() < startedAt.valueOf()) {
     throw Object.assign(new Error('The linked visit ended before the queue entry started.'), {
       code: 'ACTIVE_QUEUE_ENTRY_END_DATE_INVALID',
     });
@@ -64,10 +59,7 @@ function getQueueEntry(
 }
 
 /** End one entry from a fresh read, and verify ambiguous writes before returning. */
-async function endQueueEntry(
-  queueEntryUuid: string,
-  abortController?: AbortController,
-): Promise<QueueEntryEndOutcome> {
+async function endQueueEntry(queueEntryUuid: string, abortController?: AbortController): Promise<QueueEntryEndOutcome> {
   const freshResponse = await getQueueEntry(queueEntryUuid, abortController);
   if (freshResponse.data.endedAt) {
     return { entry: freshResponse.data, transitioned: false };
@@ -108,9 +100,7 @@ async function endActiveQueueEntryOutcomes(
   abortController?: AbortController,
 ): Promise<Array<QueueEntryEndOutcome>> {
   const uniqueEntries = Array.from(new Map(entries.map((entry) => [entry.uuid, entry])).values());
-  const results = await Promise.allSettled(
-    uniqueEntries.map((entry) => endQueueEntry(entry.uuid, abortController)),
-  );
+  const results = await Promise.allSettled(uniqueEntries.map((entry) => endQueueEntry(entry.uuid, abortController)));
   const failedResult = results.find((result) => result.status === 'rejected');
 
   if (failedResult?.status === 'rejected') {
@@ -129,11 +119,7 @@ export async function endActiveQueueEntries(
   return outcomes.map(({ entry }) => entry);
 }
 
-function searchQueueEntries(
-  criteria: Record<string, string>,
-  startIndex = 0,
-  abortController?: AbortController,
-) {
+function searchQueueEntries(criteria: Record<string, string>, startIndex = 0, abortController?: AbortController) {
   const searchParams = new URLSearchParams({
     ...criteria,
     limit: String(queueEntryPageSize),

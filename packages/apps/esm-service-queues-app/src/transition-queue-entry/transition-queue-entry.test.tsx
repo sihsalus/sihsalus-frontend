@@ -100,12 +100,7 @@ describe('TransitionQueueEntryModal', () => {
 
     expect(mockUpdateQueueEntry).toHaveBeenCalled();
     await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
-    expect(mockServeQueueEntry).toHaveBeenCalledWith(
-      queueEntry.patientUuid,
-      queueEntry.queue.name,
-      '42',
-      'serving',
-    );
+    expect(mockServeQueueEntry).toHaveBeenCalledWith(queueEntry.patientUuid, queueEntry.queue.name, '42', 'serving');
   });
 
   it('awaits the screen update and handles its rejection with one safe error', async () => {

@@ -26,10 +26,7 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
             isLowContrast: false,
             kind: 'error',
             title: t('errorStartingVisit', 'Error starting visit'),
-            subtitle: t(
-              'deceasedPatientVisitBlocked',
-              'No se puede iniciar una consulta para un paciente fallecido.',
-            ),
+            subtitle: t('deceasedPatientVisitBlocked', 'No se puede iniciar una consulta para un paciente fallecido.'),
           });
           return;
         }

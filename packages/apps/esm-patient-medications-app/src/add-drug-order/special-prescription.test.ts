@@ -28,13 +28,19 @@ describe('findSpecialPrescriptionMatch', () => {
 
   it('matches via the concept name when the drug display uses a brand name', () => {
     expect(
-      findSpecialPrescriptionMatch(drugWith('Dolcontin 30 mg tableta', 'Morfina'), DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES),
+      findSpecialPrescriptionMatch(
+        drugWith('Dolcontin 30 mg tableta', 'Morfina'),
+        DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES,
+      ),
     ).toBe('morfina');
   });
 
   it('does not flag unlisted drugs', () => {
     expect(
-      findSpecialPrescriptionMatch(drugWith('Paracetamol 500 mg tableta', 'Paracetamol'), DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES),
+      findSpecialPrescriptionMatch(
+        drugWith('Paracetamol 500 mg tableta', 'Paracetamol'),
+        DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES,
+      ),
     ).toBeNull();
   });
 
@@ -48,7 +54,9 @@ describe('findSpecialPrescriptionMatch', () => {
   });
 
   it('requires every word of a multi-word entry to be present', () => {
-    expect(findSpecialPrescriptionMatch(drugWith('Morfina sulfato 10 mg'), ['morfina sulfato'])).toBe('morfina sulfato');
+    expect(findSpecialPrescriptionMatch(drugWith('Morfina sulfato 10 mg'), ['morfina sulfato'])).toBe(
+      'morfina sulfato',
+    );
     expect(findSpecialPrescriptionMatch(drugWith('Morfina clorhidrato 10 mg'), ['morfina sulfato'])).toBeNull();
   });
 

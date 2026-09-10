@@ -877,9 +877,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     : null;
   const displayedError = inlineError ?? deceasedPatientError ?? routingConfigurationError;
   const displayedErrorCode =
-    displayedError && typeof displayedError === 'object' && 'code' in displayedError
-      ? displayedError.code
-      : undefined;
+    displayedError && typeof displayedError === 'object' && 'code' in displayedError ? displayedError.code : undefined;
   const coverageNeedsReview =
     displayedErrorCode === TRIAGE_FINANCING_UNDEFINED || displayedErrorCode === TRIAGE_SIS_FINANCING_REQUIRED;
   const isVisitBranchLoading =

@@ -23,10 +23,7 @@ interface AppointmentsActionsProps {
   checkInOnly?: boolean;
 }
 
-const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({
-  appointment,
-  checkInOnly = false,
-}) => {
+const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment, checkInOnly = false }) => {
   const { t } = useTranslation();
   const { appointmentVisitAttributeTypeUuid, checkInButton, checkOutButton } = useConfig<ConfigObject>();
   const session = useSession();
@@ -126,8 +123,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({
           </Button>
         );
 
-      case isCheckInCandidate &&
-        (!hasActiveVisit || checkInButton.showIfActiveVisit):
+      case isCheckInCandidate && (!hasActiveVisit || checkInButton.showIfActiveVisit):
         return <CheckInButton patientUuid={patientUuid} appointment={appointment} mutateVisits={mutateVisit} />;
 
       default:

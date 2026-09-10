@@ -151,9 +151,7 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
                         ))}
                         <TableCell className={classNames('cds--table-column-menu', styles.actionsColumn)}>
                           <div className={styles.actions}>
-                            {allowCheckIn ? (
-                              <AppointmentsActions appointment={appointment} checkInOnly />
-                            ) : null}
+                            {allowCheckIn ? <AppointmentsActions appointment={appointment} checkInOnly /> : null}
                             <PatientAppointmentsActionMenu appointment={appointment} patientUuid={patientUuid} />
                           </div>
                         </TableCell>

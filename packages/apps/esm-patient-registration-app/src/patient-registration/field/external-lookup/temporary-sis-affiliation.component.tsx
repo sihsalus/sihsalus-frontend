@@ -228,10 +228,7 @@ function coverageMatchesAppliedSnapshot(attributes: FormValues['attributes'], sn
   ].every((uuid) => (attributes?.[uuid] ?? '') === (snapshot.appliedCoverage[uuid] ?? ''));
 }
 
-function hasIndependentCoverageEvidence(
-  attributes: FormValues['attributes'],
-  snapshot: AppliedTemporarySisSnapshot,
-) {
+function hasIndependentCoverageEvidence(attributes: FormValues['attributes'], snapshot: AppliedTemporarySisSnapshot) {
   const payer = attributes?.[peruInsuranceTypeAttributeTypeUuid];
   const status = attributes?.[peruInsuranceAccreditationStatusAttributeTypeUuid];
   const checkedAt = attributes?.[peruInsuranceAccreditationCheckedAtAttributeTypeUuid];

@@ -181,9 +181,7 @@ const mockOpenmrsConfig: RegistrationConfig = {
       label: 'Financiador',
       showHeading: false,
       answerConceptSetUuid: '',
-      customConceptAnswers: [
-        { label: 'Financiamiento propio', uuid: peruInsuranceSelfFinancingConceptUuid },
-      ],
+      customConceptAnswers: [{ label: 'Financiamiento propio', uuid: peruInsuranceSelfFinancingConceptUuid }],
       validation: { required: true },
     },
   ],
@@ -350,15 +348,18 @@ const getReactText = (node: ReactNode): string => {
 };
 
 beforeEach(() => {
-  mockUsePersonAttributeType.mockImplementation((uuid: string) => ({
-    data: {
-      uuid,
-      display: uuid === peruInsuranceTypeAttributeTypeUuid ? 'Financiador' : 'Atributo',
-      format: uuid === peruInsuranceTypeAttributeTypeUuid ? 'org.openmrs.Concept' : 'java.lang.String',
-    },
-    error: undefined,
-    isLoading: false,
-  }) as ReturnType<typeof usePersonAttributeType>);
+  mockUsePersonAttributeType.mockImplementation(
+    (uuid: string) =>
+      ({
+        data: {
+          uuid,
+          display: uuid === peruInsuranceTypeAttributeTypeUuid ? 'Financiador' : 'Atributo',
+          format: uuid === peruInsuranceTypeAttributeTypeUuid ? 'org.openmrs.Concept' : 'java.lang.String',
+        },
+        error: undefined,
+        isLoading: false,
+      }) as ReturnType<typeof usePersonAttributeType>,
+  );
   mockMutateSWR.mockReset();
   mockMutateSWR.mockResolvedValue(undefined);
   mockUseSWRConfig.mockReturnValue({ mutate: mockMutateSWR } as unknown as ReturnType<typeof useSWRConfig>);

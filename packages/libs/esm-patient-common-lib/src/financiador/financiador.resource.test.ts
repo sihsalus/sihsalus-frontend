@@ -499,9 +499,9 @@ describe('getPersonSisFinancingState', () => {
     expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, verificationMethod: null })).toBe('missing');
     expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, verificationMethod: 'manual' })).toBe('missing');
     // Una fecha civil sin hora tampoco acredita.
-    expect(
-      getPersonSisFinancingState({ ...trustedTemporaryPerson, accreditationCheckedAt: '2026-08-11' }),
-    ).toBe('missing');
+    expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, accreditationCheckedAt: '2026-08-11' })).toBe(
+      'missing',
+    );
   });
 
   it('aplica la regla también a códigos con intención temporal malformada', () => {

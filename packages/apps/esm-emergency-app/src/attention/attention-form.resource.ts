@@ -4,8 +4,7 @@ import { v5 as uuidv5 } from 'uuid';
 import { assertEmergencyQueueEntryIsActiveForSubject } from '../resources/emergency.resource';
 
 export const EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT = 'EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT';
-export const EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED =
-  'EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED';
+export const EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED = 'EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED';
 export const EMERGENCY_ATTENTION_ENCOUNTER_UUID_UNAVAILABLE = 'EMERGENCY_ATTENTION_ENCOUNTER_UUID_UNAVAILABLE';
 export const EMERGENCY_ATTENTION_ENCOUNTER_AMBIGUOUS = 'EMERGENCY_ATTENTION_ENCOUNTER_AMBIGUOUS';
 export const EMERGENCY_ATTENTION_ENCOUNTER_SEARCH_STALLED = 'EMERGENCY_ATTENTION_ENCOUNTER_SEARCH_STALLED';
@@ -71,9 +70,7 @@ function normalizeRequestedObservations(observations: Array<AttentionObservation
 
 function normalizedObservationSignature(conceptUuid: string, value: unknown) {
   const normalizedValue =
-    typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-      ? String(value).trim()
-      : '';
+    typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value).trim() : '';
   return `${conceptUuid}\u0000${normalizedValue}`;
 }
 
@@ -236,9 +233,7 @@ async function findLegacyAttentionEncounter(
   const hasUnverifiableCandidateTime = scopeCandidates.some(({ encounter }) => {
     const encounterTime = getParsedEncounterTime(encounter);
     return (
-      encounterTime === null ||
-      encounterTime < queueStart.valueOf() ||
-      encounterTime > (authoritativeNow as number)
+      encounterTime === null || encounterTime < queueStart.valueOf() || encounterTime > (authoritativeNow as number)
     );
   });
   if (hasUnverifiableCandidateTime) {

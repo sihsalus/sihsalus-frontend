@@ -254,10 +254,10 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <InlineLoading description={t('saving', 'Guardando...')} />
+            ) : submissionAttempt ? (
+              t('retryAttentionFinalization', 'Reintentar finalización')
             ) : (
-              submissionAttempt
-                ? t('retryAttentionFinalization', 'Reintentar finalización')
-                : t('saveAttention', 'Guardar atención')
+              t('saveAttention', 'Guardar atención')
             )}
           </Button>
         </div>

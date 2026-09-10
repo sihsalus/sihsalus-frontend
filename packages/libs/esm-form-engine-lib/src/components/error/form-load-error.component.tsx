@@ -12,7 +12,10 @@ const FormLoadError = (): React.JSX.Element => {
       lowContrast
       role="alert"
       title={t('errorLoadingClinicalForm', 'The clinical form could not be loaded')}
-      subtitle={t('errorLoadingClinicalFormDescription', 'This form cannot be opened or saved. Close it and try again.')}
+      subtitle={t(
+        'errorLoadingClinicalFormDescription',
+        'This form cannot be opened or saved. Close it and try again.',
+      )}
     />
   );
 };

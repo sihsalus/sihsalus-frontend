@@ -51,5 +51,12 @@ const LabResults: React.FC<LabResultsProps> = ({ order, hideObservations }) => {
 export default LabResults;
 
 const OrderDetail = ({ order, hideObservations }: { order: Order; hideObservations?: boolean }) => {
-  return <TestOrder testOrder={order} hideInstructions={true} hideSupplementalPdf={true} hideObservations={hideObservations} />;
+  return (
+    <TestOrder
+      testOrder={order}
+      hideInstructions={true}
+      hideSupplementalPdf={true}
+      hideObservations={hideObservations}
+    />
+  );
 };

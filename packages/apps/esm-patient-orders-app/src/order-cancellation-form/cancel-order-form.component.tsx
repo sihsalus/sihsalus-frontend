@@ -201,16 +201,11 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
                       type="button"
                       kind="ghost"
                       size="sm"
-                      onClick={() => onChange("No hay máquina para realizar el examen")}
+                      onClick={() => onChange('No hay máquina para realizar el examen')}
                     >
                       No hay máquina
                     </Button>
-                    <Button
-                      type="button"
-                      kind="ghost"
-                      size="sm"
-                      onClick={() => onChange("No hay reactivo")}
-                    >
+                    <Button type="button" kind="ghost" size="sm" onClick={() => onChange('No hay reactivo')}>
                       No hay reactivo
                     </Button>
                   </div>

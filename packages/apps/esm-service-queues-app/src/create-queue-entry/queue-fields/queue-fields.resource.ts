@@ -1,8 +1,5 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import {
-  assertFreshPatientIsAlive,
-  DECEASED_PATIENT_OPERATION_BLOCKED,
-} from '@openmrs/esm-patient-common-lib';
+import { assertFreshPatientIsAlive, DECEASED_PATIENT_OPERATION_BLOCKED } from '@openmrs/esm-patient-common-lib';
 
 interface VisitAttributeSummary {
   value?: unknown;

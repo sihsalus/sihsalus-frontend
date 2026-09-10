@@ -3,10 +3,7 @@ import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 
 import { generateCREDSchedule } from '../../utils/cred-schedule-rules';
 
-import {
-  createCREDAppointments,
-  DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED,
-} from './cred-appointments.resource';
+import { createCREDAppointments, DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED } from './cred-appointments.resource';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),

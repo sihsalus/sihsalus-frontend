@@ -461,9 +461,7 @@ export function useAdmissions(limit: number, range: AdmissionDateRange = {}) {
   return {
     admissions: visits
       .map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? '']))
-      .sort(
-        (a, b) => (Date.parse(b.startDatetime ?? '') || 0) - (Date.parse(a.startDatetime ?? '') || 0),
-      ),
+      .sort((a, b) => (Date.parse(b.startDatetime ?? '') || 0) - (Date.parse(a.startDatetime ?? '') || 0)),
     error,
     isLoading: isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient),
   };

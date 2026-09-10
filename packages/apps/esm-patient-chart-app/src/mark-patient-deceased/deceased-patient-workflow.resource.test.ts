@@ -83,10 +83,7 @@ function handleAppointmentRequest(
     const body = init?.body as { status?: string; withoutDates?: boolean };
     const withoutDates = requestUrl.endsWith('/appointment/search');
     const matches = appointments
-      .filter(
-        (appointment) =>
-          appointment.status === body.status && Boolean(appointment.withoutDates) === withoutDates,
-      )
+      .filter((appointment) => appointment.status === body.status && Boolean(appointment.withoutDates) === withoutDates)
       .slice(0, pageSize)
       .map(({ status, uuid }) => ({ status, uuid }));
     return response(matches);
@@ -351,13 +348,11 @@ describe('reconcileDeceasedPatientWorkflow', () => {
 
     const datedScheduledSearches = mockOpenmrsFetch.mock.calls.filter(
       ([url, init]) =>
-        String(url).endsWith('/appointments/search') &&
-        (init?.body as { status?: string })?.status === 'Scheduled',
+        String(url).endsWith('/appointments/search') && (init?.body as { status?: string })?.status === 'Scheduled',
     );
     const undatedRequestedSearches = mockOpenmrsFetch.mock.calls.filter(
       ([url, init]) =>
-        String(url).endsWith('/appointment/search') &&
-        (init?.body as { status?: string })?.status === 'Requested',
+        String(url).endsWith('/appointment/search') && (init?.body as { status?: string })?.status === 'Requested',
     );
 
     expect(datedScheduledSearches).toHaveLength(3);
@@ -510,10 +505,7 @@ describe('reconcileDeceasedPatientWorkflow', () => {
     mockOpenmrsFetch.mockImplementation(async (url, init) => {
       const requestUrl = String(url);
       if (requestUrl.includes('/visit?')) return response({ results: [] });
-      if (
-        requestUrl.endsWith('/appointments/search') &&
-        (init?.body as { status?: string })?.status === 'CheckedIn'
-      ) {
+      if (requestUrl.endsWith('/appointments/search') && (init?.body as { status?: string })?.status === 'CheckedIn') {
         return response([{ uuid: 'completed', status: 'CheckedIn' }]);
       }
       if (requestUrl.endsWith('/appointments/search') || requestUrl.endsWith('/appointment/search')) {
@@ -535,8 +527,7 @@ describe('reconcileDeceasedPatientWorkflow', () => {
 
     const checkedInSearches = mockOpenmrsFetch.mock.calls.filter(
       ([url, init]) =>
-        String(url).endsWith('/appointments/search') &&
-        (init?.body as { status?: string })?.status === 'CheckedIn',
+        String(url).endsWith('/appointments/search') && (init?.body as { status?: string })?.status === 'CheckedIn',
     );
     expect(checkedInSearches).toHaveLength(2);
   });
@@ -603,9 +594,7 @@ describe('reconcileDeceasedPatientWorkflow', () => {
 
     expect(mockDrainActiveQueueEntriesForVisit).not.toHaveBeenCalled();
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit?'))).toBe(false);
-    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).endsWith('/clinicalvisitclosure'))).toBe(
-      false,
-    );
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).endsWith('/clinicalvisitclosure'))).toBe(false);
   });
 
   it('drains visit successors before closure and performs a final patient queue sweep', async () => {

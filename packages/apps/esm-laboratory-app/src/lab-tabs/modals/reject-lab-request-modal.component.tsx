@@ -84,16 +84,11 @@ const RejectLabRequestModal: React.FC<RejectLabRequestModalProps> = ({ order, cl
                 type="button"
                 kind="ghost"
                 size="sm"
-                onClick={() => setFulfillerComment("No hay máquina para realizar el examen")}
+                onClick={() => setFulfillerComment('No hay máquina para realizar el examen')}
               >
                 No hay máquina
               </Button>
-              <Button
-                type="button"
-                kind="ghost"
-                size="sm"
-                onClick={() => setFulfillerComment("No hay reactivo")}
-              >
+              <Button type="button" kind="ghost" size="sm" onClick={() => setFulfillerComment('No hay reactivo')}>
                 No hay reactivo
               </Button>
             </div>

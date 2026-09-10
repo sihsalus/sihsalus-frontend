@@ -65,9 +65,7 @@ describe('CodedPersonAttributeField', () => {
   });
 
   it('formats optional local codes without changing the persisted concept UUID', () => {
-    expect(formatCodedAnswerLabel({ code: 'SCL-01', label: 'Barrio Santa Rosa' })).toBe(
-      'SCL-01 - Barrio Santa Rosa',
-    );
+    expect(formatCodedAnswerLabel({ code: 'SCL-01', label: 'Barrio Santa Rosa' })).toBe('SCL-01 - Barrio Santa Rosa');
     expect(formatCodedAnswerLabel({ label: 'Sin código' })).toBe('Sin código');
   });
 

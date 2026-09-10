@@ -143,7 +143,6 @@ const EndAppointmentModal: React.FC<EndAppointmentModalProps> = ({ patientUuid, 
         if (!visitWasClosed) {
           throw error;
         }
-
       }
 
       closedVisitPendingQueueReconciliationUuid.current = visitToClose.uuid;

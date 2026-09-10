@@ -100,7 +100,9 @@ test.describe('Peru admission accreditation checks', () => {
     await page.goto('home/care-logbook/merge', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(page).toHaveURL(/\/openmrs\/admin\/patients\/findDuplicatePatients\.htm$|\/home\/care-logbook\/merge$/);
+    await expect(page).toHaveURL(
+      /\/openmrs\/admin\/patients\/findDuplicatePatients\.htm$|\/home\/care-logbook\/merge$/,
+    );
   });
 
   test('admission report by UPS exposes the required columns', async ({ page }) => {

@@ -627,7 +627,14 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     setFieldValue(`relationships[${index}].relationshipType`, personFormValues.relationshipType);
     setFieldValue(`relationships[${index}].action`, 'ADD');
     onPersonConfirmed(index);
-  }, [index, markAllNewPersonFieldsTouched, onPersonConfirmed, personFormValues, requiresAdultResponsible, setFieldValue]);
+  }, [
+    index,
+    markAllNewPersonFieldsTouched,
+    onPersonConfirmed,
+    personFormValues,
+    requiresAdultResponsible,
+    setFieldValue,
+  ]);
 
   const handleEditPendingPerson = useCallback(() => {
     if (relationship.newPerson) {
@@ -1082,9 +1089,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
     }
 
     const responsibleSection = document.getElementById('patient-responsible-section');
-    const responsibleOption = document.getElementById(
-      `relationships[${pendingResponsibleSelectionIndex}].isCompanion`,
-    );
+    const responsibleOption = document.getElementById(`relationships[${pendingResponsibleSelectionIndex}].isCompanion`);
     if (responsibleOption) {
       responsibleSection?.scrollIntoView({ block: 'center', inline: 'nearest' });
       responsibleOption.focus({ preventScroll: true });

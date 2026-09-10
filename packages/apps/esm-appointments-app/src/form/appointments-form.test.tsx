@@ -98,10 +98,7 @@ async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.s
   }
   await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
   await enableResponsibleProvider(user);
-  await user.selectOptions(
-    screen.getByRole('combobox', { name: /select a provider/i }),
-    mockProviders.data[0].uuid,
-  );
+  await user.selectOptions(screen.getByRole('combobox', { name: /select a provider/i }), mockProviders.data[0].uuid);
 
   if (allDay) {
     await user.click(screen.getByLabelText(/all day/i));
@@ -581,10 +578,7 @@ describe('AppointmentForm', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), unroutedService.uuid);
     await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
     await enableResponsibleProvider(user);
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /select a provider/i }),
-      mockProviders.data[0].uuid,
-    );
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a provider/i }), mockProviders.data[0].uuid);
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
     expect(
@@ -1449,10 +1443,7 @@ describe('AppointmentForm', () => {
 
     expect(screen.queryByText('Otro personal de salud seleccionado')).not.toBeInTheDocument();
     await enableResponsibleProvider(user);
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /select a provider/i }),
-      mockProviders.data[1].uuid,
-    );
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a provider/i }), mockProviders.data[1].uuid);
 
     expect(screen.getByText('Otro personal de salud seleccionado')).toBeInTheDocument();
     expect(

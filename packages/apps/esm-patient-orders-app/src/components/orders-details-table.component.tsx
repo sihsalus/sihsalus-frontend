@@ -590,8 +590,9 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           dosage:
             order.type === 'drugorder' ? (
               <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
-              ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${order?.quantityUnits?.display
-                } `}</div>
+              ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${
+                order?.quantityUnits?.display
+              } `}</div>
             ) : (
               '--'
             ),
@@ -827,11 +828,11 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                     selectedOrderTypeUuid === null
                       ? t('orders', 'Orders')
                       : // t('Drug Order_few', 'Drug Orders')
-                      // t('Test Order_few', 'Test Orders')
-                      t(selectedOrderName?.toLowerCase() ?? 'orders', {
-                        count: 3,
-                        default: selectedOrderName,
-                      })
+                        // t('Test Order_few', 'Test Orders')
+                        t(selectedOrderName?.toLowerCase() ?? 'orders', {
+                          count: 3,
+                          default: selectedOrderName,
+                        })
                   }
                   launchForm={canEditOrders && canUseOrderBasket ? launchOrderBasket : undefined}
                 />

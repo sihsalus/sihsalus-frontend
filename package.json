@@ -96,7 +96,7 @@
     "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "5.0.0",
-    "workbox-routing": "6.6.0",
+    "workbox-routing": "7.4.1",
     "workbox-strategies": "6.6.0"
   },
   "lint-staged": {

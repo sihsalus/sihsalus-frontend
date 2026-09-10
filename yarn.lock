@@ -9878,7 +9878,7 @@ __metadata:
     typescript: "npm:6.0.3"
     vite: "npm:8.0.16"
     vitest: "npm:5.0.0"
-    workbox-routing: "npm:6.6.0"
+    workbox-routing: "npm:7.4.1"
     workbox-strategies: "npm:6.6.0"
   languageName: unknown
   linkType: soft
@@ -25917,6 +25917,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"workbox-core@npm:7.4.1":
+  version: 7.4.1
+  resolution: "workbox-core@npm:7.4.1"
+  checksum: 10c0/953c3bcec2c04cef44ac779ac6b525f639fade17c594cfa601d7892090da6e18abd3eda22d2d592d8b4df6aa6856c947770f8b960f70c1ac1c989f722d0e7f67
+  languageName: node
+  linkType: hard
+
 "workbox-expiration@npm:6.6.0":
   version: 6.6.0
   resolution: "workbox-expiration@npm:6.6.0"
@@ -25988,6 +25995,15 @@ __metadata:
   dependencies:
     workbox-core: "npm:6.6.0"
   checksum: 10c0/28a204a86aecf7af8bffd2eee2eb53f094e5d1fa0f510887a5749653a92fa414da2fc1fe8adb6382d74400bb8c75f152bb728df9d032f34af4c9b5f17b7b1daa
+  languageName: node
+  linkType: hard
+
+"workbox-routing@npm:7.4.1":
+  version: 7.4.1
+  resolution: "workbox-routing@npm:7.4.1"
+  dependencies:
+    workbox-core: "npm:7.4.1"
+  checksum: 10c0/11447d16c652de1667aa2be89634e426b615ff00f96d08d395a096afef07813a131d64c1f840344dd4210746800937437682a6bde7ef8a5233f371203c99d36a
   languageName: node
   linkType: hard
 

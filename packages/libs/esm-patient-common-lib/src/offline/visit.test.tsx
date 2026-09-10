@@ -1,9 +1,11 @@
 import { getSynchronizationItems, queueSynchronizationItem, type Visit } from '@openmrs/esm-framework';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { useLayoutEffect } from 'react';
 
 import {
   offlineVisitToVisit,
   useAutoCreatedOfflineVisit,
+  useOfflineVisit,
   useVisitOrOfflineVisit,
   type VisitOrOfflineVisitResult,
 } from './visit';
@@ -22,6 +24,69 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 const mockGetSynchronizationItems = vi.mocked(getSynchronizationItems);
 const mockQueueSynchronizationItem = vi.mocked(queueSynchronizationItem);
+
+describe('offline visit patient identity', () => {
+  beforeEach(() => {
+    mockGetSynchronizationItems.mockReset();
+  });
+  it('never exposes the previous patient visit or loading state to committed consumers', async () => {
+    mockGetSynchronizationItems
+      .mockResolvedValueOnce([
+        {
+          uuid: 'synthetic-visit-a',
+          patient: 'synthetic-a',
+          location: 'synthetic-location',
+          visitType: 'synthetic-type',
+          startDatetime: new Date(),
+        },
+      ])
+      .mockImplementation(() => new Promise(() => {}));
+    const committed: Array<{ requested: string; actual?: string; isLoading: boolean }> = [];
+    const { result, rerender } = renderHook(
+      ({ patient }) => {
+        const state = useOfflineVisit(patient);
+        useLayoutEffect(() => {
+          committed.push({ requested: patient, actual: state.currentVisit?.patient?.uuid, isLoading: state.isLoading });
+        });
+        return state;
+      },
+      { initialProps: { patient: 'synthetic-a' } },
+    );
+    await waitFor(() => expect(result.current.currentVisit?.patient?.uuid).toBe('synthetic-a'));
+    rerender({ patient: 'synthetic-b' });
+    const nextPatientStates = committed.filter(({ requested }) => requested === 'synthetic-b');
+    expect(nextPatientStates.length).toBeGreaterThan(0);
+    expect(nextPatientStates.every(({ actual, isLoading }) => actual === undefined && isLoading)).toBe(true);
+  });
+
+  it('ignores a late queue response for the previous patient', async () => {
+    let resolveOld: (value: unknown[]) => void = () => {};
+    mockGetSynchronizationItems
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOld = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([
+        {
+          uuid: 'synthetic-visit-b',
+          patient: 'synthetic-b',
+          location: 'synthetic-location',
+          visitType: 'synthetic-type',
+          startDatetime: new Date(),
+        },
+      ]);
+    const { result, rerender } = renderHook(({ patient }) => useOfflineVisit(patient), {
+      initialProps: { patient: 'synthetic-a' },
+    });
+    await waitFor(() => expect(mockGetSynchronizationItems).toHaveBeenCalledOnce());
+    rerender({ patient: 'synthetic-b' });
+    await waitFor(() => expect(result.current.currentVisit?.patient?.uuid).toBe('synthetic-b'));
+    await act(async () => resolveOld([{ uuid: 'synthetic-visit-a', patient: 'synthetic-a' }]));
+    expect(result.current.currentVisit?.patient?.uuid).toBe('synthetic-b');
+  });
+});
 
 function visitReturnValue(overrides: Partial<VisitOrOfflineVisitResult>): VisitOrOfflineVisitResult {
   return {
@@ -116,11 +181,7 @@ describe('useAutoCreatedOfflineVisit', () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
 
     renderHook(() =>
-      useAutoCreatedOfflineVisit(
-        'synthetic-patient-uuid',
-        'synthetic-visit-type-uuid',
-        'synthetic-location-uuid',
-      ),
+      useAutoCreatedOfflineVisit('synthetic-patient-uuid', 'synthetic-visit-type-uuid', 'synthetic-location-uuid'),
     );
 
     await waitFor(() => expect(mockQueueSynchronizationItem).toHaveBeenCalledTimes(1));
@@ -149,11 +210,7 @@ describe('useAutoCreatedOfflineVisit', () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
 
     renderHook(() =>
-      useAutoCreatedOfflineVisit(
-        'synthetic-patient-uuid',
-        'synthetic-visit-type-uuid',
-        'synthetic-location-uuid',
-      ),
+      useAutoCreatedOfflineVisit('synthetic-patient-uuid', 'synthetic-visit-type-uuid', 'synthetic-location-uuid'),
     );
 
     await waitFor(() => expect(mockQueueSynchronizationItem).toHaveBeenCalledTimes(1));

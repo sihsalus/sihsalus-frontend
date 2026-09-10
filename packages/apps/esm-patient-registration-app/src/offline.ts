@@ -21,7 +21,7 @@ import {
   fetchCurrentSession,
   fetchPatientIdentifierTypesWithSources,
 } from './offline.resources';
-import { FormManager } from './patient-registration/form-manager';
+import { FormManager, SavePatientTransactionManager } from './patient-registration/form-manager';
 import { type PatientRegistration } from './patient-registration/patient-registration.types';
 
 export function setupOffline() {
@@ -129,6 +129,13 @@ export async function syncPatientRegistration(
     throw new Error('The queued patient registration is not owned by the active session.');
   }
 
+  const updateContent = options.updateContent;
+  if (!updateContent || queuedPatient._patientRegistrationData.formValues?.personUuidToPromote) {
+    throw new Error('The queued patient registration cannot be synchronized safely.');
+  }
+  const transaction =
+    queuedPatient._patientRegistrationData.savePatientTransactionManager ?? new SavePatientTransactionManager();
+
   await FormManager.savePatientFormOnline(
     queuedPatient._patientRegistrationData.isNewPatient,
     queuedPatient._patientRegistrationData.formValues,
@@ -143,7 +150,16 @@ export async function syncPatientRegistration(
       user: activeUser,
     },
     queuedPatient._patientRegistrationData.config,
-    queuedPatient._patientRegistrationData.savePatientTransactionManager,
+    transaction,
     options.abort,
+    async () => {
+      await updateContent((current) => ({
+        ...current,
+        _patientRegistrationData: {
+          ...current._patientRegistrationData,
+          savePatientTransactionManager: transaction,
+        },
+      }));
+    },
   );
 }

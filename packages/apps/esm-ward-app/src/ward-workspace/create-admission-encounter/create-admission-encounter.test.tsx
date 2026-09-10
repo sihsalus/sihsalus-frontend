@@ -1,15 +1,9 @@
-import { useAppContext, useSession, userHasAccess, useVisit, useWorkspace2Context } from '@openmrs/esm-framework';
+import { useAppContext, userHasAccess, useSession, useVisit, useWorkspace2Context } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  mockInpatientAdmissions,
-  mockInpatientRequests,
-  mockLocationInpatientWard,
-  mockLocationMosoriot,
-  mockPatientAlice,
-} from '__mocks__';
-import { renderWithSwr } from 'test-utils';
-import { mockWardViewContext } from '../../../mock';
+import { mockLocationInpatientWard, mockLocationMosoriot, mockPatientAlice, renderWithSwr } from 'test-utils';
+import { mockWardViewContext } from '../../../test-utils/mock';
+import { mockInpatientAdmissions, mockInpatientRequests } from '../../../test-utils/mocks';
 import { useAssignedBedByPatient } from '../../hooks/useAssignedBedByPatient';
 import useEmrConfiguration from '../../hooks/useEmrConfiguration';
 import { useInpatientAdmissionByPatients } from '../../hooks/useInpatientAdmissionByPatients';

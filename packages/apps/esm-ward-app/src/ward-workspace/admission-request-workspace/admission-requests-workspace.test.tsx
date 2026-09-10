@@ -7,7 +7,7 @@ import {
 } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import { renderWithSwr } from 'test-utils';
-import { mockWardViewContext } from '../../../mock';
+import { mockWardViewContext } from '../../../test-utils/mock';
 import useEmrConfiguration from '../../hooks/useEmrConfiguration';
 import { type WardViewContext } from '../../types';
 import DefaultWardPendingPatients from '../../ward-view/default-ward/default-ward-pending-patients.component';

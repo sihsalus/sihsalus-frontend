@@ -128,10 +128,10 @@ test('core translations localize app-shell connectivity status', () => {
   );
 });
 
-test('repository worker entry initially delegates to the controlled upstream alias', () => {
+test('repository worker retains the controlled upstream lifecycle entry', () => {
   const source = fs.readFileSync(assertRepoOwnedServiceWorkerSource(), 'utf8');
 
-  assert.equal(source, "import '@openmrs/esm-app-shell/default-service-worker';\n");
+  assert.ok(source.startsWith("import '@openmrs/esm-app-shell/default-service-worker';\n"));
 });
 
 test('unset worker source preserves the direct upstream InjectManifest entry', () => {

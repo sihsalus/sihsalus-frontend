@@ -116,6 +116,13 @@ enlazada por `index.html`, incluso si supera el límite de tamaño predeterminad
 de Workbox. `validate-spa-artifact` verifica ese contrato para que una
 reconexión no pueda recuperar el shell sin sus estilos globales.
 
+El service worker conserva el ciclo de vida y las rutas de OpenMRS. La entrada local
+`packages/tooling/app-shell/service-worker.ts` agrega una ruta Workbox `NetworkOnly`
+para lecturas GET que solicitan conjuntamente `cache: 'no-store'` y
+`x-omrs-offline-caching-strategy: network-only-or-cache-only`. Esa combinación exige
+red fresca; las demás estrategias offline mantienen su comportamiento. El cambio
+requiere activar el worker actualizado y cerrar las pestañas de la versión anterior.
+
 ### Testing
 
 ```bash

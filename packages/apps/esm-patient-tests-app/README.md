@@ -40,12 +40,13 @@ A patient change immediately hides the previous patient's results and aborts the
 superseded load. HTTP, JSON, metadata and pagination failures produce translated
 feedback and a retry action, never an empty or partial success. The summaries
 require connectivity; offline mode hides the table and requests a connection,
-and reconnecting reloads the current patient. Browser fetches use `no-store` and
-the existing service-worker `network-only-or-cache-only` strategy, which does not
-populate the service-worker cache. That strategy can still read an existing cache
-entry after a transport failure; it is not a strict network-only guarantee. A
-coordinated smoke must include an already populated service-worker cache and a
-backend outage. Changing the shared service-worker strategy is outside this PR.
+and reconnecting reloads the current patient. Browser fetches combine `no-store`
+and the `network-only-or-cache-only` header. The repository service worker routes
+that explicit fresh-read combination through Workbox `NetworkOnly`, so an existing
+offline entry cannot substitute for a failed backend request. Activate the updated
+worker and close older tabs during rollout: an older worker can still return a
+cached success. A coordinated smoke must include an already populated service-worker
+cache and a backend outage while the browser still reports that it is online.
 
 FHIR `Bundle.total` is optional. Pagination follows opaque `next` paths and
 queries within the configured FHIR API, including cursors at the FHIR root,

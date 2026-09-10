@@ -2,8 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["packages/tooling/scripts/*.js", "tools/*.ts"],
-      "project": ["packages/tooling/scripts/**", "tools/**"]
+      "entry": ["packages/tooling/scripts/*.js"],
+      "project": ["packages/tooling/scripts/**"]
     },
     "packages/apps/*": {
       "entry": ["src/index.ts", "src/index.tsx", "rspack.config.{js,cjs,ts}"],

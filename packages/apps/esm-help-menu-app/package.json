@@ -53,6 +53,7 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
     "typescript": "6.0.3",
+    "vite": "8.0.16",
     "vitest": "^5.0.0"
   },
   "dependencies": {

@@ -1,8 +1,8 @@
 /**
  * Shared test utilities for all microfrontends.
  *
- * Resolved as the bare `test-utils` module via the shared TypeScript and Jest config.
- * in the root vitest.config.js.
+ * Resolved as `test-utils` by packages/tsconfig.json and the shared Vitest config.
+ * See README.md for shared fixtures, local fixtures and module stubs.
  */
 
 import { type RenderOptions, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';

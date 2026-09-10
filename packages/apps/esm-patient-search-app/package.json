@@ -58,6 +58,7 @@
     "i18next": "^26.3.6",
     "openmrs": "*",
     "typescript": "6.0.3",
+    "vite": "8.0.16",
     "vitest": "^5.0.0"
   }
 }

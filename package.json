@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",
+    "@openmrs/esm-offline": "workspace:*",
     "@playwright/test": "^1.58.2",
     "@swc/core": "1.15.21",
     "@testing-library/dom": "^10.4.1",
@@ -69,8 +70,8 @@
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "@types/webpack-env": "^1.18.8",
-    "@vitest/coverage-v8": "^4.0.18",
-    "@vitest/ui": "4.1.0",
+    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/ui": "5.0.0",
     "acorn": "8.16.0",
     "chalk": "^4.1.2",
     "cross-env": "^10.1.0",
@@ -93,7 +94,10 @@
     "swc-loader": "0.2.7",
     "turbo": "2.9.16",
     "typescript": "6.0.3",
-    "vitest": "5.0.0"
+    "vite": "8.0.16",
+    "vitest": "5.0.0",
+    "workbox-routing": "6.6.0",
+    "workbox-strategies": "6.6.0"
   },
   "lint-staged": {
     "*.{css,js,json,tsx}": "biome check --write",

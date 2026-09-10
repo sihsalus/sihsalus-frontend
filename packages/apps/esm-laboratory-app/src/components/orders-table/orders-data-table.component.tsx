@@ -294,7 +294,6 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
       if (orderSet) {
         const orderMembers = getMemberUuids(orderSet);
         if (orderMembers.includes(selectedLabsetUuid)) return true;
-        if (targetMembers.some((mUuid) => orderMembers.includes(mUuid))) return true;
       }
 
       return false;

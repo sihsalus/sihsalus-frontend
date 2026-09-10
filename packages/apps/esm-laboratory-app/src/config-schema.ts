@@ -48,18 +48,21 @@ export const configSchema = {
     _type: Type.Array,
     _description: 'Conceptos de sets de laboratorio utilizados para filtrar las órdenes por grupo.',
     _default: [
+      { conceptUuid: '228ced89-758e-4e0b-982e-155c01ed50f7' }, // Hematología
+      { conceptUuid: '20df74e8-192d-4c30-8e5c-d9989c8a33d8' }, // Bioquímica
+      { conceptUuid: '8ed15668-238d-4f19-947f-2237cb5d793f' }, // Inmunología
+      { conceptUuid: '48ea717c-cc7c-4dc1-a018-9c0d439ee178' }, // Microbiología
+      { conceptUuid: '0a84d7d3-2d86-4415-a12f-dc2a307ddba1' }, // Coproanálisis
+      { conceptUuid: '29f4a2ac-d212-4ada-961c-b3d64101b390' }, // Grupo Sanguíneo y Factor Rh
       { conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e' }, // Hemograma completo
-      { conceptUuid: 'c5cedfda-c2b7-4c85-b420-ecf0b53cba08' }, // Sedimento Urinario
-      { conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35' }, // Examen completo de orina
-      //{ conceptUuid: 'df144cc2-6718-4005-9881-f39eafd73315' }, // Examen de Heces
-      { conceptUuid: '339febfd-699e-4a26-927f-1f9a7780bb5e' }, // Panel de Química del Suero
-      { conceptUuid: '241eb982-1fdd-4183-a2b5-763f5ce2d528' }, // Otras Pruebas de Laboratorio
-      //{ conceptUuid: '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d' }, // Pruebas de Tipificación Sanguínea
-      { conceptUuid: '654b11a8-a326-45c9-885e-2fae6143404a' }, // Determinación de Leucocitos en Heces
-      { conceptUuid: '968c8a41-ab1b-426c-86ee-761b88c26e40' }, // Tinción con colorante de Wright
-      { conceptUuid: 'ef0a9d25-658b-466b-9b7e-4571673b28b0' }, // Prueba de KOH
-      { conceptUuid: '7969c932-60db-4a38-8723-2f3a5bba8c16' }, // Prueba de Látex PCR Directo
-      { conceptUuid: 'bb3af485-89b6-4c04-848c-8d024a6b4a7a' }, // Examen Parasitológico en heces
+      { conceptUuid: 'ea88fc4e-e3d9-4d2b-9cdd-c5be0490615a' }, // Lámina periférica
+      { conceptUuid: '2220fe2e-37ad-465a-a49b-881369ad93cd' }, // Bilirrubina
+      { conceptUuid: '9c7b89d6-7adc-4450-8e91-bd2115d28992' }, // Proteínas totales y albúmina
+      { conceptUuid: 'ef0a9d25-658b-466b-9b7e-4571673b28b0' }, // Prueba KOH
+      { conceptUuid: '476ced01-24e8-43c0-a9f0-81327f6734f7' }, // Parasitología
+      { conceptUuid: '4df83426-dfdf-4085-8db3-8ceedd268327' }, // Reacción inflamatoria
+      { conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35' }, // Examen orina
+      { conceptUuid: 'c5cedfda-c2b7-4c85-b420-ecf0b53cba08' }, // Sedimento urinario
     ],
   },
 };

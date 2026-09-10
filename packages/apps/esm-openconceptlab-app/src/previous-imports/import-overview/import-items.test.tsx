@@ -1,7 +1,7 @@
-import { mockImportItems, mockPreviousImports } from '@mocks/openconceptlab.mock';
 import { usePagination } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithSwr } from '@tools/test-helpers';
+import { renderWithSwr } from 'test-utils';
+import { mockImportItems, mockPreviousImports } from '../../../test-utils/mocks/openconceptlab.mock';
 
 import ImportItems from './import-items.component';
 import { useImportItems } from './import-items.resource';

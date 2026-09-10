@@ -1,9 +1,9 @@
-import { receiptOperationTypeMock } from '@mocks';
 import { useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
+import { receiptOperationTypeMock } from '../../../test-utils/mocks/operation-type.mock';
 import { formatForDatePicker } from '../../constants';
 import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
 import { useStockItem } from '../../stock-items/stock-items.resource';

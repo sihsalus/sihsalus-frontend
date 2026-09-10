@@ -54,6 +54,7 @@
     "react-router-dom": "7.18.2",
     "sass": "^1.98.0",
     "typescript": "6.0.3",
+    "vite": "8.0.16",
     "vitest": "^5.0.0"
   }
 }

@@ -191,6 +191,23 @@ save handler runs and leave the item available for a later authenticated retry t
 Validate this contract with `yarn workspace @sihsalus/esm-patient-registration-app test src/offline.test.ts` and the
 shared offline queue tests. Before merging, also verify reconnection, session expiry, and changed permissions using
 synthetic registrations in coordinated DEV/QLTY; unit tests do not replace that smoke test.
+
+Queued registrations require the queue's item-scoped `updateContent` capability before writing. The existing transaction
+state is persisted before each attempted write and after each confirmed result, including identifiers, demographics,
+responsible people, relationships, observations and photos. Identifier writes run sequentially so a failed step cannot
+leave unobserved writes running behind it. Retrying after a definitive HTTP rejection resumes from confirmed progress.
+Transport errors, server errors, cancellation or a failed completion checkpoint leave an attempted-write marker and
+block automatic replay until the backend result is reconciled. Once offline synchronization has started, reopening the
+ordinary online form cannot resume the transaction without the queue's persistence capability, even when earlier writes
+are confirmed. A queued photo failure retains the registration for recovery instead of discarding the captured photo.
+
+Offline replacement is atomic and rejects once the stored registration has progress, preventing an edit from resetting
+confirmed or ambiguous writes. No database migration is required; the checkpoint data is additive and contains no
+callbacks. Existing in-memory online transactions retain their retry behavior. Pending registrations previously attempted
+by an older client may lack this journal and require operational reconciliation; upgrading does not prove that those
+older writes never committed. Close older tabs before rollout or rollback and preserve the managed browser profile.
+The local integration test uses the real form manager, queue and IndexedDB cloning with synthetic resource adapters.
+
 Existing-patient offline refreshes require confirmed fresh network responses. A stale cached success cannot complete the
 refresh, and each stable cache entry is replaced only after its corresponding network response succeeds.
 

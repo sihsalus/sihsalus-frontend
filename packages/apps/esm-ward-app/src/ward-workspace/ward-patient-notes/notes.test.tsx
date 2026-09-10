@@ -7,7 +7,8 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { emrConfigurationMock, mockInpatientRequestAlice, mockPatientAlice } from '__mocks__';
+import { mockPatientAlice } from 'test-utils';
+import { emrConfigurationMock, mockInpatientRequestAlice } from '../../../test-utils/mocks';
 import { configSchema, type WardConfigObject } from '../../config-schema';
 import useEmrConfiguration from '../../hooks/useEmrConfiguration';
 import { type WardPatient, type WardPatientWorkspaceDefinition } from '../../types';

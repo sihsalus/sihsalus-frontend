@@ -1,5 +1,13 @@
 /// <reference types="vitest/globals" />
 
+import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
+
+// Vitest 5 no longer inherits DOM matchers from the global Jest namespace.
+declare module "vitest" {
+  interface Matchers<R extends void | Promise<void> = void | Promise<void>, T = unknown>
+    extends TestingLibraryMatchers<unknown, R> {}
+}
+
 declare module "*.scss" {
   const styles: { [className: string]: string };
   export default styles;

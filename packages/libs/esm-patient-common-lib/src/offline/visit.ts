@@ -55,10 +55,11 @@ export function useVisitOrOfflineVisit(patientUuid: string): VisitOrOfflineVisit
  */
 export function useOfflineVisit(patientUuid: string): VisitOrOfflineVisitResult {
   const [offlineVisitState, setOfflineVisitState] = useState<{
+    patientUuid: string;
     data: Visit | null;
     error: Error | null;
     isLoading: boolean;
-  }>({ data: null, error: null, isLoading: true });
+  }>({ patientUuid, data: null, error: null, isLoading: true });
   const [refreshCounter, setRefreshCounter] = useState(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshCounter intentionally re-runs the read when mutate() is called
@@ -67,11 +68,12 @@ export function useOfflineVisit(patientUuid: string): VisitOrOfflineVisitResult 
     // previous patient could overwrite the current patient's visit state.
     let ignore = false;
 
-    setOfflineVisitState({ data: null, error: null, isLoading: true });
+    setOfflineVisitState({ patientUuid, data: null, error: null, isLoading: true });
     getOfflineVisitForPatient(patientUuid)
       .then((offlineVisit) => {
         if (!ignore) {
           setOfflineVisitState({
+            patientUuid,
             error: null,
             data: offlineVisit ? offlineVisitToVisit(offlineVisit) : null,
             isLoading: false,
@@ -81,7 +83,7 @@ export function useOfflineVisit(patientUuid: string): VisitOrOfflineVisitResult 
       .catch((err) => {
         if (!ignore) {
           const error = err instanceof Error ? err : new Error(String(err));
-          setOfflineVisitState({ error, data: null, isLoading: false });
+          setOfflineVisitState({ patientUuid, error, data: null, isLoading: false });
         }
       });
 
@@ -91,14 +93,16 @@ export function useOfflineVisit(patientUuid: string): VisitOrOfflineVisitResult 
   }, [patientUuid, refreshCounter]);
 
   const mutate = useCallback((): void => setRefreshCounter((counter) => counter + 1), []);
+  const state =
+    offlineVisitState.patientUuid === patientUuid ? offlineVisitState : { data: null, error: null, isLoading: true };
 
   return {
-    activeVisit: offlineVisitState.data,
-    currentVisit: offlineVisitState.data,
-    isLoading: offlineVisitState.isLoading,
+    activeVisit: state.data,
+    currentVisit: state.data,
+    isLoading: state.isLoading,
     isValidating: false,
     currentVisitIsRetrospective: false,
-    error: offlineVisitState.error,
+    error: state.error,
     mutate,
   };
 }

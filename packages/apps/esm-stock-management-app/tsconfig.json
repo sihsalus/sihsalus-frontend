@@ -5,8 +5,6 @@
     "moduleResolution": "node",
     "lib": ["dom", "scripthost", "es2020", "es2021", "es2022"],
     "paths": {
-      "@mocks": ["../../test-utils/mocks"],
-      "@tools": ["./tools"],
       "@openmrs/esm-styleguide": ["../../../node_modules/@openmrs/esm-styleguide/dist/internal"],
       "@openmrs/esm-styleguide/src/internal": ["../../../node_modules/@openmrs/esm-styleguide/dist/internal"],
       "@openmrs/esm-styleguide/src/public": ["../../../node_modules/@openmrs/esm-styleguide/dist/public"],

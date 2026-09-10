@@ -1,4 +1,4 @@
-import { saveVisit, setupOfflineSync, type SyncProcessOptions } from '@openmrs/esm-framework';
+import { type SyncProcessOptions, saveVisit, setupOfflineSync } from '@openmrs/esm-framework';
 import {
   assertFreshPatientIsAlive,
   DECEASED_PATIENT_OPERATION_BLOCKED,
@@ -68,7 +68,7 @@ describe('setupOfflineVisitsSync', () => {
 
     await handler(offlineVisit, options);
 
-    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith(offlineVisit.patient);
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith(offlineVisit.patient, options.abort.signal);
     expect(mockAssertFreshPatientIsAlive.mock.invocationCallOrder[0]).toBeLessThan(
       mockSaveVisit.mock.invocationCallOrder[0],
     );
@@ -123,7 +123,47 @@ describe('setupOfflineVisitsSync', () => {
       error,
     );
 
-    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith(visitQueuedFromLivingSnapshot.patient);
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith(
+      visitQueuedFromLivingSnapshot.patient,
+      expect.any(AbortSignal),
+    );
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it('preserves an already recorded visit end through delayed synchronization', async () => {
+    const handler = getRegisteredVisitSyncHandler();
+    const closedVisit: OfflineVisit = { ...offlineVisit, stopDatetime: new Date('2026-08-12T10:30:00-05:00') };
+    const options = getSyncOptions(closedVisit);
+    await handler(closedVisit, options);
+    expect(mockSaveVisit).toHaveBeenCalledWith(closedVisit, options.abort);
+  });
+
+  it('preserves the serialized end when a queued visit is restored from JSON', async () => {
+    const handler = getRegisteredVisitSyncHandler();
+    // Restored payloads can contain ISO strings despite the Date-only API type.
+    const closedVisit: OfflineVisit = JSON.parse(
+      JSON.stringify({ ...offlineVisit, stopDatetime: new Date('2026-08-12T10:30:00-05:00') }),
+    );
+    const options = getSyncOptions(closedVisit);
+    await handler(closedVisit, options);
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      { ...closedVisit, stopDatetime: '2026-08-12T15:30:00.000Z' },
+      options.abort,
+    );
+  });
+
+  it('cancels the vital-status read with the synchronization signal', async () => {
+    const handler = getRegisteredVisitSyncHandler();
+    const options = getSyncOptions(offlineVisit);
+    mockAssertFreshPatientIsAlive.mockImplementation(
+      (_patient, signal) =>
+        new Promise((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        }),
+    );
+    const pending = handler(offlineVisit, options);
+    options.abort.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
     expect(mockSaveVisit).not.toHaveBeenCalled();
   });
 

@@ -1,5 +1,10 @@
 import { getUserFacingErrorMessage, useConfig, useSession } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import {
+  buildConditionUpdatePatch,
+  type DefaultPatientWorkspaceProps,
+  launchPatientWorkspace,
+  mapConditionProperties,
+} from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { TFunction } from 'i18next';
@@ -171,6 +176,59 @@ describe('ConditionsForm (antecedentes)', () => {
         antecedentType: 'other',
       }),
     );
+  });
+
+  it('edits the status of coded Other without requiring a note or changing its representation', async () => {
+    const originalSource = {
+      ...matchingCondition.source,
+      additionalDetail: '__sihsalus_antecedent_type:other',
+    };
+    const otherCondition = mapConditionProperties(structuredClone(originalSource));
+    mockUseConditions.mockReturnValue({
+      conditions: [otherCondition],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    const user = userEvent.setup();
+    const { closeWorkspaceWithSavedChanges } = renderForm({ condition: otherCondition, formContext: 'editing' });
+    expect(screen.getByRole('textbox', { name: 'Descripción' })).toHaveValue('');
+    await user.click(screen.getByRole('radio', { name: 'Inactive' }));
+    await user.click(screen.getByRole('button', { name: /Save.*close/i }));
+
+    expect(mockUpdateCondition).toHaveBeenCalledExactlyOnceWith(
+      otherCondition.id,
+      expect.objectContaining({
+        originalCondition: originalSource,
+        conceptId: matchingCondition.conceptId,
+        clinicalStatus: 'inactive',
+        note: undefined,
+        antecedentType: undefined,
+      }),
+    );
+    const [conditionId, payload] = mockUpdateCondition.mock.calls[0];
+    expect(buildConditionUpdatePatch(conditionId, payload)).toEqual({ clinicalStatus: 'INACTIVE' });
+    expect(otherCondition.source).toEqual(originalSource);
+    expect(mockCreateCondition).not.toHaveBeenCalled();
+    expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce();
+  });
+
+  it.each(['', '   '])('requires a description for new narrative Other: %j', (freeText) => {
+    const t = ((_key: string, fallback: string) => fallback) as TFunction;
+    const result = createSchema('creating', t).safeParse({
+      abatementDateTime: null,
+      clinicalStatus: 'active',
+      conditionName: '',
+      onsetDateTime: null,
+      antecedentScope: 'personal',
+      personalCategory: 'other',
+      freeText,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toContainEqual(expect.objectContaining({ path: ['freeText'], message: 'Required' }));
+    }
   });
 
   it('limits a new native description without rejecting an unchanged long historical narrative', () => {

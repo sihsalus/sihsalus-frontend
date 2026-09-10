@@ -174,8 +174,8 @@ export const createSchema = (formContext: 'creating' | 'editing', t: TFunction, 
           message: t('required', 'Required'),
         });
       }
-      // Require freeText if category is other
-      if (data.antecedentScope === 'personal' && data.personalCategory === 'other') {
+      // New Other antecedents use a narrative; an existing coded antecedent may have no note.
+      if (isCreating && data.antecedentScope === 'personal' && data.personalCategory === 'other') {
         if (!data.freeText || data.freeText.trim().length === 0) {
           ctx.addIssue({
             path: ['freeText'],

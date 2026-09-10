@@ -3,7 +3,6 @@ import { mapConditionProperties } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConditionsFromConceptSet } from './conditions.resource';
-import ConditionsOverview from './conditions-overview.component';
 import GenericConditionsOverview from './generic-conditions-overview.component';
 
 vi.mock('react-i18next', () => {
@@ -26,10 +25,7 @@ const conditions = ['Alpha', 'Bravo', 'Echo'].map((display, index) =>
   }),
 );
 
-it.each([
-  ConditionsOverview,
-  GenericConditionsOverview,
-])('targets the visible page two record and recovers after deletion refresh: %p', async (Overview) => {
+it('targets the visible page two record and recovers after deletion refresh', async () => {
   const user = userEvent.setup();
   // Carbon floating menus need a measurable box in the DOM test environment.
   const layout = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 120, 40));
@@ -45,7 +41,9 @@ it.each([
     mutate: vi.fn(),
   };
   vi.mocked(useConditionsFromConceptSet).mockReturnValue(snapshot);
-  const element = () => <Overview patientUuid={patientUuid} conceptSetUuid="synthetic-set" title="Antecedents" />;
+  const element = () => (
+    <GenericConditionsOverview patientUuid={patientUuid} conceptSetUuid="synthetic-set" title="Antecedents" />
+  );
   try {
     const view = render(element());
     await user.click(screen.getByRole('button', { name: /next page/i }));

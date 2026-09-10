@@ -27,6 +27,7 @@ import {
   CardHeader,
   EmptyState,
   ErrorState,
+  isPathologicalAntecedentType,
   matchesConditionStatusFilter,
   PatientChartPagination,
   useConditionPagination,
@@ -79,7 +80,16 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   const canEdit = userHasAccess(credAntecedentsEditPrivilege, session?.user);
 
   const conceptSetUuid = config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
-  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const {
+    conditions: conceptSetConditions,
+    error,
+    isLoading,
+    isValidating,
+  } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const conditions = useMemo(
+    () => conceptSetConditions?.filter((condition) => isPathologicalAntecedentType(condition.antecedentType)),
+    [conceptSetConditions],
+  );
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
 
   // Opciones de filtro traducidas
@@ -216,19 +226,22 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
                 <Table {...getTableProps()} className={styles.table}>
                   <TableHead>
                     <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          key={header.key}
-                          className={classNames(styles.productiveHeading01, styles.text02)}
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                            onClick: onHeaderClick,
-                          })}
-                        >
-                          {renderHeaderLabel(header.header)}
-                        </TableHeader>
-                      ))}
+                      {headers.map((header) => {
+                        const { key, ...headerProps } = getHeaderProps({
+                          header,
+                          isSortable: header.isSortable,
+                          onClick: onHeaderClick,
+                        });
+                        return (
+                          <TableHeader
+                            key={key}
+                            className={classNames(styles.productiveHeading01, styles.text02)}
+                            {...headerProps}
+                          >
+                            {renderHeaderLabel(header.header)}
+                          </TableHeader>
+                        );
+                      })}
                       {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                     </TableRow>
                   </TableHead>

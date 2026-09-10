@@ -186,12 +186,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         return false;
       }
 
-      type ExtendedFormFields = FormFields & {
-        category?: string;
-        note?: string;
-      };
-
-      const payload: ExtendedFormFields = {
+      const payload: FormFields = {
         clinicalStatus: getValues('clinicalStatus'),
         conceptId: selected?.uuid,
         nonCodedText: narrative,
@@ -309,12 +304,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         return false;
       }
 
-      type ExtendedFormFields = FormFields & {
-        category?: string;
-        note?: string;
-      };
-
-      const payload: ExtendedFormFields = {
+      const payload: FormFields = {
         clinicalStatus: dirtyFields.clinicalStatus
           ? getValues('clinicalStatus')
           : editableClinicalStatus?.toLowerCase(),

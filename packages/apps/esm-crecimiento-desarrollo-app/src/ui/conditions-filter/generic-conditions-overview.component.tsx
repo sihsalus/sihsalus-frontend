@@ -67,6 +67,7 @@ interface GenericConditionsOverviewProps {
   enableAdd?: boolean;
   urlPath?: string;
   editPrivilege?: string | string[];
+  conditionFilter?: (condition: Condition) => boolean;
 }
 
 const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
@@ -77,6 +78,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   enableAdd = true,
   urlPath = 'Conditions',
   editPrivilege = credAntecedentsEditPrivilege,
+  conditionFilter,
 }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
@@ -92,7 +94,17 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   const canEdit = userHasAccess(editPrivilege, session?.user);
   const canShowEditActions = enableAdd && canEdit;
 
-  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const {
+    conditions: conceptSetConditions,
+    error,
+    isLoading,
+    isValidating,
+  } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const conditions = useMemo(
+    () =>
+      conditionFilter && conceptSetConditions ? conceptSetConditions.filter(conditionFilter) : conceptSetConditions,
+    [conceptSetConditions, conditionFilter],
+  );
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
 
   const launchConditionsForm = useCallback(
@@ -221,19 +233,22 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 <Table {...getTableProps()} className={styles.table}>
                   <TableHead>
                     <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          key={header.key}
-                          className={classNames(styles.productiveHeading01, styles.text02)}
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                            onClick: onHeaderClick,
-                          })}
-                        >
-                          {renderHeaderLabel(header.header)}
-                        </TableHeader>
-                      ))}
+                      {headers.map((header) => {
+                        const { key, ...headerProps } = getHeaderProps({
+                          header,
+                          isSortable: header.isSortable,
+                          onClick: onHeaderClick,
+                        });
+                        return (
+                          <TableHeader
+                            key={key}
+                            className={classNames(styles.productiveHeading01, styles.text02)}
+                            {...headerProps}
+                          >
+                            {renderHeaderLabel(header.header)}
+                          </TableHeader>
+                        );
+                      })}
                       {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                     </TableRow>
                   </TableHead>

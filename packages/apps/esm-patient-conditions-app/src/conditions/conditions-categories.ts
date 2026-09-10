@@ -2,6 +2,7 @@ import {
   type AntecedentTypeCode,
   type ConditionStatusFilter,
   isActiveConditionStatus,
+  isPathologicalAntecedentType,
 } from '@openmrs/esm-patient-common-lib';
 import type { Condition } from './conditions.resource';
 
@@ -34,15 +35,11 @@ export const defaultStatusFilterBySection: Record<ConditionSection, ConditionSta
 };
 
 export function getConditionDestination(antecedentType?: string, clinicalStatus?: string): ConditionDestination {
-  if (['family', 'social', 'surgical', 'previous-hospitalization', 'other'].includes(antecedentType ?? '')) {
-    return 'other-antecedents';
-  }
-
   if (antecedentType === 'definitive-diagnosis') {
     return 'past-diagnoses';
   }
 
-  if (isActiveConditionStatus(clinicalStatus)) {
+  if (isPathologicalAntecedentType(antecedentType) && isActiveConditionStatus(clinicalStatus)) {
     return 'active-problems';
   }
 

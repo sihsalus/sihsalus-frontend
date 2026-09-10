@@ -106,6 +106,12 @@ export function normalizeAntecedentTypeCode(value?: string | null): AntecedentTy
   return antecedentTypeAliases.get(value.trim().toLowerCase());
 }
 
+/** Patient pathology includes prior diagnoses and untyped history, but excludes explicit family and other types. */
+export function isPathologicalAntecedentType(value?: string | null): boolean {
+  const type = normalizeAntecedentTypeCode(value);
+  return type === undefined || type === 'pathological' || type === 'definitive-diagnosis';
+}
+
 export function getAntecedentTypeOption(code?: string | null): AntecedentTypeOption | undefined {
   const normalizedCode = normalizeAntecedentTypeCode(code);
   return normalizedCode ? antecedentTypesByCode.get(normalizedCode) : undefined;

@@ -8,6 +8,7 @@ import {
   getAntecedentTypeLabel,
   getConditionCategoryDisplay,
   getConditionNoteText,
+  isPathologicalAntecedentType,
   normalizeAntecedentTypeCode,
   OPENMRS_ANTECEDENT_CATEGORY_CODE,
   OPENMRS_ANTECEDENT_CATEGORY_DISPLAY,
@@ -16,6 +17,20 @@ import {
 } from './antecedent-types';
 
 describe('antecedent type helpers', () => {
+  it.each([
+    [undefined, true],
+    ['pathological', true],
+    ['Patológico', true],
+    ['family', false],
+    ['social', false],
+    ['surgical', false],
+    ['previous-hospitalization', false],
+    ['other', false],
+    ['definitive-diagnosis', true],
+  ])('distinguishes patient pathology and prior diagnoses from other antecedent types (%s)', (type, expected) => {
+    expect(isPathologicalAntecedentType(type)).toBe(expected);
+  });
+
   it('normalizes current and legacy antecedent type values', () => {
     expect(normalizeAntecedentTypeCode('pathological')).toBe('pathological');
     expect(normalizeAntecedentTypeCode('Patológico')).toBe('pathological');

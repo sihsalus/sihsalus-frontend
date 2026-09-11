@@ -3,7 +3,8 @@
 import { fork } from 'node:child_process';
 import { resolve } from 'node:path';
 
-import yargs from 'yargs';
+import createYargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 import type * as commands from './commands';
 import {
@@ -18,6 +19,7 @@ import {
 
 const runner = resolve(__dirname, `runner.js`);
 const root = resolve(__dirname, '..');
+const yargs = createYargs(hideBin(process.argv));
 
 type Commands = typeof commands;
 type CommandNames = keyof Commands;

@@ -271,6 +271,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
                 <FileUploaderButton
                   name="files"
                   labelText={t('chooseFiles', 'Choose Files')}
+                  disableLabelChanges
                   multiple
                   accept={['.dcm']}
                   disabled={isSubmitting || isPending || !canWrite}

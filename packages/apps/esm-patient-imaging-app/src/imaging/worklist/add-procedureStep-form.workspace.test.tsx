@@ -1,6 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import type { ReactNode } from 'react';
 import * as api from '../../api';
 import AddNewProcedureStepWorkspace, {
   type AddNewProcedureStepWorkspaceProps,
@@ -16,30 +16,33 @@ type DatePickerProps = {
 };
 
 vi.mock('../../api');
-vi.mock('@openmrs/esm-framework', async () => ({
-  ...(await vi.importActual('@openmrs/esm-framework')),
-  OpenmrsDatePicker: React.forwardRef<HTMLInputElement, DatePickerProps>(
-    ({ id, onChange, labelText, maxDate, invalidText }, ref) => (
-      <label>
-        {labelText}
-        <input
-          ref={ref}
-          data-testid={id}
-          type="date"
-          max={maxDate?.toISOString().slice(0, 10)}
-          aria-description={invalidText}
-          onChange={(event) => {
-            const [year, month, day] = event.target.value.split('-').map(Number);
-            onChange(event.target.value ? new Date(year, month - 1, day) : undefined);
-          }}
-        />
-      </label>
+vi.mock('@openmrs/esm-framework', async () => {
+  const { forwardRef } = await import('react');
+  return {
+    ...(await vi.importActual('@openmrs/esm-framework')),
+    OpenmrsDatePicker: forwardRef<HTMLInputElement, DatePickerProps>(
+      ({ id, onChange, labelText, maxDate, invalidText }, ref) => (
+        <label>
+          {labelText}
+          <input
+            ref={ref}
+            data-testid={id}
+            type="date"
+            max={maxDate?.toISOString().slice(0, 10)}
+            aria-description={invalidText}
+            onChange={(event) => {
+              const [year, month, day] = event.target.value.split('-').map(Number);
+              onChange(event.target.value ? new Date(year, month - 1, day) : undefined);
+            }}
+          />
+        </label>
+      ),
     ),
-  ),
-  useLayoutType: () => 'desktop',
-  ResponsiveWrapper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  showSnackbar: vi.fn(),
-}));
+    useLayoutType: () => 'desktop',
+    ResponsiveWrapper: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    showSnackbar: vi.fn(),
+  };
+});
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),

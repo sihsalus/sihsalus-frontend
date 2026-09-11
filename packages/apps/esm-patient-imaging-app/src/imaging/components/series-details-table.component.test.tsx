@@ -217,7 +217,7 @@ describe('SeriesDetailsTable', () => {
     (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeries,
       error: null,
-      isLoading: true,
+      isLoading: false,
       isValidating: false,
     });
 

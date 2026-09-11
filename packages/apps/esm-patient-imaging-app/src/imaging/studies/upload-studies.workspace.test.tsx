@@ -221,6 +221,7 @@ describe('UploadStudiesWorkspace', () => {
     const second = new File(['b'], 'second.dcm');
     selectFiles([first]);
     selectFiles([second]);
+    expect(screen.getByRole('button', { name: 'Choose Files' })).toBeInTheDocument();
     expect(screen.getByText('first.dcm')).toBeInTheDocument();
     expect(screen.getByText('second.dcm')).toBeInTheDocument();
     selectOrthancServer();
@@ -271,7 +272,7 @@ describe('UploadStudiesWorkspace', () => {
     setup();
     const files = [new File(['a'], 'first.dcm'), new File(['b'], 'second.dcm')];
     selectFiles(files);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Remove file' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove file - first.dcm' }));
     selectOrthancServer();
     fireEvent.click(screen.getByTestId('upload-studies-submit'));
     await waitFor(() => expect(mockUploadStudies.mock.calls[0][0]).toEqual([files[1]]));
@@ -291,6 +292,7 @@ describe('UploadStudiesWorkspace', () => {
       />,
     );
     expect(screen.queryByText('previous-patient.dcm')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Choose Files' })).toBeInTheDocument();
     expect(screen.getByTestId('orthanc-server-combobox')).toHaveValue('');
     expect(mockUploadStudies).not.toHaveBeenCalled();
   });

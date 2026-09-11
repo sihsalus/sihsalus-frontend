@@ -28,7 +28,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
     goTo: vi.fn(),
     currentPage: 1,
   })),
-  AddIcon: () => <span>AddIcon</span>,
+  AddIcon: () => <span aria-hidden="true">AddIcon</span>,
 }));
 
 vi.mock('../components/studies-details-table.component', () => ({ default: () => <div>StudiesDetailTable</div> }));

@@ -109,8 +109,8 @@ describe('DeleteSeriesModal', () => {
   it('allows a retry after a failed delete and does not expose the exception', async () => {
     vi.mocked(api.deleteSeries).mockRejectedValueOnce(new Error('sensitive-backend-detail'));
     setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /Delete$/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Delete$/i })).toBeEnabled());
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',

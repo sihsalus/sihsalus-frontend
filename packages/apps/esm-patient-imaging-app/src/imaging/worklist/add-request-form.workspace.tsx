@@ -89,6 +89,7 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     formState: { errors, isDirty, isSubmitting },
   } = formProps;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Changing patients must discard the previous patient's procedure request draft.
   useEffect(() => {
     reset();
   }, [patientUuid, reset]);

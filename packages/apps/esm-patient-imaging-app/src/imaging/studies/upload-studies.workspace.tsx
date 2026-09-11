@@ -40,6 +40,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
   }, []);
   const [uploadIssue, setUploadIssue] = useState<string | null>(null);
   const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(patientUuid);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Queued files and recovery messages belong to the patient that selected them.
   useEffect(() => {
     setSelectedFiles([]);
     setUploadIssue(null);
@@ -72,6 +73,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
     formState: { errors, isSubmitting },
   } = formProps;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Changing patients must discard the previous patient's server selection.
   useEffect(() => {
     reset();
   }, [patientUuid, reset]);

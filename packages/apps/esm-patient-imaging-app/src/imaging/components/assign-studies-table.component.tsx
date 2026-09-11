@@ -50,6 +50,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
   const pending = useRef(new Set<number>());
   const context = useRef(patientUuid);
   context.current = patientUuid;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Patient changes must reset pending writes and confirmed checkbox state.
   useEffect(() => {
     pending.current = new Set();
     setPendingStudies(new Set());
@@ -58,6 +59,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
       pending.current = new Set();
     };
   }, [patientUuid]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A new server response replaces locally confirmed checkbox state.
   useEffect(() => setAssignedStudies({}), [data]);
   const studiesById = new Map((data?.studies ?? []).map((study) => [String(study.id), study]));
   const layout = useLayoutType();

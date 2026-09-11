@@ -13,6 +13,7 @@ export function useImagingOperation(context: string) {
   currentContext.current = operationContext;
   const [isPending, setIsPending] = useState(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A different patient, resource or session must abort and retire the previous operation.
   useEffect(() => {
     mounted.current = true;
     setIsPending(false);

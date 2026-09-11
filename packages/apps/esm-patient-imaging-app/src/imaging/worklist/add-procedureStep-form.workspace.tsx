@@ -118,6 +118,7 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
     formState: { errors, isDirty, isSubmitting },
   } = formProps;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Form edits must not carry over to a different patient or procedure request.
   useEffect(() => {
     reset();
   }, [patientUuid, request.id, reset]);

@@ -58,6 +58,7 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
     formState: { errors },
   } = formProps;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Changing patients must discard the previous patient's form selection.
   useEffect(() => {
     reset();
   }, [patientUuid, reset]);

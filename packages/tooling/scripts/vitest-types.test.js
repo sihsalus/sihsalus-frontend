@@ -18,7 +18,7 @@ test('Vitest globals and legacy mock aliases reject invalid mock types', () => {
     },
     ts.sys,
     packagesRoot,
-    { strict: true, noEmit: true },
+    { strict: true, noImplicitAny: true, strictNullChecks: true, noEmit: true },
     configPath,
   );
   const program = ts.createProgram(parsed.fileNames, parsed.options);

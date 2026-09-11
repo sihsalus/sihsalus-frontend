@@ -60,6 +60,14 @@ Vitest 5's `Matchers<R, T>` interface. This preserves the matcher return type
 for synchronous assertions and awaited `resolves`/`rejects` assertions. The
 runtime setup continues to register jest-dom's matchers through `expect.extend`.
 
+Test globals come from `vitest/globals`; do not redeclare `vi` manually.
+`packages/types/vi-namespace/index.d.ts` keeps legacy `vi.Mock` and related type
+names as aliases to Vitest's types. Prefer `vi.mocked(fn)` or types imported
+from `vitest` in new tests. Specialize generic hooks before mocking them, and
+use `vi.importActual<typeof import('module')>('module')` for partial module mocks.
+An unparameterized `vi.Mock` retains Vitest's broad function signature; migrating
+those casts to inferred mocks remains incremental.
+
 ## Validation and caching
 
 Changes to shared test support trigger repository-wide `verify:changed`

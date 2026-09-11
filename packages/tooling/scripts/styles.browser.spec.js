@@ -5,17 +5,22 @@ const { tmpdir } = require('node:os');
 const path = require('node:path');
 const { after, before, test } = require('node:test');
 const { chromium, expect } = require('@playwright/test');
+const { getAppShellPackageRoot, getAppShellWebpackConfig } = require('./build-app-shell');
 
 const repositoryRoot = path.resolve(__dirname, '../../..');
 // Resolve the compiler through the workspace that owns the loader dependencies.
 const configRequire = createRequire(path.join(repositoryRoot, 'packages/tooling/rspack-config/package.json'));
 const { rspack } = configRequire('@rspack/core');
+const appShellRequire = createRequire(path.join(getAppShellPackageRoot(), 'package.json'));
+const webpack = appShellRequire('webpack');
+const MiniCssExtractPlugin = appShellRequire('mini-css-extract-plugin');
 
 const styleOwners = [
   { directory: 'apps/esm-patient-imaging-app', configFile: 'rspack.config.js' },
   { directory: 'apps/esm-stock-management-app', configFile: 'rspack.config.js' },
   { directory: 'apps/esm-user-onboarding-app', configFile: 'rspack.config.js' },
   { directory: 'libs/esm-styleguide', configFile: 'rspack.config.cjs', extractCss: true },
+  { directory: '@openmrs/esm-app-shell', appShell: true, extractCss: true },
 ];
 
 let browser;
@@ -39,15 +44,15 @@ function loadConfig(workspace, configFile) {
   }
 }
 
-async function compile(config) {
-  const compiler = rspack(config);
+async function compile(config, compilerFactory) {
+  const compiler = compilerFactory(config);
   try {
     const stats = await new Promise((resolve, reject) => {
       compiler.run((error, result) => (error ? reject(error) : resolve(result)));
     });
-    assert.ok(stats, 'Rspack must return compilation results');
+    assert.ok(stats, 'The compiler must return compilation results');
     assert.equal(stats.hasErrors(), false, stats.toString({ all: false, errors: true }));
-    assert.equal(stats.hasWarnings(), false, stats.toString({ all: false, warnings: true }));
+    return stats;
   } finally {
     await new Promise((resolve, reject) => {
       compiler.close((error) => (error ? reject(error) : resolve()));
@@ -56,7 +61,7 @@ async function compile(config) {
 }
 
 async function writeFixture(directory, extractCss) {
-  // Apps import ordinary .scss files as modules; the styleguide scopes .module.*.
+  // Apps scope ordinary .scss files; the styleguide and app shell scope .module.*.
   const suffix = extractCss ? '.module' : '';
   const files = {
     ['primary' + suffix + '.scss']: [
@@ -80,7 +85,10 @@ async function writeFixture(directory, extractCss) {
   };
   if (extractCss) {
     files['global.scss'] = '.style-contract-base { line-height: 23px; }';
-    files['entry.js'] = "import './global.scss';\n" + files['entry.js'];
+    files['global.css'] = '.style-contract-plain-global { padding-bottom: 17px; }';
+    files['openmrs-esm-styleguide.css'] = '.style-contract-framework { margin-bottom: 19px; }';
+    files['entry.js'] =
+      "import './global.scss';\nimport './global.css';\nimport './openmrs-esm-styleguide.css';\n" + files['entry.js'];
   }
   await Promise.all(Object.entries(files).map(([name, source]) => writeFile(path.join(directory, name), source)));
 }
@@ -89,25 +97,37 @@ for (const owner of styleOwners) {
   test(owner.directory + ' preserves CSS/SCSS imports, scoping and rendered styles', { timeout: 30_000 }, async (t) => {
     const fixture = await mkdtemp(path.join(tmpdir(), 'sihsalus-style-contract-'));
     t.after(() => rm(fixture, { recursive: true, force: true }));
-    const workspace = path.join(repositoryRoot, 'packages', owner.directory);
-    const config = loadConfig(workspace, owner.configFile);
+    const workspace = owner.appShell
+      ? getAppShellPackageRoot()
+      : path.join(repositoryRoot, 'packages', owner.directory);
+    const config = owner.appShell ? getAppShellWebpackConfig() : loadConfig(workspace, owner.configFile);
     const outputPath = path.join(fixture, 'dist');
     await writeFixture(fixture, owner.extractCss);
 
     // Exercise the actual loader rules and minimizers, with a small DOM fixture
     // instead of the app's entry points and Module Federation container.
-    await compile({
-      context: workspace,
-      mode: config.mode,
-      entry: path.join(fixture, 'entry.js'),
-      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
-      module: config.module,
-      resolve: config.resolve,
-      optimization: config.optimization,
-      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
-      devtool: false,
-      performance: false,
-    });
+    const stats = await compile(
+      {
+        context: workspace,
+        mode: config.mode,
+        entry: path.join(fixture, 'entry.js'),
+        output: {
+          ...config.output,
+          path: outputPath,
+          filename: 'styles.js',
+          publicPath: '',
+        },
+        module: config.module,
+        resolve: config.resolve,
+        optimization: config.optimization,
+        plugins: config.plugins.filter(
+          (plugin) => plugin instanceof rspack.CssExtractRspackPlugin || plugin instanceof MiniCssExtractPlugin,
+        ),
+        devtool: false,
+        performance: false,
+      },
+      owner.appShell ? webpack : rspack,
+    );
 
     const context = await browser.newContext({ offline: true });
     t.after(() => context.close());
@@ -119,12 +139,14 @@ for (const owner of styleOwners) {
         '<span id="label">Label</span><section id="secondary">Second component</section>' +
         '<span id="plain">CSS fixture</span><div id="unscoped" class="panel">Unscoped</div>' +
         '<div id="global" class="style-contract-global">Global</div>' +
-        '<div id="base" class="style-contract-base">Base styles</div>',
+        '<div id="base" class="style-contract-base">Base styles</div>' +
+        '<div id="plain-global" class="style-contract-plain-global">Global CSS</div>' +
+        '<div id="framework" class="style-contract-framework">Framework CSS</div>',
     );
 
     const cssAssets = (await readdir(outputPath)).filter((file) => file.endsWith('.css'));
     if (owner.extractCss) {
-      assert.ok(cssAssets.length > 0, 'The styleguide must emit a CSS asset');
+      assert.ok(cssAssets.length > 0, 'The build must emit a CSS asset');
     }
     for (const asset of cssAssets) {
       await page.addStyleTag({ path: path.join(outputPath, asset) });
@@ -132,6 +154,7 @@ for (const owner of styleOwners) {
     await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
 
     assert.deepEqual(errors, [], 'Compiled style imports must not throw in the browser');
+    assert.equal(stats.hasWarnings(), false, stats.toString({ all: false, warnings: true }));
     await expect(page.locator('#primary')).toHaveCSS('padding-top', '13px');
     await expect(page.locator('#secondary')).toHaveCSS('padding-top', '29px');
     await expect(page.locator('#action')).toHaveCSS('color', 'rgb(12, 34, 56)');
@@ -142,6 +165,8 @@ for (const owner of styleOwners) {
     await expect(page.locator('#unscoped')).toHaveCSS('padding-top', '0px');
     if (owner.extractCss) {
       await expect(page.locator('#base')).toHaveCSS('line-height', '23px');
+      await expect(page.locator('#plain-global')).toHaveCSS('padding-bottom', '17px');
+      await expect(page.locator('#framework')).toHaveCSS('margin-bottom', '19px');
     }
     assert.notEqual(
       await page.locator('#primary').getAttribute('class'),

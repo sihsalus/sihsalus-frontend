@@ -134,7 +134,8 @@ yarn test:styles                            # Check compiled CSS/SCSS in Chromiu
 
 Run `yarn playwright install chromium` before the first local `yarn test:styles`.
 This command builds the shared Rspack configuration and checks its CSS/SCSS rules
-through Imágenes, Stock and Onboarding, plus the styleguide's CSS extraction.
+through Imágenes, Stock and Onboarding, plus the styleguide's CSS extraction
+and the source-built app shell's Webpack rules.
 It verifies default imports, scoped classes and computed styles using temporary
 fixtures in an offline browser context. CI runs it for every PR and push to
 `main`; it is independent of the clinical E2E suites and their credentials.
@@ -142,6 +143,9 @@ fixtures in an offline browser context. CI runs it for every PR and push to
 Apps using `openmrs/default-rspack-config` obtain `css-loader` from
 `@openmrs/rspack-config`. Keep that dependency in the shared configuration;
 the styleguide declares its own because it has a separate build configuration.
+The app shell also preserves default CSS Module imports with
+`modules.namedExport: false` and automatic module detection. Ordinary CSS/SCSS,
+including the framework stylesheet, must remain global.
 
 ### Quality
 

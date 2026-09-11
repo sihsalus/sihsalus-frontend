@@ -102,17 +102,20 @@ describe('AddNewProcedureStepWorkspace', () => {
     expect(defaultProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
   });
 
-  it('selects nuclear medicine using NM without changing PET', async () => {
+  it.each([
+    ['NM', 'NM (Nuclear Medicine)'],
+    ['PT', 'PT (Positron Emission Tomography)'],
+  ])('saves the selected %s modality without confusing nuclear medicine and PET', async (code, label) => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
     fillRequiredFields();
     const modality = screen.getByRole('combobox', { name: 'Modality' });
-    fireEvent.change(modality, { target: { value: 'NM' } });
-    fireEvent.keyDown(modality, { key: 'ArrowDown' });
-    fireEvent.keyDown(modality, { key: 'Enter' });
+    fireEvent.change(modality, { target: { value: code } });
+    fireEvent.click(await screen.findByRole('option', { name: label }));
+    expect(modality).toHaveValue(label);
     save();
     await waitFor(() =>
       expect(api.saveRequestProcedureStep).toHaveBeenCalledWith(
-        expect.objectContaining({ modality: 'NM' }),
+        expect.objectContaining({ modality: code }),
         31,
         expect.any(AbortController),
       ),

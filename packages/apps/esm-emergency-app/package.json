@@ -65,7 +65,7 @@
     "cross-env": "^7.0.3",
     "openmrs": "*",
     "typescript": "6.0.3",
-    "vite": "8.0.16",
+    "vite": "8.2.2",
     "vitest": "^5.0.0"
   }
 }

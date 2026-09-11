@@ -5,43 +5,38 @@ import {
   Form,
   FormGroup,
   InlineLoading,
+  InlineNotification,
   RadioButton,
   RadioButtonGroup,
   Row,
   Stack,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  createErrorHandler,
-  ExtensionSlot,
-  launchWorkspace,
-  ResponsiveWrapper,
-  showSnackbar,
-  useLayoutType,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, launchWorkspace, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { getLinkStudies, useOrthancConfigurations } from '../../api';
 import { type OrthancConfiguration } from '../../types';
 import { assignStudiesFormWorkspace } from '../constants';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import styles from './studies.scss';
 
 const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientUuid, closeWorkspace }) => {
   const { t } = useTranslation();
+  const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(patientUuid);
   const isTablet = useLayoutType() === 'tablet';
   const orthancConfigurations = useOrthancConfigurations();
-  const [isLoading, setIsLoading] = useState(false);
   const patientState = useMemo(() => ({ patientUuid }), [patientUuid]);
 
   const linkStudiesFormSchema = useMemo(() => {
     return z.object({
-      fetchOption: z.string(),
+      fetchOption: z.enum(['all', 'newest']),
       orthancConfiguration: z.object({
-        id: z.number(),
+        id: z.number().int().positive(),
         orthancBaseUrl: z.string(),
         orthancProxyUrl: z.string().nullable().optional(),
       }),
@@ -53,32 +48,34 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
   const formProps = useForm<LinkStudiesFormData>({
     mode: 'all',
     resolver: zodResolver(linkStudiesFormSchema),
+    defaultValues: { fetchOption: 'all' },
   });
 
   const {
     control,
     handleSubmit,
-    setValue,
+    reset,
     formState: { errors },
   } = formProps;
 
+  useEffect(() => {
+    reset();
+  }, [patientUuid, reset]);
+
   const fetchOptions = useMemo(
     () => [
-      { id: 'all', display: 'All' },
-      { id: 'newest', display: 'Newest' },
+      { id: 'all', display: t('all', 'All') },
+      { id: 'newest', display: t('newest', 'Newest') },
     ],
-    [],
+    [t],
   );
-
-  useEffect(() => {
-    setValue('fetchOption', fetchOptions[0].id);
-  }, [setValue, fetchOptions]);
 
   const onSubmit = useCallback(
     async (data: LinkStudiesFormData) => {
       const { fetchOption, orthancConfiguration } = data;
 
-      const abortController = new AbortController();
+      const abortController = start();
+      if (!abortController) return;
 
       // copy the content because zod library makes everything optional
       const serverConfig: OrthancConfiguration = {
@@ -89,30 +86,33 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
 
       try {
         await getLinkStudies(fetchOption, serverConfig, abortController);
+        if (!isCurrent(abortController)) return;
         closeWorkspace();
         launchWorkspace<DefaultPatientWorkspaceProps & { configuration: OrthancConfiguration }>(
           assignStudiesFormWorkspace,
           { configuration: serverConfig, patientUuid },
         );
-      } catch (err) {
-        createErrorHandler();
+      } catch {
+        if (!isCurrent(abortController)) return;
         showSnackbar({
           title: t('linkStudiesError', 'An error occurred while linking the studies to the patient'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: t('checkForConnection', 'Check the connection with the configured server') + ': ' + err?.message,
+          subtitle: t(
+            'imagingOperationFailed',
+            'The operation could not be completed. Refresh and check the result before trying again.',
+          ),
         });
       } finally {
-        abortController.abort();
-        setIsLoading(false);
+        finish(abortController);
       }
     },
-    [closeWorkspace, t, patientUuid],
+    [closeWorkspace, t, patientUuid, start, isCurrent, finish],
   );
 
   return (
     <FormProvider {...formProps}>
-      {isLoading && <InlineLoading description={t('linkingStudies', 'Linking studies...')} />}
+      {isPending && <InlineLoading description={t('linkingStudies', 'Linking studies...')} />}
       <Form className={styles.formContainer} onSubmit={handleSubmit(onSubmit)} id="linkStudies">
         {isTablet ? (
           <Row className={styles.header}>
@@ -120,6 +120,14 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
           </Row>
         ) : null}
         <Stack gap={1} className={styles.formContent}>
+          {orthancConfigurations.error && (
+            <InlineNotification
+              kind="error"
+              lowContrast
+              hideCloseButton
+              title={t('imagingConfigurationUnavailable', 'Imaging servers could not be loaded.')}
+            />
+          )}
           <section>
             <ResponsiveWrapper>
               <FormGroup legendText={t('linkFetchOption', 'Fetch option for link studies')}>
@@ -148,6 +156,7 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
                       id="orthancConfiguration"
                       itemToString={(item: OrthancConfiguration) => item?.orthancBaseUrl}
                       items={orthancConfigurations.data || []}
+                      disabled={isPending}
                       onChange={({ selectedItem }) => onChange(selectedItem)}
                       placeholder={t('selectOrthancServer', 'Select an Orthanc server')}
                       selectedItem={value}
@@ -163,10 +172,10 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
             </ResponsiveWrapper>
           </section>
           <ButtonSet className={classNames(isTablet ? styles.tabletButtons : styles.desktopButtons)}>
-            <Button kind="primary" type="submit">
+            <Button kind="primary" type="submit" disabled={isPending || !canWrite}>
               {t('fetchStudy', 'Fetch Study')}
             </Button>
-            <Button kind="secondary" onClick={() => closeWorkspace()}>
+            <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isPending}>
               {t('cancel', 'Cancel')}
             </Button>
           </ButtonSet>

@@ -18,11 +18,16 @@ type CardHeaderProps = {
 };
 type PaginationProps = {
   pageNumber: number;
+  onPageNumberChange: (value: { page: number }) => void;
 };
 type EmptyStateProps = {
   displayText: string;
   headerTitle: string;
 };
+
+vi.mock('./procedureStep-details-table.component', () => ({
+  default: ({ requestProcedure }: { requestProcedure: { id: number } }) => <div>Steps for {requestProcedure.id}</div>,
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -55,7 +60,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
   CardHeader: ({ children }: CardHeaderProps) => <div>{children}</div>,
   compare: vi.fn((a, b) => (a > b ? 1 : -1)),
-  PatientChartPagination: ({ pageNumber }: PaginationProps) => <div>Page {pageNumber}</div>,
+  PatientChartPagination: ({ pageNumber, onPageNumberChange }: PaginationProps) => (
+    <div data-testid="pagination">
+      Page {pageNumber}
+      <button type="button" onClick={() => onPageNumberChange({ page: pageNumber + 1 })}>
+        Next page
+      </button>
+    </div>
+  ),
   EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
@@ -160,4 +172,41 @@ describe('RequestProcedureTable', () => {
     fireEvent.change(prioritySelect, { target: { value: 'high' } });
     expect(prioritySelect).toHaveValue('high');
   });
+  it('expands the exact request after Carbon sorts the rows', () => {
+    const requests = [
+      { ...mockRequests[0], id: 11, priority: 'low', requestDescription: 'First request' },
+      { ...mockRequests[0], id: 22, priority: 'high', requestDescription: 'Second request' },
+    ];
+    vi.mocked(usePagination).mockReturnValue({ results: requests, currentPage: 1, goTo: vi.fn() } as never);
+    render(<RequestProcedureTable requests={requests} patientUuid={patientUuid} />);
+    fireEvent.click(screen.getByRole('button', { name: /priority/i }));
+    fireEvent.doubleClick(screen.getByText('Second request').closest('tr'));
+    expect(screen.getByRole('region')).toHaveTextContent('Steps for 22');
+    expect(screen.getByRole('region')).not.toHaveTextContent('Steps for 11');
+  });
+
+  it('returns to the first page when a worklist status filter changes', async () => {
+    const framework = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+    vi.mocked(usePagination).mockImplementation(framework.usePagination);
+    const requests = Array.from({ length: 11 }, (_, index) => ({
+      ...mockRequests[0],
+      id: index + 1,
+      requestDescription: index === 0 ? 'Unique completed request' : 'Scheduled request',
+      status: index === 0 ? 'completed' : 'scheduled',
+    }));
+    render(<RequestProcedureTable requests={requests} patientUuid={patientUuid} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 3');
+    fireEvent.change(screen.getByLabelText('Status filter'), { target: { value: 'completed' } });
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 1');
+    expect(screen.getByText('Unique completed request')).toBeInTheDocument();
+  });
+
+  it('honors the caller request to hide deletion controls', () => {
+    render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} showDeleteButton={false} />);
+    expect(screen.queryByRole('button', { name: 'Remove requst' })).not.toBeInTheDocument();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

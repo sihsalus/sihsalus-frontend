@@ -50,7 +50,7 @@ const mockSeries = [
 const mockConfig = {
   id: 1,
   orthancBaseUrl: 'http://orthanc.local',
-  orthancProxyUrl: '',
+  orthancProxyUrl: 'http://openmrs.sihsalus.gidistest/orthanc',
 };
 
 vi.mock('../../api');
@@ -95,6 +95,7 @@ vi.mock('@carbon/react', async () => {
 });
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ErrorState: () => <div role="alert">Unable to load imaging data</div>,
   PatientChartPagination: ({ onPageNumberChange }: PageChangeProps) => (
     <button type="button" onClick={() => onPageNumberChange({ page: 2 })}>
       Next
@@ -363,4 +364,19 @@ describe('SeriesDetailsTable', () => {
     expect(screen.queryByLabelText(/Instance preview local/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Instance view in Orthanc/i)).not.toBeInTheDocument();
   });
+  it('shows a read error instead of an empty clinical result', () => {
+    vi.mocked(api.useStudySeries).mockReturnValue({
+      data: [],
+      error: new Error('backend-failed'),
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never);
+    render(
+      <SeriesDetailsTable studyId={1} studyInstanceUID="1.2.3" patientUuid="synthetic" orthancConfig={mockConfig} />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to load imaging data');
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

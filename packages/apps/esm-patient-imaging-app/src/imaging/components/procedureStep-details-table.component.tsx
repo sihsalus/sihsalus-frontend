@@ -11,13 +11,15 @@ import {
   TableRow,
 } from '@carbon/react';
 import { showModal, TrashCanIcon, useLayoutType, usePagination } from '@openmrs/esm-framework';
-import { compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useMemo, useRef } from 'react';
+import { compare, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import React, { useMemo } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import { useProcedureStep } from '../../api';
 import { type RequestProcedure } from '../../types';
 import { procedureStepCount, procedureSteptDeleteConfirmationDialog } from '../constants';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import styles from './details-table.scss';
 
 export interface ProcedureStepTableProps {
@@ -25,15 +27,16 @@ export interface ProcedureStepTableProps {
 }
 
 const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedure }) => {
-  const { data: stepList, isLoading: isLoadingStep } = useProcedureStep(requestProcedure.id);
+  const { data: stepList, error, isLoading: isLoadingStep } = useProcedureStep(requestProcedure.id);
 
   const { t } = useTranslation();
+  const { canWrite } = useImagingAccess();
   const displayText = t('procedureStep', 'Procedure step');
   const headerTitle = t('procedureStep', 'Procedure step');
-  const { results, goTo, currentPage } = usePagination(stepList, procedureStepCount);
+  const { results, goTo, currentPage, totalPages } = usePagination(stepList ?? [], procedureStepCount);
+  usePaginationBounds({ currentPage, totalPages, goTo });
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const shouldOnClickBeCalled = useRef(true);
 
   const launchDeleteProcedureStepDialog = (requestId: number, stepId: number) => {
     const dispose = showModal(procedureSteptDeleteConfirmationDialog, {
@@ -105,8 +108,8 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('removeStep', 'Remove step')}
+            disabled={!canWrite}
             onClick={() => {
-              shouldOnClickBeCalled.current = false;
               launchDeleteProcedureStepDialog(requestProcedure.id, step.id);
             }}
           >
@@ -119,9 +122,11 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
 
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
-      ? compare(cellB.sortKey, cellA.sortKey)
-      : compare(cellA.sortKey, cellB.sortKey);
+      ? compare(cellB?.sortKey ?? cellB, cellA?.sortKey ?? cellA)
+      : compare(cellA?.sortKey ?? cellA, cellB?.sortKey ?? cellB);
   };
+
+  if (error) return <ErrorState error={error} headerTitle={headerTitle} />;
 
   if (isLoadingStep) {
     return <InlineLoading description={t('loadingProcedureSteps', 'Loading procedure steps...')} />;

@@ -1,285 +1,199 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import React, { type ReactNode } from 'react';
+import { showSnackbar } from '@openmrs/esm-framework';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
 import * as api from '../../api';
-import { type RequestProcedure } from '../../types';
 import AddNewProcedureStepWorkspace, {
   type AddNewProcedureStepWorkspaceProps,
 } from './add-procedureStep-form.workspace';
 
-type WrapperProps = {
-  children?: ReactNode;
-};
-
-type DatePickerMockProps = React.InputHTMLAttributes<HTMLInputElement> & {
+type DatePickerProps = {
   id: string;
-  onChange?: (value: Date) => void;
-  labelText?: string;
+  value?: Date;
+  onChange: (date?: Date) => void;
+  labelText: string;
   maxDate?: Date;
-};
-
-type ComboBoxMockProps = React.HTMLAttributes<HTMLDivElement> & {
-  children?: ReactNode;
-  id?: string;
-  titleText?: string;
-  label?: string;
-  invalid?: boolean;
-  invalidText?: string;
-  selectedItem?: unknown;
-  itemToString?: (item: unknown) => string;
-};
-
-type TimePickerMockProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  labelText?: string;
-  children?: ReactNode;
-};
-
-type SelectMockProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
-  children?: ReactNode;
-};
-
-type OptionMockProps = React.OptionHTMLAttributes<HTMLOptionElement>;
-type ButtonMockProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { children?: ReactNode };
-type FormMockProps = React.FormHTMLAttributes<HTMLFormElement> & { children?: ReactNode };
-type InlineLoadingProps = { description?: string };
-type TextInputMockProps = React.InputHTMLAttributes<HTMLInputElement> & { labelText?: string };
-type TextAreaMockProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  labelText?: string;
-  invalid?: boolean;
   invalidText?: string;
 };
 
 vi.mock('../../api');
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  OpenmrsDatePicker: React.forwardRef<HTMLInputElement, DatePickerMockProps>(
-    ({ id, onChange, labelText, maxDate: _maxDate, ...props }, ref) => (
+  OpenmrsDatePicker: React.forwardRef<HTMLInputElement, DatePickerProps>(
+    ({ id, onChange, labelText, maxDate, invalidText }, ref) => (
       <label>
         {labelText}
         <input
           ref={ref}
           data-testid={id}
           type="date"
-          onChange={(e) => onChange?.(new Date(e.target.value))}
-          {...props}
+          max={maxDate?.toISOString().slice(0, 10)}
+          aria-description={invalidText}
+          onChange={(event) => {
+            const [year, month, day] = event.target.value.split('-').map(Number);
+            onChange(event.target.value ? new Date(year, month - 1, day) : undefined);
+          }}
         />
       </label>
     ),
   ),
-  ResponsiveWrapper: ({ children }: WrapperProps) => <div>{children}</div>,
-  useLayoutType: vi.fn(() => 'desktop'),
+  useLayoutType: () => 'desktop',
+  ResponsiveWrapper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   showSnackbar: vi.fn(),
 }));
 
-vi.mock('react-i18next', async () => ({
-  useTranslation: () => ({
-    t: (_key: string, defaultValue: string) => defaultValue,
-  }),
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 
-vi.mock('@carbon/react', async () => {
-  const original = await vi.importActual('@carbon/react');
-  return {
-    ...original,
-    ComboBox: ({
-      children,
-      id,
-      titleText,
-      label,
-      invalid: _invalid,
-      invalidText,
-      selectedItem: _selectedItem,
-      itemToString: _itemToString,
-      ...props
-    }: ComboBoxMockProps) => (
-      <label htmlFor={id}>
-        {titleText ?? label}
-        <div id={id} data-testid={id} {...(invalidText ? { invalidtext: invalidText } : {})} {...props}>
-          {children}
-        </div>
-      </label>
-    ),
-    TimePicker: ({ labelText, children, ...props }: TimePickerMockProps) => (
-      <label>
-        {labelText}
-        <input data-testid="timePickerInput" {...props} />
-        {children}
-      </label>
-    ),
-    TimePickerSelect: ({ children, ...props }: SelectMockProps) => <select {...props}>{children}</select>,
-    SelectItem: (props: OptionMockProps) => <option {...props} />,
-    Button: (props: ButtonMockProps) => <button {...props}>{props.children}</button>,
-    ButtonSet: ({ children }: WrapperProps) => <div>{children}</div>,
-    Form: ({ children, ...props }: FormMockProps) => <form {...props}>{children}</form>,
-    FormGroup: ({ children }: WrapperProps) => <div>{children}</div>,
-    Stack: ({ children }: WrapperProps) => <div>{children}</div>,
-    InlineLoading: (props: InlineLoadingProps) => <span>{props.description}</span>,
-    TextInput: ({ labelText, value, ...props }: TextInputMockProps) => (
-      <label>
-        {labelText}
-        <input value={value ?? ''} {...props} />
-      </label>
-    ),
-    TextArea: ({ labelText, value, invalid: _invalid, invalidText, ...props }: TextAreaMockProps) => {
-      const testAttributes: Record<string, string> = invalidText ? { invalidtext: invalidText } : {};
-      return (
-        <label>
-          {labelText}
-          <textarea value={value ?? ''} {...testAttributes} {...props} />
-        </label>
-      );
-    },
-  };
-});
-
-const orthancConfigMock = [{ id: 1, orthancBaseUrl: 'http://orthanc.local' }];
-const patientUuid = 'patient-123';
-
-const mockRequest: RequestProcedure = {
-  id: 1,
-  status: 'scheduled',
-  orthancConfiguration: orthancConfigMock[0],
-  patientUuid: patientUuid,
-  accessionNumber: 'access-123',
-  requestingPhysician: 'Dr Smith',
-  requestDescription: 'Head CT',
-  priority: 'High',
-};
-
 const defaultProps: AddNewProcedureStepWorkspaceProps = {
-  patientUuid: patientUuid,
-  request: mockRequest,
+  patientUuid: 'synthetic-patient',
+  request: {
+    id: 31,
+    patientUuid: 'synthetic-patient',
+    status: 'scheduled',
+    orthancConfiguration: { id: 4, orthancBaseUrl: 'http://orthanc:8042' },
+    accessionNumber: 'SYNTHETIC-31',
+    requestingPhysician: 'Synthetic clinician',
+    requestDescription: 'Synthetic request',
+    priority: 'high',
+  },
   closeWorkspace: vi.fn(),
   closeWorkspaceWithSavedChanges: vi.fn(),
   promptBeforeClosing: vi.fn(),
-  setTitle: function (_title: string, _titleNode?: React.ReactNode): void {
-    throw new Error('Function not implemented.');
-  },
+  setTitle: vi.fn(),
 };
+
+function fillRequiredFields() {
+  fireEvent.change(screen.getByLabelText('AetTitle'), { target: { value: 'SYNTHETIC_AE' } });
+  fireEvent.change(screen.getByLabelText('scheduledReferringPhysician'), { target: { value: 'Synthetic clinician' } });
+  fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Synthetic procedure' } });
+  fireEvent.change(screen.getByTestId('stepStartDate'), { target: { value: '2030-09-04' } });
+  fireEvent.change(screen.getByTestId('stepStartTime'), { target: { value: '12:30' } });
+  fireEvent.change(screen.getByLabelText('Time Format'), { target: { value: 'PM' } });
+}
+
+const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save and Close' }));
 
 describe('AddNewProcedureStepWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.useProcedureStep as vi.Mock).mockReturnValue({ mutate: vi.fn() });
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({ mutate: vi.fn() });
-  });
-  const setup = () => {
-    render(<AddNewProcedureStepWorkspace {...defaultProps} />);
-  };
-
-  it('renders form fields correctly', () => {
-    setup();
-
-    expect(screen.getByLabelText('Modality')).toBeInTheDocument();
-    expect(screen.getByLabelText('AetTitle')).toBeInTheDocument();
-    expect(screen.getByLabelText('scheduledReferringPhysician')).toBeInTheDocument();
-    expect(screen.getByLabelText('Description')).toBeInTheDocument();
-    expect(screen.getByTestId('stepStartDate')).toBeInTheDocument();
-    expect(screen.getByText('Start time')).toBeInTheDocument();
-    expect(screen.getByLabelText('stationName')).toBeInTheDocument();
-    expect(screen.getByLabelText('procedureStepLocation')).toBeInTheDocument();
+    vi.mocked(api.saveRequestProcedureStep).mockReset();
+    vi.mocked(api.saveRequestProcedureStep).mockResolvedValue({} as never);
+    vi.mocked(api.useProcedureStep).mockReturnValue({ mutate: vi.fn() } as never);
+    vi.mocked(api.useRequestsByPatient).mockReturnValue({ mutate: vi.fn() } as never);
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
-  it('validates required fields', async () => {
+  it('allows a future date and sends separate DICOM DA8 and TM6 values', async () => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /save and close/i }));
-
-    await waitFor(() => {
-      const scheduledReferringPhysician = screen.getByLabelText(/scheduledReferringPhysician/i);
-      expect(scheduledReferringPhysician).toHaveAttribute('invalidtext', 'Referring physician is required');
-    });
-
-    await waitFor(() => {
-      const description = screen.getByLabelText(/description/i);
-      expect(description).toHaveAttribute('invalidtext', 'Procedure description is required');
-    });
-
-    await waitFor(() => {
-      const time = screen.getByTestId(/stepStartTime/i);
-      expect(time).toHaveAttribute('invalidtext', expect.stringMatching(/required/i));
-    });
-
-    await waitFor(() => {
-      const modality = screen.getByLabelText(/modality/i);
-      expect(modality).toHaveAttribute('invalidtext', 'Modality is required');
-      expect(screen.getByLabelText(/AetTitle/i)).toHaveAttribute('invalidtext', 'AET title is required');
-    });
+    expect(screen.getByTestId('stepStartDate')).not.toHaveAttribute('max');
+    fillRequiredFields();
+    save();
+    await waitFor(() =>
+      expect(api.saveRequestProcedureStep).toHaveBeenCalledWith(
+        expect.objectContaining({ requestId: 31, modality: 'CR', stepStartDate: '20300904', stepStartTime: '123000' }),
+        31,
+        expect.any(AbortController),
+      ),
+    );
+    expect(defaultProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
   });
 
-  it('submits form with correct payload', async () => {
-    (api.saveRequestProcedureStep as vi.Mock).mockResolvedValue({});
-
+  it('selects nuclear medicine using NM without changing PET', async () => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
-    const user = userEvent.setup();
-
-    // Fill required fields
-    await user.type(screen.getByLabelText(/AetTitle/i), 'Test AET');
-    await user.type(screen.getByLabelText(/scheduledReferringPhysician/i), 'Dr. Smith');
-    await user.type(screen.getByLabelText(/Description/i), 'Test procedure');
-
-    // Mocked OpenmrsDatePicker -> returns a Date
-    fireEvent.change(screen.getByTestId('stepStartDate'), {
-      target: { value: '2025-09-04' },
-    });
-
-    await user.type(screen.getByTestId('stepStartTime'), '10:30');
-    await user.selectOptions(screen.getByLabelText(/Time Format/i), 'AM');
-
-    const comboBox = screen.getByTestId(/modality/i);
-    await user.click(comboBox);
-
-    const option = await screen.findByText(/CR/i);
-    await user.click(option);
-
-    // Submit form
-    const submitButton = screen.getByRole('button', {
-      name: /Save and Close/i,
-    });
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(api.saveRequestProcedureStep).toHaveBeenCalledTimes(1);
-      expect(defaultProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
-    });
+    fillRequiredFields();
+    const modality = screen.getByRole('combobox', { name: 'Modality' });
+    fireEvent.change(modality, { target: { value: 'NM' } });
+    fireEvent.keyDown(modality, { key: 'ArrowDown' });
+    fireEvent.keyDown(modality, { key: 'Enter' });
+    save();
+    await waitFor(() =>
+      expect(api.saveRequestProcedureStep).toHaveBeenCalledWith(
+        expect.objectContaining({ modality: 'NM' }),
+        31,
+        expect.any(AbortController),
+      ),
+    );
   });
 
-  it('calls promptBeforeClosing when form is dirty', async () => {
+  it.each(['13:00', '12:60', '1:5', ''])('rejects an invalid time before saving: %s', async (time) => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
-    fireEvent.change(screen.getByLabelText(/AetTitle/i), {
-      target: { value: 'Changed' },
-    });
-
-    await waitFor(() => {
-      expect(defaultProps.promptBeforeClosing).toHaveBeenCalled();
-    });
+    fillRequiredFields();
+    fireEvent.change(screen.getByTestId('stepStartTime'), { target: { value: time } });
+    save();
+    await screen.findByText('Enter a valid time from 01:00 to 12:59');
+    expect(api.saveRequestProcedureStep).not.toHaveBeenCalled();
   });
 
-  it('disables submit button when submitting', async () => {
-    (api.saveRequestProcedureStep as vi.Mock).mockResolvedValue({});
-
+  it.each(['AE-123456789012345', 'AE\\INVALID', 'AE-é'])('rejects an invalid DICOM AE value: %s', async (value) => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
+    fillRequiredFields();
+    fireEvent.change(screen.getByLabelText('AetTitle'), { target: { value } });
+    save();
+    await waitFor(() => expect(screen.getByLabelText('AetTitle')).toHaveAttribute('data-invalid', 'true'));
+    expect(api.saveRequestProcedureStep).not.toHaveBeenCalled();
+  });
 
-    fireEvent.change(screen.getByLabelText(/AetTitle/i), {
-      target: { value: 'Test AET' },
-    });
-    fireEvent.change(screen.getByLabelText(/scheduledReferringPhysician/i), {
-      target: { value: 'Dr. Smith' },
-    });
-    fireEvent.change(screen.getByLabelText(/Description/i), {
-      target: { value: 'Test procedure' },
-    });
-    fireEvent.change(screen.getByTestId('stepStartDate'), {
-      target: { value: '2025-09-04' },
-    });
-    fireEvent.change(screen.getByTestId('stepStartTime'), {
-      target: { value: '10:30' },
-    });
+  it.each([
+    ['scheduledReferringPhysician', 65],
+    ['Description', 65],
+    ['stationName', 17],
+    ['procedureStepLocation', 17],
+  ] as const)('rejects a value exceeding DICOM length for %s', async (label, length) => {
+    render(<AddNewProcedureStepWorkspace {...defaultProps} />);
+    fillRequiredFields();
+    fireEvent.change(screen.getByLabelText(label), { target: { value: 'X'.repeat(length) } });
+    save();
+    await screen.findByText(/Use at most/);
+    expect(api.saveRequestProcedureStep).not.toHaveBeenCalled();
+  });
 
-    const submitButton = screen.getByRole('button', {
-      name: /Save and Close/i,
-    });
-    fireEvent.click(screen.getByText(/Save and Close/i));
-    expect(submitButton).toBeDisabled();
+  it('rejects a request belonging to a different patient', async () => {
+    render(<AddNewProcedureStepWorkspace {...defaultProps} patientUuid="another-synthetic-patient" />);
+    fillRequiredFields();
+    save();
+    await waitFor(() => expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(api.saveRequestProcedureStep).not.toHaveBeenCalled();
+  });
+
+  it('releases the save control after an error and reports a safe message', async () => {
+    vi.mocked(api.saveRequestProcedureStep).mockRejectedValueOnce(new Error('private backend details'));
+    render(<AddNewProcedureStepWorkspace {...defaultProps} />);
+    fillRequiredFields();
+    save();
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
+        }),
+      ),
+    );
+    expect(screen.getByRole('button', { name: 'Save and Close' })).toBeEnabled();
+    expect(defaultProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+  });
+
+  it('prevents duplicate submission and ignores completion after unmount', async () => {
+    let resolveSave: (value: never) => void;
+    vi.mocked(api.saveRequestProcedureStep).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const { unmount } = render(<AddNewProcedureStepWorkspace {...defaultProps} />);
+    fillRequiredFields();
+    const form = screen.getByRole('button', { name: 'Save and Close' }).closest('form');
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    await waitFor(() => expect(api.saveRequestProcedureStep).toHaveBeenCalledTimes(1));
+    const controller = vi.mocked(api.saveRequestProcedureStep).mock.calls[0][2];
+    unmount();
+    expect(controller.signal.aborted).toBe(true);
+    await act(async () => resolveSave({} as never));
+    expect(defaultProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+    expect(showSnackbar).not.toHaveBeenCalled();
   });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

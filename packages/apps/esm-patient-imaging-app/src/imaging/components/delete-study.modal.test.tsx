@@ -74,7 +74,7 @@ describe('DeleteStudyModal', () => {
           isLowContrast: false,
           kind: 'error',
           title: 'An error occurred while deleting the study',
-          subtitle: errorMessage,
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
         }),
       );
     });
@@ -94,3 +94,5 @@ describe('DeleteStudyModal', () => {
     });
   });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

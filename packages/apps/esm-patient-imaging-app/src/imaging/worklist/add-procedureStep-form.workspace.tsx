@@ -21,7 +21,8 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { saveRequestProcedureStep, useProcedureStep, useRequestsByPatient } from '../../api';
 import { type CreateRequestProcedureStep, modalityOptions, type RequestProcedure } from '../../types';
-import { toDICOMDateTime, toDicomTimeString } from '../utils/help';
+import { toDicomDate, toDicomTimeString } from '../utils/help';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import styles from './worklist.scss';
 
 export interface AddNewProcedureStepWorkspaceProps extends DefaultPatientWorkspaceProps {
@@ -36,25 +37,59 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
   promptBeforeClosing,
 }) => {
   const { t } = useTranslation();
+  const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(`${patientUuid}:${request.id}`);
   const isTablet = useLayoutType() === 'tablet';
   const { mutate } = useProcedureStep(request.id);
   const { mutate: requestMutate } = useRequestsByPatient(patientUuid);
 
   const procedureStepFormSchema = useMemo(() => {
     return z.object({
-      modality: z.string().min(1, { message: t('modalityRequiredWarn', 'Modality is required') }),
-      aetTitle: z.string().min(1, { message: t('aetTitleWarn', 'AET title is required') }),
-      scheduledReferringPhysician: z.string().refine((value) => !!value, {
-        message: t('scheduledReferringPhysicianWarn', 'Referring physician is required'),
-      }),
-      requestedProcedureDescription: z.string().refine((value) => !!value, {
-        message: t('requestedProcedureDescriptionWarn', 'Procedure description is required'),
-      }),
+      modality: z
+        .string()
+        .trim()
+        .refine((value) => modalityOptions.some((option) => option.code === value), {
+          message: t('modalityRequiredWarn', 'Modality is required'),
+        }),
+      aetTitle: z
+        .string()
+        .trim()
+        .min(1, { message: t('aetTitleWarn', 'AET title is required') })
+        .max(16, t('aetTitleLength', 'AET title must contain at most 16 characters'))
+        .regex(
+          /^[\x20-\x5b\x5d-\x7e]+$/,
+          t('aetTitleCharacters', 'Use printable ASCII characters without a backslash'),
+        ),
+      scheduledReferringPhysician: z
+        .string()
+        .trim()
+        .max(64, t('dicomFieldLength', 'Use at most {{count}} characters', { count: 64 }))
+        .refine((value) => !!value, {
+          message: t('scheduledReferringPhysicianWarn', 'Referring physician is required'),
+        }),
+      requestedProcedureDescription: z
+        .string()
+        .trim()
+        .max(64, t('dicomFieldLength', 'Use at most {{count}} characters', { count: 64 }))
+        .refine((value) => !!value, {
+          message: t('requestedProcedureDescriptionWarn', 'Procedure description is required'),
+        }),
       stepStartDate: z.date().refine((value) => !!value, t('stepDateWarn', 'Step date is required')),
-      stepStartTime: z.string().refine((value) => !!value, t('stepTimeWarn', 'Step start time is required')),
-      timeFormat: z.string().refine((value) => !!value, t('seletTimeFormatWarn', 'Time format is required')),
-      stationName: z.string().nullable().optional(),
-      procedureStepLocation: z.string().nullable().optional(),
+      stepStartTime: z
+        .string()
+        .regex(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/, t('validStepTime', 'Enter a valid time from 01:00 to 12:59')),
+      timeFormat: z.enum(['AM', 'PM']),
+      stationName: z
+        .string()
+        .trim()
+        .max(16, t('dicomFieldLength', 'Use at most {{count}} characters', { count: 16 }))
+        .nullable()
+        .optional(),
+      procedureStepLocation: z
+        .string()
+        .trim()
+        .max(16, t('dicomFieldLength', 'Use at most {{count}} characters', { count: 16 }))
+        .nullable()
+        .optional(),
     });
   }, [t]);
 
@@ -79,9 +114,13 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
   const {
     control,
     handleSubmit,
-    getValues,
+    reset,
     formState: { errors, isDirty, isSubmitting },
   } = formProps;
+
+  useEffect(() => {
+    reset();
+  }, [patientUuid, request.id, reset]);
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
@@ -89,10 +128,14 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
 
   const onSubmit = useCallback(
     async (data: NewProcedureStepFormData) => {
-      const abortController = new AbortController();
-      const time = getValues('stepStartTime');
-      const format = getValues('timeFormat');
-      const fullTime = toDicomTimeString(time, format as 'AM' | 'PM');
+      if (request.patientUuid !== patientUuid) {
+        showSnackbar({
+          kind: 'error',
+          title: t('imagingContextChanged', 'Reopen imaging for the current patient before saving.'),
+        });
+        return;
+      }
+      const fullTime = toDicomTimeString(data.stepStartTime, data.timeFormat);
 
       // copy the content because zod library makes everything optional
       const requestId: number = request.id;
@@ -103,32 +146,48 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
         aetTitle: data.aetTitle,
         scheduledReferringPhysician: data.scheduledReferringPhysician,
         requestedProcedureDescription: data.requestedProcedureDescription,
-        stepStartDate: toDICOMDateTime(data.stepStartDate),
+        stepStartDate: toDicomDate(data.stepStartDate),
         stepStartTime: fullTime,
         stationName: data.stationName ? data.stationName : null,
         procedureStepLocation: data.procedureStepLocation ? data.procedureStepLocation : null,
       };
 
+      const abortController = start();
+      if (!abortController) return;
       try {
         await saveRequestProcedureStep(payload, requestId, abortController);
-        mutate();
+        if (!isCurrent(abortController)) return;
+        void Promise.resolve()
+          .then(() => mutate())
+          .catch(() => {
+            /* The read hook displays revalidation errors. */
+          });
         closeWorkspaceWithSavedChanges();
         showSnackbar({
           kind: 'success',
           title: t('procedureStepSaved', 'Procedure step is saved successfully'),
         });
-        requestMutate();
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
+        void Promise.resolve()
+          .then(() => requestMutate())
+          .catch(() => {
+            /* The read hook displays revalidation errors. */
+          });
+      } catch {
+        if (!isCurrent(abortController)) return;
         showSnackbar({
           title: t('errorSavingProcedureStep', 'An error occurred while saving the procedure step'),
           kind: 'error',
-          subtitle: message,
+          subtitle: t(
+            'imagingOperationFailed',
+            'The operation could not be completed. Refresh and check the result before trying again.',
+          ),
           isLowContrast: false,
         });
+      } finally {
+        finish(abortController);
       }
     },
-    [request, closeWorkspaceWithSavedChanges, t, mutate, requestMutate, getValues],
+    [request, patientUuid, closeWorkspaceWithSavedChanges, t, mutate, requestMutate, start, isCurrent, finish],
   );
 
   return (
@@ -239,7 +298,6 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
                     {...field}
                     id="stepStartDate"
                     data-testid="stepStartDate"
-                    maxDate={new Date()}
                     style={{ paddingBottom: '1rem', width: '100%' }}
                     labelText={t('stepStartDate', 'StepStartDate')}
                     invalid={Boolean(fieldState?.error?.message)}
@@ -259,8 +317,8 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
                     id="stepStartTime"
                     data-testid="stepStartTime"
                     labelText={t('startTime', 'Start time')}
-                    onChange={(event) => onChange(event.target.value as amPm)}
-                    pattern="^(1[0-2]|0?[1-9]):([0-5]?[0-9])$"
+                    onChange={(event) => onChange(event.target.value)}
+                    pattern="^(1[0-2]|0?[1-9]):[0-5][0-9]$"
                     style={{ marginLeft: '0.125rem', flex: 'none' }}
                     value={value}
                     onBlur={onBlur}
@@ -297,6 +355,8 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
                     <TextInput
                       type="text"
                       id="stationName"
+                      invalid={!!errors?.stationName}
+                      invalidText={errors?.stationName?.message}
                       labelText={t('stationName', 'stationName')}
                       value={value}
                       onChange={(evt) => onChange(evt.target.value)}
@@ -316,6 +376,8 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
                     <TextInput
                       type="text"
                       id="procedureStepLocation"
+                      invalid={!!errors?.procedureStepLocation}
+                      invalidText={errors?.procedureStepLocation?.message}
                       labelText={t('procedureStepLocation', 'procedureStepLocation')}
                       value={value}
                       onChange={(evt) => onChange(evt.target.value)}
@@ -327,10 +389,15 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
           </section>
         </Stack>
         <ButtonSet className={isTablet ? styles.tabletButtons : styles.desktopButtons}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button className={styles.button} kind="secondary" disabled={isPending} onClick={() => closeWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} kind="primary" disabled={isSubmitting} type="submit">
+          <Button
+            className={styles.button}
+            kind="primary"
+            disabled={isSubmitting || isPending || !canWrite}
+            type="submit"
+          >
             {isSubmitting ? (
               <InlineLoading description={t('saving', 'Saving') + '...'} />
             ) : (

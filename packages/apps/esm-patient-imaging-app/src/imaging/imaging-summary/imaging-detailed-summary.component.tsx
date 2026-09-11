@@ -1,4 +1,4 @@
-import { Button, DataTableSkeleton } from '@carbon/react';
+import { Button, DataTableSkeleton, InlineNotification } from '@carbon/react';
 import { AddIcon, launchWorkspace } from '@openmrs/esm-framework';
 import { CardHeader, type DefaultPatientWorkspaceProps, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useRequestsByPatient, useStudiesByPatient } from '../../api';
 import RequestProcedureTable from '../components/requests-details-table.component';
 import StudiesDetailTable from '../components/studies-details-table.component';
+import { useImagingAccess } from '../utils/use-imaging-access';
 import { addNewRequestWorkspace, linkStudiesFormWorkspace, uploadStudiesFormWorkspace } from '../constants';
 
 interface ImagingDetailedSummaryProps {
@@ -14,6 +15,7 @@ interface ImagingDetailedSummaryProps {
 
 export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedSummaryProps) {
   const { t } = useTranslation();
+  const { canWrite, isOnline } = useImagingAccess();
   const launchUploadStudiesWorkspace = useCallback(
     () => launchWorkspace<DefaultPatientWorkspaceProps>(uploadStudiesFormWorkspace, { patientUuid }),
     [patientUuid],
@@ -44,6 +46,14 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
 
   return (
     <div>
+      {!isOnline && (
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title={t('imagingOffline', 'Connect to the network to change imaging data or open images.')}
+        />
+      )}
       <div style={{ marginBottom: '2rem' }}>
         <CardHeader title={headerTitle}>
           <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '1rem', width: '60%' }}>
@@ -52,6 +62,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
               renderIcon={(props) => <AddIcon size={16} {...props} />}
               iconDescription={t('linkStudies', 'Studies')}
               onClick={launchLinkStudiesWorkspace}
+              disabled={!canWrite}
             >
               <strong>{t('linkStudie', 'Link studies')}</strong>
             </Button>
@@ -60,6 +71,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
               renderIcon={(props) => <AddIcon size={16} {...props} />}
               iconDescription={t('upload', 'Upload')}
               onClick={launchUploadStudiesWorkspace}
+              disabled={!canWrite}
             >
               <strong>{t('upload', 'Upload')}</strong>
             </Button>
@@ -88,7 +100,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
             <EmptyState
               displayText={displayTextStudies}
               headerTitle={headerTitle}
-              launchForm={launchUploadStudiesWorkspace}
+              launchForm={canWrite ? launchUploadStudiesWorkspace : undefined}
             />
           );
         })()}
@@ -115,7 +127,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
             <EmptyState
               displayText={displayTextWorklist}
               headerTitle={headerTitle}
-              launchForm={launchAddRequestWorkspace}
+              launchForm={canWrite ? launchAddRequestWorkspace : undefined}
             />
           );
         })()}

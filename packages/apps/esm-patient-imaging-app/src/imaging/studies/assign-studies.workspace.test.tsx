@@ -11,7 +11,7 @@ type ChildrenOnlyProps = { children: React.ReactNode };
 type StudiesTableDataProps = { data?: { studies?: Array<unknown> } | null };
 type EmptyStateProps = { displayText?: string; headerTitle?: string };
 type AssignStudiesTableMockProps = {
-  assignStudyFunction: (study: DicomStudy, isAssign: boolean) => Promise<void>;
+  assignStudyFunction: (study: DicomStudy, isAssign: boolean) => Promise<boolean>;
 };
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -36,7 +36,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 vi.mock('../../api');
 
-let capturedAssignStudyFunction: ((study: DicomStudy, isAssign: boolean) => Promise<void>) | undefined;
+let capturedAssignStudyFunction: ((study: DicomStudy, isAssign: boolean) => Promise<boolean>) | undefined;
 
 vi.mock('../components/assign-studies-table.component', () => ({
   default: (props: AssignStudiesTableMockProps & StudiesTableDataProps) => {
@@ -90,6 +90,7 @@ describe('AssignStudiesWorkspace', () => {
       error: null,
       isLoading: false,
       isValidating: false,
+      mutate: vi.fn().mockResolvedValue({ data: { studies: [mockStudyData] } }),
     });
   });
 
@@ -99,6 +100,7 @@ describe('AssignStudiesWorkspace', () => {
       error: null,
       isLoading: true,
       isValidating: false,
+      mutate: vi.fn(),
     });
 
     render(
@@ -127,6 +129,7 @@ describe('AssignStudiesWorkspace', () => {
       error: new Error('API error'),
       isLoading: false,
       isValidating: false,
+      mutate: vi.fn(),
     });
 
     render(
@@ -205,4 +208,47 @@ describe('AssignStudiesWorkspace', () => {
     expect(mockMutate).toHaveBeenCalled();
     expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
   });
+
+  it('does not send assignment for a study owned by another patient', async () => {
+    render(
+      <AssignStudiesWorkspace
+        patientUuid={patientUuid}
+        configuration={configuration}
+        closeWorkspace={vi.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
+      />,
+    );
+    expect(
+      await capturedAssignStudyFunction({ ...mockStudyData, mrsPatientUuid: 'another-synthetic-patient' }, true),
+    ).toBe(false);
+    expect(api.assignStudy).not.toHaveBeenCalled();
+  });
+
+  it('does not confirm success when a fresh read contradicts the write', async () => {
+    vi.mocked(api.useStudiesByConfig).mockReturnValue({
+      data: { studies: [mockStudyData], scores: {} },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn().mockResolvedValue({ data: { studies: [{ ...mockStudyData, mrsPatientUuid: null }] } }),
+    });
+    vi.mocked(api.assignStudy).mockResolvedValue({} as never);
+    render(
+      <AssignStudiesWorkspace
+        patientUuid={patientUuid}
+        configuration={configuration}
+        closeWorkspace={vi.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
+      />,
+    );
+    expect(await capturedAssignStudyFunction(mockStudyData, true)).toBe(false);
+    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' }));
+    expect(showSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

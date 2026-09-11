@@ -1,5 +1,5 @@
 import { launchWorkspace, showSnackbar } from '@openmrs/esm-framework';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import * as imagingApi from '../../api/api';
 import LinkStudiesWorkspace from './link-studies.workspace';
@@ -27,7 +27,7 @@ describe('LinkStudiesWorkspace', () => {
   const orthancConfigMock = [{ id: 1, orthancBaseUrl: 'http://orthanc.local' }];
 
   const setup = () => {
-    render(
+    return render(
       <LinkStudiesWorkspace
         patientUuid={patientUuid}
         closeWorkspace={mockParam}
@@ -95,7 +95,7 @@ describe('LinkStudiesWorkspace', () => {
       expect(showSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: 'error',
-          subtitle: expect.stringContaining('Server unreachable'),
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
         }),
       );
     });
@@ -106,4 +106,26 @@ describe('LinkStudiesWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
     expect(mockParam).toHaveBeenCalled();
   });
+  it('locks synchronization and aborts without launching a workspace after unmount', async () => {
+    let resolve: () => void;
+    mockGetLinkStudies.mockImplementation(
+      () =>
+        new Promise<void>((done) => {
+          resolve = done;
+        }),
+    );
+    const rendered = setup();
+    selectOrthancServer();
+    fireEvent.click(screen.getByRole('button', { name: /fetch study/i }));
+    await waitFor(() => expect(mockGetLinkStudies).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: /fetch study/i })).toBeDisabled();
+    const controller = mockGetLinkStudies.mock.calls[0][2];
+    rendered.unmount();
+    expect(controller.signal.aborted).toBe(true);
+    await act(async () => resolve());
+    expect(launchWorkspace).not.toHaveBeenCalled();
+    expect(mockParam).not.toHaveBeenCalled();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

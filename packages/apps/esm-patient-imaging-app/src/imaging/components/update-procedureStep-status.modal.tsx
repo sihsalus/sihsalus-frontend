@@ -2,6 +2,7 @@ import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import { updateProcedureStepStatus } from '../../api';
 
 interface UpdateProcedureStepStatusProps {
@@ -18,25 +19,39 @@ const UpdateProcedureStepStatusModal: React.FC<UpdateProcedureStepStatusProps> =
   mutateSteps,
 }) => {
   const { t } = useTranslation();
+  const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(`${stepId}:${status}`);
   const handleChangeStepStatus = useCallback(async () => {
+    const controller = start();
+    if (!controller) return;
     try {
-      await updateProcedureStepStatus(status, stepId, new AbortController());
-      mutateSteps();
+      await updateProcedureStepStatus(status, stepId, controller);
+      if (!isCurrent(controller)) return;
+      void Promise.resolve()
+        .then(() => mutateSteps())
+        .catch(() => {
+          /* The read hook displays revalidation errors. */
+        });
       closeChangeStepStatusModel();
       showSnackbar({
         isLowContrast: true,
         kind: 'success',
         title: t('changeStepStatus', 'The performed status of procedure step is changed'),
       });
-    } catch (err: unknown) {
+    } catch {
+      if (!isCurrent(controller)) return;
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorChangeStepStatus', 'An error occurred while changing the procedure step performed status'),
-        subtitle: err instanceof Error ? err.message : undefined,
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
       });
+    } finally {
+      finish(controller);
     }
-  }, [closeChangeStepStatusModel, stepId, status, t, mutateSteps]);
+  }, [closeChangeStepStatusModel, stepId, status, t, mutateSteps, start, isCurrent, finish]);
 
   return (
     <div>
@@ -51,7 +66,7 @@ const UpdateProcedureStepStatusModal: React.FC<UpdateProcedureStepStatusProps> =
         <Button kind="secondary" onClick={closeChangeStepStatusModel}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleChangeStepStatus}>
+        <Button kind="danger" onClick={handleChangeStepStatus} disabled={isPending || !canWrite}>
           <span>{t('submit', 'submit')}</span>
         </Button>
       </ModalFooter>

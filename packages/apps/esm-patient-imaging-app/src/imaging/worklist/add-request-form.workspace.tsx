@@ -1,4 +1,15 @@
-import { Button, ButtonSet, ComboBox, Form, FormGroup, InlineLoading, Stack, TextArea, TextInput } from '@carbon/react';
+import {
+  Button,
+  ButtonSet,
+  ComboBox,
+  Form,
+  FormGroup,
+  InlineLoading,
+  InlineNotification,
+  Stack,
+  TextArea,
+  TextInput,
+} from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
@@ -9,6 +20,7 @@ import { z } from 'zod';
 import { saveRequestProcedure, useOrthancConfigurations, useRequestsByPatient } from '../../api';
 import { type CreateRequestProcedure, type OrthancConfiguration, priorityLevels } from '../../types';
 import { generateAccessionNumber } from '../utils/help';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import styles from './worklist.scss';
 
 const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
@@ -18,6 +30,7 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   promptBeforeClosing,
 }) => {
   const { t } = useTranslation();
+  const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(patientUuid);
   const isTablet = useLayoutType() === 'tablet';
   const orthancConfigurations = useOrthancConfigurations();
   const { mutate } = useRequestsByPatient(patientUuid);
@@ -26,18 +39,32 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     return z.object({
       id: z.number().nullable().optional(),
       orthancConfiguration: z.object({
-        id: z.number(),
+        id: z.number().int().positive(),
         orthancBaseUrl: z.string(),
         orthancProxyUrl: z.string().nullable().optional(),
       }),
-      accessionNumber: z.string().nonempty({ message: t('accessNumberWarn', 'Accession number is required') }),
-      requestingPhysician: z.string().refine((value) => !!value, {
-        message: t('requestingPhysicianMsg', 'Enter the requesting physician name'),
-      }),
-      requestDescription: z.string().refine((value) => !!value, {
-        message: t('requestDescriptionMsg', 'Enter the request description'),
-      }),
-      priority: z.string().min(1, { message: t('priorityWarn', 'Priority is required') }),
+      accessionNumber: z
+        .string()
+        .trim()
+        .nonempty({ message: t('accessNumberWarn', 'Accession number is required') })
+        .max(16, t('accessionNumberLength', 'Accession number must contain at most 16 characters')),
+      requestingPhysician: z
+        .string()
+        .trim()
+        .max(64, t('dicomFieldLength', 'Use at most {{count}} characters', { count: 64 }))
+        .refine((value) => !!value, {
+          message: t('requestingPhysicianMsg', 'Enter the requesting physician name'),
+        }),
+      requestDescription: z
+        .string()
+        .trim()
+        .max(64, t('dicomFieldLength', 'Use at most {{count}} characters', { count: 64 }))
+        .refine((value) => !!value, {
+          message: t('requestDescriptionMsg', 'Enter the request description'),
+        }),
+      priority: z
+        .string()
+        .refine((value) => priorityLevels.includes(value), { message: t('priorityWarn', 'Priority is required') }),
     });
   }, [t]);
 
@@ -58,8 +85,13 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isDirty, isSubmitting },
   } = formProps;
+
+  useEffect(() => {
+    reset();
+  }, [patientUuid, reset]);
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
@@ -67,7 +99,8 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const onSubmit = useCallback(
     async (data: NewRequestFormData) => {
-      const abortController = new AbortController();
+      const abortController = start();
+      if (!abortController) return;
 
       const payload: CreateRequestProcedure = {
         orthancConfiguration: {
@@ -84,29 +117,47 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
       try {
         await saveRequestProcedure(payload, patientUuid, abortController);
-        mutate();
+        if (!isCurrent(abortController)) return;
+        void Promise.resolve()
+          .then(() => mutate())
+          .catch(() => {
+            /* The read hook displays revalidation errors. */
+          });
         closeWorkspaceWithSavedChanges();
         showSnackbar({
           kind: 'success',
           title: t('requestSaved', 'Request saved successfully'),
         });
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
+      } catch {
+        if (!isCurrent(abortController)) return;
         showSnackbar({
           title: t('errorSavingRequest', 'An error occurred while saving the request procedure'),
           kind: 'error',
-          subtitle: message,
+          subtitle: t(
+            'imagingOperationFailed',
+            'The operation could not be completed. Refresh and check the result before trying again.',
+          ),
           isLowContrast: false,
         });
+      } finally {
+        finish(abortController);
       }
     },
-    [patientUuid, closeWorkspaceWithSavedChanges, t, mutate],
+    [patientUuid, closeWorkspaceWithSavedChanges, t, mutate, start, isCurrent, finish],
   );
 
   return (
     <FormProvider {...formProps}>
       <Form className={styles.form} id="newRequestForm" onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={1} className={styles.container}>
+          {orthancConfigurations.error && (
+            <InlineNotification
+              kind="error"
+              lowContrast
+              hideCloseButton
+              title={t('imagingConfigurationUnavailable', 'Imaging servers could not be loaded.')}
+            />
+          )}
           <section>
             <ResponsiveWrapper>
               <FormGroup legendText={t('orthancConfiguration', 'Orthanc configurations')}>
@@ -153,7 +204,7 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
                       }
                     />
                     <Button type="button" onClick={() => onChange(generateAccessionNumber())} style={{ width: '15px' }}>
-                      Generate number
+                      {t('generateNumber', 'Generate number')}
                     </Button>
                   </div>
                 )}
@@ -232,10 +283,15 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           </section>
         </Stack>
         <ButtonSet className={isTablet ? styles.tabletButtons : styles.desktopButtons}>
-          <Button className={styles.button} onClick={() => closeWorkspace()} kind="secondary">
+          <Button className={styles.button} onClick={() => closeWorkspace()} disabled={isPending} kind="secondary">
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} kind="primary" disabled={isSubmitting} type="submit">
+          <Button
+            className={styles.button}
+            kind="primary"
+            disabled={isSubmitting || isPending || !canWrite}
+            type="submit"
+          >
             {isSubmitting ? (
               <InlineLoading description={t('saving', 'Saving') + '...'} />
             ) : (

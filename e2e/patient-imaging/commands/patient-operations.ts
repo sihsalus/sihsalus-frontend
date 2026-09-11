@@ -46,8 +46,6 @@ export interface Identifier {
   display: string;
 }
 
-const imagingUrl = 'imaging';
-
 export const generateRandomPatient = async (api: APIRequestContext): Promise<Patient> => {
   const identifierRes = await api.post('idgen/identifiersource/8549f706-7e85-4c1d-9424-217d50a2988b/identifier', {
     data: {},
@@ -106,24 +104,3 @@ export const deletePatient = async (api: APIRequestContext, uuid: string) => {
   const response = await api.delete(`patient/${uuid}`, { data: {} });
   expect(response.ok()).toBeTruthy();
 };
-
-export async function deletePatientAndStudies(api: APIRequestContext, patientUuid: string) {
-  // First, fetch studies for this patient
-  const studiesRes = await api.get(`${imagingUrl}/studies?patient=${patientUuid}`);
-  if (studiesRes.ok()) {
-    const body = await studiesRes.json();
-    const studies = Array.isArray(body) ? body : (body.data ?? []);
-
-    for (const study of studies) {
-      if (study.id) {
-        const delRes = await api.delete(`${imagingUrl}/studies/${study.id}`);
-        if (!delRes.ok()) {
-          console.warn(`Failed to delete study ${study.id}: ${delRes.status()}`);
-        }
-      }
-    }
-  }
-
-  // Then, delete the patient itself
-  await deletePatient(api, patientUuid);
-}

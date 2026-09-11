@@ -271,30 +271,7 @@ export function requireFirst<T>(items: readonly T[], message: string): T {
   return first;
 }
 
-// Delete all studies in openmrs database and all orthanc servers, so there are
-// no old studies that don't exist anymore in orthanc
-export async function cleanOrthanc(request: APIRequestContext, api: APIRequestContext, patientUuid?: string) {
-  const orthancConfigurations = await getOrthancConfigurations(api);
-  expect(orthancConfigurations.length).toBeGreaterThan(0);
-
-  if (patientUuid) {
-    for (const config of orthancConfigurations) {
-      await linkStudies(request, config, 'all');
-      const studies = await getStudiesByConfig(api, config, patientUuid);
-      for (const study of studies) {
-        await deleteStudy(api, study.id.toString(), 'orthanc');
-      }
-
-      await expect
-        .poll(
-          async () => {
-            await linkStudies(request, config, 'all');
-            const remaining = await getStudiesByConfig(api, config, patientUuid);
-            return remaining.length;
-          },
-          { timeout: 20_000 },
-        )
-        .toBe(0);
-    }
-  }
+/** Retired: studiesbyconfig returns all candidates, not resources owned by a patient/test. */
+export async function cleanOrthanc(_request: APIRequestContext, _api: APIRequestContext, _patientUuid?: string) {
+  throw new Error('IMAGING_E2E_QUARANTINED: global PACS cleanup is prohibited; use verified synthetic ownership.');
 }

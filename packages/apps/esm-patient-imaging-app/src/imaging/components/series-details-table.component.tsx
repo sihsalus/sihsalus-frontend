@@ -1,5 +1,6 @@
 import {
   DataTable,
+  InlineLoading,
   IconButton,
   Table,
   TableBody,
@@ -11,15 +12,17 @@ import {
 } from '@carbon/react';
 import { showModal, TrashCanIcon, useLayoutType, usePagination } from '@openmrs/esm-framework';
 
-import { compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useRef, useState } from 'react';
+import { compare, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStudySeries } from '../../api';
 import orthancExplorer from '../../assets/orthanc.png';
 import stoneview from '../../assets/stoneViewer.png';
-import { type OrthancConfiguration, type Series } from '../../types';
+import { type OrthancConfiguration } from '../../types';
 import { seriesCount, seriesDeleteConfirmationDialog } from '../constants';
 import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import styles from './details-table.scss';
 import InstancesDetailsTable from './instances-details-table.component';
 
@@ -36,21 +39,18 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
   patientUuid,
   orthancConfig,
 }) => {
-  const { data: seriesList } = useStudySeries(studyId);
+  const { data: seriesList, error, isLoading } = useStudySeries(studyId);
 
   const { t } = useTranslation();
+  const { canWrite, isOnline } = useImagingAccess();
   const displayText = t('NoSeriesAvailable', 'No series available');
   const headerTitle = t('series', 'Series');
-  const { results, goTo, currentPage } = usePagination(seriesList, seriesCount);
+  const { results, goTo, currentPage, totalPages } = usePagination(seriesList ?? [], seriesCount);
+  usePaginationBounds({ currentPage, totalPages, goTo });
   const [expandedRows, setExpandedRows] = useState({});
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const shouldOnClickBeCalled = useRef(true);
-  const seriesMap = useRef<Map<string, Series>>(new Map());
-
-  results?.forEach((series) => {
-    seriesMap.current.set(String(series.seriesInstanceUID), series);
-  });
+  const seriesMap = new Map((results ?? []).map((series) => [String(series.seriesInstanceUID), series]));
 
   const launchDeleteSeriesDialog = (orthancSeriesUID: string, studyId: number) => {
     const dispose = showModal(seriesDeleteConfirmationDialog, {
@@ -71,13 +71,19 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
 
   const tableRows = results?.map((series) => ({
     id: series.seriesInstanceUID,
-    seriesInstanceUID: <div className={styles.subTableWrapText}>{series.seriesInstanceUID}</div>,
+    seriesInstanceUID: {
+      sortKey: series.seriesInstanceUID,
+      content: <div className={styles.subTableWrapText}>{series.seriesInstanceUID}</div>,
+    },
     modality: series.modality,
-    seriesDate: (
-      <div className={'seriesDateColumn'}>
-        <span>{series.seriesDate}</span>
-      </div>
-    ),
+    seriesDate: {
+      sortKey: series.seriesDate,
+      content: (
+        <div className={'seriesDateColumn'}>
+          <span>{series.seriesDate}</span>
+        </div>
+      ),
+    },
     seriesDescription: series.seriesDescription,
     action: {
       content: (
@@ -87,8 +93,8 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('removeSeries', 'Remove series')}
+            disabled={!canWrite}
             onClick={() => {
-              shouldOnClickBeCalled.current = false;
               launchDeleteSeriesDialog(series.orthancSeriesUID, studyId);
             }}
           >
@@ -98,13 +104,21 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('stoneviewer', 'Show image')}
+            label={
+              buildOhifViewerUrl([], orthancConfig)
+                ? t('stoneviewer', 'Show image')
+                : t('viewerUnavailable', 'Viewer unavailable for this imaging server')
+            }
+            disabled={!isOnline || !buildOhifViewerUrl([], orthancConfig)}
             onClick={() =>
               openInNewWindow(
-                buildOhifViewerUrl([
-                  { code: 'StudyInstanceUIDs', value: studyInstanceUID },
-                  { code: 'SeriesInstanceUIDs', value: series.seriesInstanceUID },
-                ]),
+                buildOhifViewerUrl(
+                  [
+                    { code: 'StudyInstanceUIDs', value: studyInstanceUID },
+                    { code: 'SeriesInstanceUIDs', value: series.seriesInstanceUID },
+                  ],
+                  orthancConfig,
+                ),
               )
             }
           >
@@ -115,6 +129,7 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
+            disabled={!isOnline}
             onClick={() =>
               openInNewWindow(
                 buildOrthancExplorerUrl(orthancConfig, [
@@ -133,9 +148,12 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
 
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
-      ? compare(cellB.sortKey, cellA.sortKey)
-      : compare(cellA.sortKey, cellB.sortKey);
+      ? compare(cellB?.sortKey ?? cellB, cellA?.sortKey ?? cellA)
+      : compare(cellA?.sortKey ?? cellA, cellB?.sortKey ?? cellB);
   };
+
+  if (error) return <ErrorState error={error} headerTitle={headerTitle} />;
+  if (isLoading) return <InlineLoading description={t('loadingSeries', 'Loading series...')} />;
 
   if (seriesList?.length) {
     return (
@@ -167,7 +185,7 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    const seriesData = seriesMap.current.get(row.id);
+                    const seriesData = seriesMap.get(row.id);
                     const isExpanded = expandedRows[row.id];
                     return (
                       <React.Fragment key={row.id}>

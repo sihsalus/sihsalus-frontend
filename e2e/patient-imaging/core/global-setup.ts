@@ -1,21 +1,6 @@
-import path from 'node:path';
-import * as dotenv from 'dotenv';
-import { loginToOpenmrsAndWriteStorageState } from '../../utils/e2e-api';
-
-dotenv.config();
-
-/**
- * This configuration is to reuse the signed-in state in the tests
- * by log in only once using the API and then skip the log in step for all the tests.
- *
- * https://playwright.dev/docs/auth#reuse-signed-in-state
- */
-
-async function globalSetup() {
-  await loginToOpenmrsAndWriteStorageState({
-    locale: 'en',
-    storageStatePath: path.resolve(__dirname, '../storageState.json'),
-  });
+/** This legacy suite must not mutate a shared PACS without owned synthetic fixtures. */
+export default async function globalSetup() {
+  throw new Error(
+    'IMAGING_E2E_QUARANTINED: replace the legacy fixtures with a target-bound cleanup journal and synthetic DICOM ownership checks before running this suite.',
+  );
 }
-
-export default globalSetup;

@@ -11,7 +11,7 @@ import {
 } from '@carbon/react';
 import { useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import ohifview from '../../assets/ohifViewer.png';
@@ -19,12 +19,15 @@ import stoneview from '../../assets/stoneViewer.png';
 import { type DicomStudy, type StudiesWithScores } from '../../types';
 import { studiesCount } from '../constants';
 import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import styles from './details-table.scss';
 import SeriesDetailsTable from './series-details-table.component';
 
 export interface AssignStudiesTableProps {
   data?: StudiesWithScores | null;
   patientUuid: string;
+  isPending?: boolean;
 
   assignStudyFunction: (study: DicomStudy, isAssign: boolean) => Promise<boolean>;
 }
@@ -32,49 +35,63 @@ export interface AssignStudiesTableProps {
 const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
   data,
   patientUuid,
-  assignStudyFunction: assignStudyFunction,
+  isPending = false,
+  assignStudyFunction,
 }) => {
   const { t } = useTranslation();
+  const { canWrite, isOnline } = useImagingAccess();
   const displayText = t('studiesNoFoundMessage', 'No studies found');
   const headerTitle = t('Studies', 'Studies');
-  const { results, goTo, currentPage } = usePagination(data.studies ?? [], studiesCount);
+  const { results, goTo, currentPage, totalPages } = usePagination(data?.studies ?? [], studiesCount);
+  usePaginationBounds({ currentPage, totalPages, goTo });
   const [expandedRows, setExpandedRows] = useState({});
-  const [, setAssignedStudy] = useState<Record<string, boolean>>({});
+  const [assignedStudies, setAssignedStudies] = useState<Record<number, boolean>>({});
+  const [pendingStudies, setPendingStudies] = useState<Set<number>>(new Set());
+  const pending = useRef(new Set<number>());
+  const context = useRef(patientUuid);
+  context.current = patientUuid;
+  useEffect(() => {
+    pending.current = new Set();
+    setPendingStudies(new Set());
+    setAssignedStudies({});
+    return () => {
+      pending.current = new Set();
+    };
+  }, [patientUuid]);
+  useEffect(() => setAssignedStudies({}), [data]);
+  const studiesById = new Map((data?.studies ?? []).map((study) => [String(study.id), study]));
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-
-  // const getStudyScore = ({ study, data }: { study: DicomStudy; data: StudiesWithScores }) => {
-  //   return data.scores[study.studyInstanceUID];
-  // };
 
   const getStudyScore = ({ study, data }: { study: DicomStudy; data: StudiesWithScores }) => {
     if (data.scores instanceof Map) {
       return data.scores.get(study.studyInstanceUID);
     }
-    return (data.scores as Record<string, number>)[study.studyInstanceUID];
+    return data.scores?.[study.studyInstanceUID] ?? undefined;
   };
 
   const studyAssignStatus = ({ study }: { study: DicomStudy }) => {
-    return !!study.mrsPatientUuid && study.mrsPatientUuid === patientUuid;
+    return assignedStudies[study.id] ?? (!!study.mrsPatientUuid && study.mrsPatientUuid === patientUuid);
   };
 
   const handleAssignChange = async (study: DicomStudy, checked: boolean) => {
-    const previousMrsPatientUuid = study.mrsPatientUuid;
-
-    // Optimistic update so the checkbox responds immediately; reverted below if the save fails.
-    study.mrsPatientUuid = checked ? patientUuid : null;
-    setAssignedStudy((prev) => ({
-      ...prev,
-      [study.id]: checked,
-    }));
-
-    const succeeded = await assignStudyFunction(study, checked);
-    if (!succeeded) {
-      study.mrsPatientUuid = previousMrsPatientUuid;
-      setAssignedStudy((prev) => ({
-        ...prev,
-        [study.id]: !checked,
-      }));
+    if (!canWrite || pending.current.has(study.id) || (study.mrsPatientUuid && study.mrsPatientUuid !== patientUuid))
+      return;
+    const requests = pending.current;
+    requests.add(study.id);
+    setPendingStudies(new Set(requests));
+    try {
+      const succeeded = await assignStudyFunction(study, checked);
+      if (succeeded && context.current === patientUuid && pending.current === requests) {
+        setAssignedStudies((previous) => ({ ...previous, [study.id]: checked }));
+      }
+    } catch {
+      // The caller reports the error; preserve the last confirmed assignment.
+    } finally {
+      requests.delete(study.id);
+      if (context.current === patientUuid && pending.current === requests) {
+        setPendingStudies(new Set(requests));
+      }
     }
   };
 
@@ -96,13 +113,40 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
         type="checkbox"
         value={study.id}
         checked={studyAssignStatus({ study })}
+        disabled={
+          !canWrite ||
+          isPending ||
+          pendingStudies.has(study.id) ||
+          (!!study.mrsPatientUuid && study.mrsPatientUuid !== patientUuid)
+        }
+        aria-label={t('assignStudy', 'Assign study') + ' ' + study.studyInstanceUID}
+        title={
+          study.mrsPatientUuid && study.mrsPatientUuid !== patientUuid
+            ? t(
+                'assignedAnotherPatient',
+                'Assigned to another patient. Review and unlink it from the original chart before assigning it here.',
+              )
+            : undefined
+        }
         onChange={(e) => {
           void handleAssignChange(study, e.target.checked);
         }}
       />
     ),
-    score: <div>{getStudyScore({ study, data }) + '%'}</div>,
-    studyInstanceUID: <div className={styles.wrapText}>{study.studyInstanceUID}</div>,
+    score: {
+      sortKey: getStudyScore({ study, data }),
+      content: (
+        <div>
+          {Number.isFinite(getStudyScore({ study, data }))
+            ? `${getStudyScore({ study, data })}%`
+            : t('unknownMatchingScore', 'Unavailable')}
+        </div>
+      ),
+    },
+    studyInstanceUID: {
+      sortKey: study.studyInstanceUID,
+      content: <div className={styles.wrapText}>{study.studyInstanceUID}</div>,
+    },
     patientName: {
       sortKey: study.patientName,
       content: (
@@ -111,11 +155,14 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
         </div>
       ),
     },
-    studyDate: (
-      <div className={'studyDateColumn'}>
-        <span>{study.studyDate}</span>
-      </div>
-    ),
+    studyDate: {
+      sortKey: study.studyDate,
+      content: (
+        <div className={'studyDateColumn'}>
+          <span>{study.studyDate}</span>
+        </div>
+      ),
+    },
     studyDescription: study.studyDescription,
     orthancConfiguration: study.orthancConfiguration,
     orthancBaseUrl: study.orthancConfiguration.orthancBaseUrl,
@@ -126,9 +173,19 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('stoneviewer', 'Show image')}
+            label={
+              buildOhifViewerUrl([], study.orthancConfiguration)
+                ? t('stoneviewer', 'Show image')
+                : t('viewerUnavailable', 'Viewer unavailable for this imaging server')
+            }
+            disabled={!isOnline || !buildOhifViewerUrl([], study.orthancConfiguration)}
             onClick={() =>
-              openInNewWindow(buildOhifViewerUrl([{ code: 'StudyInstanceUIDs', value: study.studyInstanceUID }]))
+              openInNewWindow(
+                buildOhifViewerUrl(
+                  [{ code: 'StudyInstanceUIDs', value: study.studyInstanceUID }],
+                  study.orthancConfiguration,
+                ),
+              )
             }
           >
             <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
@@ -138,6 +195,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('ohifviewer', 'Show image data')}
+            disabled={!isOnline}
             onClick={() =>
               openInNewWindow(
                 buildOrthancExplorerUrl(study.orthancConfiguration, [
@@ -156,11 +214,11 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
 
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
-      ? compare(cellB.sortKey, cellA.sortKey)
-      : compare(cellA.sortKey, cellB.sortKey);
+      ? compare(cellB?.sortKey ?? cellB, cellA?.sortKey ?? cellA)
+      : compare(cellA?.sortKey ?? cellA, cellB?.sortKey ?? cellB);
   };
 
-  if (data.studies && data.studies?.length) {
+  if (data?.studies?.length) {
     return (
       <div className={styles.widgetCard}>
         <DataTable
@@ -189,17 +247,18 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, rowIndex) => {
-                    const isExpanded = expandedRows[rowIndex];
+                  {rows.map((row) => {
+                    const isExpanded = expandedRows[row.id];
+                    const study = studiesById.get(row.id);
                     return (
-                      <React.Fragment key={rowIndex}>
+                      <React.Fragment key={row.id}>
                         <TableRow
                           className={styles.row}
                           {...getRowProps({ row })}
                           onDoubleClick={() =>
                             setExpandedRows((prev) => ({
                               ...prev,
-                              [rowIndex]: !prev[rowIndex],
+                              [row.id]: !prev[row.id],
                             }))
                           }
                         >
@@ -209,20 +268,15 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
                             </TableCell>
                           ))}
                         </TableRow>
-                        {isExpanded && (
+                        {isExpanded && study && (
                           <TableRow className={styles.expandedRow}>
                             <TableCell colSpan={headers.length}>
                               <div className={styles.seriesTableDiv}>
                                 <SeriesDetailsTable
                                   studyId={Number(row.id)}
-                                  studyInstanceUID={
-                                    row.cells.find((cell) => cell.id === 'studyInstanceUID')?.value?.props?.children ||
-                                    ''
-                                  }
+                                  studyInstanceUID={study.studyInstanceUID}
                                   patientUuid={patientUuid}
-                                  orthancConfig={
-                                    row.cells.find((cell) => cell.id === 'orthancConfiguration')?.value || ''
-                                  }
+                                  orthancConfig={study.orthancConfiguration}
                                 />
                               </div>
                             </TableCell>

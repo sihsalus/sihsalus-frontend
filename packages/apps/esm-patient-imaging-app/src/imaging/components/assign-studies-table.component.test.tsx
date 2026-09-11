@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import AssignStudiesTable, { type AssignStudiesTableProps } from './assign-studies-table.component';
 
 type PaginationProps = {
@@ -40,7 +40,13 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
   EmptyState: ({ displayText }: EmptyStateProps) => <div data-testid="empty-state">{displayText}</div>,
 }));
 
-vi.mock('./series-details-table.component', () => ({ default: () => <div>Series Details</div> }));
+vi.mock('./series-details-table.component', () => ({
+  default: (props: { studyInstanceUID: string; orthancConfig: { id: number } }) => (
+    <div data-testid="series-details" data-study={props.studyInstanceUID} data-config={props.orthancConfig.id}>
+      Series Details
+    </div>
+  ),
+}));
 
 describe('AssignStudiesTable', () => {
   beforeEach(() => {
@@ -148,4 +154,66 @@ describe('AssignStudiesTable', () => {
     render(<AssignStudiesTable {...defaultProps} />);
     expect(screen.getByTestId('pagination')).toHaveTextContent(`Page 1 of ${defaultProps.data!.studies.length}`);
   });
+  it('passes the exact UID and server configuration when expanding a study', () => {
+    render(<AssignStudiesTable {...defaultProps} />);
+    fireEvent.doubleClick(screen.getByText('John Doe').closest('tr'));
+    expect(screen.getByTestId('series-details')).toHaveAttribute('data-study', '1.2.3');
+    expect(screen.getByTestId('series-details')).toHaveAttribute('data-config', '1');
+  });
+
+  it('does not mutate shared study data and blocks overlapping assignment writes', async () => {
+    const study = Object.freeze({ ...defaultProps.data.studies[0] });
+    const data = { ...defaultProps.data, studies: [study] };
+    let resolve: (result: boolean) => void;
+    const save = vi.fn(
+      () =>
+        new Promise<boolean>((done) => {
+          resolve = done;
+        }),
+    );
+    render(<AssignStudiesTable {...defaultProps} data={data} assignStudyFunction={save} />);
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+    fireEvent.click(checkbox);
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(checkbox).toBeDisabled();
+    expect(study.mrsPatientUuid).toBeNull();
+    await act(async () => resolve(false));
+    expect(checkbox).not.toBeChecked();
+    expect(checkbox).toBeEnabled();
+    expect(study.mrsPatientUuid).toBeNull();
+  });
+
+  it('discards late assignment confirmation after the patient changes', async () => {
+    let resolve: (result: boolean) => void;
+    const save = vi.fn(
+      () =>
+        new Promise<boolean>((done) => {
+          resolve = done;
+        }),
+    );
+    const rendered = render(<AssignStudiesTable {...defaultProps} assignStudyFunction={save} />);
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    rendered.rerender(
+      <AssignStudiesTable {...defaultProps} patientUuid="another-patient" assignStudyFunction={save} />,
+    );
+    await act(async () => resolve(true));
+    await waitFor(() => expect(screen.getAllByRole('checkbox')[0]).not.toBeChecked());
+  });
+  it('requires explicit review before assigning a study owned by another patient', () => {
+    const save = vi.fn();
+    const study = { ...defaultProps.data.studies[0], mrsPatientUuid: 'another-patient' };
+    render(
+      <AssignStudiesTable
+        {...defaultProps}
+        data={{ ...defaultProps.data, studies: [study] }}
+        assignStudyFunction={save}
+      />,
+    );
+    expect(screen.getByRole('checkbox')).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(save).not.toHaveBeenCalled();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

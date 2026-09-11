@@ -96,10 +96,12 @@ describe('UpdateProcedureStepStatusModal', () => {
       expect(showSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: 'error',
-          subtitle: 'Update failed',
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
         }),
       );
     });
     expect(closeMock).not.toHaveBeenCalled();
   });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

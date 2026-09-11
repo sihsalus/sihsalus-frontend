@@ -1,7 +1,8 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import { deleteProcedureStep, useProcedureStep } from '../../api';
 
 interface DeleteProcedureStepModalProps {
@@ -13,32 +14,40 @@ interface DeleteProcedureStepModalProps {
 const DeleteProcedureStepModal: React.FC<DeleteProcedureStepModalProps> = ({ closeDeleteModal, requestId, stepId }) => {
   const { t } = useTranslation();
   const { mutate } = useProcedureStep(requestId);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const { start, isCurrent, finish, isPending: isDeleting, canWrite } = useImagingOperation(`${requestId}:${stepId}`);
 
   const handleDelete = useCallback(async () => {
-    setIsDeleting(true);
-
-    deleteProcedureStep(stepId, new AbortController())
-      .then((response) => {
-        if (response.ok) {
-          mutate();
-          closeDeleteModal();
-          showSnackbar({
-            isLowContrast: true,
-            kind: 'success',
-            title: t('procedureStepDeleted', 'Procedure step is deleted'),
-          });
-        }
-      })
-      .catch((error) => {
-        showSnackbar({
-          isLowContrast: false,
-          kind: 'error',
-          title: t('errorDeletingProcedureStep', 'An error occurred while deleting the procedure step'),
-          subtitle: error?.message,
+    const controller = start();
+    if (!controller) return;
+    try {
+      await deleteProcedureStep(stepId, controller);
+      if (!isCurrent(controller)) return;
+      void Promise.resolve()
+        .then(() => mutate())
+        .catch(() => {
+          /* The read hook displays revalidation errors. */
         });
+      closeDeleteModal();
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'success',
+        title: t('procedureStepDeleted', 'Procedure step is deleted'),
       });
-  }, [closeDeleteModal, stepId, mutate, t]);
+    } catch {
+      if (!isCurrent(controller)) return;
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'error',
+        title: t('errorDeletingProcedureStep', 'An error occurred while deleting the procedure step'),
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
+      });
+    } finally {
+      finish(controller);
+    }
+  }, [closeDeleteModal, stepId, mutate, t, start, isCurrent, finish]);
 
   return (
     <div>
@@ -50,7 +59,7 @@ const DeleteProcedureStepModal: React.FC<DeleteProcedureStepModalProps> = ({ clo
         <Button kind="secondary" onClick={closeDeleteModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleDelete} disabled={isDeleting}>
+        <Button kind="danger" onClick={handleDelete} disabled={isDeleting || !canWrite}>
           {isDeleting ? (
             <InlineLoading description={t('deleting', 'Deleting') + '...'} />
           ) : (

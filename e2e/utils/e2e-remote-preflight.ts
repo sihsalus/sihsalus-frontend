@@ -1,4 +1,5 @@
 import { type APIRequestContext, type APIResponse, request } from '@playwright/test';
+import { laboratoryOrderFixture } from '../laboratory/core/fixture-config';
 import { getE2ECredentials } from './e2e-api';
 import {
   type E2EBaseConfig,
@@ -36,7 +37,7 @@ async function createDefaultApiContext(config: E2EBaseConfig): Promise<APIReques
   });
 }
 
-async function validateBaseResources(config: E2EBaseConfig, api: APIRequestContext): Promise<void> {
+async function validateBaseResources(config: E2EBaseConfig, api: APIRequestContext) {
   const locationResponse = await api.get(`location/${config.locationUuid}?v=custom:(uuid,retired)`);
   await requireOk(locationResponse, 'the configured login location could not be loaded');
   const location = (await locationResponse.json()) as { uuid?: string; retired?: boolean };
@@ -57,6 +58,11 @@ async function validateBaseResources(config: E2EBaseConfig, api: APIRequestConte
       'Clinical E2E remote preflight failed: the configured account must have an active clinical provider.',
     );
   }
+
+  return {
+    locationRetired: location.retired,
+    providerUuid: session.currentProvider.uuid,
+  };
 }
 
 /** Validates credentials, provider and location without requiring patient fixtures. */
@@ -70,6 +76,101 @@ export async function validateE2EBaseRemotePreflight(
   } finally {
     await api.dispose();
   }
+}
+
+/** Validates the exact laboratory metadata before global setup permits fixture creation. */
+export async function validateE2ELaboratoryRemotePreflight(
+  config: E2EBaseConfig,
+  { createApiContext }: Pick<RemotePreflightOptions, 'createApiContext'> = {},
+): Promise<void> {
+  let api: APIRequestContext;
+  try {
+    api = await (createApiContext ?? (() => createDefaultApiContext(config)))();
+  } catch {
+    throw new Error('LABORATORY_CONTEXT_CREATE_FAILED');
+  }
+  let failure: Error | undefined;
+  try {
+    const { locationRetired, providerUuid } = await validateBaseResources(config, api);
+    if (locationRetired !== false) {
+      throw new Error('LABORATORY_LOCATION_INACTIVE_OR_UNKNOWN');
+    }
+
+    const providerResponse = await api.get(`provider/${encodeURIComponent(providerUuid)}?v=custom:(uuid,retired)`);
+    if (!providerResponse.ok()) {
+      throw new Error(`LABORATORY_PROVIDER_HTTP_${providerResponse.status()}`);
+    }
+    const provider = (await providerResponse.json()) as {
+      uuid?: string;
+      retired?: boolean;
+    } | null;
+    if (provider?.uuid !== providerUuid || provider.retired !== false) {
+      throw new Error('LABORATORY_PROVIDER_INACTIVE_OR_MISMATCH');
+    }
+
+    const conceptResponse = await api.get(
+      `concept/${laboratoryOrderFixture.conceptUuid}?v=${encodeURIComponent(
+        'custom:(uuid,retired,conceptClass:(uuid,name),datatype:(name))',
+      )}`,
+    );
+    if (!conceptResponse.ok()) {
+      throw new Error(`LABORATORY_CONCEPT_HTTP_${conceptResponse.status()}`);
+    }
+    const concept = (await conceptResponse.json()) as {
+      uuid?: string;
+      retired?: boolean;
+      conceptClass?: { uuid?: string; name?: string };
+      datatype?: { name?: string };
+    } | null;
+    if (
+      concept?.uuid !== laboratoryOrderFixture.conceptUuid ||
+      concept.retired !== false ||
+      !concept.conceptClass?.uuid ||
+      concept.conceptClass.name !== 'Test' ||
+      concept.datatype?.name !== 'Numeric'
+    ) {
+      throw new Error('LABORATORY_CONCEPT_INACTIVE_OR_INCOMPATIBLE');
+    }
+
+    const orderTypeResponse = await api.get(
+      `ordertype/${laboratoryOrderFixture.orderTypeUuid}?v=${encodeURIComponent(
+        'custom:(uuid,retired,javaClassName,conceptClasses:(uuid))',
+      )}`,
+    );
+    if (!orderTypeResponse.ok()) {
+      throw new Error(`LABORATORY_ORDER_TYPE_HTTP_${orderTypeResponse.status()}`);
+    }
+    const orderType = (await orderTypeResponse.json()) as {
+      uuid?: string;
+      retired?: boolean;
+      javaClassName?: string;
+      conceptClasses?: Array<{ uuid?: string }>;
+    } | null;
+    if (
+      orderType?.uuid !== laboratoryOrderFixture.orderTypeUuid ||
+      orderType.retired !== false ||
+      orderType.javaClassName !== 'org.openmrs.TestOrder' ||
+      !Array.isArray(orderType.conceptClasses) ||
+      !orderType.conceptClasses.some((conceptClass) => conceptClass?.uuid === concept.conceptClass?.uuid)
+    ) {
+      throw new Error('LABORATORY_ORDER_TYPE_INACTIVE_OR_INCOMPATIBLE');
+    }
+  } catch (error) {
+    // Do not expose response bodies or request details from transport/JSON errors.
+    failure =
+      error instanceof Error && /^LABORATORY_[A-Z_]+(?:_\d{3})?$/.test(error.message)
+        ? new Error(error.message)
+        : new Error('LABORATORY_METADATA_REQUEST_FAILED');
+  } finally {
+    try {
+      await api.dispose();
+    } catch {
+      failure = new Error(
+        failure ? `${failure.message}; LABORATORY_CONTEXT_DISPOSE_FAILED` : 'LABORATORY_CONTEXT_DISPOSE_FAILED',
+      );
+    }
+  }
+  if (failure) throw failure;
 }
 
 /**

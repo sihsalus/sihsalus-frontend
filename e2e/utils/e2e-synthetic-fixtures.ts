@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse } from '@playwright/test';
+import { getMissingEffectivePrivileges } from './e2e-effective-privileges';
 import { type FixtureJournal } from './e2e-fixture-journal';
 import { loadE2EBaseConfig } from './e2e-gate-config';
 
@@ -302,7 +303,6 @@ export class SyntheticFixtures {
         session.sessionLocation?.uuid === this.config.locationUuid,
       'FIXTURE_SESSION_OR_LOCATION_UNVERIFIED',
     );
-    const assigned = new Set(session.user?.privileges?.filter(({ retired }) => !retired).map(({ name }) => name));
     // SessionController ignores v and returns references without retirement state.
     // Verify only this authenticated test account/provider, never global lists.
     const user = await this.get<{
@@ -311,14 +311,8 @@ export class SyntheticFixtures {
       roles?: Array<{ name?: string; retired?: boolean }>;
     }>(`user/${session.user?.uuid}?v=custom:(uuid,retired,roles:(name,retired))`);
     check(user?.uuid === session.user?.uuid && user.retired === false, 'FIXTURE_USER_INACTIVE_OR_MISMATCH');
-    // OpenMRS User.hasPrivilege grants all privileges to the core System Developer
-    // role, but getPrivileges only lists explicit grants. Verify its active role
-    // from fresh user metadata; frontend aliases/display labels are insufficient.
-    const isSystemDeveloper =
-      Array.isArray(user.roles) &&
-      user.roles.some((role) => role?.name === 'System Developer' && role.retired === false);
     check(
-      isSystemDeveloper || this.privileges.every((privilege) => assigned.has(privilege)),
+      getMissingEffectivePrivileges(this.privileges, session.user?.privileges, user.roles).length === 0,
       'FIXTURE_REQUIRED_PRIVILEGES_MISSING',
     );
     const provider = await this.get<{ uuid?: string; retired?: boolean }>(

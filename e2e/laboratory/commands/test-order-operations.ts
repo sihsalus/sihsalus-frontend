@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect } from '@playwright/test';
 import { voidOpenmrsResource } from '../../utils/openmrs-cleanup';
+import { laboratoryOrderFixture } from '../core/fixture-config';
 import { type Encounter, type Order } from './types';
 
 export const generateRandomTestOrder = async (
@@ -10,7 +11,7 @@ export const generateRandomTestOrder = async (
 ): Promise<Order> => {
   const order = await api.post('order', {
     data: {
-      orderType: '52a447d3-a64a-11e3-9aeb-50e549534c5e',
+      orderType: laboratoryOrderFixture.orderTypeUuid,
       type: 'testorder',
       action: 'NEW',
       accessionNumber: null,
@@ -22,7 +23,7 @@ export const generateRandomTestOrder = async (
       careSetting: '6f0c9a92-6f24-11e3-af88-005056821db0',
       encounter: encounter.uuid,
       patient: patientId,
-      concept: '887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      concept: laboratoryOrderFixture.conceptUuid,
       orderer: providerUuid,
       frequency: null,
       orderReason: null,

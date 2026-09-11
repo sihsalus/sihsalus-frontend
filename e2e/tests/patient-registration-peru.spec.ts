@@ -1,7 +1,6 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-
-const e2eHostname = new URL(process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa').hostname;
-const isLocalDevelopment = e2eHostname === 'localhost' || e2eHostname === '127.0.0.1';
+import { isolateReniecIdentitySearches, reniecContractDocument } from '../utils/e2e-reniec-isolation';
+import { isDevelopmentSpa } from '../utils/e2e-spa-environment';
 
 async function gotoPatientRegistration(page: Page) {
   await page.goto('patient-registration', { waitUntil: 'domcontentloaded' });
@@ -185,41 +184,56 @@ test.describe('Peru patient registration', () => {
     await expect(residenceSearch).toHaveValue('');
   });
 
-  test('fills basic patient data from the RENIEC mock lookup', async ({ page }) => {
-    test.skip(!isLocalDevelopment, 'Synthetic RENIEC identities are only available in local development.');
-    await enableExternalIdentityLookups(page);
-    await gotoPatientRegistration(page);
+  test.describe('isolated RENIEC contract', () => {
+    // Service workers bypass page.route and could expose unrelated local identities.
+    test.use({ serviceWorkers: 'block' });
 
-    await fillTextbox(
-      page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
-      '12345678',
-    );
-    await page.getByRole('button', { name: /Buscar.*RENIEC/i }).click();
+    test('fills basic patient data from the RENIEC mock lookup', async ({ page }) => {
+      const identitySearches = await isolateReniecIdentitySearches(page);
+      await enableExternalIdentityLookups(page);
+      await gotoPatientRegistration(page);
+      test.skip(!(await isDevelopmentSpa(page)), 'Synthetic RENIEC identities require the development SPA.');
 
-    await expect(page.getByText(/Datos RENIEC cargados/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#givenName')).toHaveValue('Juan');
-    await expect(page.locator('#middleName')).toHaveValue('Carlos');
-    await expect(page.locator('#familyName')).toHaveValue('Perez');
-    await expect(page.locator('#familyName2')).toHaveValue('Garcia');
-    await expect(page.getByRole('spinbutton', { name: /d[ií]a, Fecha de nacimiento/i })).toContainText('14');
-    await expect(page.getByRole('spinbutton', { name: /mes, Fecha de nacimiento/i })).toContainText('5');
-    await expect(page.getByRole('spinbutton', { name: /a[nñ]o, Fecha de nacimiento/i })).toContainText('1990');
-    await expect(page.locator('input[name="gender"][value="male"]')).toBeChecked();
-  });
+      await fillTextbox(
+        page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
+        reniecContractDocument,
+      );
+      await page.getByRole('button', { name: /Buscar.*RENIEC/i }).click();
 
-  test('does not expose synthetic RENIEC identities in deployed environments', async ({ page }) => {
-    test.skip(isLocalDevelopment, 'Deployed-environment safety check.');
-    await enableExternalIdentityLookups(page);
-    await gotoPatientRegistration(page);
+      await expect(page.getByText(/Datos RENIEC cargados/i)).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator('#givenName')).toHaveValue('Juan');
+      await expect(page.locator('#middleName')).toHaveValue('Carlos');
+      await expect(page.locator('#familyName')).toHaveValue('Perez');
+      await expect(page.locator('#familyName2')).toHaveValue('Garcia');
+      await expect(page.getByRole('spinbutton', { name: /d[ií]a, Fecha de nacimiento/i })).toContainText('14');
+      await expect(page.getByRole('spinbutton', { name: /mes, Fecha de nacimiento/i })).toContainText('5');
+      await expect(page.getByRole('spinbutton', { name: /a[nñ]o, Fecha de nacimiento/i })).toContainText('1990');
+      await expect(page.locator('input[name="gender"][value="male"]')).toBeChecked();
+      await expect.poll(identitySearches, { message: 'The local identity searches must stay isolated' }).toEqual({
+        searches: ['patient', 'person'],
+        blockedRequests: 0,
+      });
+    });
 
-    await fillTextbox(
-      page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
-      '12345678',
-    );
-    await page.getByRole('button', { name: /Buscar.*RENIEC/i }).click();
+    test('does not expose synthetic RENIEC identities in deployed environments', async ({ page }) => {
+      const identitySearches = await isolateReniecIdentitySearches(page);
+      await enableExternalIdentityLookups(page);
+      await gotoPatientRegistration(page);
+      test.skip(await isDevelopmentSpa(page), 'Production SPA safety check, including when served on loopback.');
 
-    await expect(page.getByText(/Sin coincidencias locales ni datos RENIEC/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Datos RENIEC cargados/i)).toHaveCount(0);
-    await expect(page.locator('#givenName')).toHaveValue('');
+      await fillTextbox(
+        page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
+        reniecContractDocument,
+      );
+      await page.getByRole('button', { name: /Buscar.*RENIEC/i }).click();
+
+      await expect(page.getByText(/Sin coincidencias locales ni datos RENIEC/i)).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(/Datos RENIEC cargados/i)).toHaveCount(0);
+      await expect(page.locator('#givenName')).toHaveValue('');
+      await expect.poll(identitySearches, { message: 'The local identity searches must stay isolated' }).toEqual({
+        searches: ['patient', 'person'],
+        blockedRequests: 0,
+      });
+    });
   });
 });

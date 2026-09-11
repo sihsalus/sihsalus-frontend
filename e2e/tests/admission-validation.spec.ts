@@ -27,15 +27,24 @@ test.describe('Peru admission accreditation checks', () => {
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page.getByText(/Crear nuevo paciente|Create new patient/i).first()).toBeVisible({ timeout: 30_000 });
 
-    const requiredTexts: Array<[string, RegExp]> = [
+    const requiredSections: Array<[string, RegExp]> = [
       // Secciones del formulario de registro vigente (acordeones 0-6).
-      ['identity validation section', /Validación de identidad( y seguro)?/i],
-      ['basic information section', /Información básica/i],
-      ['links and responsible section', /Vínculos y responsable/i],
-      ['residence birthplace contact section', /Residencia, nacimiento y contacto/i],
-      ['filiation section', /Datos de filiación/i],
-      ['blood group section', /Grupo sanguíneo y factor Rh/i],
-      ['financiador section', /Financiador/i],
+      ['identityLookup', /Validación de identidad( y seguro)?/i],
+      ['demographics', /Información básica/i],
+      ['responsiblePerson', /Vínculos y responsable/i],
+      ['contact', /Residencia, nacimiento y contacto/i],
+      ['filiation', /Datos de filiación/i],
+      ['bloodData', /Grupo sanguíneo y factor Rh/i],
+      ['insurance', /Financiador/i],
+    ];
+    for (const [id, pattern] of requiredSections) {
+      // The sidebar repeats these labels and is hidden on mobile. Check the real panel.
+      await expect(page.locator(`#${id}`).getByRole('heading', { name: pattern }), `${id} section`).toBeVisible({
+        timeout: 5_000,
+      });
+    }
+
+    const requiredTexts: Array<[string, RegExp]> = [
       // Contenido visible de la sección expandida y encabezados clave.
       ['identification data heading', /Datos de identificación/i],
       ['identity lookup heading', /Buscar\/validar identidad/i],

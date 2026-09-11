@@ -1,8 +1,9 @@
 import * as framework from '@openmrs/esm-framework';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import * as imagingApi from '../../api/api';
 import { maxUploadImageDataSize } from '../constants';
+import { useImagingAccess } from '../utils/use-imaging-access';
 import UploadStudiesWorkspace from './upload-studies.workspace';
 
 type WrapperProps = {
@@ -56,6 +57,8 @@ describe('UploadStudiesWorkspace', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUploadStudies.mockReset();
+    vi.mocked(useImagingAccess).mockReturnValue({ canWrite: true, isOnline: true });
     mockUseOrthancConfigurations.mockReturnValue({
       data: [
         { id: 1, orthancBaseUrl: 'url1', orthancProxyUrl: null },
@@ -71,7 +74,7 @@ describe('UploadStudiesWorkspace', () => {
   });
 
   const setup = () => {
-    render(
+    return render(
       <UploadStudiesWorkspace
         patientUuid={patientUuid}
         closeWorkspace={closeWorkspace}
@@ -108,9 +111,10 @@ describe('UploadStudiesWorkspace', () => {
   it('shows error if file size exceeds limit', async () => {
     setup();
 
-    const file = new File([new ArrayBuffer(maxUploadImageDataSize + 1)], 'bigfile.dcm', {
+    const file = new File(['synthetic'], 'bigfile.dcm', {
       type: 'application/dicom',
     });
+    Object.defineProperty(file, 'size', { value: maxUploadImageDataSize + 1 });
 
     selectFiles([file]);
     selectOrthancServer();
@@ -197,7 +201,9 @@ describe('UploadStudiesWorkspace', () => {
 
     await waitFor(() => {
       expect(framework.showSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({ subtitle: expect.stringContaining('Upload failed') }),
+        expect.objectContaining({
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
+        }),
       );
     });
   });
@@ -208,4 +214,160 @@ describe('UploadStudiesWorkspace', () => {
     fireEvent.click(screen.getByText('Cancel'));
     expect(closeWorkspace).toHaveBeenCalled();
   });
+  it('keeps all batches selected through the file picker', async () => {
+    mockUploadStudies.mockResolvedValue(undefined);
+    setup();
+    const first = new File(['a'], 'first.dcm');
+    const second = new File(['b'], 'second.dcm');
+    selectFiles([first]);
+    selectFiles([second]);
+    expect(screen.getByRole('button', { name: 'Choose Files' })).toBeInTheDocument();
+    expect(screen.getByText('first.dcm')).toBeInTheDocument();
+    expect(screen.getByText('second.dcm')).toBeInTheDocument();
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(mockUploadStudies.mock.calls[0][0]).toEqual([first, second]));
+  });
+
+  it('rejects ZIP before sending any file', async () => {
+    setup();
+    selectFiles([new File(['archive'], 'study.zip')]);
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await screen.findByText(/ZIP upload is unavailable/);
+    expect(mockUploadStudies).not.toHaveBeenCalled();
+  });
+
+  it('retains only unattempted files after partial completion', async () => {
+    const files = ['a.dcm', 'b.dcm', 'c.dcm'].map((name) => new File(['synthetic'], name));
+    mockUploadStudies.mockRejectedValueOnce(new imagingApi.StudyUploadError([files[0]], 1));
+    setup();
+    selectFiles(files);
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(screen.queryByText('a.dcm')).not.toBeInTheDocument());
+    expect(screen.queryByText('b.dcm')).not.toBeInTheDocument();
+    expect(screen.getByText('c.dcm')).toBeInTheDocument();
+    mockUploadStudies.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(mockUploadStudies.mock.calls[1][0]).toEqual([files[2]]));
+  });
+
+  it('does not offer to upload again when only refreshing the list failed', async () => {
+    mockUploadStudies.mockResolvedValueOnce(undefined);
+    mockUseStudiesByPatient.mockReturnValue(
+      buildStudiesHookResult({ mutate: vi.fn().mockRejectedValue(new Error('refresh failed')) }),
+    );
+    setup();
+    selectFiles([new File(['synthetic'], 'saved.dcm')]);
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await screen.findByText(/files were uploaded, but the study list could not be refreshed/i);
+    expect(screen.queryByText('saved.dcm')).not.toBeInTheDocument();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    expect(mockUploadStudies).toHaveBeenCalledTimes(1);
+  });
+  it('does not send a file removed from the queue', async () => {
+    mockUploadStudies.mockResolvedValueOnce(undefined);
+    setup();
+    const files = [new File(['a'], 'first.dcm'), new File(['b'], 'second.dcm')];
+    selectFiles(files);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove file - first.dcm' }));
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(mockUploadStudies.mock.calls[0][0]).toEqual([files[1]]));
+  });
+
+  it('clears queued files and server selection when the patient changes', () => {
+    const { rerender } = setup();
+    selectFiles([new File(['synthetic'], 'previous-patient.dcm')]);
+    selectOrthancServer();
+    rerender(
+      <UploadStudiesWorkspace
+        patientUuid="another-synthetic-patient"
+        closeWorkspace={closeWorkspace}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('previous-patient.dcm')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Choose Files' })).toBeInTheDocument();
+    expect(screen.getByTestId('orthanc-server-combobox')).toHaveValue('');
+    expect(mockUploadStudies).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { canWrite: false, isOnline: false },
+    { canWrite: true, isOnline: true, userUuid: 'next-synthetic-user' },
+  ])('reconciles attempted files before access can resume after %j', async (access) => {
+    let rejectUpload: (reason: unknown) => void;
+    mockUploadStudies.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectUpload = reject;
+        }),
+    );
+    const { rerender } = setup();
+    const files = ['a.dcm', 'b.dcm', 'c.dcm'].map((name) => new File(['synthetic'], name));
+    selectFiles(files);
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(mockUploadStudies).toHaveBeenCalledTimes(1));
+    vi.mocked(useImagingAccess).mockReturnValue(access);
+    const currentWorkspace = () => (
+      <UploadStudiesWorkspace
+        patientUuid={patientUuid}
+        closeWorkspace={closeWorkspace}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
+      />
+    );
+    rerender(currentWorkspace());
+    expect(mockUploadStudies.mock.calls[0][3].signal.aborted).toBe(true);
+    await act(async () => rejectUpload(new imagingApi.StudyUploadError([files[0]], 1)));
+    expect(screen.queryByText('a.dcm')).not.toBeInTheDocument();
+    expect(screen.queryByText('b.dcm')).not.toBeInTheDocument();
+    expect(screen.getByText('c.dcm')).toBeInTheDocument();
+    expect(screen.getByText(/files confirmed/)).toBeInTheDocument();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    vi.mocked(useImagingAccess).mockReturnValue({ canWrite: true, isOnline: true });
+    rerender(currentWorkspace());
+    mockUploadStudies.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(mockUploadStudies.mock.calls[1][0]).toEqual([files[2]]));
+  });
+
+  it('removes confirmed uploads even if access changes before the acknowledgement arrives', async () => {
+    let resolveUpload: () => void;
+    mockUploadStudies.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+    const { rerender } = setup();
+    selectFiles([new File(['synthetic'], 'confirmed.dcm')]);
+    selectOrthancServer();
+    fireEvent.click(screen.getByTestId('upload-studies-submit'));
+    await waitFor(() => expect(mockUploadStudies).toHaveBeenCalledTimes(1));
+    vi.mocked(useImagingAccess).mockReturnValue({ canWrite: false, isOnline: false });
+    rerender(
+      <UploadStudiesWorkspace
+        patientUuid={patientUuid}
+        closeWorkspace={closeWorkspace}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
+      />,
+    );
+    await act(async () => resolveUpload());
+    expect(screen.queryByText('confirmed.dcm')).not.toBeInTheDocument();
+    expect(screen.getByText(/files were uploaded, but the study list could not be refreshed/)).toBeInTheDocument();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    expect(screen.getByTestId('upload-studies-cancel')).toBeEnabled();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

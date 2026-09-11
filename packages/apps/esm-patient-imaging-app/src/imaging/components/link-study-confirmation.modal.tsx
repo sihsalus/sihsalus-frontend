@@ -16,6 +16,8 @@ import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateStudyLinkStatus, useStudiesByPatient } from '../../api';
+import { z } from 'zod';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import styles from './details-table.scss';
 
 interface LinkStudyModalProps {
@@ -34,28 +36,45 @@ const LinkingStudyModal: React.FC<LinkStudyModalProps> = ({
   patientUuid,
 }) => {
   const { t } = useTranslation();
+  const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(
+    `${patientUuid}:${studyId}:${linkStatus}`,
+  );
   const { mutate } = useStudiesByPatient(patientUuid);
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
 
-  // comparisonResult is caller-supplied: a malformed string must not throw during
-  // render, or the confirmation modal never appears.
   const parsedComparisonResult = useMemo(() => {
-    if (!comparisonResult) {
-      return { score: 0, differences: [] };
-    }
     try {
-      return JSON.parse(comparisonResult);
-    } catch (error) {
-      console.warn('Failed to parse the study comparison result.', error);
-      return { score: 0, differences: [] };
+      const result = z
+        .object({
+          score: z.number().min(0).max(100),
+          differences: z.array(
+            z.object({
+              tag: z.string(),
+              fromOpenmrs: z.string().nullable(),
+              fromPacs: z.string().nullable(),
+            }),
+          ),
+        })
+        .safeParse(JSON.parse(comparisonResult));
+      return result.success ? result.data : null;
+    } catch {
+      return null;
     }
   }, [comparisonResult]);
 
   const handleConfirmLinkingStudy = useCallback(async () => {
+    if (!parsedComparisonResult) return;
+    const controller = start();
+    if (!controller) return;
     try {
-      await updateStudyLinkStatus(linkStatus, studyId, new AbortController());
-      mutate();
+      await updateStudyLinkStatus(linkStatus, studyId, controller);
+      if (!isCurrent(controller)) return;
+      void Promise.resolve()
+        .then(() => mutate())
+        .catch(() => {
+          /* The patient study list exposes refresh errors. */
+        });
       closeLinkingStudyModal();
       showSnackbar({
         isLowContrast: true,
@@ -65,16 +84,21 @@ const LinkingStudyModal: React.FC<LinkStudyModalProps> = ({
             ? t('linkStudyConfirm', 'Study link is confirmed')
             : t('linkStudyChanged', 'Study link is changed'),
       });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : undefined;
+    } catch {
+      if (!isCurrent(controller)) return;
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorStudyLinking', 'An error occured while linking image study'),
-        subtitle: message,
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
       });
+    } finally {
+      finish(controller);
     }
-  }, [closeLinkingStudyModal, linkStatus, studyId, mutate, t]);
+  }, [closeLinkingStudyModal, linkStatus, studyId, mutate, t, start, isCurrent, finish, parsedComparisonResult]);
 
   const tableHeader = [
     { key: 'tag', header: t('dataName', 'Data Name') },
@@ -107,7 +131,8 @@ const LinkingStudyModal: React.FC<LinkStudyModalProps> = ({
       <ModalBody>
         <div style={{ marginBottom: '10px' }}>
           <h4 id="matchingScoreTitle">
-            {t('calculatedMatchingScore', 'Calculated matching score: ')} {parsedComparisonResult?.score + '%'}
+            {t('calculatedMatchingScore', 'Calculated matching score: ')}{' '}
+            {parsedComparisonResult ? `${parsedComparisonResult.score}%` : '—'}
           </h4>
         </div>
         <div style={{ marginBottom: '10px' }}>
@@ -158,7 +183,11 @@ const LinkingStudyModal: React.FC<LinkStudyModalProps> = ({
         <Button kind="primary" onClick={closeLinkingStudyModal} data-testid="footer-close-button">
           {t('close', 'Close')}
         </Button>
-        <Button kind="secondary" onClick={handleConfirmLinkingStudy}>
+        <Button
+          kind="secondary"
+          onClick={handleConfirmLinkingStudy}
+          disabled={isPending || !canWrite || !parsedComparisonResult}
+        >
           {t('confirm', 'Confirm')}
         </Button>
       </ModalFooter>

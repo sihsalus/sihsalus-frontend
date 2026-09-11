@@ -12,7 +12,7 @@ import {
 } from '@carbon/react';
 import { useLayoutType, usePagination } from '@openmrs/esm-framework';
 
-import { compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import { compare, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStudyInstances } from '../../api';
@@ -26,6 +26,8 @@ import {
   buildOrthancInstancePreviewUrl,
   openInNewWindow,
 } from '../utils/help';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import styles from './details-table.scss';
 
 export interface InstancesDetailsTableProps {
@@ -45,14 +47,17 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
 }) => {
   const {
     data: instances,
+    error,
     isLoading: isLoadingSeries,
     isValidating: isValidatingSeries,
   } = useStudyInstances(studyId, seriesInstanceUID);
 
   const { t } = useTranslation();
+  const { isOnline } = useImagingAccess();
   const displayText = t('instances', 'Instances');
   const headerTitle = t('instances', 'Instances');
-  const { results, goTo, currentPage } = usePagination(instances, instancesCount);
+  const { results, goTo, currentPage, totalPages } = usePagination(instances ?? [], instancesCount);
+  usePaginationBounds({ currentPage, totalPages, goTo });
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
 
@@ -71,7 +76,10 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
 
   const tableRows = results?.map((instance) => ({
     id: instance.sopInstanceUID,
-    sopInstanceUID: <div className={styles.wrapText}>{instance.sopInstanceUID}</div>,
+    sopInstanceUID: {
+      sortKey: instance.sopInstanceUID,
+      content: <div className={styles.wrapText}>{instance.sopInstanceUID}</div>,
+    },
     instanceNumber: instance.instanceNumber,
     imagePositionPatient: instance.imagePositionPatient,
     numberOfFrames: instance.numberOfFrames,
@@ -85,6 +93,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 align="left"
                 size={isTablet ? 'lg' : 'sm'}
                 label={t('instanceViewLocal', 'Instance preview local')}
+                disabled={!isOnline}
                 onClick={() => openInNewWindow(buildLocalInstancePreviewUrl(studyId, instance.orthancInstanceUID))}
               >
                 <img alt="" className="stone-img" src={preview} style={{ width: 23, height: 23 }} />
@@ -94,6 +103,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 align="left"
                 size={isTablet ? 'lg' : 'sm'}
                 label={t('instanceViewInOrthanc', 'Instance view in Orthanc')}
+                disabled={!isOnline}
                 onClick={() =>
                   openInNewWindow(buildOrthancInstancePreviewUrl(orthancConfig, instance.orthancInstanceUID))
                 }
@@ -107,6 +117,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
+            disabled={!isOnline}
             onClick={() =>
               openInNewWindow(
                 buildOrthancExplorerUrl(orthancConfig, [
@@ -125,9 +136,11 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
 
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
-      ? compare(cellB.sortKey, cellA.sortKey)
-      : compare(cellA.sortKey, cellB.sortKey);
+      ? compare(cellB?.sortKey ?? cellB, cellA?.sortKey ?? cellA)
+      : compare(cellA?.sortKey ?? cellA, cellB?.sortKey ?? cellB);
   };
+
+  if (error) return <ErrorState error={error} headerTitle={headerTitle} />;
 
   if (isLoadingSeries || isValidatingSeries) {
     return <InlineLoading description={t('loadingInstances', 'Loading instances...')} />;

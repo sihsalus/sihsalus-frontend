@@ -1,56 +1,24 @@
+import { makeUrl } from '@openmrs/esm-framework';
 import type { OrthancConfiguration } from '../../types';
+import { imagingUrl } from '../constants';
 
-/**
- *
- * @param date
- * @returns The data time based on the dicom format for datetime
- */
-export function toDICOMDateTime(date: Date): string {
-  // Dicom DT format: YYYYMMDDHHMMSS.FFFFFF&ZZXX
-  const pad = (num: number, size: number = 2) => num.toString().padStart(size, '0');
-
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1); // Months are zero-based
-  const day = pad(date.getDate());
-  const hour = pad(date.getHours());
-  const minute = pad(date.getMinutes());
-  const second = pad(date.getSeconds());
-
-  const _timezoneOffset = -date.getTimezoneOffset(); // in minutes
-  // const tzSign = timezoneOffset >= 0 ? '+' : '-';
-  // const tzHours = pad(Math.floor(Math.abs(timezoneOffset) / 60));
-  // const tzMinutes = pad(Math.abs(timezoneOffset) % 60);
-
-  return `${year}${month}${day}${hour}${minute}${second}`;
+/** DICOM DA for ScheduledProcedureStepStartDate; time is sent separately as TM. */
+export function toDicomDate(date: Date): string {
+  if (
+    !(date instanceof Date) ||
+    !Number.isFinite(date.getTime()) ||
+    date.getFullYear() < 1 ||
+    date.getFullYear() > 9999
+  )
+    throw new Error('Invalid scheduled date');
+  return `${date.getFullYear().toString().padStart(4, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
 }
 
-/**
- *
- * @returns The generated access number
- */
+/** Accession Number is DICOM SH (at most 16 characters). */
 export function generateAccessionNumber(): string {
-  const date: Date = new Date();
-
-  const formattedDate: string =
-    date.getFullYear().toString() +
-    String(date.getMonth() + 1).padStart(2, '0') +
-    String(date.getDate()).padStart(2, '0') +
-    String(date.getHours()).padStart(2, '0') +
-    String(date.getMinutes()).padStart(2, '0') +
-    String(date.getSeconds()).padStart(2, '0');
-
-  const randomPart = crypto.getRandomValues(new Uint32Array(1))[0].toString().padStart(10, '0').slice(0, 5);
-
-  const accessionNumber: string = formattedDate + randomPart;
-
-  const inputElement = document.getElementById('accessionNumber') as HTMLInputElement | null;
-
-  if (inputElement) {
-    inputElement.value = accessionNumber;
-  } else {
-    console.warn('Element with ID "accessionNumber" not found.');
-  }
-  return accessionNumber;
+  return Array.from(crypto.getRandomValues(new Uint8Array(8)), (byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
 }
 
 /**
@@ -59,6 +27,9 @@ export function generateAccessionNumber(): string {
  * @param period
  */
 export function toDicomTimeString(time: string, period: 'AM' | 'PM'): string {
+  if (!/^(0?[1-9]|1[0-2]):[0-5][0-9]$/.test(time) || !['AM', 'PM'].includes(period)) {
+    throw new Error('Invalid scheduled time');
+  }
   const [hourStr, minuteStr] = time.split(':');
 
   let hour = parseInt(hourStr, 10);
@@ -107,7 +78,13 @@ function getSafeHttpUrl(url: string | undefined | null): URL | null {
 
   try {
     const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+    if (
+      (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') ||
+      parsedUrl.username ||
+      parsedUrl.password ||
+      parsedUrl.search ||
+      parsedUrl.hash
+    ) {
       return null;
     }
     return parsedUrl;
@@ -125,26 +102,9 @@ function getBrowserOrigin(): URL | null {
   return getSafeHttpUrl(origin);
 }
 
-function shouldUseConfiguredOrthancRoot(candidate: URL, browserOrigin: URL | null): boolean {
-  const normalizedPath = trimTrailingSlash(candidate.pathname.toLowerCase());
-  const isLocalhostCandidate = ['localhost', '127.0.0.1'].includes(candidate.hostname);
-  const isLocalhostBrowser = browserOrigin && ['localhost', '127.0.0.1'].includes(browserOrigin.hostname);
-
-  return normalizedPath.endsWith('/orthanc') || !browserOrigin || (isLocalhostCandidate && isLocalhostBrowser);
-}
-
 export function getOrthancPublicRoot(configuration: OrthancConfiguration): string {
-  const browserOrigin = getBrowserOrigin();
-  const configuredRoot = getSafeHttpUrl(configuration.orthancProxyUrl) ?? getSafeHttpUrl(configuration.orthancBaseUrl);
-
-  if (configuredRoot && shouldUseConfiguredOrthancRoot(configuredRoot, browserOrigin)) {
-    return trimTrailingSlash(configuredRoot.toString());
-  }
-
-  if (browserOrigin) {
-    return `${trimTrailingSlash(browserOrigin.toString())}/orthanc`;
-  }
-
+  // The proxy is the explicit browser mapping; the backend URL may be private.
+  const configuredRoot = getSafeHttpUrl(configuration?.orthancProxyUrl);
   return configuredRoot ? trimTrailingSlash(configuredRoot.toString()) : '';
 }
 
@@ -175,17 +135,30 @@ export function buildOrthancInstancePreviewUrl(
   configuration: OrthancConfiguration,
   orthancInstanceUID: string,
 ): string {
-  return buildURL(getOrthancPublicRoot(configuration), `/instances/${orthancInstanceUID}/preview`, []);
+  return buildURL(
+    getOrthancPublicRoot(configuration),
+    `/instances/${encodeURIComponent(orthancInstanceUID)}/preview`,
+    [],
+  );
 }
 
 export function buildLocalInstancePreviewUrl(studyId: number, orthancInstanceUID: string): string {
-  return buildURL(getOhifPublicRoot(), '/previewinstance', [
+  const browserOrigin = getBrowserOrigin();
+  if (!browserOrigin) return '';
+  return buildURL(new URL(makeUrl(imagingUrl), browserOrigin).toString(), '/previewinstance', [
     { code: 'orthancInstanceUID', value: orthancInstanceUID },
     { code: 'studyId', value: String(studyId) },
   ]);
 }
 
-export function buildOhifViewerUrl(params: Array<{ code: string; value: string }>): string {
+export function buildOhifViewerUrl(
+  params: Array<{ code: string; value: string }>,
+  configuration: OrthancConfiguration,
+): string {
+  const origin = getBrowserOrigin();
+  const root = getOrthancPublicRoot(configuration);
+  // SIHSALUS OHIF serves exactly this Orthanc. Never silently query another PACS.
+  if (!origin || root !== `${trimTrailingSlash(origin.toString())}/orthanc`) return '';
   return buildURL(getOhifPublicRoot(), '/viewer', params);
 }
 

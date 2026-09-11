@@ -38,16 +38,18 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
         objectUrl = URL.createObjectURL(blob);
         setImageData(objectUrl);
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         if (cancelled) {
           return;
         }
-        const message = error instanceof Error ? error.message : String(error);
         showSnackbar({
           isLowContrast: false,
           kind: 'error',
           title: t('errorPreviewInstance', 'An error occurred while retrieving the instance preview'),
-          subtitle: message,
+          subtitle: t(
+            'imagingOperationFailed',
+            'The operation could not be completed. Refresh and check the result before trying again.',
+          ),
         });
         closeInstancePreviewModal();
       })

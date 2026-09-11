@@ -1,4 +1,4 @@
-import { toDICOMDateTime } from '../src/imaging/utils/help';
+import { toDicomDate } from '../../src/imaging/utils/help';
 
 import type {
   DicomStudy,
@@ -253,7 +253,7 @@ export const testProcedureSteps: Array<RequestProcedureStep> = [
     aetTitle: 'AET_CT1',
     scheduledReferringPhysician: 'Dr. Alice Morgan',
     requestedProcedureDescription: 'CT scan of the chest to evaluate nodules.',
-    stepStartDate: toDICOMDateTime(new Date()),
+    stepStartDate: toDicomDate(new Date()),
     stepStartTime: '08:30',
     performedProcedureStepStatus: 'scheduled',
     stationName: 'CT_STATION_01',
@@ -266,7 +266,7 @@ export const testProcedureSteps: Array<RequestProcedureStep> = [
     aetTitle: 'AET_MR2',
     scheduledReferringPhysician: 'Dr. Brian Lee',
     requestedProcedureDescription: 'MRI of the brain for headache evaluation.',
-    stepStartDate: toDICOMDateTime(new Date()),
+    stepStartDate: toDicomDate(new Date()),
     stepStartTime: '09:15',
     performedProcedureStepStatus: 'IN_PROGRESS',
     stationName: 'MRI_STATION_01',
@@ -279,7 +279,7 @@ export const testProcedureSteps: Array<RequestProcedureStep> = [
     aetTitle: 'AET_US3',
     scheduledReferringPhysician: 'Dr. Claire Zhang',
     requestedProcedureDescription: 'Abdominal ultrasound to check liver status.',
-    stepStartDate: toDICOMDateTime(new Date()),
+    stepStartDate: toDicomDate(new Date()),
     stepStartTime: '10:00',
     performedProcedureStepStatus: 'COMPLETED',
     stationName: 'US_STATION_01',
@@ -292,7 +292,7 @@ export const testProcedureSteps: Array<RequestProcedureStep> = [
     aetTitle: 'AET_CR4',
     scheduledReferringPhysician: 'Dr. Daniel Kim',
     requestedProcedureDescription: 'X-ray of left knee due to injury.',
-    stepStartDate: toDICOMDateTime(new Date()),
+    stepStartDate: toDicomDate(new Date()),
     stepStartTime: '10:45',
     performedProcedureStepStatus: 'COMPLETED',
     stationName: 'XRY_STATION_01',

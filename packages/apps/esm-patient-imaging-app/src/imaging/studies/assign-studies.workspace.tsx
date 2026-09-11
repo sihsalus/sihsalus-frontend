@@ -4,9 +4,10 @@ import { type DefaultPatientWorkspaceProps, EmptyState } from '@openmrs/esm-pati
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { assignStudy as assignStudy, useStudiesByConfig, useStudiesByPatient } from '../../api';
+import { assignStudy, useStudiesByConfig, useStudiesByPatient } from '../../api';
 import { type DicomStudy, type OrthancConfiguration } from '../../types';
 import AssignStudiesTable from '../components/assign-studies-table.component';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import styles from './studies.scss';
 
 interface AssignStudiesWorkspaceProps extends DefaultPatientWorkspaceProps {
@@ -19,6 +20,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
+  const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(`${patientUuid}:${configuration.id}`);
   const isTablet = useLayoutType() === 'tablet';
   const patientState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { mutate } = useStudiesByPatient(patientUuid);
@@ -27,13 +29,31 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
     data: studiesData,
     error: assignStudyError,
     isLoading: isLoadingStudies,
+    mutate: refreshCandidates,
   } = useStudiesByConfig(configuration, patientUuid);
 
   async function assignStudyFunction(study: DicomStudy, isAssign: boolean): Promise<boolean> {
-    const abortController = new AbortController();
+    if (
+      study.orthancConfiguration?.id !== configuration.id ||
+      (study.mrsPatientUuid && study.mrsPatientUuid !== patientUuid)
+    )
+      return false;
+    const abortController = start();
+    if (!abortController) return false;
     try {
       await assignStudy(study.id, patientUuid, isAssign, abortController);
-      mutate();
+      if (!isCurrent(abortController)) return false;
+      const refreshed = await refreshCandidates();
+      if (!isCurrent(abortController)) return false;
+      const current = refreshed?.data?.studies?.find((candidate) => candidate.id === study.id);
+      if (!current || (isAssign ? current.mrsPatientUuid !== patientUuid : !!current.mrsPatientUuid)) {
+        throw new Error('The current study assignment could not be confirmed.');
+      }
+      void Promise.resolve()
+        .then(() => mutate())
+        .catch(() => {
+          /* The patient study list exposes refresh errors. */
+        });
       showSnackbar({
         kind: 'success',
         title: isAssign
@@ -41,17 +61,22 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
           : t('removeAssign', 'Assignment of the study is removed'),
       });
       return true;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+    } catch {
+      if (!isCurrent(abortController)) return false;
       showSnackbar({
         title: isAssign
           ? t('errorAssignStudy', 'An error occurred while assign the study to the patient')
           : t('errorRemoveAssignStudy', 'An error occurred while removing the assigned study from the patient'),
         kind: 'error',
-        subtitle: message,
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
         isLowContrast: false,
       });
       return false;
+    } finally {
+      finish(abortController);
     }
   }
 
@@ -73,11 +98,13 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
 
           return (
             <Stack gap={2} className={styles.formContent}>
-              {studiesData?.studies.length > 0 ? (
+              {studiesData?.studies?.length > 0 ? (
                 <section>
                   <ResponsiveWrapper>
                     <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
                       <AssignStudiesTable
+                        key={`${patientUuid}:${configuration.id}`}
+                        isPending={isPending || !canWrite}
                         data={studiesData}
                         patientUuid={patientUuid}
                         assignStudyFunction={assignStudyFunction}

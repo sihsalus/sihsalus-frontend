@@ -79,7 +79,7 @@ describe('InstancePreviewModal', () => {
         expect.objectContaining({
           kind: 'error',
           title: 'An error occurred while retrieving the instance preview',
-          subtitle: 'Failed to fetch',
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
         }),
       );
       expect(closeMock).toHaveBeenCalled();
@@ -101,3 +101,5 @@ describe('InstancePreviewModal', () => {
     });
   });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

@@ -2,6 +2,7 @@ import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import * as imagingApi from '../../api/api';
+import { useImagingAccess } from '../utils/use-imaging-access';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
 
 type CardHeaderProps = {
@@ -27,7 +28,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
     goTo: vi.fn(),
     currentPage: 1,
   })),
-  AddIcon: () => <span>AddIcon</span>,
+  AddIcon: () => <span aria-hidden="true">AddIcon</span>,
 }));
 
 vi.mock('../components/studies-details-table.component', () => ({ default: () => <div>StudiesDetailTable</div> }));
@@ -95,6 +96,7 @@ describe('<ImagingDetailedSummary />', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useImagingAccess).mockReturnValue({ canWrite: true, isOnline: true });
   });
 
   it('renders loading skeletons when data is loading', () => {
@@ -224,4 +226,19 @@ describe('<ImagingDetailedSummary />', () => {
     expect(mockedLaunchWorkspace.mock.calls[0]?.[1]).toEqual({ patientUuid });
     expect(mockedLaunchWorkspace.mock.calls[1]?.[1]).toEqual({ patientUuid });
   });
+
+  it.each([true, false])('keeps read-only actions disabled with online=%s', (isOnline) => {
+    vi.mocked(useImagingAccess).mockReturnValue({ canWrite: false, isOnline });
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
+    render(<ImagingDetailedSummary patientUuid={patientUuid} />);
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Link studies' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Launch' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+    expect(launchWorkspace).not.toHaveBeenCalled();
+    if (!isOnline) expect(screen.getByText(/Connect to the network/)).toBeInTheDocument();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

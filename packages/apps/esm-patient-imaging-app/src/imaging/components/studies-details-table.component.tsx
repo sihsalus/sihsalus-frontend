@@ -12,7 +12,7 @@ import {
 } from '@carbon/react';
 import { showModal, TrashCanIcon, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import ohifview from '../../assets/ohifViewer.png';
@@ -21,6 +21,8 @@ import stoneview from '../../assets/stoneViewer.png';
 import { type DicomStudy } from '../../types';
 import { studiesCount, studyDeleteConfirmationDialog } from '../constants';
 import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import styles from './details-table.scss';
 import SeriesDetailsTable from './series-details-table.component';
 
@@ -38,6 +40,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
   patientUuid,
 }) => {
   const { t } = useTranslation();
+  const { canWrite, isOnline } = useImagingAccess();
   const displayText = t('studiesNoFoundMessage', 'No studies found');
   const headerTitle = t('Studies', 'Studies');
   const [studyDateFilter, setStudyDateFilter] = useState<string>('');
@@ -45,8 +48,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
   const [expandedRows, setExpandedRows] = useState({});
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const shouldOnClickBeCalled = useRef(true);
-  const studyMap = useRef<Map<string, DicomStudy>>(new Map());
+  const studyMap = new Map((studies ?? []).map((study) => [String(study.id), study]));
 
   const launchDeleteStudyDialog = (studyId: number) => {
     const dispose = showModal(studyDeleteConfirmationDialog, {
@@ -57,24 +59,21 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
   };
 
   const filterStudies = useMemo(() => {
-    return studies.filter((study) => {
+    return (studies ?? []).filter((study) => {
       const matchStudyDate = studyDateFilter
-        ? study.studyDate.toLowerCase().includes(studyDateFilter.toLowerCase())
+        ? (study.studyDate ?? '').toLowerCase().includes(studyDateFilter.toLowerCase())
         : true;
 
       const matchStudyDesc = studyDescFilter
-        ? study.studyDescription.toLowerCase().includes(studyDescFilter.toLowerCase())
+        ? (study.studyDescription ?? '').toLowerCase().includes(studyDescFilter.toLowerCase())
         : true;
 
       return matchStudyDate && matchStudyDesc;
     });
   }, [studies, studyDateFilter, studyDescFilter]);
 
-  const { results, goTo, currentPage } = usePagination(filterStudies, studiesCount);
-
-  studies?.forEach((study) => {
-    studyMap.current.set(String(study.id), study);
-  });
+  const { results, goTo, currentPage, totalPages } = usePagination(filterStudies, studiesCount);
+  usePaginationBounds({ currentPage, totalPages, goTo });
 
   const tableHeaders = useMemo(
     () => [
@@ -90,7 +89,10 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
 
   const tableRows = results?.map((study) => ({
     id: study.id.toString(),
-    studyInstanceUID: <div className={styles.wrapText}>{study.studyInstanceUID}</div>,
+    studyInstanceUID: {
+      sortKey: study.studyInstanceUID,
+      content: <div className={styles.wrapText}>{study.studyInstanceUID}</div>,
+    },
     patientName: {
       sortKey: study.patientName,
       content: (
@@ -99,11 +101,14 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
         </div>
       ),
     },
-    studyDate: (
-      <div className={'studyDateColumn'}>
-        <span>{study.studyDate}</span>
-      </div>
-    ),
+    studyDate: {
+      sortKey: study.studyDate,
+      content: (
+        <div className={'studyDateColumn'}>
+          <span>{study.studyDate}</span>
+        </div>
+      ),
+    },
     studyDescription: study.studyDescription,
     orthancConfiguration: study.orthancConfiguration.orthancBaseUrl,
     action: {
@@ -115,8 +120,8 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
               align="left"
               size={isTablet ? 'lg' : 'sm'}
               label={t('removeStudy', 'Remove study')}
+              disabled={!canWrite}
               onClick={() => {
-                shouldOnClickBeCalled.current = false;
                 launchDeleteStudyDialog(study.id);
               }}
             >
@@ -127,9 +132,19 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('stoneviewer', 'Show image')}
+            label={
+              buildOhifViewerUrl([], study.orthancConfiguration)
+                ? t('stoneviewer', 'Show image')
+                : t('viewerUnavailable', 'Viewer unavailable for this imaging server')
+            }
+            disabled={!isOnline || !buildOhifViewerUrl([], study.orthancConfiguration)}
             onClick={() =>
-              openInNewWindow(buildOhifViewerUrl([{ code: 'StudyInstanceUIDs', value: study.studyInstanceUID }]))
+              openInNewWindow(
+                buildOhifViewerUrl(
+                  [{ code: 'StudyInstanceUIDs', value: study.studyInstanceUID }],
+                  study.orthancConfiguration,
+                ),
+              )
             }
           >
             <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
@@ -139,6 +154,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('ohifviewer', 'Show image data')}
+            disabled={!isOnline}
             onClick={() =>
               openInNewWindow(
                 buildOrthancExplorerUrl(study.orthancConfiguration, [
@@ -155,6 +171,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
+            disabled={!isOnline}
             onClick={() =>
               openInNewWindow(
                 buildOrthancExplorerUrl(study.orthancConfiguration, [
@@ -173,8 +190,8 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
 
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
-      ? compare(cellB.sortKey, cellA.sortKey)
-      : compare(cellA.sortKey, cellB.sortKey);
+      ? compare(cellB?.sortKey ?? cellB, cellA?.sortKey ?? cellA)
+      : compare(cellA?.sortKey ?? cellA, cellB?.sortKey ?? cellB);
   };
 
   if (studies && studies?.length) {
@@ -188,14 +205,20 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
               type="text"
               placeholder={t('filterByStudyDate', 'Filter by study date')}
               value={studyDateFilter}
-              onChange={(e) => setStudyDateFilter(e.target.value)}
+              onChange={(e) => {
+                setStudyDateFilter(e.target.value);
+                goTo(1);
+              }}
               className={styles.filterInput}
             />
             <input
               type="text"
               placeholder={t('filterByStudyDescription', 'Filter by study description')}
               value={studyDescFilter}
-              onChange={(e) => setStudyDescFilter(e.target.value)}
+              onChange={(e) => {
+                setStudyDescFilter(e.target.value);
+                goTo(1);
+              }}
               className={styles.filterInput}
             />
           </div>
@@ -228,7 +251,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
                 <TableBody>
                   {rows.map((row) => {
                     const isExpanded = expandedRows[row.id];
-                    const studyData = studyMap.current.get(row.id);
+                    const studyData = studyMap.get(row.id);
                     return (
                       <React.Fragment key={row.id}>
                         <TableRow
@@ -272,7 +295,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
         <PatientChartPagination
           data-testid="pagination"
           pageNumber={currentPage}
-          totalItems={studies.length}
+          totalItems={filterStudies.length}
           currentItems={results.length}
           pageSize={studiesCount}
           onPageNumberChange={({ page }) => goTo(page)}

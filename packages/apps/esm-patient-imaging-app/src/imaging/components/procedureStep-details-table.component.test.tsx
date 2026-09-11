@@ -32,6 +32,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  ErrorState: () => <div role="alert">Unable to load imaging data</div>,
   compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
   PatientChartPagination: ({ pageNumber, totalItems }: PaginationProps) => (
     <div data-testid="pagination">
@@ -184,4 +185,17 @@ describe('ProcedureStepTable', () => {
 
     expect(mockShowModal).toHaveBeenCalled();
   });
+  it('shows a read error instead of an empty clinical result', () => {
+    vi.mocked(api.useProcedureStep).mockReturnValue({
+      data: [],
+      error: new Error('backend-failed'),
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never);
+    render(<ProcedureStepTable {...defaultProps} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to load imaging data');
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

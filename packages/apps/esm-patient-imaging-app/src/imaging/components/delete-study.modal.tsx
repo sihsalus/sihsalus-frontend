@@ -11,6 +11,7 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { deleteStudy, useStudiesByPatient } from '../../api';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import styles from './modal.scss';
 
 interface DeleteStudyModalProps {
@@ -22,7 +23,13 @@ interface DeleteStudyModalProps {
 const DeleteStudyModal: React.FC<DeleteStudyModalProps> = ({ closeDeleteModal, studyId, patientUuid }) => {
   const { t } = useTranslation();
   const { mutate } = useStudiesByPatient(patientUuid);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    start,
+    isCurrent,
+    finish,
+    isPending: isDeleting,
+    canWrite,
+  } = useImagingOperation(`${patientUuid}:${studyId}`);
   const [selectedOption, setSelectedOption] = useState('openmrs');
 
   const handleOptionChange = (valueOrEvent) => {
@@ -30,11 +37,16 @@ const DeleteStudyModal: React.FC<DeleteStudyModalProps> = ({ closeDeleteModal, s
   };
 
   const handleDelete = useCallback(async () => {
-    setIsDeleting(true);
+    const controller = start();
+    if (!controller) return;
     try {
-      const response = await deleteStudy(studyId, selectedOption, new AbortController());
-      if (response.ok) {
-        mutate();
+      const response = await deleteStudy(studyId, selectedOption, controller);
+      if (response.ok && isCurrent(controller)) {
+        void Promise.resolve()
+          .then(() => mutate())
+          .catch(() => {
+            /* The patient study list exposes refresh errors. */
+          });
         closeDeleteModal();
         showSnackbar({
           isLowContrast: true,
@@ -42,17 +54,21 @@ const DeleteStudyModal: React.FC<DeleteStudyModalProps> = ({ closeDeleteModal, s
           title: t('studyDeleted', 'Study is deleted'),
         });
       }
-    } catch (error) {
+    } catch {
+      if (!isCurrent(controller)) return;
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorDeletingStudy', 'An error occurred while deleting the study'),
-        subtitle: error instanceof Error ? error.message : undefined,
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
       });
     } finally {
-      setIsDeleting(false);
+      finish(controller);
     }
-  }, [closeDeleteModal, studyId, mutate, t, selectedOption]);
+  }, [closeDeleteModal, studyId, mutate, t, selectedOption, start, isCurrent, finish]);
 
   return (
     <div>
@@ -77,7 +93,7 @@ const DeleteStudyModal: React.FC<DeleteStudyModalProps> = ({ closeDeleteModal, s
         <Button kind="secondary" onClick={closeDeleteModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleDelete} disabled={isDeleting}>
+        <Button kind="danger" onClick={handleDelete} disabled={isDeleting || !canWrite}>
           {isDeleting ? (
             <InlineLoading description={t('deleting', 'Deleting') + '...'} />
           ) : (

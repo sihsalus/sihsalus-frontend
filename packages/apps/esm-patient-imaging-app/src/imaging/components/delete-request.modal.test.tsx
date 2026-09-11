@@ -89,7 +89,7 @@ describe('DeleteRequestModal', () => {
           isLowContrast: false,
           kind: 'error',
           title: 'An error occurred while deleting the requested procedure',
-          subtitle: errorMessage,
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
         }),
       );
     });
@@ -117,4 +117,18 @@ describe('DeleteRequestModal', () => {
       resolveDelete?.({ ok: true });
     });
   });
+  it('allows a retry after a failed delete and does not expose the exception', async () => {
+    vi.mocked(api.deleteRequest).mockRejectedValueOnce(new Error('sensitive-backend-detail'));
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: /Delete$/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Delete$/i })).toBeEnabled());
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
+      }),
+    );
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

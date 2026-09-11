@@ -65,18 +65,6 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
       studies = await getStudiesByConfig(api, orthancConfiguration, patientUuid);
     }
 
-    // If more than one exists, delete down to 1
-    if (studies.length > 1) {
-      for (const study of studies.slice(1)) {
-        await deleteStudy(api, study.id.toString(), 'orthanc');
-      }
-
-      const refreshed = await getStudiesByConfig(api, orthancConfiguration, patientUuid);
-      expect(refreshed).toHaveLength(1);
-
-      studies = await getStudiesByConfig(api, orthancConfiguration, patientUuid);
-    }
-
     // At this point, exactly 1 study exists
     expect(studies).toHaveLength(1);
 

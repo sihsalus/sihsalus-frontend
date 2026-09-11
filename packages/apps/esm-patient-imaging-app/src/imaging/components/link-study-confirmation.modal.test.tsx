@@ -85,9 +85,25 @@ describe('LinkingStudyModal', () => {
       expect(showSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: 'error',
-          subtitle: 'API Error',
+          subtitle: 'The operation could not be completed. Refresh and check the result before trying again.',
         }),
       );
     });
   });
+  it.each([
+    '{}',
+    'null',
+    '{"score":10,"differences":null}',
+    '{"score":10,"differences":{}}',
+    '{"score":101,"differences":[]}',
+    'invalid',
+  ])('keeps invalid comparison data from confirming a link: %s', (comparisonResult) => {
+    render(<LinkingStudyModal {...defaultProps} comparisonResult={comparisonResult} />);
+    expect(screen.getByText('No comparison data available')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(updateStudyLinkStatus).not.toHaveBeenCalled();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

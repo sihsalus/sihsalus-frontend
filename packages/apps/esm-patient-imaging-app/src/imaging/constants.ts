@@ -1,5 +1,7 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
 
+export const imagingEditPrivilege = 'app:hoja.clinica.imagenes.editar';
+
 export const uploadStudiesFormWorkspace = 'upload-studies-form-workspace';
 export const linkStudiesFormWorkspace = 'link-studies-form-workspace';
 export const assignStudiesFormWorkspace = 'assign-studies-form-workspace';

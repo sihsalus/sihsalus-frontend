@@ -27,7 +27,7 @@ import {
   EmptyState,
   PatientChartPagination,
 } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import { type RequestProcedure } from '../../types';
@@ -38,6 +38,8 @@ import {
   requestDeleteConfirmationDialog,
 } from '../constants';
 import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import styles from './details-table.scss';
 import ProcedureStepTable from './procedureStep-details-table.component';
 
@@ -48,14 +50,19 @@ export interface RequestProcedureTableProps {
   patientUuid: string;
 }
 
-const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidating, requests, patientUuid }) => {
+const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({
+  isValidating,
+  requests = [],
+  patientUuid,
+  showDeleteButton = true,
+}) => {
   const { t } = useTranslation();
+  const { canWrite } = useImagingAccess();
   const displayText = t('requestProcedureEmptyState', 'No requests found');
   const headerTitle = t('requestProcedure', 'RequestProcedure');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [expandedRows, setExpandedRows] = useState({});
-  const shouldOnClickBeCalled = useRef(true);
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const launchAddNewRequestWorkspace = useCallback(
@@ -70,13 +77,15 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
     });
   };
 
-  const filteredRequests = requests.filter((item) => {
-    const statusMatch = statusFilter === 'all' || item.status.toLowerCase() === statusFilter;
-    const priorityMatch = priorityFilter === 'all' || item.priority.toLowerCase() === priorityFilter;
+  const filteredRequests = (requests ?? []).filter((item) => {
+    const statusMatch = statusFilter === 'all' || (item.status ?? '').toLowerCase() === statusFilter;
+    const priorityMatch = priorityFilter === 'all' || (item.priority ?? '').toLowerCase() === priorityFilter;
     return statusMatch && priorityMatch;
   });
 
-  const { results, goTo, currentPage } = usePagination(filteredRequests, requestCount);
+  const { results, goTo, currentPage, totalPages } = usePagination(filteredRequests, requestCount);
+  usePaginationBounds({ currentPage, totalPages, goTo });
+  const requestsById = new Map(filteredRequests.map((request) => [String(request.id), request]));
 
   const tableHeaders = useMemo(
     () => [
@@ -124,38 +133,43 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
       ),
     },
     requestingPhysician: {
-      sortKey: request.priority,
+      sortKey: request.requestingPhysician,
       content: (
         <div>
           <span>{request.requestingPhysician}</span>
         </div>
       ),
     },
-    studyInstanceUID: <div className={styles.wrapText}>{request.studyInstanceUID}</div>,
+    studyInstanceUID: {
+      sortKey: request.studyInstanceUID,
+      content: <div className={styles.wrapText}>{request.studyInstanceUID}</div>,
+    },
     requestDescription: request.requestDescription,
     orthancConfiguration: request.orthancConfiguration.orthancBaseUrl,
     action: {
       content: (
         <div className="requestBtn" style={{ display: 'flex' }}>
-          <IconButton
-            kind="ghost"
-            align="left"
-            size={isTablet ? 'lg' : 'sm'}
-            label={t('removeRequst', 'Remove requst')}
-            onClick={() => {
-              shouldOnClickBeCalled.current = false;
-              launchDeleteRequestDialog(request.id);
-            }}
-          >
-            <TrashCanIcon className={styles.removeButton} />
-          </IconButton>
+          {showDeleteButton && (
+            <IconButton
+              kind="ghost"
+              align="left"
+              size={isTablet ? 'lg' : 'sm'}
+              label={t('removeRequst', 'Remove requst')}
+              disabled={!canWrite}
+              onClick={() => {
+                launchDeleteRequestDialog(request.id);
+              }}
+            >
+              <TrashCanIcon className={styles.removeButton} />
+            </IconButton>
+          )}
           <IconButton
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('addProcedureStep', 'Add procedure step')}
+            disabled={!canWrite}
             onClick={() => {
-              shouldOnClickBeCalled.current = false;
               launchWorkspace<AddNewProcedureStepWorkspaceProps>(addNewProcedureStepWorkspace, {
                 patientUuid,
                 request,
@@ -170,8 +184,8 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
   }));
   const sortRow = (cellA, cellB, { sortDirection, sortStates }) => {
     return sortDirection === sortStates.DESC
-      ? compare(cellB.sortKey, cellA.sortKey)
-      : compare(cellA.sortKey, cellB.sortKey);
+      ? compare(cellB?.sortKey ?? cellB, cellA?.sortKey ?? cellA)
+      : compare(cellA?.sortKey ?? cellA, cellB?.sortKey ?? cellB);
   };
 
   if (requests?.length) {
@@ -185,6 +199,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
               renderIcon={(props) => <AddIcon size={16} {...props} />}
               iconDescription={t('add', 'Add')}
               onClick={launchAddNewRequestWorkspace}
+              disabled={!canWrite}
             >
               <strong>{t('Add', 'Add')}</strong>
             </Button>
@@ -195,7 +210,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
               aria-label={t('statusFilter', 'Status filter')}
               style={{ marginRight: '20px' }}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                goTo(1);
+              }}
               className={styles.filterInput}
             >
               <SelectItem value="all" text={t('all', 'All')} />
@@ -207,7 +225,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
               id="priority-filter"
               aria-label={t('priorityFilter', 'Priority filter')}
               value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
+              onChange={(e) => {
+                setPriorityFilter(e.target.value);
+                goTo(1);
+              }}
               className={styles.filterInput}
             >
               <SelectItem value="all" text={t('all', 'All')} />
@@ -247,11 +268,12 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, rowIndex) => {
-                    const isExpanded = expandedRows[rowIndex];
+                  {rows.map((row) => {
+                    const isExpanded = expandedRows[row.id];
+                    const request = requestsById.get(row.id);
                     const { key, ...rowProps } = getRowProps({ row });
                     return (
-                      <React.Fragment key={rowIndex}>
+                      <React.Fragment key={row.id}>
                         <TableRow
                           key={key}
                           className={styles.row}
@@ -259,7 +281,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
                           onDoubleClick={() =>
                             setExpandedRows((prev) => ({
                               ...prev,
-                              [rowIndex]: !prev[rowIndex],
+                              [row.id]: !prev[row.id],
                             }))
                           }
                         >
@@ -269,7 +291,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
                             </TableCell>
                           ))}
                         </TableRow>
-                        {isExpanded && (
+                        {isExpanded && request && (
                           <TableRow className={styles.expandedRow}>
                             <TableCell colSpan={headers.length}>
                               <div
@@ -277,7 +299,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
                                 role="region"
                                 aria-label={t('procedureStepRegion', 'Procedure step')}
                               >
-                                <ProcedureStepTable requestProcedure={results[rowIndex]} />
+                                <ProcedureStepTable key={row.id} requestProcedure={request} />
                               </div>
                             </TableCell>
                           </TableRow>
@@ -292,7 +314,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
         </DataTable>
         <PatientChartPagination
           pageNumber={currentPage}
-          totalItems={requests.length}
+          totalItems={filteredRequests.length}
           currentItems={results.length}
           pageSize={requestCount}
           onPageNumberChange={({ page }) => goTo(page)}

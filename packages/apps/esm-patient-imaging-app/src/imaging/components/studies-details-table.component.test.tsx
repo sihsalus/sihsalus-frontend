@@ -6,6 +6,7 @@ import StudiesDetailTable from './studies-details-table.component';
 type IconProps = Record<string, unknown>;
 type PaginationProps = {
   pageNumber: number;
+  onPageNumberChange: (value: { page: number }) => void;
 };
 type EmptyStateProps = {
   displayText: string;
@@ -37,7 +38,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
-  PatientChartPagination: ({ pageNumber }: PaginationProps) => <div data-testid="pagination">Page {pageNumber}</div>,
+  PatientChartPagination: ({ pageNumber, onPageNumberChange }: PaginationProps) => (
+    <div data-testid="pagination">
+      Page {pageNumber}
+      <button type="button" onClick={() => onPageNumberChange({ page: pageNumber + 1 })}>
+        Next page
+      </button>
+    </div>
+  ),
   EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
@@ -61,7 +69,11 @@ describe('StudiesDetailsTable', () => {
       patientName: 'John Doe',
       studyDate: '2025-08-29',
       studyDescription: 'Brain MRI',
-      orthancConfiguration: { id: 1, orthancBaseUrl: 'http://localhost:8042' },
+      orthancConfiguration: {
+        id: 1,
+        orthancBaseUrl: 'http://orthanc:8042',
+        orthancProxyUrl: 'http://openmrs.sihsalus.gidistest/orthanc',
+      },
     },
   ];
 
@@ -153,4 +165,48 @@ describe('StudiesDetailsTable', () => {
       'noopener,noreferrer',
     );
   });
+
+  it('returns to page one when the last item of page two is removed', async () => {
+    const framework = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+    vi.mocked(usePagination).mockImplementation(framework.usePagination);
+    const studies = Array.from({ length: 6 }, (_, index) => ({
+      ...mockStudies[0],
+      id: index + 1,
+      studyInstanceUID: `SYNTHETIC-${index + 1}`,
+      studyDescription: `Synthetic study ${index + 1}`,
+    }));
+    const { rerender } = render(<StudiesDetailTable patientUuid="patientUuid-123" studies={studies} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 2');
+    expect(screen.getByText('Synthetic study 6')).toBeInTheDocument();
+    rerender(<StudiesDetailTable patientUuid="patientUuid-123" studies={studies.slice(0, 5)} />);
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 1');
+    expect(screen.getByText('Synthetic study 1')).toBeInTheDocument();
+    expect(screen.queryByText('Synthetic study 6')).not.toBeInTheDocument();
+  });
+
+  it('resets a high page when a filter changes, including empty results', async () => {
+    const framework = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+    vi.mocked(usePagination).mockImplementation(framework.usePagination);
+    const studies = Array.from({ length: 11 }, (_, index) => ({
+      ...mockStudies[0],
+      id: index + 1,
+      studyInstanceUID: `SYNTHETIC-${index + 1}`,
+      studyDescription: index === 0 ? 'Unique synthetic match' : 'Other study',
+    }));
+    render(<StudiesDetailTable patientUuid="patientUuid-123" studies={studies} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 3');
+    const filter = screen.getByPlaceholderText('Filter by study description');
+    fireEvent.change(filter, { target: { value: 'Unique' } });
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 1');
+    expect(screen.getByText('Unique synthetic match')).toBeInTheDocument();
+    fireEvent.change(filter, { target: { value: 'No matching synthetic study' } });
+    expect(screen.getByTestId('pagination')).toHaveTextContent('Page 1');
+    fireEvent.change(filter, { target: { value: '' } });
+    expect(screen.getByText('Unique synthetic match')).toBeInTheDocument();
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

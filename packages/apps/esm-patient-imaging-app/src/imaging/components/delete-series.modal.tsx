@@ -1,7 +1,8 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import { deleteSeries, useStudySeries } from '../../api';
 
 interface DeleteSeriesModalProps {
@@ -11,35 +12,50 @@ interface DeleteSeriesModalProps {
   patientUuid: string;
 }
 
-const DeleteSeriesModal: React.FC<DeleteSeriesModalProps> = ({ closeDeleteModal, studyId, orthancSeriesUID }) => {
+const DeleteSeriesModal: React.FC<DeleteSeriesModalProps> = ({
+  closeDeleteModal,
+  studyId,
+  orthancSeriesUID,
+  patientUuid,
+}) => {
   const { t } = useTranslation();
   const { mutate } = useStudySeries(studyId);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    start,
+    isCurrent,
+    finish,
+    isPending: isDeleting,
+    canWrite,
+  } = useImagingOperation(`${patientUuid}:${studyId}:${orthancSeriesUID}`);
 
   const handleDelete = useCallback(async () => {
-    setIsDeleting(true);
-
-    deleteSeries(orthancSeriesUID, studyId, new AbortController())
-      .then((response) => {
-        if (response.ok) {
-          mutate();
-          closeDeleteModal();
-          showSnackbar({
-            isLowContrast: true,
-            kind: 'success',
-            title: t('studySeries', 'Study Series is deleted'),
-          });
-        }
-      })
-      .catch((error) => {
-        showSnackbar({
-          isLowContrast: false,
-          kind: 'error',
-          title: t('errorDeletingSeries', 'An error occurred while deleting the study series'),
-          subtitle: error?.message,
+    const controller = start();
+    if (!controller) return;
+    try {
+      await deleteSeries(orthancSeriesUID, studyId, controller);
+      if (!isCurrent(controller)) return;
+      void Promise.resolve()
+        .then(() => mutate())
+        .catch(() => {
+          /* The read hook displays revalidation errors. */
         });
+      closeDeleteModal();
+      showSnackbar({ isLowContrast: true, kind: 'success', title: t('studySeries', 'Study Series is deleted') });
+    } catch {
+      if (!isCurrent(controller)) return;
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'error',
+        title: t('errorDeletingSeries', 'An error occurred while deleting the study series'),
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
       });
-  }, [closeDeleteModal, studyId, orthancSeriesUID, mutate, t]);
+    } finally {
+      finish(controller);
+    }
+  }, [closeDeleteModal, studyId, orthancSeriesUID, mutate, t, start, isCurrent, finish]);
 
   return (
     <div>
@@ -51,7 +67,7 @@ const DeleteSeriesModal: React.FC<DeleteSeriesModalProps> = ({ closeDeleteModal,
         <Button kind="secondary" onClick={closeDeleteModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleDelete} disabled={isDeleting}>
+        <Button kind="danger" onClick={handleDelete} disabled={isDeleting || !canWrite}>
           {isDeleting ? (
             <InlineLoading description={t('deleting', 'Deleting') + '...'} />
           ) : (

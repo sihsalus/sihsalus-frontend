@@ -15,6 +15,7 @@ type EmptyStateProps = {
 vi.mock('../../api');
 vi.mock('@openmrs/esm-framework', () => ({
   restBaseUrl: '/ws/rest/v1',
+  makeUrl: (path: string) => '/openmrs' + path,
   useLayoutType: () => 'desktop',
   usePagination: (data: unknown[], pagesize: number) => ({
     results: data.slice(0, pagesize),
@@ -24,6 +25,7 @@ vi.mock('@openmrs/esm-framework', () => ({
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  ErrorState: () => <div role="alert">Unable to load imaging data</div>,
   compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
   PatientChartPagination: ({ pageNumber, totalItems }: PaginationProps) => (
     <div data-testid="pagination">
@@ -148,12 +150,12 @@ describe('InstancesDetailsTable', () => {
 
     expect(window.open).toHaveBeenNthCalledWith(
       1,
-      'http://openmrs.sihsalus.gidistest/imaging/previewinstance?orthancInstanceUID=inst-1&studyId=1',
+      'http://openmrs.sihsalus.gidistest/openmrs/ws/rest/v1/imaging/previewinstance?orthancInstanceUID=inst-1&studyId=1',
       '_blank',
       'noopener,noreferrer',
     );
     expect(window.open).toHaveBeenCalledWith(
-      'http://openmrs.sihsalus.gidistest/orthanc/instances/inst-1/preview',
+      'http://orthanc.proxy/instances/inst-1/preview',
       '_blank',
       'noopener,noreferrer',
     );
@@ -173,4 +175,17 @@ describe('InstancesDetailsTable', () => {
 
     expect(screen.getByText(/Loading/)).toBeInTheDocument();
   });
+  it('shows a read error instead of an empty clinical result', () => {
+    vi.mocked(api.useStudyInstances).mockReturnValue({
+      data: [],
+      error: new Error('backend-failed'),
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never);
+    render(<InstancesDetailsTable {...defaultProps} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to load imaging data');
+  });
 });
+
+vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

@@ -1,7 +1,8 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useImagingOperation } from '../utils/use-imaging-operation';
 import { assignStudy, useStudiesByPatient } from '../../api';
 
 interface UnlinkStudyModalProps {
@@ -13,29 +14,42 @@ interface UnlinkStudyModalProps {
 const UnlinkStudyModal: React.FC<UnlinkStudyModalProps> = ({ closeUnlinkModal, studyId, patientUuid }) => {
   const { t } = useTranslation();
   const { mutate } = useStudiesByPatient(patientUuid);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    start,
+    isCurrent,
+    finish,
+    isPending: isDeleting,
+    canWrite,
+  } = useImagingOperation(`${patientUuid}:${studyId}`);
 
   const handleUnlink = useCallback(async () => {
-    setIsDeleting(true);
-    assignStudy(studyId, patientUuid, false, new AbortController())
-      .then(() => {
-        mutate();
-        closeUnlinkModal();
-        showSnackbar({
-          isLowContrast: true,
-          kind: 'success',
-          title: t('studyUnlinked', 'Study is unlinked'),
+    const controller = start();
+    if (!controller) return;
+    try {
+      await assignStudy(studyId, patientUuid, false, controller);
+      if (!isCurrent(controller)) return;
+      void Promise.resolve()
+        .then(() => mutate())
+        .catch(() => {
+          /* The read hook displays revalidation errors. */
         });
-      })
-      .catch((error) => {
-        showSnackbar({
-          isLowContrast: false,
-          kind: 'error',
-          title: t('errorUnlinkingStudy', 'An error occurred while unlinking the study'),
-          subtitle: error?.message,
-        });
+      closeUnlinkModal();
+      showSnackbar({ isLowContrast: true, kind: 'success', title: t('studyUnlinked', 'Study is unlinked') });
+    } catch {
+      if (!isCurrent(controller)) return;
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'error',
+        title: t('errorUnlinkingStudy', 'An error occurred while unlinking the study'),
+        subtitle: t(
+          'imagingOperationFailed',
+          'The operation could not be completed. Refresh and check the result before trying again.',
+        ),
       });
-  }, [closeUnlinkModal, studyId, patientUuid, mutate, t]);
+    } finally {
+      finish(controller);
+    }
+  }, [closeUnlinkModal, studyId, patientUuid, mutate, t, start, isCurrent, finish]);
 
   return (
     <div>
@@ -52,7 +66,7 @@ const UnlinkStudyModal: React.FC<UnlinkStudyModalProps> = ({ closeUnlinkModal, s
         <Button kind="secondary" onClick={closeUnlinkModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleUnlink} disabled={isDeleting}>
+        <Button kind="danger" onClick={handleUnlink} disabled={isDeleting || !canWrite}>
           {isDeleting ? (
             <InlineLoading description={t('unlinking', 'Unlinking') + '...'} />
           ) : (

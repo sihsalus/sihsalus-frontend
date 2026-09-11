@@ -95,9 +95,14 @@
   "emergencyPatients": "Pacientes en Emergencias",
   "emergencyQueue": "Cola de emergencias",
   "emergencyQueueActionFailedMessage": "No se pudo completar la acción. Intente nuevamente.",
+  "emergencyQueueRefreshFailed": "No se pudo actualizar la vista de la cola",
+  "emergencyQueueRefreshFailedMessage": "El cambio se guardó. Actualice la cola para ver su estado actual.",
   "emergencyUnderExistingVisit": "El paciente tiene una visita activa de tipo \"{{visitType}}\"; la atención de emergencia se registrará bajo esa visita.",
   "emergencyVisit": "Consulta de emergencia",
   "emergencyVisitCreatedSuccessfully": "Visita de emergencia creada exitosamente",
+  "emergencyWorkspaceOpeningFailed": "No se pudo abrir el formulario",
+  "emergencyWorkspaceOpeningFailedMessage": "El paciente permanece en atención. Reintente abrir el formulario para continuar.",
+  "emergencyWorkspaceRetry": "Reintentar abrir formulario",
   "enterAddress": "Dirección",
   "enterAge": "Años",
   "enterCommentHere": "Ingrese un comentario aquí",
@@ -356,10 +361,5 @@
   "waitTime": "Tiempo de espera",
   "weight": "Peso (kg)",
   "years": "años",
-  "yes": "Sí",
-  "emergencyQueueRefreshFailed": "No se pudo actualizar la vista de la cola",
-  "emergencyQueueRefreshFailedMessage": "El cambio se guardó. Actualice la cola para ver su estado actual.",
-  "emergencyWorkspaceOpeningFailed": "No se pudo abrir el formulario",
-  "emergencyWorkspaceOpeningFailedMessage": "El paciente permanece en atención. Reintente abrir el formulario para continuar.",
-  "emergencyWorkspaceRetry": "Reintentar abrir formulario"
+  "yes": "Sí"
 }

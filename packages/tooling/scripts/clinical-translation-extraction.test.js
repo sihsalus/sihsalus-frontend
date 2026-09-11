@@ -94,6 +94,25 @@ const pluralCases = [
     es: [/día de antigüedad/, /días de antigüedad/],
     en: [/day old/, /days old/],
   },
+  {
+    app: 'esm-patient-imaging-app',
+    key: 'dicomFieldLength',
+    es: [/carácter$/, /caracteres$/],
+    en: [/character$/, /characters$/],
+  },
+  {
+    app: 'esm-patient-imaging-app',
+    key: 'uploadInterrupted',
+    es: [/archivo confirmado\./, /archivos confirmados\./],
+    en: [/file confirmed\./, /files confirmed\./],
+    variables: { file: 'synthetic.dcm' },
+  },
+  {
+    app: 'esm-patient-imaging-app',
+    key: 'uploadStopped',
+    es: [/archivo confirmado\./, /archivos confirmados\./],
+    en: [/file confirmed\./, /files confirmed\./],
+  },
 ];
 
 for (const scenario of pluralCases) {

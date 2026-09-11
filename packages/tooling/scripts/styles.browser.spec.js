@@ -71,7 +71,7 @@ async function writeFixture(directory, extractCss) {
       ':global(.style-contract-global) { border-top: 3px solid rgb(65, 43, 21); }',
     ].join('\n'),
     ['secondary' + suffix + '.scss']: '.panel { padding: 29px; }',
-    ['plain' + suffix + '.css']: '.plainCss { letter-spacing: 3px; }',
+    ['plain' + suffix + '.css']: '.plain-css { letter-spacing: 3px; }',
     'entry.js': [
       "import primary from './primary" + suffix + ".scss';",
       "import secondary from './secondary" + suffix + ".scss';",
@@ -79,8 +79,10 @@ async function writeFixture(directory, extractCss) {
       "document.getElementById('primary').className = primary.panel;",
       "document.getElementById('action').className = primary.action;",
       "document.getElementById('label').className = primary.iconLabel;",
+      "document.getElementById('original-label').className = primary['icon-label'];",
       "document.getElementById('secondary').className = secondary.panel;",
       "document.getElementById('plain').className = plain.plainCss;",
+      "document.getElementById('original-plain').className = plain['plain-css'];",
     ].join('\n'),
   };
   if (extractCss) {
@@ -137,6 +139,7 @@ for (const owner of styleOwners) {
     await page.setContent(
       '<section id="primary"><button id="action">Style fixture</button></section>' +
         '<span id="label">Label</span><section id="secondary">Second component</section>' +
+        '<span id="original-label">Original SCSS name</span><span id="original-plain">Original CSS name</span>' +
         '<span id="plain">CSS fixture</span><div id="unscoped" class="panel">Unscoped</div>' +
         '<div id="global" class="style-contract-global">Global</div>' +
         '<div id="base" class="style-contract-base">Base styles</div>' +
@@ -159,7 +162,17 @@ for (const owner of styleOwners) {
     await expect(page.locator('#secondary')).toHaveCSS('padding-top', '29px');
     await expect(page.locator('#action')).toHaveCSS('color', 'rgb(12, 34, 56)');
     await expect(page.locator('#label')).toHaveCSS('margin-left', '11px');
+    await expect(page.locator('#original-label')).toHaveCSS('margin-left', '11px');
     await expect(page.locator('#plain')).toHaveCSS('letter-spacing', '3px');
+    await expect(page.locator('#original-plain')).toHaveCSS('letter-spacing', '3px');
+    assert.equal(
+      await page.locator('#label').getAttribute('class'),
+      await page.locator('#original-label').getAttribute('class'),
+    );
+    assert.equal(
+      await page.locator('#plain').getAttribute('class'),
+      await page.locator('#original-plain').getAttribute('class'),
+    );
     await expect(page.locator('#global')).toHaveCSS('border-top-width', '3px');
     await expect(page.locator('#global')).toHaveCSS('border-top-color', 'rgb(65, 43, 21)');
     await expect(page.locator('#unscoped')).toHaveCSS('padding-top', '0px');

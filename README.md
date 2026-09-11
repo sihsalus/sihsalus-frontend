@@ -146,6 +146,10 @@ the styleguide declares its own because it has a separate build configuration.
 The app shell also preserves default CSS Module imports with
 `modules.namedExport: false` and automatic module detection. Ordinary CSS/SCSS,
 including the framework stylesheet, must remain global.
+All three build configurations use `exportLocalsConvention: 'camel-case'` to
+preserve original class names and camelCase aliases. Consumers such as numeric
+observations must retain bracket imports like `styles['critical-value']` as
+well as dot imports. The five browser variants check both forms in CSS and SCSS.
 
 ### Quality
 

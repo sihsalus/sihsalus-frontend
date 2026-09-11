@@ -74,6 +74,7 @@ function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
             auto: true,
             ...loader.options?.modules,
             namedExport: false,
+            exportLocalsConvention: 'camel-case',
           },
         };
       }

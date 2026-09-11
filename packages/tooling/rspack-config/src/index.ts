@@ -298,6 +298,7 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
     options: {
       modules: {
         namedExport: false,
+        exportLocalsConvention: 'camel-case',
         localIdentName: `${ident}__[name]__[local]___[hash:base64:5]`,
       },
     },

@@ -32,6 +32,7 @@
   "identifiers": "Identificadores",
   "implementationLogo": "Logotipo de implementación",
   "nationalityCountry": "País de nacionalidad",
+  "neighborhood": "Barrio",
   "noAdditionalDetails": "No hay datos adicionales registrados",
   "noContactDetails": "No hay detalles de contacto registrados",
   "noDemographics": "No hay datos demográficos registrados",
@@ -56,6 +57,5 @@
   "status": "Estado",
   "telephoneNumberWithSeparator": "Número de teléfono:",
   "yearAbbreviation": "año",
-  "yearsAbbreviation": "años",
-  "neighborhood": "Barrio"
+  "yearsAbbreviation": "años"
 }

@@ -32,6 +32,7 @@
   "identifiers": "Identifiers",
   "implementationLogo": "Implementation logo",
   "nationalityCountry": "Country of nationality",
+  "neighborhood": "Neighborhood",
   "noAdditionalDetails": "No additional details recorded",
   "noContactDetails": "No contact details recorded",
   "noDemographics": "No demographics recorded",
@@ -56,6 +57,5 @@
   "status": "Status",
   "telephoneNumberWithSeparator": "Telephone number:",
   "yearAbbreviation": "yr",
-  "yearsAbbreviation": "yrs",
-  "neighborhood": "Neighborhood"
+  "yearsAbbreviation": "yrs"
 }

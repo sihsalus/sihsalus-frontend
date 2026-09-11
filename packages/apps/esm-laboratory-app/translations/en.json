@@ -34,8 +34,8 @@
   "fulfillerComment": "Laboratory staff comment",
   "hospitalizedPatient": "Hospitalized patient",
   "In progress": "In progress",
-  "inProgress": "In progress",
   "inactiveSis": "Inactive SIS",
+  "inProgress": "In progress",
   "laboratory": "Laboratory",
   "Laboratory": "Laboratory",
   "labOrderCreated": "New laboratory order",
@@ -49,6 +49,7 @@
   "NoInstructionLeft": "No instructions are provided.",
   "noLabRequestsFound": "No lab requests found",
   "noSis": "No SIS",
+  "observations": "Observations:",
   "onlyRegionalHospital": "Only to be sent to regional hospital",
   "orderDate": "Order date:",
   "Ordered tests": "Ordered tests",
@@ -77,8 +78,8 @@
   "rejectLabRequest": "Reject lab request",
   "rejectLabRequestSuccessMessage": "Lab request no. {{orderNumber}} was rejected.",
   "rejectLabRequestTitle": "Lab request rejected",
-  "results": "Results",
   "resultOrComment": "Result or comment",
+  "results": "Results",
   "resultsApproved": "Results Approved",
   "routine": "Routine",
   "scheduled": "Scheduled",
@@ -95,6 +96,5 @@
   "verifySis": "Verify SIS",
   "viewTestResults": "View test results",
   "worklist": "Worklist",
-  "Worklist": "Worklist",
-  "observations": "Observations:"
+  "Worklist": "Worklist"
 }

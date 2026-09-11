@@ -41,8 +41,8 @@
   "fulfillerStatus_RECEIVED": "Recibido",
   "hospitalizedPatient": "Paciente hospitalizado",
   "In progress": "En progreso",
-  "inProgress": "En progreso",
   "inactiveSis": "SIS inactivo",
+  "inProgress": "En progreso",
   "laboratory": "Laboratorio",
   "Laboratory": "Laboratorio",
   "labOrderCreated": "Nueva orden de laboratorio",
@@ -56,6 +56,7 @@
   "NoInstructionLeft": "No se han proporcionado instrucciones.",
   "noLabRequestsFound": "No se encontraron solicitudes de laboratorio",
   "noSis": "Sin SIS",
+  "observations": "Observaciones:",
   "onlyRegionalHospital": "Solo para ser enviado a hospital regional",
   "orderDate": "Fecha de solicitud:",
   "Ordered tests": "Pruebas solicitadas",
@@ -84,8 +85,8 @@
   "rejectLabRequest": "Rechazar solicitud de laboratorio",
   "rejectLabRequestSuccessMessage": "Se rechazó la solicitud de laboratorio N.º {{orderNumber}}.",
   "rejectLabRequestTitle": "Solicitud de laboratorio rechazada",
-  "results": "Resultados",
   "resultOrComment": "Resultado o comentario",
+  "results": "Resultados",
   "resultsApproved": "Resultados aprobados",
   "routine": "Rutina",
   "scheduled": "Programado",
@@ -102,6 +103,5 @@
   "verifySis": "Verificar SIS",
   "viewTestResults": "Ver resultados de la prueba",
   "worklist": "Lista de trabajo",
-  "Worklist": "Lista de trabajo",
-  "observations": "Observaciones:"
+  "Worklist": "Lista de trabajo"
 }

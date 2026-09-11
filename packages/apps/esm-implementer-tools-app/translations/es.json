@@ -32,6 +32,7 @@
   "hint3": "Problemas de conectividad de red entre el frontend y el backend",
   "implementerTools": "Herramientas  de implementación",
   "incompatibleBackendModulesCount_one": "{{count}} módulo backend tiene una versión incompatible.",
+  "incompatibleBackendModulesCount_many": "{{count}} módulos backend tienen versiones incompatibles.",
   "incompatibleBackendModulesCount_other": "{{count}} módulos backend tienen versiones incompatibles.",
   "installedVersion": "Versión instalada",
   "itemDescriptionSourceDefaultText": "El valor actual es el predeterminado.",
@@ -40,6 +41,7 @@
   "missing": "Faltante",
   "missingAndIncompatibleBackendModules": "Faltan {{missingCount}} módulo(s) backend y {{versionMismatchCount}} tienen versiones incompatibles.",
   "missingBackendModulesCount_one": "Falta {{count}} módulo backend.",
+  "missingBackendModulesCount_many": "Faltan {{count}} módulos backend.",
   "missingBackendModulesCount_other": "Faltan {{count}} módulos backend.",
   "moduleName": "Nombre del módulo",
   "modulesWithIncompatibleVersionsWarning": "Algunos módulos requieren otra versión del backend",
@@ -64,7 +66,5 @@
   "updateConfig": "Actualizar configuración",
   "uuidValidationMessage": "El valor debe ser una cadena UUID válida",
   "value": "Valor",
-  "viewModules": "Ver módulos",
-  "incompatibleBackendModulesCount_many": "{{count}} módulos backend tienen versiones incompatibles.",
-  "missingBackendModulesCount_many": "Faltan {{count}} módulos backend."
+  "viewModules": "Ver módulos"
 }

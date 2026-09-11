@@ -4,11 +4,9 @@ This legacy suite is blocked in `core/global-setup.ts` before authentication or
 fixture creation. It is not clinical evidence and must not run against a shared
 DEV, QLTY or production PACS. The block has no environment-variable bypass.
 
-`studiesbyconfig` returns candidate studies for an entire Orthanc configuration;
-the `patient` argument affects matching scores, not ownership. The previous
-`cleanOrthanc` implementation incorrectly deleted these candidates. It now fails
-before making any request. The helper that swallowed patient-study cleanup
-failures and the spec that deleted unrelated studies have been removed.
+The legacy cleanup helpers have been retired pending a reviewed synthetic fixture
+ownership contract. The retained `cleanOrthanc` entry point fails before making
+any request. Cleanup must be scoped to resources created and recorded by the test.
 
 Before replacing this block, implement and review all of the following:
 
@@ -37,6 +35,7 @@ and the E2E workflow's `contracts` job on pull requests to `main`. That job does
 not require the browser suite's `e2e` label. A guard test inside this suite's
 `core` directory would fall outside that unit-test command.
 
-These checks, and the rest of the changed imaging tests, have **NOT RUN** after
-the user requested no local testing. No browser fixture is created by these
-quarantine regression checks.
+Local validation of these checks and the changed imaging tests is **NOT RUN** at
+the user's request. Remote CI is authorized; consult the pull request checks for
+the exact SHA and results. No browser fixture is created by these quarantine
+regression checks.

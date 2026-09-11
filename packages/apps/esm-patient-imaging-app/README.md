@@ -122,11 +122,12 @@ DICOM values, proxy mapping and read-error states. The package scripts are `test
 `lint`, `typescript` and `build`; relevant repository route/error contracts and
 consumer checks apply as documented in CONTRIBUTING.
 
-**Validation of this changed implementation has NOT RUN:** the user explicitly
-requested no local tests. No typecheck, lint, build, browser or remote test has
-been executed for this diff. Earlier tests of the original code are not evidence
-for these changes. Synthetic DEV/QLTY acceptance remains required before calling
-this integration operational.
+**Local validation of this changed implementation is NOT RUN:** the user
+explicitly requested no local tests, typecheck, lint, build or browser checks.
+Remote CI is authorized; consult the pull request checks for the exact SHA and
+results. Earlier tests of the original code are not evidence for these changes.
+Synthetic DEV/QLTY acceptance remains required before calling this integration
+operational.
 
 The [legacy imaging E2E suite](../../../e2e/patient-imaging/README.md) is explicitly
 quarantined before authentication/fixture creation. Its unsafe global cleanup is

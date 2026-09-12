@@ -52,7 +52,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.2",
     "ace-builds": "^1.43.3",
     "openmrs": "*",
     "react": "^18.3.1",

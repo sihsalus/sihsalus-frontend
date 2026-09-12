@@ -44,7 +44,7 @@
   "devDependencies": {
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.2",
     "cross-env": "^10.1.0",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",

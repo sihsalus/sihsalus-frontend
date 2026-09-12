@@ -52,7 +52,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.2",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
     "vite": "8.0.16",

@@ -58,7 +58,7 @@
   "devDependencies": {
     "@openmrs/esm-offline": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.2",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "i18next": "^26.3.6",
     "i18next-parser": "^9.0.2",

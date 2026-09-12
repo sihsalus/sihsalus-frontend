@@ -35,6 +35,16 @@ test.describe('Peru admission accreditation checks', () => {
       'birth field',
     ).toBeVisible({ timeout: 5_000 });
 
+    // RelationshipsSection changes this region name only after metadata loading finishes.
+    const relationships = page
+      .locator('#responsiblePerson')
+      .getByRole('region', { name: 'Relationships section', exact: true });
+    await expect(relationships, 'relationship metadata loading must finish').toBeVisible({ timeout: 30_000 });
+    await expect(
+      relationships.getByText('Tipos de vínculo no disponibles', { exact: true }),
+      'relationship metadata unavailable; verify the configured catalog and session',
+    ).toHaveCount(0);
+
     const requiredHeadings: Array<[string, string, RegExp]> = [
       ['identityLookup', 'identification data heading', /Datos de identificación/i],
       ['identityLookup', 'identity lookup heading', /Buscar\/validar identidad/i],

@@ -20,7 +20,7 @@
     "react-i18next": "16.x"
   },
   "devDependencies": {
-    "@carbon/react": "^1.102.0",
+    "@carbon/react": "^1.115.0",
     "@openmrs/esm-framework": "workspace:*",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "react": "^18.3.1",

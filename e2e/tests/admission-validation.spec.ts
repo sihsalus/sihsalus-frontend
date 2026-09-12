@@ -46,8 +46,9 @@ test.describe('Peru admission accreditation checks', () => {
       });
     }
 
+    // The CSS required marker contributes "*" to the heading's accessible name.
     await expect(
-      page.locator('#demographics').getByRole('heading', { name: /^Nacimiento$/i }),
+      page.locator('#demographics').getByRole('heading', { name: /^Nacimiento(?:\s*\*)?$/i }),
       'birth field',
     ).toBeVisible({ timeout: 5_000 });
 

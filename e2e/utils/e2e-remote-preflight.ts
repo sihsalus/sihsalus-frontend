@@ -26,7 +26,15 @@ interface RemotePreflightOptions {
 class PreflightValidationError extends Error {}
 
 type PreflightScope = 'BASE' | 'CLINICAL' | 'LABORATORY';
-type PreflightStage = 'LOCATION' | 'SESSION' | 'PATIENT' | 'VISIT' | 'PROVIDER' | 'CONCEPT' | 'ORDER_TYPE';
+type PreflightStage =
+  | 'LOCATION'
+  | 'SESSION'
+  | 'PATIENT'
+  | 'VISIT'
+  | 'PROVIDER'
+  | 'CONCEPT'
+  | 'ORDER_TYPE'
+  | 'VISIT_TYPE';
 type ReadPreflightResource = <T>(stage: PreflightStage, path: string, httpMessage?: string) => Promise<T>;
 
 async function createDefaultApiContext(config: E2EBaseConfig): Promise<APIRequestContext> {
@@ -148,6 +156,14 @@ export async function validateE2ELaboratoryRemotePreflight(
     }>('PROVIDER', `provider/${encodeURIComponent(providerUuid)}?v=custom:(uuid,retired)`);
     if (provider?.uuid !== providerUuid || provider.retired !== false) {
       throw new PreflightValidationError('LABORATORY_PROVIDER_INACTIVE_OR_MISMATCH');
+    }
+
+    const visitType = await read<{ uuid?: string; retired?: boolean }>(
+      'VISIT_TYPE',
+      `visittype/${laboratoryOrderFixture.visitTypeUuid}?v=custom:(uuid,retired)`,
+    );
+    if (visitType?.uuid !== laboratoryOrderFixture.visitTypeUuid || visitType.retired !== false) {
+      throw new PreflightValidationError('LABORATORY_VISIT_TYPE_INACTIVE_OR_MISMATCH');
     }
 
     const concept = await read<{

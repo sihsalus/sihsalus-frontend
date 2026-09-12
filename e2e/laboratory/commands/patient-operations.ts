@@ -1,4 +1,5 @@
 import { type APIRequestContext, expect } from '@playwright/test';
+import { FixtureAuthorizationError } from '../../utils/e2e-synthetic-fixtures';
 import { voidOpenmrsResource } from '../../utils/openmrs-cleanup';
 import { type Patient } from './types';
 
@@ -58,7 +59,11 @@ export const generateRandomPatient = async (api: APIRequestContext): Promise<Pat
 };
 
 export const getPatient = async (api: APIRequestContext, uuid: string): Promise<Patient> => {
-  const patientRes = await api.get(`patient/${uuid}?v=full`);
+  const patientRes = await api.get(`patient/${uuid}?v=full`, { maxRedirects: 0, maxRetries: 0 });
+  if ([401, 403].includes(patientRes.status())) {
+    throw new FixtureAuthorizationError('FIXTURE_AUTHORIZATION_FAILED_RETAIN_JOURNAL');
+  }
+  expect(patientRes.ok(), 'The synthetic laboratory patient must be readable').toBeTruthy();
   return await patientRes.json();
 };
 

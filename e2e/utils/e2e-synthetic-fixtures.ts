@@ -42,7 +42,7 @@ interface State {
 }
 
 class FixtureError extends Error {}
-class FixtureAuthorizationError extends FixtureError {}
+export class FixtureAuthorizationError extends FixtureError {}
 function check(condition: unknown, code: string): asserts condition {
   if (!condition) throw new FixtureError(code);
 }

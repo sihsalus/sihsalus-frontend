@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test';
-import { voidOpenmrsResources } from '../../utils/openmrs-cleanup';
-import { createEncounter, generateRandomTestOrder, getProvider, startVisit } from '../commands';
-import { type Encounter, type Order, type Provider, type Visit } from '../commands/types';
+import { createEncounter, generateRandomTestOrder, getProvider } from '../commands';
+import { type Encounter, type Order, type Provider } from '../commands/types';
 import { test } from '../core';
 import { LaboratoryPage } from '../pages';
 
@@ -10,11 +9,9 @@ let encounter: Encounter;
 let orderer: Provider;
 let fullName: string;
 let testName: string;
-let visit: Visit;
 
-test.beforeEach(async ({ api, patient }) => {
+test.beforeEach(async ({ api, patient, visit }) => {
   orderer = await getProvider(api);
-  visit = await startVisit(api, patient.uuid);
   encounter = await createEncounter(api, patient.uuid, orderer.uuid, visit);
   testOrder = await generateRandomTestOrder(api, patient.uuid, encounter, orderer.uuid);
   fullName = patient.person?.display;
@@ -68,12 +65,4 @@ test('Reject a lab request', async ({ page }) => {
     await expect(page.getByRole('cell', { name: testName, exact: true })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Declined' })).toBeVisible();
   });
-});
-
-test.afterEach(async ({ api }) => {
-  await voidOpenmrsResources(api, [
-    testOrder?.uuid ? { resource: 'order', uuid: testOrder.uuid } : undefined,
-    encounter?.uuid ? { resource: 'encounter', uuid: encounter.uuid } : undefined,
-    visit?.uuid ? { resource: 'visit', uuid: visit.uuid } : undefined,
-  ]);
 });

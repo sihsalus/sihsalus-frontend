@@ -1,23 +1,26 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import globalSetup from '../laboratory/core/global-setup';
+import { loadLaboratoryFixtureEnvironment } from '../laboratory/core/synthetic-fixtures';
 import { loginToOpenmrsAndWriteStorageState } from './e2e-api';
-import { loadE2EBaseConfig } from './e2e-gate-config';
 import { validateE2ELaboratoryRemotePreflight } from './e2e-remote-preflight';
 
 vi.mock('dotenv', () => ({ config: vi.fn() }));
 vi.mock('./e2e-api', () => ({ loginToOpenmrsAndWriteStorageState: vi.fn() }));
-vi.mock('./e2e-gate-config', () => ({ loadE2EBaseConfig: vi.fn() }));
+vi.mock('../laboratory/core/synthetic-fixtures', () => ({ loadLaboratoryFixtureEnvironment: vi.fn() }));
 vi.mock('./e2e-remote-preflight', () => ({
   validateE2ELaboratoryRemotePreflight: vi.fn(),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(loadE2EBaseConfig).mockReturnValue({
-    target: 'DEV',
-    apiBaseUrl: 'https://gidis-hsc-dev.inf.pucp.edu.pe/openmrs',
-    spaBaseUrl: 'http://127.0.0.1:8080/openmrs/spa',
-    locationUuid: '33333333-3333-4333-8333-333333333333',
+  vi.mocked(loadLaboratoryFixtureEnvironment).mockReturnValue({
+    environment: {},
+    config: {
+      target: 'DEV',
+      apiBaseUrl: 'https://gidis-hsc-dev.inf.pucp.edu.pe/openmrs',
+      spaBaseUrl: 'http://127.0.0.1:8080/openmrs/spa',
+      locationUuid: '33333333-3333-4333-8333-333333333333',
+    },
   });
 });
 
@@ -26,7 +29,19 @@ it('fails global setup before login or browser fixtures when laboratory metadata
 
   await expect(globalSetup()).rejects.toThrow('LABORATORY_CONCEPT_HTTP_404');
 
-  expect(validateE2ELaboratoryRemotePreflight).toHaveBeenCalledWith(loadE2EBaseConfig());
+  expect(validateE2ELaboratoryRemotePreflight).toHaveBeenCalledWith(
+    loadLaboratoryFixtureEnvironment(process.env).config,
+  );
+  expect(loginToOpenmrsAndWriteStorageState).not.toHaveBeenCalled();
+});
+
+it('blocks CI recovery before metadata requests or login', async () => {
+  vi.mocked(loadLaboratoryFixtureEnvironment).mockImplementation(() => {
+    throw new Error('LABORATORY_CI_RECOVERY_RETENTION_UNAVAILABLE');
+  });
+
+  await expect(globalSetup()).rejects.toThrow('LABORATORY_CI_RECOVERY_RETENTION_UNAVAILABLE');
+  expect(validateE2ELaboratoryRemotePreflight).not.toHaveBeenCalled();
   expect(loginToOpenmrsAndWriteStorageState).not.toHaveBeenCalled();
 });
 

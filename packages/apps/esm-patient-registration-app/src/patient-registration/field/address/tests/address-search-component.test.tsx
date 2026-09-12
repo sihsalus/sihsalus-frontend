@@ -26,18 +26,13 @@ const mockUseOrderedAddressHierarchyLevels = vi.mocked(useOrderedAddressHierarch
 const mockUseFormikContext = useFormikContext as vi.Mock;
 
 vi.mock('../address-hierarchy.resource', async () => ({
-  ...((await vi.importActual('../address-hierarchy.resource')) as vi.Mock),
+  ...(await vi.importActual<typeof import('../address-hierarchy.resource')>('../address-hierarchy.resource')),
   useOrderedAddressHierarchyLevels: vi.fn(),
   useAddressHierarchy: vi.fn(),
 }));
 
-vi.mock('../../../patient-registration.resource', async () => ({
-  ...((await vi.importActual('../../../../patient-registration.resource')) as vi.Mock),
-  useAddressHierarchy: vi.fn(),
-}));
-
 vi.mock('formik', async () => ({
-  ...((await vi.importActual('formik')) as vi.Mock),
+  ...(await vi.importActual<typeof import('formik')>('formik')),
   useFormikContext: vi.fn(() => ({})),
 }));
 

@@ -1,11 +1,13 @@
-import { type ConfigSchema, type Session, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { type Session, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { useHsuIdIdentifier } from '../hooks/location-tag.resource';
 
 vi.mock('@openmrs/esm-framework');
 vi.mock('../hooks/location-tag.resource');
 
 const mockShowSnackbar = showSnackbar as vi.MockedFunction<typeof showSnackbar>;
-const mockUseConfig = useConfig as vi.MockedFunction<typeof useConfig>;
+const mockUseConfig = vi.mocked(
+  useConfig<{ enforcePatientListLocationMatch: boolean; patientLocationMismatchCheck?: boolean }>,
+);
 const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
 const mockUseHsuIdIdentifier = useHsuIdIdentifier as vi.MockedFunction<typeof useHsuIdIdentifier>;
 
@@ -28,7 +30,7 @@ describe('AddGroupModal - enforcePatientListLocationMatch', () => {
     mockUseConfig.mockReturnValue({
       enforcePatientListLocationMatch: true,
       patientLocationMismatchCheck: false,
-    } as ConfigSchema);
+    });
 
     mockUseSession.mockReturnValue({
       sessionLocation: mockSessionLocation,
@@ -68,7 +70,7 @@ describe('AddGroupModal - enforcePatientListLocationMatch', () => {
     mockUseConfig.mockReturnValue({
       enforcePatientListLocationMatch: false,
       patientLocationMismatchCheck: false,
-    } as ConfigSchema);
+    });
 
     mockUseSession.mockReturnValue({
       sessionLocation: mockSessionLocation,
@@ -102,7 +104,7 @@ describe('AddGroupModal - enforcePatientListLocationMatch', () => {
     mockUseConfig.mockReturnValue({
       enforcePatientListLocationMatch: true,
       patientLocationMismatchCheck: false,
-    } as ConfigSchema);
+    });
 
     mockUseSession.mockReturnValue({
       sessionLocation: mockSessionLocation,
@@ -135,7 +137,7 @@ describe('AddGroupModal - enforcePatientListLocationMatch', () => {
   it('should display patient and session location names in error message', () => {
     mockUseConfig.mockReturnValue({
       enforcePatientListLocationMatch: true,
-    } as ConfigSchema);
+    });
 
     mockUseSession.mockReturnValue({
       sessionLocation: mockSessionLocation,
@@ -178,7 +180,7 @@ describe('AddGroupModal - enforcePatientListLocationMatch', () => {
     mockUseConfig.mockReturnValue({
       enforcePatientListLocationMatch: true,
       patientLocationMismatchCheck: true,
-    } as ConfigSchema);
+    });
 
     const config = mockUseConfig();
 

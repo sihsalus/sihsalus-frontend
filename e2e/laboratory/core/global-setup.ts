@@ -1,8 +1,8 @@
 import path from 'node:path';
 import * as dotenv from 'dotenv';
 import { loginToOpenmrsAndWriteStorageState } from '../../utils/e2e-api';
-import { loadE2EBaseConfig } from '../../utils/e2e-gate-config';
 import { validateE2ELaboratoryRemotePreflight } from '../../utils/e2e-remote-preflight';
+import { loadLaboratoryFixtureEnvironment } from './synthetic-fixtures';
 
 dotenv.config();
 
@@ -14,7 +14,7 @@ dotenv.config();
  */
 
 async function globalSetup() {
-  const config = loadE2EBaseConfig();
+  const { config } = loadLaboratoryFixtureEnvironment(process.env);
   await validateE2ELaboratoryRemotePreflight(config);
   await loginToOpenmrsAndWriteStorageState({
     locale: 'en',

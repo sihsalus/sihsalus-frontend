@@ -83,6 +83,9 @@ const orderType = {
 
 function validLaboratoryResponse(url: string) {
   if (url.startsWith('provider/provider-uuid?')) return response(200, { uuid: 'provider-uuid', retired: false });
+  if (url.startsWith(`visittype/${laboratoryOrderFixture.visitTypeUuid}?`)) {
+    return response(200, { uuid: laboratoryOrderFixture.visitTypeUuid, retired: false });
+  }
   if (url.startsWith(`concept/${laboratoryOrderFixture.conceptUuid}?`)) return response(200, concept);
   if (url.startsWith(`ordertype/${laboratoryOrderFixture.orderTypeUuid}?`)) return response(200, orderType);
   return validResponse(url);
@@ -184,21 +187,56 @@ describe('validateE2ERemotePreflight', () => {
 });
 
 describe('validateE2ELaboratoryRemotePreflight', () => {
-  it('requires the original Test/Numeric concept and a compatible active TestOrder using only metadata GETs', async () => {
+  it('requires SIHSALUS AST/TGO, Atención Ambulatoria and a compatible active TestOrder using only metadata GETs', async () => {
     const api = apiWith(validLaboratoryResponse);
     await validateE2ELaboratoryRemotePreflight(config, {
       createApiContext: async () => api,
     });
 
-    expect(laboratoryOrderFixture.conceptUuid).toBe('887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-    expect(api.get).toHaveBeenCalledTimes(5);
+    expect(laboratoryOrderFixture.conceptUuid).toBe('18730e4e-0a5f-40cf-8c19-474276f5e9d7');
+    expect(laboratoryOrderFixture.visitTypeUuid).toBe('b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09');
+    expect(api.get).toHaveBeenCalledTimes(6);
     expect(vi.mocked(api.get).mock.calls.map(([url]) => url.split('?')[0])).toEqual([
       `location/${locationUuid}`,
       'session',
       'provider/provider-uuid',
+      `visittype/${laboratoryOrderFixture.visitTypeUuid}`,
       `concept/${laboratoryOrderFixture.conceptUuid}`,
       `ordertype/${laboratoryOrderFixture.orderTypeUuid}`,
     ]);
+    for (const method of [api.post, api.put, api.patch, api.delete]) expect(method).not.toHaveBeenCalled();
+    expect(api.dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    401, 403, 404, 500,
+  ])('rejects an unreadable visit type with HTTP %s without discovering a substitute', async (status) => {
+    const unavailable = response(status, { private: 'DO_NOT_LOG_RESPONSE_BODY' });
+    const api = apiWith((url) => (url.startsWith('visittype/') ? unavailable : validLaboratoryResponse(url)));
+
+    await expect(validateE2ELaboratoryRemotePreflight(config, { createApiContext: async () => api })).rejects.toThrow(
+      `LABORATORY_VISIT_TYPE_HTTP_${status}`,
+    );
+    expect(unavailable.json).not.toHaveBeenCalled();
+    expect(api.get).not.toHaveBeenCalledWith(expect.stringMatching(/^visittype\?|^concept\/|^patient\//));
+    for (const method of [api.post, api.put, api.patch, api.delete]) expect(method).not.toHaveBeenCalled();
+    expect(api.dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    null,
+    {},
+    { uuid: 'different-visit-type', retired: false },
+    { uuid: laboratoryOrderFixture.visitTypeUuid, retired: true },
+    { uuid: laboratoryOrderFixture.visitTypeUuid },
+    { uuid: laboratoryOrderFixture.visitTypeUuid, retired: 'false' },
+  ])('rejects inactive, incomplete or mismatched visit metadata before fixtures', async (body) => {
+    const api = apiWith((url) => (url.startsWith('visittype/') ? response(200, body) : validLaboratoryResponse(url)));
+
+    await expect(validateE2ELaboratoryRemotePreflight(config, { createApiContext: async () => api })).rejects.toThrow(
+      'LABORATORY_VISIT_TYPE_INACTIVE_OR_MISMATCH',
+    );
+    expect(api.get).not.toHaveBeenCalledWith(expect.stringMatching(/^visittype\?|^concept\/|^patient\//));
     for (const method of [api.post, api.put, api.patch, api.delete]) expect(method).not.toHaveBeenCalled();
     expect(api.dispose).toHaveBeenCalledOnce();
   });
@@ -372,7 +410,7 @@ const preflights = [
   {
     scope: 'LABORATORY',
     validate: validateE2ELaboratoryRemotePreflight,
-    resources: ['location', 'session', 'provider', 'concept', 'ordertype'],
+    resources: ['location', 'session', 'provider', 'visittype', 'concept', 'ordertype'],
   },
 ] as const;
 
@@ -399,7 +437,8 @@ describe.each(preflights)('$scope shared preflight error boundary', ({ scope, va
   });
 
   for (const resource of resources) {
-    const stage = resource === 'ordertype' ? 'ORDER_TYPE' : resource.toUpperCase();
+    const stage =
+      resource === 'ordertype' ? 'ORDER_TYPE' : resource === 'visittype' ? 'VISIT_TYPE' : resource.toUpperCase();
     it.each(['request', 'json'])(
       'sanitizes ' + resource + ' %s failures and preserves a simultaneous disposal failure',
       async (operation) => {

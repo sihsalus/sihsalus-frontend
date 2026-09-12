@@ -35,9 +35,17 @@ export const createEncounter = async (
   providerId: string,
   visit: Visit,
 ): Promise<Encounter> => {
-  const encounterAfterVisit = dayjs(visit.startDatetime).add(1, 'minute');
-  const now = dayjs().subtract(1, 'second');
-  const encounterDatetime = encounterAfterVisit.isBefore(now) ? encounterAfterVisit.format() : now.format();
+  const visitStart = dayjs(visit.startDatetime);
+  const now = dayjs();
+  if (!visitStart.isValid() || visitStart.isAfter(now)) {
+    throw new Error('The synthetic laboratory visit must have a valid start no later than now.');
+  }
+  const encounterAfterVisit = visitStart.add(1, 'minute');
+  const latestPreferredTime = now.subtract(1, 'second');
+  const preferredTime = encounterAfterVisit.isBefore(latestPreferredTime) ? encounterAfterVisit : latestPreferredTime;
+  const encounterDatetime = (preferredTime.isBefore(visitStart) ? visitStart : preferredTime).format(
+    'YYYY-MM-DDTHH:mm:ss.SSSZZ',
+  );
   const encounterRes = await api.post('encounter', {
     data: {
       encounterDatetime,

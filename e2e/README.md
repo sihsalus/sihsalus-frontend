@@ -83,6 +83,11 @@ etiqueta `e2e` o por `workflow_dispatch`, y exigen 7 variables/secretos
 (preflight que falla si falta alguna). Un gate que solo corre cuando alguien se
 acuerda no protege de nada: si tocas flujos clínicos, pon la etiqueta.
 
+Laboratorio añade ahora un bloqueo explícito de navegador en CI mientras no
+exista retención privada y duradera de sus journals de recuperación. Su adapter
+permite ejecución local supervisada con estado persistente; revisar
+[sus requisitos](laboratory/README.md) antes de etiquetar o lanzar esa matriz.
+
 El preflight exige `E2E_GATE_TARGET=DEV|QLTY`, comprueba que el backend sea el
 origen HTTPS exacto del ambiente elegido y solo permite que el SPA sea ese mismo
 origen o un servidor loopback. Producción y hosts parecidos quedan rechazados.

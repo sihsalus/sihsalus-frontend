@@ -209,7 +209,7 @@ test.describe('Peru patient registration', () => {
       await expect(page.getByRole('spinbutton', { name: /mes, Fecha de nacimiento/i })).toContainText('5');
       await expect(page.getByRole('spinbutton', { name: /a[nñ]o, Fecha de nacimiento/i })).toContainText('1990');
       await expect(page.locator('input[name="gender"][value="male"]')).toBeChecked();
-      await expect.poll(identitySearches, { message: 'The local identity searches must stay isolated' }).toEqual({
+      await expect.poll(identitySearches, { message: 'The local identity searches must stay isolated' }).toMatchObject({
         searches: ['patient', 'person'],
         blockedRequests: 0,
       });
@@ -230,7 +230,7 @@ test.describe('Peru patient registration', () => {
       await expect(page.getByText(/Sin coincidencias locales ni datos RENIEC/i)).toBeVisible({ timeout: 10_000 });
       await expect(page.getByText(/Datos RENIEC cargados/i)).toHaveCount(0);
       await expect(page.locator('#givenName')).toHaveValue('');
-      await expect.poll(identitySearches, { message: 'The local identity searches must stay isolated' }).toEqual({
+      await expect.poll(identitySearches, { message: 'The local identity searches must stay isolated' }).toMatchObject({
         searches: ['patient', 'person'],
         blockedRequests: 0,
       });

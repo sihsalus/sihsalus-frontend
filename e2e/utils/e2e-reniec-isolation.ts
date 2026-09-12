@@ -1,9 +1,21 @@
 import { type Page } from '@playwright/test';
+import { clinicalActivityHeartbeatUrl } from '../../packages/apps/esm-primary-navigation-app/src/clinical-activity-heartbeat';
 import { getOpenmrsRestBaseUrl, getSpaBaseUrl } from './e2e-urls';
 
 export const reniecContractDocument = '12345678';
 
-export function classifyReniecContractRequest(rawUrl: string, method: string, restBaseUrls: readonly string[]) {
+interface HeartbeatRequestMetadata {
+  spaBaseUrl: string;
+  bodyLength: number;
+  headers: Record<string, string>;
+}
+
+export function classifyReniecContractRequest(
+  rawUrl: string,
+  method: string,
+  restBaseUrls: readonly string[],
+  heartbeat?: HeartbeatRequestMetadata,
+) {
   let url: URL;
   let bases: URL[];
   try {
@@ -21,7 +33,28 @@ export function classifyReniecContractRequest(rawUrl: string, method: string, re
   ) {
     return 'blocked';
   }
+  if (method === 'POST' && heartbeat) {
+    let expectedHeartbeatUrl: string;
+    try {
+      const spa = new URL(heartbeat.spaBaseUrl);
+      if (spa.username || spa.password || !/^https?:$/.test(spa.protocol)) return 'blocked';
+      expectedHeartbeatUrl = new URL(clinicalActivityHeartbeatUrl, spa).href;
+    } catch {
+      return 'blocked';
+    }
+    if (
+      rawUrl === expectedHeartbeatUrl &&
+      heartbeat.bodyLength === 0 &&
+      !Object.keys(heartbeat.headers).some((name) =>
+        /^(?:authorization|proxy-authorization|cookie|referer)$/i.test(name),
+      )
+    ) {
+      return 'clinicalActivityHeartbeat';
+    }
+    return 'blocked';
+  }
   if (method !== 'GET' || !bases.some((base) => base.origin === url.origin)) return 'blocked';
+  if (url.pathname === clinicalActivityHeartbeatUrl) return 'blocked';
   // RENIEC currently resolves inside the SPA. A future external integration needs separate authorization.
   if (url.pathname.split('/').some((segment) => /^(?:reniec|identitylookup)$/i.test(segment))) return 'blocked';
 
@@ -48,22 +81,42 @@ export function classifyReniecContractRequest(rawUrl: string, method: string, re
 export async function isolateReniecIdentitySearches(
   page: Page,
   restBaseUrls = [getOpenmrsRestBaseUrl(), new URL('../ws/rest/v1/', getSpaBaseUrl()).href],
+  spaBaseUrl = getSpaBaseUrl(),
 ) {
   const searches = new Set<string>();
   let blockedRequests = 0;
+  let clinicalActivityHeartbeats = 0;
   await page.route('**/*', async (route) => {
     const request = route.request();
-    const decision = classifyReniecContractRequest(request.url(), request.method(), restBaseUrls);
+    let heartbeat: HeartbeatRequestMetadata | undefined;
+    if (request.method() === 'POST') {
+      try {
+        heartbeat = {
+          spaBaseUrl,
+          bodyLength: request.postDataBuffer()?.byteLength ?? 0,
+          // headers() omits cookies; allHeaders() is required for this boundary.
+          headers: await request.allHeaders(),
+        };
+      } catch {
+        blockedRequests += 1;
+        await route.abort();
+        return;
+      }
+    }
+    const decision = classifyReniecContractRequest(request.url(), request.method(), restBaseUrls, heartbeat);
     if (decision === 'blocked') {
       blockedRequests += 1;
       await route.abort();
     } else if (decision === 'patient' || decision === 'person') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: '{"results":[]}' });
       searches.add(decision);
+    } else if (decision === 'clinicalActivityHeartbeat') {
+      await route.fulfill({ status: 204 });
+      clinicalActivityHeartbeats += 1;
     } else {
       await route.continue();
     }
   });
   // Expose only fixed resource labels and a count; never request URLs, query values or response data.
-  return () => ({ searches: [...searches].sort(), blockedRequests });
+  return () => ({ searches: [...searches].sort(), blockedRequests, clinicalActivityHeartbeats });
 }

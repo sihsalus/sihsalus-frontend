@@ -3,6 +3,25 @@ import { describe, expect, it } from 'vitest';
 import { describeE2EHttpFailure, sanitizeE2ERequestUrl } from './e2e-http-failures';
 
 describe('E2E HTTP failure diagnostics', () => {
+  it('identifies the exact infrastructure heartbeat without query or credentials', () => {
+    expect(
+      sanitizeE2ERequestUrl('https://user:secret@example.test/_sihsalus/clinical-activity?context=private#private'),
+    ).toBe('https://example.test/_sihsalus/clinical-activity');
+  });
+
+  it.each([
+    '/_sihsalus/clinical-activity/synthetic-id',
+    '/_sihsalus/clinical-activity;context=private',
+    '/_sihsalus/%63linical-activity',
+    '/_sihsalus/other-signal',
+  ])('does not identify an unverified infrastructure path (%s)', (path) => {
+    const result = sanitizeE2ERequestUrl(`https://example.test${path}`);
+    expect(result).not.toContain('_sihsalus');
+    expect(result).not.toContain('synthetic-id');
+    expect(result).not.toContain('private');
+    expect(result).toContain('[redacted]');
+  });
+
   it('keeps the failing endpoint without credentials, query parameters or fragments', () => {
     expect(
       sanitizeE2ERequestUrl('https://user:secret@example.test/openmrs/ws/rest/v1/session?token=secret#private'),

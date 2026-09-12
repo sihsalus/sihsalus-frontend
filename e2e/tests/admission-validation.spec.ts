@@ -4,19 +4,21 @@ import { getOpenmrsBaseUrl } from '../utils/e2e-urls';
 const API_BASE_URL = getOpenmrsBaseUrl();
 
 async function isVisibleByText(page: Page, pattern: RegExp, timeout = 12_000) {
-  return await page
-    .getByText(pattern)
-    .first()
-    .isVisible({ timeout })
-    .catch(() => false);
+  try {
+    await expect(page.getByText(pattern).first()).toBeVisible({ timeout });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function isVisibleBySelector(page: Page, selector: string, timeout = 12_000) {
-  return await page
-    .locator(selector)
-    .first()
-    .isVisible({ timeout })
-    .catch(() => false);
+  try {
+    await expect(page.locator(selector).first()).toBeVisible({ timeout });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 test.describe('Peru admission accreditation checks', () => {
@@ -44,13 +46,17 @@ test.describe('Peru admission accreditation checks', () => {
       });
     }
 
+    await expect(
+      page.locator('#demographics').getByRole('heading', { name: /^Nacimiento$/i }),
+      'birth field',
+    ).toBeVisible({ timeout: 5_000 });
+
     const requiredTexts: Array<[string, RegExp]> = [
       // Contenido visible de la sección expandida y encabezados clave.
       ['identification data heading', /Datos de identificación/i],
       ['identity lookup heading', /Buscar\/validar identidad/i],
       ['full name heading', /Nombre completo/i],
       ['sex field', /Sexo/i],
-      ['birth field', /Nacimiento/i],
       ['residence address heading', /Dirección de residencia/i],
       ['birthplace heading', /Lugar de nacimiento/i],
       ['responsible person heading', /Responsable del paciente/i],

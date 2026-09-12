@@ -97,8 +97,15 @@ búsquedas locales exactas de paciente y persona por el documento sintético,
 con respuestas vacías y comprobación de ambas peticiones. No consultan
 identidades locales de DEV/QLTY ni simulan la implementación RENIEC: esta sigue
 ejecutándose con el `spaEnv` real. Las escrituras, búsquedas inesperadas y
-solicitudes externas se bloquean y hacen fallar el contrato. Estos casos no
-acreditan una integración RENIEC ni la búsqueda local contra el backend.
+solicitudes externas se bloquean y hacen fallar el contrato. La única excepción
+es el POST de presencia `/_sihsalus/clinical-activity`, que se responde localmente
+con 204 sin reenviarlo: exige el origen exacto del SPA, URL sin query ni fragmento,
+cuerpo vacío y ausencia de autorización, cookies y referente comprobada mediante
+`allHeaders()`. Cualquier desviación sigue bloqueada. Su contador separado
+`clinicalActivityHeartbeats` no exige una cantidad fija; las dos búsquedas y cero
+peticiones bloqueadas siguen siendo obligatorios. Estos casos no acreditan la
+señal de presencia del gateway, una integración RENIEC ni la búsqueda local
+contra el backend.
 Antes de crear workers también comprueba que ambos pacientes estén activos y
 marcados como sintéticos, que la ubicación y el proveedor clínico estén activos,
 y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
@@ -236,7 +243,9 @@ sin mensajes crudos, query, credenciales, headers ni cuerpos. Solo conserva
 prefijos y recursos REST/FHIR conocidos; los segmentos posteriores o desconocidos
 se redactan, incluidos identificadores opacos y recursos anidados. Para assets
 planos del SPA conserva únicamente nombres fijos conocidos o el patrón emitido
-de módulo/chunk con hash. Las rutas ambiguas se ocultan completamente.
+de módulo/chunk con hash. También identifica exclusivamente la ruta de
+infraestructura `/_sihsalus/clinical-activity`, sin conservar sufijos ni parámetros.
+Las rutas ambiguas se ocultan completamente.
 
 Los dos pacientes reservados configurados en Actions son fixtures persistentes:
 se conservan para las siguientes corridas y se retiran mediante su journal

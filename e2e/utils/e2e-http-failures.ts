@@ -1,4 +1,5 @@
 import { type Response } from '@playwright/test';
+import { clinicalActivityHeartbeatUrl } from '../../packages/apps/esm-primary-navigation-app/src/clinical-activity-heartbeat';
 
 const restResources = new Set([
   'session',
@@ -87,6 +88,7 @@ export function sanitizeE2ERequestUrl(rawUrl: string): string {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return '[redacted-url]';
     // Ambiguous encoded separators or repeated encoding cannot safely identify resource boundaries.
     if (/%(?:2f|5c|25)/i.test(url.pathname) || url.pathname.includes('//')) return '[redacted-url]';
+    if (url.pathname === clinicalActivityHeartbeatUrl) return `${url.origin}${clinicalActivityHeartbeatUrl}`;
     const segments = decodeURIComponent(url.pathname)
       .split('/')
       .slice(1)

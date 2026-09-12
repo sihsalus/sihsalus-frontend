@@ -110,6 +110,15 @@ Antes de crear workers también comprueba que ambos pacientes estén activos y
 marcados como sintéticos, que la ubicación y el proveedor clínico estén activos,
 y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
 preflight no imprime el cuerpo del paciente en los logs.
+Los tres preflights remotos (base, clínico y laboratorio) comparten el cierre del
+contexto y el aislamiento de errores. Conservan únicamente mensajes de validación
+creados internamente; los fallos de transporte, JSON y respuestas malformadas
+reportan ámbito y etapa fija (`LOCATION`, `SESSION`, `PATIENT`, `VISIT` o metadatos
+de laboratorio), sin IDs, URL, headers, cuerpos ni causas externas. Por ejemplo,
+`CLINICAL_LOCATION_REQUEST_FAILED` identifica un fallo de lectura de ubicación.
+Los errores de creación y cierre usan `CONTEXT_CREATE_FAILED` y
+`CONTEXT_DISPOSE_FAILED`; si el cierre también falla, su código se añade al error
+principal. Esto no modifica los timeouts ni los requisitos clínicos.
 
 La suite de laboratorio valida el mismo target, ubicación y proveedor, pero no
 exige los dos pacientes reservados de la suite clínica: sus fixtures existentes

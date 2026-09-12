@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect, type PlaywrightWorkerArgs, test } from '@playwright/test';
 import { getE2ECredentials } from '../utils/e2e-api';
+import { getMissingEffectivePrivileges } from '../utils/e2e-effective-privileges';
 import { isSyntheticE2EPatient } from '../utils/e2e-gate-config';
 import { requireE2ERuntimeUuid } from '../utils/e2e-runtime-env';
 import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
@@ -257,21 +258,26 @@ test.describe('Consulta externa acceptance metadata', () => {
         currentProvider?: { uuid?: string; retired?: boolean } | null;
         user?: { uuid?: string; retired?: boolean; privileges?: Array<{ name?: string; retired?: boolean }> };
       };
-      const assignedPrivileges = new Set(
-        session.user?.privileges
-          ?.filter(({ retired }) => !retired)
-          .map(({ name }) => name)
-          .filter(Boolean) ?? [],
-      );
-
       expect(session.authenticated, 'La cuenta E2E debe estar autenticada').toBe(true);
       expect(session.user?.uuid, 'La sesión E2E debe identificar su usuario técnico').toBeTruthy();
       expect(session.user?.retired ?? false, 'El usuario técnico E2E debe estar activo').toBe(false);
       expect(session.currentProvider?.uuid, 'La cuenta E2E debe estar vinculada a un proveedor clínico').toBeTruthy();
       expect(session.currentProvider?.retired ?? false, 'El proveedor clínico E2E debe estar activo').toBe(false);
-      for (const privilege of requiredPrivileges) {
-        expect(assignedPrivileges, `La cuenta E2E no tiene el privilegio ${privilege}`).toContain(privilege);
-      }
+      // SessionController returns references without complete retirement state.
+      // Reuse the fixture harness's effective permission contract on fresh user metadata.
+      const userResponse = await api.get(`user/${session.user?.uuid}?v=custom:(uuid,retired,roles:(name,retired))`);
+      expect(userResponse.ok(), 'El usuario exacto de la sesión E2E debe poder consultarse').toBeTruthy();
+      const user = (await userResponse.json()) as {
+        uuid?: string;
+        retired?: boolean;
+        roles?: Array<{ name?: string; retired?: boolean }>;
+      };
+      expect(user.uuid, 'El usuario consultado debe coincidir con la sesión E2E').toBe(session.user?.uuid);
+      expect(user.retired, 'El usuario técnico E2E debe estar activo').toBe(false);
+      expect(
+        getMissingEffectivePrivileges(requiredPrivileges, session.user?.privileges, user.roles),
+        'La cuenta E2E debe tener todos los privilegios clínicos efectivos requeridos',
+      ).toEqual([]);
     } finally {
       await api.dispose();
     }

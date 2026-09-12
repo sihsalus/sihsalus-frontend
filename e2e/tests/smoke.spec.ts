@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { describeE2EHttpFailure } from '../utils/e2e-http-failures';
 import { getSpaUrl } from '../utils/e2e-urls';
 
 test.describe('SPA Smoke Tests', () => {
@@ -41,6 +42,11 @@ test.describe('SPA Smoke Tests', () => {
 
   test('no console errors on home page load', async ({ page }) => {
     const errors: string[] = [];
+    const httpFailures: Array<NonNullable<ReturnType<typeof describeE2EHttpFailure>>> = [];
+    page.on('response', (response) => {
+      const failure = describeE2EHttpFailure(response);
+      if (failure) httpFailures.push(failure);
+    });
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
         errors.push(msg.text());
@@ -59,7 +65,8 @@ test.describe('SPA Smoke Tests', () => {
         !e.includes("O3 Core Translations does not provide key 'SIHSALUS'"),
     );
 
-    expect(critical).toEqual([]);
+    // Preserve the console gate, but do not publish raw messages or response bodies.
+    expect(critical.length, `Home console errors; HTTP failures: ${JSON.stringify(httpFailures)}`).toBe(0);
   });
 
   test('navigation between pages works', async ({ page }) => {

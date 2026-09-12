@@ -7,6 +7,21 @@ The one stop CLI for using the OpenMRS 3.0 Frontend app.
 This SIH Salus fork requires Node.js 24 or later; use the repository's supported
 Node 24 and Yarn versions for development and validation.
 
+## CLI startup contract
+
+The CommonJS entry point creates a parser with the
+[yargs 18 factory and `hideBin(process.argv)`](https://github.com/yargs/yargs/blob/v18.1.0/README.md#usage).
+Do not use the removed singleton API: it prevents every command, including
+`--help`, from starting. This also affects `yarn start`, `yarn serve`, and the
+clinical/laboratory E2E web server.
+
+`yarn workspace openmrs test` exercises the emitted CommonJS with the installed
+yargs: root/command help must exit successfully, unknown options must fail, and
+explicit/default `start` must preserve typed arguments. These local regressions
+replace command side effects and require no backend, browser or credentials.
+After `yarn workspace openmrs build`, also check `yarn openmrs --help` against the
+compiled entry point. Clinical E2E acceptance remains a separate environment gate.
+
 ## Installation
 
 You can run the tool without installation using `npx`, which is part of NPM. Just make sure to fulfill the prerequisites.

@@ -88,10 +88,37 @@ origen HTTPS exacto del ambiente elegido y solo permite que el SPA sea ese mismo
 origen o un servidor loopback. Producción y hosts parecidos quedan rechazados.
 En CI el SPA siempre se ensambla desde el SHA bajo prueba y se sirve en loopback;
 no se valida por accidente una versión anterior desplegada.
+Las pruebas de RENIEC eligen el contrato mediante el `spaEnv` efectivo del
+navegador: `development` permite las identidades sintéticas y `production`
+debe rechazarlas, incluso al servirse en loopback. Un entorno ausente o
+desconocido falla; el hostname no determina el modo del artefacto.
+Solo esos dos contratos RENIEC bloquean service workers e interceptan las
+búsquedas locales exactas de paciente y persona por el documento sintético,
+con respuestas vacías y comprobación de ambas peticiones. No consultan
+identidades locales de DEV/QLTY ni simulan la implementación RENIEC: esta sigue
+ejecutándose con el `spaEnv` real. Las escrituras, búsquedas inesperadas y
+solicitudes externas se bloquean y hacen fallar el contrato. La única excepción
+es el POST de presencia `/_sihsalus/clinical-activity`, que se responde localmente
+con 204 sin reenviarlo: exige el origen exacto del SPA, URL sin query ni fragmento,
+cuerpo vacío y ausencia de autorización, cookies y referente comprobada mediante
+`allHeaders()`. Cualquier desviación sigue bloqueada. Su contador separado
+`clinicalActivityHeartbeats` no exige una cantidad fija; las dos búsquedas y cero
+peticiones bloqueadas siguen siendo obligatorios. Estos casos no acreditan la
+señal de presencia del gateway, una integración RENIEC ni la búsqueda local
+contra el backend.
 Antes de crear workers también comprueba que ambos pacientes estén activos y
 marcados como sintéticos, que la ubicación y el proveedor clínico estén activos,
 y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
 preflight no imprime el cuerpo del paciente en los logs.
+Los tres preflights remotos (base, clínico y laboratorio) comparten el cierre del
+contexto y el aislamiento de errores. Conservan únicamente mensajes de validación
+creados internamente; los fallos de transporte, JSON y respuestas malformadas
+reportan ámbito y etapa fija (`LOCATION`, `SESSION`, `PATIENT`, `VISIT` o metadatos
+de laboratorio), sin IDs, URL, headers, cuerpos ni causas externas. Por ejemplo,
+`CLINICAL_LOCATION_REQUEST_FAILED` identifica un fallo de lectura de ubicación.
+Los errores de creación y cierre usan `CONTEXT_CREATE_FAILED` y
+`CONTEXT_DISPOSE_FAILED`; si el cierre también falla, su código se añade al error
+principal. Esto no modifica los timeouts ni los requisitos clínicos.
 
 La suite de laboratorio valida el mismo target, ubicación y proveedor, pero no
 exige los dos pacientes reservados de la suite clínica: sus fixtures existentes
@@ -180,6 +207,9 @@ el contrato impide que ambas fuentes diverjan en silencio.
   "Agregar paciente" y el banner del paciente "Registrar signos vitales"; un
   `getByRole('button', { name: /Agregar|Registrar/i })` sin ancla encuentra esos
   antes que el del widget. Anclar con `getByRole('main')` o con el contenedor.
+  En registro, los títulos también aparecen en la navegación lateral oculta en
+  móvil: comprobar el `heading` del panel con `expect(...).toBeVisible()` para
+  conservar la espera automática y exigir el contenido real.
 - **La UI evoluciona más rápido que los specs.** Antes de dar por bueno un
   fallo, comparar contra `routes.registry.json` del ambiente desplegado: la ruta
   del odontograma pasó de `Odontograma` a `atencion-odontologica` y el spec
@@ -213,6 +243,18 @@ de cada operación: OpenMRS concede todos los privilegios a ese rol, aunque
 Los alias de frontend, etiquetas de presentación, roles retirados o metadatos
 incompletos no sustituyen los permisos. Si se revocan, el preparador detiene
 también el cleanup y conserva su journal privado.
+AC05 reutiliza el mismo cálculo de permisos efectivos después de verificar el
+usuario activo exacto de la sesión; no modifica roles ni concede privilegios.
+
+El smoke de consola conserva su criterio de fallo, incluidos los 404. Si falla,
+informa cantidad de errores y metadatos HTTP (método, estado y URL sanitizada),
+sin mensajes crudos, query, credenciales, headers ni cuerpos. Solo conserva
+prefijos y recursos REST/FHIR conocidos; los segmentos posteriores o desconocidos
+se redactan, incluidos identificadores opacos y recursos anidados. Para assets
+planos del SPA conserva únicamente nombres fijos conocidos o el patrón emitido
+de módulo/chunk con hash. También identifica exclusivamente la ruta de
+infraestructura `/_sihsalus/clinical-activity`, sin conservar sufijos ni parámetros.
+Las rutas ambiguas se ocultan completamente.
 
 Los dos pacientes reservados configurados en Actions son fixtures persistentes:
 se conservan para las siguientes corridas y se retiran mediante su journal

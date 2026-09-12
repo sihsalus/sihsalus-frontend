@@ -13,6 +13,7 @@ const chalk = require('chalk');
 const { createSpaStaticOptions, isSpaIndexRequestPath } = require('../openmrs/spa-static-options');
 const { formatSpaArtifactIssue, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 const { normalizeDevBackendUrl } = require('./dev-backend-url');
+const { clinicalActivityPath, createClinicalActivityHandler } = require('./dev-clinical-activity');
 const logInfo = (msg) => console.log(`${chalk.green.bold('[start-dev]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[start-dev]')} ${chalk.yellow(msg)}`);
 const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk.red(msg)}`);
@@ -415,6 +416,8 @@ async function startWithProxy(cliArgs) {
     windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
     max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0),
   });
+
+  app.all(clinicalActivityPath, createClinicalActivityHandler({ backend, getBackendFetchDispatcher }));
 
   app.all(sessionPath, async (req, res) => {
     const authorization = req.get('authorization');

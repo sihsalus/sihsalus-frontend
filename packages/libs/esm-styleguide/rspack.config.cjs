@@ -11,6 +11,7 @@ const cssLoader = {
     modules: {
       auto: true,
       namedExport: false,
+      exportLocalsConvention: 'camel-case',
     },
   },
 };

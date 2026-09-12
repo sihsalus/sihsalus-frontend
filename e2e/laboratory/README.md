@@ -34,6 +34,16 @@ does not consume `E2E_PATIENT_UUID` or `E2E_APPOINTMENTS_PATIENT_UUID`: its
 existing test fixture creates a synthetic patient per case. This does not relax
 the main clinical preflight or remove CI's configured fixture requirements.
 
+Laboratory global setup also checks the exact provider resource and requires
+explicitly active provider/location metadata. Before writing login state or
+starting any patient fixture, it reads the concept and order type shared in
+`core/fixture-config.ts`. The existing concept
+`887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` must be active, class `Test`, and datatype
+`Numeric`. The existing order type must be active, use `org.openmrs.TestOrder`,
+and admit that concept class. Missing, incompatible or incomplete metadata
+blocks the suite with a safe error code; there is no search or fallback to
+another concept and no synthetic creation during these checks.
+
 Global setup and the browser use the same absolute
 `e2e/laboratory/storageState.json` path. It contains authentication state, is
 ignored by Git, and must never be published as evidence.
@@ -44,6 +54,10 @@ The existing commands depend on the configured login location, provider,
 identifier source/type, visit/encounter types, care setting and a numeric
 orderable laboratory concept. Coordinate that metadata before running: an
 available endpoint does not prove the content contract.
+
+These metadata checks validate prerequisites for the API-created test order.
+They do not validate membership in the patient-chart order picker, authorize a
+catalogue replacement, or prove that result entry and cleanup will succeed.
 
 Row selection matches an exact, whitespace-normalized synthetic patient cell,
 not a regular expression built from the patient's name. Test labels come from

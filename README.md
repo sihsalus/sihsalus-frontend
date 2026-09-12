@@ -48,6 +48,15 @@ usar HTTP(S), sin credenciales, query ni fragmento. Las rutas de contexto
 personalizadas se conservan. Esta normalización no cambia el backend elegido ni
 la política TLS.
 
+`yarn start` también reenvía el heartbeat de actividad clínica al endpoint
+`/_sihsalus/clinical-activity` del gateway configurado, con la misma política TLS
+y un límite de tres segundos. Solo admite POST a esa ruta exacta, sin query,
+cuerpo, cookies, autorización ni referer; no reenvía cabeceras del navegador.
+Devuelve 204 únicamente si el gateway confirma 204. Conserva sus errores 4xx/5xx
+sin cuerpos ni cabeceras, devuelve 502 ante redirecciones u otros fallos y 504
+ante timeout. Así la señal real de presencia sigue llegando a la política de
+apagado seguro sin incluir contexto clínico.
+
 ## Repository Structure
 
 ```

@@ -26,6 +26,13 @@ Un cambio pequeno aqui puede romper multiples apps porque muchas extensiones dep
 - El left sidebar debe mostrar labels traducidos; keys como `caseMonitoringEncounters` son defectos.
 - El right sidebar debe conservar acciones criticas: ordenes, FUA, notas de visita, formularios y listas de pacientes.
 
+En escritorio, el contenedor compartido de workspaces participa en la grilla del
+shell y reserva el ancho de la barra de acciones y del workspace abierto. El
+banner y el contenido central deben terminar antes de esa columna. Los grupos
+configurados como overlay conservan la superposición explícita y en tablet la
+barra conserva su posición inferior. La regresión visual se comprueba con
+`node --test --test-name-pattern="workspace rail" packages/tooling/scripts/styles.browser.spec.js`.
+
 ### Apertura de historias recientes
 
 El chart añade `isPatientChart: true` únicamente al estado de su `patient-header-slot`, después de cargar

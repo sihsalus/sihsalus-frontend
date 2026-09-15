@@ -72,6 +72,12 @@ completar la edad. Al cambiar o borrar valores se recalcula la fecha de nacimien
 y se conserva `birthdateEstimated: true` en el payload. Una edad expresada solo
 en meses mantiene la exigencia de responsable para menores.
 
+Un familiar menor puede conservarse como vínculo, pero no seleccionarse como responsable,
+independientemente de la edad del paciente. Una asignación inválida existente puede desmarcarse
+para corregirla. Al validar al responsable se prioriza su fecha de nacimiento sobre una edad
+numérica contradictoria; la búsqueda online exige datos frescos y la búsqueda offline conserva
+su estrategia existente. Los errores de vínculos se traducen antes de mostrarse.
+
 ## Identificadores temporales
 
 El identificador temporal debe generarse con el tipo/fuente configurada de OpenMRS/IdGen. No debe construirse en frontend con lógica ad hoc. Cuando luego aparece DNI u otro documento civil, se agrega como identificador adicional y se actualiza el estado de identificación; no se elimina automáticamente el código temporal porque sirve para reconciliación y auditoría.

@@ -425,7 +425,7 @@
   "responsiblePersonAgeUnknown": "El responsable debe tener edad o fecha de nacimiento registrada",
   "responsiblePersonCreationError": "No se pudo guardar a la persona relacionada. Inténtelo nuevamente.",
   "responsiblePersonMustBeAdult": "El responsable del paciente debe ser mayor de edad",
-  "responsiblePersonMustBeAdultHelpText": "No se puede asignar a una persona menor de edad como responsable de otro menor de edad.",
+  "responsiblePersonMustBeAdultHelpText": "No se puede asignar a una persona menor de edad como responsable de un paciente.",
   "responsiblePersonSection": "Vínculos y responsable",
   "responsiblePhone": "Teléfono o celular (opcional)",
   "responsibleRelationshipRequiredForMinor": "Para pacientes menores de edad, registre un familiar responsable, apoderado o tutor.",

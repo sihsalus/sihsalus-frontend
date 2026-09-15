@@ -7,6 +7,12 @@
   width: fit-content;
   z-index: 100;
 
+  // Let the shell's workspace grid column reserve the rail and workspace spacer
+  // widths. Absolute positioning otherwise leaves that column at zero width.
+  :global(.omrs-breakpoint-gt-tablet) &:not(.overlay) {
+    position: relative;
+  }
+
   // When any workspace is maximized, remove containment to allow fixed positioning
   &.hasMaximizedWindow {
     contain: none !important;

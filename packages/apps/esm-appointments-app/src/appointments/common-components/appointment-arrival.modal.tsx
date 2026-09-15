@@ -1,4 +1,12 @@
-import { Button, InlineLoading, InlineNotification, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import {
+  Checkbox,
+  Button,
+  InlineLoading,
+  InlineNotification,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+} from '@carbon/react';
 import {
   formatDatetime,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
@@ -18,6 +26,7 @@ import {
   getPersonSisFinancingState,
   getSisFinancingState,
   isTriageFinancingEligible,
+  normalizeFinanciadorConceptUuid,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
 import { formatPersonName, getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
@@ -41,6 +50,14 @@ import {
 } from '../../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentStatus } from '../../types';
 import styles from './appointment-arrival.scss';
+import {
+  type ArrivalPaymentConfirmation,
+  assertArrivalPaymentAttributeConfigured,
+  ensureArrivalPaymentSaved,
+  ARRIVAL_PAYMENT_CONFIGURATION_MISSING,
+  ARRIVAL_PAYMENT_NOT_SAVED,
+} from './arrival-payment.resource';
+const ARRIVAL_PAYMENT_REQUIRED = 'ARRIVAL_PAYMENT_REQUIRED';
 import {
   canCreateAppointmentQueueEntry,
   canCreateAppointmentVisit,
@@ -102,6 +119,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   const {
     appointmentArrivalRules,
     appointmentVisitAttributeTypeUuid,
+    arrivalPaymentVisitAttributeTypeUuid,
     checkInButton,
     customPatientChartUrl,
     triageRouting,
@@ -115,6 +133,8 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
   const [inlineError, setInlineError] = useState<unknown>(null);
   const isBusy = pendingAction !== null;
+  const [paymentFinancingUuid, setPaymentFinancingUuid] = useState<string | null>(null);
+  const [paymentConfirmation, setPaymentConfirmation] = useState<ArrivalPaymentConfirmation | null>(null);
 
   useEffect(() => {
     if (
@@ -236,6 +256,18 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         [TRIAGE_SIS_FINANCING_REQUIRED]: t(
           'triageSisFinancingRequired',
           'El paciente no tiene una acreditación SIS vigente. Revise el financiamiento en Admisión o derive al paciente a Caja para regularizar el pago o la cobertura antes del triaje.',
+        ),
+        [ARRIVAL_PAYMENT_REQUIRED]: t(
+          'arrivalPaymentRequired',
+          'Debe confirmar el pago de Caja para el financiador de esta consulta antes de continuar.',
+        ),
+        [ARRIVAL_PAYMENT_CONFIGURATION_MISSING]: t(
+          'arrivalPaymentConfigurationMissing',
+          'No está configurado el registro de confirmación de pago en la consulta. Contacte al administrador.',
+        ),
+        [ARRIVAL_PAYMENT_NOT_SAVED]: t(
+          'arrivalPaymentNotSaved',
+          'No se pudo verificar el pago guardado en la consulta. Intente nuevamente.',
         ),
         [TRIAGE_FINANCING_UNDEFINED]: t(
           'triageFinancingUndefined',
@@ -460,21 +492,35 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   };
 
   const assertPatientHasEligibleFinancingForTriage = async () => {
-    if (!arrivalRule?.requiresTriage) {
-      return;
-    }
-
     const patientInsurance = await fetchPersonInsurance(patientUuid);
+    const financingState = getPersonSisFinancingState(patientInsurance);
+    const financingUuid = normalizeFinanciadorConceptUuid(patientInsurance.insuranceTypeUuid);
+    if (paymentConfirmation && paymentConfirmation.financingUuid !== financingUuid) {
+      throw Object.assign(new Error('Financing changed after payment confirmation'), {
+        code: ARRIVAL_PAYMENT_REQUIRED,
+      });
+    }
+    if (financingUuid && financingState === 'notApplicable') {
+      setPaymentFinancingUuid(financingUuid);
+      if (!paymentConfirmation) {
+        setPaymentConfirmation(null);
+        throw Object.assign(new Error('Admission must confirm cashier payment'), { code: ARRIVAL_PAYMENT_REQUIRED });
+      }
+      await assertArrivalPaymentAttributeConfigured(arrivalPaymentVisitAttributeTypeUuid);
+      return paymentConfirmation;
+    }
+    if (!arrivalRule?.requiresTriage) return null;
     if (!patientInsurance.insuranceTypeUuid) {
       throw Object.assign(new Error('The patient does not have a financing type assigned.'), {
         code: TRIAGE_FINANCING_UNDEFINED,
       });
     }
-    if (!isTriageFinancingEligible(getPersonSisFinancingState(patientInsurance))) {
+    if (!isTriageFinancingEligible(financingState)) {
       throw Object.assign(new Error('The patient does not have active SIS financing.'), {
         code: TRIAGE_SIS_FINANCING_REQUIRED,
       });
     }
+    return null;
   };
 
   const openPatientCoverageReview = () => {
@@ -496,6 +542,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const validateBeforePersistence = async (expectedVisit?: Visit) => {
     try {
+      const payment = await assertPatientHasEligibleFinancingForTriage();
       assertVisitLinkIsConfigured();
       if (!(await validateAppointmentStatus(Boolean(expectedVisit)))) {
         return false;
@@ -529,6 +576,19 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
               code: TRIAGE_SIS_FINANCING_REQUIRED,
             });
           }
+        }
+        if (payment) {
+          await safeCopyFinanciadorToVisit({ patientUuid, visitUuid: activeVisit.uuid, onlyFillMissing: true });
+          const insurance = await fetchVisitInsurance(activeVisit.uuid);
+          if (
+            getSisFinancingState(insurance) !== 'notApplicable' ||
+            normalizeFinanciadorConceptUuid(insurance.financiadorUuid) !== payment.financingUuid
+          ) {
+            throw Object.assign(new Error('Visit financing differs from the confirmed payment'), {
+              code: ARRIVAL_PAYMENT_REQUIRED,
+            });
+          }
+          await ensureArrivalPaymentSaved(activeVisit.uuid, arrivalPaymentVisitAttributeTypeUuid, payment);
         }
         await ensureAppointmentVisitLink(activeVisit.uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
       }
@@ -652,7 +712,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     try {
       const rule = assertArrivalActionIsConfigured('queue');
       assertVisitLinkIsConfigured();
-      await assertPatientHasEligibleFinancingForTriage();
+      const payment = await assertPatientHasEligibleFinancingForTriage();
       const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
       if (!(await validateAppointmentStatus())) {
         closeModal();
@@ -719,6 +779,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
         companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
         additionalVisitAttributes: [
+          ...(payment ? [{ attributeType: arrivalPaymentVisitAttributeTypeUuid, value: JSON.stringify(payment) }] : []),
           {
             attributeType: appointmentVisitAttributeTypeUuid,
             value: appointment.uuid,
@@ -750,7 +811,8 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
             : 'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente será agregado a la cola seleccionada.',
         ),
         onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
-        onVisitStarted: async () => {
+        onVisitStarted: async (visit: Visit) => {
+          if (payment) await ensureArrivalPaymentSaved(visit.uuid, arrivalPaymentVisitAttributeTypeUuid, payment);
           mutateVisits?.();
           await checkInFromWorkspaceCallback(
             t(
@@ -779,6 +841,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     setInlineError(null);
     try {
       const rule = assertArrivalActionIsConfigured('direct');
+      const payment = await assertPatientHasEligibleFinancingForTriage();
       if (!canOpenPatientChart) {
         throw Object.assign(new Error('The operator cannot open the patient chart.'), {
           code: CLINICAL_CHART_CAPABILITY_MISSING,
@@ -798,6 +861,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         assertCanReuseVisit();
         assertVisitMatchesAppointmentLocation(activeVisits[0]);
         assertVisitTypeIsCompatible(activeVisits[0]);
+        if (payment && !(await validateBeforePersistence(activeVisits[0]))) return;
         await ensureAppointmentVisitLink(activeVisits[0].uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
         await checkIn(
           canOpenPatientChart
@@ -826,6 +890,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
         companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
         additionalVisitAttributes: [
+          ...(payment ? [{ attributeType: arrivalPaymentVisitAttributeTypeUuid, value: JSON.stringify(payment) }] : []),
           {
             attributeType: appointmentVisitAttributeTypeUuid,
             value: appointment.uuid,
@@ -848,7 +913,8 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           'Revise los datos de la atención. Al confirmar, se iniciará la consulta y se registrará la llegada sin enviar al paciente a una cola.',
         ),
         onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
-        onVisitStarted: async () => {
+        onVisitStarted: async (visit: Visit) => {
+          if (payment) await ensureArrivalPaymentSaved(visit.uuid, arrivalPaymentVisitAttributeTypeUuid, payment);
           mutateVisits?.();
           await checkInFromWorkspaceCallback(
             t(
@@ -941,7 +1007,41 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           <InlineLoading description={t('verifyingPatientAge', 'Verificando la edad del paciente...')} />
         ) : null}
         {isVisitBranchLoading ? <InlineLoading description={t('verifyingVisit', 'Verificando consulta…')} /> : null}
-        {displayedError ? (
+        {paymentFinancingUuid ? (
+          <div>
+            <p>
+              {t(
+                'arrivalPaymentInstructions',
+                'El paciente tiene un seguro distinto de SIS. Verifique el comprobante de Caja antes de continuar.',
+              )}
+            </p>
+            <Checkbox
+              id="arrival-payment-confirmed"
+              labelText={t(
+                'arrivalPaymentConfirmed',
+                'Confirmo que revisé el comprobante y que el pago fue realizado en Caja',
+              )}
+              checked={Boolean(paymentConfirmation)}
+              disabled={isBusy || !session?.user?.uuid}
+              onChange={(_event, { checked }) => {
+                setPaymentConfirmation(
+                  checked
+                    ? {
+                        version: 1,
+                        confirmed: true,
+                        financingUuid: paymentFinancingUuid,
+                        appointmentUuid: appointment.uuid,
+                        confirmedBy: session.user.uuid,
+                        confirmedAt: new Date().toISOString(),
+                      }
+                    : null,
+                );
+                setInlineError(null);
+              }}
+            />
+          </div>
+        ) : null}
+        {displayedError && displayedErrorCode !== ARRIVAL_PAYMENT_REQUIRED ? (
           <InlineNotification
             hideCloseButton
             kind="error"

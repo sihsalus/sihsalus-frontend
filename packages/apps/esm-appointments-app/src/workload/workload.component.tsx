@@ -6,17 +6,23 @@ import { useMonthlyCalendarDistribution } from './workload.resource';
 import styles from './workload.scss';
 
 interface WorkloadProps {
-  appointmentDate: Date;
+  appointmentDate: Date | null;
   minDate?: Date;
   onWorkloadDateChange: (pickedDate: Date) => void;
   serviceUuid: string;
 }
 
 const Workload: React.FC<WorkloadProps> = ({ serviceUuid, appointmentDate, minDate, onWorkloadDateChange }) => {
-  const [displayedMonth, setDisplayedMonth] = useState(() => dayjs(appointmentDate).startOf('month').toDate());
+  const [displayedMonth, setDisplayedMonth] = useState(() =>
+    dayjs(appointmentDate && dayjs(appointmentDate).isValid() ? appointmentDate : new Date())
+      .startOf('month')
+      .toDate(),
+  );
 
   useEffect(() => {
-    setDisplayedMonth(dayjs(appointmentDate).startOf('month').toDate());
+    if (appointmentDate && dayjs(appointmentDate).isValid()) {
+      setDisplayedMonth(dayjs(appointmentDate).startOf('month').toDate());
+    }
   }, [appointmentDate]);
 
   const monthlyCalendarWorkload = useMonthlyCalendarDistribution(serviceUuid, 'month', displayedMonth);

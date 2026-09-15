@@ -117,7 +117,11 @@ describe('assessProviderSchedulingCategory', () => {
     });
   });
 
-  it('filters providers by the exact active scheduling category in strict mode', () => {
+  it.each([
+    'off',
+    'warn',
+    'strict',
+  ] as const)('filters providers by the exact active scheduling category in %s mode', (mode) => {
     const incompatibleProvider = {
       ...provider,
       uuid: 'incompatible-provider-uuid',
@@ -126,7 +130,7 @@ describe('assessProviderSchedulingCategory', () => {
 
     expect(
       filterProvidersBySchedulingCategory({
-        mode: 'strict',
+        mode,
         providerAttributeTypeUuid: attributeTypeUuid,
         providers: [incompatibleProvider, provider],
         service,
@@ -140,6 +144,17 @@ describe('assessProviderSchedulingCategory', () => {
         mode: 'strict',
         providerAttributeTypeUuid: attributeTypeUuid,
         providers: [provider],
+      }),
+    ).toEqual([]);
+  });
+
+  it('does not list unrelated providers if service category metadata is missing', () => {
+    expect(
+      filterProvidersBySchedulingCategory({
+        mode: 'warn',
+        providers: [provider],
+        service: { ...service, speciality: {} },
+        providerAttributeTypeUuid: attributeTypeUuid,
       }),
     ).toEqual([]);
   });

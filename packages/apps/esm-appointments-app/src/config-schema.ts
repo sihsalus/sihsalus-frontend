@@ -66,6 +66,12 @@ export const configSchema = {
       },
     },
   },
+  arrivalPaymentVisitAttributeTypeUuid: {
+    _type: Type.UUID,
+    _default: '090eb9b3-a306-450f-8623-9fc00b8d82fa',
+    _description:
+      'Visit FreeText attribute storing the non-SIS cashier payment confirmation and its admission audit context',
+  },
   appointmentVisitAttributeTypeUuid: {
     _type: Type.UUID,
     _description: 'Visit attribute type used to persist the originating appointment UUID on an OpenMRS visit',
@@ -215,6 +221,7 @@ export interface ConfigObject {
     allowedGenders: Array<string>;
   }>;
   appointmentVisitAttributeTypeUuid: string;
+  arrivalPaymentVisitAttributeTypeUuid: string;
   careRoutingContractVersion: string;
   appointmentArrivalRules: Array<AppointmentArrivalRule>;
   triageRouting: AppointmentTriageRouting;

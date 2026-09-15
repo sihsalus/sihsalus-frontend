@@ -64,10 +64,15 @@ Los guards de UI controlan visibilidad y acceso a rutas, modales y workspaces. N
 
 ## Configuración operativa
 
+- La llegada con un financiador no SIS exige que Admisión confirme manualmente haber revisado el comprobante de Caja. La confirmación no acredita SIS ni ejecuta un cobro. El atributo `arrivalPaymentVisitAttributeTypeUuid` guarda JSON versión 1 con `confirmed`, `financingUuid`, `appointmentUuid`, `confirmedBy` y `confirmedAt`. En visitas nuevas se incluye en el mismo payload; en consultas activas se guarda y relee antes de autorizar el ingreso a cola o la llegada directa. Si cambia el financiador o falla el guardado, se bloquea la continuación. SIS conserva la verificación de cobertura existente.
+- Antes de habilitar ese flujo, el paquete de contenido debe instalar el atributo de visita FreeText `090eb9b3-a306-450f-8623-9fc00b8d82fa` (máximo una ocurrencia), definido en `configuration/backend_configuration/attributetypes/arrival_payment.csv` del repositorio de contenido. El modal verifica la configuración antes de abrir el formulario de consulta. El backend conserva su auditoría de creación/actualización; el registro representa una declaración del operador, no una verificación automática contra Caja.
 - `appointmentVisitAttributeTypeUuid` vincula la consulta activa con la cita y permite detectar cierres o llegadas que necesitan regularización.
 - `appointmentArrivalRules` y `careRoutingContractVersion` determinan el enrutamiento de la llegada.
 - `checkInButton` y `checkOutButton` habilitan las acciones o permiten delegarlas a una URL configurada.
 - Las notas de una cita no deben superar 255 caracteres, límite del campo `patient_appointment.comments` del backend.
+- La duración ingresada debe ser un número entero entre 1 y 720 minutos (12 horas); el formulario valida el máximo también antes de guardar.
+- La UPSS limita los servicios disponibles y el selector de personal exige una categoría de agenda del servicio coincidente con un atributo activo del prestador (`providerSchedulingCategoryValidation.providerAttributeTypeUuid`). Los modos `off` y `warn` no amplían el selector a personal sin esa habilitación. Si faltan asociaciones, se muestra la advertencia de personal no habilitado; no se infiere compatibilidad por el nombre, la profesión o el rol. Cambiar la UPSS o el servicio elimina una selección incompatible, y el guardado vuelve a comprobarla.
+- Borrar o completar parcialmente la fecha mantiene abierto el formulario y conserva el mes visible del calendario. La fecha debe ser válida antes de guardar.
 - La tabla muestra el documento civil como tipo + número (`DNI - …`, `CE - …`, `Pasaporte - …`). El número de HCE y los identificadores internos no se presentan como documentos civiles. La consulta complementaria del paciente distingue carga, ausencia y error; este último ofrece reintento sobre el mismo registro.
 
 ## Desarrollo

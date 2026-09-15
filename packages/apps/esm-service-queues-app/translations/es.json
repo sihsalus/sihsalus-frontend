@@ -444,5 +444,10 @@
   "waitingFor": "En espera para",
   "waitTime": "Tiempo de espera",
   "weight": "Peso",
-  "years": "años"
+  "years": "años",
+  "refreshVisualQueue": "Actualizar cola",
+  "visualQueueOffline": "Sin conexión",
+  "visualQueueOfflineMessage": "No se pueden comprobar los cambios en la cola hasta recuperar la conexión.",
+  "visualQueuePreviousData": "Se muestra la última cola completa cargada en esta vista. Puede haber cambiado.",
+  "visualQueueUnconfirmedStatus": "No hay información actualizada de la cola"
 }

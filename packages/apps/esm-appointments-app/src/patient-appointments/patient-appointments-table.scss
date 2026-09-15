@@ -15,6 +15,7 @@
   th,
   td {
     vertical-align: middle;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -54,17 +55,22 @@
   width: 12rem;
 }
 
-.actionsColumn {
-  width: 13rem;
+.table .actionsColumn {
+  // Override Carbon's automatic width on the last header cell.
+  inline-size: 16rem;
 }
 
 .actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: layout.$spacing-02;
   min-width: 0;
+
+  > * {
+    flex-shrink: 0;
+  }
 }
 
 .responsiveDetailsRow {
@@ -88,7 +94,11 @@
   }
 }
 
-@container (max-width: 70rem) {
+@container (max-width: 90rem) {
+  .table {
+    table-layout: auto;
+  }
+
   .locationColumn,
   .providerColumn,
   .typeColumn,
@@ -106,25 +116,21 @@
   }
 
   .dateColumn {
-    width: 16%;
+    width: 8.5rem;
   }
 
   .serviceColumn {
-    width: 34%;
+    width: auto;
   }
 
   .statusColumn {
-    width: 16%;
-  }
-
-  .actionsColumn {
-    width: 34%;
+    width: 8rem;
   }
 }
 
 @container (max-width: 44rem) {
   .table {
-    min-width: 32rem;
+    min-width: 40rem;
   }
 
   .dateColumn {
@@ -133,10 +139,6 @@
 
   .statusColumn {
     width: 7.5rem;
-  }
-
-  .actionsColumn {
-    width: 11rem;
   }
 
   .responsiveDetails {

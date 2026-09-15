@@ -1,18 +1,21 @@
 import { Button, InlineLoading, InlineNotification, Layer, Tag } from '@carbon/react';
-import { ArrowLeft, Maximize, Minimize, Time } from '@carbon/react/icons';
+import { ArrowLeft, Maximize, Minimize, Renew, Time } from '@carbon/react/icons';
 import {
   ConfigurableLink,
   EmptyCardIllustration,
   getUserFacingErrorMessage,
   isDesktop,
   navigate,
+  restBaseUrl,
   useConfig,
+  useConnectivity,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { formatPersonName } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 
 import { type ConfigObject } from '../config-schema';
 import { serviceQueuesBasePath } from '../constants';
@@ -93,6 +96,9 @@ function getPriorityTagType(priorityDisplay: string) {
 
 const VisualQueue = () => {
   const { t } = useTranslation();
+  const isOnline = useConnectivity();
+  const { mutate: refreshCache } = useSWRConfig();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const layout = useLayoutType();
   const boardId = useId();
   const {
@@ -122,13 +128,32 @@ const VisualQueue = () => {
     }),
     [selectedQueueLocationUuid, selectedQueueStatusUuid, selectedServiceUuid],
   );
-  const { queueEntries, error, isLoading, isValidating } = useOperationalQueueEntries(searchCriteria);
+  const { queueEntries, error, isLoading, isValidating, mutate } = useOperationalQueueEntries(searchCriteria);
   const columns = useMemo(
     () => buildQueueBoardColumns(queueEntries ?? [], statuses, selectedQueueStatusUuid, selectedQueueStatusDisplay),
     [queueEntries, selectedQueueStatusDisplay, selectedQueueStatusUuid, statuses],
   );
   const queueError = error || queueStatusesError;
   const isQueueLoading = Boolean(isLoading || isLoadingQueueStatuses);
+  const isDataUnavailable = !isOnline || Boolean(queueError);
+  const isAccessDenied = [error, queueStatusesError].some((error) =>
+    [401, 403].includes((error as { response?: { status?: number } })?.response?.status ?? 0),
+  );
+  const showPreviousEntries =
+    (isDataUnavailable || isValidating || isRefreshing) && !isAccessDenied && queueEntries.length > 0;
+
+  const refreshQueue = async () => {
+    if (!isOnline || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        mutate(),
+        refreshCache((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/queue?`)),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <>
@@ -167,15 +192,24 @@ const VisualQueue = () => {
                 <strong>
                   <output
                     aria-label={
-                      queueError || isQueueLoading
+                      isDataUnavailable || isQueueLoading
                         ? t('queueCountUnavailable', 'Patient count unavailable')
                         : t('patients', 'Patients')
                     }
                   >
-                    {queueError || isQueueLoading ? '—' : (queueEntries?.length ?? 0)}
+                    {isDataUnavailable || isQueueLoading ? '—' : (queueEntries?.length ?? 0)}
                   </output>
                 </strong>
               </div>
+              <Button
+                kind="ghost"
+                renderIcon={Renew}
+                size={isDesktop(layout) ? 'sm' : 'md'}
+                disabled={!isOnline || isQueueLoading || isValidating || isRefreshing}
+                onClick={refreshQueue}
+              >
+                {t('refreshVisualQueue', 'Refresh queue')}
+              </Button>
               <Button
                 kind="tertiary"
                 renderIcon={isFullscreen ? Minimize : Maximize}
@@ -189,7 +223,7 @@ const VisualQueue = () => {
               >
                 {isFullscreen ? t('exitQueueFullscreen', 'Exit fullscreen') : t('enterQueueFullscreen', 'Fullscreen')}
               </Button>
-              {isValidating && !isQueueLoading && !queueError ? (
+              {isOnline && (isValidating || isRefreshing) && !isQueueLoading ? (
                 <div className={styles.refreshing}>
                   <InlineLoading description={t('updatingQueue', 'Updating queue')} />
                 </div>
@@ -212,7 +246,15 @@ const VisualQueue = () => {
             />
           ) : null}
 
-          {queueError ? (
+          {!isOnline ? (
+            <InlineNotification
+              className={styles.notification}
+              hideCloseButton
+              kind="warning"
+              title={t('visualQueueOffline', 'No connection')}
+              subtitle={t('visualQueueOfflineMessage', 'Queue changes cannot be checked until the connection returns.')}
+            />
+          ) : queueError ? (
             <InlineNotification
               className={styles.notification}
               hideCloseButton
@@ -228,7 +270,17 @@ const VisualQueue = () => {
                 { logContext: 'Load visual queue' },
               )}
             />
-          ) : isQueueLoading ? (
+          ) : null}
+          {showPreviousEntries ? (
+            <p className={styles.fullscreenHint} role="status">
+              {t(
+                'visualQueuePreviousData',
+                'Showing the last complete queue loaded in this view. It may have changed.',
+              )}
+            </p>
+          ) : null}
+
+          {isDataUnavailable && !showPreviousEntries ? null : isQueueLoading && !showPreviousEntries ? (
             <div className={styles.loading}>
               <InlineLoading description={t('loadingVisualQueue', 'Loading visual queue')} />
             </div>
@@ -240,7 +292,7 @@ const VisualQueue = () => {
                 <section className={styles.lane} key={status.uuid}>
                   <header className={styles.laneHeader}>
                     <h3 id={`${boardId}-${status.uuid}`}>{status.display || t('unknown', 'Unknown')}</h3>
-                    <Tag type={entries.length ? 'blue' : 'gray'}>{entries.length}</Tag>
+                    <Tag type={entries.length ? 'blue' : 'gray'}>{isDataUnavailable ? '—' : entries.length}</Tag>
                   </header>
                   <div className={styles.laneBody} role="region" aria-labelledby={`${boardId}-${status.uuid}`}>
                     {entries.length ? (
@@ -248,7 +300,11 @@ const VisualQueue = () => {
                         <QueuePatientCard key={queueEntry.uuid} position={index + 1} queueEntry={queueEntry} />
                       ))
                     ) : (
-                      <p className={styles.emptyLane}>{t('noPatientsInStatus', 'No patients in this status')}</p>
+                      <p className={styles.emptyLane}>
+                        {isDataUnavailable
+                          ? t('visualQueueUnconfirmedStatus', 'Current queue information is unavailable')
+                          : t('noPatientsInStatus', 'No patients in this status')}
+                      </p>
                     )}
                   </div>
                 </section>

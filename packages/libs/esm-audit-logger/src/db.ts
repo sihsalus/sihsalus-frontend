@@ -12,7 +12,7 @@ const DB_VERSION = 2;
 /**
  * What actually lives in IndexedDB. Only `id`, `userUuid`, and `timestamp`
  * are in plaintext (needed for index lookups and eviction). Everything else —
- * including `sessionId`, `patientUuid`, `encounterUuid`, `eventType`, and
+ * including `patientUuid`, `encounterUuid`, `eventType`, and
  * `metadata` — is inside the AES-GCM encrypted `payload`.
  */
 interface EncryptedEntry {

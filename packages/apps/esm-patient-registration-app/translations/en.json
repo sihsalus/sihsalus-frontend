@@ -422,7 +422,7 @@
   "responsiblePersonAgeUnknown": "The responsible person must have a known age or date of birth",
   "responsiblePersonCreationError": "The related person could not be saved. Try again.",
   "responsiblePersonMustBeAdult": "Responsible person must be an adult",
-  "responsiblePersonMustBeAdultHelpText": "A minor cannot be assigned as the responsible person for another minor.",
+  "responsiblePersonMustBeAdultHelpText": "A minor cannot be assigned as the responsible person for a patient.",
   "responsiblePersonSection": "Family links and responsible person",
   "responsiblePhone": "Phone or mobile phone (optional)",
   "responsibleRelationshipRequiredForMinor": "For minors, record a responsible family member, guardian, or legal representative.",

@@ -1,4 +1,11 @@
 {
+  "appointmentDurationMaximum": "La duración no puede superar 720 minutos (12 horas)",
+  "appointmentDateRequired": "Ingrese una fecha válida para la cita",
+  "arrivalPaymentInstructions": "El paciente tiene un seguro distinto de SIS. Verifique el comprobante de Caja antes de continuar.",
+  "arrivalPaymentConfirmed": "Confirmo que revisé el comprobante y que el pago fue realizado en Caja",
+  "arrivalPaymentRequired": "Debe confirmar el pago de Caja para el financiador de esta consulta antes de continuar. Si cambió el financiamiento, vuelva a registrar la llegada.",
+  "arrivalPaymentConfigurationMissing": "No está configurado el registro de confirmación de pago en la consulta. Contacte al administrador.",
+  "arrivalPaymentNotSaved": "No se pudo verificar el pago guardado en la consulta. Intente nuevamente.",
   "action": "Acción",
   "actions": "Acciones",
   "actionsForPatient": "Acciones para {{patient}}",

@@ -33,7 +33,14 @@ import {
 } from '../../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../../types';
 import AppointmentArrivalModal from './appointment-arrival.modal';
+import { assertArrivalPaymentAttributeConfigured, ensureArrivalPaymentSaved } from './arrival-payment.resource';
 import { getActiveVisitsForPatient } from './batch-change-appointment-statuses.resources';
+
+vi.mock('./arrival-payment.resource', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./arrival-payment.resource')>()),
+  assertArrivalPaymentAttributeConfigured: vi.fn(),
+  ensureArrivalPaymentSaved: vi.fn(),
+}));
 
 vi.mock('../../patient-appointments/patient-appointments.resource', () => ({
   APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING: 'APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING',
@@ -210,6 +217,8 @@ describe('AppointmentArrivalModal', () => {
       patientUuid: 'patient-uuid',
     } as unknown as ReturnType<typeof usePatient>);
     vi.clearAllMocks();
+    vi.mocked(assertArrivalPaymentAttributeConfigured).mockResolvedValue(undefined);
+    vi.mocked(ensureArrivalPaymentSaved).mockResolvedValue(undefined);
     mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
     mockLaunchWorkspace2.mockResolvedValue(true);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
@@ -242,6 +251,75 @@ describe('AppointmentArrivalModal', () => {
     expect(getQueueButton()).toBeEnabled();
     expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
+  });
+
+  it.each([
+    'queue',
+    'direct',
+  ] as const)('includes confirmed non-SIS payment in the new visit payload for %s arrival', async (action) => {
+    if (action === 'direct') configureDirectArrivalRule();
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: 'non-sis',
+      insuranceCode: null,
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+      verificationMethod: null,
+    });
+    mockGetPersonSisFinancingState.mockReturnValue('notApplicable');
+    renderModal();
+    const getActionButton = action === 'queue' ? getQueueButton : getDirectButton;
+    await userEvent.click(getActionButton());
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('checkbox', { name: /confirmo que/i }));
+    await userEvent.click(getActionButton());
+    const options = mockLaunchWorkspace2.mock.calls[0][1] as {
+      additionalVisitAttributes: Array<{ attributeType: string; value: string }>;
+      onBeforeVisitSave: () => Promise<boolean>;
+      onVisitStarted: (visit: typeof activeVisit) => Promise<void>;
+    };
+    const payment = options.additionalVisitAttributes.find(
+      ({ attributeType }) => attributeType !== appointmentVisitAttributeTypeUuid,
+    );
+    expect(JSON.parse(payment.value)).toMatchObject({
+      confirmed: true,
+      financingUuid: 'non-sis',
+      confirmedBy: 'admission-user',
+      appointmentUuid: appointment.uuid,
+    });
+    expect(await options.onBeforeVisitSave()).toBe(true);
+    const error = new Error('Synthetic payment persistence failure');
+    vi.mocked(ensureArrivalPaymentSaved).mockRejectedValueOnce(error);
+    await expect(options.onVisitStarted(activeVisit)).rejects.toBe(error);
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: 'changed-financing',
+      insuranceCode: null,
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+      verificationMethod: null,
+    });
+    expect(await options.onBeforeVisitSave()).toBe(false);
+  });
+
+  it('blocks non-SIS arrival when the payment attribute is not configured', async () => {
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: 'non-sis',
+      insuranceCode: null,
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+      verificationMethod: null,
+    });
+    mockGetPersonSisFinancingState.mockReturnValue('notApplicable');
+    renderModal();
+    await userEvent.click(getQueueButton());
+    await userEvent.click(screen.getByRole('checkbox', { name: /confirmo que/i }));
+    vi.mocked(assertArrivalPaymentAttributeConfigured).mockRejectedValueOnce(
+      Object.assign(new Error('Missing attribute'), { code: 'ARRIVAL_PAYMENT_CONFIGURATION_MISSING' }),
+    );
+    await userEvent.click(getQueueButton());
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(await screen.findByText(/No está configurado el registro de confirmación de pago/i)).toBeInTheDocument();
   });
 
   it('blocks arrival when the patient is already known to be deceased', () => {
@@ -597,7 +675,7 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
-  it('allows explicitly non-SIS financing through arrival and active-visit queue validation', async () => {
+  it('requires confirmed payment for non-SIS financing and persists it before allowing the active-visit queue', async () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
@@ -624,14 +702,29 @@ describe('AppointmentArrivalModal', () => {
       accreditationCheckedAt: null,
     });
     mockGetSisFinancingState.mockReturnValue('notApplicable');
+    mockGetPersonSisFinancingState.mockReturnValue('notApplicable');
 
     renderModal();
+    await userEvent.click(getQueueButton());
+
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('checkbox', { name: /confirmo que/i }));
     await userEvent.click(getQueueButton());
 
     const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
       onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
     };
     await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(true);
+    expect(ensureArrivalPaymentSaved).toHaveBeenCalledWith(
+      activeVisit.uuid,
+      expect.any(String),
+      expect.objectContaining({
+        confirmed: true,
+        financingUuid: 'essalud-concept-uuid',
+        confirmedBy: 'admission-user',
+        appointmentUuid: appointment.uuid,
+      }),
+    );
     expect(mockFetchPersonInsurance).toHaveBeenCalledWith(appointment.patient.uuid);
     expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
     expect(mockEnsureAppointmentVisitLink).toHaveBeenCalledWith(

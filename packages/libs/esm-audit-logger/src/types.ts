@@ -6,7 +6,6 @@ export interface AuditEvent {
   metadata?: Record<string, unknown>;
   timestamp: string;
   userUuid: string;
-  sessionId: string;
 }
 
 export interface AuditLoggerConfig {

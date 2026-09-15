@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, navigate, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, navigate, useConfig, useConnectivity } from '@openmrs/esm-framework';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntries } from 'test-utils';
@@ -11,6 +11,12 @@ import { useServiceQueuesStore } from '../store/store';
 import { type Concept } from '../types';
 
 import VisualQueue, { buildQueueBoardColumns } from './visual-queue.component';
+
+const refreshCache = vi.hoisted(() => vi.fn());
+vi.mock('swr', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('swr')>()),
+  useSWRConfig: () => ({ mutate: refreshCache }),
+}));
 
 vi.mock('../hooks/useOperationalQueueEntries', () => ({ useOperationalQueueEntries: vi.fn() }));
 vi.mock('../hooks/useQueueStatuses', () => ({ default: vi.fn() }));
@@ -88,6 +94,8 @@ describe('visual queue controls and data states', () => {
   ].map(({ target, key }) => ({ target, key, descriptor: Object.getOwnPropertyDescriptor(target, key) }));
 
   beforeEach(() => {
+    vi.mocked(useConnectivity).mockReturnValue(true);
+    refreshCache.mockReset().mockResolvedValue([]);
     vi.mocked(useConfig).mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     vi.mocked(useServiceQueuesStore).mockReturnValue(defaultFilters);
     vi.mocked(useOperationalQueueEntries).mockReturnValue(defaultQueueResult);
@@ -289,6 +297,73 @@ describe('visual queue controls and data states', () => {
     expect(screen.getAllByText('No patients in this status')).toHaveLength(defaultStatuses.statuses.length);
     expect(screen.queryByLabelText('Patient count unavailable')).not.toBeInTheDocument();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
+  });
+
+  it('marks the last loaded entries as unconfirmed while offline, including in fullscreen', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useConnectivity).mockReturnValue(false);
+    render(<VisualQueue />);
+
+    await user.click(screen.getByRole('button', { name: 'Fullscreen' }));
+
+    const board = screen.getByRole('region', { name: 'Care flow' });
+    expect(within(board).getByText('No connection')).toBeInTheDocument();
+    expect(
+      within(board).getByText('Showing the last complete queue loaded in this view. It may have changed.'),
+    ).toBeInTheDocument();
+    expect(within(board).getAllByRole('article')).toHaveLength(mockQueueEntries.length);
+    expect(screen.getByLabelText('Patient count unavailable')).toHaveTextContent('—');
+    expect(screen.getByRole('button', { name: 'Refresh queue' })).toBeDisabled();
+  });
+
+  it('does not turn an offline first load into an empty queue or a zero count', () => {
+    vi.mocked(useConnectivity).mockReturnValue(false);
+    vi.mocked(useOperationalQueueEntries).mockReturnValue({ ...defaultQueueResult, queueEntries: [], isLoading: true });
+    render(<VisualQueue />);
+
+    expect(screen.getByText('No connection')).toBeInTheDocument();
+    expect(screen.getByLabelText('Patient count unavailable')).toHaveTextContent('—');
+    expect(screen.queryByText('No patients to display')).not.toBeInTheDocument();
+    expect(screen.queryByText('No patients in this status')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loading visual queue')).not.toBeInTheDocument();
+  });
+
+  it('retries both entries and queue metadata and prevents duplicate refreshes', async () => {
+    const user = userEvent.setup();
+    let finishRefresh: (value: unknown[]) => void;
+    refreshCache.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishRefresh = resolve;
+        }),
+    );
+    render(<VisualQueue />);
+    const button = screen.getByRole('button', { name: 'Refresh queue' });
+
+    await user.click(button);
+    await user.click(button);
+
+    expect(defaultQueueResult.mutate).toHaveBeenCalledOnce();
+    expect(refreshCache).toHaveBeenCalledOnce();
+    expect(refreshCache.mock.calls[0][0]('/ws/rest/v1/queue?v=synthetic')).toBe(true);
+    expect(refreshCache.mock.calls[0][0]('/ws/rest/v1/patient')).toBe(false);
+    expect(button).toBeDisabled();
+    await act(async () => finishRefresh([]));
+    expect(button).toBeEnabled();
+  });
+
+  it.each([401, 403])('hides prior entries if the server denies access with %s', (status) => {
+    vi.mocked(useOperationalQueueEntries).mockReturnValue({
+      ...defaultQueueResult,
+      error: Object.assign(new Error('Synthetic access failure'), { response: { status } }),
+    });
+    render(<VisualQueue />);
+
+    expect(screen.getByText('Error loading queue entries')).toBeInTheDocument();
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Showing the last complete queue loaded in this view. It may have changed.'),
+    ).not.toBeInTheDocument();
   });
 
   it('prevents duplicate fullscreen requests while a transition is pending', async () => {

@@ -240,6 +240,16 @@ yarn turbo run test --filter=@sihsalus/esm-login-app   # Single package
 
 La imagen publicada en GHCR usa el target `secure-init`: ensambla el SPA en `/spa` y termina. No contiene un servidor HTTP. El despliegue de `sihsalus-distro-referenceapplication` la ejecuta como init container con un volumen compartido que luego sirve Nginx.
 
+Para validar una corrección en un entorno de pruebas autorizado, el workflow
+`SPA Image` admite `workflow_dispatch` con `publish_candidate=true` y
+`candidate_base=<SHA completo de la base>`. Solo acepta ramas distintas de
+`main` y `pre-release`. Verifica los paquetes afectados y sus consumidores,
+construye `secure-init` y analiza su digest con Trivy. La etiqueta resultante es
+`candidate-<SHA completo>`; solo se debe desplegar el digest de una ejecución
+terminada con éxito. El workflow no promueve etiquetas de release ni dispara
+despliegues. La elección del entorno y su rollback siguen siendo responsabilidad
+del despliegue autorizado en la distribución.
+
 Para fijar un despliegue a la imagen publicada por `main`, resuelve primero su digest y úsalo en la configuración del repositorio de infraestructura:
 
 ```bash

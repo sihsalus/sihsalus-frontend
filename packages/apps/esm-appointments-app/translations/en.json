@@ -1,4 +1,11 @@
 {
+  "arrivalPaymentInstructions": "The patient has non-SIS insurance. Verify the cashier receipt before continuing.",
+  "arrivalPaymentConfirmed": "I confirm that I reviewed the receipt and payment was made at the cashier",
+  "arrivalPaymentRequired": "Confirm cashier payment for this visit's financing before continuing. If financing changed, restart arrival registration.",
+  "arrivalPaymentConfigurationMissing": "The visit payment confirmation attribute is not configured. Contact an administrator.",
+  "arrivalPaymentNotSaved": "The payment saved on the visit could not be verified. Please try again.",
+  "appointmentDurationMaximum": "Duration cannot exceed 720 minutes (12 hours)",
+  "appointmentDateRequired": "Enter a valid appointment date",
   "action": "Action",
   "actions": "Actions",
   "actionsForPatient": "Actions for {{patient}}",

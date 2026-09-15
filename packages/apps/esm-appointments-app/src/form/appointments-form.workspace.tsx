@@ -100,7 +100,7 @@ import {
   useMutateAppointments,
 } from './appointments-form.resource';
 import styles from './appointments-form.scss';
-import { assessProviderSchedulingCategory, filterProvidersBySchedulingCategory } from './provider-scheduling-category';
+import { filterProvidersBySchedulingCategory } from './provider-scheduling-category';
 
 const preventInvalidIntegerKey =
   (constraints: PlainNumberInputConstraints) => (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -152,6 +152,8 @@ interface AppointmentsFormProps {
 
 // MINSA appointment services are configured without a default `durationMins`,
 // so new appointments fall back to this duration until the user overrides it.
+const MAX_APPOINTMENT_DURATION_MINUTES = 720;
+
 const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
 const APPOINTMENT_EDIT_STATUS_CONFLICT = 'APPOINTMENT_EDIT_STATUS_CONFLICT';
 const APPOINTMENT_STATUS_TRANSITION_CONFLICT = 'APPOINTMENT_STATUS_TRANSITION_CONFLICT';
@@ -404,6 +406,10 @@ const AppointmentsForm: React.FC<
     .object({
       duration: z
         .number()
+        .int()
+        .max(MAX_APPOINTMENT_DURATION_MINUTES, {
+          message: t('appointmentDurationMaximum', 'Duration cannot exceed 720 minutes (12 hours)'),
+        })
         .nullable()
         .refine((duration) => (isAllDayAppointment ? true : duration > 0), {
           message: translateFrom(moduleName, 'durationErrorMessage', 'Duration should be greater than zero'),
@@ -433,7 +439,9 @@ const AppointmentsForm: React.FC<
       }),
       timeFormat: z.enum(['AM', 'PM']),
       appointmentDateTime: z.object({
-        startDate: z.date(),
+        startDate: z.date({
+          errorMap: () => ({ message: t('appointmentDateRequired', 'Enter a valid appointment date') }),
+        }),
         startDateText: z.string(),
         recurringPatternEndDate: z.date().nullable(),
         recurringPatternEndDateText: z.string().nullable(),
@@ -564,13 +572,12 @@ const AppointmentsForm: React.FC<
           selectedLocationUuid: formValues.location,
           services: availableServices ?? [],
         }).find(({ uuid }) => uuid === formValues.selectedServiceUuid);
-        const provider = providers.providers?.find(({ uuid }) => uuid === formValues.provider);
-        return !assessProviderSchedulingCategory({
+        return filterProvidersBySchedulingCategory({
           mode: providerSchedulingCategoryValidation.mode,
-          provider,
+          providers: providers.providers ?? [],
           providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
           service,
-        }).shouldBlock;
+        }).some(({ uuid }) => uuid === formValues.provider);
       },
       {
         path: ['provider'],
@@ -1119,15 +1126,6 @@ const AppointmentsForm: React.FC<
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
       <Form className={styles.form} onSubmit={handleSubmit(handleSaveAppointment, handleAppointmentValidationErrors)}>
         <Stack gap={4}>
-          {Object.keys(errors).length > 0 && (
-            <InlineNotification
-              className={styles.formErrorSummary}
-              kind="error"
-              lowContrast={false}
-              title={t('appointmentFormValidationTitle', 'Revise los campos marcados')}
-              subtitle={getAppointmentValidationSummary(errors, t)}
-            />
-          )}
           {patient && (
             <ExtensionSlot
               name="patient-header-slot"
@@ -1760,18 +1758,18 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               invalid={!!errors?.duration}
               invalidText={errors?.duration?.message}
               label={<RequiredFieldLabel label={t('durationInMinutes', 'Duration (minutes)')} />}
-              max={1440}
+              max={MAX_APPOINTMENT_DURATION_MINUTES}
               min={0}
               onBlur={onBlur}
               onKeyDown={preventInvalidIntegerKey({
                 integer: true,
-                max: 1440,
+                max: MAX_APPOINTMENT_DURATION_MINUTES,
                 min: 0,
                 nonNegative: true,
               })}
               onPaste={preventInvalidIntegerPaste({
                 integer: true,
-                max: 1440,
+                max: MAX_APPOINTMENT_DURATION_MINUTES,
                 min: 0,
                 nonNegative: true,
               })}
@@ -1781,7 +1779,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
                     ? null
                     : getIntegerValue(nextValue, {
                         integer: true,
-                        max: 1440,
+                        max: MAX_APPOINTMENT_DURATION_MINUTES,
                         min: 0,
                         nonNegative: true,
                       }),
@@ -1796,13 +1794,6 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
       </ResponsiveWrapper>
     </>
   );
-}
-
-function getAppointmentValidationSummary(
-  errors: Record<string, unknown>,
-  t: (key: string, fallback: string) => string,
-) {
-  return getAppointmentValidationMessages(errors, t).join(' • ');
 }
 
 function getAppointmentValidationMessages(

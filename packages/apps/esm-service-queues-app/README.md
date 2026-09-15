@@ -74,6 +74,7 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 
 ## Contratos de UI
 
+- La tabla de pacientes en cola consulta cambios cada 15 segundos mientras la pestaña está visible y hay conexión, y vuelve a consultar al recuperar el foco o la conexión. Conserva los filtros y la última lista completa durante la actualización; solo reemplaza las filas cuando terminaron de cargar todas las páginas. Si falla una página, mantiene la lista anterior y muestra el error mediante el manejo existente. Es actualización periódica, no una suscripción push del backend.
 - El resumen de consulta se identifica por la combinación exacta de Encounter Type y Form configurados. Colas muestra primero los diagnósticos nativos activos y usa las observaciones históricas solo como fallback sin duplicarlas.
 - El guardado de triaje que queda pendiente en el equipo no mueve al paciente. La transición automática solo se ejecuta después de una respuesta confirmada del encounter; después de sincronizar un triaje offline, refrescar la cola y usar `Enviar a atención`. No borrar la acción offline para forzar el cambio de cola.
 - La entrada y la acción de triaje aceptan SIS vigente con bundle completo o un financiador no-SIS registrado explícitamente. Mientras la cobertura está cargando o no pudo leerse, la acción permanece verificando y no afirma que corresponda Caja. Un financiador ausente, o un SIS incompleto, inactivo, pendiente o no consultado, mantiene el bloqueo y la derivación a Caja.
@@ -122,6 +123,38 @@ las entradas y acciones generales de cola se conservan.
 
 ## Vista visual de colas
 
+### Pérdida de conexión y recuperación
+
+- La vista indica `Sin conexión` y muestra como referencia las últimas entradas
+  completas cargadas para los filtros actuales. Advierte que pueden haber
+  cambiado; los contadores quedan sin confirmar. Si todavía no se cargaron
+  entradas, la desconexión no se presenta como una cola vacía.
+- `Actualizar cola` vuelve a consultar las entradas y la configuración de
+  servicios y estados. Se deshabilita sin conexión y durante la actualización.
+  Los avisos y el control también aparecen dentro de la pantalla completa.
+- La lectura compartida de entradas mantiene activa su consulta SWR para
+  recuperar los datos al reconectar. Los errores se eliminan al completar una
+  lectura correcta. Servicios y estados también se vuelven a consultar al
+  reconectar; si el servidor sigue inaccesible, se puede reintentar con el botón.
+- Cada actualización de entradas solicita todas las páginas al servidor con
+  `cache: no-store`. Solo sustituye el resultado anterior cuando termina la
+  lectura completa. Un fallo en una página no mezcla resultados antiguos con
+  nuevos ni conserva entradas de otro servicio al cambiar el filtro.
+- La recuperación de lectura beneficia también a las tablas y los indicadores
+  que consumen `useQueueEntries`. La vista visual oculta las entradas anteriores
+  ante una respuesta de acceso denegado (401/403).
+- Esta vista usa la memoria de la sesión abierta; no prepara una descarga
+  persistente de la cola para recargarla sin conexión. Las transiciones de
+  pacientes y la sincronización del triaje conservan sus contratos existentes.
+
+Validar con datos sintéticos en DEV/QLTY: carga inicial sin conexión, corte
+durante una descarga de varias páginas, reconexión, error del servidor con el
+navegador conectado, cambio de filtros y actualización desde Emergencia. La
+prueba local de recuperación usa SWR real con respuestas sintéticas; no sustituye
+la aceptación del worker y el backend del entorno.
+
+### Presentación y pantalla completa
+
 - `Volver a la tabla de colas` está al pie del tablero, después del flujo de
   atención. Conserva los filtros compartidos de UPSS, servicio y estado.
 - `Pantalla completa` amplía únicamente el tablero mediante la API de pantalla
@@ -141,15 +174,16 @@ las entradas y acciones generales de cola se conservan.
   espacio junto a los controles, sin superponerse al contador.
 - Durante la carga o ante un error de entradas o estados, el contador indica que
   no está disponible. Una lectura fallida de estados no se presenta como una cola
-  vacía. No cambia la consulta al backend ni las reglas de transición de colas.
+  vacía. Se conservan los filtros clínicos y las reglas de transición de colas.
 - Validación mínima: pruebas de renderizado, filtros, carga/error, entrada/salida
   de pantalla completa, rechazo del navegador y disponibilidad de la API; smoke
   de navegador con datos sintéticos para dimensiones, desplazamiento, foco y
   salida mediante botón/Escape. La validación contra DEV/QLTY se registra aparte.
 
 Capturas con datos sintéticos en un fixture local del componente:
-[vista normal](docs/images/visual-queue-normal.png) y
-[pantalla completa](docs/images/visual-queue-fullscreen.png).
+[vista normal](docs/images/visual-queue-normal.png),
+[pantalla completa](docs/images/visual-queue-fullscreen.png) y
+[aviso sin conexión](docs/images/visual-queue-offline-fullscreen.png).
 
 ## Riesgos conocidos
 

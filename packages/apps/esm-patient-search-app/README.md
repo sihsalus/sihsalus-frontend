@@ -46,6 +46,9 @@ El acceso «Pacientes recientes» de la cabecera navega a la pantalla independie
 `/recent-patients`, tanto en escritorio como en tablet. No abre el overlay ni la página de búsqueda,
 no necesita una consulta y ofrece un enlace explícito a «Buscar paciente». La búsqueda sin texto
 conserva su vista previa de recientes como acceso complementario.
+El acceso de la cabecera usa un botón de icono compacto, con nombre accesible y descripción al pasar el cursor
+o enfocarlo. La página de recientes activa se identifica visualmente y mediante `aria-current="page"`;
+el botón conserva la navegación por teclado y las restricciones de configuración y permisos.
 Muestra las últimas 10 historias abiertas en esta pestaña desde cualquier entrada, sin duplicados
 y con la apertura más reciente primero; no es una lista de pacientes buscados.
 `RecentPatientsPreview` y la página independiente reciben hasta diez historias en la carga inicial;

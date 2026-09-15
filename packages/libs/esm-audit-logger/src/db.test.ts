@@ -15,7 +15,6 @@ function makeEntry(overrides: Partial<StoredAuditEntry> = {}): StoredAuditEntry 
     id: crypto.randomUUID(),
     eventType: 'VIEW',
     userUuid: 'user-1',
-    sessionId: 'sess-1',
     timestamp: new Date().toISOString(),
     ...overrides,
   };
@@ -35,7 +34,7 @@ describe('queueEntry / getEntriesForUser', () => {
     await queueEntry(DB, entry, 10);
     const { entries: results } = await getEntriesForUser(DB, 'user-1');
     expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({ id: entry.id, eventType: 'VIEW', sessionId: 'sess-1' });
+    expect(results[0]).toMatchObject({ id: entry.id, eventType: 'VIEW', userUuid: 'user-1' });
   });
 
   it('decrypts — the raw IDB row does not contain plaintext PHI', async () => {
@@ -57,7 +56,6 @@ describe('queueEntry / getEntriesForUser', () => {
     expect(rawRow['userUuid']).toBe('user-1'); // plaintext index field
     expect(rawRow['payload']).toBeTypeOf('string'); // ciphertext blob
     expect(JSON.stringify(rawRow)).not.toContain('sensitive-patient');
-    expect(JSON.stringify(rawRow)).not.toContain('sess-1');
   });
 
   it('only returns entries for the requesting user', async () => {

@@ -2,6 +2,8 @@ import { useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
+import * as reactI18next from 'react-i18next';
+import es from '../../../../translations/es.json';
 
 import { type RegistrationConfig } from '../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../offline.resources';
@@ -596,6 +598,58 @@ describe('RelationshipsSection', () => {
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'UPDATE');
     expect(setFieldValue).toHaveBeenCalledWith('relationships[1].isCompanion', true);
     expect(setFieldValue).toHaveBeenCalledWith('relationships[1].action', 'UPDATE');
+  });
+
+  it.each([
+    false,
+    true,
+  ])('handles an underage relative with responsible selection %s and translates validation errors', (isCompanion) => {
+    const translation = vi.spyOn(reactI18next, 'useTranslation').mockReturnValue({
+        t: (key: string) => es[key as keyof typeof es] ?? key,
+    } as unknown as ReturnType<typeof reactI18next.useTranslation>);
+    const formValues = {
+      ...minorPatientValues,
+      yearsEstimated: 30,
+      relationships: [
+        {
+          action: 'ADD',
+          isCompanion,
+          relatedPersonUuid: 'synthetic-minor',
+          relatedPersonName: 'Persona sintética',
+          relatedPersonAge: 1,
+          relationshipType: 'synthetic-relative/aIsToB',
+        },
+      ],
+    } as FormValues;
+    mockResourcesContextValue = { ...mockResourcesContextValue, relationshipTypes };
+    try {
+      render(
+        <ResourcesContext.Provider value={mockResourcesContextValue}>
+          <Formik
+            initialValues={formValues}
+            initialErrors={isCompanion ? { relationships: 'responsiblePersonMustBeAdult' } : {}}
+            initialTouched={{ relationships: true }}
+            onSubmit={vi.fn()}
+          >
+            <Form>
+              <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+                <RelationshipsSection />
+              </PatientRegistrationContext.Provider>
+            </Form>
+          </Formik>
+        </ResourcesContext.Provider>,
+      );
+      const checkbox = screen.getByRole('checkbox', { name: /Persona sintética/i });
+      if (isCompanion) {
+        expect(checkbox).toBeEnabled(); // Existing invalid assignments can be cleared.
+        expect(screen.getAllByText(es.responsiblePersonMustBeAdult).length).toBeGreaterThan(0);
+        expect(screen.queryByText('responsiblePersonMustBeAdult')).not.toBeInTheDocument();
+      } else {
+        expect(checkbox).toBeDisabled();
+      }
+    } finally {
+      translation.mockRestore();
+    }
   });
 
   it('shows an error when the patient has more than one active mother', () => {

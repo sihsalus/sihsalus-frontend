@@ -50,6 +50,7 @@ import {
   hasResponsibleRelationshipWithUnknownAge,
   hasUnderageResponsibleRelationship,
   isMinorPatient,
+  isUnderageResponsibleRelationship,
 } from '../../validation/patient-registration-validation';
 import sectionStyles from '../section.scss';
 import styles from './relationships.scss';
@@ -313,7 +314,8 @@ function getPersonSearchResultAge(person?: PersonSearchResult | null) {
     return undefined;
   }
 
-  return person.person?.age ?? person.age ?? getAgeFromBirthdate(person.person?.birthdate ?? person.birthdate);
+  const birthdate = person.person?.birthdate ?? person.birthdate;
+  return birthdate ? getAgeFromBirthdate(birthdate) : (person.person?.age ?? person.age);
 }
 
 function getPersonSearchResultDisplay(person?: PersonSearchResult | null) {
@@ -393,7 +395,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const { t } = useTranslation(moduleName);
   const config = useConfig<RegistrationConfig>();
   const effectiveConfig = config?.sections ? getEffectiveRegistrationConfig(config) : config;
-  const { setFieldValue, values } = React.useContext(PatientRegistrationContext);
+  const { setFieldValue, values, isOffline } = React.useContext(PatientRegistrationContext);
   const [isInvalid, setIsInvalid] = useState(false);
   const [selectedExistingPerson, setSelectedExistingPerson] = useState<PersonSearchResult | null>(null);
   const [selectedPersonInvalidText, setSelectedPersonInvalidText] = useState<string | null>(null);
@@ -425,8 +427,10 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   );
 
   const requiresAdultResponsible = useMemo(
-    () => isMinorPatient(values) && minorResponsibleRelationshipTypes.includes(personFormValues.relationshipType),
-    [minorResponsibleRelationshipTypes, personFormValues.relationshipType, values],
+    () =>
+      !!relationship.isCompanion ||
+      (isMinorPatient(values) && minorResponsibleRelationshipTypes.includes(personFormValues.relationshipType)),
+    [minorResponsibleRelationshipTypes, personFormValues.relationshipType, relationship.isCompanion, values],
   );
 
   const personFormErrors = useMemo(
@@ -508,7 +512,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
   const searchPerson = async (query: string) => {
     const abortController = new AbortController();
-    return await fetchPerson(query, abortController);
+    return await fetchPerson(query, abortController, { requireFreshNetwork: !isOffline });
   };
 
   const deleteRelationship = useCallback(() => {
@@ -983,6 +987,9 @@ const PrimaryResponsibleSection: React.FC<PrimaryResponsibleSectionProps> = ({ r
                 id={`relationships[${index}].isCompanion`}
                 labelText={`${personName}${relationshipLabel}`}
                 checked={!!relationship.isCompanion}
+                disabled={
+                  !relationship.isCompanion && isUnderageResponsibleRelationship({ ...relationship, isCompanion: true })
+                }
                 onChange={(_event, { checked }) => handlePrimaryResponsibleChange(index, checked)}
               />
             );
@@ -1072,7 +1079,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const relationshipError =
     unknownResponsibleAgeError ??
     missingResponsibleRelationshipError ??
-    (relationshipsMeta.touched && typeof relationshipsMeta.error === 'string' ? relationshipsMeta.error : null);
+    (relationshipsMeta.touched && typeof relationshipsMeta.error === 'string' ? t(relationshipsMeta.error) : null);
   const visibleRelationshipTypes = useMemo(
     () =>
       getDisplayRelationshipTypes(
@@ -1214,15 +1221,14 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                   title={t('patientCanOnlyHaveOneMother', 'The patient can only have one mother')}
                 />
               ) : null}
-              {requiresResponsibleRelationship &&
-              hasUnderageResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
+              {hasUnderageResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
                 <InlineNotification
                   kind="error"
                   lowContrast
                   title={t('responsiblePersonMustBeAdult', 'Responsible person must be an adult')}
                   subtitle={t(
                     'responsiblePersonMustBeAdultHelpText',
-                    'A minor cannot be assigned as the responsible person for another minor.',
+                    'A minor cannot be assigned as the responsible person for a patient.',
                   )}
                 />
               ) : null}

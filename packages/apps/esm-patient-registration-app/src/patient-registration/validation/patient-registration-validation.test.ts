@@ -1311,6 +1311,47 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).not.toContain('responsibleRelationshipRequiredForMinor');
   });
 
+  it.each([
+    [30, ''],
+    [1, ''],
+    ['', 6],
+  ])('rejects a one-year-old responsible person for estimated age %s years %s months', async (years, months) => {
+    const error = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: years,
+      monthsEstimated: months,
+      relationships: [
+        {
+          action: 'ADD',
+          isCompanion: true,
+          relatedPersonUuid: 'synthetic-responsible',
+          relatedPersonAge: 1,
+          relationshipType: 'synthetic-relative/aIsToB',
+        },
+      ],
+    });
+    expect(error.errors).toContain('responsiblePersonMustBeAdult');
+  });
+
+  it('uses the responsible person birthdate instead of a contradictory adult age', async () => {
+    const error = await validateFormValues({
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          isCompanion: true,
+          relatedPersonUuid: 'synthetic-responsible',
+          relatedPersonAge: 35,
+          relatedPersonBirthdate: dayjs().subtract(1, 'year').format('YYYY-MM-DD'),
+          relationshipType: 'synthetic-relative/aIsToB',
+        },
+      ],
+    });
+    expect(error.errors).toContain('responsiblePersonMustBeAdult');
+  });
+
   it('should not allow a minor patient with a pending underage responsible person', async () => {
     const minorWithPendingUnderageResponsible = {
       ...validFormValues,

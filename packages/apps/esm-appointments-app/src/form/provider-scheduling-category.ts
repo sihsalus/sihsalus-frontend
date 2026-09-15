@@ -100,27 +100,25 @@ export function assessProviderSchedulingCategory({
 
 /**
  * Returns only providers that can be scheduled for the selected service.
- * Validation modes remain backwards compatible: strict mode filters
- * mismatches, while warn/off keep them visible and rely on the existing
- * validation feedback.
+ * Selection always requires an explicit category match. The validation mode
+ * controls legacy validation feedback, not which providers may be offered.
  */
 export function filterProvidersBySchedulingCategory({
-  mode,
   providerAttributeTypeUuid,
   providers,
   service,
 }: FilterProvidersBySchedulingCategoryOptions): Array<Provider> {
-  if (!service) {
+  if (!service || !getSchedulingCategoryUuid(service)) {
     return [];
   }
 
   return providers.filter(
     (provider) =>
-      !assessProviderSchedulingCategory({
-        mode,
+      assessProviderSchedulingCategory({
+        mode: 'strict',
         provider,
         providerAttributeTypeUuid,
         service,
-      }).shouldBlock,
+      }).reason === 'matched',
   );
 }

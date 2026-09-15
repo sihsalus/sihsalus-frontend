@@ -25,6 +25,145 @@ const styleOwners = [
 
 let browser;
 
+test("workspace rail reserves desktop chart space without changing overlay or tablet layout", async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), "workspace-rail-"));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, "packages/libs/esm-styleguide");
+  const config = loadConfig(workspace, "rspack.config.cjs");
+  const outputPath = path.join(fixture, "dist");
+  const source = (file) => JSON.stringify(path.join(workspace, "src", file));
+  await writeFile(
+    path.join(fixture, "entry.js"),
+    [
+      `import ${source("components/_general.scss")};`,
+      `import menu from ${source("workspaces2/workspace-windows-and-menu.module.scss")};`,
+      `import rail from ${source("workspaces2/action-menu2/action-menu2.module.scss")};`,
+      `import windows from ${source("workspaces2/workspace2.module.scss")};`,
+      "window.layoutStyles = { menu, rail, windows };",
+    ].join("\n"),
+  );
+  await compile({
+    context: workspace,
+    mode: config.mode,
+    entry: path.join(fixture, "entry.js"),
+    output: {
+      ...config.output,
+      path: outputPath,
+      filename: "styles.js",
+      publicPath: "",
+    },
+    module: config.module,
+    resolve: config.resolve,
+    optimization: config.optimization,
+    plugins: config.plugins.filter(
+      (plugin) => plugin instanceof rspack.CssExtractRspackPlugin,
+    ),
+    devtool: false,
+    performance: false,
+  }, rspack);
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<div id="omrs-top-nav-app-container"></div><div id="omrs-left-nav-container"></div>' +
+      '<div id="omrs-workspaces-container"><div id="menu"><div id="windows"></div>' +
+      '<aside id="rail"><div id="sideRail"><div id="actions"><button>Forms</button></div></div></aside></div></div>' +
+      '<div id="omrs-apps-container"><main><header>Test chart</header><section>Chart content</section></main></div>',
+  );
+  for (const asset of (await readdir(outputPath)).filter((file) =>
+    file.endsWith(".css"),
+  )) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, "styles.js") });
+  await page.addStyleTag({
+    content:
+      "body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}main{min-height:1200px}",
+  });
+  await page.evaluate(() => {
+    const { menu, rail } = window.layoutStyles;
+    document.querySelector("#menu").className =
+      menu.workspaceWindowsAndMenuContainer;
+    document.querySelector("#windows").className =
+      menu.workspaceWindowsContainer;
+    document.querySelector("#rail").className = rail.sideRailVisible;
+    document.querySelector("#sideRail").className = rail.sideRail;
+    document.querySelector("#actions").className = rail.container;
+  });
+  for (const [width, height] of [
+    [1920, 1080],
+    [1366, 768],
+  ]) {
+    await page.setViewportSize({ width, height });
+    for (const direction of ["ltr", "rtl"]) {
+      await page.evaluate((dir) => {
+        document.documentElement.dir = dir;
+        document.body.className = "omrs-breakpoint-gt-tablet";
+      }, direction);
+      const app = await page.locator("#omrs-apps-container").boundingBox();
+      const rail = await page.locator("#rail").boundingBox();
+      assert.equal(rail.width, 48);
+      assert.equal(
+        app.width,
+        width - rail.width,
+        `${width} ${direction}: chart must reserve the rail`,
+      );
+      assert.ok(
+        direction === "ltr"
+          ? app.x + app.width <= rail.x
+          : rail.x + rail.width <= app.x,
+      );
+      await page.evaluate(() => {
+        const { windows } = window.layoutStyles;
+        document.querySelector("#windows").innerHTML =
+          `<div class="${windows.workspaceOuterContainer} ${windows.narrowWorkspace}"><div class="${windows.workspaceSpacer}"></div></div>`;
+      });
+      assert.equal(
+        (await page.locator("#omrs-apps-container").boundingBox()).width,
+        width - 48 - 420,
+      );
+      await page.evaluate(() => {
+        document.querySelector("#windows").replaceChildren();
+      });
+    }
+    await page.evaluate(() => {
+      document.querySelector("#rail").className =
+        window.layoutStyles.rail.sideRailHidden;
+    });
+    assert.equal(
+      (await page.locator("#omrs-apps-container").boundingBox()).width,
+      width,
+    );
+    await page.evaluate(() => {
+      document.querySelector("#rail").className =
+        window.layoutStyles.rail.sideRailVisible;
+      document
+        .querySelector("#menu")
+        .classList.add(window.layoutStyles.menu.overlay);
+    });
+    assert.equal(
+      (await page.locator("#omrs-apps-container").boundingBox()).width,
+      width,
+    );
+    await page.evaluate(() => {
+      document
+        .querySelector("#menu")
+        .classList.remove(window.layoutStyles.menu.overlay);
+    });
+  }
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.evaluate(() => {
+    document.body.className = "omrs-breakpoint-lt-desktop";
+  });
+  assert.equal(
+    (await page.locator("#omrs-apps-container").boundingBox()).width,
+    768,
+  );
+  await expect(page.locator("#sideRail")).toHaveCSS("position", "fixed");
+  const bottomRail = await page.locator("#sideRail").boundingBox();
+  assert.equal(bottomRail.y + bottomRail.height, 1024);
+});
+
 before(async () => {
   browser = await chromium.launch();
 });

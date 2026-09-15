@@ -1,6 +1,7 @@
 import { createAttachment, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import {
+  fetchPerson,
   fetchPersonRegistrationCopyData,
   generateIdentifier,
   savePatient,
@@ -20,6 +21,34 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 beforeEach(() => {
   mockOpenmrsFetch.mockReset();
+});
+
+describe('fetchPerson', () => {
+  it('requires fresh patient and person ages for online responsible-person searches', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } });
+    const controller = new AbortController();
+    await fetchPerson('Synthetic', controller, { requireFreshNetwork: true });
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    for (const [, options] of mockOpenmrsFetch.mock.calls) {
+      expect(options).toEqual(
+        expect.objectContaining({
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+          rejectOnAuthFailure: true,
+        }),
+      );
+    }
+  });
+
+  it('preserves the existing offline search strategy', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } });
+    const controller = new AbortController();
+    await fetchPerson('Synthetic', controller, { requireFreshNetwork: false });
+    for (const [, options] of mockOpenmrsFetch.mock.calls) {
+      expect(options).toEqual({ signal: controller.signal });
+    }
+  });
 });
 
 describe('savePatient', () => {

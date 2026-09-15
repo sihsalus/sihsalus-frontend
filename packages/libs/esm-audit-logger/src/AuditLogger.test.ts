@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { auditLogger } from './AuditLogger';
 import { clearKeyCache } from './crypto';
+import * as auditDb from './db';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -15,6 +16,13 @@ vi.mock('@openmrs/esm-framework', () => ({
 import { openmrsFetch } from '@openmrs/esm-framework';
 
 const mockFetch = vi.mocked(openmrsFetch);
+
+function sentBody(): string {
+  const body = mockFetch.mock.calls[0]?.[1]?.body;
+  expect(body).toBeTypeOf('string');
+  if (typeof body !== 'string') throw new Error('Expected a serialized audit batch');
+  return body;
+}
 
 function okResponse(): Promise<{ ok: boolean; status: number }> {
   return Promise.resolve({ ok: true, status: 200 });
@@ -29,7 +37,6 @@ function failResponse(status = 500): Promise<{ ok: boolean; status: number }> {
 // ---------------------------------------------------------------------------
 
 const USER = 'user-uuid-1';
-const SESSION = 'session-id-1';
 let DB: string;
 
 // Use a fresh DB name every test so the module-level dbCache in db.ts never
@@ -37,18 +44,22 @@ let DB: string;
 beforeEach(() => {
   DB = `test-audit-logger-${crypto.randomUUID()}`;
   vi.clearAllMocks();
-  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  Object.defineProperty(navigator, 'onLine', {
+    value: true,
+    configurable: true,
+  });
 });
 
 afterEach(() => {
   auditLogger.clearSession();
   auditLogger.destroy();
   clearKeyCache();
+  vi.restoreAllMocks();
 });
 
 function setupSession(): void {
   auditLogger.configure({ dbName: DB });
-  auditLogger.setSession(USER, SESSION);
+  auditLogger.setSession(USER);
 }
 
 // ---------------------------------------------------------------------------
@@ -63,16 +74,14 @@ describe('log() — online path', () => {
     await auditLogger.log({ eventType: 'PATIENT_VIEW' });
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [url, opts] = mockFetch.mock.calls[0] as [
-      string,
-      { method: string; body: Array<{ eventType: string; userUuid: string; sessionId: string }> },
-    ];
+    const [url, opts] = mockFetch.mock.calls[0] as [string, { method: string; body: string }];
     expect(url).toBe('/ws/rest/v1/sihsalus/audit');
     expect(opts.method).toBe('POST');
-    const body = opts.body;
-    expect(body[0]!.eventType).toBe('PATIENT_VIEW');
-    expect(body[0]!.userUuid).toBe(USER);
-    expect(body[0]!.sessionId).toBe(SESSION);
+    expect(opts.body).toBeTypeOf('string');
+    const body = JSON.parse(opts.body);
+    expect(body[0].eventType).toBe('PATIENT_VIEW');
+    expect(body[0].userUuid).toBe(USER);
+    expect(body[0]).not.toHaveProperty('sessionId');
   });
 
   it('queues offline when the HTTP call fails', async () => {
@@ -90,20 +99,27 @@ describe('log() — online path', () => {
 
 describe('log() — offline path', () => {
   it('queues the event and flushes on demand', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     setupSession();
 
     await auditLogger.log({ eventType: 'ENCOUNTER_VIEW' });
     expect(mockFetch).not.toHaveBeenCalled();
 
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     mockFetch.mockResolvedValue(okResponse() as never);
     await auditLogger.flush();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [, opts] = mockFetch.mock.calls[0] as [string, { body: Array<{ eventType: string }> }];
-    const body = opts.body;
-    expect(body[0]!.eventType).toBe('ENCOUNTER_VIEW');
+    const [, opts] = mockFetch.mock.calls[0] as [string, { body: string }];
+    expect(opts.body).toBeTypeOf('string');
+    const body = JSON.parse(opts.body);
+    expect(body[0].eventType).toBe('ENCOUNTER_VIEW');
   });
 });
 
@@ -147,7 +163,10 @@ describe('flush()', () => {
   });
 
   it('sends entries in batches and clears them on success', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     setupSession();
 
     // Queue 55 events (> FLUSH_BATCH_SIZE of 50).
@@ -155,7 +174,10 @@ describe('flush()', () => {
       await auditLogger.log({ eventType: `EVT_${i}` });
     }
 
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     mockFetch.mockResolvedValue(okResponse() as never);
     await auditLogger.flush();
 
@@ -169,13 +191,19 @@ describe('flush()', () => {
   });
 
   it('stops flushing on first batch failure and keeps remaining entries', async () => {
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
     setupSession();
     for (let i = 0; i < 3; i++) {
       await auditLogger.log({ eventType: 'EVT' });
     }
 
-    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
     mockFetch.mockResolvedValue(failResponse() as never);
     await auditLogger.flush();
 
@@ -196,9 +224,10 @@ describe('clearSession()', () => {
     await auditLogger.log({ eventType: 'AFTER_LOGOUT' });
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    const [, opts] = mockFetch.mock.calls[0] as [string, { body: Array<{ eventType: string }> }];
-    const body = opts.body;
-    expect(body[0]!.eventType).toBe('BEFORE_LOGOUT');
+    const [, opts] = mockFetch.mock.calls[0] as [string, { body: string }];
+    expect(opts.body).toBeTypeOf('string');
+    const body = JSON.parse(opts.body);
+    expect(body[0].eventType).toBe('BEFORE_LOGOUT');
   });
 });
 
@@ -230,5 +259,131 @@ describe('init() / destroy()', () => {
     expect(onlineListeners).toHaveLength(1);
     addSpy.mockRestore();
     auditLogger.destroy();
+  });
+});
+
+describe('authenticated actor isolation', () => {
+  it('replays the user’s pending entries when authentication arrives after initialization', async () => {
+    auditLogger.configure({ dbName: DB });
+    await auditDb.queueEntry(
+      DB,
+      {
+        id: 'pending-before-login',
+        eventType: 'PATIENT_SEARCH',
+        userUuid: USER,
+        timestamp: '2026-01-02T03:04:05.000Z',
+      },
+      10,
+    );
+    mockFetch.mockResolvedValue(okResponse() as never);
+    auditLogger.init();
+
+    auditLogger.setSession(USER);
+
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce());
+    expect(JSON.parse(sentBody())).toEqual([expect.objectContaining({ id: 'pending-before-login', userUuid: USER })]);
+    await vi.waitFor(async () => expect((await auditDb.getEntriesForUser(DB, USER)).entries).toHaveLength(0));
+  });
+
+  it('stops before the next batch when the authenticated actor changes', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    setupSession();
+    for (let i = 0; i < 55; i++) await auditLogger.log({ eventType: 'PATIENT_SEARCH' });
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+    mockFetch.mockImplementationOnce(() => {
+      auditLogger.setSession('user-uuid-2');
+      return okResponse() as never;
+    });
+
+    await auditLogger.flush();
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect((await auditDb.getEntriesForUser(DB, USER)).entries).toHaveLength(5);
+  });
+
+  it('does not replay another user’s encrypted queue after an account switch', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    setupSession();
+    await auditLogger.log({ eventType: 'FIRST_USER' });
+    auditLogger.setSession('user-uuid-2');
+    await auditLogger.log({ eventType: 'SECOND_USER' });
+
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+    mockFetch.mockResolvedValue(okResponse() as never);
+    await auditLogger.flush();
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const body = JSON.parse(sentBody());
+    expect(body).toEqual([
+      expect.objectContaining({
+        eventType: 'SECOND_USER',
+        userUuid: 'user-uuid-2',
+      }),
+    ]);
+    expect((await auditDb.getEntriesForUser(DB, USER)).entries).toHaveLength(1);
+  });
+
+  it.each(['logout', 'switch'])('stops a pending replay if the actor changes during decryption: %s', async (change) => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    setupSession();
+    await auditLogger.log({ eventType: 'FIRST_USER' });
+    const getEntries = auditDb.getEntriesForUser;
+    vi.spyOn(auditDb, 'getEntriesForUser').mockImplementationOnce(async (...args) => {
+      const entries = await getEntries(...args);
+      if (change === 'logout') auditLogger.clearSession();
+      else auditLogger.setSession('user-uuid-2');
+      return entries;
+    });
+
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+    mockFetch.mockResolvedValue(okResponse() as never);
+    await auditLogger.flush();
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect((await getEntries(DB, USER)).entries).toHaveLength(1);
+  });
+
+  it('omits legacy authentication identifiers when replaying stored entries', async () => {
+    setupSession();
+    const legacy = {
+      id: 'legacy-event',
+      eventType: 'PATIENT_SEARCH',
+      userUuid: USER,
+      timestamp: '2026-01-02T03:04:05.000Z',
+      sessionId: 'legacy-authentication-identifier',
+    };
+    await auditDb.queueEntry(DB, legacy, 10);
+    mockFetch.mockResolvedValue(okResponse() as never);
+
+    await auditLogger.flush();
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const wireBody = sentBody();
+    expect(wireBody).toBeTypeOf('string');
+    const body = JSON.parse(wireBody as string);
+    expect(body[0]).toMatchObject({
+      id: legacy.id,
+      eventType: legacy.eventType,
+    });
+    expect(body[0]).not.toHaveProperty('sessionId');
+    expect(wireBody).not.toContain('legacy-authentication-identifier');
   });
 });

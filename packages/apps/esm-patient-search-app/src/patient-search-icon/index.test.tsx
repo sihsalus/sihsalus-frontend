@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, navigate, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession } from 'test-utils';
 
@@ -32,7 +32,14 @@ it.each([
   const user = userEvent.setup();
   render(<PatientSearchIconWrapper />);
   expect(screen.getByRole('button', { name: 'Search patient' })).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'Recent patients' }));
+  const recentPatients = screen.getByRole('button', { name: 'Recent patients' });
+  if (route === 'recent-patients') {
+    expect(recentPatients).toHaveAttribute('aria-current', 'page');
+  } else {
+    expect(recentPatients).not.toHaveAttribute('aria-current');
+  }
+  await act(async () => recentPatients.focus());
+  await user.keyboard('{Enter}');
   expect(navigate).toHaveBeenCalledWith({ to: '/openmrs/spa/recent-patients' });
 });
 

@@ -228,7 +228,11 @@ export function savePatientPhotoAsAttachment(patientUuid: string, content: strin
   return createAttachment(patientUuid, uploadedFile, signal);
 }
 
-export async function fetchPerson(query: string, abortController: AbortController): Promise<Array<PersonSearchResult>> {
+export async function fetchPerson(
+  query: string,
+  abortController: AbortController,
+  { requireFreshNetwork = false }: { requireFreshNetwork?: boolean } = {},
+): Promise<Array<PersonSearchResult>> {
   const encodedQuery = encodeURIComponent(query);
   const patientRepresentation = 'custom:(uuid,display,person:(uuid,display,age,birthdate,birthdateEstimated))';
   const personRepresentation = 'custom:(uuid,display,age,birthdate,birthdateEstimated)';
@@ -237,12 +241,26 @@ export async function fetchPerson(query: string, abortController: AbortControlle
       `${restBaseUrl}/patient?q=${encodedQuery}&v=${patientRepresentation}`,
       {
         signal: abortController.signal,
+        ...(requireFreshNetwork
+          ? {
+              cache: 'no-store' as const,
+              headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+              rejectOnAuthFailure: true,
+            }
+          : {}),
       },
     ),
     openmrsFetch<{ results: Array<PersonSearchResult> }>(
       `${restBaseUrl}/person?q=${encodedQuery}&v=${personRepresentation}`,
       {
         signal: abortController.signal,
+        ...(requireFreshNetwork
+          ? {
+              cache: 'no-store' as const,
+              headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+              rejectOnAuthFailure: true,
+            }
+          : {}),
       },
     ),
   ]);

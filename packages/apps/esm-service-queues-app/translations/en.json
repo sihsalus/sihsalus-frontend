@@ -442,5 +442,10 @@
   "waitingFor": "Waiting for",
   "waitTime": "Wait time",
   "weight": "Weight",
-  "years": "years"
+  "years": "years",
+  "refreshVisualQueue": "Refresh queue",
+  "visualQueueOffline": "No connection",
+  "visualQueueOfflineMessage": "Queue changes cannot be checked until the connection returns.",
+  "visualQueuePreviousData": "Showing the last complete queue loaded in this view. It may have changed.",
+  "visualQueueUnconfirmedStatus": "Current queue information is unavailable"
 }

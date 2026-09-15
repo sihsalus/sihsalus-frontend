@@ -10,7 +10,7 @@ import styles from './monthly-workload.scss';
 interface MonthlyCalendarViewProps {
   calendarWorkload: Array<{ count: number; date: string }>;
   displayedMonth: Date;
-  selectedDate: Date;
+  selectedDate: Date | null;
   minDate?: Date;
   onDateClick?: (pickedDate: Date) => void;
   onMonthChange: (month: Date) => void;

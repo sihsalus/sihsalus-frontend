@@ -16,9 +16,9 @@ import dayjs from 'dayjs';
 import {
   mockLocations,
   mockPatient,
-  mockProviders,
+  mockProviders as baseProviders,
   mockSession,
-  mockUseAppointmentServiceData,
+  mockUseAppointmentServiceData as baseServices,
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
@@ -39,6 +39,25 @@ import {
   saveAppointment,
 } from './appointments-form.resource';
 import AppointmentForm from './appointments-form.workspace';
+
+const schedulingCategoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
+const providerCategoryAttributeUuid = '3961cbdd-3240-4b70-99ca-5f63af488b15';
+const mockUseAppointmentServiceData = baseServices.map((service) => ({
+  ...service,
+  speciality: { uuid: schedulingCategoryUuid },
+}));
+const mockProviders = {
+  data: baseProviders.data.map((provider) => ({
+    ...provider,
+    attributes: [
+      {
+        uuid: 'category-' + provider.uuid,
+        attributeType: { uuid: providerCategoryAttributeUuid },
+        value: schedulingCategoryUuid,
+      },
+    ],
+  })),
+};
 
 const defaultProps = {
   context: 'creating',
@@ -134,6 +153,7 @@ function makeEditableAppointment(): Appointment {
       location: { uuid: 'service-location-uuid' },
       maxAppointmentsLimit: null,
       name: 'Outpatient',
+      speciality: { uuid: schedulingCategoryUuid },
       startTime: '',
       uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
     },
@@ -307,6 +327,9 @@ describe('AppointmentForm', () => {
     const notification = mockShowSnackbar.mock.calls.at(-1)?.[0];
     expect(JSON.stringify(notification?.subtitle)).toContain('UPSS');
     expect(JSON.stringify(notification?.subtitle)).toContain('serviceRequired');
+    expect(screen.queryByText('Revise los campos marcados')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /select a UPSS/i })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('locationRequired')).toBeInTheDocument();
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
@@ -749,6 +772,49 @@ describe('AppointmentForm', () => {
     ).toBe(false);
   });
 
+  it.each([720, 721])('validates a service duration of %i minutes before saving', async (durationMins) => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockResolvedValue({
+      data: [{ ...mockUseAppointmentServiceData[0], durationMins }],
+    } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await selectLocationAndService(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), 'Scheduled');
+    const duration = screen.getByRole('spinbutton', { name: /duration/i });
+    expect(duration).toHaveAttribute('max', '720');
+    // Submit directly to verify schema validation even when browser validation is bypassed.
+    fireEvent.submit(duration.closest('form'));
+    if (durationMins === 720) {
+      await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledOnce());
+      const saved = mockSaveAppointment.mock.calls[0][0];
+      expect(dayjs(saved.endDateTime).diff(dayjs(saved.startDateTime), 'minutes')).toBe(720);
+    } else {
+      expect(await screen.findByText('Duration cannot exceed 720 minutes (12 hours)')).toBeInTheDocument();
+      expect(mockSaveAppointment).not.toHaveBeenCalled();
+    }
+  });
+
+  it('keeps the form open when the appointment date is cleared and allows correcting it', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    const dateInput = screen.getByTestId('datePickerInput');
+    fireEvent.change(dateInput, { target: { value: '' } });
+    expect(screen.getByRole('region', { name: 'Appointment calendar' })).toBeInTheDocument();
+    fireEvent.submit(dateInput.closest('form'));
+    expect(await screen.findByText('Enter a valid appointment date')).toBeInTheDocument();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+    fireEvent.change(dateInput, { target: { value: dayjs().add(1, 'day').format('YYYY-MM-DD') } });
+    fireEvent.submit(dateInput.closest('form'));
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledOnce());
+  });
+
   it('closes the workspace when the cancel button is clicked', async () => {
     const user = userEvent.setup();
 
@@ -850,7 +916,7 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
-  it('allows saving without showing a warning when the provider category is not confirmed in warn mode', async () => {
+  it('allows saving with an eligible provider in warn mode', async () => {
     const user = userEvent.setup();
     const categoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
     const categorizedService = {
@@ -880,7 +946,11 @@ describe('AppointmentForm', () => {
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
   });
 
-  it('only lists providers enabled for the selected service category in strict mode', async () => {
+  it.each([
+    'off',
+    'warn',
+    'strict',
+  ] as const)('only lists providers enabled for the selected service category in %s mode', async (mode) => {
     const user = userEvent.setup();
     const providerAttributeTypeUuid = '3961cbdd-3240-4b70-99ca-5f63af488b15';
     const categoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
@@ -895,7 +965,7 @@ describe('AppointmentForm', () => {
       ...getDefaultsFromConfigSchema(configSchema),
       appointmentTypes: ['Scheduled', 'WalkIn'],
       providerSchedulingCategoryValidation: {
-        mode: 'strict',
+        mode,
         providerAttributeTypeUuid,
       },
     });

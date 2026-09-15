@@ -1,4 +1,4 @@
-import { logError, showToast, useConfig } from '@openmrs/esm-framework';
+import { logError, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -85,10 +85,10 @@ export function useColumns(queue: string, status: string): QueueTableColumn[] {
   useEffect(() => {
     invalidColumnIds.forEach((columnId) => {
       logError(new Error(`Unknown queue table column id: ${columnId}`), 'Resolve queue table columns');
-      showToast({
+      showSnackbar({
         title: t('invalidColumnConfig', 'Invalid column config'),
         kind: 'warning',
-        description: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
+        subtitle: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
       });
     });
   }, [invalidColumnIds, t]);

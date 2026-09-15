@@ -23,6 +23,7 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   const canAccessPatientChart = usePatientChartAccess();
   const { page } = useParams();
   const isSearchPage = useMemo(() => page === 'search', [page]);
+  const isRecentPatientsPage = page === recentPatientsRoute;
   const [searchParams] = useSearchParams();
   const initialSearchTerm = isSearchPage ? searchParams.get('query') : '';
 
@@ -81,11 +82,13 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
       {!showSearchInput && config.search.showRecentlySearchedPatients && canAccessPatientChart && (
         <HeaderGlobalAction
           aria-label={t('recentPatients', 'Recent patients')}
-          className={styles.recentPatientsButton}
+          aria-current={isRecentPatientsPage ? 'page' : undefined}
+          className={isRecentPatientsPage ? styles.activeSearchIconButton : styles.searchIconButton}
+          isActive={isRecentPatientsPage}
+          tooltipAlignment="end"
           onClick={() => navigate({ to: `${globalThis.spaBase}/${recentPatientsRoute}` })}
         >
           <RecentlyViewed size={20} />
-          <span>{t('recentPatients', 'Recent patients')}</span>
         </HeaderGlobalAction>
       )}
       {showSearchInput ? (

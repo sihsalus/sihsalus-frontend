@@ -15,7 +15,7 @@ const RATE_LIMIT_PER_SECOND = 20;
 
 class AuditLogger {
   private config: Required<AuditLoggerConfig> = { ...DEFAULTS };
-  private sessionRef: { userUuid: string; sessionId: string } | null = null;
+  private sessionRef: { userUuid: string } | null = null;
   private onlineHandler: (() => void) | null = null;
   private initialized = false;
 
@@ -37,8 +37,13 @@ class AuditLogger {
     this.rateLimitResetAt = 0;
   }
 
-  setSession(userUuid: string, sessionId: string): void {
-    this.sessionRef = { userUuid, sessionId };
+  setSession(userUuid: string): void {
+    if (this.sessionRef?.userUuid === userUuid) return;
+    this.clearSession();
+    this.sessionRef = { userUuid };
+    if (this.initialized && navigator.onLine) {
+      this.flush().catch((err) => console.error('[AuditLogger] Session flush failed:', err));
+    }
   }
 
   clearSession(): void {
@@ -70,17 +75,17 @@ class AuditLogger {
     this.rateLimitResetAt = 0;
   }
 
-  async log(event: Omit<AuditEvent, 'timestamp' | 'userUuid' | 'sessionId'>): Promise<void> {
+  async log(event: Omit<AuditEvent, 'timestamp' | 'userUuid'>): Promise<void> {
     if (!this.sessionRef) return;
 
     const entry: StoredAuditEntry = {
-      ...event,
+      eventType: event.eventType,
+      patientUuid: event.patientUuid,
+      encounterUuid: event.encounterUuid,
+      resourceType: event.resourceType,
+      metadata: event.metadata,
       timestamp: new Date().toISOString(),
       userUuid: this.sessionRef.userUuid,
-      // sessionId is intentionally embedded in the entry so the server can
-      // correlate the action with the exact session — but it travels only in
-      // the encrypted offline payload or over TLS; it is never stored in plaintext.
-      sessionId: this.sessionRef.sessionId,
       id: crypto.randomUUID(),
     };
 
@@ -116,8 +121,13 @@ class AuditLogger {
     if (!this.sessionRef) return;
 
     const { dbName } = this.config;
-    const { userUuid } = this.sessionRef;
+    const session = this.sessionRef;
+    const { userUuid } = session;
     const { entries, undecryptableIds } = await getEntriesForUser(dbName, userUuid);
+
+    // Decryption is asynchronous: never submit a previous user's queue with
+    // the credentials of a newly authenticated user, or after logout.
+    if (this.sessionRef !== session) return;
 
     if (undecryptableIds.length > 0) {
       // Surfaced the same way the queue reports eviction. These can never be
@@ -135,6 +145,7 @@ class AuditLogger {
     if (!entries.length) return;
 
     for (let i = 0; i < entries.length; i += FLUSH_BATCH_SIZE) {
+      if (this.sessionRef !== session) return;
       const batch = entries.slice(i, i + FLUSH_BATCH_SIZE);
       try {
         await this.sendEntries(batch);
@@ -156,7 +167,20 @@ class AuditLogger {
   private async sendEntries(entries: StoredAuditEntry[]): Promise<void> {
     const response = await openmrsFetch(this.config.endpoint, {
       method: 'POST',
-      body: entries,
+      // Explicit fields also remove authentication identifiers from legacy
+      // encrypted entries. openmrsFetch only serializes plain objects, not arrays.
+      body: JSON.stringify(
+        entries.map(({ id, eventType, patientUuid, encounterUuid, resourceType, metadata, timestamp, userUuid }) => ({
+          id,
+          eventType,
+          patientUuid,
+          encounterUuid,
+          resourceType,
+          metadata,
+          timestamp,
+          userUuid,
+        })),
+      ),
       headers: { 'Content-Type': 'application/json' },
     });
     if (!response.ok) {

@@ -50,6 +50,12 @@ patient/form downloads and shows the oldest verified update, incomplete selectio
 Only an explicit button requests persistent storage. Read failures and failed operations show fixed translated errors
 with retry controls; missing patient metadata does not hide a pending action or leave an endless loading skeleton.
 
+The menu uses one visible label associated with its switch, without a surrounding navigation link or duplicate
+label. Clicking the label or using Space/Enter changes the preference once. Each mounted menu has its own control
+ID. The switch reflects the mode returned after saving; unavailable capability and storage failures retain the
+previous state and show fixed translated messages. Verify this control with the real user-menu styles at desktop
+and narrow widths. This control does not synchronize or remove pending actions.
+
 Actions are filtered and sorted across the complete owned collection before pagination. Page size is controlled, and
 a shrinking queue clamps the active page. Selection and deletion use stable queue IDs. Sync errors are displayed as
 an opaque status rather than persisted backend details.

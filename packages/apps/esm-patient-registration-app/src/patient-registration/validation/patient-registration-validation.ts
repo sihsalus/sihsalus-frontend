@@ -350,7 +350,9 @@ export function isAdultResponsibleRelationship(
     return Number(newPersonAge) >= 18;
   }
 
-  const relatedPersonAge = relationship.relatedPersonAge ?? getAgeFromBirthdate(relationship.relatedPersonBirthdate);
+  const relatedPersonAge = relationship.relatedPersonBirthdate
+    ? getAgeFromBirthdate(relationship.relatedPersonBirthdate)
+    : relationship.relatedPersonAge;
   return typeof relatedPersonAge === 'number' && relatedPersonAge >= 18;
 }
 
@@ -377,7 +379,9 @@ export function isUnderageResponsibleRelationship(
     return Number(newPersonAge) < 18;
   }
 
-  const relatedPersonAge = relationship.relatedPersonAge ?? getAgeFromBirthdate(relationship.relatedPersonBirthdate);
+  const relatedPersonAge = relationship.relatedPersonBirthdate
+    ? getAgeFromBirthdate(relationship.relatedPersonBirthdate)
+    : relationship.relatedPersonAge;
   return typeof relatedPersonAge === 'number' && relatedPersonAge < 18;
 }
 
@@ -685,16 +689,11 @@ export function getValidationSchema(
       .test(
         'responsible-relationship-must-be-adult',
         t('responsiblePersonMustBeAdult', 'Responsible person must be an adult'),
-        function (relationships?: Array<RelationshipValue>) {
-          const values = this.parent as FormValues;
-          return (
-            !isMinorPatient(values) ||
-            !hasUnderageResponsibleRelationship(
-              relationships,
-              config.relationshipOptions?.minorResponsibleRelationshipTypes,
-            )
-          );
-        },
+        (relationships?: Array<RelationshipValue>) =>
+          !hasUnderageResponsibleRelationship(
+            relationships,
+            config.relationshipOptions?.minorResponsibleRelationshipTypes,
+          ),
       )
       .test(
         'responsible-relationship-age-must-be-known',

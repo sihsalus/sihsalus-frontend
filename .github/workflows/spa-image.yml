@@ -3,27 +3,37 @@ name: SPA Image
 on:
   pull_request:
     paths:
-      - '.github/workflows/spa-image.yml'
-      - 'packages/apps/**'
-      - 'packages/libs/**'
-      - 'packages/tooling/**'
-      - 'Dockerfile'
-      - 'nginx.spa.conf'
-      - 'package.json'
-      - 'yarn.lock'
+      - ".github/workflows/spa-image.yml"
+      - "packages/apps/**"
+      - "packages/libs/**"
+      - "packages/tooling/**"
+      - "Dockerfile"
+      - "nginx.spa.conf"
+      - "package.json"
+      - "yarn.lock"
   workflow_dispatch:
+    inputs:
+      publish_candidate:
+        description: Build a commit-addressed candidate without promoting or deploying it
+        type: boolean
+        default: false
+      candidate_base:
+        description: Full base commit SHA for candidate regression validation
+        type: string
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  IBM_TELEMETRY_DISABLED: 'true'
-  TURBO_TELEMETRY_DISABLED: '1'
-  DO_NOT_TRACK: '1'
+  IBM_TELEMETRY_DISABLED: "true"
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
 
 jobs:
   build-spa-image:
+    if: github.event_name != 'workflow_dispatch' || !inputs.publish_candidate
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -59,3 +69,122 @@ jobs:
           cache-from: type=gha,scope=release-amd64
           # Cache export is an optimization; keep the image build itself strict.
           cache-to: type=gha,scope=release-amd64,mode=max,ignore-error=true
+
+  candidate-quality:
+    if: github.repository == 'sihsalus/sihsalus-frontend' && github.event_name == 'workflow_dispatch' && inputs.publish_candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate candidate source
+        env:
+          CANDIDATE_BASE: ${{ inputs.candidate_base }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/heads/* ]]
+          [[ "$GITHUB_REF" != refs/heads/main && "$GITHUB_REF" != refs/heads/pre-release ]]
+          [[ "$CANDIDATE_BASE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CANDIDATE_BASE" != "$GITHUB_SHA" ]]
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          git merge-base --is-ancestor "$CANDIDATE_BASE" HEAD
+
+      - uses: ./.github/actions/setup-node-env
+
+      - name: Restore Turbo cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Validate changed workspaces and consumers
+        env:
+          CANDIDATE_BASE: ${{ inputs.candidate_base }}
+        run: yarn verify:changed --base "$CANDIDATE_BASE" --head "$GITHUB_SHA"
+
+  publish-candidate:
+    needs: candidate-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Record candidate provenance
+        id: source
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          echo "build_time=$(git show -s --format=%cI HEAD)" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build commit-addressed candidate
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: secure-init
+          push: true
+          tags: ghcr.io/sihsalus/sihsalus-frontend:candidate-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          platforms: linux/amd64
+          build-args: |
+            APP_VERSION=${{ steps.source.outputs.version }}
+            GIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ steps.source.outputs.build_time }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=release-amd64
+          cache-to: type=gha,scope=candidate-amd64,mode=max,ignore-error=true
+
+      - name: Scan exact candidate digest
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.build.outputs.digest }}
+          format: json
+          output: candidate-scan.json
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      - name: Retain candidate scan
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: candidate-scan-${{ github.sha }}
+          path: candidate-scan.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Record scanned candidate
+        env:
+          CANDIDATE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          {
+            echo "Candidate commit: $GITHUB_SHA"
+            echo "Scanned image: ghcr.io/sihsalus/sihsalus-frontend@$CANDIDATE_DIGEST"
+            echo "No release aliases or deployment signals were updated."
+          } >> "$GITHUB_STEP_SUMMARY"

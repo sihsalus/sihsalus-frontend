@@ -5,7 +5,7 @@ import {
   isDesktop,
   launchWorkspace,
   logError,
-  showToast,
+  showSnackbar,
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
@@ -194,10 +194,10 @@ function QueueTableForQueueAndStatus({
         new Error(`No table columns defined for queue ${queue.uuid} and status ${statusUuid}`),
         'Resolve queue table configuration',
       );
-      showToast({
+      showSnackbar({
         title: t('invalidtableConfig', 'Invalid table configuration'),
         kind: 'warning',
-        description: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
+        subtitle: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
       });
     }
   }, [columns, queue.uuid, statusUuid, t]);

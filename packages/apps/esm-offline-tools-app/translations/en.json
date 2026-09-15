@@ -108,5 +108,7 @@
   "offlineStorageUnverified": "Storage reserve is insufficient or could not be checked",
   "offlineToolsAppMenuLink": "Offline tools",
   "requestPersistentStorage": "Request persistent storage",
-  "retry": "Retry"
+  "retry": "Retry",
+  "offlineModeUnavailable": "Offline use is not available in this session.",
+  "offlineModeChangeFailed": "Could not change offline use. Please try again."
 }

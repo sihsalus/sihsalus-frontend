@@ -112,5 +112,7 @@
   "offlineStorageUnverified": "La reserva de almacenamiento es insuficiente o no pudo verificarse",
   "offlineToolsAppMenuLink": "Herramientas sin internet",
   "requestPersistentStorage": "Solicitar almacenamiento persistente",
-  "retry": "Reintentar"
+  "retry": "Reintentar",
+  "offlineModeUnavailable": "El uso sin conexión no está disponible en esta sesión.",
+  "offlineModeChangeFailed": "No se pudo cambiar el uso sin conexión. Vuelve a intentarlo."
 }

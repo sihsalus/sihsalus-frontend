@@ -53,7 +53,7 @@ export type LowestNode = Pick<TreeNode, 'display' | 'flatName'>;
 export interface ReducerState {
   checkboxes: TreeCheckboxes;
   parents: TreeParents;
-  roots: Array<LowestNode>;
+  roots: Array<TreeNode>;
   tests: TreeTests;
   lowestParents: Array<TreeNode>;
 }

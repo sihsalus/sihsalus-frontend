@@ -35,6 +35,14 @@ export const configSchema = {
         conceptUuid: '0a84d7d3-2d86-4415-a12f-dc2a307ddba1', // Coproanálisis
         defaultOpen: false,
       },
+      {
+        conceptUuid: 'b83483dc-b3c6-48ef-a95c-b094a882dda1', // Uroanálisis
+        defaultOpen: false,
+      },
+      {
+        conceptUuid: '968c8a41-ab1b-426c-86ee-761b88c26e40', // Tinción con colorante de Wright
+        defaultOpen: false,
+      },
     ],
   },
   orders: {

@@ -52,6 +52,8 @@ const orderableLabsetConceptUuids = [
   '8ed15668-238d-4f19-947f-2237cb5d793f', // Inmunología
   '48ea717c-cc7c-4dc1-a018-9c0d439ee178', // Microbiología
   '0a84d7d3-2d86-4415-a12f-dc2a307ddba1', // Coproanálisis
+  'b83483dc-b3c6-48ef-a95c-b094a882dda1', // Uroanálisis
+  '968c8a41-ab1b-426c-86ee-761b88c26e40', // Tinción con colorante de Wright
   '29f4a2ac-d212-4ada-961c-b3d64101b390', // Grupo Sanguíneo y Factor Rh
   '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
   'ea88fc4e-e3d9-4d2b-9cdd-c5be0490615a', // Lámina periférica

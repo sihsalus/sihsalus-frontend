@@ -39,13 +39,17 @@ const RoutedResultsViewer: React.FC<ResultsViewerProps> = ({ basePath, patientUu
   const conceptUuids = config.resultsViewerConcepts.map((concept) => concept.conceptUuid) ?? [];
   const { roots, isLoading, error } = useGetManyObstreeData(conceptUuids);
 
+  const rootsWithData = React.useMemo(() => {
+    return roots?.filter((root) => root.hasData) ?? [];
+  }, [roots]);
+
   if (error) {
     return <ErrorState error={error} headerTitle={t('dataLoadError', 'Data Load Error')} />;
   }
 
-  if (roots?.length) {
+  if (isLoading || rootsWithData.length) {
     return (
-      <FilterProvider roots={!isLoading ? roots : []} isLoading={isLoading}>
+      <FilterProvider roots={!isLoading ? rootsWithData : []} isLoading={isLoading}>
         <ResultsViewer patientUuid={patientUuid} basePath={basePath} loading={isLoading} />
       </FilterProvider>
     );

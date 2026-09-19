@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 import {
-  Button,
   DataTable,
   DataTableSkeleton,
   Table,
@@ -19,7 +18,6 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation } from '../../types';
-import usePanelData from '../panel-view/usePanelData';
 
 import styles from './individual-results-table.scss';
 
@@ -61,14 +59,6 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
   const layout = useLayoutType();
   const patientUuid = getPatientUuidFromStore();
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
-  const { panels } = usePanelData();
-
-  const groupConceptUuid = useMemo(() => {
-    return (
-      panels?.find((p) => p.relatedObs?.some((obs) => obs.conceptUuid === subRows.entries[0]?.conceptUuid))
-        ?.conceptUuid || subRows.entries[0]?.conceptUuid
-    );
-  }, [panels, subRows.entries]);
 
   const headerTitle = t(title);
 
@@ -100,7 +90,6 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
       subRows?.entries.length &&
       subRows.entries.map((row, i) => {
         const { units = '', range = '' } = row;
-        const isString = Number.isNaN(Number.parseFloat(row.value));
 
         return {
           ...row,

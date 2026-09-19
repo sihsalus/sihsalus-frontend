@@ -72,13 +72,14 @@ describe('ResultsViewer', () => {
     });
     render(<RoutedResultsViewer {...testProps} />);
 
-    expect(screen.getAllByText(/complete blood count/i)).toHaveLength(2);
-    expect(screen.getAllByText(/hematocrit/i)).toHaveLength(2);
-    expect(screen.getAllByText(/hemoglobin/i)).toHaveLength(4);
-    const mainLabel = screen.getByLabelText(/Serum chemistry panel/i);
-    expect(mainLabel).toBeInTheDocument();
+    expect(screen.getAllByText(/complete blood count/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/platelets/i)).toHaveLength(2);
 
-    const checkboxes = [
+    expect(screen.queryByText(/hematocrit/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hemoglobin/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Serum chemistry panel/i)).not.toBeInTheDocument();
+
+    const checkboxesWithoutData = [
       'Serum glucose',
       'Fasting blood glucose measurement (mg/dL)',
       'Post-prandial blood glucose measurement (mg/dL)',
@@ -99,18 +100,16 @@ describe('ResultsViewer', () => {
       'Serum calcium',
     ];
 
-    checkboxes.forEach((label) => {
-      const checkboxes = screen.getAllByLabelText(label);
-      checkboxes.forEach((checkbox) => {
-        expect(checkbox).toBeInTheDocument();
-        expect(checkbox).toBeDisabled();
-      });
+    checkboxesWithoutData.forEach((label) => {
+      expect(screen.queryByLabelText(label)).not.toBeInTheDocument();
     });
 
-    const panelButton = screen.getByRole('button', { name: /Comprehensive metabolic panel/i });
-    expect(panelButton).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Comprehensive metabolic panel/i })).not.toBeInTheDocument();
 
-    await userEvent.click(panelButton);
-    expect(screen.getByText(/Comprehensive metabolic panel/i)).toBeVisible();
+    const cbcButtons = screen.getAllByRole('button', { name: /Complete blood count/i });
+    expect(cbcButtons.length).toBeGreaterThan(0);
+
+    await userEvent.click(cbcButtons[0]);
+    expect(screen.getAllByLabelText(/platelets/i)[0]).toBeVisible();
   });
 });

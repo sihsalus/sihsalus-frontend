@@ -25,11 +25,15 @@ interface filterNodeParentProps extends Pick<FilterNodeProps, 'root'> {
 }
 
 function filterTreeNode(inputValue: string, treeNode: TreeNode): boolean {
+  if (!treeNode?.hasData) {
+    return false;
+  }
   // If the tree node's display value contains the user input, or any of its children's display contains the user input, return true
   if (
     treeNode &&
     (treeNode.display.toLowerCase().includes(inputValue.toLowerCase()) ||
-      (treeNode.subSets && treeNode.subSets.some((child) => filterTreeNode(inputValue, child))))
+      (treeNode.subSets &&
+        treeNode.subSets.filter((c) => c.hasData).some((child) => filterTreeNode(inputValue, child))))
   ) {
     return true;
   }
@@ -44,7 +48,9 @@ const FilterSet: React.FC<FilterSetProps> = () => {
   const [treeDataFiltered, setTreeDataFiltered] = useState(roots);
 
   useEffect(() => {
-    const filteredData = roots.filter((node) => filterTreeNode(searchTerm, node));
+    const filteredData = roots
+      .filter((node) => node.hasData)
+      .filter((node) => filterTreeNode(searchTerm, node));
     setTreeDataFiltered(filteredData);
   }, [searchTerm, roots]);
 
@@ -72,30 +78,32 @@ const FilterNodeParent = ({ root, itemNumber }: filterNodeParentProps): React.JS
   const [expandAll, setExpandAll] = useState<boolean | undefined>(undefined);
   const { checkboxes, parents, updateParent } = useContext(FilterContext);
 
-  if (!root.subSets) return;
+  if (!root.subSets || !root.hasData) return null;
 
   const affectedLeaves = parents[root.flatName] ?? [];
   const allChecked = affectedLeaves.length > 0 && affectedLeaves.every((leaf) => checkboxes[leaf]);
 
-  const filterParent = root.subSets.map((node, key) => {
-    if (!node.subSets?.length) {
+  const filterParent = root.subSets
+    .filter((node) => node.hasData)
+    .map((node, key) => {
+      if (!node.subSets?.length) {
+        return (
+          <div key={key}>
+            <FilterLeaf leaf={node} />
+          </div>
+        );
+      }
+
       return (
         <div key={key}>
-          <FilterLeaf leaf={node} />
+          <FilterNode
+            root={node}
+            level={0}
+            open={expandAll === undefined ? (config.resultsViewerConcepts[itemNumber]?.defaultOpen ?? false) : expandAll}
+          />
         </div>
       );
-    }
-
-    return (
-      <div key={key}>
-        <FilterNode
-          root={node}
-          level={0}
-          open={expandAll === undefined ? (config.resultsViewerConcepts[itemNumber]?.defaultOpen ?? false) : expandAll}
-        />
-      </div>
-    );
-  });
+    });
 
   return (
     <div>
@@ -132,6 +140,8 @@ const FilterNode = ({ root, level, open }: FilterNodeProps) => {
   const indeterminate = isIndeterminate(parents[root.flatName], checkboxes);
   const allChildrenChecked = parents[root.flatName]?.every((kid) => checkboxes[kid]);
 
+  if (!root.hasData) return null;
+
   return (
     <Accordion align="start" size={tablet ? 'md' : 'sm'}>
       <AccordionItem
@@ -149,8 +159,13 @@ const FilterNode = ({ root, level, open }: FilterNodeProps) => {
       >
         <div style={{ paddingLeft: `${level > 0 ? 1 : 0}rem` }}>
           {!root?.subSets?.[0]?.obs &&
-            root?.subSets?.map((node, index) => <FilterNode root={node} level={level + 1} key={index} />)}
-          {root?.subSets?.[0]?.obs && root.subSets?.map((obs, index) => <FilterLeaf leaf={obs} key={index} />)}
+            root?.subSets
+              ?.filter((node) => node.hasData)
+              ?.map((node, index) => <FilterNode root={node} level={level + 1} key={index} />)}
+          {root?.subSets?.[0]?.obs &&
+            root.subSets
+              ?.filter((obs) => obs.hasData)
+              ?.map((obs, index) => <FilterLeaf leaf={obs} key={index} />)}
         </div>
       </AccordionItem>
     </Accordion>
@@ -159,6 +174,9 @@ const FilterNode = ({ root, level, open }: FilterNodeProps) => {
 
 const FilterLeaf = ({ leaf }: FilterLeafProps) => {
   const { checkboxes, toggleVal } = useContext(FilterContext);
+
+  if (!leaf?.hasData) return null;
+
   return (
     <div className={styles.filterItem}>
       <Checkbox
@@ -166,7 +184,6 @@ const FilterLeaf = ({ leaf }: FilterLeafProps) => {
         labelText={leaf?.display}
         checked={checkboxes?.[leaf.flatName]}
         onChange={() => toggleVal(leaf.flatName)}
-        disabled={!leaf.hasData}
       />
     </div>
   );

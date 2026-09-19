@@ -5,7 +5,7 @@ import Dashboard from "./dashboard.component";
 
 const Root: React.FC = () => {
   return (
-    <AppErrorBoundary appName="esm-epidemiological-surveillance">
+    <AppErrorBoundary appName="esm-epidemiological-surveillance-app">
       <RequirePrivilege privilege={epidemiologicalSurveillanceReadPrivilege}>
         <Dashboard />
       </RequirePrivilege>

@@ -8218,9 +8218,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@sihsalus/esm-epidemiological-surveillance@workspace:packages/apps/esm-epidemiological-surveillance":
+"@sihsalus/esm-epidemiological-surveillance-app@workspace:packages/apps/esm-epidemiological-surveillance-app":
   version: 0.0.0-use.local
-  resolution: "@sihsalus/esm-epidemiological-surveillance@workspace:packages/apps/esm-epidemiological-surveillance"
+  resolution: "@sihsalus/esm-epidemiological-surveillance-app@workspace:packages/apps/esm-epidemiological-surveillance-app"
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"

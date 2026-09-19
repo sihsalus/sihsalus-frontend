@@ -1,9 +1,9 @@
 {
-  "name": "@sihsalus/esm-epidemiological-surveillance",
+  "name": "@sihsalus/esm-epidemiological-surveillance-app",
   "version": "0.1.0",
   "license": "MPL-2.0",
   "description": "Registro de casos, alertas e indicadores de vigilancia epidemiológica de SIH Salus",
-  "browser": "dist/sihsalus-esm-epidemiological-surveillance.js",
+  "browser": "dist/sihsalus-esm-epidemiological-surveillance-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {

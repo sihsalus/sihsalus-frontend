@@ -1,4 +1,4 @@
-# @sihsalus/esm-epidemiological-surveillance
+# @sihsalus/esm-epidemiological-surveillance-app
 
 Microfrontend OpenMRS 3 de vigilancia epidemiológica de SIH Salus, iteración 1 (RE 3.1). Registro de casos, alertas, curva epidémica, canal endémico y distribución demográfica.
 
@@ -6,7 +6,7 @@ Terminología: visita = consulta; encounter = atención.
 
 ## Alcance
 
-Registro en **tres pasos**: paciente/atención; clasificación y laboratorio; revisión y registro. Precarga valores inequívocos de observaciones/diagnósticos existentes. El servidor valida, asocia CIE-10, detecta duplicados y determina periodicidad y alertas.
+Registro en **tres pasos**: paciente/atención de metaxénicas existente; clasificación y laboratorio; revisión y registro. Precarga valores inequívocos de observaciones/diagnósticos existentes. El servidor valida, asocia CIE-10, detecta duplicados y determina periodicidad y alertas. El registro completa esa misma atención; `CaseResult.uuid` es su UUID.
 
 Cubre RF-01 a RF-07, RF-11 a RF-13, RF-17 a RF-19, RF-22, RF-26 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye edición de casos guardados, padrón de febriles, NOTI/Excel, mapas o clasificación automática de focos. La aceptación con metadatos e instancia real sigue pendiente.
 
@@ -43,7 +43,7 @@ Lecturas clínicas: FHIR R4 `Patient,Encounter,Observation`; REST `encounter` (d
 
 ```json
 {
-  "@sihsalus/esm-epidemiological-surveillance": {
+  "@sihsalus/esm-epidemiological-surveillance-app": {
     "defaultReportPeriod": "semana",
     "reportLookbackDays": 28
   }
@@ -52,11 +52,11 @@ Lecturas clínicas: FHIR R4 `Patient,Encounter,Observation`; REST `encounter` (d
 
 Periodos: `dia,semana,mes,trimestre,semestre`. Fechas iniciales respetan cobertura; servidor admite hasta 731 días de diferencia.
 
-No hay UUID clínicos fijos. El OMOD exige `sihsalusepidemiologicalsurveillance.metadata` con conceptos, respuestas, tipos/roles, fuente CIE-10, etnia y pruebas locales existentes. Configuración ausente/inconsistente bloquea registro/reportes con `METADATA_NOT_CONFIGURED`. No hay fallback a datos demo ni creación de conceptos.
+El OMOD fija los UUID clínicos en `SurveillanceCatalog.java` tras contrastarlos con `sihsalus-content`; no lee archivo JSON ni global property. Si faltan conceptos, respuestas, tipo de atención o eventos administrativos en OpenMRS, bloquea registro/reportes con `METADATA_NOT_CONFIGURED`. No hay fallback a datos demo ni creación de conceptos.
 
 ## Registro y trabajo sin conexión
 
-La solicitud lleva UUID nuevo estable, paciente, atención, proveedor de la sesión, localidad, evento, estado, gravedad, origen, especie opcional, inicio de síntomas y resultado opcional; no copia nombres/historia clínica.
+La solicitud lleva UUID nuevo estable para el intento, paciente, UUID de la atención de metaxénicas existente, proveedor de la sesión, localidad, evento, estado, gravedad, origen, especie opcional, inicio de síntomas y resultado opcional; no copia nombres/historia clínica.
 
 Se usa exclusivamente la cola compartida del framework: `queueSynchronizationItem`, `getFullSynchronizationItemsFor`, `setupOfflineSync`, `deleteSynchronizationItem`. Tipo `sihsalus-epidemiological-surveillance-case-v1`. Persiste antes de enviar y elimina tras respuesta exitosa y comprobación de propietario. No añade localStorage clínico independiente.
 
@@ -90,11 +90,11 @@ Se muestra fecha de generación del reporte y aviso sin conexión. La caché com
 Desde la raíz del monorepo:
 
 ```sh
-yarn workspace @sihsalus/esm-epidemiological-surveillance start
-yarn workspace @sihsalus/esm-epidemiological-surveillance lint
-yarn workspace @sihsalus/esm-epidemiological-surveillance typescript
-yarn workspace @sihsalus/esm-epidemiological-surveillance test
-yarn workspace @sihsalus/esm-epidemiological-surveillance build
+yarn workspace @sihsalus/esm-epidemiological-surveillance-app start
+yarn workspace @sihsalus/esm-epidemiological-surveillance-app lint
+yarn workspace @sihsalus/esm-epidemiological-surveillance-app typescript
+yarn workspace @sihsalus/esm-epidemiological-surveillance-app test
+yarn workspace @sihsalus/esm-epidemiological-surveillance-app build
 ```
 
 Usar Node/Yarn del monorepo. Pruebas sintéticas de tres pasos, campos/fechas, precarga, permisos concedidos/denegados, cambio de usuario, paginación, errores seguros, cola y reportes.

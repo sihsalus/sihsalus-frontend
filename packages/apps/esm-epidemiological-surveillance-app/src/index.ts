@@ -12,7 +12,7 @@ export const importTranslation = require.context(
   "lazy",
 );
 
-const moduleName = "@sihsalus/esm-epidemiological-surveillance";
+const moduleName = "@sihsalus/esm-epidemiological-surveillance-app";
 
 const options = {
   featureName: "epidemiological-surveillance",

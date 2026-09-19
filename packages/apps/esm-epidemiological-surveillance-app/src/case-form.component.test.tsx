@@ -39,7 +39,9 @@ vi.mock("./api", async (importOriginal) => ({
     birthDate: "2000-01-01",
   })),
   fhirSearch: vi.fn(async (resource: string) =>
-    resource === "Encounter"
+    resource === "Patient"
+      ? [{ resourceType: "Patient", id: "patient", name: [{ text: "Synthetic Patient" }] }]
+      : resource === "Encounter"
       ? [
           {
             resourceType: "Encounter",
@@ -47,6 +49,15 @@ vi.mock("./api", async (importOriginal) => ({
             subject: { reference: "Patient/patient" },
             period: { start: "2026-01-20" },
             status: "finished",
+            type: [{ coding: [{ code: "surveillance-type" }], text: "Metaxenicas" }],
+          },
+          {
+            resourceType: "Encounter",
+            id: "other-care",
+            subject: { reference: "Patient/patient" },
+            period: { start: "2026-01-20" },
+            status: "finished",
+            type: [{ coding: [{ code: "other-type" }], text: "Other care" }],
           },
         ]
       : [],
@@ -79,6 +90,15 @@ describe("case registration screen", () => {
       screen.getByText("Complete the highlighted fields"),
     ).toBeInTheDocument();
     expect(saveCase).not.toHaveBeenCalled();
+  });
+  it("offers the existing metaxenicas encounter and excludes other care", async () => {
+    render(<CaseForm catalogue={catalogue} onSaved={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Patient name"), { target: { value: "Synthetic" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    await screen.findByText(/Synthetic Patient/);
+    fireEvent.change(screen.getByLabelText("Patient"), { target: { value: "patient" } });
+    await waitFor(() => expect(screen.getByText(/Metaxenicas/)).toBeInTheDocument());
+    expect(screen.queryByText(/Other care/)).not.toBeInTheDocument();
   });
   it("registers within three steps and distinguishes offline persistence", async () => {
     vi.mocked(saveCase).mockResolvedValue({ queued: true });

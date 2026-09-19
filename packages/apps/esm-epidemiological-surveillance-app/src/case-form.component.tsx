@@ -180,7 +180,7 @@ export function CaseForm({
           (item) =>
             referenceId(item.subject?.reference) === id &&
             item.status !== "entered-in-error" &&
-            !item.type?.some((type) =>
+            item.type?.some((type) =>
               type.coding?.some((code) => code.code === m.encounterTypeUuid),
             ),
         ),

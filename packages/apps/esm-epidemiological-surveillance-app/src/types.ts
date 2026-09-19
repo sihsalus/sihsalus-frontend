@@ -12,6 +12,7 @@ export interface Disease {
     severity: string;
     species?: string;
     diagnosisConceptUuid: string;
+    icd10Code: string;
   }[];
   laboratoryTests: {
     orderConceptUuid: string;
@@ -45,7 +46,7 @@ export interface Catalogue {
   events: SurveillanceEvent[];
 }
 export interface CaseRequest {
-  uuid: string;
+  uuid: string; // Stable idempotency key; the source encounter keeps its own UUID.
   patientUuid: string;
   sourceEncounterUuid: string;
   providerUuid: string;
@@ -59,7 +60,7 @@ export interface CaseRequest {
   laboratoryResultUuid?: string;
 }
 export interface CaseResult {
-  uuid: string;
+  uuid: string; // UUID of the completed metaxenicas encounter.
   diagnosisConceptUuid: string;
   icd10: string;
   periodicity: string;

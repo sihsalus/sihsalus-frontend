@@ -38,7 +38,7 @@ export const catalogue: Catalogue = {
         eventUuid: "event",
         severities: [{ key: "MILD", conceptUuid: "mild", label: "Mild" }],
         species: [],
-        diagnoses: [{ severity: "MILD", diagnosisConceptUuid: "diagnosis" }],
+        diagnoses: [{ severity: "MILD", diagnosisConceptUuid: "diagnosis", icd10Code: "A90" }],
         laboratoryTests: [],
       },
     ],

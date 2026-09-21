@@ -9,7 +9,7 @@ Este modulo es el punto de entrada de ordenes clinicas dentro del patient chart.
 
 - ordenes de medicamentos;
 - ordenes de laboratorio;
-- ordenes de radiologia;
+- ordenes de imagenes medicas;
 - ordenes de inmunizacion;
 - ordenes de interconsulta.
 
@@ -21,7 +21,9 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y 
 - El mensaje `Se requiere una consulta activa para realizar ordenes` debe mostrarse arriba del workspace o cerca de la accion bloqueada, no perdido al final del panel.
 - Los iconos deben estar presentes o, si se deshabilitan, debe hacerse de forma consistente para todas las ordenes.
 - No debe aparecer `t is not a function`; los helpers y componentes que renderizan mensajes deben recibir `t` o usar `useTranslation` localmente.
-- Los nombres de orden deben ser consistentes en plural: `Ordenes de laboratorio`, `Ordenes de radiologia`, etc.
+- Los nombres de orden deben ser consistentes en plural: `Ordenes de laboratorio`, `Órdenes de imágenes médicas`, etc.
+- La etiqueta configurada en `orderTypes` se reutiliza en la canasta, el buscador y el historial, incluidos filtros, detalles e impresión. `Medical imaging orders` se traduce como `Órdenes de imágenes médicas`; el UUID del tipo de orden existente se conserva aunque el backend lo denomine `Radiology Order`.
+- Imágenes médicas abarca las modalidades que permita el catálogo institucional, incluidas ecografías. Esta denominación no provisiona estudios ni conecta las órdenes clínicas con las solicitudes DICOM de `esm-patient-imaging-app`. El catálogo, la ejecución y el informe requieren su propia validación de backend/content.
 - La tarjeta de interconsultas abre `request-interconsulta-workspace` como child workspace de la canasta. El formulario agrega la solicitud a la canasta; no la publica antes de que el profesional use `Firmar y cerrar`.
 - El formulario de interconsulta distingue un consultorio/servicio local de un especialista externo o remoto. La segunda opción sigue siendo una orden de interconsulta y no inicia referencia, contrarreferencia ni traslado.
 - Cada agrupación de órdenes generales registra su transformador con el `careSettingUuid` configurado. El transformador también acepta el `careSetting` conservado en una orden y bloquea el envío si ninguno está disponible; nunca debe publicar una orden clínica sin ámbito asistencial.
@@ -33,7 +35,7 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y 
 - Care settings y order types configurables desde `config-schema`.
 - Visita activa disponible desde patient chart.
 - Exactamente un Provider activo vinculado a la persona de la cuenta clinica que firma la orden.
-- Laboratorio, farmacia, radiologia, inmunizacion e interconsulta pueden depender de modulos backend distintos.
+- Laboratorio, farmacia, imagenes medicas, inmunizacion e interconsulta pueden depender de modulos backend distintos.
 - La interconsulta usa por defecto el concept set `Tipo de Servicio` (`4bf3f465-…`) y el workspace de `esm-interconsultas-app`; ambos siguen siendo configurables.
 - Integraciones opcionales con stock/billing/FHIR deben degradar sin romper el workspace.
 

@@ -156,3 +156,11 @@ unique, network-only REST request so a service-worker patient cache cannot
 authorize a clinical write. Both accept an optional `AbortSignal`; offline
 synchronization handlers must pass their item-scoped signal so an owner/session
 change or cancellation cannot leave an untracked guard request running.
+
+### Medication basket date intent
+
+`DrugOrderBasketItem.startDateIsExplicit` is optional for persisted-draft
+compatibility. Only `false` identifies an untouched current-time default;
+`true` identifies a selected or retained historical date. Consumers must preserve
+this marker when editing or persisting a draft. Missing markers conservatively
+retain legacy date behavior. This client-only field is not sent to OpenMRS.

@@ -13,9 +13,11 @@ export function useDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItem) {
 
   const defaultValues = useMemo(() => {
     const defaultStartDate =
-      typeof initialOrderBasketItem?.startDate === 'string'
-        ? parseDate(initialOrderBasketItem?.startDate)
-        : ((initialOrderBasketItem?.startDate as Date) ?? new Date());
+      initialOrderBasketItem?.startDateIsExplicit === false
+        ? new Date()
+        : typeof initialOrderBasketItem?.startDate === 'string'
+          ? parseDate(initialOrderBasketItem?.startDate)
+          : ((initialOrderBasketItem?.startDate as Date) ?? new Date());
 
     return drugOrderBasketItemToFormValue(initialOrderBasketItem, defaultStartDate);
   }, [initialOrderBasketItem]);

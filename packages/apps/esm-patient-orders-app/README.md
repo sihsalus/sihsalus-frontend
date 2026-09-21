@@ -98,3 +98,11 @@ puede asociarse cuando la orden, el encounter y el paciente ya tienen UUID persi
 - Proteger explícitamente las extensiones de precio, stock y resultado de laboratorio, y retirar cualquier resto de código del workspace de resultados eliminado.
 - Agregar eventos auditables para crear/modificar/cancelar orden y para consultar precio/stock de insumos.
 - Definir fallback cuando `billing` no esté instalado: ocultar la extensión, mostrar dato no disponible o desactivar la acción.
+
+### Medication draft start dates
+
+The medication editing entry point marks the default current date on renew/revise
+as implicit (`startDateIsExplicit: false`), matching the medications application.
+A discontinuation retains its historical date. The medications payload preparer
+omits an implicit activation date even when a draft crosses midnight; explicit
+and older unmarked dates retain their existing validation contract.

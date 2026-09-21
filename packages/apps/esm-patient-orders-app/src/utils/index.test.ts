@@ -28,6 +28,17 @@ describe('buildMedicationOrder', () => {
     });
   });
 
+  it.each(['RENEW', 'REVISE', 'DISCONTINUE'] as const)('tracks start-date intent for %s', (action) => {
+    const order = mockOrders.find((candidate) => candidate.type === 'drugorder') as unknown as Order;
+    const draft = buildMedicationOrder(order, action);
+    expect(draft.startDateIsExplicit).toBe(action === 'DISCONTINUE');
+    if (action === 'DISCONTINUE') {
+      expect(draft.startDate).toBe(order.dateActivated);
+    } else {
+      expect((draft.startDate as Date).toDateString()).toBe(new Date().toDateString());
+    }
+  });
+
   it('preserves the submitted order identity and encounter context for a revision', () => {
     const order = mockOrders.find((candidate) => candidate.type === 'drugorder') as unknown as Order;
 

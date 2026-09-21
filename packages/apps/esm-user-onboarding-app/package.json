@@ -42,7 +42,7 @@
     "@carbon/react": "^1.83.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-joyride": "^2.8.2"
+    "react-joyride": "^3.2.0"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

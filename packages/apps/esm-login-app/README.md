@@ -3,6 +3,23 @@
 openmrs-esm-login-app is responsible for rendering the loading page,
 the login page, and the location picker.
 
+## Password-change response handling
+
+The normal modal and page submit to the authenticated REST `POST /password`
+endpoint. Empty successful responses (HTTP 200 or 204) are valid. Authentication
+failures must reject the operation even when the API configuration redirects to
+login: a redirect must not become a success notification or leave the form
+permanently submitting. The shared request uses `rejectOnAuthFailure` from the
+local `@openmrs/esm-api` transport while preserving its configured redirect.
+Deploy this microfrontend with the matching SIHSalus framework/app shell.
+
+`change-password-auth-failure.test.tsx` exercises the local transport with
+synthetic HTTP responses for both authentication-redirect promise modes,
+empty success, forbidden access and network failure. These tests do not change
+or validate the backend's password policy or session-revocation behavior.
+Acceptance of consecutive password changes and expired sessions still requires
+an authorized synthetic account in DEV/QLTY.
+
 ## Forced password changes
 
 For the `basic` authentication provider, the app treats the authenticated

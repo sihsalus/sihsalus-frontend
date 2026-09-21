@@ -1,11 +1,11 @@
-import { getUserFacingErrorMessage, useConfig, useSession } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, openmrsFetch, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import {
   buildConditionUpdatePatch,
   type DefaultPatientWorkspaceProps,
   launchPatientWorkspace,
   mapConditionProperties,
 } from '@openmrs/esm-patient-common-lib';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { TFunction } from 'i18next';
 import {
@@ -92,7 +92,11 @@ function renderForm(overrides: { condition?: Condition; formContext?: 'creating'
   );
 
   const view = render(element());
-  return { closeWorkspaceWithSavedChanges, rerender: () => view.rerender(element()) };
+  return {
+    closeWorkspaceWithSavedChanges,
+    closeWorkspace: workspaceProps.closeWorkspace,
+    rerender: () => view.rerender(element()),
+  };
 }
 
 describe('ConditionsForm (antecedentes)', () => {
@@ -123,6 +127,19 @@ describe('ConditionsForm (antecedentes)', () => {
     });
     mockCreateCondition.mockResolvedValue({} as Awaited<ReturnType<typeof createCondition>>);
     mockUpdateCondition.mockResolvedValue(undefined);
+    vi.mocked(openmrsFetch).mockResolvedValue({
+      data: {
+        results: [
+          {
+            uuid: 'form-1',
+            name: 'form-1',
+            published: true,
+            retired: false,
+            encounterType: { uuid: 'encounter-type-1' },
+          },
+        ],
+      },
+    } as never);
   });
 
   it('bloquea el guardado con error visible si se escribió texto sin elegir un resultado', async () => {
@@ -343,16 +360,31 @@ describe('ConditionsForm (antecedentes)', () => {
     await user.click(screen.getByRole('radio', { name: 'Social' }));
     await user.click(screen.getByRole('button', { name: /Save & close/i }));
 
-    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        formInfo: expect.objectContaining({
-          encounterUuid: '',
-          formUuid: 'form-1',
-          patientUuid: 'patient-1',
+    await waitFor(() =>
+      expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          formInfo: expect.objectContaining({
+            encounterUuid: '',
+            formUuid: 'form-1',
+            patientUuid: 'patient-1',
+          }),
         }),
-      }),
+      ),
     );
+  });
+  it('keeps the antecedent workspace open when its social-history form is missing', async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { results: [] } } as never);
+    const { closeWorkspace } = renderForm();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('radio', { name: 'Social' }));
+    await user.click(screen.getByRole('button', { name: /Save & close/i }));
+    await waitFor(() => expect(showSnackbar).toHaveBeenCalled());
+    expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    expect(mockCreateCondition).not.toHaveBeenCalled();
+    expect(mockUpdateCondition).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Save & close/i })).toBeEnabled();
   });
   it('waits for the verified record and initializes edit values after asynchronous loading', async () => {
     const response = {

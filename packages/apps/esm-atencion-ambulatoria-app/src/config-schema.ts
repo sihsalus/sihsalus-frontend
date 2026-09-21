@@ -578,7 +578,8 @@ export const configSchema = {
     },
     alcoholUseDurationUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Alcohol use duration concept',
+      _description:
+        'Legacy configuration key: the default concept records cigarettes per day, not alcohol duration. Keep existing overrides; the social-history table labels the default by its actual meaning.',
       _default: '1546AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
     smokingUuid: {
@@ -593,7 +594,8 @@ export const configSchema = {
     },
     otherSubstanceAbuseUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Other substance abuse concept',
+      _description:
+        'Legacy configuration key: the default concept records tobacco use status, not other substances. Keep existing overrides; the social-history table labels the default by its actual meaning.',
       _default: '163731AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
 

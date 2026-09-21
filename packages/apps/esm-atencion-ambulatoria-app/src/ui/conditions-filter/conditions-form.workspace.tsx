@@ -11,7 +11,7 @@ import {
   TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { launchWorkspace, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
 import {
   type AntecedentTypeCode,
   antecedentTypeOptions,
@@ -22,7 +22,6 @@ import {
   isActiveConditionStatus,
   isConditionForPatient,
   isSupportedConditionStatus,
-  launchPatientWorkspace,
   normalizeAntecedentTypeCode,
   useConditionFormLifecycle,
 } from '@openmrs/esm-patient-common-lib';
@@ -33,8 +32,7 @@ import { Controller, FormProvider, type SubmitHandler, useForm } from 'react-hoo
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
-import type { ConfigObject } from '../../config-schema';
-import { patientFormEntryWorkspace } from '../../utils/constants';
+import { useSocialHistoryFormLauncher } from '../../hooks/useSocialHistoryFormLauncher';
 import { type Condition, useConditions } from './conditions.resource';
 import styles from './conditions-form.scss';
 import ConditionsWidget from './conditions-widget.component';
@@ -205,7 +203,7 @@ const ConditionsFormContent: React.FC<ConditionFormProps> = ({
   const [errorCreating, setErrorCreating] = useState(null);
   const [errorUpdating, setErrorUpdating] = useState(null);
   const isEditing = formContext === 'editing';
-  const config = useConfig<ConfigObject>();
+  const openSocialHistoryForm = useSocialHistoryFormLauncher(patientUuid);
 
   const matchingCondition = conditions?.find((c) => c?.id === condition?.id);
 
@@ -293,18 +291,7 @@ const ConditionsFormContent: React.FC<ConditionFormProps> = ({
     }
 
     if (values.antecedentScope === 'social') {
-      // Open social history clinical encounter form and close
-      launchPatientWorkspace(patientFormEntryWorkspace, {
-        workspaceTitle: t('socialHistory', 'Social History'),
-        formInfo: {
-          encounterUuid: '',
-          formUuid: config?.formsList?.clinicalEncounterFormUuid,
-          patientUuid,
-          visitTypeUuid: '',
-          visitUuid: '',
-        },
-      });
-      closeWorkspace();
+      if (await openSocialHistoryForm()) closeWorkspace();
       return;
     }
   };

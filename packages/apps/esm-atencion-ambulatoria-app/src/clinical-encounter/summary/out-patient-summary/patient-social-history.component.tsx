@@ -13,20 +13,15 @@ import {
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import {
-  CardHeader,
-  EmptyState,
-  ErrorState,
-  getObsFromEncounter,
-  launchPatientWorkspace,
-} from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState, getObsFromEncounter } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
-import type { ConfigObject } from '../../../config-schema';
+import { configSchema, type ConfigObject } from '../../../config-schema';
+import { useSocialHistoryFormLauncher } from '../../../hooks/useSocialHistoryFormLauncher';
 import type { OpenmrsEncounter } from '../../../types';
-import { patientFormEntryWorkspace, socialHistoryEditPrivilege } from '../../../utils/constants';
+import { socialHistoryEditPrivilege } from '../../../utils/constants';
 import styles from './patient-history.scss';
 
 interface OutPatientSocialHistoryProps {
@@ -47,24 +42,12 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   mutate,
 }) => {
   const { t } = useTranslation();
-  const {
-    concepts,
-    formsList: { clinicalEncounterFormUuid },
-  } = useConfig<ConfigObject>();
+  const { concepts } = useConfig<ConfigObject>();
+  const openSocialHistoryForm = useSocialHistoryFormLauncher(patientUuid, () => mutate());
 
   const headerTitle = t('socialHistory', 'Social History');
-  const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      workspaceTitle: t('socialHistory', 'Social History'),
-      mutateForm: () => mutate(),
-      formInfo: {
-        encounterUuid: encounterUUID,
-        formUuid: clinicalEncounterFormUuid,
-        patientUuid,
-        visitTypeUuid: '',
-        visitUuid: '',
-      },
-    });
+  const handleOpenOrEditClinicalEncounterForm = () => {
+    void openSocialHistoryForm();
   };
   const tableHeader = [
     {
@@ -77,7 +60,10 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
     },
     {
       key: 'alcoholUseDuration',
-      header: t('alcoholUseDuration', 'Alcohol Use Duration'),
+      header:
+        concepts.alcoholUseDurationUuid === configSchema.concepts.alcoholUseDurationUuid._default
+          ? t('dailyCigaretteUse', 'Cigarettes per day')
+          : t('alcoholUseDuration', 'Alcohol Use Duration'),
     },
     {
       key: 'smoking',
@@ -85,11 +71,17 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
     },
     {
       key: 'smokingDuration',
-      header: t('smokingDuration', 'Smoking Duration'),
+      header:
+        concepts.smokingDurationUuid === configSchema.concepts.smokingDurationUuid._default
+          ? t('smokingDurationYears', 'Smoking duration (years)')
+          : t('smokingDuration', 'Smoking Duration'),
     },
     {
       key: 'otherSubstanceAbuse',
-      header: t('otherSubstanceAbuse', 'Other Substance Abuse'),
+      header:
+        concepts.otherSubstanceAbuseUuid === configSchema.concepts.otherSubstanceAbuseUuid._default
+          ? t('tobaccoUseStatus', 'Tobacco use status')
+          : t('otherSubstanceAbuse', 'Other Substance Abuse'),
     },
   ];
   const tableRows = (encounters ?? [])

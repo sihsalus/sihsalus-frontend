@@ -546,5 +546,9 @@
   "visitType": "Tipo de visita",
   "vitalSigns": "Signos vitales y antropometría",
   "weight": "Peso",
-  "yes": "Sí"
+  "yes": "Sí",
+  "previousSocialHistory": "Registros anteriores de historia social",
+  "tobaccoUse": "Consumo de tabaco",
+  "recordSocialHistory": "Registrar historia social",
+  "socialHistoryLoadError": "No se pudo cargar la historia social. Recargue e inténtelo nuevamente."
 }

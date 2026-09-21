@@ -1,8 +1,8 @@
-import { getUserFacingErrorMessage, openmrsFetch, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { useSocialHistoryFormLauncher } from '../../hooks/useSocialHistoryFormLauncher';
+import { getUserFacingErrorMessage, openmrsFetch, useConfig, useSession } from '@openmrs/esm-framework';
 import {
   buildConditionUpdatePatch,
   type DefaultPatientWorkspaceProps,
-  launchPatientWorkspace,
   mapConditionProperties,
 } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -16,6 +16,9 @@ import {
   useConditionsSearchFromConceptSet,
 } from './conditions.resource';
 import ConditionsForm, { createSchema } from './conditions-form.workspace';
+
+vi.mock('../../hooks/useSocialHistoryFormLauncher', () => ({ useSocialHistoryFormLauncher: vi.fn() }));
+const launchSocialHistory = vi.fn();
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -50,7 +53,6 @@ const mockUseConditions = vi.mocked(useConditions);
 const mockUseConditionsSearch = vi.mocked(useConditionsSearchFromConceptSet);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseSession = vi.mocked(useSession);
-const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 
 const matchingCondition: Condition = {
   source: {
@@ -101,6 +103,8 @@ function renderForm(overrides: { condition?: Condition; formContext?: 'creating'
 
 describe('ConditionsForm (antecedentes)', () => {
   beforeEach(() => {
+    vi.mocked(useSocialHistoryFormLauncher).mockReturnValue(launchSocialHistory);
+    launchSocialHistory.mockResolvedValue(true);
     vi.clearAllMocks();
     mockUseSession.mockReturnValue({
       currentProvider: { uuid: 'provider-1' },
@@ -353,34 +357,22 @@ describe('ConditionsForm (antecedentes)', () => {
     expect(await screen.findByRole('alert')).not.toHaveTextContent('Synthetic server detail');
   });
 
-  it('crea un encounter nuevo al abrir el formulario de antecedente social', async () => {
+  it('delegates social history to the shared launcher and closes after a successful launch', async () => {
     const user = userEvent.setup();
-    renderForm();
-
+    const { closeWorkspace } = renderForm();
     await user.click(screen.getByRole('radio', { name: 'Social' }));
     await user.click(screen.getByRole('button', { name: /Save & close/i }));
-
-    await waitFor(() =>
-      expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          formInfo: expect.objectContaining({
-            encounterUuid: '',
-            formUuid: 'form-1',
-            patientUuid: 'patient-1',
-          }),
-        }),
-      ),
-    );
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    expect(launchSocialHistory).toHaveBeenCalledOnce();
+    expect(mockCreateCondition).not.toHaveBeenCalled();
   });
-  it('keeps the antecedent workspace open when its social-history form is missing', async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue({ data: { results: [] } } as never);
+  it('keeps the antecedent workspace open when the social-history launch fails', async () => {
+    launchSocialHistory.mockResolvedValue(false);
     const { closeWorkspace } = renderForm();
     const user = userEvent.setup();
     await user.click(screen.getByRole('radio', { name: 'Social' }));
     await user.click(screen.getByRole('button', { name: /Save & close/i }));
-    await waitFor(() => expect(showSnackbar).toHaveBeenCalled());
-    expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
+    await waitFor(() => expect(launchSocialHistory).toHaveBeenCalled());
     expect(closeWorkspace).not.toHaveBeenCalled();
     expect(mockCreateCondition).not.toHaveBeenCalled();
     expect(mockUpdateCondition).not.toHaveBeenCalled();

@@ -766,6 +766,31 @@ export const configSchema = {
     _default: '1495edf8-2df2-11e9-b210-d663bd873d93',
   },
 
+  socialHistory: {
+    formUuid: {
+      _type: Type.UUID,
+      _default: '76067e7a-48e5-3f69-92a4-70cf53e3e994',
+      _description: 'Persisted Initializer Form UUID for CE-SOC-001-HISTORIA SOCIAL 1.0.0 (content 1.25.21).',
+    },
+    encounterTypeUuid: {
+      _type: Type.UUID,
+      _default: 'c7059f4b-385f-45e7-82ad-204e5b380196',
+      _description: 'Dedicated social-history encounter type; never use the legacy clinical encounter type.',
+    },
+    concepts: {
+      _type: Type.Object,
+      _description: 'Existing SIHSALUS concepts and coded answers for the social-history form.',
+      _default: {
+        alcohol: 'fcd7736e-39d4-4ecd-84e0-9129e9690809',
+        tobacco: 'a79047b1-aa5c-44ab-9410-02afb350c80a',
+        cigarettesPerDay: '1546AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        smokingDurationYears: '159931AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        yes: '372a262c-8d57-4b57-ad29-b24a2941b749',
+        no: '5b2a0f81-22df-4ee1-ae2e-3c547cd7ec9f',
+      },
+    },
+  },
+
   clinicalEncounterUuid: {
     _type: Type.String,
     _description: 'Clinical Encounter UUID',
@@ -1000,6 +1025,18 @@ export interface ConfigObject {
     vitalSignsControl: string;
   };
   defaulterTracingEncounterUuid: string;
+  socialHistory: {
+    formUuid: string;
+    encounterTypeUuid: string;
+    concepts: {
+      alcohol: string;
+      tobacco: string;
+      cigarettesPerDay: string;
+      smokingDurationYears: string;
+      yes: string;
+      no: string;
+    };
+  };
   clinicalEncounterUuid: string;
   concepts: Record<string, string>;
   specialClinics: Array<{

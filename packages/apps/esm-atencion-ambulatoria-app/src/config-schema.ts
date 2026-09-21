@@ -770,7 +770,7 @@ export const configSchema = {
     formUuid: {
       _type: Type.UUID,
       _default: '76067e7a-48e5-3f69-92a4-70cf53e3e994',
-      _description: 'Persisted Initializer Form UUID for CE-SOC-001-HISTORIA SOCIAL 1.0.0 (content 1.25.21).',
+      _description: 'Persisted Initializer Form UUID for CE-SOC-001-HISTORIA SOCIAL 1.0.0 (content 1.25.23).',
     },
     encounterTypeUuid: {
       _type: Type.UUID,

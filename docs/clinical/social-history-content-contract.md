@@ -69,7 +69,7 @@ Existen alternativas con respuestas, pero no son equivalentes automáticos:
 ## Implementación de esta iteración
 
 `socialHistory.formUuid` usa el Form persistido `76067e7a-48e5-3f69-92a4-70cf53e3e994`
-de `CE-SOC-001-HISTORIA SOCIAL` 1.0.0, incorporado en content 1.25.21.
+de `CE-SOC-001-HISTORIA SOCIAL` 1.0.0, incorporado en content 1.25.23.
 `socialHistory.encounterTypeUuid` usa `c7059f4b-385f-45e7-82ad-204e5b380196`
 (Historia social). El UUID del esquema JSON es
 `f18f4320-690b-4c34-9b20-89a9bf7fec71`; no se utiliza como UUID REST.

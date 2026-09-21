@@ -157,5 +157,7 @@
   "trySearchingAgain": "Por favor, intente buscar nuevamente",
   "tryTo": "Intente",
   "updated": "Actualizado",
-  "usingADifferentTerm": "utilizando un término diferente"
+  "usingADifferentTerm": "utilizando un término diferente",
+  "labResultsUnavailable": "No se pudo cargar la prueba o el resultado guardado. No se pueden guardar cambios.",
+  "retry": "Reintentar"
 }

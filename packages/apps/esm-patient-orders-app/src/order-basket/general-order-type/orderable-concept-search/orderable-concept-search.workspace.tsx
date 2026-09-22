@@ -19,6 +19,7 @@ import React, { type ComponentProps, useCallback, useEffect, useMemo, useRef, us
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../../config-schema';
+import { useOrderTypeLabel } from '../../../hooks/useOrderTypeLabel';
 import { OrderForm } from '../general-order-form/general-order-form.component';
 import { prepOrderPostData } from '../resources';
 
@@ -82,6 +83,8 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [workspaceTitle, setWorkspaceTitle] = useState(t('searchOrderables', 'Search orderables'));
   const { orderType } = useOrderType(orderTypeUuid);
+  const getOrderTypeLabel = useOrderTypeLabel();
+  const orderTypeLabel = getOrderTypeLabel(orderTypeUuid, orderType?.display);
   const handleSetTitle = useCallback(
     (value: string) => {
       if (isWorkspace2Props(props)) {
@@ -123,24 +126,15 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
     [props],
   );
 
-  const configuredOrderTypeLabel = useMemo(
-    () => orderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid)?.label,
-    [orderTypeUuid, orderTypes],
-  );
-
   useEffect(() => {
-    const orderTypeDisplay = configuredOrderTypeLabel
-      ? t(configuredOrderTypeLabel, { defaultValue: configuredOrderTypeLabel })
-      : orderType?.display;
-
-    if (orderTypeDisplay) {
+    if (orderTypeLabel) {
       handleSetTitle(
         t(`addOrderableForOrderType`, 'Add {{orderTypeDisplay}}', {
-          orderTypeDisplay: orderTypeDisplay.toLocaleLowerCase(),
+          orderTypeDisplay: orderTypeLabel.toLocaleLowerCase(),
         }),
       );
     }
-  }, [configuredOrderTypeLabel, handleSetTitle, orderType, t]);
+  }, [handleSetTitle, orderTypeLabel, t]);
 
   const orderableConceptSets = useMemo(
     () =>
@@ -191,6 +185,7 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
           returnToOrderBasket={returnToOrderBasket}
           orderableConceptSets={orderableConceptSets}
           orderTypeUuid={orderTypeUuid}
+          orderTypeLabel={orderTypeLabel}
         />
       )}
     </div>
@@ -212,6 +207,7 @@ interface ConceptSearchProps {
   openOrderForm: (search: OrderBasketItem) => void;
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
+  orderTypeLabel: string;
 }
 
 function ConceptSearch({
@@ -219,9 +215,9 @@ function ConceptSearch({
   orderTypeUuid,
   openOrderForm,
   orderableConceptSets,
+  orderTypeLabel,
 }: ConceptSearchProps) {
   const { t } = useTranslation();
-  const { orderType } = useOrderType(orderTypeUuid);
   const isTablet = useLayoutType() === 'tablet';
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -241,11 +237,11 @@ function ConceptSearch({
         <Search
           autoFocus
           size="lg"
-          placeholder={t('searchFieldOrder', 'Search for {{orderType}} order', {
-            orderType: orderType?.display ?? '',
+          placeholder={t('searchFieldOrder', 'Search {{orderType}}', {
+            orderType: orderTypeLabel,
           })}
-          labelText={t('searchFieldOrder', 'Search for {{orderType}} order', {
-            orderType: orderType?.display ?? '',
+          labelText={t('searchFieldOrder', 'Search {{orderType}}', {
+            orderType: orderTypeLabel,
           })}
           onChange={handleSearchTermChange}
           ref={searchInputRef}

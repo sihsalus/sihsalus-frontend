@@ -70,6 +70,7 @@ import useSWR from 'swr';
 import dayjs from 'dayjs';
 
 import type { ConfigObject } from '../config-schema';
+import { useOrderTypeLabel } from '../hooks/useOrderTypeLabel';
 import PrintComponent from '../print/print.component';
 import { buildGeneralOrder, buildLabOrder, buildMedicationOrder } from '../utils';
 
@@ -224,6 +225,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   >();
   const [isPrinting, setIsPrinting] = useState(false);
   const { data: orderTypes } = useOrderTypes();
+  const getOrderTypeLabel = useOrderTypeLabel();
   const [selectedOrderTypeUuid, setSelectedOrderTypeUuid] = useState<string | null>(null);
   const [selectedFromDate, setSelectedFromDate] = useState<string | null>(null);
   const [selectedToDate, setSelectedToDate] = useState<string | null>(null);
@@ -588,7 +590,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           dateActivated: order.dateActivated,
           orderNumber: order.orderNumber,
           dateOfOrder: <div className={styles.singleLineText}>{formatDate(new Date(order.dateActivated))}</div>,
-          orderType: capitalize(order.orderType?.display ?? '-'),
+          orderType: capitalize(getOrderTypeLabel(order.orderType?.uuid, order.orderType?.display ?? '-')),
           dosage:
             order.type === 'drugorder' ? (
               <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
@@ -621,7 +623,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           ),
         };
       }) ?? [],
-    [filteredOrders, t, priorityConfigs],
+    [filteredOrders, t, priorityConfigs, getOrderTypeLabel],
   );
 
   const { results: paginatedOrders, goTo, currentPage } = usePagination(tableRows, defaultPageSize);
@@ -692,11 +694,11 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
         uuid: null,
       },
       ...(orderTypes?.map((orderType) => ({
-        display: orderType.display,
+        display: getOrderTypeLabel(orderType.uuid, orderType.display),
         uuid: orderType.uuid,
       })) ?? []),
     ],
-    [allOrdersLabel, orderTypes],
+    [allOrdersLabel, orderTypes, getOrderTypeLabel],
   );
 
   const handleDateFilterChange = (dates: Array<Date | undefined>) => {

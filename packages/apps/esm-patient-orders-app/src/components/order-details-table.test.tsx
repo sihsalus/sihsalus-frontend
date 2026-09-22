@@ -49,7 +49,8 @@ const mockLaunchCancelOrder = vi.fn();
 let mockBasketOrders: Array<unknown> = [];
 const translationMock = vi.hoisted(() => {
   const values: Record<string, string> = {};
-  const t = (key: string, defaultValue?: string) => values[key] ?? defaultValue ?? key;
+  const t = (key: string, defaultValue?: string | { defaultValue?: string }) =>
+    values[key] ?? (typeof defaultValue === 'string' ? defaultValue : defaultValue?.defaultValue) ?? key;
   return { t, values };
 });
 
@@ -136,6 +137,9 @@ describe('OrderDetailsTable', () => {
   } as unknown as Order;
 
   beforeEach(() => {
+    Object.keys(translationMock.values).forEach((key) => {
+      delete translationMock.values[key];
+    });
     mockBasketOrders = [];
     mockSetOrders.mockReset();
     mockLaunchOrderBasket.mockReset();
@@ -405,6 +409,26 @@ describe('OrderDetailsTable', () => {
         name: /drug order/i,
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows the configured imaging label for historical orders and filters by the existing order type UUID', async () => {
+    const imagingOrderTypeUuid = 'f9c5d0b8-8b5a-11e5-8e9b-12345678a01a';
+    translationMock.values['Medical imaging orders'] = spanishTranslations['Medical imaging orders'];
+    const imagingOrder = {
+      ...generalOrder,
+      orderType: { ...generalOrder.orderType, uuid: imagingOrderTypeUuid, display: 'Radiology Order' },
+    };
+
+    renderSingleOrder(imagingOrder, []);
+
+    expect(await screen.findByRole('cell', { name: 'Órdenes de imágenes médicas' })).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: /select order type/i }));
+    await user.click(screen.getByRole('option', { name: 'Órdenes de imágenes médicas' }));
+
+    expect(mockUsePatientOrders.mock.calls.at(-1)?.[2]).toBe(imagingOrderTypeUuid);
+    expect(screen.queryByText(/radiology order/i)).not.toBeInTheDocument();
+    expect(imagingOrder.orderType.display).toBe('Radiology Order');
+    expectNoPreSaveMutation();
   });
 
   it('prints the orders in the list when the print button is clicked', async () => {

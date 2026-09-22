@@ -10,6 +10,7 @@ import {
 } from '../constants';
 import { isAppointmentEditable } from '../helpers';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
+import { useAppointmentPatientPrint } from '../hooks/useAppointmentPatientPrint';
 
 import { type Appointment, AppointmentStatus } from '../types';
 
@@ -26,6 +27,8 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
   const session = useSession();
   const patientAppointmentContext = React.useContext(PatientAppointmentContext);
   const isPatientChart = patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART;
+  const { canPrintPatient, printPatient } = useAppointmentPatientPrint(isPatientChart);
+  const canPrint = canPrintPatient && Boolean(patientUuid) && appointment.patient?.uuid === patientUuid;
   const canEdit = userHasAccess(
     isPatientChart ? chartAppointmentsEditPrivileges : appointmentsEditPrivileges,
     session?.user,
@@ -36,7 +39,7 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
     userHasAccess(chartAppointmentsCheckoutPrivileges, session?.user);
   const canEditAppointment = canEdit && isAppointmentEditable(appointment.status);
 
-  if (!canEditAppointment && !canFinalizeCare) {
+  if (!canEditAppointment && !canFinalizeCare && !canPrint) {
     return null;
   }
 
@@ -80,6 +83,14 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
         flipped
         align="left"
       >
+        {canPrint && (
+          <OverflowMenuItem
+            className={styles.menuItem}
+            id="printPatientIdentification"
+            itemText={t('printPatientIdentification', 'Print patient identification')}
+            onClick={() => printPatient(appointment.patient.uuid)}
+          />
+        )}
         {canEditAppointment ? (
           <>
             <OverflowMenuItem

@@ -369,5 +369,6 @@
   "waitList": "Lista de espera",
   "walkIn": "No programada presencial",
   "week": "Semana",
-  "yes": "Sí"
+  "yes": "Sí",
+  "printPatientIdentification": "Imprimir datos de identificación"
 }

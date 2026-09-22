@@ -6,7 +6,7 @@ import {
   type MedicationRoute,
   type QuantityUnit,
 } from '@openmrs/esm-patient-common-lib';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 
 export interface ConceptName {
@@ -32,16 +32,18 @@ export interface OrderConfig {
 
 export function useOrderConfig(): {
   isLoading: boolean;
+  isValidating: boolean;
+  reloadOrderConfig: () => Promise<void>;
   error: Error;
   orderConfigObject: {
     drugRoutes: Array<MedicationRoute>;
-    drugDosingUnits: Array<DosingUnit>;
+    drugDosingUnits: Array<DosingUnit> | undefined;
     drugDispensingUnits: Array<QuantityUnit>;
     durationUnits: Array<DurationUnit>;
     orderFrequencies: Array<MedicationFrequency>;
   };
 } {
-  const { data, error, isLoading } = useSWRImmutable<{ data: OrderConfig }, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWRImmutable<{ data: OrderConfig }, Error>(
     `${restBaseUrl}/orderentryconfig`,
     openmrsFetch,
   );
@@ -49,10 +51,17 @@ export function useOrderConfig(): {
     data: frequencyData,
     error: frequencyError,
     isLoading: frequencyLoading,
+    isValidating: frequencyValidating,
+    mutate: mutateFrequencies,
   } = useSWRImmutable<{ data: OrderConfig }, Error>(
     `${restBaseUrl}/orderentryconfig?v=custom:(uuid,display,frequencyPerDay,concept:(names:(display,uuid)))`,
     openmrsFetch,
   );
+
+  const reloadOrderConfig = useCallback(async () => {
+    // SWR retains each request's failure in its error state, including failed retries.
+    await Promise.allSettled([mutate(), mutateFrequencies()]);
+  }, [mutate, mutateFrequencies]);
 
   const results = useMemo(
     () => ({
@@ -61,10 +70,8 @@ export function useOrderConfig(): {
           valueCoded: uuid,
           value: display,
         })),
-        drugDosingUnits: data?.data?.drugDosingUnits?.map(({ uuid, display }) => ({
-          valueCoded: uuid,
-          value: display,
-        })),
+        // The existing REST resource can omit a catalog even on HTTP 200.
+        drugDosingUnits: parseDosingUnits(data?.data?.drugDosingUnits),
         drugDispensingUnits: data?.data?.drugDispensingUnits?.map(({ uuid, display }) => ({
           valueCoded: uuid,
           value: display,
@@ -81,9 +88,38 @@ export function useOrderConfig(): {
         })),
       },
       isLoading: isLoading || frequencyLoading,
+      isValidating: isValidating || frequencyValidating,
+      reloadOrderConfig,
       error: error || frequencyError,
     }),
-    [data, error, isLoading, frequencyData, frequencyError, frequencyLoading],
+    [
+      data,
+      error,
+      isLoading,
+      isValidating,
+      frequencyData,
+      frequencyError,
+      frequencyLoading,
+      frequencyValidating,
+      reloadOrderConfig,
+    ],
   );
   return results;
+}
+
+function parseDosingUnits(value: unknown): Array<DosingUnit> | undefined {
+  if (
+    !Array.isArray(value) ||
+    !value.every(
+      (unit) =>
+        unit &&
+        typeof unit.uuid === 'string' &&
+        unit.uuid.trim() &&
+        typeof unit.display === 'string' &&
+        unit.display.trim(),
+    )
+  ) {
+    return undefined;
+  }
+  return value.map(({ uuid, display }) => ({ valueCoded: uuid, value: display }));
 }

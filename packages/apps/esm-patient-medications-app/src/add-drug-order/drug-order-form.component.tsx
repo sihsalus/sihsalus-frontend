@@ -1,4 +1,5 @@
 import {
+  ActionableNotification,
   Button,
   ButtonSet,
   Checkbox,
@@ -172,7 +173,14 @@ export function DrugOrderForm({
   const specialPrescriptionDrugNames =
     medicationConfig?.specialPrescriptionDrugNames ?? DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES;
   const isTablet = useLayoutType() === 'tablet';
-  const { orderConfigObject, error: errorFetchingOrderConfig } = useOrderConfig();
+  const {
+    orderConfigObject,
+    error: errorFetchingOrderConfig,
+    isLoading: isLoadingOrderConfig,
+    isValidating: isValidatingOrderConfig,
+    reloadOrderConfig,
+  } = useOrderConfig();
+  const isFetchingOrderConfig = isLoadingOrderConfig || isValidatingOrderConfig;
   const { requireOutpatientQuantity } = useRequireOutpatientQuantity();
 
   const drugOrderForm = useDrugOrderForm(initialOrderBasketItem);
@@ -336,7 +344,12 @@ export function DrugOrderForm({
   };
 
   const handleFormSubmission = async (data: MedicationOrderFormData) => {
-    if (isSingleDose && (!singleDoseFrequency || errorFetchingOrderConfig)) {
+    if (
+      isFetchingOrderConfig ||
+      errorFetchingOrderConfig ||
+      (!data.isFreeTextDosage && !drugDosingUnits.some((unit) => unit.valueCoded === data.unit?.valueCoded)) ||
+      (isSingleDose && !singleDoseFrequency)
+    ) {
       return;
     }
     const newBasketItem = {
@@ -373,15 +386,12 @@ export function DrugOrderForm({
   };
 
   const drugDosingUnits: Array<DosingUnit> = useMemo(
-    () =>
-      orderConfigObject?.drugDosingUnits ?? [
-        {
-          valueCoded: initialOrderBasketItem?.drug?.dosageForm?.uuid,
-          value: initialOrderBasketItem?.drug?.dosageForm?.display,
-        },
-      ],
-    [orderConfigObject, initialOrderBasketItem?.drug?.dosageForm],
+    () => orderConfigObject?.drugDosingUnits ?? [],
+    [orderConfigObject?.drugDosingUnits],
   );
+  const doseUnitUnavailable =
+    Boolean(watchedUnit) && !drugDosingUnits.some((unit) => unit.valueCoded === watchedUnit.valueCoded);
+  const doseCatalogUnavailable = drugDosingUnits.length === 0;
 
   const drugRoutes: Array<MedicationRoute> = useMemo(() => orderConfigObject?.drugRoutes ?? [], [orderConfigObject]);
 
@@ -432,14 +442,30 @@ export function DrugOrderForm({
   }, [orderConfigObject]);
 
   useEffect(() => {
-    if (isExistingOrder || watchedIsFreeText || watchedUnit || !drug?.dosageForm?.uuid) {
+    if (
+      isFetchingOrderConfig ||
+      errorFetchingOrderConfig ||
+      isExistingOrder ||
+      watchedIsFreeText ||
+      watchedUnit ||
+      !drug?.dosageForm?.uuid
+    ) {
       return;
     }
     const matchingUnit = drugDosingUnits.find((unit) => unit.valueCoded === drug.dosageForm.uuid);
     if (matchingUnit) {
       setValue('unit', matchingUnit, { shouldValidate: true });
     }
-  }, [drug?.dosageForm?.uuid, drugDosingUnits, isExistingOrder, setValue, watchedIsFreeText, watchedUnit]);
+  }, [
+    drug?.dosageForm?.uuid,
+    drugDosingUnits,
+    errorFetchingOrderConfig,
+    isFetchingOrderConfig,
+    isExistingOrder,
+    setValue,
+    watchedIsFreeText,
+    watchedUnit,
+  ]);
 
   useEffect(() => {
     if (isExistingOrder || !requireOutpatientQuantity || watchedQuantityUnits || !drug?.dosageForm?.uuid) {
@@ -575,15 +601,36 @@ export function DrugOrderForm({
         <ExtensionSlot name="allergy-list-pills-slot" state={{ patientUuid: patient?.id }} />
         <Form className={styles.orderForm} onSubmit={handleSubmit(handleFormSubmission)} id="drugOrderForm">
           <div>
-            {errorFetchingOrderConfig && (
+            {isFetchingOrderConfig ? (
               <InlineNotification
+                kind="info"
+                lowContrast
+                hideCloseButton
+                className={styles.inlineNotification}
+                title={t('loadingPrescriptionOptions', 'Loading prescription options')}
+              />
+            ) : errorFetchingOrderConfig || doseCatalogUnavailable ? (
+              <ActionableNotification
+                inline
                 kind="error"
                 lowContrast
+                hideCloseButton
                 className={styles.inlineNotification}
-                title={t('errorFetchingOrderConfig', 'Error occurred when fetching Order config')}
-                subtitle={t('tryReopeningTheForm', 'Please try launching the form again')}
+                title={
+                  errorFetchingOrderConfig
+                    ? t('prescriptionOptionsUnavailable', 'Prescription options could not be loaded')
+                    : orderConfigObject?.drugDosingUnits
+                      ? t('doseUnitsEmpty', 'No dose units are configured')
+                      : t('doseUnitsUnavailable', 'Dose units are unavailable')
+                }
+                subtitle={t(
+                  'retryPrescriptionOptionsDescription',
+                  'Retry without closing this form. Your entries will be kept. If the problem continues, contact support.',
+                )}
+                actionButtonLabel={t('retry', 'Retry')}
+                onActionButtonClick={() => void reloadOrderConfig()}
               />
-            )}
+            ) : null}
             <h1 className={styles.orderFormHeading}>{t('orderForm', 'Medication prescription')}</h1>
             <p className={styles.requiredFieldsNote}>{t('requiredFieldsNote', '* Required field')}</p>
             <div ref={medicationInfoHeaderRef}>
@@ -756,6 +803,14 @@ export function DrugOrderForm({
                           aria-required="true"
                           items={drugDosingUnits}
                           itemToString={(item: CommonMedicationValueCoded) => item?.value}
+                          disabled={isFetchingOrderConfig || !!errorFetchingOrderConfig || doseCatalogUnavailable}
+                          invalid={
+                            !isFetchingOrderConfig &&
+                            !errorFetchingOrderConfig &&
+                            !doseCatalogUnavailable &&
+                            doseUnitUnavailable
+                          }
+                          invalidText={t('doseUnitSelectionRequired', 'Select a dose unit from the available list.')}
                         />
                       </InputWrapper>
                     </Column>
@@ -1114,6 +1169,8 @@ export function DrugOrderForm({
               size="xl"
               disabled={
                 !!errorFetchingOrderConfig ||
+                isFetchingOrderConfig ||
+                (!watchedIsFreeText && (doseCatalogUnavailable || doseUnitUnavailable)) ||
                 isSubmitting ||
                 drugAlreadyPrescribedForNewOrder ||
                 (isSingleDose && !singleDoseFrequency)

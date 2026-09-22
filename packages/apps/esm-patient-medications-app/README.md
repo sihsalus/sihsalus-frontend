@@ -46,6 +46,32 @@ of search, draft copying and normal prescription remains required before merge.
 
 For outpatient prescriptions, the form visibly marks and validates the treatment duration, duration unit, dispense quantity and unit, number of refills, and configured indication. It follows the backend quantity policy and uses OpenMRS's safe required default while that policy is loading or unavailable, so a clinical role does not need broad global-property privileges and the fields do not become mandatory after the clinician starts entering a prescription. The duration selector is limited by `outpatientDurationUnitUuids` (days, weeks, and months by default); other backend duration units remain available outside the outpatient quantity workflow, and legacy values remain visible while an existing order is edited. New outpatient prescriptions default to structured dose, unit, route, and frequency fields and offer free-text dosage as an explicit exception, except for the configured single-dose frequency. Free-text dosage requires a nonblank regimen and retains the outpatient duration, dispensing, refill, and configured indication requirements; the dispense quantity must be entered manually and is never calculated from the text. Switching to free-text dosage clears the structured dosing fields; switching back requires structured dosing again. When the selected drug's dosage form exactly matches a configured dosing or dispensing unit, that unit is proposed without overwriting a clinician's selection; the dosing unit is only proposed in structured mode. A reason is required whenever the medication is marked for as-needed use; route and frequency are never inferred.
 
+### Dose-unit catalog availability
+
+The dose-unit selector uses only `drugDosingUnits` from the existing REST
+OMOD's `/ws/rest/v1/orderentryconfig`. A drug's dosage form is proposed only
+when its UUID is present in that catalog; it never substitutes for a missing
+catalog. The REST resource can omit a catalog on HTTP 200 when its internal
+query fails. Missing/malformed, empty, loading and failed responses therefore
+have explicit states. No new OMOD, local concept list, global property or
+privilege is introduced.
+
+Retry reloads both existing order-entry requests without resetting form values.
+Loading/retrying or an HTTP error blocks submission; structured dosing also
+requires a unit in the current catalog. A previously selected unit remains
+visible when unavailable and requires explicit replacement rather than silent
+conversion. The existing free-text exception remains an explicit clinical
+choice and does not hide a dose-catalog warning or bypass transport errors.
+
+Local regressions exercise the real metadata hook and form with synthetic HTTP
+responses, including 401/403/500, failed retry, recovery and preservation of
+entered values. Payload/read-mapper checks establish UUID continuity, not live
+database persistence. Before acceptance, use an authorized clinical account in
+coordinated DEV/QLTY to verify the deployed REST version, permissions and the
+members of `order.drugDosingUnitsConceptUuid`, then select a unit, sign a
+synthetic prescription, reload it and clean up. An administrator's successful
+catalog lookup alone does not validate the prescribing role.
+
 ## STAT and one administration
 
 Urgency and dosing frequency are separate. `STAT` means start immediately; it does not make a daily prescription a single dose. The form and both medication draft builders preserve urgency, including existing scheduled-order dates. The medication basket and medication history identify STAT orders explicitly.

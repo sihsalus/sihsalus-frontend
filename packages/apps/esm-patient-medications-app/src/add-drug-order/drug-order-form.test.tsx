@@ -47,7 +47,10 @@ vi.mock('../api/order-config', async () => ({
   useOrderConfig: vi.fn().mockReturnValue({
     orderConfigObject: {
       drugRoutes: [{ valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' }],
-      drugDosingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
+      drugDosingUnits: [
+        { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+        { valueCoded: 'synthetic-mg', value: 'mg' },
+      ],
       drugDispensingUnits: [
         { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
         { valueCoded: '162376AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Application' },

@@ -183,7 +183,11 @@ it.each([
     await user.type(dose, '3');
 
     for (const ratio of [0.5, 1, 0, 1]) {
-      act(() => notifyVisibility.forEach((notify) => notify(ratio)));
+      act(() => {
+        for (const notify of notifyVisibility) {
+          notify(ratio);
+        }
+      });
       expect(container.querySelectorAll('#medicationInfo')).toHaveLength(1);
       expect(container.querySelector('#medicationInfo')).toBe(summary);
       expect(dose).toHaveValue(3);

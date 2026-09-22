@@ -86,6 +86,24 @@ vi.mock('../api/api', async () => ({
   }),
 }));
 
+// Workspace transaction tests need a loaded catalog; missing/error states are
+// exercised with the real hook in drug-order-form-catalog.test.tsx.
+vi.mock('../api/order-config', () => ({
+  useOrderConfig: vi.fn(() => ({
+    orderConfigObject: {
+      drugDosingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
+      drugDispensingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
+      drugRoutes: [{ valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' }],
+      durationUnits: [{ valueCoded: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Days' }],
+      orderFrequencies: [],
+    },
+    isLoading: false,
+    isValidating: false,
+    error: null,
+    reloadOrderConfig: vi.fn(),
+  })),
+}));
+
 describe('AddDrugOrderWorkspace drug search', () => {
   beforeEach(() => {
     vi.clearAllMocks();

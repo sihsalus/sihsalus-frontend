@@ -105,6 +105,16 @@ El dashboard muestra una cabecera compacta propia para garantizar que `Consulta 
 
 Anamnesis y examen físico son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; el workspace crea un encounter nuevo adjunto a la visita ambulatoria verificada y persiste únicamente destino, especialidad, prioridad, condición de salida, transporte y motivo. Paciente, visita, triaje, diagnósticos, tratamiento y profesional no se duplican.
 
+Antes de abrir un formulario, la verificación de su publicación y cada página
+de la búsqueda de encounters requieren una respuesta del servidor mediante
+`cache: no-store`. Una búsqueda vacía almacenada no autoriza crear otro registro
+de anamnesis o examen físico. Si falla cualquiera de esas lecturas, se muestra
+el error existente y se permite reintentar al recuperar la conexión. Se reutiliza
+el contrato del worker del frontend, que debe estar actualizado y activo; cerrar
+las pestañas de versiones anteriores antes de validar en QLTY. Restaurar la misma
+instancia ya abierta conserva sus cambios sin guardar. Esto no sustituye los
+controles de persistencia o concurrencia del backend.
+
 El lanzador bloquea clics simultáneos mientras resuelve o abre el formulario, pero
 no depende de `mutateForm` para detectar el cierre: la X del workspace y su
 reemplazo por otro formulario no ejecutan ese callback. Consulta en modo de solo

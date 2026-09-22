@@ -115,7 +115,7 @@
   "loadingResults": "Loading results...",
   "loadingVersions": "Loading versions...",
   "locations": "Services",
-  "locationsHelperText": "This search box queries native OpenMRS locations and uses them as indicator services.",
+  "locationsHelperText": "Select the care services to include in the calculation.",
   "male": "Male",
   "maxAge": "Max Age",
   "maxAgeDays": "Max age days",

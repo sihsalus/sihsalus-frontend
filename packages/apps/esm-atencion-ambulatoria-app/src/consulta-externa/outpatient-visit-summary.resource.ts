@@ -273,6 +273,7 @@ export class OutpatientVisitSummaryContractError extends Error {
 export async function fetchOutpatientVisitSummarySource(visitUuid: string): Promise<VisitSummarySource> {
   const response = await openmrsFetch<VisitSummarySource>(
     `${restBaseUrl}/visit/${visitUuid}?v=${VISIT_SUMMARY_REPRESENTATION}`,
+    { cache: 'no-store' },
   );
   const source = response.data;
   const drugUuids = new Map<string, string>();

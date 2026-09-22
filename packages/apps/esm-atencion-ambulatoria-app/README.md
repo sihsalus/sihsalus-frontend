@@ -119,11 +119,20 @@ El catálogo inicial de destinos se configura en `referralDestinations` con nomb
 
 ## Resumen de atención ambulatoria
 
+La lectura de la visita para generar Resumen, Indicaciones o Receta Única exige
+`cache: no-store`. El worker de perfil offline del mismo frontend no sustituye
+un fallo de red por una visita descargada previamente. Así, datos o una fecha
+HTTP antiguos no se presentan como verificados al generar un documento actual.
+La identidad y el resto de requisitos clínicos siguen comprobándose antes de
+producirlo; la información del catálogo de medicamentos conserva su función de
+enriquecimiento opcional. Validar guardado, recarga, impresión y reconexión en
+DEV/QLTY con el worker actualizado y cuentas sintéticas autorizadas.
+
 Consulta Externa ofrece una descarga PDF denominada **Resumen de atención ambulatoria** para la visita activa, con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis, examen físico segmentado, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
 
 El responsable documental se resuelve solo desde el encounter canónico configurado por tipo y formulario. Ese encounter queda `canonical-complete` cuando contiene exactamente un diagnóstico principal con mapping estructurado CIE-10/ICD-10 y exactamente un provider activo con `clinicianEncounterRoleUuid`; providers de otros roles no firman el documento. La fecha clínica, el nombre y la colegiatura provienen de ese mismo encounter/provider. La colegiatura usa el Provider Attribute Type exacto configurado, nunca el identificador del provider.
 
-Los formatos antiguos dentro de la visita activa se clasifican explícitamente como `legacy`; un encounter canónico presente pero incompleto o ambiguo se clasifica `canonical-incomplete`. El Resumen y las Indicaciones continúan disponibles como documentos informativos en ambos estados, con advertencia visible y campos manuales para fecha clínica, responsable o colegiatura que no pudieron verificarse. No se infiere un profesional ni una hora desde otro encounter. La firma y el sello son manuales; no se afirma ni implementa firma digital. Este fallback no agrega selección de visitas finalizadas: el dashboard sigue trabajando con la visita ambulatoria activa verificada.
+Los formatos antiguos dentro de la visita activa se clasifican explícitamente como `legacy`; un encounter canónico presente pero incompleto o ambiguo se clasifica `canonical-incomplete`. El Resumen y las Indicaciones continúan disponibles como documentos informativos en ambos estados, con advertencia visible y campos manuales para fecha clínica, responsable o colegiatura que no pudieron verificarse. No se infiere un profesional ni una hora desde otro encounter. La firma y el sello son manuales; no se afirma ni implementa firma digital. En el dashboard este fallback sigue trabajando con la visita ambulatoria activa verificada; los documentos históricos se abren desde la consulta seleccionada en Consultas previas.
 
 La cabecera ofrece además **Imprimir indicaciones**, una hoja PDF breve para entregar al paciente. Incluye la identificación institucional de la ubicación activa (dirección, teléfono y código IPRESS), identificación del paciente, fecha y responsable de la atención, la próxima cita programada verificable, indicaciones terapéuticas, medicamentos indicados mediante órdenes no anuladas, sustituidas, suspendidas ni vencidas registradas en la visita, incluido el motivo registrado cuando el uso es según necesidad (PRN), la indicación clínica y el número de renovaciones registrado (incluido cero), la fecha de control indicada y un espacio para la firma, el sello y el número de colegiatura manuscritos del profesional responsable. Las órdenes canónicas tienen prioridad; el texto histórico de prescripción se usa únicamente cuando la visita no contiene órdenes canónicas, para evitar duplicados. La hoja debe ser revisada, firmada y sellada antes de entregarse al paciente; sigue siendo informativa y no sustituye una receta médica o electrónica válida para dispensación. El número de renovaciones se muestra como dato registrado y no afirma que el documento sea dispensable.
 
@@ -151,7 +160,42 @@ expone como `legacyObjective`. `formsList.soapNoteForm`, `concepts.soapObjective
 y el `formFieldPath` histórico se conservan como contratos con el contenido
 instalado; no definen un formato SOAP para Consulta Externa.
 
-La generación de ambos documentos falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: los documentos deben generarse antes de finalizarla. Una futura generación histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
+La generación de ambos documentos falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. El dashboard usa la visita activa; el historial usa exclusivamente la visita finalizada seleccionada explícitamente, sin elegir silenciosamente “la última” del paciente.
+
+### Documentos de consultas finalizadas
+
+En **Consultas previas → consulta seleccionada → Documentos de Consulta Externa**
+se puede descargar el resumen e imprimir las indicaciones de una visita
+ambulatoria finalizada. La selección, las fechas y la paginación pertenecen al
+historial existente de Visitas. El panel se integra en `visit-summary-panels` y
+reutiliza el lector y los generadores PDF anteriores; no crea ni cambia la visita
+activa y no ofrece edición ni emisión de Receta Única.
+
+Se necesitan ambos permisos de lectura: `app:hoja.clinica.visitas` y
+`app:hoja.clinica.consultaExterna`. Al generar se vuelve a verificar en REST la
+identidad de la visita, el paciente, el tipo ambulatorio y que siga finalizada.
+Cambiar de paciente o de visita, o desmontar el panel, descarta cualquier
+documento pendiente de ese contexto.
+
+Los documentos históricos son **copias informativas de los datos actualmente
+disponibles en el registro**, no reproducciones de una emisión archivada. La
+advertencia aparece en el panel y en el PDF. Las indicaciones incluyen los
+medicamentos registrados aunque hayan vencido o terminado; conservan el filtrado
+existente de órdenes anuladas o sustituidas y no afirman tratamiento vigente.
+Nunca incorporan citas futuras consultadas en la agenda actual ni consumen un
+correlativo de receta.
+
+El establecimiento procede de la ubicación asociada a la visita. Se omiten
+dirección, teléfono y código IPRESS, porque el contrato actual no conserva una
+versión histórica de esos atributos. Tampoco conserva una instantánea de la
+identificación del paciente o del provider: se muestran los datos disponibles
+mediante sus referencias, sin presentarlos como una reproducción certificada.
+No se completa la institución histórica con la ubicación activa de la sesión.
+
+Esta iteración contribuye al
+[issue #12](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/12);
+no lo cierra. Quedan pendientes la validación clínica con dos consultas
+sintéticas en DEV/QLTY y los otros casos de persistencia/edición del issue.
 
 ## TODO QA/QLTY
 

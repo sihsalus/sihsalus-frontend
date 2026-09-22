@@ -83,6 +83,16 @@ La creación asigna un UUID v5 determinista a esa identidad y el submit tiene un
 
 Una revalidación en segundo plano mantiene el formulario montado para no perder cambios locales, pero bloquea el guardado mientras está en curso. Si la revalidación falla, muestra un aviso persistente y exige recargar antes de escribir sobre una versión que ya no pudo verificarse.
 
+Las lecturas canónicas asociadas a una visita, la comprobación previa de creación
+y la reconciliación después de una respuesta perdida exigen `cache: no-store`.
+Esto incluye todas las páginas de la búsqueda. El worker de perfil offline de
+la misma versión impide que una descarga antigua confirme la ausencia de una
+nota o entregue diagnósticos antiguos como base de edición. Un fallo de red
+activa la recuperación existente; no autoriza crear o editar desde esa copia.
+El historial de notas de solo lectura conserva su política offline previa.
+Validar guardar, recargar y cambiar el diagnóstico principal con roles mínimos
+en DEV/QLTY; esta lectura fresca no sustituye control de concurrencia en backend.
+
 ## Desarrollo
 
 ```bash

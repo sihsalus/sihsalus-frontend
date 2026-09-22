@@ -54,6 +54,7 @@ function getQueueEntry(
   const searchParams = new URLSearchParams({ v: queueEntryRepresentation });
 
   return openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}?${searchParams.toString()}`, {
+    cache: 'no-store',
     signal: abortController?.signal,
   });
 }
@@ -128,6 +129,7 @@ function searchQueueEntries(criteria: Record<string, string>, startIndex = 0, ab
   });
 
   return openmrsFetch<QueueEntrySearchResponse>(`${restBaseUrl}/queue-entry?${searchParams.toString()}`, {
+    cache: 'no-store',
     signal: abortController?.signal,
     method: 'GET',
     headers: { 'Content-type': 'application/json' },

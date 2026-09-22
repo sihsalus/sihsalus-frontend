@@ -16,6 +16,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
+import { useOrderTypeLabel } from '../hooks/useOrderTypeLabel';
 import { useLabEncounter, useOrderConceptByUuid } from '../lab-results/lab-results.resource';
 
 import styles from './general-order-table.scss';
@@ -77,6 +78,8 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
 
 const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
   const { t } = useTranslation();
+  const getOrderTypeLabel = useOrderTypeLabel();
+  const orderTypeLabel = getOrderTypeLabel(order.orderType?.uuid, order.orderType?.display);
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingConcept } = useOrderConceptByUuid(order.concept.uuid);
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(order.encounter.uuid);
@@ -90,7 +93,7 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
   const tableHeaders: Array<{ key: string; header: string }> = [
     {
       key: 'orderName',
-      header: order?.orderType?.display,
+      header: orderTypeLabel,
     },
     {
       key: 'instructions',
@@ -107,7 +110,7 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
     {
       key: 'referenceNumber',
       header: t('referenceNumberTableHeader', '{{orderType}} reference number', {
-        orderType: order?.orderType?.display,
+        orderType: orderTypeLabel,
       }),
     },
   ];

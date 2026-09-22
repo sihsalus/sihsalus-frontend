@@ -74,6 +74,15 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 
 ## Contratos de UI
 
+- Las lecturas que verifican una transición, cierre o edición de una entrada
+  exigen red con `cache: no-store`, incluida cada página de reconciliación. El
+  worker de perfil offline instalado respeta esta opción y no sustituye un fallo
+  de red por una descarga anterior. Así una lista vacía almacenada no confirma
+  que otro operador haya finalizado o trasladado al paciente. El error conserva
+  el flujo existente de recuperación; no se repite una escritura confirmada por
+  una lectura fresca. Validar actualización coordinada de worker y frontend,
+  pérdida de respuesta, reconexión y operadores simultáneos en DEV/QLTY.
+
 - La tabla de pacientes en cola consulta cambios cada 15 segundos mientras la pestaña está visible y hay conexión, y vuelve a consultar al recuperar el foco o la conexión. Conserva los filtros y la última lista completa durante la actualización; solo reemplaza las filas cuando terminaron de cargar todas las páginas. Si falla una página, mantiene la lista anterior y muestra el error mediante el manejo existente. Es actualización periódica, no una suscripción push del backend.
 - El resumen de consulta se identifica por la combinación exacta de Encounter Type y Form configurados. Colas muestra primero los diagnósticos nativos activos y usa las observaciones históricas solo como fallback sin duplicarlas.
 - El guardado de triaje que queda pendiente en el equipo no mueve al paciente. La transición automática solo se ejecuta después de una respuesta confirmada del encounter; después de sincronizar un triaje offline, refrescar la cola y usar `Enviar a atención`. No borrar la acción offline para forzar el cambio de cola.

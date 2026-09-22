@@ -8672,6 +8672,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@hookform/resolvers": "npm:^3.6.0"
+    "@openmrs/esm-api": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"

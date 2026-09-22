@@ -54,6 +54,7 @@ export function buildMedicationOrder(order: Order, action?: OrderAction) {
     asNeeded: order.asNeeded,
     asNeededCondition: order.asNeededCondition,
     startDate: action === 'DISCONTINUE' ? order.dateActivated : new Date(),
+    startDateIsExplicit: action === 'DISCONTINUE',
     duration: order.duration,
     durationUnit: order.durationUnits
       ? {

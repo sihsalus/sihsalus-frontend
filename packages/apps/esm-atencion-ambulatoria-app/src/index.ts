@@ -47,6 +47,10 @@ export const genericConditionsOverview = getAsyncLifecycle(
 // CONSULTA EXTERNA EXPORTS
 // ================================================================================
 export const consultaExternaDashboard = getSyncLifecycle(ConsultaExternaDashboard, options);
+export const historicalOutpatientDocuments = getAsyncLifecycle(
+  () => import('./consulta-externa/historical-outpatient-documents.component'),
+  options,
+);
 export const institutionalReferralWorkspace = getAsyncLifecycle(
   () => import('./consulta-externa/institutional-referral-form.workspace'),
   options,

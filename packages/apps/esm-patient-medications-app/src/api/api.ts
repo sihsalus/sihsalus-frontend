@@ -158,11 +158,16 @@ export const prepMedicationOrderPostData = (
       ? parseDate(order.startDate)
       : order.startDate
     : null;
+  // An untouched default stays immediate even when its draft crosses midnight.
+  // Missing intent on older drafts conservatively preserves their existing date.
   // Only send an explicit dateActivated for intentionally backdated orders. For orders
   // starting today, omit it so the backend defaults it to the order save time; a
   // client-side timestamp (set when the item was added to the basket) lands before the
   // encounterDatetime and fails the dateActivated >= encounterDatetime validation.
-  const dateActivated = startDate && !isSameCalendarDay(startDate, new Date()) ? toOmrsIsoString(startDate) : undefined;
+  const dateActivated =
+    order.startDateIsExplicit !== false && startDate && !isSameCalendarDay(startDate, new Date())
+      ? toOmrsIsoString(startDate)
+      : undefined;
 
   // Drafts can be signed from the basket or renewed without reopening the form.
   // Enforce the reviewed single-dose contract at that boundary as well.
@@ -342,6 +347,7 @@ export function buildMedicationOrder(order: Order, action: OrderAction): DrugOrd
     asNeeded: order.asNeeded,
     asNeededCondition: order.asNeededCondition ?? null,
     startDate: action === 'DISCONTINUE' ? order.dateActivated : new Date(),
+    startDateIsExplicit: action === 'DISCONTINUE',
     duration: order.duration,
     durationUnit: order.durationUnits
       ? {

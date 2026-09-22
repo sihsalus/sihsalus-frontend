@@ -63,7 +63,7 @@ describe('getMissingPatientInstructionsRequirements', () => {
 
     getMissingPatientInstructionsRequirements(summary, appointment);
 
-    expect(mockHasInstructions).toHaveBeenCalledWith(summary, appointment);
+    expect(mockHasInstructions).toHaveBeenCalledWith(summary, appointment, 'current');
   });
 });
 

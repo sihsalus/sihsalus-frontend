@@ -8,6 +8,7 @@ import {
   getCanonicalVisitNoteEncounterUuid,
   saveCanonicalVisitNote,
   useCanonicalVisitNoteEncounter,
+  useVisitNoteClinicalContext,
   useVisitNotes,
 } from './visit-notes.resource';
 
@@ -149,6 +150,50 @@ test('preflight exhausts the supported search and blocks an exact existing summa
   }
 });
 
+test('a cached empty search cannot authorize creating a note when the server cannot be read', async () => {
+  const error = new Error('Synthetic network failure');
+  mockFetch.mockImplementation(async (_url, init) => {
+    if (init?.cache === 'no-store') throw error;
+    return { data: { results: [] } } as never;
+  });
+
+  await expect(assertCanonicalVisitNoteCanBeCreated(patient, visit, encounterType, form)).rejects.toBe(error);
+  expect(mockFetch.mock.calls.every(([, init]) => init?.method !== 'POST')).toBe(true);
+});
+
+test.each([
+  {
+    name: 'canonical',
+    render: () => renderHook(() => useCanonicalVisitNoteEncounter(patient, visit, encounterType, form)),
+  },
+  { name: 'context', render: () => renderHook(() => useVisitNoteClinicalContext(patient, visit)) },
+])('$name loading rejects a later cached page after network failure', async ({ render }) => {
+  render();
+  const [, fetcher] = mockUseSWR.mock.calls[0];
+  const error = new Error('Synthetic second page failure');
+  mockFetch.mockImplementation(async (url, init) => {
+    if (new URL(String(url), 'https://openmrs.test').searchParams.get('startIndex') === '0') {
+      return { data: { results: [exactEncounter('one')], links: [{ rel: 'next' }] } } as never;
+    }
+    if (init?.cache === 'no-store') throw error;
+    return { data: { results: [] } } as never;
+  });
+
+  await expect((fetcher as () => Promise<unknown>)()).rejects.toBe(error);
+  expect(mockFetch).toHaveBeenCalledTimes(2);
+});
+
+test('read-only note history keeps its existing offline read policy', async () => {
+  renderHook(() => useVisitNotes(patient));
+  const [, fetcher] = mockUseSWR.mock.calls[0];
+  mockFetch.mockResolvedValue({ data: { results: [exactEncounter('historical-note')] } } as never);
+
+  await expect((fetcher as () => Promise<unknown>)()).resolves.toMatchObject({
+    data: { results: [expect.objectContaining({ uuid: 'historical-note' })] },
+  });
+  expect(mockFetch.mock.calls[0][1]?.cache).not.toBe('no-store');
+});
+
 test('fails closed when an ambiguous create finds the same deterministic identity', async () => {
   const uuid = getCanonicalVisitNoteEncounterUuid(patient, visit, encounterType, form);
   const payload = {
@@ -167,4 +212,28 @@ test('fails closed when an ambiguous create finds the same deterministic identit
   await expect(saveCanonicalVisitNote(new AbortController(), payload)).rejects.toBeInstanceOf(
     AmbiguousVisitNoteSaveError,
   );
+});
+
+test('an old cached encounter cannot establish the outcome of a failed create', async () => {
+  const uuid = getCanonicalVisitNoteEncounterUuid(patient, visit, encounterType, form);
+  const payload = {
+    uuid,
+    visit,
+    patient,
+    encounterType,
+    form,
+    location: 'location',
+    encounterProviders: [{ encounterRole: 'role', provider: 'provider' }],
+    obs: [],
+    diagnoses: [],
+  };
+  mockFetch.mockImplementation(async (_url, init) => {
+    if (init?.method === 'POST' || init?.cache === 'no-store') throw new Error('Synthetic network failure');
+    return { data: exactEncounter(uuid) } as never;
+  });
+
+  await expect(saveCanonicalVisitNote(new AbortController(), payload)).rejects.toThrow(
+    'The visit note create result could not be verified.',
+  );
+  expect(mockFetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
 });

@@ -207,6 +207,17 @@ describe('outpatient visit summary contract', () => {
     vi.clearAllMocks();
   });
 
+  it('does not generate a current document from an old cached visit after network failure', async () => {
+    const error = new Error('Synthetic network failure');
+    mockOpenmrsFetch.mockImplementation(async (_url, init) => {
+      if (init?.cache === 'no-store') throw error;
+      return { data: { uuid: 'visit-uuid', encounters: [] } } as never;
+    });
+
+    await expect(fetchOutpatientVisitSummarySource('visit-uuid')).rejects.toBe(error);
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
   it('propagates the server Date header from the verified visit read', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: { uuid: 'visit-uuid' },

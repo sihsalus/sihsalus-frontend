@@ -528,13 +528,23 @@ function hasRecordedCanonicalMedicationOrders(summary: OutpatientVisitSummary): 
   return summary.hasRecordedMedicationOrders;
 }
 
+export type OutpatientInstructionsMode = 'current' | 'historical';
+
+function getPatientInstructionsMedications(summary: OutpatientVisitSummary, mode: OutpatientInstructionsMode) {
+  // Historical copies describe the recorded orders, not a currently valid treatment.
+  return mode === 'historical'
+    ? summary.orders.filter((order) => order.category === 'medication')
+    : getCanonicalMedicationOrders(summary);
+}
+
 export function hasOutpatientPatientInstructions(
   summary: OutpatientVisitSummary,
   scheduledAppointment?: OutpatientScheduledAppointment | null,
+  mode: OutpatientInstructionsMode = 'current',
 ): boolean {
-  const medicationOrders = getCanonicalMedicationOrders(summary);
+  const medicationOrders = getPatientInstructionsMedications(summary, mode);
   return Boolean(
-    isUpcomingScheduledAppointment(scheduledAppointment) ||
+    (mode === 'current' && isUpcomingScheduledAppointment(scheduledAppointment)) ||
       hasText(summary.treatment.nextAppointment) ||
       hasText(summary.treatment.therapeuticIndications) ||
       medicationOrders.length ||
@@ -693,11 +703,11 @@ export async function createOutpatientPatientInstructionsPdf(
   labels: OutpatientPatientInstructionsPdfLabels,
   locale: string,
   scheduledAppointment?: OutpatientScheduledAppointment | null,
+  mode: OutpatientInstructionsMode = 'current',
 ): Promise<Uint8Array> {
   const state = await createPdfState(labels.title, summary.facilityName, summary);
-  const printableScheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment)
-    ? scheduledAppointment
-    : null;
+  const printableScheduledAppointment =
+    mode === 'current' && isUpcomingScheduledAppointment(scheduledAppointment) ? scheduledAppointment : null;
 
   drawIncompleteClinicalRecordWarning(state, summary, labels.incompleteClinicalRecordWarning);
 
@@ -741,7 +751,7 @@ export async function createOutpatientPatientInstructionsPdf(
     drawField(state, labels.therapeuticIndications, summary.treatment.therapeuticIndications);
   }
 
-  const medicationOrders = getCanonicalMedicationOrders(summary);
+  const medicationOrders = getPatientInstructionsMedications(summary, mode);
   if (medicationOrders.length) {
     drawOrderList(state, labels.medications, medicationOrders, labels);
   } else if (!hasRecordedCanonicalMedicationOrders(summary) && hasText(summary.treatment.legacyPrescriptions)) {

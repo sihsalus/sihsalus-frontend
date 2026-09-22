@@ -5,6 +5,7 @@ import {
   hasOutpatientPatientInstructions,
   hasOutpatientRecetaUnicaContent,
   isOutpatientRecetaUnicaClinicallyReady,
+  type OutpatientInstructionsMode,
 } from './outpatient-visit-summary-pdf';
 
 /**
@@ -59,8 +60,9 @@ export function getMissingVisitSummaryRequirements(summary: OutpatientVisitSumma
 export function getMissingPatientInstructionsRequirements(
   summary: OutpatientVisitSummary,
   scheduledAppointment?: OutpatientScheduledAppointment | null,
+  mode: OutpatientInstructionsMode = 'current',
 ): OutpatientDocumentRequirement[] {
-  if (hasOutpatientPatientInstructions(summary, scheduledAppointment)) return [];
+  if (hasOutpatientPatientInstructions(summary, scheduledAppointment, mode)) return [];
   return [
     { id: 'followUpDate', tab: 'treatment' },
     { id: 'therapeuticIndications', tab: 'treatment' },

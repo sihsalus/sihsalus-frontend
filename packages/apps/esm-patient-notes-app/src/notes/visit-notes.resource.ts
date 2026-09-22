@@ -192,7 +192,10 @@ function buildEncounterSearchUrl(
 }
 
 /** Fetches every REST search page; it never relies on an unsupported `form` filter. */
-export async function fetchAllEncounterPages<T>(baseUrl: string): Promise<Array<T>> {
+export async function fetchAllEncounterPages<T>(
+  baseUrl: string,
+  options: { requireServer?: boolean } = {},
+): Promise<Array<T>> {
   const allResults: Array<T> = [];
   const seenUuids = new Set<string>();
   let startIndex = 0;
@@ -203,7 +206,10 @@ export async function fetchAllEncounterPages<T>(baseUrl: string): Promise<Array<
     pageUrl.searchParams.set('startIndex', String(startIndex));
     pageUrl.searchParams.set('totalCount', 'true');
     const requestUrl = `${pageUrl.pathname}${pageUrl.search}`;
-    const { data } = await openmrsFetch<EncounterPage<T>>(requestUrl);
+    const { data } = await openmrsFetch<EncounterPage<T>>(
+      requestUrl,
+      options.requireServer ? { cache: 'no-store' } : undefined,
+    );
     if (!Array.isArray(data?.results)) {
       throw new Error('The encounter search response is invalid.');
     }
@@ -256,7 +262,9 @@ async function fetchExactVisitNoteEncounters(
     visitUuid,
     encounterTypeUuid,
   });
-  const results = await fetchAllEncounterPages<Encounter>(baseUrl);
+  // Visit-scoped results authorize creating/editing the canonical note. A
+  // downloaded history cannot establish its current identity or diagnoses.
+  const results = await fetchAllEncounterPages<Encounter>(baseUrl, { requireServer: Boolean(visitUuid) });
   return results.filter((encounter) =>
     hasExactEncounterIdentity(encounter, patientUuid, encounterTypeUuid, formUuid, visitUuid),
   );
@@ -583,6 +591,7 @@ async function reconcileAmbiguousCanonicalCreate(payload: VisitNotePayload): Pro
   try {
     const { data } = await openmrsFetch<Encounter>(
       `${restBaseUrl}/encounter/${payload.uuid}?v=${encodeURIComponent(canonicalVisitNoteRepresentation)}`,
+      { cache: 'no-store' },
     );
     if (
       data?.uuid === payload.uuid &&
@@ -724,7 +733,9 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
     { data: { results: Array<RestClinicalContextEncounter> } },
     Error
   >(encountersApiUrl, async () => {
-    const encounters = await fetchAllEncounterPages<RestClinicalContextEncounter>(encountersApiUrl as string);
+    const encounters = await fetchAllEncounterPages<RestClinicalContextEncounter>(encountersApiUrl as string, {
+      requireServer: Boolean(visitUuid),
+    });
     return {
       data: {
         results: encounters.filter(

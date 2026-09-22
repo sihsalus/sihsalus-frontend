@@ -119,6 +119,15 @@ El catálogo inicial de destinos se configura en `referralDestinations` con nomb
 
 ## Resumen de atención ambulatoria
 
+La lectura de la visita para generar Resumen, Indicaciones o Receta Única exige
+`cache: no-store`. El worker de perfil offline del mismo frontend no sustituye
+un fallo de red por una visita descargada previamente. Así, datos o una fecha
+HTTP antiguos no se presentan como verificados al generar un documento actual.
+La identidad y el resto de requisitos clínicos siguen comprobándose antes de
+producirlo; la información del catálogo de medicamentos conserva su función de
+enriquecimiento opcional. Validar guardado, recarga, impresión y reconexión en
+DEV/QLTY con el worker actualizado y cuentas sintéticas autorizadas.
+
 Consulta Externa ofrece una descarga PDF denominada **Resumen de atención ambulatoria** para la visita activa, con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis, examen físico segmentado, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
 
 El responsable documental se resuelve solo desde el encounter canónico configurado por tipo y formulario. Ese encounter queda `canonical-complete` cuando contiene exactamente un diagnóstico principal con mapping estructurado CIE-10/ICD-10 y exactamente un provider activo con `clinicianEncounterRoleUuid`; providers de otros roles no firman el documento. La fecha clínica, el nombre y la colegiatura provienen de ese mismo encounter/provider. La colegiatura usa el Provider Attribute Type exacto configurado, nunca el identificador del provider.

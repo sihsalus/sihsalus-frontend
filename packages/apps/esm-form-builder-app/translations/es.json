@@ -251,6 +251,9 @@
   "schemaLoadError": "Error al cargar esquema",
   "schemaNotFound": "Esquema no encontrado",
   "schemaNotFoundText": "No se pudo encontrar el esquema asociado originalmente con este formulario. Se ha encontrado un borrador de esquema en el almacenamiento local de tu buscador. ¿Deseas cargar este en su lugar?",
+  "schemaPreviewDescription": "Pruebe valores de ejemplo aquí. No se guardan; las acciones que requieren una atención de paciente no están disponibles.",
+  "schemaPreviewTitle": "Vista previa del formulario",
+  "schemaPreviewValidationHint": "Revise las preguntas y la pestaña Validación para identificar errores del esquema.",
   "schemaSaveWarningMessage": "El servidor dev3 es efímero en el mejor de los casos y no se puede confiar en él para guardar tus esquemas de forma permanente. Para evitar perder tu trabajo, guarde sus esquemas en tu máquina local. Alternativamente, súbalos al repositorio de distribución para que se conserven tras los reinicios del servidor.",
   "searchable": "Buscable",
   "searchConcept": "Buscar usando un nombre de concepto o UUID",
@@ -313,8 +316,5 @@
   "viewErrors": "Visualizar los errores en el constructor interactivo",
   "welcomeExplainer": "Agregar páginas, secciones y preguntas a su formulario. La sección Vista Previa actualiza automáticamente a medida que construye su formulario. Para una explicación detallada de lo que constituye un esquema de formulario de OpenMRS, por favor lea el siguiente documento.",
   "welcomeHeading": "Constructor de esquemas interactivo",
-  "yes": "Sí",
-  "schemaPreviewTitle": "Vista previa del formulario",
-  "schemaPreviewDescription": "Pruebe valores de ejemplo aquí. No se guardan; las acciones que requieren una atención de paciente no están disponibles.",
-  "schemaPreviewValidationHint": "Revise las preguntas y la pestaña Validación para identificar errores del esquema."
+  "yes": "Sí"
 }

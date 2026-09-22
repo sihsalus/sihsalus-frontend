@@ -247,47 +247,46 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
     expect(mockLaunchWorkspace2).toHaveBeenCalledOnce();
   });
 
-  it.each(['permission revocation', 'account change', 'patient change', 'workspace closure'])(
-    'discards a pending lookup after %s',
-    async (change) => {
-      const user = userEvent.setup();
-      let finishLookup!: (response: Awaited<ReturnType<typeof openmrsFetch>>) => void;
-      mockOpenmrsFetch.mockReturnValueOnce(
-        new Promise((resolve) => {
-          finishLookup = resolve;
-        }),
-      );
-      const { rerender, unmount } = render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} />);
+  it.each([
+    'permission revocation',
+    'account change',
+    'patient change',
+    'workspace closure',
+  ])('discards a pending lookup after %s', async (change) => {
+    const user = userEvent.setup();
+    let finishLookup!: (response: Awaited<ReturnType<typeof openmrsFetch>>) => void;
+    mockOpenmrsFetch.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishLookup = resolve;
+      }),
+    );
+    const { rerender, unmount } = render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} />);
 
-      await user.click(screen.getByRole('button', { name: /embarazo actual/i }));
-      expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
-      if (change === 'permission revocation') {
-        mockUserHasAccess.mockImplementation((privilege) => privilege !== 'app:hoja.clinica.controlPrenatal.editar');
-      } else if (change === 'account change') {
-        getSessionStore().setState({
-          loaded: true,
-          session: { ...mockSession.data, user: { ...mockSession.data.user, uuid: 'different-synthetic-user' } },
-        });
-      } else if (change === 'patient change') {
-        mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as Awaited<ReturnType<typeof openmrsFetch>>);
-        rerender(
-          <MaternalHealthFormsSelectorWorkspace
-            {...defaultWorkspaceProps}
-            patientUuid="different-synthetic-patient"
-          />,
-        );
-      } else {
-        unmount();
-      }
-
-      await act(async () => {
-        finishLookup({ data: currentPregnancyForm } as Awaited<ReturnType<typeof openmrsFetch>>);
+    await user.click(screen.getByRole('button', { name: /embarazo actual/i }));
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    if (change === 'permission revocation') {
+      mockUserHasAccess.mockImplementation((privilege) => privilege !== 'app:hoja.clinica.controlPrenatal.editar');
+    } else if (change === 'account change') {
+      getSessionStore().setState({
+        loaded: true,
+        session: { ...mockSession.data, user: { ...mockSession.data.user, uuid: 'different-synthetic-user' } },
       });
+    } else if (change === 'patient change') {
+      mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as Awaited<ReturnType<typeof openmrsFetch>>);
+      rerender(
+        <MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} patientUuid="different-synthetic-patient" />,
+      );
+    } else {
+      unmount();
+    }
 
-      expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
-      expect(showSnackbar).not.toHaveBeenCalled();
-    },
-  );
+    await act(async () => {
+      finishLookup({ data: currentPregnancyForm } as Awaited<ReturnType<typeof openmrsFetch>>);
+    });
+
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(showSnackbar).not.toHaveBeenCalled();
+  });
 
   it('does not launch a form after its specific permission is revoked', async () => {
     const user = userEvent.setup();

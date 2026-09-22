@@ -10,7 +10,11 @@ interface RemoveQueueEntryModalProps {
   completeCare?: boolean;
 }
 
-const RemoveQueueEntryModal: React.FC<RemoveQueueEntryModalProps> = ({ queueEntry, closeModal, completeCare = false }) => {
+const RemoveQueueEntryModal: React.FC<RemoveQueueEntryModalProps> = ({
+  queueEntry,
+  closeModal,
+  completeCare = false,
+}) => {
   const { t } = useTranslation();
   const patient = queueEntry.display;
   const queue = queueEntry.queue.display;

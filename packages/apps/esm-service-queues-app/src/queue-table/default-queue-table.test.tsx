@@ -312,65 +312,65 @@ describe('DefaultQueueTable', () => {
     });
   });
 
-  it.each(['upss-hospitalizacion', 'upss-emergencia'])(
-    'shows a transfer from %s under Centro Obstetrico, using the receiving queue location',
-    async (originLocationUuid) => {
-      mockUseServiceQueuesStore.mockReturnValue({
-        queueLocationSelectionInitialized: true,
-        selectedServiceUuid: null,
-        selectedQueueLocationUuid: 'upss-centro-obstetrico',
-        selectedQueueStatusUuid: null,
-        selectedAppointmentStatus: '',
-        selectedQueueRoomTimestamp: new Date(),
-        isPermanentProviderQueueRoom: false,
-      });
-      mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
-      mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
-      mockUseQueueEntries.mockReturnValue({
-        queueEntries: [
-          {
-            ...mockQueueEntries[0],
-            queue: {
-              ...mockQueueEntries[0].queue,
-              uuid: 'centro-obstetrico-queue',
-              location: { ...mockQueueEntries[0].queue.location, uuid: 'upss-centro-obstetrico' },
-            },
-            visit: {
-              ...mockQueueEntries[0].visit,
-              location: { uuid: originLocationUuid },
-            },
+  it.each([
+    'upss-hospitalizacion',
+    'upss-emergencia',
+  ])('shows a transfer from %s under Centro Obstetrico, using the receiving queue location', async (originLocationUuid) => {
+    mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
+      selectedServiceUuid: null,
+      selectedQueueLocationUuid: 'upss-centro-obstetrico',
+      selectedQueueStatusUuid: null,
+      selectedAppointmentStatus: '',
+      selectedQueueRoomTimestamp: new Date(),
+      isPermanentProviderQueueRoom: false,
+    });
+    mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
+    mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: [
+        {
+          ...mockQueueEntries[0],
+          queue: {
+            ...mockQueueEntries[0].queue,
+            uuid: 'centro-obstetrico-queue',
+            location: { ...mockQueueEntries[0].queue.location, uuid: 'upss-centro-obstetrico' },
           },
-          {
-            ...mockQueueEntries[1],
-            queue: {
-              ...mockQueueEntries[1].queue,
-              location: { ...mockQueueEntries[1].queue.location, uuid: originLocationUuid },
-            },
-            visit: {
-              ...mockQueueEntries[1].visit,
-              location: { uuid: 'upss-centro-obstetrico' },
-            },
+          visit: {
+            ...mockQueueEntries[0].visit,
+            location: { uuid: originLocationUuid },
           },
-        ],
-        isLoading: false,
-        error: undefined,
-        totalCount: 2,
-        isValidating: false,
-        mutate: vi.fn(),
-      });
+        },
+        {
+          ...mockQueueEntries[1],
+          queue: {
+            ...mockQueueEntries[1].queue,
+            location: { ...mockQueueEntries[1].queue.location, uuid: originLocationUuid },
+          },
+          visit: {
+            ...mockQueueEntries[1].visit,
+            location: { uuid: 'upss-centro-obstetrico' },
+          },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      totalCount: 2,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
 
-      rendeDefaultQueueTable();
+    rendeDefaultQueueTable();
 
-      expect(await screen.findByRole('link', { name: /Brian Johnson/i })).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: /Alice Johnson/i })).not.toBeInTheDocument();
-      expect(mockUseQueueEntries).toHaveBeenCalledWith({
-        service: null,
-        location: null,
-        isEnded: false,
-        status: null,
-      });
-    },
-  );
+    expect(await screen.findByRole('link', { name: /Brian Johnson/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Alice Johnson/i })).not.toBeInTheDocument();
+    expect(mockUseQueueEntries).toHaveBeenCalledWith({
+      service: null,
+      location: null,
+      isEnded: false,
+      status: null,
+    });
+  });
 
   it('clears a persisted status only after the available statuses finish loading', async () => {
     mockUseServiceQueuesStore.mockReturnValue({

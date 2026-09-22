@@ -214,11 +214,9 @@ describe('clinical history identity verification', () => {
       encounterDatetime: '2026-09-21T10:00:00Z',
     };
     const matching = { ...common, uuid: 'matching', form: { uuid: 'social-form' } };
-    mockOpenmrsFetch
-      .mockReset()
-      .mockResolvedValueOnce({
-        data: { results: [matching, { ...common, uuid: 'other', form: { uuid: 'other-form' } }], totalCount: 2 },
-      } as never);
+    mockOpenmrsFetch.mockReset().mockResolvedValueOnce({
+      data: { results: [matching, { ...common, uuid: 'other', form: { uuid: 'other-form' } }], totalCount: 2 },
+    } as never);
     expect((await fetchClinicalHistorySource(source)).encounters).toEqual([matching]);
   });
 });

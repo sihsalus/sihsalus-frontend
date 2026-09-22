@@ -50,7 +50,7 @@ export async function fetchLabOrderResult(
 
   const { data: order } = await openmrsFetch<Order>(
     `${restBaseUrl}/order/${encodeURIComponent(selectedOrder.uuid)}?v=${orderRepresentation}`,
-    { signal },
+    { cache: 'no-store', signal },
   );
   if (
     order.uuid !== selectedOrder.uuid ||
@@ -65,7 +65,7 @@ export async function fetchLabOrderResult(
 
   const { data: encounter } = await openmrsFetch<ResultEncounter>(
     `${restBaseUrl}/encounter/${encodeURIComponent(order.encounter.uuid)}?v=${encounterRepresentation}`,
-    { signal },
+    { cache: 'no-store', signal },
   );
   if (encounter.uuid !== order.encounter.uuid || encounter.patient?.uuid !== order.patient.uuid) {
     throw new Error('Laboratory encounter does not match the selection');
@@ -75,7 +75,7 @@ export async function fetchLabOrderResult(
 
   const { data: observation } = await openmrsFetch<LabResultObservation>(
     `${restBaseUrl}/obs/${encodeURIComponent(observations[0].uuid)}?v=full`,
-    { signal },
+    { cache: 'no-store', signal },
   );
   if (
     observation.uuid !== observations[0].uuid ||

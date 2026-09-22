@@ -34,7 +34,9 @@ it('loads only the selected persisted order, encounter and observation, includin
     expect.stringContaining('/encounter/synthetic-encounter?v=custom:'),
     expect.stringContaining('/obs/synthetic-observation?v=full'),
   ]);
-  expect(fetch.mock.calls.every(([, options]) => options.signal === signal && !options.method)).toBe(true);
+  expect(
+    fetch.mock.calls.every(([, options]) => options.signal === signal && !options.method && options.cache === 'no-store'),
+  ).toBe(true);
 });
 
 it.each([

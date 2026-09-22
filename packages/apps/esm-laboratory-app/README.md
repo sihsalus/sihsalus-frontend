@@ -43,6 +43,12 @@ observation reference range. Only saved ranges are printed; a missing range is
 shown as a dash, never replaced by a current catalog range. Units are explicitly
 identified as coming from the test catalog. No content migration is required.
 
+These verification reads request `cache: no-store`; the matching frontend
+worker requires a current server response. A downloaded offline snapshot cannot
+authorize an amendment or establish the current report. Network failures leave
+the existing blocking error state visible. Activate the matching worker and
+refresh existing tabs when releasing this change.
+
 Before rollout, validate in coordinated DEV/QLTY with synthetic patients and
 minimum laboratory roles: single tests, panels, zero/coded/text results,
 reopening after correction, failures/retries, denied access, patient isolation,

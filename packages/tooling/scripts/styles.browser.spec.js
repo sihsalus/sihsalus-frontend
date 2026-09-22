@@ -164,6 +164,65 @@ test("workspace rail reserves desktop chart space without changing overlay or ta
   assert.equal(bottomRail.y + bottomRail.height, 1024);
 });
 
+test('medication summary overlay preserves field positions and scroll while appearing', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'medication-summary-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-medications-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  const stylesheet = path.join(workspace, 'src/add-drug-order/drug-order-form.scss');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import styles from ${JSON.stringify(stylesheet)}; window.medicationStyles = styles;`,
+  );
+  await compile({
+    context: workspace,
+    mode: config.mode,
+    entry: path.join(fixture, 'entry.js'),
+    output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+    module: config.module,
+    resolve: config.resolve,
+    optimization: config.optimization,
+    plugins: [],
+    devtool: false,
+    performance: false,
+  }, rspack);
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<div id="scroll"><div id="overlay" hidden><div id="summary">Synthetic medication and dose</div></div>' +
+    '<div style="height:160px"></div><label>Indication<input id="field" value="Synthetic indication"></label>' +
+    '<div style="height:1000px"></div></div>',
+  );
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({
+    content: 'body{margin:0}#scroll{height:600px;overflow:auto;overflow-anchor:none}#overlay[hidden]{display:none}',
+  });
+  await page.evaluate(() => {
+    document.querySelector('#overlay').className = window.medicationStyles.stickyMedicationInfo;
+    document.querySelector('#summary').className = window.medicationStyles.medicationInfo;
+  });
+  for (const width of [420, 768]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const scrollTop of [0, 140]) {
+      await page.evaluate((top) => { document.querySelector('#scroll').scrollTop = top; }, scrollTop);
+      const position = await page.locator('#field').boundingBox();
+      for (const visible of [true, false, true, false]) {
+        await page.evaluate((show) => { document.querySelector('#overlay').hidden = !show; }, visible);
+        assert.deepEqual(await page.locator('#field').boundingBox(), position, 'Summary must not move form fields');
+        assert.equal(await page.locator('#scroll').evaluate((node) => node.scrollTop), scrollTop);
+        await expect(page.locator('#field')).toHaveValue('Synthetic indication');
+        if (visible) {
+          await expect(page.locator('#summary')).toHaveCSS('background-color', 'rgb(0, 114, 195)');
+          await expect(page.locator('#summary')).toHaveCSS('color', 'rgb(255, 255, 255)');
+          assert.equal((await page.locator('#summary').boundingBox()).y, 0, 'Summary remains visible while scrolling');
+        }
+      }
+    }
+  }
+});
+
 before(async () => {
   browser = await chromium.launch();
 });

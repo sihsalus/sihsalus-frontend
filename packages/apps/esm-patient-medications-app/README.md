@@ -50,6 +50,15 @@ of search, draft copying and normal prescription remains required before merge.
 
 ## Outpatient prescription contract
 
+The medication summary shown while scrolling overlays the form without changing
+field positions or scroll offset. Its colors and content remain the same as the
+existing summary. This avoids an IntersectionObserver feedback loop when browser
+scroll anchoring is unavailable or disabled. The existing browser style suite
+checks that appearing/disappearing summaries do not move fields; a local synthetic
+form reproduced the loop with scroll anchoring disabled. Confirmation against the
+reported hospital browser and deployed QLTY build remains required; this does not
+establish the cause of every reported form flicker or change prescription data.
+
 For outpatient prescriptions, the form visibly marks and validates the treatment duration, duration unit, dispense quantity and unit, number of refills, and configured indication. It follows the backend quantity policy and uses OpenMRS's safe required default while that policy is loading or unavailable, so a clinical role does not need broad global-property privileges and the fields do not become mandatory after the clinician starts entering a prescription. The duration selector is limited by `outpatientDurationUnitUuids` (days, weeks, and months by default); other backend duration units remain available outside the outpatient quantity workflow, and legacy values remain visible while an existing order is edited. New outpatient prescriptions default to structured dose, unit, route, and frequency fields and offer free-text dosage as an explicit exception, except for the configured single-dose frequency. Free-text dosage requires a nonblank regimen and retains the outpatient duration, dispensing, refill, and configured indication requirements; the dispense quantity must be entered manually and is never calculated from the text. Switching to free-text dosage clears the structured dosing fields; switching back requires structured dosing again. When the selected drug's dosage form exactly matches a configured dosing or dispensing unit, that unit is proposed without overwriting a clinician's selection; the dosing unit is only proposed in structured mode. A reason is required whenever the medication is marked for as-needed use; route and frequency are never inferred.
 
 ### Dose-unit catalog availability

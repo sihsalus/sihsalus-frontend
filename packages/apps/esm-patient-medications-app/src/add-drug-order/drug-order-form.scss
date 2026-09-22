@@ -72,14 +72,17 @@
 
 .stickyMedicationInfo {
   position: sticky;
-  background-color: colors.$cyan-60;
   color: colors.$white-0;
   top: 0;
   z-index: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  // The overlay must not move the heading watched by IntersectionObserver.
+  height: 0;
 
   .medicationInfo {
+    background-color: colors.$cyan-60;
+    width: 100%;
     margin: 0;
   }
 }

@@ -224,15 +224,6 @@ export const transitionPatientToLatestQueue = getAsyncLifecycle(
   },
 );
 
-// t('addNewQueueServiceRoom', 'Add new queue service room')
-export const addNewQueueServiceRoomWorkspace = getAsyncLifecycle(
-  () => import('./queue-rooms/queue-room-form.workspace'),
-  {
-    featureName: 'service-queues-queue-room-form',
-    moduleName,
-  },
-);
-
 export const addNewQueueServiceRoomWorkspace2 = getAsyncLifecycle(
   () => import('./admin/queue-rooms/queue-room-form.workspace'),
   {

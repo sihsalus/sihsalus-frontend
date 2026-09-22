@@ -93,6 +93,26 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 - Las acciones de cambiar estado/prioridad deben fallar de forma visible si no hay conceptos configurados.
 - Los nombres de menu deben usar lenguaje final para usuarios clinicos, no nombres internos del paquete.
 
+### Descripción de ambientes
+
+El acceso `Agregar nueva sala de servicio` desde las métricas de Colas abre el
+mismo formulario de Administración para crear ambientes. La edición desde
+Administración reutiliza ese formulario y carga la descripción existente.
+Ambos envían `name`, `description` y `queue.uuid` al recurso REST `queue-room`
+del módulo Queue ya instalado; la edición conserva el UUID del ambiente.
+Después de guardar, se actualizan las consultas de ambientes. Si falla la
+escritura, el formulario conserva los valores para corregir o reintentar.
+
+Se mantiene un único registro Workspace2 y una única implementación del
+formulario y del recurso. Los permisos acumulativos de ambientes no cambian;
+el acceso de métricas conserva además `Emr: View Legacy Interface`.
+
+Validar en DEV/QLTY con un ambiente sintético: crear desde Colas con descripción,
+recargar Administración, editar la descripción y volver a consultar; comprobar
+el rechazo con un rol sin `Manage Queue Rooms` y retirar el ambiente de prueba.
+Las pruebas locales cubren el payload de creación/edición, la carga del valor
+existente, los errores y la navegación; no demuestran persistencia en el backend.
+
 ## Flujo obstétrico
 
 `obstetricCare.enabled` habilita las acciones en `config/frontend.json`. Los UUIDs

@@ -13,7 +13,7 @@
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "test": "vitest run",
+    "test": "node --test tooling/hmr-compat.check.cjs && vitest run",
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage",
     "typescript": "tsc --noEmit",

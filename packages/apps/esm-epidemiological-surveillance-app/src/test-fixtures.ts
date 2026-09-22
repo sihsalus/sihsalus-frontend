@@ -9,9 +9,8 @@ export const catalogue: Catalogue = {
       deadlineDays: 7,
     },
   ],
-  metadata: {
+  catalog: {
     version: 1,
-    encounterTypeUuid: "surveillance-type",
     encounterRoleUuid: "role",
     trueConceptUuid: "true",
     falseConceptUuid: "false",

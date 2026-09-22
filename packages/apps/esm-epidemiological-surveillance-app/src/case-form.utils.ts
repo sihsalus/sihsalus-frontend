@@ -1,4 +1,4 @@
-import type { CaseRequest, Catalogue, FhirResource, Metadata } from "./types";
+import type { CaseRequest, Catalogue, FhirResource, ClinicalCatalog } from "./types";
 
 export function patientName(patient: FhirResource): string {
   const name = patient.name?.[0];
@@ -8,6 +8,55 @@ export function patientName(patient: FhirResource): string {
     patient.identifier?.[0]?.value ||
     ""
   );
+}
+export function patientDni(patient: FhirResource): string {
+  const dniObj =
+    patient.identifier?.find((id) =>
+      id.type?.text?.toUpperCase().includes("DNI"),
+    ) ??
+    patient.identifier?.find((id) => id.value && /^\d{8}$/.test(id.value)) ??
+    patient.identifier?.[0];
+  return dniObj?.value || "";
+}
+export function findDiagnosisMapping(
+  diagnosisUuid: string,
+  catalogue: Catalogue,
+):
+  | {
+      eventUuid?: string;
+      eventName?: string;
+      severity?: string;
+      species?: string;
+      diagnosisConceptUuid: string;
+    }
+  | undefined {
+  const { catalog: m, events } = catalogue;
+  for (const disease of m.diseases) {
+    const mapping = disease.diagnoses.find(
+      (d) => d.diagnosisConceptUuid === diagnosisUuid,
+    );
+    if (mapping) {
+      const event = events.find((e) => e.uuid === disease.eventUuid);
+      return {
+        eventUuid: disease.eventUuid,
+        eventName: event?.name,
+        severity: mapping.severity,
+        species: mapping.species,
+        diagnosisConceptUuid: mapping.diagnosisConceptUuid,
+      };
+    }
+  }
+  const directEvent = events.find((e) => e.conceptUuid === diagnosisUuid);
+  if (directEvent) {
+    const disease = m.diseases.find((d) => d.eventUuid === directEvent.uuid);
+    return {
+      eventUuid: directEvent.uuid,
+      eventName: directEvent.name,
+      severity: disease?.severities[0]?.key ?? "MILD",
+      diagnosisConceptUuid: diagnosisUuid,
+    };
+  }
+  return undefined;
 }
 export const referenceId = (reference?: string): string =>
   reference?.split("/").filter(Boolean).at(-1) ?? "";
@@ -33,7 +82,7 @@ export function prefill(
   diagnoses: string[],
   catalogue: Catalogue,
 ): Partial<CaseRequest> {
-  const { metadata: m } = catalogue;
+  const { catalog: m } = catalogue;
   const result: Partial<CaseRequest> = {};
   const matching = (field: string) =>
     observations.filter((obs) => hasConcept(obs, m.questions[field]));
@@ -83,7 +132,7 @@ export function prefill(
 }
 export function validateCase(
   request: Partial<CaseRequest>,
-  m: Metadata,
+  m: ClinicalCatalog,
   patient?: FhirResource,
   source?: FhirResource,
 ): string[] {

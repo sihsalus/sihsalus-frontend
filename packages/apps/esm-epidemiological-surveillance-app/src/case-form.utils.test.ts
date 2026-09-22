@@ -3,7 +3,7 @@ import { dateInZone, prefill, validateCase } from "./case-form.utils";
 import { catalogue, request } from "./test-fixtures";
 describe("case form validation", () => {
   it("requires patient and clinical context", () => {
-    expect(validateCase({}, catalogue.metadata)).toEqual(
+    expect(validateCase({}, catalogue.catalog)).toEqual(
       expect.arrayContaining([
         "patientUuid",
         "sourceEncounterUuid",
@@ -14,19 +14,19 @@ describe("case form validation", () => {
   });
   it("requires a result for a confirmed case", () => {
     expect(
-      validateCase({ ...request, status: "CONFIRMED" }, catalogue.metadata),
+      validateCase({ ...request, status: "CONFIRMED" }, catalogue.catalog),
     ).toContain("laboratoryResultUuid");
   });
   it.each(["2026-02-30", "2999-01-01", "yesterday"])(
     "rejects invalid onset %s",
     (onsetDate) => {
       expect(
-        validateCase({ ...request, onsetDate }, catalogue.metadata),
+        validateCase({ ...request, onsetDate }, catalogue.catalog),
       ).toContain("onsetDate");
     },
   );
   it("accepts a complete suspected case", () =>
-    expect(validateCase(request, catalogue.metadata)).toEqual([]));
+    expect(validateCase(request, catalogue.catalog)).toEqual([]));
   it("uses the configured time zone at UTC day boundary", () => {
     expect(dateInZone("America/Lima", new Date("2026-01-02T01:00:00Z"))).toBe(
       "2026-01-01",

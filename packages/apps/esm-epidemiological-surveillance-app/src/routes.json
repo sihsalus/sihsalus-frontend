@@ -5,13 +5,6 @@
     "fhir2": ">=1.2.0",
     "sihsalusepidemiologicalsurveillance": ">=1.0.0-SNAPSHOT"
   },
-  "pages": [
-    {
-      "component": "root",
-      "route": "epidemiological-surveillance",
-      "privileges": "app:home.epidemiologicalSurveillance"
-    }
-  ],
   "extensions": [
     {
       "name": "epidemiological-surveillance-dashboard-link",
@@ -20,9 +13,16 @@
       "privileges": "app:home.epidemiologicalSurveillance",
       "meta": {
         "name": "epidemiological-surveillance",
-        "title": "epidemiologicalSurveillance"
+        "title": "epidemiologicalSurveillance",
+        "slot": "epidemiological-surveillance-dashboard-slot"
       },
       "order": 60
+    },
+    {
+      "name": "epidemiological-surveillance-dashboard",
+      "slot": "epidemiological-surveillance-dashboard-slot",
+      "component": "root",
+      "privileges": "app:home.epidemiologicalSurveillance"
     }
   ]
 }

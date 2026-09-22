@@ -31,37 +31,37 @@ vi.mock("@openmrs/esm-framework", () => ({
 }));
 vi.mock("./api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api")>()),
-  read: vi.fn(async () => ({
+  getPatient: vi.fn(async () => ({
     resourceType: "Patient",
     id: "patient",
     name: [{ text: "Synthetic Patient" }],
     gender: "female",
     birthDate: "2000-01-01",
   })),
-  fhirSearch: vi.fn(async (resource: string) =>
-    resource === "Patient"
-      ? [{ resourceType: "Patient", id: "patient", name: [{ text: "Synthetic Patient" }] }]
-      : resource === "Encounter"
-      ? [
-          {
-            resourceType: "Encounter",
-            id: "source",
-            subject: { reference: "Patient/patient" },
-            period: { start: "2026-01-20" },
-            status: "finished",
-            type: [{ coding: [{ code: "surveillance-type" }], text: "Metaxenicas" }],
-          },
-          {
-            resourceType: "Encounter",
-            id: "other-care",
-            subject: { reference: "Patient/patient" },
-            period: { start: "2026-01-20" },
-            status: "finished",
-            type: [{ coding: [{ code: "other-type" }], text: "Other care" }],
-          },
-        ]
-      : [],
-  ),
+  encountersForPatient: vi.fn(async () => [
+    {
+      resourceType: "Encounter",
+      id: "source",
+      subject: { reference: "Patient/patient" },
+      period: { start: "2026-01-20" },
+      type: [{ text: "Metaxenicas" }],
+    },
+    {
+      resourceType: "Encounter",
+      id: "other-care",
+      subject: { reference: "Patient/patient" },
+      period: { start: "2026-01-20" },
+      type: [{ text: "Other care" }],
+    },
+  ]),
+  getEncounterObservations: vi.fn(async () => []),
+  getEncounterDiagnoses: vi.fn(async () => ["diagnosis"]),
+  getEncounterDiagnosesDetails: vi.fn(async () => [
+    { uuid: "diagnosis", display: "Synthetic disease" },
+  ]),
+  searchPatients: vi.fn(async () => [
+    { resourceType: "Patient", id: "patient", name: [{ text: "Synthetic Patient" }] },
+  ]),
   references: vi.fn(async (resource: string) =>
     resource === "provider"
       ? [
@@ -91,14 +91,19 @@ describe("case registration screen", () => {
     ).toBeInTheDocument();
     expect(saveCase).not.toHaveBeenCalled();
   });
-  it("offers the existing metaxenicas encounter and excludes other care", async () => {
+  it("offers every active encounter of the selected patient", async () => {
     render(<CaseForm catalogue={catalogue} onSaved={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText("Patient name"), { target: { value: "Synthetic" } });
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    await screen.findByText(/Synthetic Patient/);
-    fireEvent.change(screen.getByLabelText("Patient"), { target: { value: "patient" } });
-    await waitFor(() => expect(screen.getByText(/Metaxenicas/)).toBeInTheDocument());
-    expect(screen.queryByText(/Other care/)).not.toBeInTheDocument();
+    const patientInput = screen.getByPlaceholderText("Select a patient");
+    fireEvent.change(patientInput, { target: { value: "Synthetic" } });
+    await waitFor(() =>
+      expect(screen.getByText(/Synthetic Patient/)).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByText(/Synthetic Patient/));
+    await waitFor(() =>
+      expect(screen.getByText(/Metaxenicas/)).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Other care/)).toBeInTheDocument();
+    expect(screen.getByText("Synthetic professional")).toBeInTheDocument();
   });
   it("registers within three steps and distinguishes offline persistence", async () => {
     vi.mocked(saveCase).mockResolvedValue({ queued: true });

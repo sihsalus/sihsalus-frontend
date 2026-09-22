@@ -30,7 +30,7 @@ Base `/ws/rest/v1/sihsalusepidemiologicalsurveillance`, mediante `openmrsFetch` 
 
 | Método/recurso                                                     | Contrato                                                                      |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| GET `/metadata`                                                    | `{metadata, events}`, catálogo de contenido verificado.                       |
+| GET `/catalog`                                                     | `{catalog, events}`, catálogo fijo y eventos activos disponibles.             |
 | POST `/cases`                                                      | `CaseRequest` → `CaseResult`; 200, con `replayed` para reintento idempotente. |
 | GET `/cases/{uuid}`                                                | Evaluación y alertas de un registro.                                          |
 | GET `/reports?event=…&from=YYYY-MM-DD&to=YYYY-MM-DD&period=semana` | Totales, curva, canal, demografía, advertencias y fecha de generación.        |
@@ -52,7 +52,9 @@ Lecturas clínicas: FHIR R4 `Patient,Encounter,Observation`; REST `encounter` (d
 
 Periodos: `dia,semana,mes,trimestre,semestre`. Fechas iniciales respetan cobertura; servidor admite hasta 731 días de diferencia.
 
-El OMOD fija los UUID clínicos en `SurveillanceCatalog.java` tras contrastarlos con `sihsalus-content`; no lee archivo JSON ni global property. Si faltan conceptos, respuestas, tipo de atención o eventos administrativos en OpenMRS, bloquea registro/reportes con `METADATA_NOT_CONFIGURED`. No hay fallback a datos demo ni creación de conceptos.
+El OMOD fija los UUID clínicos en `SurveillanceCatalog.java` tras contrastarlos con `sihsalus-content`; no lee archivo JSON ni global property. Abrir el catálogo no exige validar todos los conceptos. Al guardar se comprueban las referencias utilizadas: `CLINICAL_CONCEPT_UNAVAILABLE` indica un concepto ausente o retirado y `CLINICAL_DATATYPE_MISMATCH` un tipo incompatible. Actualizar el OMOD y el ESM juntos porque el contrato usa `/catalog` y la propiedad `catalog`.
+
+El backend ofrece `GET /events`, `GET /events/{uuid}`, `PUT /events/{uuid}` y `DELETE /events/{uuid}`. La eliminación retira el evento conservando los casos históricos; la administración se realiza mediante API. `GET /healthcheck` devuelve `{"status":"UP"}` con una sesión autorizada.
 
 ## Registro y trabajo sin conexión
 
@@ -86,6 +88,13 @@ Se muestra fecha de generación del reporte y aviso sin conexión. La caché com
 | `report-panel.component.tsx`                    | Filtros, gráficos y tablas.                             |
 
 ## Desarrollo y validación
+
+El `rspack.config.js` aplica una adaptación local, solo en desarrollo, para
+`@rspack/dev-server` 2 con `@rspack/core` 1: expone `log` y `emitter` también como
+exports nombrados, conservando las mismas instancias CommonJS para HMR. Evita
+que el cliente falle en `setLogLevel` antes de publicar el contenedor federado.
+Después de cambiar esta configuración hay que reiniciar el servidor de desarrollo.
+La compilación de producción no utiliza esta adaptación.
 
 Desde la raíz del monorepo:
 

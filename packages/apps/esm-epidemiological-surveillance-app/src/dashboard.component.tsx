@@ -16,10 +16,12 @@ import { CaseForm } from "./case-form.component";
 import {
   caseRegisterPrivilege,
   caseViewPrivilege,
+  managePrivilege,
   moduleName,
   reportPrivilege,
 } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
+import { EventsPanel } from "./events-panel.component";
 import { PendingCases } from "./pending-cases.component";
 import { ReportPanel } from "./report-panel.component";
 import type { CaseRequest, Catalogue } from "./types";
@@ -92,6 +94,7 @@ function SessionDashboard() {
           >
             <Tab>{t("cases", "Cases")}</Tab>
             <Tab>{t("indicators", "Indicators")}</Tab>
+            <Tab>{t("events", "Events")}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
@@ -128,6 +131,14 @@ function SessionDashboard() {
             <TabPanel>
               <RequirePrivilege privilege={reportPrivilege}>
                 <ReportPanel catalogue={catalogue} />
+              </RequirePrivilege>
+            </TabPanel>
+            <TabPanel>
+              <RequirePrivilege privilege={managePrivilege}>
+                <EventsPanel
+                  catalogue={catalogue}
+                  onEventsChanged={() => setRetry((value) => value + 1)}
+                />
               </RequirePrivilege>
             </TabPanel>
           </TabPanels>

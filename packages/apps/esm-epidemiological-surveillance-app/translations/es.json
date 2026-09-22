@@ -1,4 +1,4 @@
-﻿{
+{
   "epidemiologicalSurveillance": "Vigilancia epidemiológica",
   "surveillanceDescription": "Registra casos y consulta indicadores epidemiológicos.",
   "cases": "Casos",
@@ -137,7 +137,10 @@
     "SERVICE_UNAVAILABLE": "Vuelve a intentarlo. Los registros pendientes se conservan en este equipo.",
     "AUTHENTICATION_REQUIRED": "Inicia sesión nuevamente con la cuenta que capturó este registro.",
     "ACCESS_DENIED": "Tu cuenta no tiene permiso para esta acción. Contacta al administrador.",
-    "METADATA_NOT_CONFIGURED": "La configuración de vigilancia está incompleta. Solicita al administrador que verifique el catálogo clínico.",
+    "CLINICAL_CONCEPT_UNAVAILABLE": "Falta un concepto requerido para este registro o está retirado. Solicita revisar el contenido clínico de OpenMRS.",
+    "CLINICAL_DATATYPE_MISMATCH": "Una pregunta clínica tiene un tipo incompatible. Solicita revisar el concepto en OpenMRS.",
+    "EVENT_NOT_FOUND": "El evento notificable no existe. Actualiza la lista de eventos.",
+    "EVENT_RETIRED": "El evento fue retirado y no admite nuevos registros.",
     "ICD10_MAPPING_UNAVAILABLE": "El diagnóstico no tiene un código CIE-10 inequívoco. Solicita la revisión del catálogo.",
     "INVALID_CLASSIFICATION": "Selecciona una clasificación disponible para esta enfermedad.",
     "INVALID_EVENT": "Selecciona una enfermedad del catálogo de vigilancia.",
@@ -158,6 +161,41 @@
     "INVALID_CASE_DATA": "El caso está incompleto. Solicita a epidemiología que revise sus datos de origen.",
     "INVALID_DATE_RANGE": "Selecciona un rango válido de hasta dos años, sin superar la fecha de hoy.",
     "OUTSIDE_COVERAGE": "Selecciona fechas dentro de la cobertura verificada de vigilancia.",
-    "INVALID_PERIOD": "Selecciona un periodo de reporte disponible."
+    "INVALID_PERIOD": "Selecciona un periodo de reporte disponible.",
+    "EVENT_ALREADY_EXISTS": "Ya existe un evento notificable con este identificador.",
+    "EVENT_CONCEPT_ALREADY_EXISTS": "Ya existe un evento notificable para esta enfermedad o concepto.",
+    "EVENT_CONCEPT_IMMUTABLE": "No se puede cambiar el concepto clínico de un evento ya registrado."
+  },
+  "events": "Eventos",
+  "newEvent": "Nuevo evento",
+  "editEvent": "Editar evento notificable",
+  "retireEvent": "¿Retirar evento notificable?",
+  "confirmRetireEvent": "¿Está seguro de que desea retirar el evento notificable \"{{name}}\"? Los eventos retirados no permitirán registrar nuevos casos.",
+  "notifiableEvents": "Eventos Notificables",
+  "eventsTable": {
+    "name": "Nombre del evento",
+    "namePlaceholder": "Ej. Dengue, Malaria...",
+    "concept": "Enfermedad (Concepto)",
+    "searchConcept": "Escriba para buscar concepto...",
+    "deadlineDays": "Plazo (días)",
+    "status": "Estado",
+    "active": "Activo",
+    "retired": "Retirado",
+    "hideRetired": "Ocultar retirados",
+    "showRetired": "Mostrar retirados"
+  },
+  "edit": "Editar",
+  "retire": "Retirar",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "saving": "Guardando...",
+  "searching": "Buscando...",
+  "searchAndSelectPatient": "Buscar por nombre o DNI...",
+  "noDiagnosesInEncounterTitle": "Atención sin diagnósticos",
+  "noDiagnosesInEncounter": "La atención seleccionada no tiene diagnósticos asociados para vigilancia epidemiológica.",
+  "statuses": {
+    "SUSPECTED": "Sospechoso",
+    "CONFIRMED": "Confirmado",
+    "DISCARDED": "Descartado"
   }
 }

@@ -1,10 +1,13 @@
 import { openmrsFetch } from "@openmrs/esm-framework";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  fhirSearch,
+  encountersForPatient,
+  getCatalogue,
   getEncounterDiagnoses,
+  getEncounterObservations,
+  references,
   safeError,
-  SurveillanceApiError,
+  searchPatients,
 } from "./api";
 vi.mock("@openmrs/esm-framework", () => ({
   openmrsFetch: vi.fn(),
@@ -12,6 +15,47 @@ vi.mock("@openmrs/esm-framework", () => ({
   fhirBaseUrl: "/ws/fhir2/R4",
 }));
 describe("surveillance API", () => {
+  it("reads the fixed catalog contract", async () => {
+    const response = { catalog: { version: 1 }, events: [] };
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: response } as never);
+    expect(await getCatalogue()).toEqual(response);
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      "/ws/rest/v1/sihsalusepidemiologicalsurveillance/catalog",
+      expect.any(Object),
+    );
+  });
+  it("searches patients through the native patient index", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({
+      data: {
+        results: [
+          {
+            uuid: "patient",
+            identifiers: [{ identifier: "SYN-001" }],
+            person: {
+              display: "Synthetic Patient",
+              gender: "F",
+              birthdate: "2000-01-01",
+            },
+          },
+        ],
+      },
+    } as never);
+
+    await expect(searchPatients("Synthetic")).resolves.toEqual([
+      {
+        resourceType: "Patient",
+        id: "patient",
+        name: [{ text: "Synthetic Patient" }],
+        identifier: [{ value: "SYN-001" }],
+        gender: "F",
+        birthDate: "2000-01-01",
+      },
+    ]);
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/patient?q=Synthetic"),
+      expect.any(Object),
+    );
+  });
   it("reads only active coded native diagnoses for the verified patient", async () => {
     vi.mocked(openmrsFetch).mockResolvedValue({
       data: {
@@ -34,36 +78,6 @@ describe("surveillance API", () => {
   beforeEach(() => {
     vi.mocked(openmrsFetch).mockReset();
   });
-  it("loads all FHIR pages", async () => {
-    vi.mocked(openmrsFetch)
-      .mockResolvedValueOnce({
-        data: {
-          entry: [{ resource: { resourceType: "Patient", id: "one" } }],
-          link: [
-            { relation: "next", url: "/openmrs/ws/fhir2/R4/Patient?page=2" },
-          ],
-        },
-      } as never)
-      .mockResolvedValueOnce({
-        data: { entry: [{ resource: { resourceType: "Patient", id: "two" } }] },
-      } as never);
-    expect(
-      (await fhirSearch("Patient", { name: "Synthetic" })).map(
-        (resource) => resource.id,
-      ),
-    ).toEqual(["one", "two"]);
-  });
-  it("rejects pagination to a foreign host", async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue({
-      data: {
-        link: [{ relation: "next", url: "https://external.invalid/patient" }],
-      },
-    } as never);
-    await expect(
-      fhirSearch("Patient", { name: "Synthetic" }),
-    ).rejects.toBeInstanceOf(SurveillanceApiError);
-    expect(openmrsFetch).toHaveBeenCalledTimes(1);
-  });
   it("does not expose raw backend messages", () => {
     const failure = safeError({
       status: 500,
@@ -78,8 +92,94 @@ describe("surveillance API", () => {
     async (status) => {
       vi.mocked(openmrsFetch).mockRejectedValue({ status });
       await expect(
-        fhirSearch("Patient", { name: "Synthetic" }),
+        searchPatients("Synthetic"),
       ).rejects.toMatchObject({ status });
     },
-  );
-});
+    );
+  });
+  it("lists the patient's active encounters through the native REST endpoint", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({
+      data: {
+        results: [
+          {
+            uuid: "encounter",
+            patient: { uuid: "patient" },
+            encounterDatetime: "2026-01-20T10:00:00.000+0000",
+            encounterType: { name: "Consulta externa" },
+            location: { uuid: "location", display: "Main clinic" },
+          },
+          { uuid: "voided", voided: true, patient: { uuid: "patient" } },
+        ],
+      },
+    } as never);
+
+    await expect(encountersForPatient("patient")).resolves.toEqual([
+      {
+        resourceType: "Encounter",
+        id: "encounter",
+        subject: { reference: "Patient/patient" },
+        period: { start: "2026-01-20T10:00:00.000+0000" },
+        location: [{ location: { reference: "Location/location", display: "Main clinic" } }],
+        type: [{ text: "Consulta externa" }],
+      },
+    ]);
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/encounter?patient=patient"),
+      expect.any(Object),
+    );
+  });
+  it("reads observations from the selected native encounter", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({
+      data: {
+        uuid: "encounter",
+        patient: { uuid: "patient" },
+        obs: [
+          {
+            uuid: "group",
+            obsDatetime: "2026-01-20T10:00:00.000+0000",
+            concept: { uuid: "group-question", display: "Group" },
+            groupMembers: [
+              {
+                uuid: "observation",
+                obsDatetime: "2026-01-20T10:00:00.000+0000",
+                concept: { uuid: "question", display: "Question" },
+                value: { uuid: "answer", display: "Answer" },
+              },
+            ],
+          },
+        ],
+      },
+    } as never);
+
+    const observations = await getEncounterObservations("encounter", "patient");
+    expect(observations.some((observation) => observation.id === "observation")).toBe(true);
+    expect(observations.find((observation) => observation.id === "observation")).toMatchObject({
+      code: { coding: [{ code: "question" }] },
+      valueCodeableConcept: { coding: [{ code: "answer" }] },
+    });
+  });
+  it("loads professionals from the native provider endpoint", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({
+      data: {
+        results: [
+          {
+            uuid: "provider",
+            display: "Synthetic professional",
+            person: { uuid: "person" },
+          },
+        ],
+      },
+    } as never);
+
+    await expect(references("provider")).resolves.toEqual([
+      {
+        uuid: "provider",
+        display: "Synthetic professional",
+        person: { uuid: "person" },
+      },
+    ]);
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/provider?v=custom%3A%28uuid%2Cdisplay%2Cperson%3A%28uuid%29%29"),
+      expect.any(Object),
+    );
+  });

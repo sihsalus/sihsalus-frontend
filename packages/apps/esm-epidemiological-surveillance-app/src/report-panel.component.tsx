@@ -133,7 +133,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
   const { t } = useTranslation(moduleName);
   const online = useConnectivity();
   const config = useConfig<Config>();
-  const today = dateInZone(catalogue.metadata.timezone);
+  const today = dateInZone(catalogue.catalog.timezone);
   const defaultStart = new Date(`${today}T12:00:00Z`);
   defaultStart.setUTCDate(
     defaultStart.getUTCDate() - (config.reportLookbackDays ?? 28) + 1,
@@ -142,7 +142,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
   const [from, setFrom] = useState(
     [
       defaultStart.toISOString().slice(0, 10),
-      catalogue.metadata.surveillanceStartDate,
+      catalogue.catalog.surveillanceStartDate,
     ]
       .sort()
       .at(-1) ?? today,
@@ -190,7 +190,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
           type="date"
           labelText={t("from", "From")}
           value={from}
-          min={catalogue.metadata.surveillanceStartDate}
+          min={catalogue.catalog.surveillanceStartDate}
           max={to}
           onChange={(event) => setFrom(event.target.value)}
         />

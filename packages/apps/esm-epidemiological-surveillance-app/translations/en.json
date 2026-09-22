@@ -1,4 +1,4 @@
-﻿{
+{
   "epidemiologicalSurveillance": "Epidemiological Surveillance",
   "surveillanceDescription": "Register cases and review epidemiological indicators.",
   "cases": "Cases",
@@ -137,7 +137,10 @@
     "SERVICE_UNAVAILABLE": "Please try again. Pending records remain saved on this device.",
     "AUTHENTICATION_REQUIRED": "Sign in again with the account that captured this record.",
     "ACCESS_DENIED": "Your account does not have permission for this action. Contact the administrator.",
-    "METADATA_NOT_CONFIGURED": "Surveillance setup is incomplete. Ask the administrator to verify the clinical catalogue.",
+    "CLINICAL_CONCEPT_UNAVAILABLE": "A concept required for this record is missing or retired. Ask an administrator to check the OpenMRS clinical content.",
+    "CLINICAL_DATATYPE_MISMATCH": "A clinical question has an incompatible datatype. Ask an administrator to check the OpenMRS concept.",
+    "EVENT_NOT_FOUND": "The notifiable event does not exist. Refresh the event list.",
+    "EVENT_RETIRED": "The event is retired and cannot receive new records.",
     "ICD10_MAPPING_UNAVAILABLE": "The diagnosis has no unambiguous ICD-10 mapping. Ask the administrator to verify the catalogue.",
     "INVALID_CLASSIFICATION": "Choose a classification available for this disease.",
     "INVALID_EVENT": "Choose a disease from the surveillance catalogue.",
@@ -158,6 +161,41 @@
     "INVALID_CASE_DATA": "The case is incomplete. Ask epidemiology to review its source data.",
     "INVALID_DATE_RANGE": "Select a valid date range of up to two years, ending no later than today.",
     "OUTSIDE_COVERAGE": "Select dates within the verified surveillance coverage.",
-    "INVALID_PERIOD": "Choose an available reporting period."
+    "INVALID_PERIOD": "Choose an available reporting period.",
+    "EVENT_ALREADY_EXISTS": "A notifiable event with this identifier already exists.",
+    "EVENT_CONCEPT_ALREADY_EXISTS": "A notifiable event for this disease or concept already exists.",
+    "EVENT_CONCEPT_IMMUTABLE": "The clinical concept of an existing notifiable event cannot be changed."
+  },
+  "events": "Events",
+  "newEvent": "New event",
+  "editEvent": "Edit notifiable event",
+  "retireEvent": "Retire notifiable event?",
+  "confirmRetireEvent": "Are you sure you want to retire notifiable event \"{{name}}\"? Retired events will not allow registering new cases.",
+  "notifiableEvents": "Notifiable Events",
+  "eventsTable": {
+    "name": "Event name",
+    "namePlaceholder": "E.g. Dengue, Malaria...",
+    "concept": "Disease (Concept)",
+    "searchConcept": "Type to search concept...",
+    "deadlineDays": "Deadline (days)",
+    "status": "Status",
+    "active": "Active",
+    "retired": "Retired",
+    "hideRetired": "Hide retired",
+    "showRetired": "Show retired"
+  },
+  "edit": "Edit",
+  "retire": "Retire",
+  "save": "Save",
+  "cancel": "Cancel",
+  "saving": "Saving...",
+  "searching": "Searching...",
+  "searchAndSelectPatient": "Search by name or DNI...",
+  "noDiagnosesInEncounterTitle": "Care encounter without diagnoses",
+  "noDiagnosesInEncounter": "The selected care encounter has no associated diagnoses for epidemiological surveillance.",
+  "statuses": {
+    "SUSPECTED": "Suspected",
+    "CONFIRMED": "Confirmed",
+    "DISCARDED": "Discarded"
   }
 }

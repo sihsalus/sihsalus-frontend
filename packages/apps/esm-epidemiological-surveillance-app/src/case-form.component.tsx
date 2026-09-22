@@ -1,5 +1,6 @@
 import {
   Button,
+  ComboBox,
   InlineLoading,
   InlineNotification,
   ProgressIndicator,
@@ -13,15 +14,19 @@ import { useConnectivity, useSession } from "@openmrs/esm-framework";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  fhirSearch,
-  getEncounterDiagnoses,
-  read,
+  getEncounterDiagnosesDetails,
+  getEncounterObservations,
+  getPatient,
+  encountersForPatient,
   references,
   safeError,
+  searchPatients,
 } from "./api";
 import {
   dateInZone,
+  findDiagnosisMapping,
   hasConcept,
+  patientDni,
   patientName,
   prefill,
   referenceId,
@@ -36,6 +41,7 @@ import type {
   CaseRequest,
   CaseResult,
   Catalogue,
+  EncounterDiagnosis,
   FhirResource,
   NamedReference,
 } from "./types";
@@ -53,16 +59,20 @@ export function CaseForm({
   const { t } = useTranslation(moduleName);
   const session = useSession();
   const online = useConnectivity();
-  const { metadata: m } = catalogue;
+  const { catalog: m } = catalogue;
   const [step, setStep] = useState(0);
   const [request, setRequest] = useState<Partial<CaseRequest>>(
     () => initial ?? { uuid: globalThis.crypto.randomUUID() },
   );
-  const [query, setQuery] = useState("");
   const [patients, setPatients] = useState<FhirResource[]>([]);
   const [patient, setPatient] = useState<FhirResource>();
   const [encounters, setEncounters] = useState<FhirResource[]>([]);
   const [observations, setObservations] = useState<FhirResource[]>([]);
+  const [encounterDiagnoses, setEncounterDiagnoses] = useState<
+    EncounterDiagnosis[]
+  >([]);
+  const [selectedDiagnosisUuid, setSelectedDiagnosisUuid] =
+    useState<string>("");
   const [locations, setLocations] = useState<NamedReference[]>([]);
   const [providers, setProviders] = useState<NamedReference[]>([]);
   const [invalid, setInvalid] = useState<string[]>([]);
@@ -72,6 +82,7 @@ export function CaseForm({
   const [result, setResult] = useState<CaseResult>();
   const [queued, setQueued] = useState(false);
   const generation = useRef(0);
+  const patientSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const source = encounters.find(
     (item) => item.id === request.sourceEncounterUuid,
   );
@@ -85,26 +96,30 @@ export function CaseForm({
 
   useEffect(() => {
     const abort = new AbortController();
-    void Promise.all([
+    void Promise.allSettled([
       references("location", abort.signal),
       references("provider", abort.signal),
     ])
-      .then(([nextLocations, nextProviders]) => {
+      .then(([locationsResult, providersResult]) => {
         if (abort.signal.aborted) return;
-        setLocations(nextLocations);
-        const ownProviders = nextProviders.filter(
-          (item) => item.person?.uuid === session?.user?.person?.uuid,
-        );
-        setProviders(ownProviders);
-        if (ownProviders.length === 1 && !initial?.providerUuid)
-          setRequest((current) => ({
-            ...current,
-            providerUuid: ownProviders[0].uuid,
-          }));
+        if (locationsResult.status === "fulfilled") setLocations(locationsResult.value);
+        if (providersResult.status === "fulfilled") {
+          const ownProviders = providersResult.value.filter(
+            (item) => item.person?.uuid === session?.user?.person?.uuid,
+          );
+          setProviders(ownProviders);
+          if (ownProviders.length === 1 && !initial?.providerUuid)
+            setRequest((current) => ({
+              ...current,
+              providerUuid: ownProviders[0].uuid,
+            }));
+        }
+        if (
+          locationsResult.status === "rejected" &&
+          providersResult.status === "rejected"
+        )
+          setError(locationsResult.reason);
       })
-      .catch((failure) => {
-        if (!abort.signal.aborted) setError(failure);
-      });
     return () => abort.abort();
   }, [session?.user?.person?.uuid, initial?.providerUuid]);
 
@@ -112,24 +127,41 @@ export function CaseForm({
     if (!initial) return;
     const abort = new AbortController();
     void Promise.all([
-      read<FhirResource>(
-        `/ws/fhir2/R4/Patient/${encodeURIComponent(initial.patientUuid)}`,
+      getPatient(initial.patientUuid, abort.signal),
+      encountersForPatient(initial.patientUuid, abort.signal),
+      getEncounterObservations(
+        initial.sourceEncounterUuid,
+        initial.patientUuid,
         abort.signal,
       ),
-      fhirSearch("Encounter", { patient: initial.patientUuid }, abort.signal),
-      fhirSearch("Observation", { patient: initial.patientUuid }, abort.signal),
+      getEncounterDiagnosesDetails(
+        initial.sourceEncounterUuid,
+        initial.patientUuid,
+        abort.signal,
+      ),
     ])
-      .then(([nextPatient, nextEncounters, nextObservations]) => {
+      .then(([nextPatient, nextEncounters, nextObservations, nextDiagDetails]) => {
         if (abort.signal.aborted) return;
         setPatient(nextPatient);
+        if (nextPatient) setPatients([nextPatient]);
         setEncounters(nextEncounters);
         setObservations(nextObservations);
+        setEncounterDiagnoses(nextDiagDetails);
+        const matched = nextDiagDetails.find((d) => {
+          const mapping = findDiagnosisMapping(d.uuid, catalogue);
+          return mapping?.eventUuid === initial.eventUuid;
+        });
+        if (matched) {
+          setSelectedDiagnosisUuid(matched.uuid);
+        } else if (nextDiagDetails.length > 0) {
+          setSelectedDiagnosisUuid(nextDiagDetails[0].uuid);
+        }
       })
       .catch((failure) => {
         if (!abort.signal.aborted) setError(failure);
       });
     return () => abort.abort();
-  }, [initial]);
+  }, [initial, catalogue]);
 
   useEffect(
     () => () => {
@@ -142,25 +174,31 @@ export function CaseForm({
     setInvalid((current) => current.filter((field) => field !== key));
     setError(undefined);
   };
-  async function search() {
-    const current = ++generation.current;
-    setBusy(true);
-    setError(undefined);
-    try {
-      const found = await fhirSearch("Patient", { name: query });
-      if (current === generation.current) setPatients(found);
-    } catch (failure) {
-      if (current === generation.current) setError(failure);
-    } finally {
-      if (current === generation.current) setBusy(false);
-    }
-  }
+  const handlePatientInputChange = (searchStr: string) => {
+    if (patientSearchTimer.current) clearTimeout(patientSearchTimer.current);
+    if (!searchStr || searchStr.trim().length < 2) return;
+    patientSearchTimer.current = setTimeout(async () => {
+      const current = ++generation.current;
+      setBusy(true);
+      setError(undefined);
+      try {
+        const found = await searchPatients(searchStr);
+        if (current === generation.current) setPatients(found);
+      } catch (failure) {
+        if (current === generation.current) setError(failure);
+      } finally {
+        if (current === generation.current) setBusy(false);
+      }
+    }, 250);
+  };
   async function choosePatient(id: string) {
     const selected = patients.find((item) => item.id === id);
     const current = ++generation.current;
     setPatient(selected);
     setEncounters([]);
     setObservations([]);
+    setEncounterDiagnoses([]);
+    setSelectedDiagnosisUuid("");
     setError(undefined);
     setRequest((value) => ({
       uuid: value.uuid,
@@ -170,28 +208,9 @@ export function CaseForm({
     if (!id) return;
     setBusy(true);
     try {
-      const [nextEncounters, nextObservations] = await Promise.all([
-        fhirSearch("Encounter", { patient: id }),
-        fhirSearch("Observation", { patient: id }),
-      ]);
+      const nextEncounters = await encountersForPatient(id);
       if (current !== generation.current) return;
-      setEncounters(
-        nextEncounters.filter(
-          (item) =>
-            referenceId(item.subject?.reference) === id &&
-            item.status !== "entered-in-error" &&
-            item.type?.some((type) =>
-              type.coding?.some((code) => code.code === m.encounterTypeUuid),
-            ),
-        ),
-      );
-      setObservations(
-        nextObservations.filter(
-          (item) =>
-            referenceId(item.subject?.reference) === id &&
-            item.status !== "entered-in-error",
-        ),
-      );
+      setEncounters(nextEncounters);
     } catch (failure) {
       if (current === generation.current) setError(failure);
     } finally {
@@ -208,27 +227,96 @@ export function CaseForm({
       sourceEncounterUuid: id,
       locationUuid: referenceId(selected?.location?.[0]?.location.reference),
     }));
+    setEncounterDiagnoses([]);
+    setSelectedDiagnosisUuid("");
     if (!id || !request.patientUuid) return;
     setBusy(true);
     setError(undefined);
     try {
-      const diagnoses = await getEncounterDiagnoses(id, request.patientUuid);
+      const [diagDetails, sourceObservations] = await Promise.all([
+        getEncounterDiagnosesDetails(id, request.patientUuid),
+        getEncounterObservations(id, request.patientUuid),
+      ]);
       if (current !== generation.current) return;
-      const sourceObs = observations.filter(
-        (obs) => referenceId(obs.encounter?.reference) === id,
-      );
+      setObservations(sourceObservations);
+      setEncounterDiagnoses(diagDetails);
+      const diagUuids = diagDetails.map((d) => d.uuid);
+      const prefilled = prefill(sourceObservations, diagUuids, catalogue);
       setRequest((value) => ({
         ...value,
-        ...prefill(sourceObs, diagnoses, catalogue),
+        ...prefilled,
       }));
+      if (prefilled.eventUuid) {
+        const matched = diagDetails.find((d) => {
+          const mapping = findDiagnosisMapping(d.uuid, catalogue);
+          return mapping?.eventUuid === prefilled.eventUuid;
+        });
+        if (matched) {
+          setSelectedDiagnosisUuid(matched.uuid);
+        } else if (diagDetails.length > 0) {
+          setSelectedDiagnosisUuid(diagDetails[0].uuid);
+        }
+      } else if (diagDetails.length === 1) {
+        const mapping = findDiagnosisMapping(diagDetails[0].uuid, catalogue);
+        if (mapping) {
+          setSelectedDiagnosisUuid(diagDetails[0].uuid);
+          setRequest((value) => ({
+            ...value,
+            eventUuid: mapping.eventUuid,
+            severity: mapping.severity,
+            species: mapping.species,
+          }));
+        }
+      }
     } catch (failure) {
       if (current === generation.current) setError(failure);
     } finally {
       if (current === generation.current) setBusy(false);
     }
   }
+  const diagnosisOptions = encounterDiagnoses.map((diag) => {
+    const mapping = findDiagnosisMapping(diag.uuid, catalogue);
+    return {
+      uuid: diag.uuid,
+      display: diag.display,
+      mapping,
+      label: mapping?.eventName
+        ? `${diag.display} (${mapping.eventName})`
+        : diag.display,
+    };
+  });
+  const onDiagnosisChange = (diagUuid: string) => {
+    setSelectedDiagnosisUuid(diagUuid);
+    const item = diagnosisOptions.find((d) => d.uuid === diagUuid);
+    if (item?.mapping) {
+      setRequest((current) => ({
+        ...current,
+        eventUuid: item.mapping?.eventUuid ?? "",
+        severity: item.mapping?.severity ?? "",
+        species: item.mapping?.species ?? "",
+        status: !current.laboratoryResultUuid ? "SUSPECTED" : current.status,
+      }));
+    } else {
+      setRequest((current) => ({
+        ...current,
+        eventUuid: "",
+        severity: "",
+        species: "",
+      }));
+    }
+    setInvalid((current) =>
+      current.filter(
+        (field) => !["eventUuid", "severity", "species"].includes(field),
+      ),
+    );
+  };
   function next() {
-    const errors = validateCase(request, m, patient, source);
+    const currentRequest = {
+      ...request,
+      status:
+        request.status || (!request.laboratoryResultUuid ? "SUSPECTED" : ""),
+    };
+    const errors = validateCase(currentRequest, m, patient, source);
     const relevant =
       step === 0
         ? errors.filter((field) =>
@@ -241,11 +329,19 @@ export function CaseForm({
           )
         : errors;
     setInvalid(relevant);
-    if (!relevant.length) setStep((value) => value + 1);
+    if (!relevant.length) {
+      setRequest(currentRequest);
+      setStep((value) => value + 1);
+    }
   }
   async function submit() {
     if (submitting.current || !userUuid) return;
-    const errors = validateCase(request, m, patient, source);
+    const currentRequest = {
+      ...request,
+      status:
+        request.status || (!request.laboratoryResultUuid ? "SUSPECTED" : ""),
+    };
+    const errors = validateCase(currentRequest, m, patient, source);
     setInvalid(errors);
     if (errors.length) {
       setStep(1);
@@ -255,7 +351,11 @@ export function CaseForm({
     setBusy(true);
     setError(undefined);
     try {
-      const saved = await saveCase(request as CaseRequest, userUuid, online);
+      const saved = await saveCase(
+        currentRequest as CaseRequest,
+        userUuid,
+        online,
+      );
       setQueued(saved.queued);
       setResult(saved.result);
       onSaved();
@@ -308,12 +408,22 @@ export function CaseForm({
         )}
       />
     );
-  const labResults = observations.filter(
-    (obs) =>
-      disease?.laboratoryTests.some((test) =>
-        hasConcept(obs, test.resultConceptUuid),
-      ) && ["final", "amended", "corrected"].includes(obs.status ?? ""),
-  );
+  const labResults = observations.filter((obs) => {
+    if (!["final", "amended", "corrected"].includes(obs.status ?? ""))
+      return false;
+    const test = disease?.laboratoryTests.find((item) =>
+      hasConcept(obs, item.resultConceptUuid),
+    );
+    if (!test) return false;
+    const codes = valueConcepts(obs);
+    const isPositive = test.positiveAnswerUuids.some((code) =>
+      codes.includes(code),
+    );
+    const isNegative = test.negativeAnswerUuids.some((code) =>
+      codes.includes(code),
+    );
+    return isPositive || isNegative;
+  });
   return (
     <section
       aria-label={t("registerCase", "Register case")}
@@ -350,52 +460,32 @@ export function CaseForm({
       {step === 0 && (
         <>
           {!initial && (
-            <div className={styles.actions}>
-              <TextInput
-                id="patient-search"
-                labelText={t("searchPatient", "Patient name")}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-              <Button
-                kind="secondary"
-                disabled={busy || query.trim().length < 2}
-                onClick={search}
-              >
-                {t("search", "Search")}
-              </Button>
-            </div>
-          )}
-          {!initial && (
-            <Select
+            <ComboBox
               id="case-patient"
-              labelText={t("fields.patientUuid")}
-              value={request.patientUuid ?? ""}
-              disabled={busy}
+              titleText={t("fields.patientUuid", "Paciente")}
+              placeholder={t("selectPatient", "Buscar y seleccionar paciente...")}
+              items={patients}
+              itemToString={(item) =>
+                item
+                  ? `${patientName(item)}${patientDni(item) ? ` · DNI: ${patientDni(item)}` : ""}${item.birthDate ? ` · ${item.birthDate}` : ""}`
+                  : ""
+              }
+              onInputChange={handlePatientInputChange}
+              onChange={({ selectedItem }) => {
+                choosePatient(selectedItem?.id ?? "");
+              }}
               invalid={invalid.includes("patientUuid")}
               invalidText={t(
                 "requiredSelection",
                 "Select a valid value to continue.",
               )}
-              onChange={(event) => choosePatient(event.target.value)}
-            >
-              <SelectItem
-                value=""
-                text={t("selectPatient", "Select a patient")}
-              />
-              {patients.map((item) => (
-                <SelectItem
-                  key={item.id}
-                  value={item.id}
-                  text={`${patientName(item)} · ${item.identifier?.[0]?.value ?? ""} · ${item.birthDate ?? ""}`}
-                />
-              ))}
-            </Select>
+            />
           )}
           {patient && (
             <Tile>
               <strong>{patientName(patient)}</strong>
               <p>
+                {patientDni(patient) ? `DNI: ${patientDni(patient)} · ` : ""}
                 {patient.birthDate} ·{" "}
                 {t(`sexValues.${patient.gender ?? "unknown"}`)}
               </p>
@@ -421,37 +511,39 @@ export function CaseForm({
       )}
       {step === 1 && (
         <>
-          {select(
-            "eventUuid",
-            catalogue.events.map((item) => ({
-              value: item.uuid,
-              text: item.name,
-            })),
-            (value) =>
-              setRequest((current) => ({
-                ...current,
-                eventUuid: value,
-                severity: "",
-                species: "",
-                status: "",
-                laboratoryResultUuid: "",
-              })),
-          )}
-          {select(
-            "severity",
-            disease?.severities.map((item) => ({
-              value: item.key,
-              text: item.label,
-            })) ?? [],
-          )}
-          {!!disease?.species.length &&
-            select(
-              "species",
-              disease.species.map((item) => ({
-                value: item.key,
-                text: item.label,
-              })),
+          <Select
+            id="case-disease-diagnosis"
+            labelText={t("fields.eventUuid", "Enfermedad")}
+            value={selectedDiagnosisUuid}
+            disabled={busy || !encounterDiagnoses.length}
+            invalid={invalid.includes("eventUuid")}
+            invalidText={t(
+              "requiredSelection",
+              "Select a valid value to continue.",
             )}
+            onChange={(event) => onDiagnosisChange(event.target.value)}
+          >
+            <SelectItem value="" text={t("selectOption", "Select an option")} />
+            {diagnosisOptions.map((item) => (
+              <SelectItem
+                key={item.uuid}
+                value={item.uuid}
+                text={item.label}
+              />
+            ))}
+          </Select>
+          {!encounterDiagnoses.length && (
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title={t("noDiagnosesInEncounterTitle", "Atención sin diagnósticos")}
+              subtitle={t(
+                "noDiagnosesInEncounter",
+                "La atención seleccionada no tiene diagnósticos asociados para vigilancia epidemiológica.",
+              )}
+            />
+          )}
           {select(
             "origin",
             m.origins.map((item) => ({ value: item.key, text: item.label })),
@@ -481,23 +573,53 @@ export function CaseForm({
                 (item) => !!obs && hasConcept(obs, item.resultConceptUuid),
               );
               const codes = obs ? valueConcepts(obs) : [];
-              const status = test?.positiveAnswerUuids.some((code) =>
-                codes.includes(code),
-              )
-                ? "CONFIRMED"
-                : test?.negativeAnswerUuids.some((code) => codes.includes(code))
-                  ? "DISCARDED"
-                  : "";
+              let nextStatus = "SUSPECTED";
+              if (obs && test) {
+                if (
+                  test.positiveAnswerUuids.some((code) => codes.includes(code))
+                ) {
+                  nextStatus = "CONFIRMED";
+                } else if (
+                  test.negativeAnswerUuids.some((code) => codes.includes(code))
+                ) {
+                  nextStatus = "DISCARDED";
+                }
+              }
               setRequest((current) => ({
                 ...current,
                 laboratoryResultUuid: value,
-                status,
+                status: nextStatus,
               }));
             },
           )}
           {select(
             "status",
-            m.statuses.map((item) => ({ value: item.key, text: item.label })),
+            request.laboratoryResultUuid
+              ? request.status === "CONFIRMED"
+                ? [
+                    {
+                      value: "CONFIRMED",
+                      text:
+                        m.statuses.find((s) => s.key === "CONFIRMED")?.label ??
+                        "Confirmado",
+                    },
+                  ]
+                : [
+                    {
+                      value: "DISCARDED",
+                      text:
+                        m.statuses.find((s) => s.key === "DISCARDED")?.label ??
+                        "Descartado",
+                    },
+                  ]
+              : [
+                  {
+                    value: "SUSPECTED",
+                    text:
+                      m.statuses.find((s) => s.key === "SUSPECTED")?.label ??
+                      "Sospechoso",
+                  },
+                ],
           )}
         </>
       )}
@@ -508,22 +630,38 @@ export function CaseForm({
             {patient ? patientName(patient) : ""} · {event?.name}
           </p>
           <dl>
-            {(["onsetDate", "status", "severity", "species", "origin"] as const)
+            {(["onsetDate", "status", "origin"] as const)
               .filter((key) => request[key])
               .map((key) => (
                 <div key={key}>
                   <dt>{t(`fields.${key}`)}</dt>
                   <dd>
-                    {[
-                      ...m.statuses,
-                      ...m.origins,
-                      ...(disease?.severities ?? []),
-                      ...(disease?.species ?? []),
-                    ].find((item) => item.key === request[key])?.label ??
-                      request[key]}
+                    {[...m.statuses, ...m.origins].find(
+                      (item) => item.key === request[key],
+                    )?.label ?? request[key]}
                   </dd>
                 </div>
               ))}
+            {request.severity && (
+              <div>
+                <dt>{t("fields.severity")}</dt>
+                <dd>
+                  {disease?.severities.find(
+                    (item) => item.key === request.severity,
+                  )?.label ?? request.severity}
+                </dd>
+              </div>
+            )}
+            {request.species && (
+              <div>
+                <dt>{t("fields.species")}</dt>
+                <dd>
+                  {disease?.species.find(
+                    (item) => item.key === request.species,
+                  )?.label ?? request.species}
+                </dd>
+              </div>
+            )}
           </dl>
           <p>
             {t(

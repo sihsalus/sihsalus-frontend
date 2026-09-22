@@ -21,12 +21,11 @@ export interface Disease {
     negativeAnswerUuids: string[];
   }[];
 }
-export interface Metadata {
+export interface ClinicalCatalog {
   version: number;
-  encounterTypeUuid: string;
   encounterRoleUuid: string;
-  trueConceptUuid: string;
-  falseConceptUuid: string;
+  trueConceptUuid: string | null;
+  falseConceptUuid: string | null;
   surveillanceStartDate: string;
   timezone: string;
   questions: Record<string, string>;
@@ -38,11 +37,17 @@ export interface SurveillanceEvent {
   uuid: string;
   name: string;
   conceptUuid: string;
+  conceptDisplay?: string;
   periodicity: string;
   deadlineDays: number;
+  retired?: boolean;
+}
+export interface EncounterDiagnosis {
+  uuid: string;
+  display: string;
 }
 export interface Catalogue {
-  metadata: Metadata;
+  catalog: ClinicalCatalog;
   events: SurveillanceEvent[];
 }
 export interface CaseRequest {
@@ -102,7 +107,7 @@ export interface FhirResource {
   resourceType: string;
   id: string;
   name?: { text?: string; given?: string[]; family?: string }[];
-  identifier?: { value?: string }[];
+  identifier?: { value?: string; type?: { text?: string } }[];
   birthDate?: string;
   gender?: string;
   deceasedBoolean?: boolean;

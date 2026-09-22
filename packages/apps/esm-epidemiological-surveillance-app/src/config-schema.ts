@@ -11,7 +11,7 @@ export const configSchema = {
     _description: "Initial date range for the epidemiological dashboard.",
   },
 };
-/** Clinical UUIDs come from the verified OMOD metadata catalogue, never from component constants. */
+/** Clinical UUIDs come from the verified OMOD catalog catalogue, never from component constants. */
 export interface Config {
   defaultReportPeriod: string;
   reportLookbackDays: number;

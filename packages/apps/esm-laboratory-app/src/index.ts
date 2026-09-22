@@ -24,6 +24,14 @@ export const laboratoryDashboardLink = getSyncLifecycle(
 );
 
 // Modals
+export const editLabResultsModal = getAsyncLifecycle(
+  () => import('./lab-tabs/modals/edit-lab-results-modal.component'),
+  options,
+);
+export const printLabResultsModal = getAsyncLifecycle(
+  () => import('./lab-tabs/modals/print-lab-results-modal.component'),
+  options,
+);
 
 export const pickupLabRequestModal = getAsyncLifecycle(
   () => import('./lab-tabs/modals/pickup-lab-request-modal.component'),

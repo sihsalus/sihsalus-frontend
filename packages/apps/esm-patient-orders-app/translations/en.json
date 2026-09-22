@@ -153,5 +153,7 @@
   "trySearchingAgain": "Please try searching again",
   "tryTo": "Try to",
   "updated": "Updated",
-  "usingADifferentTerm": "using a different term"
+  "usingADifferentTerm": "using a different term",
+  "labResultsUnavailable": "The test or saved result could not be loaded. No changes can be saved.",
+  "retry": "Retry"
 }

@@ -42,7 +42,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import { type Config } from '../../config-schema';
-import { laboratoryEditPrivilege } from '../../constants';
+import { editLabResultsModalName, printLabResultsModalName, laboratoryEditPrivilege } from '../../constants';
 import { fetchConfiguredLabsets, type LabsetMember, type LabsetResponse } from '../../labsets.resource';
 import { useLabOrders } from '../../laboratory.resource';
 import { type FlattenedOrder, type FulfillerStatus, type Order } from '../../types';
@@ -550,7 +550,8 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
 
   const handlePrintModal = useCallback((orders: Array<Order>) => {
     const completedOrders = orders.filter((order) => order.fulfillerStatus === 'COMPLETED');
-    const dispose = showModal('print-lab-results-modal', {
+    const dispose = showModal(printLabResultsModalName, {
+      size: 'lg',
       closeModal: () => dispose(),
       orders: completedOrders,
     });
@@ -558,11 +559,9 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
 
   const handleLaunchModal = useCallback((orders: Array<Order>) => {
     const completedOrders = orders.filter((order) => order.fulfillerStatus === 'COMPLETED');
-    const dispose = showModal('edit-lab-results-modal', {
+    const dispose = showModal(editLabResultsModalName, {
       orders: completedOrders,
       closeModal: () => dispose(),
-      patient: completedOrders[0]?.patient,
-      workspaceName: 'lab-app-test-results-form-workspace',
     });
   }, []);
 

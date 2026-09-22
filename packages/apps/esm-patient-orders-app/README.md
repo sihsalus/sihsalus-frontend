@@ -82,6 +82,13 @@ Se comparan valores numéricos normalizados (incluido cero), UUIDs de respuestas
 codificadas y texto/comentarios sin eliminar espacios significativos. Deshacer una
 edición no debe impedir guardar la única corrección restante del panel.
 
+Si no se puede cargar el concepto o el resultado previo, el formulario bloquea
+el guardado y permite reintentar la lectura. Una orden completada sin observación
+persistida tampoco habilita una corrección vacía; durante la carga inicial no se
+puede guardar.
+Una corrección guardada refresca las órdenes y las representaciones del encuentro
+utilizadas por la bandeja y sus comentarios, además de la observación editada.
+
 La modificación de medicamentos tiene una brecha de composición: `medicamentos.editar` hace visible la acción, pero esta abre `order-basket`, registrado con `ordenes.editar`. Hasta alinear ambos guards, el rol que complete el flujo necesita los dos privilegios; no debe interpretarse la visibilidad del comando como autorización end-to-end.
 
 Los guards de UI no autorizan la mutación en el backend. Los roles todavía necesitan los privilegios OpenMRS de Orders y la visita/encounter válidos para la operación.

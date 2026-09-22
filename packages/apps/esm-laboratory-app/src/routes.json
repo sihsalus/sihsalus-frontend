@@ -233,5 +233,17 @@
       "name": "add-test-order-group",
       "scopePattern": "/home/laboratory"
     }
+  ],
+  "modals": [
+    {
+      "name": "edit-lab-results-modal",
+      "component": "editLabResultsModal",
+      "privileges": "app:home.laboratorio.editar"
+    },
+    {
+      "name": "print-lab-results-modal",
+      "component": "printLabResultsModal",
+      "privileges": "app:home.laboratorio"
+    }
   ]
 }

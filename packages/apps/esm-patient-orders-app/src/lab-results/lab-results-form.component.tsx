@@ -62,11 +62,16 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
   const { t } = useTranslation();
   const abortController = useAbortController();
   const isTablet = useLayoutType() === 'tablet';
-  const { concept, isLoading: isLoadingConcepts } = useOrderConceptByUuid(order.concept.uuid);
+  const {
+    concept,
+    isLoading: isLoadingConcepts,
+    error: conceptError,
+    mutate: reloadConcept,
+  } = useOrderConceptByUuid(order.concept.uuid);
   const [showEmptyFormErrorNotification, setShowEmptyFormErrorNotification] = useState(false);
   const [needsOrderCompletion, setNeedsOrderCompletion] = useState(false);
   const schema = useLabResultsFormSchema(order.concept.uuid);
-  const { completeLabResult, isLoading, mutate: mutateResults } = useCompletedLabResults(order);
+  const { completeLabResult, isLoading, error: resultError, mutate: mutateResults } = useCompletedLabResults(order);
   const invalidateLabOrdersRef = useRef(invalidateLabOrders);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const isCompletionOnly =
@@ -201,6 +206,39 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
     }
 
     return loadingContent;
+  }
+
+  if (
+    conceptError ||
+    resultError ||
+    !concept ||
+    (!isLoading && order.fulfillerStatus === 'COMPLETED' && !completeLabResult?.uuid)
+  ) {
+    const unavailable = (
+      <Stack gap={5}>
+        <InlineNotification
+          kind="error"
+          hideCloseButton
+          title={t('labResultsUnavailable', 'The test or saved result could not be loaded. No changes can be saved.')}
+        />
+        <Button
+          kind="tertiary"
+          onClick={() => {
+            void reloadConcept();
+            void mutateResults();
+          }}
+        >
+          {t('retry', 'Retry')}
+        </Button>
+      </Stack>
+    );
+    return isWorkspace2 ? (
+      <Workspace2 title={t('enterTestResults', 'Enter test results')} hasUnsavedChanges={hasUnsavedChanges}>
+        {unavailable}
+      </Workspace2>
+    ) : (
+      unavailable
+    );
   }
 
   const saveLabResults = async (formValues: Record<string, unknown>) => {
@@ -347,6 +385,15 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
       const [[observationUuid, payload]] = [...updates.entries()];
       try {
         await updateObservation(observationUuid, payload);
+        void mutateOrderData();
+        invalidateLabOrdersRef.current?.();
+        // Result comments in the laboratory list use a different encounter
+        // representation. Refresh all reads of this encounter after correction.
+        void mutate(
+          (key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/encounter/${order.encounter.uuid}?`),
+          undefined,
+          { revalidate: true },
+        );
         closeCurrentWorkspaceWithSavedChanges();
         showNotification(
           'success',
@@ -482,7 +529,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         <Button
           className={styles.button}
           kind="primary"
-          disabled={isSubmitting || Object.keys(errors).length > 0}
+          disabled={isSubmitting || isLoading || Object.keys(errors).length > 0}
           type="submit"
         >
           {isSubmitting ? (

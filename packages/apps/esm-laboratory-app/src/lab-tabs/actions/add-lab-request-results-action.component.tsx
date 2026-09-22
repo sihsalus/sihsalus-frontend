@@ -12,15 +12,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { type Config } from '../../config-schema';
-import { laboratoryEditPrivilege } from '../../constants';
+import { laboratoryEditPrivilege, labResultsWorkspaceName, labResultsAddOrderWorkspaceName } from '../../constants';
 import styles from './actions.scss';
 
 interface AddLabRequestResultsActionProps {
   order: Order;
 }
-
-const labAppTestResultsFormWorkspaceName = 'lab-app-test-results-form-workspace';
-const labAppTestResultsAddLabOrderWorkspaceName = 'lab-app-test-results-add-lab-order-workspace';
 
 const AddLabRequestResultsAction: React.FC<AddLabRequestResultsActionProps> = ({ order }) => {
   const { t } = useTranslation();
@@ -36,12 +33,12 @@ const AddLabRequestResultsAction: React.FC<AddLabRequestResultsActionProps> = ({
 
   const launchTestResultsWorkspace = () => {
     launchWorkspace2(
-      labAppTestResultsFormWorkspaceName,
+      labResultsWorkspaceName,
       {
         patient: order.patient,
         order,
         invalidateLabOrders,
-        labOrderWorkspaceName: labAppTestResultsAddLabOrderWorkspaceName,
+        labOrderWorkspaceName: labResultsAddOrderWorkspaceName,
       },
       {
         patient: order.patient,

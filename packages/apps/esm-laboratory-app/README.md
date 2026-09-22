@@ -14,6 +14,48 @@ Lab technicians can enter test results by expanding an in-progress order and cli
 
 ![Adding lab results](assets/screenshots/labs_enter_results.png)
 
+## Editing and printing saved results
+
+The completed-orders menu opens registered `edit-lab-results-modal` and
+`print-lab-results-modal` destinations. Amendment from the order detail uses the
+same edit selector. Editing requires `app:home.laboratorio.editar`; printing
+requires `app:home.laboratorio`. Backend authorization remains authoritative.
+
+Editing selects one completed or pending-review order, rereads its persisted
+order, encounter and result, and opens the existing v2
+`lab-app-test-results-form-workspace` with that patient's encounter and visit.
+Missing, ambiguous or mismatched results block opening. The shared form retains
+its observation-revision and one-panel-result-per-save rules. A result pending
+order completion stays read-only until that completion succeeds.
+
+Printing rereads only the selected completed orders for one patient, independent
+of patient-chart context. Every selected order must have exactly one active root
+result with matching patient, encounter, order and concept. Nested active panel
+members preserve their recorded values and comments; zero is a result. Missing
+results, read failures and inconsistent associations block the entire report.
+The preview has no write operations and does not print supplemental PDFs or an
+unselected patient's history. It does not assert clinical approval or provide a
+new institutional report template.
+
+Reads use OpenMRS REST `order`, `encounter` and `obs` resources. The `full`
+observation representation supplies nested members and, on Core 2.7+, the saved
+observation reference range. Only saved ranges are printed; a missing range is
+shown as a dash, never replaced by a current catalog range. Units are explicitly
+identified as coming from the test catalog. No content migration is required.
+
+These verification reads request `cache: no-store`; the matching frontend
+worker requires a current server response. A downloaded offline snapshot cannot
+authorize an amendment or establish the current report. Network failures leave
+the existing blocking error state visible. Activate the matching worker and
+refresh existing tabs when releasing this change.
+
+Before rollout, validate in coordinated DEV/QLTY with synthetic patients and
+minimum laboratory roles: single tests, panels, zero/coded/text results,
+reopening after correction, failures/retries, denied access, patient isolation,
+and browser print preview on desktop/tablet. Local component tests do not replace
+that authenticated clinical smoke test. Follow the laboratory E2E README's
+recovery-journal restriction before enabling any remote browser CI.
+
 ## Supplemental PDF documents
 
 Every persisted laboratory order renders `lab-order-pdf-attachments-slot` directly, so existing PDFs remain readable
@@ -36,7 +78,7 @@ The module supports the following configuration options:
 | `labTableColumns`                         | `Array<string>` | `['name', 'age', 'sex', 'totalOrders', 'action']` | Columns to display in the lab table. Allowed values: `name`, `age`, `dob`, `sex`, `totalOrders`, `action`, `patientId` |
 | `patientIdIdentifierTypeUuid`             | `UUID`          | `05a29f94-c0ed-11e2-94be-8c13b969e334`            | Identifier type UUID for the patient ID column. Only needed if `patientId` is included in `labTableColumns`            |
 | `enableReviewingLabResultsBeforeApproval` | `boolean`       | `false`                                           | When enabled, lab results are submitted for review before being approved and finalized                                 |
-| `enableRealtimeLabResultNotifications`    | `boolean`       | `false`                                           | Refresh the dashboard for new laboratory orders and completed results after the compatible OMOD is validated          |
+| `enableRealtimeLabResultNotifications`    | `boolean`       | `false`                                           | Refresh the dashboard for new laboratory orders and completed results after the compatible OMOD is validated           |
 
 ## Realtime laboratory notifications
 

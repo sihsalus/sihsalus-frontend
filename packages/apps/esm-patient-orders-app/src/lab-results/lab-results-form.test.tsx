@@ -1,4 +1,6 @@
 import { type Order } from '@openmrs/esm-patient-common-lib';
+import { restBaseUrl } from '@openmrs/esm-framework';
+import { mutate } from 'swr';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -23,6 +25,8 @@ const mockUseObservation = vi.mocked(useObservation);
 const mockUseCompletedLabResults = vi.mocked(useCompletedLabResults);
 const mockCompleteOrderResult = vi.mocked(completeOrderResult);
 const mockUpdateObservation = vi.mocked(updateObservation);
+
+vi.mock('swr', async (original) => ({ ...(await original()), mutate: vi.fn() }));
 
 vi.mock('./lab-results.resource', async () => ({
   ...(await vi.importActual('./lab-results.resource')),
@@ -101,6 +105,56 @@ describe('LabResultsForm', () => {
       error: null,
       mutate: vi.fn(),
     });
+  });
+
+  test.each([
+    'read error',
+    'missing completed result',
+  ])('blocks editing after %s and allows reloading', async (reason) => {
+    const reload = vi.fn();
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: null,
+      isLoading: false,
+      error: reason === 'read error' ? new Error('private backend detail') : null,
+      mutate: reload,
+    });
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    expect(
+      screen.getByText('The test or saved result could not be loaded. No changes can be saved.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Save and close/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+    expect(screen.queryByText(/private backend detail/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(reload).toHaveBeenCalledOnce();
+    expect(mockUpdateObservation).not.toHaveBeenCalled();
+    expect(updateOrderResult).not.toHaveBeenCalled();
+  });
+
+  test('blocks the form without crashing when the concept cannot be loaded', () => {
+    mockUseOrderConceptByUuid.mockReturnValue({
+      concept: undefined,
+      error: new Error('private detail'),
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    render(<LabResultsForm {...testProps} />);
+    expect(
+      screen.getByText('The test or saved result could not be loaded. No changes can be saved.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Save and close/i })).not.toBeInTheDocument();
+  });
+
+  test('disables saving while the original result is loading', () => {
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: null,
+      isLoading: true,
+      error: null,
+      mutate: vi.fn(),
+    });
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    expect(screen.getByRole('button', { name: /Save and close/i })).toBeDisabled();
   });
 
   test('validates numeric input correctly', async () => {
@@ -764,6 +818,7 @@ describe('LabResultsForm', () => {
 
   test('updates one completed panel member with one observation request', async () => {
     const user = userEvent.setup();
+    const invalidateLabOrders = vi.fn();
     mockUseOrderConceptByUuid.mockReturnValue({
       concept: {
         uuid: 'concept-uuid',
@@ -802,7 +857,13 @@ describe('LabResultsForm', () => {
       mutate: vi.fn(),
     });
 
-    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    render(
+      <LabResultsForm
+        {...testProps}
+        invalidateLabOrders={invalidateLabOrders}
+        order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order}
+      />,
+    );
     const input = screen.getByLabelText(/Hemoglobina sintética/i);
     await waitFor(() => expect(input).toHaveValue(11));
     await user.clear(input);
@@ -816,6 +877,13 @@ describe('LabResultsForm', () => {
       ),
     );
     expect(mockUpdateObservation).toHaveBeenCalledOnce();
+    expect(invalidateLabOrders).toHaveBeenCalledOnce();
+    const encounterFilter = vi.mocked(mutate).mock.calls.at(-1)[0];
+    expect(typeof encounterFilter).toBe('function');
+    if (typeof encounterFilter === 'function') {
+      expect(encounterFilter(`${restBaseUrl}/encounter/encounter-uuid?v=comments`)).toBe(true);
+      expect(encounterFilter(`${restBaseUrl}/encounter/other-encounter?v=comments`)).toBe(false);
+    }
   });
 
   test('fails closed before writing when more than one completed panel member changed', async () => {

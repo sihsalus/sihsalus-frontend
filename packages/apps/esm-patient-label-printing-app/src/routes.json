@@ -3,6 +3,13 @@
   "backendDependencies": {
     "patientdocuments": "^1.0.0-SNAPSHOT"
   },
+  "modals": [
+    {
+      "name": "print-patient-identity-modal",
+      "component": "printPatientIdentityModal",
+      "privileges": ["App: Can generate a Patient Identity Sticker", "Get Patients"]
+    }
+  ],
   "extensions": [
     {
       "name": "print-identifier-sticker-button",

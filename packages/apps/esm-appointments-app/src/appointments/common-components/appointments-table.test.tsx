@@ -13,7 +13,12 @@ import { useSWRConfig } from 'swr';
 import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { appointmentsEditPrivileges, clinicalChartPrivilege } from '../../constants';
+import {
+  appointmentsEditPrivileges,
+  clinicalChartPrivilege,
+  patientIdentityPrintPrivilege,
+  patientIdentityPrintModal,
+} from '../../constants';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, type AppointmentKind, AppointmentStatus } from '../../types';
@@ -118,7 +123,9 @@ describe('AppointmentsTable', () => {
       isLoading: false,
       error: null,
     });
-    mockUserHasAccess.mockReturnValue(true);
+    mockUserHasAccess.mockImplementation(
+      (required) => !(Array.isArray(required) ? required : [required]).includes(patientIdentityPrintPrivilege),
+    );
     mockUseTodaysVisits.mockReturnValue({
       visits: [],
       error: null,
@@ -621,7 +628,11 @@ describe('AppointmentsTable', () => {
   });
 
   it('hides batch selection and row actions without the edit privilege', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege !== appointmentsEditPrivileges);
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        privilege !== appointmentsEditPrivileges &&
+        !(Array.isArray(privilege) ? privilege : [privilege]).includes(patientIdentityPrintPrivilege),
+    );
     const pastAppointment = {
       ...mockAppointments[0],
       startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),
@@ -636,6 +647,23 @@ describe('AppointmentsTable', () => {
 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /acciones para/i })).not.toBeInTheDocument();
+  });
+  it('prints the selected row with read access and backend privileges without enabling edits or batch changes', async () => {
+    const granted = new Set(['app:home.citas', patientIdentityPrintPrivilege, 'Get Patients']);
+    mockUserHasAccess.mockImplementation((required) =>
+      (Array.isArray(required) ? required : [required]).every((p) => granted.has(p)),
+    );
+    const selected = { ...mockAppointments[0], status: AppointmentStatus.COMPLETED };
+    renderAppointmentsTable({ appointments: [selected], appointmentStatus: AppointmentStatus.COMPLETED });
+    await userEvent.click(screen.getByRole('button', { name: /acciones para/i }));
+    await userEvent.click(screen.getByText('Print patient identification'));
+    expect(mockShowModal).toHaveBeenCalledWith(patientIdentityPrintModal, {
+      patientUuid: selected.patient.uuid,
+      context: 'appointments',
+      closeModal: expect.any(Function),
+    });
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
   });
 });
 

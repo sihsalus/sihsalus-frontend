@@ -367,5 +367,6 @@
   "waitList": "Wait list",
   "walkIn": "Walk-in",
   "week": "Week",
-  "yes": "Yes"
+  "yes": "Yes",
+  "printPatientIdentification": "Print patient identification"
 }

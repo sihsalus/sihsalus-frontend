@@ -62,6 +62,27 @@ El frontend reconoce los identificadores heredados equivalentes `app:appointment
 
 Los guards de UI controlan visibilidad y acceso a rutas, modales y workspaces. No sustituyen la autorización del backend: los roles OpenMRS todavía deben incluir los permisos REST necesarios para leer o modificar citas, consultas, colas y personas.
 
+## Impresión desde una cita
+
+La tabla de agenda y el menú de citas de la hoja clínica ofrecen **Imprimir datos
+de identificación** para el paciente de la fila seleccionada. La acción requiere
+lectura de citas en su contexto, `Get Patients` y el privilegio existente
+`App: Can generate a Patient Identity Sticker`; no requiere editar la cita ni
+cambia su estado. También está disponible en citas finalizadas o canceladas.
+Si el paciente del menú no coincide con el de la cita, no se habilita impresión.
+
+El modal `print-patient-identity-modal` pertenece al módulo existente
+`esm-patient-label-printing-app` y usa el PDF de `patientdocuments` ya incluido
+en la distribución. No añade otra plantilla ni otro OMOD. La opción de mostrar
+el botón del banner del paciente sigue siendo independiente. El modal vuelve a
+comprobar privilegios y paciente antes de solicitar el PDF; los errores de
+acceso, carga o impresión permiten reintentar sin modificar datos.
+
+La aceptación requiere comprobar ambos menús con un perfil de prueba autorizado
+y uno sin acceso, el documento del paciente sintético correcto, su formato y el
+diálogo de impresión en el navegador del hospital. Las pruebas locales no
+certifican el OMOD instalado ni la salida física de la impresora.
+
 ## Configuración operativa
 
 - La llegada con un financiador no SIS exige que Admisión confirme manualmente haber revisado el comprobante de Caja. La confirmación no acredita SIS ni ejecuta un cobro. El atributo `arrivalPaymentVisitAttributeTypeUuid` guarda JSON versión 1 con `confirmed`, `financingUuid`, `appointmentUuid`, `confirmedBy` y `confirmedAt`. En visitas nuevas se incluye en el mismo payload; en consultas activas se guarda y relee antes de autorizar el ingreso a cola o la llegada directa. Si cambia el financiador o falla el guardado, se bloquea la continuación. SIS conserva la verificación de cobertura existente.

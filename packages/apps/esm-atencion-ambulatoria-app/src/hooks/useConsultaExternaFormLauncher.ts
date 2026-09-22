@@ -66,7 +66,7 @@ function hasUsableFormState(form: OpenmrsFormReference): boolean {
   return Boolean(form.uuid && form.retired === false && form.published === true);
 }
 
-async function resolvePublishedForm(
+export async function resolvePublishedForm(
   formIdentifier: string,
   expectedEncounterTypeUuid: string,
 ): Promise<OpenmrsFormReference> {

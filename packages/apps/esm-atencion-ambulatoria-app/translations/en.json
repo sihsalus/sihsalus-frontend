@@ -22,6 +22,10 @@
   "airTransport": "Air",
   "alcoholUse": "Alcohol Use",
   "alcoholUseDuration": "Alcohol Use Duration",
+  "dailyCigaretteUse": "Cigarettes per day",
+  "smokingDurationYears": "Smoking duration (years)",
+  "tobaccoUseStatus": "Tobacco use status",
+  "socialHistoryFormUnavailable": "The social history form could not be verified. Try again or contact your system administrator.",
   "all": "All",
   "ambulatoryVisitRequired": "An active Outpatient Care visit is required to record this information.",
   "anamnesis": "Anamnesis",
@@ -548,5 +552,9 @@
   "visitType": "Visit type",
   "vitalSigns": "Vital signs and anthropometry",
   "weight": "Weight",
-  "yes": "Yes"
+  "yes": "Yes",
+  "previousSocialHistory": "Previous social history records",
+  "tobaccoUse": "Tobacco use",
+  "recordSocialHistory": "Record social history",
+  "socialHistoryLoadError": "Social history could not be loaded. Reload and try again."
 }

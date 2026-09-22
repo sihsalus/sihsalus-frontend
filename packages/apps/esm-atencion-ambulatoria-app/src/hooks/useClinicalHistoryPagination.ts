@@ -31,6 +31,8 @@ interface DatedEncounter {
   form?: string | { uuid?: string } | null;
   visit?: string | { uuid?: string; visitType?: string | { uuid?: string } | null } | null;
   uuid?: string;
+  patient?: string | { uuid?: string };
+  encounterType?: string | { uuid?: string };
 }
 
 interface OpenmrsEncounterPage<T> {
@@ -42,6 +44,9 @@ export interface ClinicalHistorySource {
   url: string;
   /** Restricts a generic encounter type to the form that owns this history. */
   expectedFormUuid?: string;
+  /** Verify server-side identity filters before displaying any clinical data. */
+  expectedPatientUuid?: string;
+  expectedEncounterTypeUuid?: string;
   /** Restricts a generic encounter/form pair to the clinical visit context it belongs to. */
   expectedVisitTypeUuid?: string;
 }
@@ -100,7 +105,22 @@ export async function fetchClinicalHistorySource<T extends DatedEncounter>(
     const response = await openmrsFetch<OpenmrsEncounterPage<T>>(getPaginatedSourceUrl(source.url, receivedCount), {
       signal,
     });
-    const results = response?.data?.results ?? [];
+    const results = response?.data?.results;
+    if (!Array.isArray(results)) throw new Error('invalid-clinical-history');
+    if (
+      results.some(
+        (encounter) =>
+          !encounter ||
+          (source.expectedPatientUuid &&
+            (typeof encounter.patient === 'object' ? encounter.patient?.uuid : encounter.patient) !==
+              source.expectedPatientUuid) ||
+          (source.expectedEncounterTypeUuid &&
+            (typeof encounter.encounterType === 'object' ? encounter.encounterType?.uuid : encounter.encounterType) !==
+              source.expectedEncounterTypeUuid),
+      )
+    ) {
+      throw new Error('invalid-clinical-history-identity');
+    }
     receivedCount += results.length;
 
     encounters.push(...results.filter((encounter) => isRelevantToSource(encounter, source)));
@@ -119,7 +139,6 @@ export async function fetchClinicalHistorySource<T extends DatedEncounter>(
 
   console.warn(
     `Clinical history crawl stopped at the ${CLINICAL_HISTORY_MAX_SOURCE_PAGES}-page cap; results may be incomplete.`,
-    source.url,
   );
   return { encounters, truncated: true };
 }
@@ -152,7 +171,7 @@ export async function fetchClinicalHistorySources<T extends DatedEncounter>(
   }
 
   if (sourceErrors.length) {
-    console.warn('Some clinical history sources could not be loaded; showing partial history.', sourceErrors);
+    console.warn('Some clinical history sources could not be loaded; showing partial history.');
   }
 
   const byUuid = new Map<string, T>();

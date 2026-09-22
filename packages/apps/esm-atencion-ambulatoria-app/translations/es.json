@@ -22,6 +22,10 @@
   "airTransport": "Aéreo",
   "alcoholUse": "Uso de alcohol",
   "alcoholUseDuration": "Duración del consumo de alcohol",
+  "dailyCigaretteUse": "Cigarrillos por día",
+  "smokingDurationYears": "Duración del tabaquismo (años)",
+  "tobaccoUseStatus": "Estado de consumo de tabaco",
+  "socialHistoryFormUnavailable": "No se pudo verificar el formulario de historia social. Intente nuevamente o contacte al administrador del sistema.",
   "all": "Todos",
   "ambulatoryVisitRequired": "Se requiere una visita de Atención Ambulatoria activa para registrar esta información.",
   "anamnesis": "Anamnesis",
@@ -548,5 +552,9 @@
   "visitType": "Tipo de visita",
   "vitalSigns": "Signos vitales y antropometría",
   "weight": "Peso",
-  "yes": "Sí"
+  "yes": "Sí",
+  "previousSocialHistory": "Registros anteriores de historia social",
+  "tobaccoUse": "Consumo de tabaco",
+  "recordSocialHistory": "Registrar historia social",
+  "socialHistoryLoadError": "No se pudo cargar la historia social. Recargue e inténtelo nuevamente."
 }

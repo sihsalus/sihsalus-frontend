@@ -188,3 +188,37 @@ describe('useMergedClinicalHistoryPagination', () => {
     expect(encounters).toHaveLength(103);
   });
 });
+
+describe('clinical history identity verification', () => {
+  const source = {
+    url: '/encounter',
+    expectedPatientUuid: 'synthetic-patient',
+    expectedEncounterTypeUuid: 'social-type',
+    expectedFormUuid: 'social-form',
+  };
+  it.each([
+    undefined,
+    {},
+    { results: null },
+    { results: 'invalid' },
+    { results: [{ patient: { uuid: 'other-patient' }, encounterType: { uuid: 'social-type' } }] },
+    { results: [{ patient: { uuid: 'synthetic-patient' }, encounterType: { uuid: 'therapy-type' } }] },
+  ])('rejects malformed data or clinical identity mismatches: %j', async (data) => {
+    mockOpenmrsFetch.mockReset().mockResolvedValueOnce({ data } as never);
+    await expect(fetchClinicalHistorySource(source)).rejects.toThrow();
+  });
+  it('filters forms without mixing unrelated encounters', async () => {
+    const common = {
+      patient: { uuid: 'synthetic-patient' },
+      encounterType: { uuid: 'social-type' },
+      encounterDatetime: '2026-09-21T10:00:00Z',
+    };
+    const matching = { ...common, uuid: 'matching', form: { uuid: 'social-form' } };
+    mockOpenmrsFetch
+      .mockReset()
+      .mockResolvedValueOnce({
+        data: { results: [matching, { ...common, uuid: 'other', form: { uuid: 'other-form' } }], totalCount: 2 },
+      } as never);
+    expect((await fetchClinicalHistorySource(source)).encounters).toEqual([matching]);
+  });
+});

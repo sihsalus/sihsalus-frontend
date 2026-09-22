@@ -10,6 +10,7 @@ import useProcessorDependencies from '../../hooks/useProcessorDependencies';
 import { registerFormFieldAdaptersForCleanUp } from '../../lifecycle';
 import { EncounterFormProcessor } from '../../processors/encounter/encounter-form-processor';
 import { type FormProcessor, type FormProcessorConstructor } from '../../processors/form-processor';
+import { PreviewFormProcessor } from '../../processors/preview-form-processor';
 import { useFormFactory } from '../../provider/form-factory-provider';
 import { type FormProcessorContextProps, type FormSchema } from '../../types';
 import { reportError } from '../../utils/error-utils';
@@ -31,6 +32,7 @@ const FormProcessorFactory = ({
   onDependencyError,
 }: FormProcessorFactoryProps): React.JSX.Element => {
   const {
+    isPreview,
     patient,
     sessionMode,
     formProcessors,
@@ -46,7 +48,9 @@ const FormProcessorFactory = ({
   const processor = useMemo<FormProcessor>(() => {
     const ProcessorClass: FormProcessorConstructor | undefined = formProcessors[formJson.processor];
     let processorInstance: FormProcessor;
-    if (ProcessorClass) {
+    if (isPreview) {
+      processorInstance = new PreviewFormProcessor(formJson);
+    } else if (ProcessorClass) {
       processorInstance = new ProcessorClass(formJson);
     } else {
       console.error(`Form processor ${formJson.processor} not found, defaulting to EncounterFormProcessor`);
@@ -54,9 +58,10 @@ const FormProcessorFactory = ({
     }
     processorInstance.prepareFormSchema(formJson);
     return processorInstance;
-  }, [formJson, formProcessors]);
+  }, [formJson, formProcessors, isPreview]);
 
   const [processorContext, setProcessorContext] = useState<FormProcessorContextProps>({
+    isPreview,
     patient,
     formJson,
     sessionMode,
@@ -76,7 +81,7 @@ const FormProcessorFactory = ({
   const { formFields: rawFormFields, conceptReferences } = useFormFields(formJson);
   const { concepts: formFieldsConcepts, isLoading: isLoadingConcepts } = useConcepts(Array.from(conceptReferences));
   const formFieldsWithMeta = useFormFieldsMeta(rawFormFields, formFieldsConcepts);
-  const formFieldAdapters = useFormFieldValueAdapters(rawFormFields);
+  const formFieldAdapters = useFormFieldValueAdapters(rawFormFields, isPreview);
   const formFieldValidators = useFormFieldValidators(rawFormFields);
   const { isLoading: isLoadingCustomDeps } = useProcessorDependencies(processor, processorContext, setProcessorContext);
   const { useCustomHooks } = processor.getCustomHooks();
@@ -86,7 +91,14 @@ const FormProcessorFactory = ({
     isLoadingInitialValues,
     initialValues,
     error: initialValuesError,
-  } = useInitialValues(processor, isLoadingCustomDeps || isLoadingCustomHooks || isLoadingConcepts, processorContext);
+  } = useInitialValues(
+    processor,
+    isLoadingCustomDeps ||
+      isLoadingCustomHooks ||
+      isLoadingConcepts ||
+      processorContext.formFields !== formFieldsWithMeta,
+    processorContext,
+  );
 
   useEffect(() => {
     const isLoading = isLoadingCustomDeps || isLoadingCustomHooks || isLoadingConcepts || isLoadingInitialValues;
@@ -105,13 +117,9 @@ const FormProcessorFactory = ({
       ...prev,
       ...(formFieldAdapters && { formFieldAdapters }),
       ...(formFieldValidators && { formFieldValidators }),
-      ...(formFieldsWithMeta?.length
-        ? { formFields: formFieldsWithMeta }
-        : rawFormFields?.length
-          ? { formFields: rawFormFields }
-          : {}),
+      formFields: formFieldsWithMeta,
     }));
-  }, [formFieldAdapters, formFieldValidators, rawFormFields, formFieldsWithMeta]);
+  }, [formFieldAdapters, formFieldValidators, formFieldsWithMeta]);
 
   useEffect(() => {
     setProcessorContext((prev) => ({
@@ -126,10 +134,10 @@ const FormProcessorFactory = ({
   }, [initialValuesError, t]);
 
   useEffect(() => {
-    if (formFieldAdapters) {
+    if (formFieldAdapters && !isPreview) {
       registerFormFieldAdaptersForCleanUp(formFieldAdapters);
     }
-  }, [formFieldAdapters]);
+  }, [formFieldAdapters, isPreview]);
 
   return (
     <>
@@ -142,7 +150,7 @@ const FormProcessorFactory = ({
           onError={onDependencyError}
         />
       )}
-      {isLoadingProcessorDependencies && !isSubForm ? (
+      {isLoadingProcessorDependencies && (!isSubForm || isPreview) ? (
         <Loader />
       ) : (
         <FormRenderer

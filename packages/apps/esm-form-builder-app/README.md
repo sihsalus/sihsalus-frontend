@@ -6,10 +6,35 @@
 
 The Form Builder is a widget used to create OpenMRS form schemas. It enables users to both create new schemas and edit existing ones. It provides an embedded code editor that accepts JSON code. It also provides an interactive editor where users can construct a schema interactively without writing code.
 
+## Schema preview
+
+The Preview tab uses `FormPreview` from the shared form engine library. It renders
+sample values with the same field controls as clinical forms, without requiring a
+patient or an active encounter. Previewing, typing, or submitting the preview's
+HTML form does not save clinical data or publish the edited schema. Saving and
+publishing remain separate editor actions with their existing permissions.
+
+A schema change recreates the preview, including when its UUID is unchanged, and
+clears sample values. Invalid schemas show a recoverable message pointing to the
+Validation tab. Empty schemas finish loading. Draft translations are scoped to the
+preview and cannot replace labels in an open clinical form.
+
+Concepts, referenced forms, and built-in metadata selectors still require their
+existing read endpoints and permissions. Workspace launchers, file uploads,
+custom controls and custom datasources show an unavailable notice: they depend
+on clinical context or external behavior that a schema preview does not provide.
+No synthetic patient is persisted or fetched to make these actions work.
+
+Regression coverage: `yarn workspace @sihsalus/esm-form-builder-app test
+src/components/form-renderer/form-renderer.test.tsx` exercises the real shared
+renderer with synthetic schemas and mocked infrastructure. QLTY acceptance must
+also open an existing test form, edit its draft, refresh the preview, and verify
+that the published schema is unchanged until an authorized save/publish action.
+
 ## Form Builder User Guide
 
-* See the thorough User Guide for the Form Builder here: <https://ampath-forms.vercel.app/docs/quickstart>
-* Prerequisites & dependencies are covered here: <https://ampath-forms.vercel.app/docs/developer-guide/run-form-engine-in-openmrs3#prerequisites>
+- See the thorough User Guide for the Form Builder here: <https://ampath-forms.vercel.app/docs/quickstart>
+- Prerequisites & dependencies are covered here: <https://ampath-forms.vercel.app/docs/developer-guide/run-form-engine-in-openmrs3#prerequisites>
 
 ## Running this code
 
@@ -19,9 +44,9 @@ To set up environment variables for the project, follow these steps:
 
 1. Create a copy of the .env.example file by running the following command:
 
-    ```bash
-    cp example.env .env
-    ```
+   ```bash
+   cp example.env .env
+   ```
 
 2. Open the newly created .env file in the root of the project.
 
@@ -38,8 +63,8 @@ yarn start  # Launches a dev server
 
 Once the dev server launches, log in and select a location. You will get redirected to the home page. Once there, you can either:
 
-* Click the App Switcher icon in the top right corner and then click the `System Administration` link to go the Admin page. Click on the `Form Builder` tile to launch the app.
-* Manually navigate to the `/openmrs/spa/form-builder` URL.
+- Click the App Switcher icon in the top right corner and then click the `System Administration` link to go the Admin page. Click on the `Form Builder` tile to launch the app.
+- Manually navigate to the `/openmrs/spa/form-builder` URL.
 
 ## Running tests
 

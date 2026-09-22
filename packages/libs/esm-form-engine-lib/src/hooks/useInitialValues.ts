@@ -22,8 +22,8 @@ const useInitialValues = (
     if (
       formProcessor &&
       !isLoadingContextDependencies &&
-      context.formFields?.length &&
-      Object.keys(context.formFieldAdapters).length &&
+      Array.isArray(context.formFields) &&
+      (!context.formFields.length || Object.keys(context.formFieldAdapters).length > 0) &&
       !hasLoadedRef.current
     ) {
       hasLoadedRef.current = true;

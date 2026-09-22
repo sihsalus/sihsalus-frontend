@@ -1,3 +1,4 @@
+import type { i18n } from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchClobData, fetchOpenMRSForm } from '../api';
 import { formEngineAppName } from '../globals';
@@ -20,6 +21,7 @@ export function useFormJson(
   encounterUuid: string,
   formSessionIntent: string,
   preFilledQuestions?: PreFilledQuestions,
+  translationInstance: i18n = window.i18next,
 ): {
   formJson: FormSchema | null;
   isLoading: boolean;
@@ -51,8 +53,8 @@ export function useFormJson(
         return;
       }
       if (nextFormJson.translations) {
-        const language = window.i18next.language;
-        window.i18next.addResourceBundle(language, formEngineAppName, nextFormJson.translations, true, true);
+        const language = translationInstance.language;
+        translationInstance.addResourceBundle(language, formEngineAppName, nextFormJson.translations, true, true);
       }
       setLoaded({ session, formJson: nextFormJson, error: undefined });
     };
@@ -93,7 +95,16 @@ export function useFormJson(
     return (): void => {
       disposed = true;
     };
-  }, [argsError, encounterUuid, formSessionIntent, formUuid, preFilledQuestions, rawFormJson, session]);
+  }, [
+    argsError,
+    encounterUuid,
+    formSessionIntent,
+    formUuid,
+    preFilledQuestions,
+    rawFormJson,
+    session,
+    translationInstance,
+  ]);
 
   const current = loaded.session === session && !argsError ? loaded : { formJson: null, error: argsError };
 

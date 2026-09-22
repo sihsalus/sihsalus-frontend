@@ -119,6 +119,8 @@
   "pastMedicationsTableTitle": "Medicamentos Anteriores",
   "patientInstructions": "Instrucciones para el paciente",
   "patientInstructionsPlaceholder": "Instrucciones de dosificación adicionales (p. ej., \"Tomar después de comer\")",
+  "pendingOrdersNavigationTitle": "Órdenes pendientes",
+  "pendingOrdersNavigationError": "No se pudo abrir la canasta de órdenes. Tus órdenes pendientes siguen disponibles desde el acceso a la canasta.",
   "pillDispensedErrorMessage": "La cantidad a dispensar es obligatoria",
   "prescriptionDuration": "Duración del tratamiento",
   "prescriptionRefills": "Número de renovaciones",

@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useConsultaExternaVisitNoteLauncher } from '../hooks/useConsultaExternaVisitNoteLauncher';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
-import { consultaExternaEditPrivilege, orderBasketPrivileges, visitNotesEditPrivilege } from '../utils/constants';
+import { consultaExternaEditPrivilege, prescribingPrivileges, visitNotesEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
@@ -43,8 +43,11 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const session = useSession();
   // Without this check the button would start a real visit and then silently fail
   // to open the (privilege-gated) order basket, leaving a spurious visit behind.
-  const canPrescribe = userHasAccess(orderBasketPrivileges, session?.user);
-  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
+  const canPrescribe = userHasAccess(prescribingPrivileges, session?.user);
+  const launchMedications = useLaunchWorkspaceRequiringVisit<{ returnToOrderBasket: boolean }>(
+    patientUuid,
+    'add-drug-order',
+  );
   const launchVisitNote = useConsultaExternaVisitNoteLauncher({
     patientUuid,
     ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
@@ -96,12 +99,12 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       isValidating={isValidating}
       loadingVariant="accordion"
       onAction={launchVisitNote}
-      onSecondaryAction={canPrescribe ? () => launchOrderBasket() : undefined}
+      onSecondaryAction={canPrescribe ? () => launchMedications({ returnToOrderBasket: true }) : undefined}
       pagination={pagination}
       sourceErrors={sourceErrors}
       secondaryActionIcon={ShoppingCart}
       secondaryActionLabel={canPrescribe ? t('prescribeInOrderBasket', 'Prescribir medicamentos') : undefined}
-      secondaryActionPrivilege={orderBasketPrivileges}
+      secondaryActionPrivilege={prescribingPrivileges}
     >
       <Accordion>
         {treatmentPlans.map((plan) => (

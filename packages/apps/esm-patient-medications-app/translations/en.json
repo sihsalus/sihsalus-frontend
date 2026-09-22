@@ -119,6 +119,8 @@
   "pastMedicationsTableTitle": "Past Medications",
   "patientInstructions": "Patient instructions",
   "patientInstructionsPlaceholder": "Additional dosing instructions (e.g. \"Take after eating\")",
+  "pendingOrdersNavigationTitle": "Pending orders",
+  "pendingOrdersNavigationError": "The order basket could not be opened. Your pending orders remain available from the order basket action.",
   "pillDispensedErrorMessage": "Quantity to dispense is required",
   "prescriptionDuration": "Treatment duration",
   "prescriptionRefills": "Number of refills",

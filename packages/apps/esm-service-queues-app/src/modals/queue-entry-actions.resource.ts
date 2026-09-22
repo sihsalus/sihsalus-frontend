@@ -81,6 +81,7 @@ export function fetchQueueEntry(
 ): Promise<FetchResponse<QueueEntry>> {
   const representation = encodeURIComponent(queueEntryCustomRepresentation);
   return openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}?v=${representation}`, {
+    cache: 'no-store',
     signal: abortController?.signal,
   });
 }
@@ -169,7 +170,7 @@ async function findDirectTransitionSuccessor(
     });
     const response = await openmrsFetch<QueueEntrySearchResponse>(
       `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
-      { signal: abortController?.signal },
+      { cache: 'no-store', signal: abortController?.signal },
     );
     const page = response.data?.results ?? [];
     const successor = page.find((candidate) => isPossibleDirectTransitionSuccessor(candidate, source));
@@ -233,7 +234,7 @@ async function reconcileTransition(
     });
     const response = await openmrsFetch<QueueEntrySearchResponse>(
       `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
-      { signal: abortController?.signal },
+      { cache: 'no-store', signal: abortController?.signal },
     );
     const page = response.data?.results ?? [];
     const matchingEntry = page.find((candidate) => queueEntryMatchesTransition(candidate, source, params));

@@ -1,4 +1,10 @@
-import { type DrugOrderBasketItem, type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
+import { launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import {
+  type DrugOrderBasketItem,
+  getPatientChartStore,
+  type PatientWorkspace2DefinitionProps,
+} from '@openmrs/esm-patient-common-lib';
+import { useTranslation } from 'react-i18next';
 import AddDrugOrder from './add-drug-order.component';
 
 export interface AddDrugOrderWorkspaceProps {
@@ -13,6 +19,9 @@ export interface AddDrugOrderWorkspaceProps {
    * This field should only be supplied for an existing order saved to the backend
    */
   orderToEditOrdererUuid?: string;
+
+  /** Direct prescribing entry returns to the shared basket to review and sign pending orders. */
+  returnToOrderBasket?: boolean;
 }
 
 /**
@@ -29,10 +38,41 @@ export interface AddDrugOrderWorkspaceProps {
  * @see exported-add-drug-order.workspace.tsx
  */
 export default function AddDrugOrderWorkspace({
-  workspaceProps: { order, orderToEditOrdererUuid },
-  groupProps: { patient, patientUuid, visitContext },
+  workspaceProps: { order, orderToEditOrdererUuid, returnToOrderBasket },
+  groupProps,
+  windowProps,
+  isRootWorkspace,
   closeWorkspace,
 }: PatientWorkspace2DefinitionProps<AddDrugOrderWorkspaceProps, { encounterUuid?: string }>) {
+  const { patient, patientUuid, visitContext } = groupProps;
+  const { t } = useTranslation();
+  const closeAndReturn: typeof closeWorkspace = async (options) => {
+    const closed = await closeWorkspace(options);
+    const current = getPatientChartStore().getState();
+    if (
+      closed &&
+      returnToOrderBasket &&
+      isRootWorkspace &&
+      current.patientUuid === patientUuid &&
+      current.visitContext?.uuid === visitContext?.uuid
+    ) {
+      try {
+        if (!(await launchWorkspace2('order-basket', null, windowProps, groupProps))) {
+          throw new Error('Order basket unavailable');
+        }
+      } catch {
+        showSnackbar({
+          kind: 'error',
+          title: t('pendingOrdersNavigationTitle', 'Pending orders'),
+          subtitle: t(
+            'pendingOrdersNavigationError',
+            'The order basket could not be opened. Your pending orders remain available from the order basket action.',
+          ),
+        });
+      }
+    }
+    return closed;
+  };
   return (
     <AddDrugOrder
       key={JSON.stringify([
@@ -47,7 +87,7 @@ export default function AddDrugOrderWorkspace({
       patient={patient}
       patientUuid={patientUuid}
       visitContext={visitContext}
-      closeWorkspace={closeWorkspace}
+      closeWorkspace={closeAndReturn}
       trackPatientChartContext
     />
   );

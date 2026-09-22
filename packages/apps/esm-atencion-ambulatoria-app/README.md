@@ -6,17 +6,17 @@ Microfrontend de atención ambulatoria y consulta externa para SIH Salus, una di
 
 Los permisos de lectura protegen los puntos de entrada y mantienen visibles los datos clínicos. Los permisos de edición ocultan las acciones de registro o modificación cuando el usuario solo puede consultar.
 
-| Superficie                                   | Lectura / entrada                                                   | Modificación                                                                          |
-| -------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Consulta externa e historia médica           | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar`                                             |
-| Formularios AMPATH de Consulta Externa       | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.formulariosClinicos`    |
-| Hoja de Referencia Institucional nativa      | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar`                                             |
-| Diagnóstico/plan desde Consulta Externa      | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta.editar` |
-| Pruebas complementarias                      | `app:hoja.clinica.consultaExterna` + `app:hoja.clinica.resultados`  | Solo lectura; las órdenes conservan sus propios permisos                              |
-| Antecedentes y problemas en Consulta Externa | `app:hoja.clinica.consultaExterna` + `app:hoja.clinica.condiciones` | `app:hoja.clinica.condiciones.editar`                                                 |
-| Historia social                              | `app:hoja.clinica.historiaSocial`                                   | `app:hoja.clinica.historiaSocial.editar`                                              |
-| Consultas previas desde Consulta Externa     | `app:hoja.clinica.visitas`                                          | Las acciones históricas conservan sus propios permisos                                |
-| Prescripción desde el plan de tratamiento    | Entrada por Consulta Externa                                        | `app:hoja.clinica.canastaOrdenes` + `app:hoja.clinica.ordenes.editar`                 |
+| Superficie                                   | Lectura / entrada                                                   | Modificación                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Consulta externa e historia médica           | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar`                                                                      |
+| Formularios AMPATH de Consulta Externa       | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.formulariosClinicos`                             |
+| Hoja de Referencia Institucional nativa      | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar`                                                                      |
+| Diagnóstico/plan desde Consulta Externa      | `app:hoja.clinica.consultaExterna`                                  | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta.editar`                          |
+| Pruebas complementarias                      | `app:hoja.clinica.consultaExterna` + `app:hoja.clinica.resultados`  | Solo lectura; las órdenes conservan sus propios permisos                                                       |
+| Antecedentes y problemas en Consulta Externa | `app:hoja.clinica.consultaExterna` + `app:hoja.clinica.condiciones` | `app:hoja.clinica.condiciones.editar`                                                                          |
+| Historia social                              | `app:hoja.clinica.historiaSocial`                                   | `app:hoja.clinica.historiaSocial.editar`                                                                       |
+| Consultas previas desde Consulta Externa     | `app:hoja.clinica.visitas`                                          | Las acciones históricas conservan sus propios permisos                                                         |
+| Prescripción desde el plan de tratamiento    | Entrada por Consulta Externa                                        | `app:hoja.clinica.canastaOrdenes` + `app:hoja.clinica.ordenes.editar` + `app:hoja.clinica.medicamentos.editar` |
 
 En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
 
@@ -27,6 +27,14 @@ Las listas y estados vacíos siguen visibles en modo de solo lectura, pero sin b
 La acción **Registrar Diagnóstico** abre el workspace de Visit Notes, que persiste diagnósticos CIE-10 como diagnósticos nativos del encounter. Requiere una visita ambulatoria activa verificada y los dos privilegios de modificación indicados en la tabla. `CE-001-CONSULTA EXTERNA` no debe volver a capturar diagnósticos mediante observaciones.
 
 El historial obtiene el código desde el mapping estructurado CIE-10/ICD-10. Para el catálogo MINSA importado sin mappings, admite el nombre `SHORT` del concepto como código catalogado; no infiere el código desde el texto visible del diagnóstico.
+
+## Acceso directo a prescripción
+
+**Prescribir medicamentos** abre el buscador canónico de medicamentos con el paciente y la visita del chart. Conserva el guard de inicio de visita y exige los tres permisos de la tabla antes de ofrecer la acción. Al añadir la receta a las órdenes pendientes o cancelar el formulario, vuelve a la canasta existente para revisar y firmar; no crea una segunda canasta ni envía la receta automáticamente. La X de la ventana conserva su cierre normal.
+
+Si cambia el paciente o la visita durante el cierre, no reabre el contexto anterior. Una denegación al volver a la canasta muestra un aviso seguro y conserva sus órdenes. Registrar medicación previa continúa siendo un alcance distinto ([#14](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/14)); este acceso inicia una prescripción nueva.
+
+Usa los workspaces existentes de Patient Medications y Patient Orders y los mismos servicios OpenMRS: no requiere un OMOD, endpoint ni concepto nuevo. Validar en QLTY con paciente sintético: visita activa/inexistente, permisos permitidos/denegados, orden pendiente previa, añadir/cancelar y regreso a la canasta sin duplicar.
 
 ## Advertencia de financiamiento SIS (opcional)
 

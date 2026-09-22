@@ -8,6 +8,12 @@ Drug search combines direct OpenMRS `Drug` matches with formulations linked to m
 
 If one search source fails but another returns medications, the UI keeps the usable results and shows a partial-results warning without exposing backend details. Persistence errors are normalized to a safe user-facing message; field validation objects are not written to the browser console.
 
+## Direct prescribing entry
+
+The existing `add-drug-order` workspace accepts `returnToOrderBasket` for the direct outpatient prescribing action. When opened as a root workspace, its form save/cancel returns to the existing `order-basket` after closing is confirmed. Pending orders stay in the shared basket; adding a draft does not sign or submit it. Child workspaces retain their existing parent navigation, and the window header keeps its ordinary close behavior.
+
+A patient or visit change during closing prevents reopening the previous chart context. A refused or failed basket launch reports a safe message and leaves drafts available from the basket action. The caller checks medication editing plus both basket privileges before invoking the visit guard. This reuses the existing OpenMRS order APIs and does not implement medication-history capture.
+
 ## Missing medications and supplies
 
 The search includes **Cannot find a medication or supply?**, an optional,

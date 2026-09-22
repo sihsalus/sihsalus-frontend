@@ -1,6 +1,6 @@
 /* eslint-disable testing-library/no-node-access */
 
-import { ExtensionSlot, showSnackbar, UserHasAccess, useSession } from '@openmrs/esm-framework';
+import { ExtensionSlot, launchWorkspace2, showSnackbar, UserHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   type DrugOrderBasketItem,
   type Order,
@@ -247,6 +247,42 @@ describe('AddDrugOrderWorkspace drug search', () => {
     await user.click(aspirin81OpenFormButton);
 
     expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
+  });
+
+  test('direct prescribing preserves pending medications and lab orders when returning to the basket', async () => {
+    const user = userEvent.setup();
+    mockCloseWorkspace.mockResolvedValueOnce(true);
+    vi.mocked(launchWorkspace2).mockResolvedValueOnce(true);
+    const { result: medications } = renderHook(() =>
+      useOrderBasket<DrugOrderBasketItem>(mockFhirPatient, 'medications', prepareIdentityPostData),
+    );
+    const { result: labs } = renderHook(() =>
+      useOrderBasket<OrderBasketItem>(mockFhirPatient, 'labs', prepareIdentityPostData),
+    );
+    const previousMedication = getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null);
+    const previousLab = { display: 'SYNTHETIC-LAB', orderType: 'SYNTHETIC-LAB-TYPE' } as OrderBasketItem;
+    act(() => {
+      medications.current.setOrders([previousMedication]);
+      labs.current.setOrders([previousLab]);
+    });
+    render(getAddDrugOrderWorkspaceElement({ returnToOrderBasket: true }));
+    await user.type(screen.getByRole('searchbox'), 'Aspirin');
+    const result = getByTextWithMarkup(/Aspirin 325mg/i).closest('[role="listitem"]') as HTMLElement;
+    await user.click(within(result).getByText(/Add to basket/i));
+
+    await waitFor(() =>
+      expect(launchWorkspace2).toHaveBeenCalledWith(
+        'order-basket',
+        null,
+        { encounterUuid: '' },
+        expect.objectContaining({ patientUuid: mockFhirPatient.id }),
+      ),
+    );
+    expect(medications.current.orders).toHaveLength(2);
+    expect(medications.current.orders[0]).toEqual(previousMedication);
+    expect(labs.current.orders).toEqual([previousLab]);
+    expect(mockPostOrder).not.toHaveBeenCalled();
+    expect(mockCloseWorkspace).toHaveBeenCalledOnce();
   });
 
   test('can open an item in the medication form and on saving, it should add the order in the order basket store', async () => {
@@ -781,16 +817,19 @@ function getAddDrugOrderWorkspaceElement({
   order = null,
   orderToEditOrdererUuid = null,
   patient = mockFhirPatient,
+  returnToOrderBasket = false,
 }: {
   order?: DrugOrderBasketItem | null;
   orderToEditOrdererUuid?: string | null;
   patient?: fhir.Patient;
+  returnToOrderBasket?: boolean;
 } = {}) {
   return (
     <AddDrugOrderWorkspace
       workspaceProps={{
         order,
         orderToEditOrdererUuid,
+        returnToOrderBasket,
       }}
       groupProps={{
         patientUuid: patient.id,
@@ -805,7 +844,7 @@ function getAddDrugOrderWorkspaceElement({
         encounterUuid: '',
       }}
       windowName={''}
-      isRootWorkspace={false}
+      isRootWorkspace={returnToOrderBasket}
       showActionMenu={false}
     />
   );

@@ -188,23 +188,6 @@ test.describe('Consulta externa - hoja clínica', () => {
     await selectConsultaExternaTab(page, /Plan de Tratamiento/i);
     await page.getByRole('button', { name: /Prescribir medicamentos|Prescribe medications/i }).click();
 
-    await expect(
-      page.getByText(/Canasta de [oó]rdenes|Order basket/i, { exact: true }).filter({ visible: true }),
-    ).toBeVisible({
-      timeout: 20_000,
-    });
-
-    const medicationHeading = page.getByRole('heading', {
-      name: /[ÓO]rdenes de medicamentos \(\d+\)|Drug orders \(\d+\)/i,
-    });
-    await expect(medicationHeading).toBeVisible({ timeout: 20_000 });
-    await medicationHeading
-      .locator('..')
-      .locator('..')
-      .getByRole('button', { name: /Agregar|Add/i })
-      .first()
-      .click();
-
     const medicationSearch = page.getByPlaceholder(/Buscar un medicamento|Search for a drug/i);
     await expect(medicationSearch).toBeVisible({ timeout: 20_000 });
     await medicationSearch.fill('ursodesoxic');
@@ -213,6 +196,10 @@ test.describe('Consulta externa - hoja clínica', () => {
       'El ácido ursodesoxicólico debe existir como medicamento ordenable, no como texto libre',
     ).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: /Regresar a la canasta de [oó]rdenes|Back to order basket/i }).click();
+
+    await expect(
+      page.getByText(/Canasta de [oó]rdenes|Order basket/i, { exact: true }).filter({ visible: true }),
+    ).toBeVisible({ timeout: 20_000 });
 
     const laboratoryHeading = page.getByRole('heading', {
       name: /[ÓO]rdenes de laboratorio \(\d+\)|Lab orders \(\d+\)/i,
@@ -247,6 +234,18 @@ test.describe('Consulta externa - hoja clínica', () => {
     await expect(tgoResult, 'TGO debe resolver la prueba AST configurada').toBeVisible({ timeout: 20_000 });
     await tgoResult.getByRole('button', { name: /Agregar a la cesta|Add to basket/i }).click();
 
+    await page.getByRole('button', { name: /Regresar a la canasta de [oó]rdenes|Back to order basket/i }).click();
+    await expect(
+      page.getByRole('heading', { name: /[ÓO]rdenes de laboratorio \(2\)|Lab orders \(2\)/i }),
+    ).toBeVisible();
+
+    // Re-entering direct prescribing must preserve the two pending laboratory orders.
+    await page.getByRole('button', { name: /Prescribir medicamentos|Prescribe medications/i }).click();
+    // Replacing a basket with pending drafts must respect the existing close guard.
+    const confirmClose = page.getByRole('button', { name: /Descartar cambios|Discard changes/i });
+    await expect(confirmClose).toBeVisible();
+    await confirmClose.click();
+    await expect(medicationSearch).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: /Regresar a la canasta de [oó]rdenes|Back to order basket/i }).click();
     await expect(
       page.getByRole('heading', { name: /[ÓO]rdenes de laboratorio \(2\)|Lab orders \(2\)/i }),

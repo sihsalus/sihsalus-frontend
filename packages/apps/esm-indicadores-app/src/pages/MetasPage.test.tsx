@@ -97,6 +97,23 @@ describe('MetasPage', () => {
     mockUseDeleteMeta.mockReturnValue({ deleteMeta: vi.fn().mockResolvedValue(undefined) });
   });
 
+  it.each([
+    { isLoading: true, error: undefined },
+    { isLoading: false, error: new Error('Synthetic catalogue failure') },
+  ])('renders safely without catalogue data: $isLoading', ({ isLoading, error }) => {
+    mockUseAllIndicadores.mockReturnValue({
+      data: undefined,
+      isLoading,
+      error,
+      isError: Boolean(error),
+      refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByRole('combobox', { name: 'Indicador' })).toBeDisabled();
+    if (error) expect(screen.getByText('No se pudieron cargar los indicadores.')).toBeInTheDocument();
+    else expect(screen.getByText('Cargando indicadores...')).toBeInTheDocument();
+  });
+
   it('requires an indicator and year lookup instead of requesting a nonexistent global list', () => {
     renderPage();
 

@@ -165,7 +165,7 @@ const MetasPage: React.FC = () => {
         <ComboBox
           id="meta-filter-indicator"
           titleText={t('indicator', 'Indicador')}
-          items={indicators}
+          items={indicators ?? []}
           itemToString={(item?: Indicador) => item?.nombre ?? ''}
           selectedItem={selectedIndicator}
           onChange={({ selectedItem }: { selectedItem: Indicador | null | undefined }) =>

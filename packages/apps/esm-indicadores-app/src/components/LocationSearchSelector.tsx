@@ -19,10 +19,7 @@ const LocationSearchSelector: React.FC<LocationSearchSelectorProps> = ({ selecte
     <SearchMultiSelector
       label={t('locations', 'Servicios')}
       placeholder={t('searchLocations', 'Buscar servicios')}
-      helperText={t(
-        'locationsHelperText',
-        'Este buscador consulta locations nativas de OpenMRS y las usa como servicios del indicador.',
-      )}
+      helperText={t('locationsHelperText', 'Seleccione los servicios de atención que se incluirán en el cálculo.')}
       emptyText={t('noLocationsSelected', 'Sin servicios seleccionados.')}
       noResultsText={t('noLocationsFound', 'No se encontraron servicios con ese criterio.')}
       selectedItems={selectedItems}

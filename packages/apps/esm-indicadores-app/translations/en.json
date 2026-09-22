@@ -30,7 +30,7 @@
   "createdAt": "Created",
   "createdLabel": "Created:",
   "createModeHelperText": "Use the search boxes to add services, diagnoses and orders without typing UUIDs manually.",
-  "createModeIntro": "Define the metadata and the base logic of the indicator. Later we can replace these fields with richer clinical selectors.",
+  "createModeIntro": "Define the indicator name, description and calculation criteria.",
   "createNewVersion": "Create new version",
   "createVersionBtn": "Create version",
   "currentDefinition": "Current definition",

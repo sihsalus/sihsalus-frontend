@@ -220,6 +220,20 @@ describe('useResultados', () => {
 
     expect(result.current.data).toBeUndefined();
   });
+
+  it('does not call getResultados when params are null (SWR null-key pattern)', () => {
+    mockGetResultados.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 0,
+      size: 20,
+      pages: 0,
+    });
+
+    renderHook(() => useResultados(null), { wrapper: swrWrapper });
+
+    expect(mockGetResultados).not.toHaveBeenCalled();
+  });
 });
 
 describe('useResultadosSeries', () => {

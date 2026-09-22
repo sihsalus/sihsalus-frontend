@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
 import type { IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
-import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
+import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetaByIndicator, useUpsertMeta } from '../features/metas/hooks';
 import MetasPage from './MetasPage';
 
@@ -10,7 +10,7 @@ vi.mock('../features/indicadores/hooks', () => ({
   getIndicatorsErrorMessage: vi.fn((_error, fallback) => fallback),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
-  useIndicadores: vi.fn(),
+  useAllIndicadores: vi.fn(),
 }));
 
 vi.mock('../features/metas/hooks', () => ({
@@ -38,7 +38,7 @@ vi.mock('../components/MetaFormModal', () => ({
   ),
 }));
 
-const mockUseIndicadores = vi.mocked(useIndicadores);
+const mockUseAllIndicadores = vi.mocked(useAllIndicadores);
 const mockUseMetaByIndicator = vi.mocked(useMetaByIndicator);
 const mockUseUpsertMeta = vi.mocked(useUpsertMeta);
 const mockUseDeleteMeta = vi.mocked(useDeleteMeta);
@@ -71,22 +71,16 @@ describe('MetasPage', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
-    mockUseIndicadores.mockReturnValue({
-      data: {
-        items: [
-          {
-            id: 'indicator-a',
-            nombre: 'Control prenatal',
-            descripcion: null,
-            activo: true,
-            creado_en: '2026-01-01',
-          },
-        ],
-        total: 1,
-        page: 1,
-        size: 100,
-        pages: 1,
-      },
+    mockUseAllIndicadores.mockReturnValue({
+      data: [
+        {
+          id: 'indicator-a',
+          nombre: 'Control prenatal',
+          descripcion: null,
+          activo: true,
+          creado_en: '2026-01-01',
+        },
+      ],
       error: undefined,
       isLoading: false,
       isError: false,
@@ -103,10 +97,27 @@ describe('MetasPage', () => {
     mockUseDeleteMeta.mockReturnValue({ deleteMeta: vi.fn().mockResolvedValue(undefined) });
   });
 
+  it.each([
+    { isLoading: true, error: undefined },
+    { isLoading: false, error: new Error('Synthetic catalogue failure') },
+  ])('renders safely without catalogue data: $isLoading', ({ isLoading, error }) => {
+    mockUseAllIndicadores.mockReturnValue({
+      data: undefined,
+      isLoading,
+      error,
+      isError: Boolean(error),
+      refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByRole('combobox', { name: 'Indicador' })).toBeDisabled();
+    if (error) expect(screen.getByText('No se pudieron cargar los indicadores.')).toBeInTheDocument();
+    else expect(screen.getByText('Cargando indicadores...')).toBeInTheDocument();
+  });
+
   it('requires an indicator and year lookup instead of requesting a nonexistent global list', () => {
     renderPage();
 
-    expect(screen.getByText(/Seleccioná un indicador y un año/i)).toBeInTheDocument();
+    expect(screen.getByText(/Seleccione un indicador y un año/i)).toBeInTheDocument();
     expect(mockUseMetaByIndicator).toHaveBeenCalledWith('', null);
   });
 

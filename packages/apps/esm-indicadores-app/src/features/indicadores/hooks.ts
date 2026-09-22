@@ -6,6 +6,7 @@ import {
   createIndicador,
   createVersion,
   deleteIndicador,
+  getEncounterTypes,
   getIndicador,
   getIndicadores,
   previewSql,
@@ -20,6 +21,7 @@ import {
 import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
+  EncounterTypeOption,
   Indicador,
   IndicadorCreatePayload,
   IndicadorDetail,
@@ -38,6 +40,46 @@ export function useIndicadores(page: number, size: number) {
     indicadoresKey(page, size),
     () => getIndicadores(page, size),
   );
+  return {
+    data,
+    error,
+    isLoading,
+    isError: Boolean(error),
+    refetch: mutate,
+  };
+}
+
+// Safety cap to prevent runaway pagination loops against a malicious or
+// buggy backend that always reports more items than it returns. 1000 is
+// well above any realistic indicador count for this domain.
+const ALL_INDICADORES_MAX = 1000;
+const ALL_INDICADORES_PAGE_SIZE = 100;
+const allIndicadoresKey = () => ['indicadores', 'all'] as const;
+
+export function useAllIndicadores() {
+  const { data, error, isLoading, mutate } = useSWR<Array<Indicador>, Error>(allIndicadoresKey(), async () => {
+    const items: Array<Indicador> = [];
+    let page = 1;
+    while (true) {
+      const response = await getIndicadores(page, ALL_INDICADORES_PAGE_SIZE);
+      const knownIds = new Set(items.map((item) => item.id));
+      if (response.page !== page || response.items.some((item) => knownIds.has(item.id))) {
+        throw new Error('Invalid indicator pagination');
+      }
+      items.push(...response.items);
+      if (items.length === response.total) break;
+      if (
+        items.length > response.total ||
+        response.items.length < ALL_INDICADORES_PAGE_SIZE ||
+        items.length >= ALL_INDICADORES_MAX
+      ) {
+        throw new Error('Incomplete indicator catalogue');
+      }
+      page += 1;
+    }
+    return items;
+  });
+
   return {
     data,
     error,
@@ -160,6 +202,42 @@ export function useOrdenSearch(query: string) {
     () => searchOrdenes(query),
   );
   return { data: data ?? [], error, isLoading };
+}
+
+const encounterTypesKey = () => ['encounter-types'] as const;
+
+/**
+ * Fetches the full encounter-type list once and keeps it cached. The backend
+ * endpoint returns everything; filtering happens client-side by display name.
+ */
+export function useEncounterTypes() {
+  const { data, error, isLoading } = useSWR<Array<EncounterTypeOption>, Error>(encounterTypesKey(), () =>
+    getEncounterTypes(),
+  );
+  return { data: data ?? [], error, isLoading };
+}
+
+export function useEncounterTypeSearch(query: string) {
+  const { data, error, isLoading } = useEncounterTypes();
+  const normalized = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () => (normalized ? data.filter((item) => item.display.toLowerCase().includes(normalized)) : data),
+    [data, normalized],
+  );
+  return { data: filtered, error, isLoading };
+}
+
+export function useResolvedEncounterTypes(uuids: Array<string>) {
+  const deduped = useMemo(() => Array.from(new Set(uuids.filter(Boolean))), [uuids]);
+  // Only fetch the full list when there is something to resolve. The key is
+  // shared with useEncounterTypes, so SWR dedupes the request when both hooks
+  // are mounted.
+  const { data, error, isLoading } = useSWR<Array<EncounterTypeOption>, Error>(
+    deduped.length ? encounterTypesKey() : null,
+    () => getEncounterTypes(),
+  );
+  const displayMap = useMemo(() => new Map((data ?? []).map((item) => [item.uuid, item.display])), [data]);
+  return { data: data ?? [], displayMap, error, isLoading };
 }
 
 export function useResolvedLocations(uuids: Array<string>) {

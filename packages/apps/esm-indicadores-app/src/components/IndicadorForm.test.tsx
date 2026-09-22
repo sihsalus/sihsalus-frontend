@@ -2,6 +2,18 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { IndicadorUpdatePayload } from '../api/types';
 import IndicadorForm from './IndicadorForm';
 
+vi.mock('../features/indicadores/hooks', async () => {
+  const actual = await vi.importActual<typeof import('../features/indicadores/hooks')>('../features/indicadores/hooks');
+  return {
+    ...actual,
+    useEncounterTypeSearch: vi.fn((query: string) => ({
+      data: query.trim().toLowerCase().includes('cred') ? [{ uuid: 'enc-cred-neonato', display: 'CRED Neonato' }] : [],
+      error: undefined,
+      isLoading: false,
+    })),
+  };
+});
+
 describe('IndicadorForm metadata contract', () => {
   const editInitialMetadata: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion'> = {
     nombre: 'Indicador de prueba',
@@ -146,5 +158,132 @@ describe('IndicadorForm reportes-sql contract', () => {
 
     expect(screen.getByText(/enteros mayores o iguales a 0/i)).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('rejects min age greater than max age when both use the same unit', async () => {
+    const onSubmit = vi.fn();
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Rango invertido' }} onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText('Edad mínima años'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Edad máxima años'), { target: { value: '5' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(screen.getByText(/la edad mínima no puede ser mayor que la edad máxima/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('rejects min age greater than max age across different units (months vs years)', async () => {
+    const onSubmit = vi.fn();
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Rango invertido mixto' }} onSubmit={onSubmit} />);
+
+    // 72 months (≈2160 days) > 1 year (365 days) → inverted range
+    fireEvent.change(screen.getByLabelText('Edad mínima meses'), { target: { value: '72' } });
+    fireEvent.change(screen.getByLabelText('Edad máxima años'), { target: { value: '1' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(screen.getByText(/la edad mínima no puede ser mayor que la edad máxima/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('accepts min age less than max age across different units (months vs years)', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Rango válido mixto' }} onSubmit={onSubmit} />);
+
+    // 6 months (≈180 days) < 6 years (2190 days) → valid
+    fireEvent.change(screen.getByLabelText('Edad mínima meses'), { target: { value: '6' } });
+    fireEvent.change(screen.getByLabelText('Edad máxima años'), { target: { value: '6' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/la edad mínima no puede ser mayor que la edad máxima/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('IndicadorForm conteo_pacientes_ventana contract', () => {
+  it('serializes encounter types, min occurrences and the day window into the definicion', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <IndicadorForm
+        mode="create"
+        defaultValues={{
+          nombre: 'CRED Neonato',
+          tipo: 'conteo_pacientes_ventana',
+          selectedEncounterTypes: [{ uuid: 'enc-cred', display: 'CRED Neonato' }],
+        }}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Mínimo de ocurrencias'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Edad máxima días'), { target: { value: '28' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].definicion).toEqual({
+      tipo: 'conteo_pacientes_ventana',
+      evento: {
+        minimo_ocurrencias: 4,
+        encounter_type_uuids: ['enc-cred'],
+      },
+      poblacion: {
+        min_anios: undefined,
+        min_meses: undefined,
+        min_dias: undefined,
+        max_anios_excl: undefined,
+        max_meses_excl: undefined,
+        max_dias: 28,
+        sexo: undefined,
+      },
+    });
+  });
+
+  it('rejects the window tipo without any selected encounter type', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <IndicadorForm
+        mode="create"
+        defaultValues={{ nombre: 'Sin encounter types', tipo: 'conteo_pacientes_ventana' }}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(screen.getByText(/al menos un tipo de encuentro/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('shows the encounter-type picker only for the window tipo', async () => {
+    const onSubmit = vi.fn();
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Window' }} onSubmit={onSubmit} />);
+
+    expect(screen.queryByLabelText('Tipos de encuentro')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'conteo_pacientes_ventana' } });
+    expect(screen.getByLabelText('Tipos de encuentro')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'conteo_atenciones' } });
+    expect(screen.queryByLabelText('Tipos de encuentro')).not.toBeInTheDocument();
+  });
+
+  it('adds an encounter type through the picker and submits it in the definicion', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'CRED Neonato' }} onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'conteo_pacientes_ventana' } });
+    fireEvent.change(screen.getByLabelText('Tipos de encuentro'), { target: { value: 'CRED' } });
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+    expect(screen.getByText('CRED Neonato')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Mínimo de ocurrencias'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Edad máxima días'), { target: { value: '28' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].definicion.evento.encounter_type_uuids).toEqual(['enc-cred-neonato']);
+    expect(onSubmit.mock.calls[0][0].definicion.evento.minimo_ocurrencias).toBe(4);
+    expect(onSubmit.mock.calls[0][0].definicion.poblacion.max_dias).toBe(28);
   });
 });

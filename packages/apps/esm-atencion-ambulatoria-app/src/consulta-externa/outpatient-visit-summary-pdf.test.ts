@@ -172,6 +172,45 @@ const summary: OutpatientVisitSummary = {
 };
 
 describe('outpatient visit summary PDF', () => {
+  it('keeps expired and stopped recorded medications in historical instructions without adding a current appointment', async () => {
+    const historicalSummary = {
+      ...summary,
+      visitEnd: '2025-01-01T11:00:00Z',
+      treatment: {
+        ...summary.treatment,
+        therapeuticIndications: null,
+        nextAppointment: null,
+        legacyPrescriptions: null,
+      },
+      orders: summary.orders
+        .filter((order) => order.category === 'medication')
+        .map((order) => ({
+          ...order,
+          autoExpireDate: '2025-01-03T11:00:00Z',
+          dateStopped: '2025-01-02T11:00:00Z',
+        })),
+    };
+    expect(hasOutpatientPatientInstructions(historicalSummary)).toBe(false);
+    expect(hasOutpatientPatientInstructions(historicalSummary, null, 'historical')).toBe(true);
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+    try {
+      await createOutpatientPatientInstructionsPdf(
+        historicalSummary,
+        patientInstructionsLabels,
+        'es-PE',
+        scheduledAppointment,
+        'historical',
+      );
+      const text = drawText.mock.calls.map(([value]) => value).join('\n');
+      expect(text).toContain('Paracetamol');
+      expect(text).not.toContain('Próxima cita programada');
+      expect(text).not.toContain('Dra. Próxima');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
   it('creates a valid multi-section PDF in the browser-compatible library', async () => {
     const bytes = await createOutpatientVisitSummaryPdf(summary, labels, 'es-PE');
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toMatch(/^%PDF-/);

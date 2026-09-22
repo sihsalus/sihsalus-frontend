@@ -6,6 +6,17 @@
   },
   "extensions": [
     {
+      "name": "historical-outpatient-documents",
+      "slot": "visit-summary-panels",
+      "component": "historicalOutpatientDocuments",
+      "privileges": ["app:hoja.clinica.visitas", "app:hoja.clinica.consultaExterna"],
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "outpatientHistoricalDocuments"
+      }
+    },
+    {
       "name": "clinical-encounter",
       "slot": "patient-chart-clinical-encounter-slot",
       "component": "inPatientClinicalEncounter",

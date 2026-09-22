@@ -50,6 +50,30 @@ of search, draft copying and normal prescription remains required before merge.
 
 ## Outpatient prescription contract
 
+### Medication summary while scrolling
+
+The prescription form keeps one medication summary and one `medication-info-slot`
+mounted. Native CSS sticky positioning keeps that summary visible while scrolling
+through the fields; its blue background is also used before scrolling. Dose,
+route and unit changes update that same summary without mounting another copy.
+
+The former intersection observer inserted an additional summary into the observed
+layout. With scroll anchoring disabled, scrolling just past the summary's top
+repeatedly added and removed that copy without further user input. A local
+Chromium reproduction establishes this layout feedback, but does not establish
+that it is the cause of every hospital report of medication-form flicker.
+
+Minimum regression coverage: one summary across visibility transitions on desktop
+and tablet, entered values and focus retained, and no implicit save. A browser
+smoke must also check scrolling in both directions, the first and last fields,
+long medication names, dose updates and the medication-info extension. Include a
+case with `overflow-anchor: none` on the workspace scroll container to ensure
+stability does not depend on the browser compensating for layout shifts. Confirm
+the reported hospital scenario in coordinated DEV/QLTY before closing backlog
+issue [#84](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/84).
+
+### Required prescription fields
+
 For outpatient prescriptions, the form visibly marks and validates the treatment duration, duration unit, dispense quantity and unit, number of refills, and configured indication. It follows the backend quantity policy and uses OpenMRS's safe required default while that policy is loading or unavailable, so a clinical role does not need broad global-property privileges and the fields do not become mandatory after the clinician starts entering a prescription. The duration selector is limited by `outpatientDurationUnitUuids` (days, weeks, and months by default); other backend duration units remain available outside the outpatient quantity workflow, and legacy values remain visible while an existing order is edited. New outpatient prescriptions default to structured dose, unit, route, and frequency fields and offer free-text dosage as an explicit exception, except for the configured single-dose frequency. Free-text dosage requires a nonblank regimen and retains the outpatient duration, dispensing, refill, and configured indication requirements; the dispense quantity must be entered manually and is never calculated from the text. Switching to free-text dosage clears the structured dosing fields; switching back requires structured dosing again. When the selected drug's dosage form exactly matches a configured dosing or dispensing unit, that unit is proposed without overwriting a clinician's selection; the dosing unit is only proposed in structured mode. A reason is required whenever the medication is marked for as-needed use; route and frequency are never inferred.
 
 ### Dose-unit catalog availability

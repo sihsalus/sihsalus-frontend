@@ -1,6 +1,6 @@
 import { getDefaultsFromConfigSchema, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse } from 'test-utils';
 import { useRequireOutpatientQuantity } from '../api/api';
@@ -138,6 +138,62 @@ function getRequiredFieldLabels() {
       .trim(),
   );
 }
+
+it.each([
+  'small-desktop',
+  'tablet',
+] as const)('keeps one medication summary and the entered dose across visibility changes on %s', async (layout) => {
+  mockUseLayoutType.mockReturnValue(layout);
+  const notifyVisibility: Array<(ratio: number) => void> = [];
+  const OriginalIntersectionObserver = globalThis.IntersectionObserver;
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class extends OriginalIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        super(callback, options);
+        notifyVisibility.push((intersectionRatio) => {
+          const target = document.getElementById('medicationInfo');
+          const bounds = target.getBoundingClientRect();
+          callback(
+            [
+              {
+                target,
+                intersectionRatio,
+                isIntersecting: intersectionRatio > 0,
+                boundingClientRect: bounds,
+                intersectionRect: bounds,
+                rootBounds: null,
+                time: performance.now(),
+              },
+            ],
+            this,
+          );
+        });
+      }
+    },
+  );
+
+  try {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const { container } = renderDrugOrderForm(createNewOrderBasketItem(), onSave);
+    const summary = container.querySelector('#medicationInfo');
+    const dose = screen.getByRole('spinbutton', { name: /^Dose/ });
+    await user.clear(dose);
+    await user.type(dose, '3');
+
+    for (const ratio of [0.5, 1, 0, 1]) {
+      act(() => notifyVisibility.forEach((notify) => notify(ratio)));
+      expect(container.querySelectorAll('#medicationInfo')).toHaveLength(1);
+      expect(container.querySelector('#medicationInfo')).toBe(summary);
+      expect(dose).toHaveValue(3);
+      expect(dose).toHaveFocus();
+    }
+    expect(onSave).not.toHaveBeenCalled();
+  } finally {
+    vi.stubGlobal('IntersectionObserver', OriginalIntersectionObserver);
+  }
+});
 
 describe('STAT single-dose prescriptions', () => {
   const onceUuid = '11111111-1111-4111-8111-111111111111';

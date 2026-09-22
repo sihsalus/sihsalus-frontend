@@ -530,36 +530,7 @@ export function DrugOrderForm({
     return true;
   }, []);
 
-  const [showStickyMedicationHeader, setShowMedicationHeader] = useState(false);
   const patientName = patient ? getPatientName(patient) : '';
-
-  const observer = useRef<IntersectionObserver | null>(null);
-  const medicationInfoHeaderRef = useCallback((node: HTMLElement) => {
-    if (observer.current) {
-      observer.current.disconnect();
-    }
-
-    if (typeof IntersectionObserver === 'undefined') {
-      return;
-    }
-
-    observer.current = new IntersectionObserver(
-      ([e]) => {
-        setShowMedicationHeader(e.intersectionRatio < 1);
-      },
-      {
-        threshold: 1,
-      },
-    );
-
-    if (node) {
-      observer.current.observe(node);
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => observer.current?.disconnect();
-  }, []);
 
   useController<MedicationOrderFormData>({ name: 'drug', control });
 
@@ -581,16 +552,6 @@ export function DrugOrderForm({
   return (
     <Workspace2 title={workspaceTitle} hasUnsavedChanges={isDirty}>
       <div className={styles.container}>
-        {showStickyMedicationHeader && (
-          <div className={styles.stickyMedicationInfo}>
-            <MedicationInfoHeader
-              dosage={watchedDosage}
-              drug={drug}
-              routeValue={routeValue}
-              unitValue={watchedUnitValue}
-            />
-          </div>
-        )}
         <div className={styles.patientHeader}>
           <span className={styles.bodyShort02}>{patientName}</span>
           <span className={classNames(styles.text02, styles.bodyShort01)}>
@@ -633,14 +594,12 @@ export function DrugOrderForm({
             ) : null}
             <h1 className={styles.orderFormHeading}>{t('orderForm', 'Medication prescription')}</h1>
             <p className={styles.requiredFieldsNote}>{t('requiredFieldsNote', '* Required field')}</p>
-            <div ref={medicationInfoHeaderRef}>
-              <MedicationInfoHeader
-                dosage={watchedDosage}
-                drug={drug}
-                routeValue={routeValue}
-                unitValue={watchedUnitValue}
-              />
-            </div>
+            <MedicationInfoHeader
+              dosage={watchedDosage}
+              drug={drug}
+              routeValue={routeValue}
+              unitValue={watchedUnitValue}
+            />
             {specialPrescriptionSubstance && (
               <InlineNotification
                 kind="warning"

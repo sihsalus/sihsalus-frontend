@@ -140,6 +140,15 @@ un botón que volvería a fallar. Emergencia conserva su política no bloqueante
 
 ## Offline visit queue contract
 
+Operational queue reads used by appointment checkout, visit closure and patient
+workflow cleanup explicitly request `cache: no-store`, including every search
+page, each pre-write read and post-write reconciliation. The deployed offline
+profile worker honors this as network-only: a cached empty queue or a cached
+entry cannot confirm a close or authorize a retry. A network failure propagates
+to the existing recovery flow; it never counts as successful cleanup. The
+worker and frontend must be deployed together. Validate partial failures,
+response loss, concurrent operators and more than one page in DEV/QLTY.
+
 `useOfflineVisit` keys its data, error and loading state by patient UUID. Changing the requested patient immediately
 returns an empty loading state, including the first committed render before effects run; late reads for the previous
 patient cannot overwrite the new context. Consumers must not receive a previous patient's visit under a new UUID.

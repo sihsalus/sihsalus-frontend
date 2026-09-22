@@ -57,6 +57,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
+    "@openmrs/esm-api": "workspace:*",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

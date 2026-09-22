@@ -1,4 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react';
+import { ControlAdapter } from '../adapters/control-adapter';
 import type { FormProcessor } from '../processors/form-processor';
 import type { FormProcessorContextProps } from '../types';
 import useInitialValues from './useInitialValues';
@@ -31,7 +32,7 @@ it('waits for dependencies and adapters before initializing nonempty fields', as
   expect(result.current.isLoadingInitialValues).toBe(true);
   rerender({
     loading: false,
-    context: { ...context, formFieldAdapters: { control: {} } } as FormProcessorContextProps,
+    context: { ...context, formFieldAdapters: { control: ControlAdapter } },
   });
   await waitFor(() => expect(result.current.initialValues.sample).toBe('Existing default'));
   expect(result.current.isLoadingInitialValues).toBe(false);

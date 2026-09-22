@@ -19,6 +19,7 @@ const schema: FormSchema = {
   name: 'Synthetic preview',
   uuid: 'synthetic-preview-form',
   processor: 'EncounterFormProcessor',
+  encounterType: 'synthetic-encounter-type',
   referencedForms: [],
   pages: [
     {

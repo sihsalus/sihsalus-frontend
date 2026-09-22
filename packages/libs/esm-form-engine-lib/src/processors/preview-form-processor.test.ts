@@ -8,6 +8,7 @@ const schema: FormSchema = {
   pages: [],
   referencedForms: [],
   processor: 'EncounterFormProcessor',
+  encounterType: 'synthetic-encounter-type',
 };
 
 it('has no clinical dependency or history hooks and cannot submit even when called directly', async () => {

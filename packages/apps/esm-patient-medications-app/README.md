@@ -61,3 +61,15 @@ Selecting the preset explicitly applies `urgency: STAT`, the configured native `
 This uses the existing `webservices.rest >=2.2.0` drug-order endpoint and native coded frequency; it adds no FHIR Timing payload, synthetic frequency, administration event, automatic discontinuation or expiry. OpenMRS distinguishes the [order urgency enum](https://rest.openmrs.org/#create-an-order) from the [coded OrderFrequency](https://resources.openmrs.org/doc-1.10/org/openmrs/OrderFrequency.html); its maintainers explain the [one-time versus STAT distinction](https://talk.openmrs.org/t/mapping-openmrs-order-frequencies-fhir/36421). An order remaining in the active list does not prove that a dose was administered or should repeat. Backend/fulfiller support for the configured once concept must be verified in coordinated DEV/QLTY before activation; the frontend cannot establish administration completion.
 
 Minimum regression coverage: routine and daily STAT retain their regimen; the once preset and direct frequency selection remove repeating fields; PRN/refill/duration conflicts are rejected; matching-unit quantity counts one dose even when the prior estimate is identical or the preset is applied again; subsequent manual quantity overrides survive dose changes; missing content disables the preset; urgency and frequency survive new/revised/renewed REST payloads and both editing entry points. Clinical acceptance still requires an authorized synthetic patient, prescribing account and deployed SHA in DEV/QLTY, followed by save, reload, dispensing/administration review and fixture cleanup. No remote clinical fixtures were created for local validation.
+
+### Draft start dates across midnight
+
+New, renewed and revised drafts mark an untouched current-time default with
+`startDateIsExplicit: false`. Signing omits `dateActivated` for that default even
+on a later day, allowing the backend to assign the save time after the encounter
+exists. Reopening refreshes that implicit default to the current date. Selecting
+a date marks it explicit and preserves it through save/reopen; older drafts
+without the flag conservatively retain their date. Explicit dates from a previous
+day are still sent and remain subject to backend encounter/date validation.
+Single-dose STAT drafts from an earlier day still require review before signing;
+this change does not bypass that guard or change dose/frequency/quantity.

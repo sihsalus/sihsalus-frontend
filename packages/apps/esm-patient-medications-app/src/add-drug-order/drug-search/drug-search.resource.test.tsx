@@ -2,7 +2,13 @@ import { logError, openmrsFetch } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { mockDrugSearchResultApiData } from 'test-utils';
-import { useConceptSets, useConceptTree, useDrugSearch, useDrugsByConcepts } from './drug-search.resource';
+import {
+  getTemplateOrderBasketItem,
+  useConceptSets,
+  useConceptTree,
+  useDrugSearch,
+  useDrugsByConcepts,
+} from './drug-search.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 const mockLogError = vi.mocked(logError);
@@ -258,5 +264,14 @@ describe('useDrugsByConcepts', () => {
 
     expect(result.current.drugs).toHaveLength(51);
     expect(result.current.errors).toEqual([]);
+  });
+});
+
+describe('new medication draft date', () => {
+  it.each([false, true])('marks an untouched default as implicit (template=%s)', (withTemplate) => {
+    const template = { template: { dosingInstructions: {} } } as Parameters<typeof getTemplateOrderBasketItem>[2];
+    const draft = getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null, withTemplate ? template : undefined);
+    expect(draft.startDateIsExplicit).toBe(false);
+    expect((draft.startDate as Date).toDateString()).toBe(new Date().toDateString());
   });
 });

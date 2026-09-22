@@ -17,8 +17,20 @@ vi.mock('@openmrs/esm-framework', async () => {
     ...actual,
     useLayoutType: vi.fn(() => 'small-desktop'),
     OpenmrsDatePicker: React.forwardRef(
-      (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLSpanElement>) =>
-        React.createElement('span', { ref }, props.labelText as import('react').ReactNode),
+      (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLInputElement>) =>
+        React.createElement(
+          'label',
+          { htmlFor: props.id },
+          props.labelText as import('react').ReactNode,
+          React.createElement('input', {
+            ref,
+            id: props.id,
+            type: 'date',
+            disabled: props.isDisabled,
+            onChange: (event: import('react').ChangeEvent<HTMLInputElement>) =>
+              (props.onChange as (date: Date) => void)(new Date(`${event.target.value}T00:00:00`)),
+          }),
+        ),
     ),
   };
 });
@@ -182,6 +194,7 @@ describe('STAT single-dose prescriptions', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
     expect(onSave.mock.calls[0][0]).toMatchObject({
       urgency: 'STAT',
+      startDateIsExplicit: false,
       frequency: { valueCoded: onceUuid },
       dosage: 2,
       unit: tablet,
@@ -367,7 +380,7 @@ describe('STAT single-dose prescriptions', () => {
     const onSave = vi.fn();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    renderDrugOrderForm(completeOrder({ startDate: yesterday }), onSave);
+    renderDrugOrderForm(completeOrder({ startDate: yesterday, startDateIsExplicit: true }), onSave);
     const selectFrequency = async () => {
       const frequency = screen.getByRole('combobox', { name: /frequency/i });
       await user.clear(frequency);
@@ -386,9 +399,50 @@ describe('STAT single-dose prescriptions', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
     const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
     expect((draft.startDate as Date).toDateString()).toBe(new Date().toDateString());
+    expect(draft.startDateIsExplicit).toBe(false);
     expect(
       prepMedicationOrderPostData(draft, 'synthetic-patient', 'synthetic-encounter').dateActivated,
     ).toBeUndefined();
+  });
+
+  it.each([
+    false,
+    true,
+    undefined,
+  ])('preserves date intent when reopening and saving (explicit=%s)', async (explicit) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder({ startDate: yesterday, startDateIsExplicit: explicit }), onSave);
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect(draft.startDateIsExplicit).toBe(explicit !== false);
+    expect((draft.startDate as Date).toDateString()).toBe((explicit === false ? new Date() : yesterday).toDateString());
+  });
+
+  it('keeps a clinician-selected date explicit through saving and reopening the draft', async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const selected = [
+      yesterday.getFullYear(),
+      String(yesterday.getMonth() + 1).padStart(2, '0'),
+      String(yesterday.getDate()).padStart(2, '0'),
+    ].join('-');
+    const onSave = vi.fn();
+    const view = renderDrugOrderForm(completeOrder(), onSave);
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: selected } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect(draft).toMatchObject({ startDate: yesterday, startDateIsExplicit: true });
+    view.unmount();
+    const onResave = vi.fn();
+    renderDrugOrderForm(draft, onResave);
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onResave).toHaveBeenCalledOnce());
+    expect(onResave.mock.calls[0][0]).toMatchObject({ startDate: yesterday, startDateIsExplicit: true });
   });
 
   it('blocks submission of an existing once draft when its configured frequency is no longer available', () => {

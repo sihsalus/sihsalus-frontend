@@ -176,6 +176,9 @@ export function DrugOrderForm({
   const { requireOutpatientQuantity } = useRequireOutpatientQuantity();
 
   const drugOrderForm = useDrugOrderForm(initialOrderBasketItem);
+  const [startDateIsExplicit, setStartDateIsExplicit] = useState(
+    initialOrderBasketItem?.startDateIsExplicit ?? Boolean(initialOrderBasketItem?.startDate),
+  );
   const {
     control,
     formState: { isDirty, isSubmitting },
@@ -328,6 +331,7 @@ export function DrugOrderForm({
     setValue('urgency', 'STAT', options);
     setValue('frequency', singleDoseFrequency, options);
     setValue('startDate', new Date(), options);
+    setStartDateIsExplicit(false);
     clearRepeatingRegimen();
   };
 
@@ -358,6 +362,7 @@ export function DrugOrderForm({
       urgencyCode: data.urgency,
       scheduledDate: data.urgency === 'ON_SCHEDULED_DATE' ? initialOrderBasketItem?.scheduledDate : undefined,
       startDate: data.startDate,
+      startDateIsExplicit,
       action: initialOrderBasketItem?.action ?? 'NEW',
       commonMedicationName: data.drug.display,
       display: data.drug.display,
@@ -618,6 +623,7 @@ export function DrugOrderForm({
                             field.onChange(event);
                             if (isSingleDose && event.target.value === 'STAT') {
                               setValue('startDate', new Date(), { shouldDirty: true, shouldValidate: true });
+                              setStartDateIsExplicit(false);
                             }
                           }}
                           id="medicationUrgency"
@@ -788,6 +794,7 @@ export function DrugOrderForm({
                               clearRepeatingRegimen();
                               if (watchedUrgency === 'STAT') {
                                 setValue('startDate', new Date(), { shouldDirty: true, shouldValidate: true });
+                                setStartDateIsExplicit(false);
                               }
                             }
                           }}
@@ -875,6 +882,10 @@ export function DrugOrderForm({
                         render={({ field, fieldState }) => (
                           <OpenmrsDatePicker
                             {...field}
+                            onChange={(date) => {
+                              setStartDateIsExplicit(true);
+                              field.onChange(date);
+                            }}
                             maxDate={new Date()}
                             isDisabled={isSingleDose && watchedUrgency === 'STAT'}
                             id="startDatePicker"

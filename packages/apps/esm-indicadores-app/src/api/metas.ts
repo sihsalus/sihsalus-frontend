@@ -1,4 +1,5 @@
-import { fetchJson, mutateJson, toJsonBody } from './client';
+import { getMetaByIndicatorMock } from '../mocks/indicators-data';
+import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
 import { getReportesSqlResourcePath } from './config';
 import type { IndicadorMeta, IndicadorMetaCreatePayload, IndicadorMetaRecord } from './types';
 
@@ -22,21 +23,17 @@ export function isMetaNotFoundError(error: unknown): boolean {
   };
   const detail = candidate.responseBody?.detail;
 
-  return (
-    (candidate.status === 404 || candidate.response?.status === 404) &&
-    detail?.field === 'indicador_version_id' &&
-    detail.message === 'Meta no encontrada'
-  );
-}
-
-export async function getMetaByVersion(indicadorVersionId: string, anio: number): Promise<IndicadorMeta> {
-  const metasPath = await getReportesSqlResourcePath('metas');
-  return fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_version_id: indicadorVersionId, anio })}`);
+  // The 404 + field name is the structural contract; the human message is
+  // not — the backend may reword it without changing the semantics.
+  return (candidate.status === 404 || candidate.response?.status === 404) && detail?.field === 'indicador_version_id';
 }
 
 export async function getMetaByIndicator(indicadorId: string, anio: number): Promise<IndicadorMeta> {
   const metasPath = await getReportesSqlResourcePath('metas');
-  return fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_id: indicadorId, anio })}`);
+  return withMockFallback(
+    () => fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_id: indicadorId, anio })}`),
+    () => getMetaByIndicatorMock(indicadorId, anio),
+  );
 }
 
 export async function upsertMeta(payload: IndicadorMetaCreatePayload): Promise<IndicadorMetaRecord> {

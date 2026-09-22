@@ -1,6 +1,7 @@
 import { Button, InlineLoading, Search, Tile } from '@carbon/react';
 import { getUserFacingErrorMessage, useDebounce } from '@openmrs/esm-framework';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import styles from '../indicators-dashboard.module.scss';
@@ -36,6 +37,7 @@ function SearchMultiSelector<T>({
   onChange,
   onSearchChange,
 }: SearchMultiSelectorProps<T>) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
 
@@ -80,7 +82,7 @@ function SearchMultiSelector<T>({
                 type="button"
                 className={styles.pillRemoveButton}
                 onClick={() => handleRemove(item)}
-                aria-label={`Quitar ${itemLabel(item)}`}
+                aria-label={t('removeItem', 'Quitar {{label}}', { label: itemLabel(item) })}
               >
                 ×
               </button>
@@ -94,19 +96,23 @@ function SearchMultiSelector<T>({
       {normalizedQuery ? (
         <div className={styles.searchResultsPanel}>
           {isLoading ? (
-            <InlineLoading description="Buscando..." />
+            <InlineLoading description={t('searching', 'Buscando...')} />
           ) : error ? (
             <div className={styles.errorBanner}>
-              {getUserFacingErrorMessage(error, 'No se pudieron cargar las opciones.', indicatorsErrorMessageOptions)}
+              {getUserFacingErrorMessage(
+                error,
+                t('optionsLoadFailed', 'No se pudieron cargar las opciones.'),
+                indicatorsErrorMessageOptions(t),
+              )}
             </div>
           ) : filteredResults.length ? (
             <div className={styles.searchResultsList} role="listbox" aria-label={label}>
               {filteredResults.map((item) => (
-                <Tile key={itemKey(item)} className={styles.searchResultItem}>
+                <Tile key={itemKey(item)} className={styles.searchResultItem} role="option" aria-selected={false}>
                   <div className={styles.searchResultContent}>
                     <span>{itemLabel(item)}</span>
                     <Button size="sm" kind="ghost" onClick={() => handleAdd(item)}>
-                      Agregar
+                      {t('add', 'Agregar')}
                     </Button>
                   </div>
                 </Tile>

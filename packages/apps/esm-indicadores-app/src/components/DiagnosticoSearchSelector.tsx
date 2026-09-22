@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { DiagnosticoOption } from '../api/types';
 import { useDiagnosticoSearch } from '../features/indicadores/hooks';
@@ -10,16 +11,17 @@ interface DiagnosticoSearchSelectorProps {
 }
 
 const DiagnosticoSearchSelector: React.FC<DiagnosticoSearchSelectorProps> = ({ selectedItems, onChange }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const { data, isLoading, error } = useDiagnosticoSearch(query);
 
   return (
     <SearchMultiSelector
-      label="Diagnósticos"
-      placeholder="Buscar diagnósticos"
-      helperText="Agregá uno o más diagnósticos al filtro clínico del indicador."
-      emptyText="Sin diagnósticos seleccionados."
-      noResultsText="No se encontraron diagnósticos con ese criterio."
+      label={t('diagnostics', 'Diagnósticos')}
+      placeholder={t('searchDiagnostics', 'Buscar diagnósticos')}
+      helperText={t('diagnosticsHelperText', 'Agregue uno o más diagnósticos al filtro clínico del indicador.')}
+      emptyText={t('noDiagnosticsSelected', 'Sin diagnósticos seleccionados.')}
+      noResultsText={t('noDiagnosticsFound', 'No se encontraron diagnósticos con ese criterio.')}
       selectedItems={selectedItems}
       data={data}
       isLoading={isLoading}

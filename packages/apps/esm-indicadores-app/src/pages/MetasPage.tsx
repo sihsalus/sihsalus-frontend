@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
 import MetaFormModal from '../components/MetaFormModal';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
-import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
+import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetaByIndicator, useUpsertMeta } from '../features/metas/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
@@ -40,9 +40,8 @@ const MetasPage: React.FC = () => {
   const submitLockRef = useRef(false);
   const deleteLockRef = useRef(false);
 
-  const { data: indicatorsData, isLoading: indicatorsLoading, error: indicatorsError } = useIndicadores(1, 100);
-  const indicators = indicatorsData?.items ?? [];
-  const selectedIndicator = indicators.find((indicator) => indicator.id === selectedIndicatorId) ?? null;
+  const { data: indicators, isLoading: indicatorsLoading, error: indicatorsError } = useAllIndicadores();
+  const selectedIndicator = indicators?.find((indicator) => indicator.id === selectedIndicatorId) ?? null;
   const {
     data: meta,
     isLoading: metaLoading,
@@ -113,7 +112,7 @@ const MetasPage: React.FC = () => {
         getUserFacingErrorMessage(
           submitError,
           t('metaSaveFailed', 'No se pudo guardar la meta.'),
-          indicatorsErrorMessageOptions,
+          indicatorsErrorMessageOptions(t),
         ),
       );
     } finally {
@@ -138,7 +137,7 @@ const MetasPage: React.FC = () => {
         getUserFacingErrorMessage(
           deleteError,
           t('metaDeleteFailed', 'No se pudo eliminar la meta.'),
-          indicatorsErrorMessageOptions,
+          indicatorsErrorMessageOptions(t),
         ),
       );
     } finally {
@@ -154,7 +153,7 @@ const MetasPage: React.FC = () => {
         <div>
           <h2>{t('metasTitle', 'Metas')}</h2>
           <p className={styles.subtitle}>
-            {t('metasSubtitle', 'Consultá y administrá la meta anual de un indicador.')}
+            {t('metasSubtitle', 'Consulte y administre la meta anual de un indicador.')}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -172,7 +171,7 @@ const MetasPage: React.FC = () => {
           onChange={({ selectedItem }: { selectedItem: Indicador | null | undefined }) =>
             setSelectedIndicatorId(selectedItem?.id ?? '')
           }
-          placeholder={t('selectIndicator', 'Seleccioná un indicador')}
+          placeholder={t('selectIndicator', 'Seleccione un indicador')}
           disabled={indicatorsLoading || Boolean(indicatorsError)}
         />
         <NumberInput
@@ -196,7 +195,7 @@ const MetasPage: React.FC = () => {
           {getUserFacingErrorMessage(
             indicatorsError,
             t('indicatorsLoadFailed', 'No se pudieron cargar los indicadores.'),
-            indicatorsErrorMessageOptions,
+            indicatorsErrorMessageOptions(t),
           )}
         </div>
       ) : null}
@@ -206,14 +205,14 @@ const MetasPage: React.FC = () => {
           {getUserFacingErrorMessage(
             metaError,
             t('metasLoadFailed', 'No se pudo consultar la meta.'),
-            indicatorsErrorMessageOptions,
+            indicatorsErrorMessageOptions(t),
           )}
         </div>
       ) : null}
 
       {!selectedIndicatorId && !indicatorsLoading && !indicatorsError ? (
         <Tile className={styles.empty}>
-          {t('selectMetaLookup', 'Seleccioná un indicador y un año para consultar su meta.')}
+          {t('selectMetaLookup', 'Seleccione un indicador y un año para consultar su meta.')}
         </Tile>
       ) : null}
 
@@ -292,7 +291,7 @@ const MetasPage: React.FC = () => {
         onRequestSubmit={handleConfirmDelete}
         danger
       >
-        <p>{t('deleteMetaConfirmation', '¿Estás seguro de que querés eliminar esta meta?')}</p>
+        <p>{t('deleteMetaConfirmation', '¿Está seguro de que quiere eliminar esta meta?')}</p>
       </Modal>
     </div>
   );

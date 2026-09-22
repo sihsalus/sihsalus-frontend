@@ -1,6 +1,7 @@
 import { getSeriesMock, listResultados } from '../mocks/indicators-data';
 import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
 import { getReportesSqlApiPath } from './config';
+import { assertShape, isPaginatedResponse, isSeriesResponse } from './validate';
 import type {
   BatchCalcularNowResponse,
   GetResultadosParams,
@@ -25,16 +26,21 @@ function ensureQuery(params: Record<string, string | number | boolean | undefine
 
 export async function getResultados(params: GetResultadosParams): Promise<PaginatedResponse<IndicadorResultado>> {
   const reportesSqlBase = await getReportesSqlApiPath();
-  const queryParams: Record<string, string | number | undefined> = {
+  const queryParams: Record<string, string | number | boolean | undefined> = {
     page: params.page,
     size: params.size,
     indicador_id: params.indicador_id,
     periodo_inicio: params.periodo_inicio,
     periodo_fin: params.periodo_fin,
+    include_historicos: params.include_historicos,
+    version_id: params.version_id,
   };
 
   return withMockFallback(
-    () => fetchJson<PaginatedResponse<IndicadorResultado>>(`${reportesSqlBase}/resultados/${ensureQuery(queryParams)}`),
+    () =>
+      fetchJson<PaginatedResponse<IndicadorResultado>>(
+        `${reportesSqlBase}/resultados/${ensureQuery(queryParams)}`,
+      ).then((data) => assertShape(data, isPaginatedResponse, 'resultados')),
     () => listResultados(params),
   );
 }
@@ -62,7 +68,10 @@ export async function getResultadosSeries(params: GetSeriesParams): Promise<Seri
   };
 
   return withMockFallback(
-    () => fetchJson<SeriesResponse>(`${reportesSqlBase}/resultados/series${ensureQuery(queryParams)}`),
+    () =>
+      fetchJson<SeriesResponse>(`${reportesSqlBase}/resultados/series${ensureQuery(queryParams)}`).then((data) =>
+        assertShape(data, isSeriesResponse, 'series'),
+      ),
     () => getSeriesMock(params),
   );
 }

@@ -75,6 +75,33 @@ Los guards de UI controlan visibilidad y acceso a rutas, modales y workspaces. N
 - Borrar o completar parcialmente la fecha mantiene abierto el formulario y conserva el mes visible del calendario. La fecha debe ser válida antes de guardar.
 - La tabla muestra el documento civil como tipo + número (`DNI - …`, `CE - …`, `Pasaporte - …`). El número de HCE y los identificadores internos no se presentan como documentos civiles. La consulta complementaria del paciente distingue carga, ausencia y error; este último ofrece reintento sobre el mismo registro.
 
+## Fechas del calendario
+
+Una fecha civil sin hora (`YYYY-MM-DD`) se interpreta en la zona local del
+navegador, de forma consistente en el calendario, el formulario y su payload.
+No se convierte primero a medianoche UTC: en Lima eso cambia la fecha al día
+anterior. Un timestamp almacenado con offset conserva su instante al editarlo;
+la fecha civil y el timestamp tienen contratos distintos. El fin de una serie
+recurrente sigue la misma regla de fecha local cuando no incluye hora.
+
+La cuadrícula conserva el año del mes consultado también en sus celdas vecinas.
+Empieza en domingo, como sus encabezados, independientemente del idioma, y
+contiene semanas completas. El título del mes y el vínculo a la lista diaria
+usan la misma fecha local seleccionada.
+
+[Appointments 2.2.0 devuelve claves `yyyy-MM-dd` en su resumen diario](https://github.com/Bahmni/openmrs-module-appointments/blob/2.2.0/omod/src/main/java/org/openmrs/module/appointments/web/controller/AppointmentController.java#L98).
+El frontend conserva esas claves; no las desplaza para compensar diferencias de
+zona horaria del servidor. La distribución y el entorno deben tener una zona
+horaria coherente con la operación del hospital.
+
+Las regresiones ejecutan explícitamente UTC y `America/Lima`, incluso cuando
+el proceso de CI comienza en UTC. Cubren límites de mes/año, año bisiesto,
+creación con hora o de día completo, edición de un instante UTC y navegación
+del resumen hacia el mismo día. Para cerrar el reporte hospitalario falta
+comprobar creación, edición/reprogramación, recarga de calendario/lista y visitas
+vinculadas con datos sintéticos en DEV/QLTY y las versiones desplegadas. Las
+pruebas locales no acreditan la agrupación de fechas del servidor ni su zona.
+
 ## Desarrollo
 
 ```bash

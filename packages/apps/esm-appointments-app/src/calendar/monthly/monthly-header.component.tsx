@@ -56,7 +56,7 @@ const MonthlyHeader: React.FC = () => {
         >
           {t('prev', 'Prev')}
         </Button>
-        <span>{formatDate(new Date(selectedDate), { day: false, time: false, noToday: true })}</span>
+        <span>{formatDate(dayjs(selectedDate).toDate(), { day: false, time: false, noToday: true })}</span>
         <Button aria-label={t('nextMonth', 'Next month')} kind="tertiary" onClick={handleSelectNextMonth} size="sm">
           {t('next', 'Next')}
         </Button>

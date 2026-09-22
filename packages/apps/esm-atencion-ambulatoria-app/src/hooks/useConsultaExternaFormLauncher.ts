@@ -73,6 +73,7 @@ async function resolvePublishedForm(
   if (UUID_PATTERN.test(formIdentifier)) {
     const response = await openmrsFetch<OpenmrsFormReference>(
       createRestUrl(`form/${formIdentifier}`, { v: formRepresentation }),
+      { cache: 'no-store' },
     );
     const form = response.data;
     if (
@@ -88,6 +89,7 @@ async function resolvePublishedForm(
 
   const response = await openmrsFetch<RestListResponse<OpenmrsFormReference>>(
     createRestUrl('form', { q: formIdentifier, v: formRepresentation, limit: '100' }),
+    { cache: 'no-store' },
   );
   if (!Array.isArray(response.data?.results) || response.data.links?.some((link) => link.rel === 'next')) {
     throw new ConsultaExternaLaunchError('verification-failed');
@@ -130,6 +132,7 @@ export async function findSingleEncounterForVisit(
         startIndex: String(startIndex),
         totalCount: 'true',
       }),
+      { cache: 'no-store' },
     );
     const data = response.data;
     if (!Array.isArray(data?.results) || (data.links != null && !Array.isArray(data.links))) {

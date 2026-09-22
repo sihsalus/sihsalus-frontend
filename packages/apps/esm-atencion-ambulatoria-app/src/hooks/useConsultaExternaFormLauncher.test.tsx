@@ -337,6 +337,55 @@ describe('useConsultaExternaFormLauncher', () => {
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
   });
 
+  it.each([
+    formIdentifier,
+    formUuid,
+  ])('does not open a form using cached publication metadata after a server failure (%s)', async (configuredForm) => {
+    const cachedForm = {
+      uuid: formUuid,
+      name: formIdentifier,
+      published: true,
+      retired: false,
+      encounterType: { uuid: encounterTypeUuid },
+    };
+    mockOpenmrsFetch.mockImplementationOnce((_url, options) =>
+      options?.cache === 'no-store'
+        ? Promise.reject(new Error('synthetic server unavailable'))
+        : Promise.resolve({ data: configuredForm === formUuid ? cachedForm : { results: [cachedForm] } } as never),
+    );
+    const { result } = renderLauncher({ configuredForm, entryMode: 'repeatable' });
+
+    act(() => result.current());
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    0, 1,
+  ])('does not interpret a cached empty encounter page as permission to create a record (page %s)', async (failedPage) => {
+    mockPublishedFormResponse();
+    if (failedPage === 1) {
+      mockOpenmrsFetch.mockResolvedValueOnce({
+        data: {
+          results: [{ ...matchingEncounter('other-form'), form: { uuid: 'different-form' } }],
+          links: [{ rel: 'next' }],
+        },
+      } as never);
+    }
+    mockOpenmrsFetch.mockImplementationOnce((_url, options) =>
+      options?.cache === 'no-store'
+        ? Promise.reject(new Error('synthetic server unavailable'))
+        : Promise.resolve({ data: { results: [], links: [] } } as never),
+    );
+    const { result } = renderLauncher();
+
+    act(() => result.current());
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
   it('creates each referral as a repeatable encounter but still attaches it to the visit', async () => {
     mockPublishedFormResponse();
     const { result } = renderLauncher({ entryMode: 'repeatable' });

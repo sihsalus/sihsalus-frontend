@@ -24,6 +24,8 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## Contratos de navegación
 
+- La redirección de `/home` al panel predeterminado reemplaza la entrada del historial. No crea una pantalla intermedia: al volver desde Inicio, el navegador debe regresar a la página anterior conservando sus parámetros. La selección por rol y el panel alternativo mantienen el mismo criterio.
+- La regresión de historial cubre búsqueda → Inicio → Citas y el recorrido inverso con Atrás/Adelante, tanto para el panel general como para el asignado por rol. Cuando no hay paneles disponibles, se conserva la página de error y la posibilidad de volver.
 - Los accesos rápidos deben lanzar rutas/workspaces registrados por otros módulos, no duplicar su comportamiento.
 - El acceso a búsqueda de paciente debe comportarse igual que la lupa del top bar: abrir el panel y cerrar sin dejar la página en blanco.
 - Los textos de navegación deben usar traducciones visibles para usuario final. Keys como `caseMonitoring` no deben aparecer en la UI.

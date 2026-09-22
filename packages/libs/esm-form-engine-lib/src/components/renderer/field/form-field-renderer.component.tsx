@@ -5,7 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { Controller, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useFormProviderContext } from '../../../provider/form-provider';
-import { getFieldControlWithFallback, getRegisteredControl } from '../../../registry/registry';
+import { getFieldControlWithFallback, getPreviewFieldControl, getRegisteredControl } from '../../../registry/registry';
 import {
   type FormField,
   type FormFieldInputComponent,
@@ -157,8 +157,9 @@ export const FormFieldRenderer = ({
     let disposed = false;
 
     const loadInputComponent = async (): Promise<void> => {
-      const component =
-        hasRendering(field, 'repeating') && repeatOptions?.targetRendering
+      const component = context.isPreview
+        ? getPreviewFieldControl(field, repeatOptions?.targetRendering)
+        : hasRendering(field, 'repeating') && repeatOptions?.targetRendering
           ? await getRegisteredControl(repeatOptions.targetRendering)
           : await getFieldControlWithFallback(field);
 
@@ -170,7 +171,11 @@ export const FormFieldRenderer = ({
     void loadInputComponent();
 
     const loadHistoricalValue = async (): Promise<void> => {
-      if (sessionMode === 'enter' && (field.historicalExpression || context.previousDomainObjectValue)) {
+      if (
+        !context.isPreview &&
+        sessionMode === 'enter' &&
+        (field.historicalExpression || context.previousDomainObjectValue)
+      ) {
         try {
           const value = await context.processor.getHistoricalValue(field, context);
           if (!disposed) {
@@ -319,9 +324,8 @@ export const FormFieldRenderer = ({
   );
 };
 
-export function ErrorFallback({ error }: { error: unknown }): React.JSX.Element {
+export function ErrorFallback(_props: { error?: unknown }): React.JSX.Element {
   const { t } = useTranslation();
-  const safeError = toError(error);
 
   return (
     <ToastNotification
@@ -332,7 +336,10 @@ export function ErrorFallback({ error }: { error: unknown }): React.JSX.Element 
       onClose={function noRefCheck() {}}
       onCloseButtonClick={function noRefCheck() {}}
       statusIconDescription={t('notification', 'Notification')}
-      subtitle={safeError.message}
+      subtitle={t(
+        'errorRenderingFieldDescription',
+        'This field could not be displayed. Check the form configuration or contact support.',
+      )}
       title={t('errorRenderingField', 'Error rendering field')}
     />
   );

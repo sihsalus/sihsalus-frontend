@@ -65,5 +65,7 @@
   "valueMustBeLessThanOrEqualTo": "El valor debe ser menor o igual que {{max}}",
   "valueMustBeNumber": "El valor debe ser numérico",
   "valueNotFoundInCodedAnswersList": "El valor no se encuentra en la lista de respuestas codificadas",
-  "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos."
+  "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos.",
+  "previewActionUnavailable": "Esta acción o control personalizado no está disponible en la vista previa del esquema.",
+  "errorRenderingFieldDescription": "No se pudo mostrar este campo. Revise la configuración del formulario o contacte a Soporte."
 }

@@ -13,6 +13,7 @@ import styles from './page.renderer.scss';
 interface PageRendererProps {
   page: FormPage;
   isFormExpanded: boolean;
+  isPreview?: boolean;
 }
 
 interface CollapsibleSectionContainerProps {
@@ -22,7 +23,7 @@ interface CollapsibleSectionContainerProps {
   isFormExpanded: boolean;
 }
 
-function PageRenderer({ page, isFormExpanded }: PageRendererProps): React.JSX.Element {
+function PageRenderer({ page, isFormExpanded, isPreview = false }: PageRendererProps): React.JSX.Element {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -41,16 +42,20 @@ function PageRenderer({ page, isFormExpanded }: PageRendererProps): React.JSX.El
     setIsCollapsed(!isFormExpanded);
 
     return (): void => {
-      pageObserver.removeInactivePage(page.id);
+      if (!isPreview) pageObserver.removeInactivePage(page.id);
     };
-  }, [isFormExpanded, page.id]);
+  }, [isFormExpanded, page.id, isPreview]);
 
   return (
     <div>
       <Waypoint
         key={page.id}
-        onEnter={() => pageObserver.addActivePage(page.id)}
-        onLeave={() => pageObserver.removeInactivePage(page.id)}
+        onEnter={() => {
+          if (!isPreview) pageObserver.addActivePage(page.id);
+        }}
+        onLeave={() => {
+          if (!isPreview) pageObserver.removeInactivePage(page.id);
+        }}
         topOffset="40%"
         bottomOffset="40%"
       >

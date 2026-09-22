@@ -61,17 +61,20 @@ export const FormRenderer = ({
   } = useFormStateHelpers(dispatch, formFields);
 
   useEffect(() => {
+    if (processorContext.isPreview) return;
     const scrollablePages = formJson.pages.filter((page) => !page.isSubform).map((page) => page);
     pageObserver.updateScrollablePages(scrollablePages);
-  }, [formJson.pages]);
+  }, [formJson.pages, processorContext.isPreview]);
 
   useEffect(() => {
+    if (processorContext.isPreview) return;
     pageObserver.setEvaluatedPagesVisibility(evaluatedPagesVisibility);
-  }, [evaluatedPagesVisibility]);
+  }, [evaluatedPagesVisibility, processorContext.isPreview]);
 
   useEffect(() => {
+    if (processorContext.isPreview) return;
     pageObserver.updatePagesWithErrors(invalidFields.map((field) => field.meta.pageId));
-  }, [invalidFields]);
+  }, [invalidFields, processorContext.isPreview]);
 
   const context: FormContextProps = useMemo(() => {
     return {
@@ -136,7 +139,14 @@ export const FormRenderer = ({
             />
           );
         }
-        return <PageRenderer key={page.label} page={page} isFormExpanded={isFormExpanded} />;
+        return (
+          <PageRenderer
+            key={page.label}
+            page={page}
+            isFormExpanded={isFormExpanded}
+            isPreview={processorContext.isPreview}
+          />
+        );
       })}
     </FormProvider>
   );

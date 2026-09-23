@@ -8,6 +8,8 @@ import {
   mapToAmpathOdontogramEncounterPayload,
 } from './ampath-form-odontogram-mapper';
 import { adultConfig } from './config/adultConfig';
+import { childConfig } from './config/childConfig';
+import { getOdontogramConfig } from './config/dentition';
 import { createEmptyOdontogramData } from './types/odontogram';
 
 const config = getDefaultsFromConfigSchema(configSchema) as OdontogramConfig;
@@ -89,6 +91,45 @@ describe('AMPATH odontogram form mapper', () => {
     expect(getOdontogramRecordTypeFromEncounter(encounter, config, 'base')).toBe('attention');
     expect(getParentBaseEncounterUuidFromEncounter(encounter, config)).toBe('base-encounter');
     expect(getOdontogramDataFromEncounter(encounter, config)).toEqual(data);
+  });
+
+  it.each([
+    'base',
+    'attention',
+  ] as const)('round-trips the complete primary %s snapshot and updates its existing observation', (recordType) => {
+    const data = createEmptyOdontogramData(childConfig);
+    const finding = { id: 'synthetic-finding', findingId: 1, color: { id: 1, name: 'red' } };
+    data.teeth[0].findings = [finding];
+    data.teeth[0].notes = 'Synthetic tooth note';
+    data.teeth[0].annotations = [{ findingId: 1, text: 'Synthetic annotation', color: 'red' }];
+    data.spacingFindings[1][0].findings = [finding];
+    data.legendSpaces[0].findings = [finding];
+    data.especificaciones = 'Synthetic specification';
+    data.observaciones = 'Synthetic observation';
+    const snapshotConcept = config.ampathFormPersistence.concepts.snapshot;
+    const payload = mapToAmpathOdontogramEncounterPayload({
+      config,
+      data,
+      recordType,
+      activeBaseEncounterUuid: 'primary-base',
+      patientUuid: 'synthetic-patient',
+      encounterTypeUuid: recordType === 'base' ? config.baseEncounterTypeUuid : config.attentionEncounterTypeUuid,
+    });
+    const existingObs = [{ uuid: 'existing-snapshot', concept: { uuid: snapshotConcept } }];
+    const update = applyExistingObsUuids(payload, existingObs);
+    expect(update.obs.filter((obs) => obs.concept === snapshotConcept)).toEqual([
+      { uuid: 'existing-snapshot', concept: snapshotConcept, value: JSON.stringify(data) },
+    ]);
+    const encounter = {
+      uuid: 'existing-encounter',
+      encounterDatetime: '2026-09-22T10:00:00.000Z',
+      obs: update.obs.map((obs) => ({ ...obs, concept: { uuid: obs.concept } })),
+    };
+    const reloaded = getOdontogramDataFromEncounter(encounter, config);
+    expect(reloaded).toEqual(data);
+    expect(getOdontogramConfig(reloaded)).toBe(childConfig);
+    if (recordType === 'attention')
+      expect(getParentBaseEncounterUuidFromEncounter(encounter, config)).toBe('primary-base');
   });
 
   describe('applyExistingObsUuids', () => {

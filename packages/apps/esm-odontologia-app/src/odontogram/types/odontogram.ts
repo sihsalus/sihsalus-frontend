@@ -127,6 +127,8 @@ export interface LegendSpaceData {
   findings: SpaceFinding[];
 }
 
+export type Dentition = 'adult' | 'child';
+
 /**
  * Datos completos del odontograma — LO QUE SE GUARDA EN BBDD.
  *
@@ -138,9 +140,10 @@ export interface LegendSpaceData {
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  * CONTRATO DE INTEGRACIÓN — IMPORTANTE
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * Los 5 campos siguientes conforman UNA SOLA UNIDAD CLÍNICA y deben
+ * Los 6 campos siguientes conforman UNA SOLA UNIDAD CLÍNICA y deben
  * persistirse y restaurarse juntos:
  *
+ *   0. `dentition`         → variante elegida (ausente solo en registros adultos históricos)
  *   1. `teeth`             → hallazgos por pieza (cara/superficie)
  *   2. `spacingFindings`   → hallazgos entre piezas (diastemas, etc.)
  *   3. `legendSpaces`      → hallazgos en zona de leyendas (fusiones, etc.)
@@ -151,10 +154,13 @@ export interface LegendSpaceData {
  *
  * No persistir uno sin los otros: el odontograma clínico vive como un
  * único registro completo. Tanto al guardar como al cargar, el round-trip
- * debe preservar los 5 campos.
+ * debe preservar los 6 campos.
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  */
 export interface OdontogramData {
+  /** Missing only in historical adult snapshots; new records persist the selected variant. */
+  dentition?: Dentition;
+
   /** Datos de cada diente con sus hallazgos */
   teeth: ToothData[];
 
@@ -186,7 +192,7 @@ export interface OdontogramData {
 
 export type ToothPosition = 'upper' | 'lower';
 export type ToothType = 'molar' | 'premolar' | 'canino' | 'incisivo';
-export type ToothRootDesign = 'default' | 'design2' | 'design3' | 'design4';
+export type ToothRootDesign = 'default' | 'design2' | 'design3' | 'design4' | 'twoRoots';
 
 /**
  * Definición de un diente en la configuración del odontograma.
@@ -220,7 +226,7 @@ export type SpacingFindingId = number;
  */
 export interface OdontogramConfig {
   /** Identificador del tipo de odontograma */
-  type: 'adult' | 'child';
+  type: Dentition;
   /** Nombre descriptivo */
   name: string;
   /** Definición de todos los dientes (ordenados como se renderizan) */
@@ -338,5 +344,5 @@ export function createEmptyOdontogramData(config: OdontogramConfig): OdontogramD
     }
   }
 
-  return { teeth, spacingFindings, legendSpaces, especificaciones: '', observaciones: '' };
+  return { dentition: config.type, teeth, spacingFindings, legendSpaces, especificaciones: '', observaciones: '' };
 }

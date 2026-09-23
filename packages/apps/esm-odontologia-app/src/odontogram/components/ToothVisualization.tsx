@@ -168,7 +168,7 @@ const ToothVisualization = ({
     <>
       <svg width="60" height="120" onClick={handleFindingToggle} cursor={'pointer'}>
         <g transform={transform}>
-          <ToothDesigns design={design as 'default' | 'design2' | 'design3' | 'design4'} />
+          <ToothDesigns design={design} />
           <Tooth zones={toothZones} />
           {/* Renderizar todos los hallazgos */}
           {renderAllFindings()}

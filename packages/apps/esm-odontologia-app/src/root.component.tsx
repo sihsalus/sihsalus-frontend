@@ -3,7 +3,7 @@ import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { useCallback } from 'react';
 
 import OdontogramCanvas from './odontogram/components/Odontogram';
-import { adultConfig } from './odontogram/config/adultConfig';
+import { getOdontogramConfig } from './odontogram/config/dentition';
 import type { OdontogramData } from './odontogram/types/odontogram';
 import useOdontogramDataStore from './store/odontogramDataStore';
 
@@ -21,7 +21,7 @@ export default function OdontologiaRoot() {
   return (
     <AppErrorBoundary appName="esm-odontologia-app">
       <div style={{ padding: '1rem 0' }}>
-        <OdontogramCanvas config={adultConfig} data={data} onChange={handleChange} />
+        <OdontogramCanvas config={getOdontogramConfig(data)} allowDentitionChange data={data} onChange={handleChange} />
       </div>
     </AppErrorBoundary>
   );

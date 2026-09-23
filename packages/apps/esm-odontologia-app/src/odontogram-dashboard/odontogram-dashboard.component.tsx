@@ -26,6 +26,7 @@ import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
+import { getOdontogramConfig } from '../odontogram/config/dentition';
 import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
 import { deleteEncounter } from '../odontogram.resource';
 import useOdontogramDataStore from '../store/odontogramDataStore';
@@ -223,7 +224,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     (base: OdontogramRecord) => {
       setActiveBaseEncounterUuid(base.encounterUuid);
       setSelectedEncounterUuid(base.encounterUuid);
-      setData(createEmptyOdontogramData(adultConfig));
+      setData(createEmptyOdontogramData(getOdontogramConfig(base.data)));
       resetFormSelection();
       setWorkspaceMode('attention');
       setEditContext({ recordType: 'attention', baseEncounterUuid: base.encounterUuid });
@@ -460,7 +461,8 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
 
               <div className={styles.editCanvas}>
                 <OdontogramCanvas
-                  config={adultConfig}
+                  config={getOdontogramConfig(editData)}
+                  allowDentitionChange={isCreatingBase && !isSaving}
                   data={editData}
                   onChange={setData}
                   formSelection={formSelection}
@@ -550,7 +552,12 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
               </div>
 
               <div className={styles.preview}>
-                <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
+                <OdontogramCanvas
+                  config={getOdontogramConfig(previewData)}
+                  data={previewData}
+                  onChange={noop}
+                  readOnly
+                />
               </div>
             </>
           )}

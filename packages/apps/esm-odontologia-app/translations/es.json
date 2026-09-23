@@ -129,5 +129,10 @@
   "viewing": "En vista",
   "viewInOdontogram": "Ver en el odontograma",
   "viewLarge": "Ver en grande",
-  "visitType": "Tipo de visita"
+  "visitType": "Tipo de visita",
+  "chooseDentition": "Seleccione la dentición antes de registrar hallazgos. Se conservará al guardar.",
+  "dentition": "Dentición",
+  "dentitionHasEntries": "La dentición no puede cambiar mientras este odontograma contenga datos clínicos.",
+  "permanentDentition": "Dentición permanente (32 piezas)",
+  "primaryDentition": "Dentición temporal (20 piezas)"
 }

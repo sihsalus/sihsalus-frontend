@@ -32,6 +32,8 @@ La búsqueda avanzada debe priorizar datos que sirven para confirmar identidad o
 
 El texto principal admite nombre o cualquier identificador/documento, por lo que no se duplican filtros separados de tipo y número de documento. La consulta se ejecuta desde 3 caracteres y se limita a 100 tanto en la cabecera como en la página completa.
 
+La lupa de la cabecera también funciona al entrar directamente a `/search` sin el parámetro `query`: abre el campo vacío y permite iniciar una búsqueda. Un `query` presente conserva su texto inicial.
+
 Para evitar unidades ambiguas, la edad se captura como número más unidad: días (0–27), meses (0–23) o años (0–140, respetando los límites configurados). El filtro de consulta activa contrasta los resultados con las visitas actualmente activas de OpenMRS.
 
 Los resultados se muestran de 10 en 10. Cada cambio de página devuelve el foco visual al inicio de los resultados para no dejar al usuario al final de la lista anterior.

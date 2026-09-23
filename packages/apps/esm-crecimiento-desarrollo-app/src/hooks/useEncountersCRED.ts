@@ -1,6 +1,5 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useCallback, useMemo } from 'react';
-import useSWR from 'swr';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 
@@ -158,14 +157,12 @@ export default function useEncountersCRED(patientUuid: string): UseEncountersRes
   const searchParams = new URLSearchParams({
     patient: patientUuid,
     v: 'custom:(uuid,encounterDatetime,encounterType:(uuid,display),visit:(uuid),form:(uuid,name,display))',
-    limit: '1000',
   });
   const encounterUrl = `${restBaseUrl}/encounter?${searchParams.toString()}`;
   const controlNumberSearchParams = new URLSearchParams({
     patient: patientUuid,
     concept: controlNumberConceptUuid ?? '',
     v: 'custom:(uuid,value,encounter:(uuid))',
-    limit: '1000',
   });
   const controlNumberUrl = `${restBaseUrl}/obs?${controlNumberSearchParams.toString()}`;
 
@@ -174,26 +171,26 @@ export default function useEncountersCRED(patientUuid: string): UseEncountersRes
     error,
     isLoading,
     mutate: mutateEncounters,
-  } = useSWR<FetchResponse<{ results: CREDEncounter[] }>, Error>(patientUuid ? encounterUrl : null, openmrsFetch);
+  } = useOpenmrsFetchAll<CREDEncounter>(patientUuid ? encounterUrl : null, { fetcher: openmrsFetch });
   const {
     data: controlNumberData,
     error: controlNumberError,
     isLoading: isControlNumberLoading,
     mutate: mutateControlNumbers,
-  } = useSWR<FetchResponse<{ results: CREDControlNumberObservation[] }>, Error>(
+  } = useOpenmrsFetchAll<CREDControlNumberObservation>(
     patientUuid && controlNumberConceptUuid ? controlNumberUrl : null,
-    openmrsFetch,
+    { fetcher: openmrsFetch },
   );
 
   const encounters = useMemo(
     () =>
-      data?.data?.results
+      data
         ? attachCREDControlNumbers(
-            data.data.results.filter((encounter) => isCREDFormEncounter(encounter, formIdentifiers)),
-            controlNumberData?.data?.results ?? [],
+            data.filter((encounter) => isCREDFormEncounter(encounter, formIdentifiers)),
+            controlNumberData ?? [],
           )
         : undefined,
-    [controlNumberData?.data?.results, data?.data?.results, formIdentifiers],
+    [controlNumberData, data, formIdentifiers],
   );
 
   const mutate = useCallback(async () => {

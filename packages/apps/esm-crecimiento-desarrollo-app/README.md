@@ -58,6 +58,25 @@ La persistencia real, el inventario de widgets heredados y la aceptación por
 formulario siguen en el
 [issue #57](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/57).
 
+El calendario y el inicio de control también esperan las lecturas necesarias.
+Un error de paciente, historial, número de control o citas no genera una
+recomendación como si el historial estuviera vacío. El workspace muestra el
+estado de error compartido y permite reintentar la lectura del historial antes
+de continuar, conservando los valores del formulario.
+
+El historial y los números de control consumen todas las páginas REST mediante
+`useOpenmrsFetchAll` de la plataforma. El límite de una respuesta no representa
+el fin del historial; una página pendiente o fallida impide iniciar un control.
+El campo de hora admite borrar y escribir un nuevo valor sin sustituirlo por la
+hora actual durante la edición.
+
+La resolución de formularios exige respuesta actual del servidor, UUID correcto
+o una única coincidencia exacta por nombre, publicación confirmada y formulario
+no retirado. Una búsqueda incompleta, ambigua o sin coincidencias muestra el
+error existente; no abre el primer resultado aproximado ni un borrador. Estas
+condiciones corresponden a la metadata servida por OpenMRS y no añaden reglas
+clínicas a content.
+
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.
 - Probar en QLTY el flujo end-to-end de CRED neonatal: abrir formulario, guardar, recargar la historia y confirmar que los widgets leen el encounter y las obs guardadas.
 - Probar balance de líquidos, biometría, evaluación cefalocaudal, alojamiento conjunto y consejería de lactancia con datos sintéticos en DEV/QLTY autorizado y coordinado.

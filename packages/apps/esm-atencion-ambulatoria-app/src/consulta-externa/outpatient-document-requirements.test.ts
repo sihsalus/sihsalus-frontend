@@ -86,14 +86,16 @@ describe('getMissingRecetaUnicaRequirements', () => {
       ),
     ).toEqual([
       { id: 'primaryDiagnosisCie10', tab: 'diagnosis' },
-      { id: 'responsibleProfessional', tab: 'soap' },
+      { id: 'responsibleProfessional', tab: 'physicalExam' },
     ]);
   });
 
   it('still names the clinical encounter when the contract fails without a reported issue', () => {
     mockIsRecetaReady.mockReturnValue(false);
 
-    expect(getMissingRecetaUnicaRequirements(buildSummary())).toEqual([{ id: 'clinicalEncounter', tab: 'soap' }]);
+    expect(getMissingRecetaUnicaRequirements(buildSummary())).toEqual([
+      { id: 'clinicalEncounter', tab: 'physicalExam' },
+    ]);
   });
 
   it('adds the medication requirement on top of the clinical ones', () => {
@@ -119,6 +121,6 @@ describe('getMissingRecetaUnicaRequirements', () => {
           clinicalRecordIssues: ['canonical-encounter-missing', 'canonical-encounter-missing'],
         }),
       ),
-    ).toEqual([{ id: 'clinicalEncounter', tab: 'soap' }]);
+    ).toEqual([{ id: 'clinicalEncounter', tab: 'physicalExam' }]);
   });
 });

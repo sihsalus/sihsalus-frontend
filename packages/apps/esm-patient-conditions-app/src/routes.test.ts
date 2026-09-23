@@ -8,7 +8,7 @@ describe('patient conditions route contract', () => {
     expect(detailViews[0]).toEqual(
       expect.objectContaining({
         name: 'conditions-details-widget',
-        slots: ['patient-chart-conditions-dashboard-slot', 'consulta-externa-antecedents-slot'],
+        slot: 'consulta-externa-antecedents-slot',
         privileges: 'app:hoja.clinica.condiciones',
       }),
     );

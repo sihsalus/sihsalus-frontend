@@ -11,6 +11,7 @@ export type ConsultaExternaFormEntryMode = 'one-per-visit' | 'repeatable';
 interface ConsultaExternaFormLauncherOptions {
   patientUuid: string;
   formIdentifier?: string | null;
+  workspaceTitle?: string;
   encounterTypeUuid?: string | null;
   ambulatoryVisitTypeUuid?: string | null;
   mutate?: () => unknown;
@@ -199,6 +200,7 @@ export async function findSingleEncounterForVisit(
 export function useConsultaExternaFormLauncher({
   patientUuid,
   formIdentifier,
+  workspaceTitle,
   encounterTypeUuid,
   ambulatoryVisitTypeUuid,
   mutate,
@@ -285,7 +287,7 @@ export function useConsultaExternaFormLauncher({
         const launchArgs: Parameters<typeof launchWorkspace2> = [
           patientFormEntryWorkspace,
           {
-            workspaceTitle: form.display ?? form.name,
+            workspaceTitle: workspaceTitle ?? form.display ?? form.name,
             mutateForm: handleFormClose,
             formInfo: {
               patientUuid,
@@ -351,5 +353,6 @@ export function useConsultaExternaFormLauncher({
     requireAmbulatoryVisit,
     showLaunchError,
     t,
+    workspaceTitle,
   ]);
 }

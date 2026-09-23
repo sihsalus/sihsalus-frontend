@@ -32,7 +32,8 @@ const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
 
   const handleLaunchForm = useConsultaExternaFormLauncher({
     patientUuid,
-    formIdentifier: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
+    formIdentifier: config.formsList?.physicalExamForm,
+    workspaceTitle: t('physicalExam', 'Examen físico'),
     encounterTypeUuid: config.encounterTypes?.externalConsultation,
     ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
     mutate,

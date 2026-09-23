@@ -53,7 +53,7 @@ ni del orden de carga de los microfrontends. Los números `order` de cada
 | Bloque de orden            | Accesos, en secuencia                                                                          |
 | -------------------------- | ---------------------------------------------------------------------------------------------- |
 | Atención y agenda          | Resumen, Signos vitales y biometría, Consulta externa, Citas, Consultas                        |
-| Contexto clínico           | Alergias, Antecedentes, Historia social, Ficha familiar                                        |
+| Contexto clínico           | Alergias, Antecedentes (condiciones e historia social), Ficha familiar                         |
 | Tratamiento y estudios     | Medicamentos, Órdenes, Resultados, Imágenes, Procedimientos, Adjuntos                          |
 | Prevención y continuidad   | Vacunación, Tamizajes, Programas, Seguimiento de casos, Pérdida de seguimiento, Interconsultas |
 | Atención especializada     | CRED, Salud materna, Odontología, Psicología, Terapia física                                   |
@@ -63,6 +63,12 @@ Estos bloques describen la secuencia; no añaden carpetas ni ocultan opciones.
 Citas queda junto a la atención actual y el historial de consultas, no al final
 de especialidades. Se conservan los grupos existentes de CRED y salud materna,
 sus hijos y los marcadores invisibles que registran sus rutas.
+
+Antecedentes reúne condiciones e historia social en un solo enlace visible. Las
+extensiones históricas conservan sus rutas y permisos: el enlace de historia social
+solo se muestra si el de condiciones no está asignado, por ejemplo para un perfil
+que solo tiene lectura social. Ambos conservan sus posiciones contiguas en la
+configuración canónica; no se añade un segundo ordenador de navegación.
 
 El orden no concede privilegios, no habilita módulos opcionales ni modifica
 visibilidad online/offline. Los elementos sin permiso o no instalados se omiten

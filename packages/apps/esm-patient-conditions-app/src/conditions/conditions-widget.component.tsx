@@ -45,7 +45,6 @@ import {
   useConditions,
   useConditionsSearch,
 } from './conditions.resource';
-import { getConditionDestination } from './conditions-categories';
 import styles from './conditions-form.scss';
 import { type ConditionsFormSchema } from './conditions-form.workspace';
 
@@ -70,18 +69,6 @@ interface ConditionsWidgetProps {
 interface RequiredFieldLabelProps {
   label: string;
   t: TFunction;
-}
-
-function getConditionDestinationLabel(antecedentType: string | undefined, clinicalStatus: string, t: TFunction) {
-  switch (getConditionDestination(antecedentType, clinicalStatus)) {
-    case 'active-problems':
-      return t('activeProblems', 'Active problems');
-    case 'past-diagnoses':
-      return t('pastDiagnoses', 'Past diagnoses');
-    case 'other-antecedents':
-    default:
-      return t('antecedents', 'Antecedents');
-  }
 }
 
 const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidgetProps>(
@@ -201,7 +188,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
           subtitle: !refreshed
             ? t('antecedentSavedRefreshFailed', 'Saved. Reload the history to see the latest information.')
             : t('antecedentNowVisible', 'It is now visible in {{section}}', {
-                section: getConditionDestinationLabel(payload.antecedentType, payload.clinicalStatus, t),
+                section: t('antecedents', 'Antecedents'),
               }),
           title: t('antecedentSaved', 'Antecedent saved'),
         });
@@ -323,11 +310,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
           subtitle: !refreshed
             ? t('antecedentSavedRefreshFailed', 'Saved. Reload the history to see the latest information.')
             : t('antecedentNowVisible', 'It is now visible in {{section}}', {
-                section: getConditionDestinationLabel(
-                  payload.antecedentType ?? conditionToEdit.antecedentType,
-                  payload.clinicalStatus,
-                  t,
-                ),
+                section: t('antecedents', 'Antecedents'),
               }),
           title: t('antecedentUpdated', 'Antecedent updated'),
         });
@@ -407,11 +390,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
     );
 
     return (
-      <fieldset
-        className={styles.formContainer}
-        disabled={isSubmittingForm}
-        style={{ border: 0, padding: 0, margin: 0 }}
-      >
+      <fieldset className={styles.formContainer} disabled={isSubmittingForm}>
         {isEditing &&
           [conditionToEdit?.onsetDateTime, conditionToEdit?.abatementDateTime].some(
             (date) => date && !/^\d{4}-\d{2}-\d{2}/.test(date),
@@ -432,14 +411,14 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
             title={t('antecedentSearchFailed', 'Antecedent search is unavailable. Please try again.')}
           />
         ) : null}
-        <Stack gap={7}>
+        <Stack gap={5}>
           <FormGroup legendText={<RequiredFieldLabel label={t('antecedentType', 'Antecedent type')} t={t} />}>
             <Controller
               name="antecedentType"
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
                 <RadioButtonGroup
-                  className={styles.radioGroup}
+                  className={`${styles.radioGroup} ${styles.typeOptions}`}
                   invalid={Boolean(errors?.antecedentType)}
                   name="antecedentType"
                   onBlur={onBlur}
@@ -605,7 +584,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
                   name="clinicalStatus"
                   onBlur={onBlur}
                   onChange={onChange}
-                  orientation="vertical"
+                  orientation="horizontal"
                   valueSelected={value.toLowerCase()}
                   aria-labelledby={errors?.clinicalStatus ? `${inputId}-clinicalStatusError` : undefined}
                 >

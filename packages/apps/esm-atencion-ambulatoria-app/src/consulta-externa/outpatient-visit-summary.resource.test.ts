@@ -41,10 +41,8 @@ const concepts = {
   moodUuid: 'mood',
   urineUuid: 'urine',
   bowelMovementsUuid: 'bowel',
-  soapSubjectiveUuid: 'soap-subjective',
-  soapObjectiveUuid: 'soap-objective',
-  soapAssessmentUuid: 'soap-assessment',
-  soapPlanUuid: 'soap-plan',
+  legacyNarrativeUuid: 'soap-subjective',
+  legacyPhysicalExamUuid: 'soap-objective',
   diagnosisTypeConceptUuid: 'diagnosis-type',
   definitiveDiagnosisTypeUuid: 'definitive',
   repeatDiagnosisTypeUuid: 'repeat',
@@ -412,8 +410,8 @@ describe('outpatient visit summary contract', () => {
     });
     expect(summary.anamnesis.chiefComplaint).toBe('Dolor de cabeza');
     expect(summary.anamnesis.biologicalFunctions.summary).toBeNull();
-    expect(summary.soap.subjective).toBe('Cefalea de dos días');
-    expect(summary.soap.objective).toBeNull();
+    expect(summary.legacyNotes.narrative).toBe('Cefalea de dos días');
+    expect(summary.legacyNotes.physicalExam).toBeNull();
     expect(summary.physicalExam).toMatchObject({
       generalState: 'Paciente en buen estado general',
       headAndNeck: 'Sin hallazgos de alarma',

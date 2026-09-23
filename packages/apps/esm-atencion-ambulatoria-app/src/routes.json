@@ -52,6 +52,14 @@
       "offline": false
     },
     {
+      "name": "antecedents-dashboard",
+      "slot": "patient-chart-antecedents-slot",
+      "component": "antecedentsDashboard",
+      "privileges": "app:hoja.clinica.condiciones",
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "social-history-dashboard",
       "slot": "patient-chart-social-history-dashboard-slot",
       "component": "inPatientClinicalEncounter",
@@ -70,7 +78,7 @@
         "columns": 1,
         "columnSpan": 1,
         "slot": "patient-chart-social-history-dashboard-slot",
-        "title": "socialHistory",
+        "title": "antecedents",
         "path": "social-history-dashboard",
         "icon": "omrs-icon-sticky-note-add",
         "layoutMode": "anchored"
@@ -79,24 +87,12 @@
   ],
   "modals": [
     {
-      "name": "ambulatoria-condition-delete-confirmation-dialog",
-      "component": "conditionFilterDeleteConfirmationDialog",
-      "privileges": "app:hoja.clinica.historiaSocial.editar"
-    },
-    {
       "name": "outpatient-missing-document-data-dialog",
       "component": "outpatientMissingDocumentDataModal",
       "privileges": "app:hoja.clinica.consultaExterna"
     }
   ],
   "workspaces": [
-    {
-      "name": "conditions-filter-form-workspace",
-      "component": "conditionsFilterWorkspace",
-      "title": "Antecedentes",
-      "type": "form",
-      "privileges": "app:hoja.clinica.historiaSocial.editar"
-    },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",

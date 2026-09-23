@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .widgetCard {
   border: 1px solid $ui-03;
@@ -35,7 +35,7 @@
 }
 
 .content {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   color: $text-02;
   margin-bottom: layout.$spacing-03;
 }
@@ -43,7 +43,7 @@
 .tileContainer {
   background-color: $ui-02;
   border-top: 1px solid $ui-03;
-  padding: layout.$spacing-11 0;
+  padding: layout.$spacing-05;
 }
 
 .tile {
@@ -58,7 +58,7 @@
 }
 
 .helper {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: $text-02;
 }
 
@@ -66,4 +66,15 @@
   td {
     border-bottom: none !important;
   }
+}
+
+.emptyState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-05;
+  border: 1px solid $ui-03;
+  color: $text-02;
 }

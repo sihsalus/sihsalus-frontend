@@ -106,15 +106,18 @@ function renderLauncher({
   entryMode = 'one-per-visit',
   mutate = vi.fn(),
   configuredForm = formIdentifier,
+  workspaceTitle,
 }: {
   entryMode?: 'one-per-visit' | 'repeatable';
   mutate?: () => unknown;
   configuredForm?: string | null;
+  workspaceTitle?: string;
 } = {}) {
   const hook = renderHook(() =>
     useConsultaExternaFormLauncher({
       patientUuid,
       formIdentifier: configuredForm,
+      workspaceTitle,
       encounterTypeUuid,
       ambulatoryVisitTypeUuid,
       mutate,
@@ -271,6 +274,43 @@ describe('useConsultaExternaFormLauncher', () => {
         expect.objectContaining({ patientUuid }),
       ),
     );
+  });
+
+  it('opens the physical examination form with its clinical title', async () => {
+    mockPublishedFormResponse('CE-EXF-001-EXAMEN FISICO');
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { results: [matchingEncounter('existing-physical-exam')] },
+    } as never);
+    const { result } = renderLauncher({
+      configuredForm: 'CE-EXF-001-EXAMEN FISICO',
+      workspaceTitle: 'Examen físico',
+    });
+
+    act(() => result.current());
+
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+        patientFormEntryWorkspace,
+        expect.objectContaining({
+          workspaceTitle: 'Examen físico',
+          formInfo: expect.objectContaining({ formUuid, encounterUuid: 'existing-physical-exam' }),
+        }),
+        null,
+        expect.objectContaining({ patientUuid }),
+      ),
+    );
+    expect(getRequestedUrl(0).searchParams.get('q')).toBe('CE-EXF-001-EXAMEN FISICO');
+  });
+
+  it('does not fall back to the historical form when the physical examination form is unavailable', async () => {
+    mockPublishedFormResponse('CE-SOAP-001-NOTA SOAP');
+    const { result } = renderLauncher({ configuredForm: 'CE-EXF-001-EXAMEN FISICO' });
+
+    act(() => result.current());
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
   });
 
   it('blocks ambiguous duplicate encounters without silently choosing one', async () => {

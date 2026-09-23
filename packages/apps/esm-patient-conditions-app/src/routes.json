@@ -37,12 +37,18 @@
     },
     {
       "name": "conditions-details-widget",
-      "slots": ["patient-chart-conditions-dashboard-slot", "consulta-externa-antecedents-slot"],
+      "slot": "consulta-externa-antecedents-slot",
       "component": "conditionsDetailedSummary",
       "privileges": "app:hoja.clinica.condiciones",
       "meta": {
         "fullWidth": false
       }
+    },
+    {
+      "name": "conditions-dashboard",
+      "slot": "patient-chart-conditions-dashboard-slot",
+      "component": "conditionsDashboard",
+      "privileges": "app:hoja.clinica.condiciones"
     },
     {
       "name": "conditions-summary-dashboard",
@@ -52,7 +58,9 @@
       "order": 7,
       "meta": {
         "slot": "patient-chart-conditions-dashboard-slot",
-        "path": "Antecedentes"
+        "path": "Antecedentes",
+        "title": "antecedents",
+        "columns": 1
       }
     },
     {

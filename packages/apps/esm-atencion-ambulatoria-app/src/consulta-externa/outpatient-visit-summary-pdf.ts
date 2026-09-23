@@ -620,7 +620,7 @@ export async function createOutpatientVisitSummaryPdf(
     drawField(state, labels.bowelMovements, summary.anamnesis.biologicalFunctions.bowelMovements);
   }
 
-  if (Object.values(summary.physicalExam).some(Boolean) || summary.soap.objective) {
+  if (Object.values(summary.physicalExam).some(Boolean) || summary.legacyNotes.physicalExam) {
     drawSectionTitle(state, labels.physicalExam);
     drawField(state, labels.generalCondition, summary.physicalExam.generalState);
     drawField(state, labels.consciousnessStatus, summary.physicalExam.consciousness);
@@ -632,7 +632,11 @@ export async function createOutpatientVisitSummaryPdf(
     drawField(state, labels.genitourinarySystem, summary.physicalExam.genitourinary);
     drawField(state, labels.musculoskeletalAndExtremities, summary.physicalExam.musculoskeletal);
     drawField(state, labels.neurologicalExam, summary.physicalExam.neurological);
-    drawField(state, labels.otherObjectiveFindings, summary.physicalExam.otherFindings ?? summary.soap.objective);
+    drawField(
+      state,
+      labels.otherObjectiveFindings,
+      summary.physicalExam.otherFindings ?? summary.legacyNotes.physicalExam,
+    );
   }
 
   if (summary.diagnoses.length) {

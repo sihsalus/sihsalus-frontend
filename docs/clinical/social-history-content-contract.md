@@ -5,9 +5,11 @@ acredita las versiones instaladas ni el funcionamiento clínico en DEV/QLTY.
 
 ## Componentes reutilizados
 
-Consulta Externa y Antecedentes y problemas ya comparten
+Consulta Externa y la página Antecedentes comparten
 `conditions-details-widget`, sus formularios y el lector REST Condition.
-Los antecedentes longitudinales conservan el
+Desde el 23/09/2026, el acceso lateral **Antecedentes** agrupa condiciones e
+historia social; se conserva la ruta social histórica con sus permisos y
+paneles de hospitalización. Los antecedentes longitudinales conservan el
 [contrato de antecedentes](antecedents-data-contract.md).
 
 Historia Social comparte `OutPatientSocialHistory`, `ClinicalHistoryCard` y

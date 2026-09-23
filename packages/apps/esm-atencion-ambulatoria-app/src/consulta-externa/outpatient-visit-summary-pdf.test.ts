@@ -117,11 +117,9 @@ const summary: OutpatientVisitSummary = {
       bowelMovements: null,
     },
   },
-  soap: {
-    subjective: 'Subjetivo',
-    objective: 'Objetivo',
-    assessment: 'Apreciación',
-    plan: 'Plan',
+  legacyNotes: {
+    narrative: 'Subjetivo',
+    physicalExam: 'Objetivo',
   },
   physicalExam: {
     generalState: 'Paciente en buen estado general',

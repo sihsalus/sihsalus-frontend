@@ -7,8 +7,17 @@ This is a library of components and utilities shared across widgets in the patie
 
 ## Antecedents
 
+`ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.
+
+`src/antecedents/_condition-form.scss` supplies the shared workspace layout for
+Conditions and the concept-set form. The form body scrolls while
+actions remain visible, with compact field spacing and width-aware option grids.
+The app forms retain their fields, clinical filters, lifecycle and permissions.
+The local browser regression in `styles.browser.spec.js` checks both shared layouts
+at 320, 420 and 768 pixels; authenticated clinical acceptance remains in QLTY.
+
 `src/antecedents` owns the Condition data model, complete-history reader and write
-payloads used by Conditions, Consulta Externa, CRED and Salud Materna. Each view
+payloads used by Conditions and the concept-set form. Each view
 retains its clinical filters and permissions. Keep transformations and persistence
 rules here instead of copying a resource implementation into another app.
 

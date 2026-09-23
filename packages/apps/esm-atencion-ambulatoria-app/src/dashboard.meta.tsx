@@ -12,7 +12,7 @@ export const socialHistoryDashboardMeta = {
   icon: 'omrs-icon-sticky-note-add',
   slot: 'patient-chart-social-history-dashboard-slot',
   columns: 1,
-  title: 'socialHistory',
+  title: 'antecedents',
   path: 'social-history-dashboard',
   config: {},
 } as const;

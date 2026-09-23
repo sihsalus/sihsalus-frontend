@@ -104,7 +104,9 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
                 ) : null}
               </TabPanel>
               <TabPanel>
-                {selectedTab === getConsultaExternaTabIndex('soap') ? <ExamenFisico patientUuid={patientUuid} /> : null}
+                {selectedTab === getConsultaExternaTabIndex('physicalExam') ? (
+                  <ExamenFisico patientUuid={patientUuid} />
+                ) : null}
               </TabPanel>
               <TabPanel>
                 {selectedTab === getConsultaExternaTabIndex('complementaryTests') ? (

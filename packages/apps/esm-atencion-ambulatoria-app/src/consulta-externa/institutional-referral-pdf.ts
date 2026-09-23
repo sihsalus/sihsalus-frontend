@@ -276,7 +276,7 @@ function getAnamnesis(summary: OutpatientVisitSummary): string | null {
       summary.anamnesis.chiefComplaint && `Motivo: ${summary.anamnesis.chiefComplaint}`,
       summary.anamnesis.illnessDuration && `Tiempo: ${summary.anamnesis.illnessDuration}`,
       summary.anamnesis.narrative,
-      summary.soap.subjective,
+      summary.legacyNotes.narrative,
     ],
     '\n',
   );
@@ -290,7 +290,7 @@ function getPhysicalExam(summary: OutpatientVisitSummary): string | null {
     summary.vitals.pulse && `FC ${summary.vitals.pulse}`,
     summary.vitals.oxygenSaturation && `SatO2 ${summary.vitals.oxygenSaturation}`,
   ]);
-  return compact([vitals, ...Object.values(summary.physicalExam), summary.soap.objective], '\n');
+  return compact([vitals, ...Object.values(summary.physicalExam), summary.legacyNotes.physicalExam], '\n');
 }
 
 function getAuxiliaryExams(summary: OutpatientVisitSummary): string | null {

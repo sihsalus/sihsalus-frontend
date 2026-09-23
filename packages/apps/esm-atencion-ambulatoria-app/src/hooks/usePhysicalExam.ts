@@ -50,7 +50,7 @@ export function mapPhysicalExamEntry(
   encounter: PhysicalExamEncounter,
   concepts: Record<string, string>,
 ): PhysicalExamEntry {
-  const objectiveUuid = concepts?.soapObjectiveUuid;
+  const objectiveUuid = concepts?.legacyPhysicalExamUuid;
   const physicalExam = physicalExamFields.reduce((values, field) => {
     values[field.key] = getObsValue(encounter.obs, undefined, getFormEngineFieldPath(field.questionId));
     return values;

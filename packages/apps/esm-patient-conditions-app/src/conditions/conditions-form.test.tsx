@@ -273,7 +273,7 @@ describe('Conditions form', () => {
     });
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       kind: 'success',
-      subtitle: 'It is now visible in Active problems',
+      subtitle: 'It is now visible in Antecedents',
       title: 'Antecedent saved',
     });
     expect(mockCreateCondition).toHaveBeenCalledWith(
@@ -540,7 +540,7 @@ describe('Conditions form', () => {
     });
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       kind: 'success',
-      subtitle: 'It is now visible in Active problems',
+      subtitle: 'It is now visible in Antecedents',
       title: 'Antecedent saved',
     });
   });

@@ -1,3 +1,4 @@
+import type { Condition } from '@openmrs/esm-patient-common-lib';
 import { useConfig, useSession } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -5,12 +6,11 @@ import userEvent from '@testing-library/user-event';
 import type { TFunction } from 'i18next';
 import type { ReactNode } from 'react';
 import {
-  type Condition,
   createCondition,
   updateCondition,
-  useConditions,
-  useConditionsSearchFromConceptSet,
-} from './conditions.resource';
+  usePatientConditions as useConditions,
+} from '@openmrs/esm-patient-common-lib/src/antecedents/conditions.resource';
+import { useConditionsSearchFromConceptSet } from '@openmrs/esm-patient-common-lib/src/antecedents/condition-concept-set.resource';
 import ConditionsForm, { createSchema } from './conditions-form.workspace';
 
 vi.mock('@sihsalus/esm-rbac', () => ({
@@ -23,17 +23,21 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('./conditions.resource', async () => {
-  const actual = await vi.importActual('./conditions.resource');
+vi.mock('@openmrs/esm-patient-common-lib/src/antecedents/conditions.resource', async () => {
+  const actual = await vi.importActual('@openmrs/esm-patient-common-lib/src/antecedents/conditions.resource');
 
   return {
     ...actual,
     createCondition: vi.fn(),
     updateCondition: vi.fn(),
-    useConditions: vi.fn(),
-    useConditionsSearchFromConceptSet: vi.fn(),
+    usePatientConditions: vi.fn(),
   };
 });
+
+vi.mock('@openmrs/esm-patient-common-lib/src/antecedents/condition-concept-set.resource', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib/src/antecedents/condition-concept-set.resource')),
+  useConditionsSearchFromConceptSet: vi.fn(),
+}));
 
 const mockCreateCondition = vi.mocked(createCondition);
 const mockUpdateCondition = vi.mocked(updateCondition);

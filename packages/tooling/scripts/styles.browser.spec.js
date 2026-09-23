@@ -25,6 +25,93 @@ const styleOwners = [
 
 let browser;
 
+test('antecedent workspaces keep fields scrollable and actions visible at narrow and tablet widths', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'antecedent-workspaces-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-conditions-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  const owners = [
+    'apps/esm-patient-conditions-app/src/conditions/conditions-form.scss',
+    'libs/esm-patient-common-lib/src/antecedents/condition-concept-set-form.scss',
+  ];
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    owners
+      .map(
+        (owner, index) => `import styles${index} from ${JSON.stringify(path.join(repositoryRoot, 'packages', owner))};`,
+      )
+      .join('\n') + '\nwindow.conditionStyles = [styles0, styles1];',
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<main id="workspace"><form id="form"><div id="content">' +
+      '<fieldset id="fields"><div id="types"><div class="cds--radio-button-group">' +
+      ['Patológico', 'Familiar', 'Quirúrgico', 'Hospitalización previa', 'Social', 'Otro']
+        .map((label) => `<label class="cds--radio-button-wrapper"><input type="radio" name="type">${label}</label>`)
+        .join('') +
+      '</div></div><div style="height:1200px">Campos del antecedente</div>' +
+      '</fieldset></div><footer id="actions"><div id="buttons"><button type="button">Cancelar</button>' +
+      '<button type="submit">Guardar y cerrar</button></div></footer></form></main>',
+  );
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({
+    content: '*{box-sizing:border-box}body{margin:0}#workspace{height:500px}#buttons{display:flex}',
+  });
+  for (const [index, app] of owners.entries()) {
+    await page.evaluate((owner) => {
+      const styles = window.conditionStyles[owner];
+      for (const [id, key] of Object.entries({
+        form: 'form',
+        content: 'formContent',
+        fields: 'formContainer',
+        actions: 'formActions',
+      })) {
+        document.getElementById(id).className = styles[key];
+      }
+      document.getElementById('types').className = styles.typeOptions ?? styles.categoryGrid ?? '';
+      document.querySelectorAll('button').forEach((button) => {
+        button.className = styles.button;
+      });
+    }, index);
+    for (const width of [320, 420, 768]) {
+      await page.setViewportSize({ width, height: 500 });
+      const before = await page.locator('#actions').boundingBox();
+      assert.ok(before.y + before.height <= 500, `${app}: actions fit at ${width}px`);
+      await page.locator('#content').evaluate((content) => {
+        content.scrollTop = content.scrollHeight;
+      });
+      assert.ok(await page.locator('#content').evaluate((content) => content.scrollTop > 0), `${app}: fields scroll`);
+      assert.deepEqual(await page.locator('#actions').boundingBox(), before, `${app}: actions stay in place`);
+      assert.ok(
+        await page.locator('#form').evaluate((form) => form.scrollWidth <= form.clientWidth),
+        `${app}: no horizontal overflow`,
+      );
+      await expect(page.getByRole('button', { name: 'Guardar y cerrar' })).toBeInViewport();
+    }
+  }
+});
+
 test('workspace rail reserves desktop chart space without changing overlay or tablet layout', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'workspace-rail-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));

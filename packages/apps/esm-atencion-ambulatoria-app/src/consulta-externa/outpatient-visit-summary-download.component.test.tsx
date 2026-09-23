@@ -1047,7 +1047,7 @@ describe('receta única desde el dashboard', () => {
           title: 'No se pudo emitir la Receta Única',
           requirements: [
             { id: 'primaryDiagnosisCie10', tab: 'diagnosis' },
-            { id: 'responsibleProfessional', tab: 'soap' },
+            { id: 'responsibleProfessional', tab: 'physicalExam' },
           ],
         }),
       ),

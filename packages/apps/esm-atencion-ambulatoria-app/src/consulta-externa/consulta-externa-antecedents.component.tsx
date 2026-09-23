@@ -1,4 +1,14 @@
-import { DataTableSkeleton, InlineNotification, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
+import {
+  Accordion,
+  AccordionItem,
+  DataTableSkeleton,
+  InlineNotification,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+} from '@carbon/react';
 import { Friendship, ReminderMedical } from '@carbon/react/icons';
 import { ExtensionSlot, useAssignedExtensions, useConfig, usePatient } from '@openmrs/esm-framework';
 import { useClinicalEncounter } from '@openmrs/esm-patient-common-lib';
@@ -78,11 +88,12 @@ const ClinicalEncounterHistory: React.FC<ConsultaExternaAntecedentsProps & { med
 const ConsultaExternaAntecedents: React.FC<ConsultaExternaAntecedentsProps> = ({ patientUuid }) => {
   const { t } = useTranslation(moduleName);
   const [selectedTab, setSelectedTab] = useState(0);
+  const [showPreviousRecords, setShowPreviousRecords] = useState(false);
 
   return (
     <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
       <TabList contained activation="manual" aria-label={t('antecedentsTabs', 'Antecedents tabs')}>
-        <Tab renderIcon={ReminderMedical}>{t('antecedentsAndProblems', 'Antecedents and problems')}</Tab>
+        <Tab renderIcon={ReminderMedical}>{t('conditionsTab', 'Conditions')}</Tab>
         <Tab renderIcon={Friendship}>{t('socialHistory', 'Social History')}</Tab>
       </TabList>
       <TabPanels>
@@ -93,7 +104,15 @@ const ConsultaExternaAntecedents: React.FC<ConsultaExternaAntecedentsProps> = ({
                 <PatientAntecedents patientUuid={patientUuid} />
               </RequirePrivilege>
               <RequirePrivilege privilege={socialHistoryPrivilege} hideUnauthorized>
-                <ClinicalEncounterHistory patientUuid={patientUuid} medical />
+                <Accordion size="sm">
+                  <AccordionItem
+                    title={t('previousMedicalRecords', 'Previous medical records')}
+                    open={showPreviousRecords}
+                    onHeadingClick={({ isOpen }) => setShowPreviousRecords(isOpen)}
+                  >
+                    {showPreviousRecords ? <ClinicalEncounterHistory patientUuid={patientUuid} medical /> : null}
+                  </AccordionItem>
+                </Accordion>
               </RequirePrivilege>
             </>
           ) : null}

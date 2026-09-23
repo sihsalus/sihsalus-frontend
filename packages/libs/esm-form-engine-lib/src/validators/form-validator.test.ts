@@ -59,6 +59,28 @@ describe('form validators', () => {
     );
   });
 
+  it.each([
+    [undefined, undefined, false],
+    [false, undefined, false],
+    [false, true, false],
+    [false, false, true],
+    [true, true, true],
+    [true, false, true],
+    [true, undefined, true],
+  ])('validates decimals with form restriction %s and concept allowance %s', (disallowDecimals, allowDecimal, rejects) => {
+    const field = {
+      id: 'hemoglobin',
+      type: 'obs',
+      questionOptions: { rendering: 'number', min: '3', max: '25', disallowDecimals },
+      meta: { concept: allowDecimal === undefined ? undefined : { uuid: 'synthetic-numeric-concept', allowDecimal } },
+    } as FormField;
+
+    expect(FieldValidator.validate(field, 11.5)).toHaveLength(rejects ? 1 : 0);
+    expect(FieldValidator.validate(field, 11)).toEqual([]);
+    expect(FieldValidator.validate(field, undefined)).toEqual([]);
+    expect(FieldValidator.validate(field, 30)).toHaveLength(1);
+  });
+
   it('translates future date validation messages', () => {
     const field = {
       questionOptions: {

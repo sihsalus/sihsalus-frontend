@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import { useTranslation } from 'react-i18next';
 import { renderWithSwr } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { useOrderStockInfo } from '../hooks/useOrderStockInfo';
 
 import OrderStockDetailsComponent from './order-stock-details.component';
@@ -16,7 +17,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: vi.fn(),
 }));
 
-const mockUseTranslation = useTranslation as vi.Mock;
+const mockUseTranslation = useTranslation as Mock;
 
 describe('OrderStockDetailsComponent', () => {
   beforeEach(() => {

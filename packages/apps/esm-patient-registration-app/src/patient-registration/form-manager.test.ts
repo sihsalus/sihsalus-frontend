@@ -1,5 +1,6 @@
 import { getConfig, getDefaultsFromConfigSchema, type Session } from '@openmrs/esm-framework';
 
+import type { Mock } from 'vitest';
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
 import { FormManager, SavePatientTransactionManager } from './form-manager';
 import {
@@ -78,7 +79,7 @@ vi.mock('./identity/identity-verification.resource', () => ({
   verifyIdentityForPromotion: vi.fn(),
 }));
 
-const mockGenerateIdentifier = generateIdentifier as vi.Mock;
+const mockGenerateIdentifier = generateIdentifier as Mock;
 const mockAddPatientIdentifier = vi.mocked(addPatientIdentifier);
 const mockDeletePatientIdentifier = vi.mocked(deletePatientIdentifier);
 const mockDeletePersonAttribute = vi.mocked(deletePersonAttribute);

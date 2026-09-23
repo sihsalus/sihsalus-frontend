@@ -1,15 +1,16 @@
 import { type Session, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import type { MockedFunction } from 'vitest';
 import { useHsuIdIdentifier } from '../hooks/location-tag.resource';
 
 vi.mock('@openmrs/esm-framework');
 vi.mock('../hooks/location-tag.resource');
 
-const mockShowSnackbar = showSnackbar as vi.MockedFunction<typeof showSnackbar>;
+const mockShowSnackbar = showSnackbar as MockedFunction<typeof showSnackbar>;
 const mockUseConfig = vi.mocked(
   useConfig<{ enforcePatientListLocationMatch: boolean; patientLocationMismatchCheck?: boolean }>,
 );
-const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
-const mockUseHsuIdIdentifier = useHsuIdIdentifier as vi.MockedFunction<typeof useHsuIdIdentifier>;
+const mockUseSession = useSession as MockedFunction<typeof useSession>;
+const mockUseHsuIdIdentifier = useHsuIdIdentifier as MockedFunction<typeof useHsuIdIdentifier>;
 
 describe('AddGroupModal - enforcePatientListLocationMatch', () => {
   const mockSessionLocation = {

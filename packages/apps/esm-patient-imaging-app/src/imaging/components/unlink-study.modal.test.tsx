@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import { assignStudy, useStudiesByPatient } from '../../api';
 import UnlinkStudyModal from './unlink-study.modal';
 
@@ -27,7 +28,7 @@ describe('UnlinkStudyModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useStudiesByPatient as vi.Mock).mockReturnValue({ mutate: mockMutate });
+    (useStudiesByPatient as Mock).mockReturnValue({ mutate: mockMutate });
   });
 
   it('renders correctly', () => {
@@ -40,7 +41,7 @@ describe('UnlinkStudyModal', () => {
   });
 
   it('calls assignStudy and handles success flow', async () => {
-    (assignStudy as vi.Mock).mockResolvedValueOnce({ ok: true });
+    (assignStudy as Mock).mockResolvedValueOnce({ ok: true });
 
     render(<UnlinkStudyModal closeUnlinkModal={mockClose} studyId={studyId} patientUuid={patientUuid} />);
 
@@ -53,7 +54,7 @@ describe('UnlinkStudyModal', () => {
   });
 
   it('handles error flow correctly', async () => {
-    (assignStudy as vi.Mock).mockRejectedValueOnce(new Error('unlink failed'));
+    (assignStudy as Mock).mockRejectedValueOnce(new Error('unlink failed'));
 
     render(<UnlinkStudyModal closeUnlinkModal={mockClose} studyId={studyId} patientUuid={patientUuid} />);
 
@@ -75,7 +76,7 @@ describe('UnlinkStudyModal', () => {
     let resolvePromise: Function;
 
     const pendingPromise = new Promise((resolve) => (resolvePromise = resolve));
-    (assignStudy as vi.Mock).mockReturnValue(pendingPromise);
+    (assignStudy as Mock).mockReturnValue(pendingPromise);
 
     render(<UnlinkStudyModal closeUnlinkModal={mockClose} studyId={studyId} patientUuid={patientUuid} />);
 

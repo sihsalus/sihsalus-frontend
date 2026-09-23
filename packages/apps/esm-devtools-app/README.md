@@ -38,6 +38,6 @@ If you prefer using the browser console instead of a UI to manage module overrid
 
 ## Type checking and validation
 
-Source and tests use the shared [strict TypeScript preset](../../tooling/tsconfig.strict.json).
+Source and tests use the [strict TypeScript options](tsconfig.json) declared in this package.
 From the repository root, run `yarn workspace @sihsalus/esm-devtools-app typescript`
 and the same workspace's `lint`, `test`, and `build` scripts.

@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import InstancePreviewModal from './instance-preview.modal';
 import '@testing-library/jest-dom';
 import { showSnackbar } from '@openmrs/esm-framework';
@@ -39,11 +40,11 @@ describe('InstancePreviewModal', () => {
   });
 
   afterAll(() => {
-    (global.URL.createObjectURL as vi.Mock).mockRestore?.();
+    (global.URL.createObjectURL as Mock).mockRestore?.();
   });
 
   it('renders loading state initially', async () => {
-    (api.previewInstance as vi.Mock).mockReturnValue(new Promise(() => {}));
+    (api.previewInstance as Mock).mockReturnValue(new Promise(() => {}));
 
     await act(async () => {
       setup();
@@ -57,7 +58,7 @@ describe('InstancePreviewModal', () => {
     const blob = new Blob(['fake image'], { type: 'image/png' });
 
     const response = { blob: vi.fn().mockResolvedValue(blob) };
-    (api.previewInstance as vi.Mock).mockResolvedValue(response);
+    (api.previewInstance as Mock).mockResolvedValue(response);
 
     setup();
 
@@ -70,7 +71,7 @@ describe('InstancePreviewModal', () => {
 
   it('handles fetch error', async () => {
     const error = new Error('Failed to fetch');
-    (api.previewInstance as vi.Mock).mockImplementation(() => Promise.reject(error));
+    (api.previewInstance as Mock).mockImplementation(() => Promise.reject(error));
 
     setup();
 
@@ -89,7 +90,7 @@ describe('InstancePreviewModal', () => {
   it('renders and finishes loading', async () => {
     const blob = new Blob(['fake image'], { type: 'image/png' });
     const response = { blob: vi.fn().mockResolvedValue(blob) };
-    (api.previewInstance as vi.Mock).mockResolvedValue(response);
+    (api.previewInstance as Mock).mockResolvedValue(response);
 
     setup();
 

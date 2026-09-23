@@ -5,8 +5,8 @@ import {
   openmrsFetch,
   showSnackbar,
   useConfig,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   getDrugOrderByUuid,
@@ -22,24 +22,25 @@ import userEvent from '@testing-library/user-event';
 import { useReactToPrint } from 'react-to-print';
 import { mockOrders, mockSessionDataResponse } from 'test-utils';
 
-import { configSchema } from '../config-schema';
+import type { Mock } from 'vitest';
 import spanishTranslations from '../../translations/es.json';
+import { configSchema } from '../config-schema';
 
 import OrderDetailsTable from './orders-details-table.component';
 
-const mockUsePatientOrders = usePatientOrders as vi.Mock;
-const mockUseOrderTypes = useOrderTypes as vi.Mock;
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUsePatientOrders = usePatientOrders as Mock;
+const mockUseOrderTypes = useOrderTypes as Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockGetLocale = vi.mocked(getLocale);
 const mockSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseReactToPrint = vi.mocked(useReactToPrint);
-const mockGetDrugOrderByUuid = getDrugOrderByUuid as vi.Mock;
-const mockGetPatientUuidFromStore = getPatientUuidFromStore as vi.Mock;
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
-const mockUseOrderBasket = useOrderBasket as vi.Mock;
+const mockGetDrugOrderByUuid = getDrugOrderByUuid as Mock;
+const mockGetPatientUuidFromStore = getPatientUuidFromStore as Mock;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as Mock;
+const mockUseOrderBasket = useOrderBasket as Mock;
 const mockSetOrders = vi.fn();
 const mockLaunchOrderBasket = vi.fn();
 const mockLaunchAddDrugOrder = vi.fn();

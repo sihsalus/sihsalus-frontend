@@ -5,6 +5,7 @@ import {
   PATIENT_VITAL_STATUS_UNAVAILABLE,
 } from '@openmrs/esm-patient-common-lib';
 import { render } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import FormWorkflowContext from '../context/FormWorkflowContext';
 import FormBootstrap from '../FormBootstrap';
 import useStartVisit from '../hooks/useStartVisit';
@@ -68,7 +69,7 @@ vi.mock('./workflow-review', () => ({
 const mockUseSession = vi.mocked(useSession);
 const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
 const mockUseStartVisit = vi.mocked(useStartVisit);
-const mockFormBootstrap = FormBootstrap as vi.Mock;
+const mockFormBootstrap = FormBootstrap as Mock;
 
 const renderWorkspace = (contextOverrides = {}) => {
   const defaultContext = {

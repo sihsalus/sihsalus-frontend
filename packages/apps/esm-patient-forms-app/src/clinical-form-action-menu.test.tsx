@@ -3,12 +3,13 @@ import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-li
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 
+import type { Mock } from 'vitest';
 import ClinicalFormActionMenu from './clinical-form-action-menu.component';
 
 void React;
 
 const mockActionMenuButton = vi.mocked(ActionMenuButton);
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as Mock;
 
 mockActionMenuButton.mockImplementation(({ label }) => <button type="button">{label}</button>);
 

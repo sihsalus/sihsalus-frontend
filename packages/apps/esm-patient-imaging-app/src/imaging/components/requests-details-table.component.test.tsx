@@ -3,6 +3,7 @@ import { usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { act } from 'react';
+import type { Mock } from 'vitest';
 import RequestProcedureTable from './requests-details-table.component';
 
 type IconProps = Record<string, unknown>;
@@ -95,7 +96,7 @@ describe('RequestProcedureTable', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (usePagination as vi.Mock).mockReturnValue({
+    (usePagination as Mock).mockReturnValue({
       results: mockRequests,
       currentPage: 1,
       goTo: vi.fn(),
@@ -125,7 +126,7 @@ describe('RequestProcedureTable', () => {
 
   it('call showModal when delete icon is clicked', async () => {
     const mockDispose = vi.fn();
-    (framework.showModal as vi.Mock).mockReturnValue(mockDispose);
+    (framework.showModal as Mock).mockReturnValue(mockDispose);
 
     await act(async () => {
       render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} />);

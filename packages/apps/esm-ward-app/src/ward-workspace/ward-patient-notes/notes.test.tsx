@@ -8,6 +8,7 @@ import {
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatientAlice } from 'test-utils';
+import type { Mock } from 'vitest';
 import { emrConfigurationMock, mockInpatientRequestAlice } from '../../../test-utils/mocks';
 import { configSchema, type WardConfigObject } from '../../config-schema';
 import useEmrConfiguration from '../../hooks/useEmrConfiguration';
@@ -37,7 +38,7 @@ const testProps: WardPatientWorkspaceDefinition = {
   showActionMenu: false,
 };
 
-const mockCreatePatientNote = createPatientNote as vi.Mock;
+const mockCreatePatientNote = createPatientNote as Mock;
 const mockedShowSnackbar = vi.mocked(showSnackbar);
 
 vi.mock('./notes.resource', () => ({

@@ -2,6 +2,7 @@ import { openmrsFetch, useAppContext } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
 import useSWR from 'swr';
 
+import type { Mock, MockedFunction } from 'vitest';
 import { cancelFuaRequest, setFuaEstado, useFuaEstados, useFuaRequests, useFuasByPatient } from './useFuaRequests';
 
 vi.mock('swr');
@@ -11,9 +12,9 @@ vi.mock('@openmrs/esm-framework', async () => ({
   useAppContext: vi.fn(),
 }));
 
-const mockUseSWR = useSWR as vi.MockedFunction<typeof useSWR>;
-const mockUseAppContext = useAppContext as vi.MockedFunction<typeof useAppContext>;
-const mockOpenmrsFetch = openmrsFetch as vi.MockedFunction<typeof openmrsFetch>;
+const mockUseSWR = useSWR as MockedFunction<typeof useSWR>;
+const mockUseAppContext = useAppContext as MockedFunction<typeof useAppContext>;
+const mockOpenmrsFetch = openmrsFetch as MockedFunction<typeof openmrsFetch>;
 
 // Use local-date constructor to avoid UTC-midnight timezone shifts
 const mockDateRange: [Date, Date] = [new Date(2024, 0, 1), new Date(2024, 0, 31)];
@@ -73,7 +74,7 @@ describe('useFuaRequests', () => {
 
     renderHook(() => useFuaRequests({ status: 'IN_PROGRESS' }));
 
-    const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
+    const calledUrl = (mockUseSWR as Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('/ws/module/fua/solicitudes');
     expect(calledUrl).toContain('status=En%20Proceso');
     expect(calledUrl).not.toContain('fechaInicio=');
@@ -91,7 +92,7 @@ describe('useFuaRequests', () => {
 
     renderHook(() => useFuaRequests({ status: 'COMPLETED' }));
 
-    const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
+    const calledUrl = (mockUseSWR as Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('status=Completado');
   });
 
@@ -106,7 +107,7 @@ describe('useFuaRequests', () => {
 
     renderHook(() => useFuaRequests({ status: 'DECLINED' }));
 
-    const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
+    const calledUrl = (mockUseSWR as Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('status=Rechazado');
   });
 

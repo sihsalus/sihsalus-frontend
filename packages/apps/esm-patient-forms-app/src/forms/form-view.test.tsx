@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockCurrentVisit, mockForms, mockPatient } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { type ConfigObject, configSchema } from '../config-schema';
 
 import FormView from './form-view.component';
@@ -16,11 +17,11 @@ import FormView from './form-view.component';
 void React;
 
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
-const mockLaunchPatientWorkspace = launchPatientWorkspace as vi.Mock;
-const mockLaunchStartVisitPrompt = launchStartVisitPrompt as vi.Mock;
+const mockLaunchPatientWorkspace = launchPatientWorkspace as Mock;
+const mockLaunchStartVisitPrompt = launchStartVisitPrompt as Mock;
 const mockShowModal = vi.mocked(showModal);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
-const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as vi.Mock;
+const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as Mock;
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
   const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');

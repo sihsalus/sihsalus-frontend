@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import DeleteRequestModal from './delete-request.modal';
 
@@ -23,7 +24,7 @@ describe('DeleteRequestModal', () => {
   const patientUuid = 'patient-uuid-123';
 
   const setup = () => {
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
+    (api.useRequestsByPatient as Mock).mockReturnValue({
       mutate: mutateMock,
     });
     render(<DeleteRequestModal closeDeleteModal={closeDeleteModal} requestId={requestId} patientUuid={patientUuid} />);
@@ -50,7 +51,7 @@ describe('DeleteRequestModal', () => {
   });
 
   it('calls deleteRequest and shows success snackbar on success', async () => {
-    (api.deleteRequest as vi.Mock).mockResolvedValueOnce({ ok: true });
+    (api.deleteRequest as Mock).mockResolvedValueOnce({ ok: true });
 
     setup();
 
@@ -73,7 +74,7 @@ describe('DeleteRequestModal', () => {
 
   it('shows error snackbar on delete failure', async () => {
     const errorMessage = 'An error occurred while deleting the requested procedure';
-    (api.deleteRequest as vi.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    (api.deleteRequest as Mock).mockRejectedValueOnce(new Error(errorMessage));
 
     setup();
 
@@ -98,7 +99,7 @@ describe('DeleteRequestModal', () => {
   it('shows loading state while deleting', async () => {
     let resolveDelete: ((val: { ok: boolean }) => void) | undefined;
 
-    (api.deleteRequest as vi.Mock).mockImplementationOnce(
+    (api.deleteRequest as Mock).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolveDelete = resolve; // capture resolver

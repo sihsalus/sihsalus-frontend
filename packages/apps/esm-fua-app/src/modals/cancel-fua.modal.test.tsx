@@ -2,6 +2,7 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
+import type { Mock } from 'vitest';
 import { cancelFuaRequest } from '../hooks/useFuaRequests';
 
 import CancelFuaModal from './cancel-fua.modal';
@@ -52,7 +53,7 @@ describe('CancelFuaModal', () => {
   });
 
   it('calls cancelFuaRequest with fuaId and comment', async () => {
-    (cancelFuaRequest as vi.Mock).mockResolvedValueOnce({});
+    (cancelFuaRequest as Mock).mockResolvedValueOnce({});
     render(<CancelFuaModal closeModal={closeModal} fuaRequest={mockFua} onCancelled={onCancelled} />);
 
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Registro duplicado' } });
@@ -66,7 +67,7 @@ describe('CancelFuaModal', () => {
   });
 
   it('shows error snackbar when cancelFuaRequest fails', async () => {
-    (cancelFuaRequest as vi.Mock).mockRejectedValueOnce(new Error('Error'));
+    (cancelFuaRequest as Mock).mockRejectedValueOnce(new Error('Error'));
     render(<CancelFuaModal closeModal={closeModal} fuaRequest={mockFua} onCancelled={onCancelled} />);
 
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Motivo' } });

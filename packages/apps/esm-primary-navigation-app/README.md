@@ -12,7 +12,7 @@ when it cannot observe a current signal.
 
 ## Type checking and validation
 
-Source and tests use the shared [strict TypeScript preset](../../tooling/tsconfig.strict.json).
+Source and tests use the [strict TypeScript options](tsconfig.json) declared in this package.
 Language changes require an authenticated user and a selected locale that is still
 allowed and differs from the current one.
 Dashboards pass extension context only when mounted within an extension.

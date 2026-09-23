@@ -11,12 +11,13 @@ import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession } from 'test-utils';
+import type { Mock } from 'vitest';
 import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
 import { formEntryWorkspace } from '../../types';
 import MaternalHealthFormsSelectorWorkspace from './maternal-health-forms-selector.workspace';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
-const mockUseConfig = useConfig as vi.Mock;
+const mockUseConfig = useConfig as Mock;
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockFormsSelectorWorkspace = vi.mocked(FormsSelectorWorkspace);
 const mockOnFormSubmitted = vi.hoisted(() => vi.fn());

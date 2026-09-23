@@ -41,7 +41,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## Tipado y validación
 
-El código y las pruebas usan [TypeScript estricto](../../tooling/tsconfig.strict.json);
+El código y las pruebas usan las [opciones estrictas de TypeScript](tsconfig.json) declaradas en este paquete;
 los archivos `*.test.tsx` también forman parte del chequeo.
 Desde la raíz, ejecutar `yarn workspace @sihsalus/esm-home-app typescript`
 y los scripts `lint`, `test` y `build` del mismo paquete.

@@ -9,11 +9,12 @@ import {
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
+import type { Mock } from 'vitest';
 import PastMedications from './past-medications.component';
 
 const mockUseSession = vi.mocked(useSession);
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
-const mockLaunchWorkspace2 = launchWorkspace2 as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
+const mockLaunchWorkspace2 = launchWorkspace2 as Mock;
 const mockUseLaunchWorkspaceRequiringVisit = vi.fn().mockImplementation((_, name) => {
   return () => mockLaunchWorkspace2(name);
 });

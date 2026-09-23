@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import DeleteProcedureStepModal from './delete-procedureStep.modal';
 
@@ -27,7 +28,7 @@ describe('DeleteProcedureStepModal', () => {
   };
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.useProcedureStep as vi.Mock).mockReturnValue({
+    (api.useProcedureStep as Mock).mockReturnValue({
       mutate: mutateMock,
     });
   });
@@ -48,7 +49,7 @@ describe('DeleteProcedureStepModal', () => {
   });
 
   it('calls deleteProcedureStep and shows success snackbar', async () => {
-    (api.deleteProcedureStep as vi.Mock).mockResolvedValue({ ok: true });
+    (api.deleteProcedureStep as Mock).mockResolvedValue({ ok: true });
 
     setup();
 
@@ -69,7 +70,7 @@ describe('DeleteProcedureStepModal', () => {
 
   it('shows error snackbar when deleteProcedureStep fails', async () => {
     const errorMessage = new Error('An error occurred while deleting the procedure step');
-    (api.deleteProcedureStep as vi.Mock).mockRejectedValueOnce(errorMessage);
+    (api.deleteProcedureStep as Mock).mockRejectedValueOnce(errorMessage);
 
     setup();
 
@@ -93,7 +94,7 @@ describe('DeleteProcedureStepModal', () => {
   it('disables delete button and shows loading state while deleting', async () => {
     let resolveDelete: (value?: unknown) => void;
 
-    (api.deleteProcedureStep as vi.Mock).mockReturnValueOnce(
+    (api.deleteProcedureStep as Mock).mockReturnValueOnce(
       new Promise((resolve) => {
         resolveDelete = resolve;
       }),

@@ -3,8 +3,8 @@ import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse } from 'test-utils';
-import { useRequireOutpatientQuantity } from '../api/api';
-import { prepMedicationOrderPostData } from '../api/api';
+import type { Mock } from 'vitest';
+import { prepMedicationOrderPostData, useRequireOutpatientQuantity } from '../api/api';
 import { type ConfigObject, configSchema } from '../config-schema';
 import DrugOrderForm from './drug-order-form.component';
 import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
@@ -99,7 +99,7 @@ vi.mock('../api/api', async () => ({
 afterEach(() => {
   mockUseConfig.mockReturnValue(defaultConfig);
   mockUseLayoutType.mockReturnValue('small-desktop');
-  (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+  (useRequireOutpatientQuantity as Mock).mockReturnValue({
     requireOutpatientQuantity: true,
     error: null,
     isLoading: false,
@@ -590,7 +590,7 @@ describe('DrugOrderForm - required field indicators', () => {
 
   it('does not mark indication or dispensing fields when they are optional', () => {
     mockUseConfig.mockReturnValue({ ...defaultConfig, requireIndication: false });
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -1197,7 +1197,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
 
   it('does not auto-calculate when requireOutpatientQuantity is false', async () => {
     const user = userEvent.setup();
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -1228,7 +1228,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(screen.queryByText(/auto-calculated/i)).not.toBeInTheDocument();
 
     // Restore default mock
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: true,
       error: null,
       isLoading: false,
@@ -1267,7 +1267,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
 
   it('keeps the complete backend duration catalog outside the outpatient workflow', async () => {
     const user = userEvent.setup();
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -1280,7 +1280,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(screen.getByText('Hours')).toBeInTheDocument();
     expect(screen.getByText('Years')).toBeInTheDocument();
 
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: true,
       error: null,
       isLoading: false,

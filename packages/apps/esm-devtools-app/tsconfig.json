@@ -1,8 +1,11 @@
 {
-  "extends": "../../tooling/tsconfig.strict.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "target": "es2015",
-    "types": ["fhir", "node", "@testing-library/jest-dom", "vi-namespace"]
+    "types": ["fhir", "node", "@testing-library/jest-dom"]
   },
   "include": ["src/**/*", "setup-tests.ts"]
 }

@@ -92,6 +92,20 @@ Reading studies, series, instances or steps distinguishes loading, empty and err
 states. Metadata reads request fresh network data; imaging writes are not queued
 for offline replay. User errors are translated and do not expose backend messages.
 
+## Request form presentation
+
+The new imaging request groups server/accession identification separately from
+physician, procedure description and priority. Its content scrolls within the
+workspace while discard/save actions remain visible. The accession generator
+keeps a readable label and moves below the input in narrow panels. Priority labels
+use the selected language; the stored `low`, `medium` and `high` values stay the
+same. These styles belong only to the request form.
+
+Check 320 px and 420 px workspace panels and tablet widths in Spanish and English,
+including server/priority menus, validation messages, number generation and
+keyboard access to the footer. Browser previews use synthetic data and simulated
+services; they do not validate a deployed worklist or PACS.
+
 ## Permissions
 
 Patient-chart reading requires `app:hoja.clinica.imagenes`; write workspaces and
@@ -103,14 +117,14 @@ accepted server writes still require reconciliation. Read-only users can open
 images online, and offline viewer controls are disabled. Server-side privileges
 are separate and must be assigned and tested for the intended role:
 
-| Operation | Backend privilege |
-| --- | --- |
-| Read images | `Task: View Image Data` |
-| Upload | `Task: Upload Image Data` |
-| Associate/synchronize | `Task: Link Image Studies` |
-| Modify | `Task: Modify Image Data` |
-| Delete image data | `Task: Delete Image Data` |
-| Edit worklist | `Task: Edit Worklist` |
+| Operation                | Backend privilege               |
+| ------------------------ | ------------------------------- |
+| Read images              | `Task: View Image Data`         |
+| Upload                   | `Task: Upload Image Data`       |
+| Associate/synchronize    | `Task: Link Image Studies`      |
+| Modify                   | `Task: Modify Image Data`       |
+| Delete image data        | `Task: Delete Image Data`       |
+| Edit worklist            | `Task: Edit Worklist`           |
 | Receive Orthanc callback | `Task: Receive Orthanc Updates` |
 
 ## Validation and remaining operational gates
@@ -122,10 +136,10 @@ DICOM values, proxy mapping and read-error states. The package scripts are `test
 `lint`, `typescript` and `build`; relevant repository route/error contracts and
 consumer checks apply as documented in CONTRIBUTING.
 
-**Local validation of this changed implementation is NOT RUN:** the user
-explicitly requested no local tests, typecheck, lint, build or browser checks.
-Remote CI is authorized; consult the pull request checks for the exact SHA and
-results. Earlier tests of the original code are not evidence for these changes.
+The earlier functional integration recorded local validation as **NOT RUN** at
+the user's request. Subsequent presentation changes record their local tests,
+typecheck, lint, build and synthetic browser evidence in the relevant PR. Consult
+the checks and evidence for the exact SHA; older results do not validate later changes.
 Synthetic DEV/QLTY acceptance remains required before calling this integration
 operational.
 

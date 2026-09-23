@@ -9,8 +9,8 @@ import {
   Search,
   Stack,
   Tile,
-} from "@carbon/react";
-import { WarningFilled } from "@carbon/react/icons";
+} from '@carbon/react';
+import { WarningFilled } from '@carbon/react/icons';
 import {
   getUserFacingErrorMessage,
   OpenmrsDatePicker,
@@ -18,25 +18,17 @@ import {
   showSnackbar,
   useDebounce,
   useSession,
-} from "@openmrs/esm-framework";
-import type { ConditionFormSubmissionResult } from "./use-condition-form-lifecycle";
-import { isConditionForPatient } from "./conditions-model";
-import { matchesConditionStatusFilter } from "./condition-status";
-import classNames from "classnames";
-import dayjs from "dayjs";
-import "dayjs/plugin/utc";
-import type { TFunction } from "i18next";
-import React, {
-  type Dispatch,
-  useCallback,
-  useEffect,
-  useId,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
-import { Controller, useFormContext } from "react-hook-form";
-import { useTranslation } from "react-i18next";
+} from '@openmrs/esm-framework';
+import type { ConditionFormSubmissionResult } from './use-condition-form-lifecycle';
+import { isConditionForPatient } from './conditions-model';
+import { matchesConditionStatusFilter } from './condition-status';
+import classNames from 'classnames';
+import dayjs from 'dayjs';
+import 'dayjs/plugin/utc';
+import type { TFunction } from 'i18next';
+import React, { type Dispatch, useCallback, useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
+import { Controller, useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import {
   createCondition,
@@ -44,20 +36,18 @@ import {
   updateCondition,
   usePatientConditions,
   isUnconfirmedConditionWriteError,
-} from "./conditions.resource";
-import type { CodedCondition, Condition, FormFields } from "./conditions.types";
-import { useConditionsSearchFromConceptSet } from "./condition-concept-set.resource";
-import styles from "./condition-concept-set-form.scss";
-import { type ConditionsFormSchema } from "./condition-concept-set-form.workspace";
+} from './conditions.resource';
+import type { CodedCondition, Condition, FormFields } from './conditions.types';
+import { useConditionsSearchFromConceptSet } from './condition-concept-set.resource';
+import styles from './condition-concept-set-form.scss';
+import { type ConditionsFormSchema } from './condition-concept-set-form.workspace';
 
 export interface ConditionsWidgetHandle {
   submit: () => Promise<ConditionFormSubmissionResult>;
 }
 
 interface ConditionsWidgetProps {
-  closeWorkspace: (options?: {
-    discardUnsavedChanges?: boolean;
-  }) => Promise<boolean>;
+  closeWorkspace: (options?: { discardUnsavedChanges?: boolean }) => Promise<boolean>;
   conditionToEdit?: Condition;
   isEditing?: boolean;
   isSubmittingForm: boolean;
@@ -83,10 +73,7 @@ interface SearchResultsProps {
   value: string;
 }
 
-const ConditionsWidget = React.forwardRef<
-  ConditionsWidgetHandle,
-  ConditionsWidgetProps
->(
+const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidgetProps>(
   (
     {
       closeWorkspace,
@@ -120,33 +107,24 @@ const ConditionsWidget = React.forwardRef<
     } = useFormContext<ConditionsFormSchema>();
     const session = useSession();
     const searchInputRef = useRef(null);
-    const clinicalStatus = watch("clinicalStatus");
-    const matchingCondition = conditions?.find(
-      (condition) => condition?.id === conditionToEdit?.id,
-    );
+    const clinicalStatus = watch('clinicalStatus');
+    const matchingCondition = conditions?.find((condition) => condition?.id === conditionToEdit?.id);
 
     const displayName = conditionToEdit?.display;
     const editableRecordedDate = conditionToEdit?.recordedDate;
-    const [selectedCondition, setSelectedCondition] =
-      useState<CodedCondition | null>(null);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCondition, setSelectedCondition] = useState<CodedCondition | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm);
 
     const {
       searchResults,
       isSearching,
       error: searchError,
-    } = useConditionsSearchFromConceptSet(
-      debouncedSearchTerm,
-      conceptSetUuid ?? "",
-    );
+    } = useConditionsSearchFromConceptSet(debouncedSearchTerm, conceptSetUuid ?? '');
 
-    const handleConditionChange = useCallback(
-      (selectedCondition: CodedCondition) => {
-        setSelectedCondition(selectedCondition);
-      },
-      [],
-    );
+    const handleConditionChange = useCallback((selectedCondition: CodedCondition) => {
+      setSelectedCondition(selectedCondition);
+    }, []);
 
     const refreshAfterSave = useCallback(async () => {
       try {
@@ -160,12 +138,7 @@ const ConditionsWidget = React.forwardRef<
     const handleCreate = useCallback(async () => {
       if (!selectedCondition || searchError) {
         setIsSubmittingForm(false);
-        setCreationMessage?.(
-          t(
-            "conditionSelectionRequired",
-            "Select a condition from the search results.",
-          ),
-        );
+        setCreationMessage?.(t('conditionSelectionRequired', 'Select a condition from the search results.'));
         return false;
       }
 
@@ -174,25 +147,25 @@ const ConditionsWidget = React.forwardRef<
         setIsSubmittingForm(false);
         setCreationMessage?.(
           t(
-            "clinicalProviderRequiredForCondition",
-            "Your session is not linked to a clinical provider. Sign in with a clinical account and try again.",
+            'clinicalProviderRequiredForCondition',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
           ),
         );
         return false;
       }
 
       const payload: FormFields = {
-        clinicalStatus: getValues("clinicalStatus"),
+        clinicalStatus: getValues('clinicalStatus'),
         conceptId: selectedCondition?.uuid,
         display: selectedCondition?.display,
         abatementDateTime: dirtyFields.abatementDateTime
-          ? getValues("abatementDateTime")
-            ? dayjs(getValues("abatementDateTime")).format()
+          ? getValues('abatementDateTime')
+            ? dayjs(getValues('abatementDateTime')).format()
             : null
           : undefined,
         onsetDateTime: dirtyFields.onsetDateTime
-          ? getValues("onsetDateTime")
-            ? dayjs(getValues("onsetDateTime")).format()
+          ? getValues('onsetDateTime')
+            ? dayjs(getValues('onsetDateTime')).format()
             : null
           : undefined,
         patientId: patientUuid,
@@ -207,17 +180,11 @@ const ConditionsWidget = React.forwardRef<
 
         if (!mounted.current) return true;
         showSnackbar({
-          kind: refreshed ? "success" : "warning",
+          kind: refreshed ? 'success' : 'warning',
           subtitle: !refreshed
-            ? t(
-                "antecedentSavedRefreshFailed",
-                "Saved. Reload the history to see the latest information.",
-              )
-            : t(
-                "conditionNowVisible",
-                "It is now visible on the Conditions page",
-              ),
-          title: t("conditionSaved", "Condition saved"),
+            ? t('antecedentSavedRefreshFailed', 'Saved. Reload the history to see the latest information.')
+            : t('conditionNowVisible', 'It is now visible on the Conditions page'),
+          title: t('conditionSaved', 'Condition saved'),
         });
 
         await closeWorkspace({ discardUnsavedChanges: true });
@@ -228,26 +195,23 @@ const ConditionsWidget = React.forwardRef<
         if (isUnconfirmedConditionWriteError(error)) {
           setCreationMessage?.(
             t(
-              "antecedentSaveUnconfirmedMessage",
-              "The save could not be confirmed. Close this form and reload the history before recording it again.",
+              'antecedentSaveUnconfirmedMessage',
+              'The save could not be confirmed. Close this form and reload the history before recording it again.',
             ),
           );
-          return "uncertain" as const;
+          return 'uncertain' as const;
         }
         setIsSubmittingForm(false);
         setCreationMessage?.(
           getUserFacingErrorMessage(
             error,
-            t(
-              "conditionSaveFailed",
-              "The condition could not be saved. Please try again.",
-            ),
+            t('conditionSaveFailed', 'The condition could not be saved. Please try again.'),
             {
-              logContext: "Create condition",
+              logContext: 'Create condition',
               codeMessages: {
                 CONDITION_TEXT_TOO_LONG: t(
-                  "antecedentTextTooLong",
-                  "Shorten the antecedent description or note before saving.",
+                  'antecedentTextTooLong',
+                  'Shorten the antecedent description or note before saving.',
                 ),
               },
             },
@@ -275,8 +239,8 @@ const ConditionsWidget = React.forwardRef<
         setIsSubmittingForm(false);
         setUpdateMessage?.(
           t(
-            "clinicalProviderRequiredForCondition",
-            "Your session is not linked to a clinical provider. Sign in with a clinical account and try again.",
+            'clinicalProviderRequiredForCondition',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
           ),
         );
         return false;
@@ -290,28 +254,25 @@ const ConditionsWidget = React.forwardRef<
         // indefinidos y corrompería el registro clínico.
         setIsSubmittingForm(false);
         setUpdateMessage?.(
-          t(
-            "conditionEditUnavailable",
-            "No se pudo cargar la condición a editar. Recargue e intente nuevamente.",
-          ),
+          t('conditionEditUnavailable', 'No se pudo cargar la condición a editar. Recargue e intente nuevamente.'),
         );
         return false;
       }
 
       const payload: FormFields = {
         clinicalStatus: dirtyFields.clinicalStatus
-          ? getValues("clinicalStatus")
+          ? getValues('clinicalStatus')
           : conditionToEdit.clinicalStatus.toLowerCase(),
         conceptId: conditionToEdit?.conceptId,
         display: conditionToEdit.display,
         abatementDateTime: dirtyFields.abatementDateTime
-          ? getValues("abatementDateTime")
-            ? dayjs(getValues("abatementDateTime")).format()
+          ? getValues('abatementDateTime')
+            ? dayjs(getValues('abatementDateTime')).format()
             : null
           : undefined,
         onsetDateTime: dirtyFields.onsetDateTime
-          ? getValues("onsetDateTime")
-            ? dayjs(getValues("onsetDateTime")).format()
+          ? getValues('onsetDateTime')
+            ? dayjs(getValues('onsetDateTime')).format()
             : null
           : undefined,
         patientId: patientUuid,
@@ -328,17 +289,11 @@ const ConditionsWidget = React.forwardRef<
 
         if (!mounted.current) return true;
         showSnackbar({
-          kind: refreshed ? "success" : "warning",
+          kind: refreshed ? 'success' : 'warning',
           subtitle: !refreshed
-            ? t(
-                "antecedentSavedRefreshFailed",
-                "Saved. Reload the history to see the latest information.",
-              )
-            : t(
-                "conditionNowVisible",
-                "It is now visible on the Conditions page",
-              ),
-          title: t("conditionUpdated", "Condition updated"),
+            ? t('antecedentSavedRefreshFailed', 'Saved. Reload the history to see the latest information.')
+            : t('conditionNowVisible', 'It is now visible on the Conditions page'),
+          title: t('conditionUpdated', 'Condition updated'),
         });
 
         await closeWorkspace({ discardUnsavedChanges: true });
@@ -349,30 +304,27 @@ const ConditionsWidget = React.forwardRef<
         if (isUnconfirmedConditionWriteError(error)) {
           setUpdateMessage?.(
             t(
-              "antecedentSaveUnconfirmedMessage",
-              "The save could not be confirmed. Close this form and reload the history before recording it again.",
+              'antecedentSaveUnconfirmedMessage',
+              'The save could not be confirmed. Close this form and reload the history before recording it again.',
             ),
           );
-          return "uncertain" as const;
+          return 'uncertain' as const;
         }
         setIsSubmittingForm(false);
         setUpdateMessage?.(
           getUserFacingErrorMessage(
             error,
-            t(
-              "conditionUpdateFailed",
-              "The condition could not be updated. Please try again.",
-            ),
+            t('conditionUpdateFailed', 'The condition could not be updated. Please try again.'),
             {
-              logContext: "Update condition",
+              logContext: 'Update condition',
               codeMessages: {
                 CONDITION_TEXT_TOO_LONG: t(
-                  "antecedentTextTooLong",
-                  "Shorten the antecedent description or note before saving.",
+                  'antecedentTextTooLong',
+                  'Shorten the antecedent description or note before saving.',
                 ),
                 CONDITION_CHANGED: t(
-                  "antecedentChanged",
-                  "This antecedent changed. Close this form and reopen it before editing.",
+                  'antecedentChanged',
+                  'This antecedent changed. Close this form and reopen it before editing.',
                 ),
               },
             },
@@ -410,21 +362,14 @@ const ConditionsWidget = React.forwardRef<
     return (
       <fieldset className={styles.formContainer} disabled={isSubmittingForm}>
         {isEditing &&
-          [
-            conditionToEdit?.onsetDateTime,
-            conditionToEdit?.abatementDateTime,
-          ].some((date) => date && !/^\d{4}-\d{2}-\d{2}/.test(date)) && (
+          [conditionToEdit?.onsetDateTime, conditionToEdit?.abatementDateTime].some(
+            (date) => date && !/^\d{4}-\d{2}-\d{2}/.test(date),
+          ) && (
             <p>
-              {t(
-                "antecedentPartialDatesPreserved",
-                "Partial recorded dates are kept unchanged:",
-              )}{" "}
-              {[
-                conditionToEdit?.onsetDateTime,
-                conditionToEdit?.abatementDateTime,
-              ]
+              {t('antecedentPartialDatesPreserved', 'Partial recorded dates are kept unchanged:')}{' '}
+              {[conditionToEdit?.onsetDateTime, conditionToEdit?.abatementDateTime]
                 .filter((date) => date && !/^\d{4}-\d{2}-\d{2}/.test(date))
-                .join(" · ")}
+                .join(' · ')}
             </p>
           )}
         {!isEditing && searchError ? (
@@ -433,22 +378,13 @@ const ConditionsWidget = React.forwardRef<
             lowContrast
             hideCloseButton
             role="alert"
-            title={t(
-              "antecedentSearchFailed",
-              "Antecedent search is unavailable. Please try again.",
-            )}
+            title={t('antecedentSearchFailed', 'Antecedent search is unavailable. Please try again.')}
           />
         ) : null}
         <Stack gap={5}>
-          <FormGroup
-            legendText={
-              <RequiredFieldLabel label={t("condition", "Condition")} t={t} />
-            }
-          >
+          <FormGroup legendText={<RequiredFieldLabel label={t('condition', 'Condition')} t={t} />}>
             {isEditing ? (
-              <FormLabel className={styles.conditionLabel}>
-                {displayName}
-              </FormLabel>
+              <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
             ) : (
               <>
                 <Controller
@@ -463,12 +399,8 @@ const ConditionsWidget = React.forwardRef<
                         })}
                         disabled={isEditing}
                         id={`${inputId}-conditionsSearch`}
-                        aria-labelledby={
-                          errors?.conditionName
-                            ? `${inputId}-conditionsSearchError`
-                            : undefined
-                        }
-                        labelText={t("enterCondition", "Enter condition")}
+                        aria-labelledby={errors?.conditionName ? `${inputId}-conditionsSearchError` : undefined}
+                        labelText={t('enterCondition', 'Enter condition')}
                         onChange={(event) => {
                           const val = event.target.value;
                           onChange(val);
@@ -476,26 +408,20 @@ const ConditionsWidget = React.forwardRef<
                           setSelectedCondition(null);
                         }}
                         onClear={() => {
-                          onChange("");
-                          setSearchTerm("");
+                          onChange('');
+                          setSearchTerm('');
                           setSelectedCondition(null);
                         }}
-                        placeholder={t("searchConditions", "Search conditions")}
+                        placeholder={t('searchConditions', 'Search conditions')}
                         ref={searchInputRef}
-                        renderIcon={
-                          errors?.conditionName &&
-                          ((props) => <WarningFilled fill="red" {...props} />)
-                        }
-                        value={selectedCondition?.display ?? value ?? ""}
+                        renderIcon={errors?.conditionName && ((props) => <WarningFilled fill="red" {...props} />)}
+                        value={selectedCondition?.display ?? value ?? ''}
                       />
                     </ResponsiveWrapper>
                   )}
                 />
                 {errors?.conditionName && (
-                  <p
-                    id={`${inputId}-conditionsSearchError`}
-                    className={styles.errorMessage}
-                  >
+                  <p id={`${inputId}-conditionsSearchError`} className={styles.errorMessage}>
                     {errors.conditionName.message}
                   </p>
                 )}
@@ -523,12 +449,12 @@ const ConditionsWidget = React.forwardRef<
                     id={`${inputId}-onsetDate`}
                     isDisabled={Boolean(
                       isEditing &&
-                      conditionToEdit?.onsetDateTime &&
-                      !/^\d{4}-\d{2}-\d{2}/.test(conditionToEdit.onsetDateTime),
+                        conditionToEdit?.onsetDateTime &&
+                        !/^\d{4}-\d{2}-\d{2}/.test(conditionToEdit.onsetDateTime),
                     )}
                     data-testid={`${inputId}-onsetDate`}
                     maxDate={new Date()}
-                    labelText={t("onsetDate", "Onset date")}
+                    labelText={t('onsetDate', 'Onset date')}
                     invalid={Boolean(fieldState?.error?.message)}
                     invalidText={fieldState?.error?.message}
                   />
@@ -538,25 +464,13 @@ const ConditionsWidget = React.forwardRef<
           </FormGroup>
           {isEditing &&
             conditionToEdit?.clinicalStatus &&
-            !["active", "inactive"].includes(
-              conditionToEdit.clinicalStatus.toLowerCase(),
-            ) && (
+            !['active', 'inactive'].includes(conditionToEdit.clinicalStatus.toLowerCase()) && (
               <p>
-                {t("recordedClinicalStatus", "Recorded clinical status")}:{" "}
-                {t(
-                  conditionToEdit.clinicalStatus.toLowerCase(),
-                  conditionToEdit.clinicalStatus,
-                )}
+                {t('recordedClinicalStatus', 'Recorded clinical status')}:{' '}
+                {t(conditionToEdit.clinicalStatus.toLowerCase(), conditionToEdit.clinicalStatus)}
               </p>
             )}
-          <FormGroup
-            legendText={
-              <RequiredFieldLabel
-                label={t("clinicalStatus", "Clinical status")}
-                t={t}
-              />
-            }
-          >
+          <FormGroup legendText={<RequiredFieldLabel label={t('clinicalStatus', 'Clinical status')} t={t} />}>
             <Controller
               name="clinicalStatus"
               control={control}
@@ -569,35 +483,20 @@ const ConditionsWidget = React.forwardRef<
                   onChange={onChange}
                   orientation="vertical"
                   valueSelected={value.toLowerCase()}
-                  aria-labelledby={
-                    errors?.clinicalStatus
-                      ? `${inputId}-clinicalStatusError`
-                      : undefined
-                  }
+                  aria-labelledby={errors?.clinicalStatus ? `${inputId}-clinicalStatusError` : undefined}
                 >
-                  <RadioButton
-                    id={`${inputId}-active`}
-                    labelText={t("active", "Active")}
-                    value="active"
-                  />
-                  <RadioButton
-                    id={`${inputId}-inactive`}
-                    labelText={t("inactive", "Inactive")}
-                    value="inactive"
-                  />
+                  <RadioButton id={`${inputId}-active`} labelText={t('active', 'Active')} value="active" />
+                  <RadioButton id={`${inputId}-inactive`} labelText={t('inactive', 'Inactive')} value="inactive" />
                 </RadioButtonGroup>
               )}
             />
             {errors?.clinicalStatus && (
-              <p
-                id={`${inputId}-clinicalStatusError`}
-                className={styles.errorMessage}
-              >
+              <p id={`${inputId}-clinicalStatusError`} className={styles.errorMessage}>
                 {errors.clinicalStatus.message}
               </p>
             )}
           </FormGroup>
-          {matchesConditionStatusFilter(clinicalStatus, "Inactive") && (
+          {matchesConditionStatusFilter(clinicalStatus, 'Inactive') && (
             <FormGroup legendText="">
               <Controller
                 name="abatementDateTime"
@@ -610,15 +509,13 @@ const ConditionsWidget = React.forwardRef<
                         id={`${inputId}-endDate`}
                         isDisabled={Boolean(
                           isEditing &&
-                          conditionToEdit?.abatementDateTime &&
-                          !/^\d{4}-\d{2}-\d{2}/.test(
-                            conditionToEdit.abatementDateTime,
-                          ),
+                            conditionToEdit?.abatementDateTime &&
+                            !/^\d{4}-\d{2}-\d{2}/.test(conditionToEdit.abatementDateTime),
                         )}
                         data-testid={`${inputId}-endDate`}
-                        minDate={watch("onsetDateTime") ?? undefined}
+                        minDate={watch('onsetDateTime') ?? undefined}
                         maxDate={new Date()}
-                        labelText={t("endDate", "End date")}
+                        labelText={t('endDate', 'End date')}
                         invalid={Boolean(fieldState?.error?.message)}
                         invalidText={fieldState?.error?.message}
                       />
@@ -638,7 +535,7 @@ function RequiredFieldLabel({ label, t }: RequiredFieldLabelProps) {
   return (
     <span>
       {label}
-      <span title={t("required", "Required")} className={styles.required}>
+      <span title={t('required', 'Required')} className={styles.required}>
         *
       </span>
     </span>
@@ -658,12 +555,7 @@ function SearchResults({
   }
 
   if (isSearching) {
-    return (
-      <InlineLoading
-        className={styles.loader}
-        description={t("searching", "Searching") + "..."}
-      />
-    );
+    return <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />;
   }
 
   if (searchResults?.length > 0) {
@@ -671,11 +563,7 @@ function SearchResults({
       <ul className={styles.conditionsList}>
         {searchResults?.map((searchResult) => (
           <li className={styles.condition} key={searchResult?.uuid}>
-            <button
-              type="button"
-              className={styles.conditionButton}
-              onClick={() => onConditionChange(searchResult)}
-            >
+            <button type="button" className={styles.conditionButton} onClick={() => onConditionChange(searchResult)}>
               {searchResult.display}
             </button>
           </li>
@@ -688,8 +576,7 @@ function SearchResults({
     <Layer>
       <Tile className={styles.emptyResults}>
         <span>
-          {String(t("noResultsFor", "No results for"))}{" "}
-          <strong>"{value}"</strong>
+          {String(t('noResultsFor', 'No results for'))} <strong>"{value}"</strong>
         </span>
       </Tile>
     </Layer>

@@ -115,3 +115,31 @@ del frontend. El alcance pendiente y la aceptación del módulo se siguen en el
 - Calendario CRED alineado a NTS 238: `cred-schedule-rules.ts` define las 27 edades ideales y `cred-control-intervals.ts` calcula el siguiente control desde la ultima atencion real.
 - Selector CRED: `useCREDFormsForAgeGroup` ya convierte keys de `formsList` en objetos `Form` válidos para el selector.
 - Traducciones base de dashboards: `dashboard-translations.test.ts` cubre keys principales como `neonatalCare`, `newbornVitals`, `wellChildCare` y `childNutrition`.
+
+## Curvas escolares y primer control neonatal
+
+Las curvas escolares reutilizan el componente Carbon de crecimiento para IMC/edad y
+talla/edad, con referencias OMS 2007 de ambos sexos entre 61 y 228 meses. Los
+parámetros LMS, procedencia y límites están en
+[src/ui/growth-chart/data-sets/WhoReference2007/README.md](src/ui/growth-chart/data-sets/WhoReference2007/README.md).
+El IMC exige peso y talla de la misma atención. La interpretación del gráfico es
+referencial: no persiste nuevas observaciones ni sustituye una clasificación clínica.
+Los conceptos y la persistencia estructurada del issue #58 siguen pendientes.
+
+Para el primer control de un recién nacido, la lectura paginada de antecedentes
+perinatales obtiene el lugar del parto de Embarazo y Parto y el alta del niño de
+Datos del Nacimiento. Un parto institucional exige alta válida y espera 48 horas
+exactas. Datos faltantes, ambiguos, anulados o un error de lectura no generan una
+recomendación. No se toma el alta de otra hospitalización. El día 14 pertenece a la
+ventana normativa del segundo control; el intervalo mínimo entre controles se
+mantiene en siete días. El calendario ideal inicia su primera ventana antes de los
+siete días y no fija el primer control a tres días del nacimiento.
+
+Requiere el campo de alta opcional en content `(CRED) Detalles de Nacimiento` 1.2,
+concepto Datetime `e911fe60-6d45-40c7-8d65-1ab93b3c77f4`. Todos los UUID están en
+`neonatalConcepts`. La consulta adicional se limita al primer control mientras el
+paciente está en período neonatal. La reanudación de controles conserva su número
+y no aplica otra espera desde el alta. Partos domiciliarios documentados pueden
+atenderse al conocerse el nacimiento; falta persistir esa notificación y validar los
+registros retrospectivos y la captación tardía en QLTY. Estos límites mantienen
+abierto el issue #98.

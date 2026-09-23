@@ -1,8 +1,8 @@
 type Translate = (key: string, fallback: string, options?: Record<string, unknown>) => string;
 
 const ageGroupLabelKeys: Record<string, [string, string]> = {
-  'RN - 3 a 6d': ['credAgeGroupNewborn3To6Days', 'Recién nacido - 3 a 6 días'],
-  'RN - 7 a 13d': ['credAgeGroupNewborn7To14Days', 'Recién nacido - 7 a 13 días'],
+  'RN - antes de 7d': ['credAgeGroupNewbornBefore7Days', 'Recién nacido - antes de 7 días'],
+  'RN - 7 a 14d': ['credAgeGroupNewborn7To14Days', 'Recién nacido - 7 a 14 días'],
   'RN - 14 a 21d': ['credAgeGroupNewborn14To21Days', 'Recién nacido - 14 a 21 días'],
   '0 AÑOS': ['credAgeGroup0Years', '0 años'],
   '1 AÑO': ['credAgeGroup1Year', '1 año'],
@@ -30,8 +30,8 @@ const ageGroupSublabelKeys: Record<string, [string, string]> = {
 };
 
 const newbornControlLabelKeys: Record<string, [string, string]> = {
-  'RN - 3 a 6 días': ['credControlNewborn3To6Days', 'Recién nacido - 3 a 6 días'],
-  'RN - 7 a 13 días': ['credControlNewborn7To14Days', 'Recién nacido - 7 a 13 días'],
+  'RN - antes de 7 días': ['credControlNewbornBefore7Days', 'Recién nacido - antes de 7 días'],
+  'RN - 7 a 14 días': ['credControlNewborn7To14Days', 'Recién nacido - 7 a 14 días'],
   'RN - 14 a 21 días': ['credControlNewborn14To21Days', 'Recién nacido - 14 a 21 días'],
 };
 

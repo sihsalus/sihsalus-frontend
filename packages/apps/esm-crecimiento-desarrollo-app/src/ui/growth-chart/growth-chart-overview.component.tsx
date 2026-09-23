@@ -8,7 +8,6 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import { differenceInMonths } from 'date-fns';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNeonatalEditPrivilege, credWellChildEditPrivilege } from '../../constants';
@@ -79,21 +78,6 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
         subtitle={t(
           'growthChartMissingDemographics',
           'No se puede graficar: el paciente no tiene sexo (M/F) o fecha de nacimiento válida registrada.',
-        )}
-      />
-    );
-  }
-
-  if (differenceInMonths(new Date(), dateOfBirth) >= 60) {
-    return (
-      <InlineNotification
-        kind="warning"
-        lowContrast
-        hideCloseButton
-        title={t('schoolGrowthChartUnavailable', 'Curva de crecimiento escolar no disponible')}
-        subtitle={t(
-          'schoolGrowthChartUnavailableSubtitle',
-          'No se muestran curvas de 0 a 5 años para este paciente. Falta implementar las referencias de IMC/edad y talla/edad de 5 a 19 años.',
         )}
       />
     );

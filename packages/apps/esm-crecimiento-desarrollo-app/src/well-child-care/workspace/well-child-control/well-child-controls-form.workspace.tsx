@@ -23,6 +23,7 @@ import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
 import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
 import useCREDEncounters, { type CREDEncounter } from '../../../hooks/useEncountersCRED';
+import { useNeonatalDischarge } from '../../../hooks/useNeonatalDischarge';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
 import EncounterDateTimeSection from '../../../ui/encounter-date-time/encounter-date-time.component';
 import { getNextCREDMinimumDate } from '../../../utils/cred-control-intervals';
@@ -119,14 +120,14 @@ export const createCREDControlsSchema = (
       if (
         minimumControlDate &&
         dayjs(minimumControlDate).isValid() &&
-        dayjs(consultationDatetime).isBefore(dayjs(minimumControlDate), 'day')
+        dayjs(consultationDatetime).isBefore(dayjs(minimumControlDate))
       ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['visitStartDate'],
           message: t(
             'credConsultationBeforeMinimumInterval',
-            'La fecha de atención no puede ser anterior al intervalo mínimo del siguiente control CRED.',
+            'La fecha y hora de atención no pueden ser anteriores al intervalo mínimo del siguiente control CRED.',
           ),
         });
       }
@@ -265,11 +266,12 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     controlNumberError,
     mutate: refreshHistory,
   } = useCREDEncounters(patientUuid);
-  const loadingError = patientError ?? encountersError ?? controlNumberError;
   const encounters = useMemo(() => groupCREDControlEncounters(rawEncounters ?? []), [rawEncounters]);
+  const neonatal = useNeonatalDischarge(patientUuid, patient?.birthDate, encounters.length === 0);
+  const loadingError = patientError ?? encountersError ?? controlNumberError ?? neonatal.error;
   const nextControlMinimumDate = useMemo(
-    () => (patient?.birthDate ? getNextCREDMinimumDate(patient.birthDate, encounters) : null),
-    [encounters, patient?.birthDate],
+    () => (patient?.birthDate ? getNextCREDMinimumDate(patient.birthDate, encounters, neonatal.dischargeDate) : null),
+    [encounters, patient?.birthDate, neonatal.dischargeDate],
   );
   const getMinimumControlDate = useCallback(
     (consultationDate: Date) => {
@@ -280,9 +282,12 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           dayjs(encounter.encounterDatetime).isSame(dayjs(consultationDate), 'day'),
       );
 
-      return resumesExistingControl ? undefined : (nextControlMinimumDate ?? undefined);
+      if (resumesExistingControl || !nextControlMinimumDate) return undefined;
+      return encounters.length === 0 && neonatal.dischargeDate
+        ? nextControlMinimumDate
+        : dayjs(nextControlMinimumDate).startOf('day').toDate();
     },
-    [encounters, nextControlMinimumDate, visit?.uuid],
+    [encounters, nextControlMinimumDate, visit?.uuid, neonatal.dischargeDate],
   );
   const CREDControlsSchema = useMemo(
     () =>
@@ -344,7 +349,8 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const handleStartControl = useCallback(
     (consultationData: CREDControlsFormType) => {
-      if (isPatientLoading || isEncountersLoading || loadingError) return;
+      if (isPatientLoading || isEncountersLoading || neonatal.isLoading || neonatal.missingDischarge || loadingError)
+        return;
       if (
         !consultationData.visitStartDate ||
         !consultationData.visitStartTime ||
@@ -383,6 +389,8 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       isPatientLoading,
       isEncountersLoading,
       loadingError,
+      neonatal.isLoading,
+      neonatal.missingDischarge,
     ],
   );
 
@@ -415,7 +423,13 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
             headerTitle={t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo')}
           />
           {!patientError && (
-            <Button kind="tertiary" onClick={() => void refreshHistory()}>
+            <Button
+              kind="tertiary"
+              onClick={() => {
+                void refreshHistory();
+                void neonatal.mutate();
+              }}
+            >
               {t('retry', 'Reintentar')}
             </Button>
           )}
@@ -424,7 +438,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     );
   }
 
-  if (isPatientLoading || isEncountersLoading) {
+  if (isPatientLoading || isEncountersLoading || neonatal.isLoading) {
     return (
       <ResponsiveWrapper>
         <div className={styles.loadingContainer}>{t('loading', 'Loading...')}</div>
@@ -436,6 +450,9 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
       <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
+          {neonatal.missingDischarge && (
+            <InlineNotification kind="warning" lowContrast hideCloseButton title={t('neonatalDischargeRequired')} />
+          )}
           <EncounterDateTimeSection control={control} minDate={minimumConsultationDate} />
 
           <div>
@@ -537,7 +554,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           <Button
             className={styles.button}
             kind="primary"
-            disabled={!visit || isSubmitting || credControlNumber === null}
+            disabled={!visit || isSubmitting || credControlNumber === null || neonatal.missingDischarge}
             type="submit"
           >
             {t('startControl', 'Empezar Control')}

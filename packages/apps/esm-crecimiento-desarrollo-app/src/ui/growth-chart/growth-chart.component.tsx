@@ -7,15 +7,9 @@ import type { TFunction } from 'i18next';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-  type CategoryCodes,
-  DataSetLabels,
-  GenderCodes,
-  MeasurementTypeCodes,
-  MeasurementTypeCodesLabel,
-  TimeUnitCodes,
-} from './data-sets';
+import { type CategoryCodes, DataSetLabels, GenderCodes, MeasurementTypeCodesLabel, TimeUnitCodes } from './data-sets';
 import { chartData as rawChartData } from './data-sets/WhoStandardDataSets/ChartData';
+import { schoolChartData } from './data-sets/WhoReference2007';
 import styles from './growth-chart.scss';
 import { buildGrowthChartOptions } from './growth-chart-options';
 import {
@@ -25,9 +19,9 @@ import {
   type GrowthChartPoint,
   getGrowthChartInterpretation,
   getMeasurementXValue,
+  getMeasurementValue,
   isMeasurementUsableForDataset,
   isWeightForLengthHeightCategory,
-  toFiniteNumber,
 } from './growth-chart-utils';
 import { useAppropriateChartData } from './hooks/useAppropriateChartData';
 import { useChartDataForGender } from './hooks/useChartDataForGender';
@@ -78,7 +72,8 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
 }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
 
-  const memoizedChartData = useMemo(() => rawChartData, []);
+  const isSchoolAge = differenceInMonths(new Date(), dateOfBirth) >= 60;
+  const memoizedChartData = isSchoolAge ? schoolChartData : rawChartData;
   const { chartDataForGender } = useChartDataForGender(gender, memoizedChartData);
   const currentDate = useMemo(() => new Date(), []);
 
@@ -86,10 +81,10 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
     () =>
       Object.entries(chartDataForGender).map(([key, value]) => ({
         id: key,
-        title: value.categoryMetadata?.label ?? key,
+        title: t(value.categoryMetadata?.label ?? key),
         value: key as keyof typeof CategoryCodes,
       })),
-    [chartDataForGender],
+    [chartDataForGender, t],
   );
 
   const [selectedCategory, setSelectedCategory] = useState<GrowthChartCategoryItem | undefined>(categories[0]);
@@ -153,7 +148,6 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   );
 
   const keysDataSet = useMemo(() => Object.keys(dataSetValues[0] ?? {}), [dataSetValues]);
-  const measurementCode = MeasurementTypeCodes[selectedCategoryKey];
 
   const startIndex = useMemo(
     () => determineStartIndex(selectedCategoryKey, selectedDataset, datasetMetadata.range.start),
@@ -169,10 +163,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
 
     const processEntry = (entry: { eventDate: Date; dataValues: Record<string, string> }) => {
       const xValue = getMeasurementXValue(entry, selectedCategoryKey, selectedDataset, dateOfBirth);
-      const yValue =
-        selectedCategoryKey === 'wflh_b' || selectedCategoryKey === 'wflh_g'
-          ? toFiniteNumber(entry.dataValues.weight)
-          : toFiniteNumber(entry.dataValues[measurementCode]);
+      const yValue = getMeasurementValue(entry, selectedCategoryKey);
 
       if (
         xValue !== null &&
@@ -200,15 +191,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
         eventDate: point.eventDate,
         isPatientMeasurement: true,
       }));
-  }, [
-    measurementData,
-    measurementCode,
-    selectedCategoryKey,
-    selectedDataset,
-    patientName,
-    dateOfBirth,
-    datasetMetadata.range,
-  ]);
+  }, [measurementData, selectedCategoryKey, selectedDataset, patientName, dateOfBirth, datasetMetadata.range]);
 
   const hasPatientMeasurements = measurementPlotData.length > 0;
   const latestMeasurement = useMemo(() => {
@@ -235,8 +218,9 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
       measurementValue: latestMeasurement.value,
       zScoreDatasetValues: dataSetEntry?.zScoreDatasetValues ?? [],
       startIndex,
+      lmsReferences: dataSetEntry?.lmsReferences,
     });
-  }, [dataSetEntry?.zScoreDatasetValues, latestMeasurement, selectedCategoryKey, startIndex]);
+  }, [dataSetEntry, latestMeasurement, selectedCategoryKey, startIndex]);
 
   const data = useMemo(() => [...chartLineData, ...measurementPlotData], [chartLineData, measurementPlotData]);
   const colorScale = useMemo<Record<string, string>>(() => {
@@ -344,7 +328,11 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
             ) : null}
           </div>
           <div className={styles.summaryText}>
-            <span>{t('whoGrowthReference', 'Estándares OMS de crecimiento infantil')}</span>
+            <span>
+              {isSchoolAge
+                ? t('schoolGrowthReference')
+                : t('whoGrowthReference', 'Estándares OMS de crecimiento infantil')}
+            </span>
             <span>
               {t('availableMeasurementsCount', '{{count}} mediciones útiles', {
                 count: measurementPlotData.length,
@@ -416,12 +404,14 @@ function determineStartIndex(
   dataset: string | undefined,
   metadataRangeStart: number,
 ) {
-  const adjustIndex = dataset === DataSetLabels.y_2_5 ? 24 : 0;
+  const adjustIndex = dataset === DataSetLabels.y_5_19 ? 61 : dataset === DataSetLabels.y_2_5 ? 24 : 0;
   return isWeightForLengthHeightCategory(category) ? metadataRangeStart : adjustIndex;
 }
 
 function translateAxisLabel(label: string, t: TFunction) {
   switch (label) {
+    case MeasurementTypeCodesLabel.bmi:
+      return t('bmiAxisLabel', 'IMC (kg/m²)');
     case TimeUnitCodes.weeks:
       return t('weeksAxisLabel', 'Semanas');
     case TimeUnitCodes.months:
@@ -452,6 +442,10 @@ function getInterpretationTagType(severity: GrowthChartInterpretationSeverity): 
 
 function translateInterpretationCode(code: GrowthChartInterpretationCode, t: TFunction) {
   switch (code) {
+    case 'thinness':
+      return t('growthInterpretationThinness', 'Delgadez');
+    case 'severeThinness':
+      return t('growthInterpretationSevereThinness', 'Delgadez severa');
     case 'veryLowWeight':
       return t('growthInterpretationVeryLowWeight', 'Peso muy bajo para la edad');
     case 'lowWeight':

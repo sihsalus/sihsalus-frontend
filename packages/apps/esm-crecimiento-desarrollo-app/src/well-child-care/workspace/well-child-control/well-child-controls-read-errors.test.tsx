@@ -2,9 +2,11 @@ import { launchWorkspace2, useConfig, usePatient, useVisit } from '@openmrs/esm-
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import useEncountersCRED from '../../../hooks/useEncountersCRED';
+import { useNeonatalDischarge } from '../../../hooks/useNeonatalDischarge';
 import CREDControlsWorkspace from './well-child-controls-form.workspace';
 
 vi.mock('../../../hooks/useEncountersCRED');
+vi.mock('../../../hooks/useNeonatalDischarge');
 vi.mock('../../../hooks/useAgeGroups', () => ({
   useAgeGroups: () => ({
     getAgeGroupForForms: () => ({ label: 'Synthetic age group' }),
@@ -22,10 +24,19 @@ vi.mock('react-i18next', () => ({
 
 let patientState: ReturnType<typeof usePatient>;
 let historyState: ReturnType<typeof useEncountersCRED>;
+let neonatalState: ReturnType<typeof useNeonatalDischarge>;
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConfig).mockReturnValue({});
+  neonatalState = {
+    dischargeDate: undefined,
+    missingDischarge: false,
+    isLoading: false,
+    error: undefined,
+    mutate: vi.fn(),
+  };
+  vi.mocked(useNeonatalDischarge).mockReturnValue(neonatalState);
   patientState = {
     patient: {
       resourceType: 'Patient',
@@ -61,6 +72,7 @@ it.each([
   'patient',
   'encounters',
   'controlNumbers',
+  'neonatal',
 ] as const)('does not start a control when %s failed to load', (source) => {
   const error = new Error('Synthetic internal read failure');
   if (source === 'patient')
@@ -68,6 +80,7 @@ it.each([
       ...patientState,
       error,
     });
+  else if (source === 'neonatal') vi.mocked(useNeonatalDischarge).mockReturnValue({ ...neonatalState, error });
   else
     vi.mocked(useEncountersCRED).mockReturnValue({
       ...historyState,
@@ -77,6 +90,16 @@ it.each([
   expect(screen.queryByRole('button', { name: 'Empezar Control' })).not.toBeInTheDocument();
   expect(screen.getByText('Selección de Formularios Crecimiento y Desarrollo')).toBeVisible();
   expect(screen.queryByText(error.message)).not.toBeInTheDocument();
+  expect(launchWorkspace2).not.toHaveBeenCalled();
+});
+
+it('waits for birth context and prevents starting without required neonatal timing', () => {
+  vi.mocked(useNeonatalDischarge).mockReturnValue({ ...neonatalState, isLoading: true });
+  const { rerender } = renderWorkspace();
+  expect(screen.queryByRole('button', { name: 'Empezar Control' })).not.toBeInTheDocument();
+  vi.mocked(useNeonatalDischarge).mockReturnValue({ ...neonatalState, missingDischarge: true });
+  rerender(<CREDControlsWorkspace patientUuid="synthetic-child" closeWorkspace={vi.fn()} />);
+  expect(screen.getByRole('button', { name: 'Empezar Control' })).toBeDisabled();
   expect(launchWorkspace2).not.toHaveBeenCalled();
 });
 

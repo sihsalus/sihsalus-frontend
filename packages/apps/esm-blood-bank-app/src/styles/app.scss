@@ -1,0 +1,110 @@
+.shell {
+  min-height: 100%;
+  margin-inline-start: var(--sihsalus-left-nav-width, 0rem);
+  color: var(--cds-text-primary);
+  background: var(--cds-background);
+}
+
+.main {
+  min-width: 0;
+  padding: 2rem;
+}
+.page {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 90rem;
+  margin: 0 auto;
+}
+.pageHeader span {
+  color: var(--cds-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.pageHeader h1 {
+  margin: 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 400;
+}
+.pageHeader p {
+  max-width: 48rem;
+  margin: 0;
+  color: var(--cds-text-secondary);
+}
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.metric {
+  display: grid;
+  gap: 1rem;
+  min-height: 8rem;
+}
+.metric span {
+  color: var(--cds-text-secondary);
+}
+.metric strong {
+  font-size: 2.5rem;
+  font-weight: 300;
+}
+.panel {
+  padding: 1rem;
+  border: 1px solid var(--cds-border-subtle);
+  background: var(--cds-layer);
+}
+.panel h2 {
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+.workList article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+.workList article div {
+  display: grid;
+  gap: 0.25rem;
+}
+.workList article span {
+  color: var(--cds-text-secondary);
+}
+.placeholder {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  min-height: 14rem;
+}
+.placeholder h2 {
+  margin-bottom: 0.5rem;
+  font-weight: 400;
+}
+.placeholder p {
+  max-width: 40rem;
+  color: var(--cds-text-secondary);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (width <= 66rem) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 42rem) {
+  .main {
+    padding: 1rem;
+  }
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+  .placeholder {
+    align-items: start;
+    flex-direction: column;
+  }
+}

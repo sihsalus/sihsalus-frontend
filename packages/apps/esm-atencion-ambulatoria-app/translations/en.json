@@ -561,5 +561,6 @@
   "referralOriginService": "Origin service",
   "referralDiagnosticSupport": "Diagnostic support (attach order)",
   "referralOutpatientService": "Outpatient care",
-  "referralServicesUnavailable": "Review the referral: its origin and destination services could not be verified. No document was generated."
+  "referralServicesUnavailable": "Review the referral: its origin and destination services could not be verified. No document was generated.",
+  "previousConsultationFormVersion": "This visit already contains a record from a previous form version. Review it in the clinical history before continuing."
 }

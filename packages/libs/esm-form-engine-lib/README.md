@@ -35,6 +35,17 @@ Key features of the Form Engine include:
   - **View Mode** - This mode allows the user to view data that has already been entered into the form. The form is rendered in a read-only mode.
   - **Embedded View** - This mode is a condensed version of the `view mode` without the section headers and form actions. It can be used to display entered form data within a widget.
 
+### Literal dropdown answers
+
+The local O3 fork supports `answers[].value` on `select` fields backed by Text
+observations. The dropdown and observation display adapter use the same literal
+value and translated label. An existing text value absent from the current list
+remains visible and selectable; rendering does not replace it or infer an answer.
+Coded answers still use `answers[].concept`. Content owns the option lists and
+concept datatypes. The regression tests cover selection, payload/reload/display,
+previous text and coded-answer compatibility. These tests do not replace a
+clinical save/reload check against the deployed backend.
+
 ### Numeric precision
 
 A number field rejects decimals when its schema sets `disallowDecimals` or its

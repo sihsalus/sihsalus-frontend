@@ -11,6 +11,8 @@ export type ConsultaExternaFormEntryMode = 'one-per-visit' | 'repeatable';
 interface ConsultaExternaFormLauncherOptions {
   patientUuid: string;
   formIdentifier?: string | null;
+  formVersion?: string;
+  workspaceTitle?: string;
   encounterTypeUuid?: string | null;
   ambulatoryVisitTypeUuid?: string | null;
   mutate?: () => unknown;
@@ -20,6 +22,7 @@ interface ConsultaExternaFormLauncherOptions {
 interface OpenmrsFormReference {
   uuid: string;
   name?: string;
+  version?: string;
   display?: string;
   published?: boolean;
   retired?: boolean;
@@ -28,7 +31,7 @@ interface OpenmrsFormReference {
 
 interface EncounterReference {
   uuid: string;
-  form?: { uuid?: string } | null;
+  form?: { uuid?: string; name?: string } | null;
   patient?: { uuid?: string } | null;
   visit?: { uuid?: string } | null;
   encounterType?: { uuid?: string } | null;
@@ -40,7 +43,7 @@ interface RestListResponse<T> {
   totalCount?: number;
 }
 
-type LaunchFailureCode = 'form-unavailable' | 'multiple-encounters' | 'verification-failed';
+type LaunchFailureCode = 'form-unavailable' | 'multiple-encounters' | 'previous-form-version' | 'verification-failed';
 
 export class ConsultaExternaLaunchError extends Error {
   constructor(readonly code: LaunchFailureCode) {
@@ -49,8 +52,8 @@ export class ConsultaExternaLaunchError extends Error {
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const formRepresentation = 'custom:(uuid,name,display,published,retired,encounterType:(uuid))';
-const encounterRepresentation = 'custom:(uuid,patient:(uuid),visit:(uuid),encounterType:(uuid),form:(uuid))';
+const formRepresentation = 'custom:(uuid,name,version,display,published,retired,encounterType:(uuid))';
+const encounterRepresentation = 'custom:(uuid,patient:(uuid),visit:(uuid),encounterType:(uuid),form:(uuid,name))';
 const pageSize = 100;
 const maxPages = 100;
 
@@ -69,6 +72,7 @@ function hasUsableFormState(form: OpenmrsFormReference): boolean {
 export async function resolvePublishedForm(
   formIdentifier: string,
   expectedEncounterTypeUuid: string,
+  expectedVersion?: string,
 ): Promise<OpenmrsFormReference> {
   if (UUID_PATTERN.test(formIdentifier)) {
     const response = await openmrsFetch<OpenmrsFormReference>(
@@ -80,6 +84,7 @@ export async function resolvePublishedForm(
       !form ||
       !sameUuid(form.uuid, formIdentifier) ||
       !hasUsableFormState(form) ||
+      (expectedVersion != null && form.version !== expectedVersion) ||
       !sameUuid(form.encounterType?.uuid, expectedEncounterTypeUuid)
     ) {
       throw new ConsultaExternaLaunchError('form-unavailable');
@@ -98,6 +103,7 @@ export async function resolvePublishedForm(
     (form) =>
       form.name === formIdentifier &&
       hasUsableFormState(form) &&
+      (expectedVersion == null || form.version === expectedVersion) &&
       sameUuid(form.encounterType?.uuid, expectedEncounterTypeUuid),
   );
   if (matches.length !== 1) {
@@ -115,8 +121,9 @@ export async function findSingleEncounterForVisit(
   visitUuid: string,
   encounterTypeUuid: string,
   formUuid: string,
+  formName?: string,
 ): Promise<string | undefined> {
-  const matchingEncounterUuids: Array<string> = [];
+  const matchingEncounters: Array<EncounterReference> = [];
   const seenEncounterUuids = new Set<string>();
   let startIndex = 0;
   let expectedTotalCount: number | undefined;
@@ -159,8 +166,8 @@ export async function findSingleEncounterForVisit(
         throw new ConsultaExternaLaunchError('verification-failed');
       }
       seenEncounterUuids.add(encounter.uuid);
-      if (sameUuid(encounter.form?.uuid, formUuid)) {
-        matchingEncounterUuids.push(encounter.uuid);
+      if (sameUuid(encounter.form?.uuid, formUuid) || (formName && encounter.form?.name === formName)) {
+        matchingEncounters.push(encounter);
       }
     }
 
@@ -189,16 +196,22 @@ export async function findSingleEncounterForVisit(
     }
   }
 
-  if (matchingEncounterUuids.length > 1) {
+  if (matchingEncounters.length > 1) {
     throw new ConsultaExternaLaunchError('multiple-encounters');
   }
-  return matchingEncounterUuids[0];
+  const encounter = matchingEncounters[0];
+  if (encounter && !sameUuid(encounter.form?.uuid, formUuid)) {
+    throw new ConsultaExternaLaunchError('previous-form-version');
+  }
+  return encounter?.uuid;
 }
 
 /** Anamnesis and physical examination edit one verified encounter; referrals create a new, visit-attached encounter. */
 export function useConsultaExternaFormLauncher({
   patientUuid,
   formIdentifier,
+  formVersion,
+  workspaceTitle,
   encounterTypeUuid,
   ambulatoryVisitTypeUuid,
   mutate,
@@ -245,6 +258,8 @@ export function useConsultaExternaFormLauncher({
           currentVisit.stopDatetime,
           currentVisit.visitType.uuid,
           formIdentifier,
+          formVersion,
+          workspaceTitle,
           encounterTypeUuid,
           ambulatoryVisitTypeUuid,
           entryMode,
@@ -270,10 +285,10 @@ export function useConsultaExternaFormLauncher({
           return;
         }
 
-        const form = await resolvePublishedForm(formIdentifier, encounterTypeUuid);
+        const form = await resolvePublishedForm(formIdentifier, encounterTypeUuid, formVersion);
         const encounterUuid =
           entryMode === 'one-per-visit'
-            ? await findSingleEncounterForVisit(patientUuid, currentVisit.uuid, encounterTypeUuid, form.uuid)
+            ? await findSingleEncounterForVisit(patientUuid, currentVisit.uuid, encounterTypeUuid, form.uuid, form.name)
             : undefined;
         const handleFormClose = () => {
           try {
@@ -285,7 +300,7 @@ export function useConsultaExternaFormLauncher({
         const launchArgs: Parameters<typeof launchWorkspace2> = [
           patientFormEntryWorkspace,
           {
-            workspaceTitle: form.display ?? form.name,
+            workspaceTitle: workspaceTitle ?? form.display ?? form.name,
             mutateForm: handleFormClose,
             formInfo: {
               patientUuid,
@@ -318,6 +333,13 @@ export function useConsultaExternaFormLauncher({
               'More than one record of this form exists in the active visit. Resolve the duplicate before editing.',
             ),
           );
+        } else if (error instanceof ConsultaExternaLaunchError && error.code === 'previous-form-version') {
+          showLaunchError(
+            t(
+              'previousConsultationFormVersion',
+              'This visit already contains a record from a previous form version. Review it in the clinical history before continuing.',
+            ),
+          );
         } else if (error instanceof ConsultaExternaLaunchError && error.code === 'form-unavailable') {
           showLaunchError(
             t(
@@ -344,6 +366,8 @@ export function useConsultaExternaFormLauncher({
     encounterTypeUuid,
     entryMode,
     formIdentifier,
+    formVersion,
+    workspaceTitle,
     mutate,
     patientChartContext.mutateVisitContext,
     patientChartContext.patient,

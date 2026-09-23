@@ -30,6 +30,7 @@ describe('ExamenFisico', () => {
     mockUseConfig.mockReturnValue({
       encounterTypes: { externalConsultation: 'external-consultation' },
       formsList: {
+        physicalExamFormVersion: '1.2.0',
         soapNoteForm: 'CE-SOAP-001-NOTA SOAP',
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
@@ -119,6 +120,8 @@ describe('ExamenFisico', () => {
       ambulatoryVisitTypeUuid: 'ambulatory-visit',
       mutate,
       entryMode: 'one-per-visit',
+      formVersion: '1.2.0',
+      workspaceTitle: 'Examen físico',
     });
     expect(mockLaunchForm).toHaveBeenCalledOnce();
   });

@@ -106,15 +106,21 @@ function renderLauncher({
   entryMode = 'one-per-visit',
   mutate = vi.fn(),
   configuredForm = formIdentifier,
+  formVersion = undefined,
+  workspaceTitle = undefined,
 }: {
   entryMode?: 'one-per-visit' | 'repeatable';
   mutate?: () => unknown;
   configuredForm?: string | null;
+  formVersion?: string;
+  workspaceTitle?: string;
 } = {}) {
   const hook = renderHook(() =>
     useConsultaExternaFormLauncher({
       patientUuid,
       formIdentifier: configuredForm,
+      formVersion,
+      workspaceTitle,
       encounterTypeUuid,
       ambulatoryVisitTypeUuid,
       mutate,
@@ -149,6 +155,87 @@ describe('useConsultaExternaFormLauncher', () => {
       mutateVisitContext: vi.fn(),
     } as never);
     mockVisitState();
+  });
+
+  it('opens the configured schema version with a clinical title instead of the legacy form name', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'old-form',
+            name: formIdentifier,
+            version: '1.0.3',
+            published: false,
+            retired: true,
+            encounterType: { uuid: encounterTypeUuid },
+          },
+          {
+            uuid: formUuid,
+            name: formIdentifier,
+            version: '1.1.0',
+            published: true,
+            retired: false,
+            encounterType: { uuid: encounterTypeUuid },
+          },
+        ],
+      },
+    } as never);
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } } as never);
+    const { result } = renderLauncher({ formVersion: '1.1.0', workspaceTitle: 'Anamnesis' });
+    act(() => result.current());
+    await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledOnce());
+    expect(mockLaunchWorkspace2.mock.calls[0][1]).toMatchObject({
+      workspaceTitle: 'Anamnesis',
+      formInfo: { formUuid },
+    });
+  });
+
+  it('does not fall back to the SOAP-era schema when the required version is missing', async () => {
+    mockPublishedFormResponse();
+    const { result } = renderLauncher({ formVersion: '1.1.0' });
+    act(() => result.current());
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledOnce());
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
+  it('does not create a second encounter when an ongoing visit uses a historical form version', async () => {
+    mockPublishedFormResponse();
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          { ...matchingEncounter('historical-encounter'), form: { uuid: 'historical-form', name: formIdentifier } },
+        ],
+      },
+    } as never);
+    const { result } = renderLauncher();
+    act(() => result.current());
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ subtitle: expect.stringContaining('previous form version') }),
+      ),
+    );
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('blocks duplicate encounters across form versions', async () => {
+    mockPublishedFormResponse();
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          matchingEncounter('current-encounter'),
+          { ...matchingEncounter('historical-encounter'), form: { uuid: 'historical-form', name: formIdentifier } },
+        ],
+      },
+    } as never);
+    const { result } = renderLauncher();
+    act(() => result.current());
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ subtitle: expect.stringContaining('More than one record') }),
+      ),
+    );
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
   });
 
   it('opens the existing start-visit prompt when no visit is active', () => {

@@ -8578,6 +8578,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-home-app@workspace:packages/apps/esm-home-app"
   dependencies:
+    "@sihsalus/esm-patient-search-app": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     i18next: "npm:^26.3.6"
     i18next-parser: "npm:^9.3.0"
@@ -9324,7 +9325,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app":
+"@sihsalus/esm-patient-search-app@workspace:*, @sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app"
   dependencies:

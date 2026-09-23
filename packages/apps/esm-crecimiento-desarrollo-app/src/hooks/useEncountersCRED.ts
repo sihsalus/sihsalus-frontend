@@ -23,6 +23,7 @@ interface UseEncountersResponse {
   encounters: CREDEncounter[] | undefined;
   isLoading: boolean;
   error: Error | null;
+  controlNumberError: Error | null;
   mutate: () => Promise<void>;
 }
 
@@ -176,6 +177,7 @@ export default function useEncountersCRED(patientUuid: string): UseEncountersRes
   } = useSWR<FetchResponse<{ results: CREDEncounter[] }>, Error>(patientUuid ? encounterUrl : null, openmrsFetch);
   const {
     data: controlNumberData,
+    error: controlNumberError,
     isLoading: isControlNumberLoading,
     mutate: mutateControlNumbers,
   } = useSWR<FetchResponse<{ results: CREDControlNumberObservation[] }>, Error>(
@@ -206,6 +208,8 @@ export default function useEncountersCRED(patientUuid: string): UseEncountersRes
     isLoading: isLoading || Boolean(controlNumberConceptUuid && isControlNumberLoading),
     // Control-number metadata enriches grouping but must not block the clinical history.
     error: error ?? null,
+    // Writing through the control selector requires this lookup to succeed as well.
+    controlNumberError: controlNumberError ?? null,
     mutate,
   };
 }

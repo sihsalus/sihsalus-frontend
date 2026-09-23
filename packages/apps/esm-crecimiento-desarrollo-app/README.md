@@ -43,6 +43,21 @@ clasificaciones.
 
 ## TODO QA/QLTY
 
+El selector de formularios espera la lectura de atenciones y de sus números de
+control antes de ofrecer acciones. Si falla cualquiera de las dos consultas,
+presenta el estado de error compartido y permite reintentar; un error no equivale
+a un historial vacío. Reutiliza `FormsSelectorWorkspace`, `ErrorState` y los
+controles Carbon existentes. Conserva el estado de formularios guardados durante
+el reintento y reabre la atención del control seleccionado, sin tomar la de otro
+control por ser más reciente. Las vistas de consulta pueden seguir mostrando el
+historial disponible aunque falle la lectura de números de control.
+
+Las pruebas de este selector usan respuestas REST sintéticas y verifican la
+reapertura antes y después de recargar, los errores, la espera y los permisos.
+La persistencia real, el inventario de widgets heredados y la aceptación por
+formulario siguen en el
+[issue #57](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/57).
+
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.
 - Probar en QLTY el flujo end-to-end de CRED neonatal: abrir formulario, guardar, recargar la historia y confirmar que los widgets leen el encounter y las obs guardadas.
 - Probar balance de líquidos, biometría, evaluación cefalocaudal, alojamiento conjunto y consejería de lactancia con datos sintéticos en DEV/QLTY autorizado y coordinado.

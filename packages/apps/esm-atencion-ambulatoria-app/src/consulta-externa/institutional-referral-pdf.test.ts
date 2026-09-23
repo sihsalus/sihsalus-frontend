@@ -89,6 +89,8 @@ const data: InstitutionalReferralPdfData = {
     encounterDatetime: '2026-08-25T10:00:00.000-05:00',
     destinationName: 'Hospital Regional de Loreto',
     destinationRenaesCode: '00000003',
+    originService: 'UPSS Emergencia',
+    destinationService: 'Apoyo al Diagnóstico',
     specialty: 'Cirugía',
     priority: 'Urgencia',
     patientCondition: 'Estable',
@@ -100,6 +102,21 @@ const data: InstitutionalReferralPdfData = {
 };
 
 describe('institutional referral PDF', () => {
+  it('prints the recorded origin and destination services independently of priority and specialty', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const draw = vi.spyOn(PDFPage.prototype, 'drawText');
+    try {
+      await createInstitutionalReferralPdf(data, 'es-PE');
+      const text = draw.mock.calls.map(([value]) => value);
+      expect(text).toContain('UPSS Emergencia');
+      expect(text).toContain('Apoyo al Diagnóstico');
+      expect(text).not.toContain('Consulta Externa');
+      expect(text).toContain('Cirugía');
+    } finally {
+      draw.mockRestore();
+    }
+  });
+
   it('creates a printable PDF from referral data and the canonical visit summary', async () => {
     const bytes = await createInstitutionalReferralPdf(data, 'es-PE');
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toMatch(/^%PDF-/);

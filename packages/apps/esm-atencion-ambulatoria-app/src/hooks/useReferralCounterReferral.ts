@@ -1,6 +1,9 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
-import { parseReferralDestination } from '../consulta-externa/institutional-referral.resource';
+import {
+  getRecordedDestinationService,
+  parseReferralDestination,
+} from '../consulta-externa/institutional-referral.resource';
 import { useMergedClinicalHistoryPagination } from './useClinicalHistoryPagination';
 
 export interface ReferralEntry {
@@ -8,6 +11,8 @@ export interface ReferralEntry {
   visitUuid: string | null;
   encounterDatetime: string;
   provider: string | null;
+  originService: string | null;
+  destinationService: string | null;
   // OBS values — populated once the CE-REF form maps these concepts
   referralType: string | null; // Tipo: Emergencia | Urgencia | Electiva
   referralReason: string | null; // Motivo de referencia (texto libre)
@@ -22,6 +27,7 @@ export interface ReferralEntry {
 }
 
 interface Obs {
+  voided?: boolean;
   concept: { uuid: string };
   value: string | { display?: string; uuid?: string } | null;
   display?: string;
@@ -30,6 +36,7 @@ interface Obs {
 interface Encounter {
   uuid: string;
   encounterDatetime: string;
+  location?: { uuid?: string; display?: string };
   encounterType?: string | { uuid?: string };
   visit?: string | { uuid?: string; visitType?: string | { uuid?: string } | null } | null;
   encounterProviders: Array<{ display: string }>;
@@ -40,6 +47,7 @@ interface ReferralConcepts {
   referralTypeUuid?: string;
   referralReasonUuid?: string;
   referralDestinationUuid?: string;
+  referralDestinationServiceUuid?: string;
   referralDestinationSpecialtyUuid?: string;
   referralDestinationSpecialtyOtherUuid?: string;
   referralPatientConditionUuid?: string;
@@ -78,7 +86,7 @@ export function useReferralCounterReferral(
           {
             url:
               `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${referralCounterReferralEncounterTypeUuid}` +
-              `&v=custom:(uuid,encounterDatetime,encounterType:(uuid),visit:(uuid),encounterProviders:(display),obs:(concept:(uuid),value,display))&order=desc`,
+              `&v=custom:(uuid,encounterDatetime,encounterType:(uuid),visit:(uuid),location:(uuid,display),encounterProviders:(display),obs:(voided,concept:(uuid),value,display))&order=desc`,
           },
         ]
       : null;
@@ -123,6 +131,8 @@ export function useReferralCounterReferral(
       return {
         uuid: encounter.uuid,
         visitUuid: getEncounterVisitUuid(encounter),
+        originService: encounter.location?.display?.trim() || null,
+        destinationService: getRecordedDestinationService(encounter.obs, concepts.referralDestinationServiceUuid),
         encounterDatetime: encounter.encounterDatetime,
         provider: encounter.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
         referralType: getObsValue(encounter.obs, concepts.referralTypeUuid),

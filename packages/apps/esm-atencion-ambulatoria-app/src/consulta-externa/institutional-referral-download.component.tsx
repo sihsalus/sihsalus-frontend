@@ -11,6 +11,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import type { ReferralEntry } from '../hooks/useReferralCounterReferral';
+import { getRecordedReferralServices, ReferralServicesError } from './institutional-referral.resource';
 import {
   createInstitutionalReferralFileName,
   createInstitutionalReferralPdf,
@@ -114,6 +115,12 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
         {
           summary,
           referral: {
+            ...getRecordedReferralServices(
+              source,
+              entry.uuid,
+              config.encounterTypes.referralCounterReferral,
+              config.concepts.referralDestinationServiceUuid,
+            ),
             uuid: entry.uuid,
             encounterDatetime: entry.encounterDatetime,
             destinationName: entry.referralDestination ?? '—',
@@ -141,7 +148,14 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
       });
     } catch (error) {
       createErrorHandler()(error);
-      showError(t('referralDownloadRetry', 'Recargue la historia e intente nuevamente.'));
+      showError(
+        error instanceof ReferralServicesError
+          ? t(
+              'referralServicesUnavailable',
+              'Revise la referencia: no se pudieron verificar sus servicios de origen y destino. No se generó el documento.',
+            )
+          : t('referralDownloadRetry', 'Recargue la historia e intente nuevamente.'),
+      );
     } finally {
       generationInProgress.current = false;
       setIsGenerating(false);

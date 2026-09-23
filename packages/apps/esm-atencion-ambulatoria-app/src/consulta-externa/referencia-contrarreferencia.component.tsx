@@ -2,12 +2,12 @@ import {
   Accordion,
   AccordionItem,
   ContentSwitcher,
-  Switch,
   StructuredListBody,
   StructuredListCell,
   StructuredListHead,
   StructuredListRow,
   StructuredListWrapper,
+  Switch,
   Tag,
 } from '@carbon/react';
 import { formatDate, launchWorkspace2, showSnackbar, useConfig } from '@openmrs/esm-framework';
@@ -18,8 +18,8 @@ import { useAmbulatoryVisitGuard } from '../hooks';
 import { type ReferralEntry, useReferralCounterReferral } from '../hooks/useReferralCounterReferral';
 import { consultaExternaEditPrivilege, institutionalReferralWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
-import InstitutionalReferralDownload from './institutional-referral-download.component';
 import styles from './consulta-externa-dashboard.scss';
+import InstitutionalReferralDownload from './institutional-referral-download.component';
 
 interface ReferenciaContraReferenciaProps {
   patientUuid: string;
@@ -50,6 +50,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       referralTypeUuid: config.concepts?.referralTypeUuid,
       referralReasonUuid: config.concepts?.referralReasonUuid,
       referralDestinationUuid: config.concepts?.referralDestinationUuid,
+      referralDestinationServiceUuid: config.concepts?.referralDestinationServiceUuid,
       referralDestinationSpecialtyUuid: config.concepts?.referralDestinationSpecialtyUuid,
       referralDestinationSpecialtyOtherUuid: config.concepts?.referralDestinationSpecialtyOtherUuid,
       referralPatientConditionUuid: config.concepts?.referralPatientConditionUuid,
@@ -216,6 +217,16 @@ function ReferralAccordionItem({ entry, patientUuid }: { entry: ReferralEntry; p
         ) : null}
         {entry.referralDestinationCode ? (
           <DetailRow label={t('renaesCode', 'Código RENIPRESS')} value={entry.referralDestinationCode} tagType="blue" />
+        ) : null}
+        {entry.originService ? (
+          <DetailRow label={t('referralOriginService', 'Servicio origen')} value={entry.originService} tagType="blue" />
+        ) : null}
+        {entry.destinationService ? (
+          <DetailRow
+            label={t('referralDestinationService', 'Servicio destino (UPS)')}
+            value={entry.destinationService}
+            tagType="blue"
+          />
         ) : null}
         {entry.referralDestinationSpecialty ? (
           <DetailRow

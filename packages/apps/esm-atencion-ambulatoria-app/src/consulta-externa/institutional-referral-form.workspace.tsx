@@ -87,6 +87,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
   );
   const [destination, setDestination] = useState<ReferralDestination | null>(null);
   const [otherDestination, setOtherDestination] = useState('');
+  const [destinationServiceUuid, setDestinationServiceUuid] = useState('');
   const [specialtyUuid, setSpecialtyUuid] = useState('');
   const [otherSpecialty, setOtherSpecialty] = useState('');
   const [referralTypeUuid, setReferralTypeUuid] = useState('');
@@ -111,10 +112,20 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
       : destination
     : null;
   const hasCompleteDestination = Boolean(resolvedDestination?.name.trim());
+  const hasDestinationService = Boolean(
+    destinationServiceUuid &&
+      config.concepts.referralDestinationServiceUuid &&
+      [
+        config.concepts.referralDestinationEmergencyServiceUuid,
+        config.concepts.referralDestinationOutpatientServiceUuid,
+        config.concepts.referralDestinationDiagnosticServiceUuid,
+      ].includes(destinationServiceUuid),
+  );
   const hasCompleteSpecialty = Boolean(specialtyUuid && (!isOtherSpecialty || otherSpecialty.trim()));
   const isDirty = Boolean(
     destination ||
       otherDestination.trim() ||
+      destinationServiceUuid ||
       specialtyUuid ||
       otherSpecialty.trim() ||
       referralTypeUuid ||
@@ -128,6 +139,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
       locationUuid &&
       providerUuid &&
       hasCompleteDestination &&
+      hasDestinationService &&
       hasCompleteSpecialty &&
       referralTypeUuid &&
       patientConditionUuid &&
@@ -151,6 +163,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
           encounterTypeUuid: config.encounterTypes.referralCounterReferral,
           encounterRoleUuid: config.referralEncounterRoleUuid,
           destination: resolvedDestination,
+          destinationServiceUuid,
           referralTypeUuid,
           specialtyUuid,
           otherSpecialty: isOtherSpecialty ? otherSpecialty : undefined,
@@ -161,6 +174,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
             referralTypeUuid: config.concepts.referralTypeUuid,
             referralReasonUuid: config.concepts.referralReasonUuid,
             referralDestinationUuid: config.concepts.referralDestinationUuid,
+            referralDestinationServiceUuid: config.concepts.referralDestinationServiceUuid,
             referralDestinationSpecialtyUuid: config.concepts.referralDestinationSpecialtyUuid,
             referralDestinationSpecialtyOtherUuid: config.concepts.referralDestinationSpecialtyOtherUuid,
             referralPatientConditionUuid: config.concepts.referralPatientConditionUuid,
@@ -311,6 +325,29 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                   value={otherDestination}
                 />
               ) : null}
+              <Select
+                id="referral-destination-service"
+                labelText={t('referralDestinationService', 'Servicio destino (UPS)')}
+                value={destinationServiceUuid}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                  setDestinationServiceUuid(event.target.value)
+                }
+                required
+              >
+                <SelectItem disabled hidden value="" text={t('selectAnOption', 'Seleccione una opción')} />
+                <SelectItem
+                  value={config.concepts.referralDestinationEmergencyServiceUuid}
+                  text={t('emergency', 'Emergencia')}
+                />
+                <SelectItem
+                  value={config.concepts.referralDestinationOutpatientServiceUuid}
+                  text={t('referralOutpatientService', 'Consulta Externa')}
+                />
+                <SelectItem
+                  value={config.concepts.referralDestinationDiagnosticServiceUuid}
+                  text={t('referralDiagnosticSupport', 'Apoyo al Diagnóstico (Adjuntar orden)')}
+                />
+              </Select>
               <Select
                 id="referral-specialty"
                 labelText={t('destinationSpecialty', 'Especialidad de destino')}

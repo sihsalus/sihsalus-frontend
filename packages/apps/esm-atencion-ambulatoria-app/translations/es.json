@@ -556,5 +556,10 @@
   "visitType": "Tipo de visita",
   "vitalSigns": "Signos vitales y antropometría",
   "weight": "Peso",
-  "yes": "Sí"
+  "yes": "Sí",
+  "referralDestinationService": "Servicio destino (UPS)",
+  "referralOriginService": "Servicio origen",
+  "referralDiagnosticSupport": "Apoyo al Diagnóstico (Adjuntar orden)",
+  "referralOutpatientService": "Consulta Externa",
+  "referralServicesUnavailable": "Revise la referencia: no se pudieron verificar sus servicios de origen y destino. No se generó el documento."
 }

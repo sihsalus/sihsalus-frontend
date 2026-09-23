@@ -72,6 +72,64 @@ describe('admissions resources', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
+  it('loads a large history completely with one relationship request per patient and at most five in flight', async () => {
+    const visits = Array.from({ length: 1001 }, (_, index) => ({
+      uuid: `visit-${index}`,
+      patient: { uuid: `patient-${index % 51}` },
+      startDatetime: new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString(),
+    }));
+    let pendingRelationships = 0;
+    let peakRelationships = 0;
+    mockOpenmrsFetch.mockImplementation(async (request) => {
+      const url = new URL(String(request), 'http://localhost');
+      if (url.pathname.endsWith('/visit')) {
+        const start = Number(url.searchParams.get('startIndex') ?? 0);
+        return {
+          data: {
+            results: visits.slice(start, start + 50),
+            links: start + 50 < visits.length ? [{ rel: 'next' }] : [],
+          },
+        } as Awaited<ReturnType<typeof openmrsFetch>>;
+      }
+      pendingRelationships++;
+      peakRelationships = Math.max(peakRelationships, pendingRelationships);
+      await Promise.resolve();
+      pendingRelationships--;
+      return { data: { results: [] } } as Awaited<ReturnType<typeof openmrsFetch>>;
+    });
+    const { result } = renderHook(() => useAdmissions(50), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.admissions).toHaveLength(1001);
+    expect(result.current.admissions[0].uuid).toBe('visit-1000');
+    expect(result.current.admissions[1000].uuid).toBe('visit-0');
+    const urls = mockOpenmrsFetch.mock.calls.map(([url]) => String(url));
+    expect(urls.filter((url) => url.includes('/visit?'))).toHaveLength(21);
+    expect(urls.filter((url) => url.includes('/relationship?'))).toHaveLength(51);
+    expect(peakRelationships).toBe(5);
+  });
+
+  it('rejects incomplete responsible-person enrichment when just one patient request fails', async () => {
+    mockOpenmrsFetch.mockImplementation(async (request) => {
+      const url = String(request);
+      if (url.includes('/visit?')) {
+        return {
+          data: {
+            results: [
+              { uuid: 'visit-ok', patient: { uuid: 'patient-ok' } },
+              { uuid: 'visit-error', patient: { uuid: 'patient-error' } },
+            ],
+          },
+        } as Awaited<ReturnType<typeof openmrsFetch>>;
+      }
+      if (url.includes('person=patient-error')) throw new Error('Synthetic relationship failure');
+      return { data: { results: [] } } as Awaited<ReturnType<typeof openmrsFetch>>;
+    });
+    const { result } = renderHook(() => useAdmissions(50), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.error).toEqual(new Error('Synthetic relationship failure'));
+  });
+
   it('loads and maps the admission report rows from visits', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {
@@ -365,7 +423,7 @@ describe('admissions resources', () => {
     );
   });
 
-  it('keeps the admission report usable when relationship enrichment fails', async () => {
+  it('reports a relationship loading failure even when legacy responsible data is available', async () => {
     mockOpenmrsFetch.mockImplementation((url) => {
       const requestUrl = String(url);
 
@@ -402,7 +460,7 @@ describe('admissions resources', () => {
     const { result } = renderHook(() => useAdmissions(10), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.error).toBeUndefined();
+    expect(result.current.error).toEqual(new Error('relationship endpoint unavailable'));
     expect(result.current.admissions[0]).toMatchObject({
       patientName: 'Paciente Fallback',
       medicalRecordNumber: 'HC-200',

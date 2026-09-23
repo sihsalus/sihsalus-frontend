@@ -1,5 +1,5 @@
 import { useConfig } from '@openmrs/esm-framework';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { type PropsWithChildren } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -39,7 +39,8 @@ function renderAdmissionHome() {
 }
 
 function getMetricValue(label: string) {
-  return screen.getByText(label).parentElement;
+  return within(screen.getByRole('region', { name: 'Métricas del libro de atenciones' })).getByText(label)
+    .parentElement;
 }
 
 function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
@@ -113,18 +114,18 @@ describe('AdmissionHome', () => {
       isLoading: false,
     });
     renderAdmissionHome();
-    expect(screen.queryByRole('cell', { name: 'Synthetic 25' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Synthetic 25' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
-    expect(screen.getByRole('cell', { name: 'Synthetic 25' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Synthetic 25' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Tipo de visita'), { target: { value: 'Emergencia' } });
-    expect(screen.getByRole('cell', { name: 'Synthetic 25' })).toBeInTheDocument();
-    expect(screen.queryByRole('cell', { name: 'Synthetic 0' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Synthetic 25' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Synthetic 0' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('UPSS'), { target: { value: 'Admision Central' } });
-    expect(screen.queryByRole('cell', { name: 'Synthetic 25' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Synthetic 25' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeDisabled();
   });
 
-  it('renders the care encounters by UPSS report with accreditation columns', () => {
+  it('keeps the operational columns compact and exposes complementary data on expansion', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
         createAdmission({
@@ -164,43 +165,61 @@ describe('AdmissionHome', () => {
     renderAdmissionHome();
 
     expect(screen.getByRole('heading', { name: /libro de atenciones/i })).toBeInTheDocument();
-    for (const header of [
-      'Fecha y hora',
-      'HCE / código temporal',
+    for (const header of ['Fecha y hora', 'Paciente', 'Tipo de visita', 'UPSS', 'Estado de atención', 'Tiene SIS']) {
+      expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
+    }
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7);
+    expect(screen.getByRole('link', { name: 'Ada Lovelace' })).toBeInTheDocument();
+    expect(screen.getByText('HCE / código temporal: HC-99')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'En curso' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Finalizada' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Sí' })).toBeInTheDocument();
+    expect(screen.getByText(/9\/05\/26, 8:30/)).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Topico' })).toBeInTheDocument();
+    expect(screen.queryByText('Av. Peru 123, Lima, Lima')).not.toBeInTheDocument();
+
+    const expand = screen.getByRole('button', { name: 'Ver detalles de Ada Lovelace' });
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
+    const detailsId = expand.getAttribute('aria-controls');
+    if (!detailsId) throw new Error('Missing details target');
+    fireEvent.click(expand);
+    expect(expand).toHaveAttribute('aria-expanded', 'true');
+    const detailsElement = document.getElementById(detailsId);
+    if (!detailsElement) throw new Error('Missing details row');
+    const details = within(detailsElement);
+    for (const label of [
       'Tipo doc.',
       'N° documento',
       'Estado identificación',
       'Responsable',
       'F. Nac.',
-      'Tiene SIS',
-      'Nombres y apellidos',
-      'Dirección',
       'Edad',
       'Sexo',
-      'Tipo de visita',
-      'UPSS',
-      'Número de orden',
+      'Dirección',
       'Condición comunicación',
+      'N° de fila del reporte',
     ]) {
-      expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
+      expect(details.getByText(label)).toBeInTheDocument();
     }
-    expect(screen.queryByRole('columnheader', { name: 'M' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'F' })).not.toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'CE' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'CE-876543' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '12345678' })).toBeInTheDocument();
-    expect(screen.getAllByRole('cell', { name: 'Confirmado' })[0]).toBeInTheDocument();
-    expect(screen.getAllByRole('cell', { name: 'Charles Babbage - Familiar' })[0]).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Sí' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Av. Peru 123, Lima, Lima' })).toBeInTheDocument();
-    expect(screen.getByText(/9\/05\/26, 8:30/)).toBeInTheDocument();
-    expect(screen.getAllByRole('cell', { name: 'F' })[0]).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Topico' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
+    for (const value of [
+      'DNI',
+      '12345678',
+      'Confirmado',
+      'Charles Babbage - Familiar',
+      'Av. Peru 123, Lima, Lima',
+      'F',
+      'Puede comunicarse',
+      '1',
+    ]) {
+      expect(details.getByText(value)).toBeInTheDocument();
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalles de Grace Hopper' }));
+    expect(screen.getByText('CE')).toBeInTheDocument();
+    expect(screen.getByText('CE-876543')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar detalles de Ada Lovelace' }));
+    expect(screen.queryByText('Av. Peru 123, Lima, Lima')).not.toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).toHaveTextContent('2');
     expect(getMetricValue('En curso')).toHaveTextContent('1');
     expect(getMetricValue('Finalizadas')).toHaveTextContent('1');
@@ -216,7 +235,7 @@ describe('AdmissionHome', () => {
     );
   });
 
-  it('renders exact age with years, months, and days in a single age column', () => {
+  it('preserves exact age with years, months, and days in visit details', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
         createAdmission({
@@ -244,9 +263,12 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    expect(screen.getByRole('cell', { name: '36 años 0 meses 0 días' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '1 año 0 meses 2 días' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '0 años 0 meses 21 días' })).toBeInTheDocument();
+    for (const button of screen.getAllByRole('button', { name: 'Ver detalles de Ada Lovelace' })) {
+      fireEvent.click(button);
+    }
+    expect(screen.getByText('36 años 0 meses 0 días')).toBeInTheDocument();
+    expect(screen.getByText('1 año 0 meses 2 días')).toBeInTheDocument();
+    expect(screen.getByText('0 años 0 meses 21 días')).toBeInTheDocument();
   });
 
   it('filters the report by search text and status', () => {
@@ -278,13 +300,13 @@ describe('AdmissionHome', () => {
 
     fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), { target: { value: '87654321' } });
 
-    expect(screen.queryByRole('cell', { name: 'Ada Lovelace' })).not.toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Grace Hopper' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ada Lovelace' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Grace Hopper' })).toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).toHaveTextContent('1');
 
     fireEvent.change(screen.getByLabelText(/filtrar por estado/i), { target: { value: 'Activa' } });
 
-    expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Grace Hopper' })).not.toBeInTheDocument();
     expect(screen.getByTestId('care-logbook-empty-state-illustration')).toBeInTheDocument();
     expect(screen.getByText(/no hay atenciones que coincidan/i)).toBeInTheDocument();
     expect(screen.getByText(/comprobar los filtros anteriores/i)).toBeInTheDocument();
@@ -324,8 +346,8 @@ describe('AdmissionHome', () => {
     for (const query of ['TEMP-001', 'SIS-183299', 'María Quispe', 'Madre']) {
       fireEvent.change(searchInput, { target: { value: query } });
 
-      expect(screen.getByRole('cell', { name: 'Niño Prueba' })).toBeInTheDocument();
-      expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Niño Prueba' })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Grace Hopper' })).not.toBeInTheDocument();
     }
   });
 
@@ -375,6 +397,8 @@ describe('AdmissionHome', () => {
     expect(csv).toContain('"N° documento"');
     expect(csv).toContain('"Estado identificación"');
     expect(csv).toContain('"Condición comunicación"');
+    expect(csv).toContain('"Estado de atención"');
+    expect(csv).toContain('"En curso"');
     expect(csv).toContain('"Sexo"');
     expect(csv).toContain('"Tipo de visita"');
     expect(csv).toContain('"UPSS"');
@@ -398,6 +422,89 @@ describe('AdmissionHome', () => {
       50,
       expect.objectContaining({ from: expect.any(String), to: expect.any(String) }),
     );
+  });
+
+  it('clears the operational filters without discarding the selected historical period', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [createAdmission({})],
+      error: undefined,
+      isLoading: false,
+    });
+    renderAdmissionHome();
+    expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'history' } });
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-01-01' } });
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2026-01-31' } });
+    fireEvent.change(screen.getByLabelText('Tipo de visita'), { target: { value: 'Consulta externa' } });
+    fireEvent.change(screen.getByLabelText('UPSS'), { target: { value: 'Admision Central' } });
+    fireEvent.change(screen.getByLabelText('Filtrar por estado'), { target: { value: 'Activa' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), { target: { value: 'missing' } });
+    expect(screen.getByText('No hay atenciones que coincidan')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(screen.getByRole('link', { name: 'Ada Lovelace' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Tipo de visita')).toHaveValue('all');
+    expect(screen.getByLabelText('UPSS')).toHaveValue('all');
+    expect(screen.getByLabelText('Filtrar por estado')).toHaveValue('all');
+    expect(screen.getByRole('textbox', { name: /buscar por paciente/i })).toHaveValue('');
+    expect(screen.getByLabelText('Desde')).toHaveValue('2026-01-01');
+    expect(screen.getByLabelText('Hasta')).toHaveValue('2026-01-31');
+  });
+
+  it('keeps a patient without DNI or birthday identifiable and searchable by their responsible person', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          patientName: 'SYNTHETIC Sin identificar',
+          medicalRecordNumber: 'TEMP-900',
+          documentType: '',
+          documentNumber: '',
+          birthDate: '',
+          identificationStatus: 'Pendiente',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+    renderAdmissionHome();
+    expect(screen.getByText('HCE / código temporal: TEMP-900')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), {
+      target: { value: 'Charles Babbage' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalles de SYNTHETIC Sin identificar' }));
+    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('Charles Babbage - Familiar')).toBeInTheDocument();
+    expect(screen.getAllByText('Sin registrar')).toHaveLength(4);
+  });
+
+  it('exports every filtered visit in a large history independently of pagination and collapsed details', async () => {
+    const createObjectURL = vi.fn((_blob: Blob | MediaSource) => 'blob:history');
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    mockUseAdmissions.mockReturnValue({
+      admissions: Array.from({ length: 2501 }, (_, index) =>
+        createAdmission({
+          uuid: `visit-${index}`,
+          patientName: `SYNTHETIC ${index}`,
+          status: index % 2 ? 'Finalizada' : 'Activa',
+        }),
+      ),
+      error: undefined,
+      isLoading: false,
+    });
+    renderAdmissionHome();
+    expect(screen.getAllByRole('link')).toHaveLength(25);
+    expect(screen.queryByText('Charles Babbage - Familiar')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Filtrar por estado'), { target: { value: 'Activa' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+    const csv = await (createObjectURL.mock.calls[0][0] as Blob).text();
+    expect(csv.split('\r\n')).toHaveLength(1253); // Excel preamble, header and 1251 matching visits.
+    expect(csv).toContain('"SYNTHETIC 0"');
+    expect(csv).toContain('"SYNTHETIC 2500"');
+    expect(csv).not.toContain('"SYNTHETIC 1"');
+    expect(csv).toContain('"Charles Babbage - Familiar"');
+    expect(csv).toContain('"Av. Peru 123, Lima, Lima"');
+    expect(screen.getAllByRole('link')).toHaveLength(25);
   });
 
   it('shows only the table skeleton while care encounters are loading', () => {
@@ -450,7 +557,7 @@ describe('AdmissionHome', () => {
     renderAdmissionHome();
 
     expect(screen.getByRole('table', { name: /atenciones registradas/i })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.queryByTestId('care-logbook-empty-state')).not.toBeInTheDocument();
     expect(screen.queryByText(/no hay atenciones/i)).not.toBeInTheDocument();

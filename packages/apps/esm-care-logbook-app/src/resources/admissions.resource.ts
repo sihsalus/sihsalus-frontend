@@ -341,32 +341,17 @@ function getRelationshipSearchText(patientUuid: string, relationships: VisitRela
 
 async function fetchRelationshipsForPatients(patientUuids: string[]) {
   const relationshipsByPatient: Record<string, VisitRelationship[]> = {};
-  const failedPatientUuids: string[] = [];
 
   // A historical report must not launch one simultaneous request per patient.
   for (let offset = 0; offset < patientUuids.length; offset += 5) {
     await Promise.all(
       patientUuids.slice(offset, offset + 5).map(async (patientUuid) => {
-        try {
-          const { data } = await openmrsFetch<{ results?: VisitRelationship[] }>(
-            `${restBaseUrl}/relationship?person=${patientUuid}&v=${relationshipRepresentation}`,
-          );
-          relationshipsByPatient[patientUuid] = data.results ?? [];
-        } catch (error) {
-          // A single patient's failure shouldn't blank the whole logbook, but it
-          // must not masquerade as "patient has no relationships" either.
-          console.warn(`Failed to load relationships for patient ${patientUuid}.`, error);
-          failedPatientUuids.push(patientUuid);
-          relationshipsByPatient[patientUuid] = [];
-        }
+        const { data } = await openmrsFetch<{ results?: VisitRelationship[] }>(
+          `${restBaseUrl}/relationship?person=${patientUuid}&v=${relationshipRepresentation}`,
+        );
+        relationshipsByPatient[patientUuid] = data.results ?? [];
       }),
     );
-  }
-
-  if (patientUuids.length > 0 && failedPatientUuids.length === patientUuids.length) {
-    // Every request failed: this is a systemic error (network/backend), so report
-    // it instead of rendering an all-blank "responsible person" column.
-    throw new Error('Failed to load patient relationships for the admissions logbook.');
   }
 
   return relationshipsByPatient;
@@ -454,15 +439,19 @@ export function useAdmissions(limit: number, range: AdmissionDateRange = {}) {
   const visits = data?.data.results ?? [];
   const patientUuids = Array.from(new Set(visits.map((visit) => visit.patient?.uuid).filter(Boolean))).sort();
   const relationshipsKey = patientUuids.length ? `admission-relationships:${patientUuids.join(',')}` : null;
-  const { data: relationshipsByPatient, isLoading: isLoadingRelationships } = useSWR<
-    Record<string, VisitRelationship[]>
-  >(relationshipsKey, () => fetchRelationshipsForPatients(patientUuids));
+  const {
+    data: relationshipsByPatient,
+    error: relationshipsError,
+    isLoading: isLoadingRelationships,
+  } = useSWR<Record<string, VisitRelationship[]>, Error>(relationshipsKey, () =>
+    fetchRelationshipsForPatients(patientUuids),
+  );
 
   return {
     admissions: visits
       .map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? '']))
       .sort((a, b) => (Date.parse(b.startDatetime ?? '') || 0) - (Date.parse(a.startDatetime ?? '') || 0)),
-    error,
+    error: error ?? relationshipsError,
     isLoading: isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient),
   };
 }

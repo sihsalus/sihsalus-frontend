@@ -69,6 +69,6 @@
     "style-loader": "4.0.0",
     "swc-loader": "0.2.7",
     "typescript": "6.0.3",
-    "vitest": "5.0.0"
+    "vitest": "5.0.1"
   }
 }

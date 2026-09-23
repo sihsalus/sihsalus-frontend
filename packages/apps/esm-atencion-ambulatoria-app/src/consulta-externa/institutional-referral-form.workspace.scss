@@ -5,10 +5,15 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  justify-content: space-between;
+  min-height: 0;
+  min-width: 0;
+  background: var(--cds-layer-01);
 }
 
 .formContent {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   padding: layout.$spacing-05 layout.$spacing-05 layout.$spacing-07;
 }
@@ -21,16 +26,42 @@
 }
 
 .formSection {
-  background: var(--cds-layer-01);
+  background: var(--cds-background);
   border: 1px solid var(--cds-border-subtle-01);
   padding: layout.$spacing-05;
 }
 
 .sectionHeader {
+  background: var(--cds-layer-01);
   border-bottom: 1px solid var(--cds-border-subtle-01);
   margin: calc(-1 * layout.$spacing-05) calc(-1 * layout.$spacing-05)
     layout.$spacing-05;
   padding: layout.$spacing-04 layout.$spacing-05;
+}
+
+.sectionFields {
+  display: grid;
+  gap: layout.$spacing-06;
+  min-width: 0;
+
+  :global(.cds--form-item),
+  :global(.cds--select),
+  :global(.cds--select-input__wrapper) {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.choiceGroup {
+  :global(.cds--radio-button-group) {
+    flex-wrap: wrap;
+    gap: layout.$spacing-04 layout.$spacing-05;
+  }
+
+  :global(.cds--radio-button-wrapper) {
+    margin: 0;
+  }
 }
 
 .sectionTitle {
@@ -50,7 +81,7 @@
 .contextList {
   display: grid;
   gap: layout.$spacing-04;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
   margin: 0;
 
   div {
@@ -75,10 +106,10 @@
 .buttonSet {
   background: var(--cds-layer-01);
   border-top: 1px solid var(--cds-border-subtle-01);
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
-  padding: layout.$spacing-05;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex-shrink: 0;
+  margin: 0;
 }
 
 .tabletButtonSet {
@@ -86,13 +117,12 @@
   padding: 0;
 }
 
-.button {
-  max-width: 50%;
-  width: 50%;
-}
-
-@media (max-width: 42rem) {
-  .contextList {
-    grid-template-columns: 1fr;
-  }
+.buttonSet .button {
+  min-width: 0;
+  max-width: none;
+  min-inline-size: 0;
+  max-inline-size: none;
+  width: 100%;
+  padding-inline: layout.$spacing-05;
+  align-items: center;
 }

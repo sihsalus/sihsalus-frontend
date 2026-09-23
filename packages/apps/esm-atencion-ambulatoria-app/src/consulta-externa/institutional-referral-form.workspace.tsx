@@ -225,7 +225,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
           <p className={styles.formIntro}>
             {t(
               'institutionalReferralIntro',
-              'Registre solo los datos propios de la derivación. Identificación, visita, triaje, historia, diagnósticos, tratamiento y profesional se recuperan del registro clínico para la hoja imprimible.',
+              'Complete el destino y las condiciones del traslado para registrar la referencia.',
             )}
           </p>
 
@@ -295,8 +295,9 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                 )}
               </p>
             </header>
-            <Stack gap={5}>
+            <div className={styles.sectionFields}>
               <ComboBox
+                autoAlign
                 id="referral-destination"
                 items={destinationOptions}
                 itemToString={(item: ReferralDestination | null) =>
@@ -373,7 +374,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                   value={otherSpecialty}
                 />
               ) : null}
-            </Stack>
+            </div>
           </section>
 
           <section className={styles.formSection} aria-labelledby="referral-transfer-heading">
@@ -388,11 +389,12 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                 )}
               </p>
             </header>
-            <Stack gap={5}>
+            <div className={styles.sectionFields}>
               <RadioButtonGroup
+                className={styles.choiceGroup}
                 legendText={t('referralPriority', 'Prioridad de la referencia')}
                 name="referral-priority"
-                orientation={isTablet ? 'vertical' : 'horizontal'}
+                orientation="horizontal"
                 valueSelected={referralTypeUuid}
                 onChange={(value: string) => setReferralTypeUuid(value)}
               >
@@ -413,9 +415,10 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                 />
               </RadioButtonGroup>
               <RadioButtonGroup
+                className={styles.choiceGroup}
                 legendText={t('patientConditionAtDeparture', 'Condición del paciente a la salida')}
                 name="referral-patient-condition"
-                orientation={isTablet ? 'vertical' : 'horizontal'}
+                orientation="horizontal"
                 valueSelected={patientConditionUuid}
                 onChange={(value: string) => setPatientConditionUuid(value)}
               >
@@ -431,9 +434,10 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                 />
               </RadioButtonGroup>
               <RadioButtonGroup
+                className={styles.choiceGroup}
                 legendText={t('transportMode', 'Transporte')}
                 name="referral-transport"
-                orientation={isTablet ? 'vertical' : 'horizontal'}
+                orientation="horizontal"
                 valueSelected={transportModeUuid}
                 onChange={(value: string) => setTransportModeUuid(value)}
               >
@@ -465,7 +469,7 @@ const InstitutionalReferralWorkspaceForm: React.FC<InstitutionalReferralWorkspac
                 rows={5}
                 value={reason}
               />
-            </Stack>
+            </div>
           </section>
 
           <InlineNotification

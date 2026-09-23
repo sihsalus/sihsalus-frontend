@@ -238,7 +238,7 @@
   "illnessDuration": "Tiempo de enfermedad",
   "inactive": "Inactivo",
   "inPatientSummary": "Resumen del paciente",
-  "institutionalReferralIntro": "Registre solo los datos propios de la derivación. Identificación, visita, triaje, historia, diagnósticos, tratamiento y profesional se recuperan del registro clínico para la hoja imprimible.",
+  "institutionalReferralIntro": "Complete el destino y las condiciones del traslado para registrar la referencia.",
   "institutionalReferralSheetTitle": "Hoja de Referencia Institucional",
   "insuranceHistory": "Historial de Financiador",
   "insuranceProvider": "Financiador",

@@ -139,6 +139,14 @@ El catálogo inicial de destinos se configura en `referralDestinations` con nomb
 
 ### Servicios de la referencia institucional
 
+La Hoja de Referencia separa visualmente los datos ya registrados, el destino y
+las condiciones del traslado. El contenido se desplaza dentro del workspace y
+las acciones permanecen al pie. Los campos ocupan el ancho disponible y las
+opciones de prioridad, condición y transporte se distribuyen según el espacio
+del panel, también cuando se abre estrecho en escritorio. Validar visualmente
+panel estrecho, escritorio y tablet, con etiquetas en español e inglés y con
+las opciones «Otro» desplegadas.
+
 El formulario nativo exige seleccionar la **UPS destino** por separado de la
 especialidad y de la prioridad de la referencia. Persiste la respuesta codificada
 bajo `concepts.referralDestinationServiceUuid`. Los valores predeterminados

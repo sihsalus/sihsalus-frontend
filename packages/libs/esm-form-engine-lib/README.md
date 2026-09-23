@@ -46,6 +46,13 @@ concept datatypes. The regression tests cover selection, payload/reload/display,
 previous text and coded-answer compatibility. These tests do not replace a
 clinical save/reload check against the deployed backend.
 
+### Initial section expansion
+
+The renderer honors each section's declarative `isExpanded` value on first
+render. Manual section toggles retain entered values; subsequent expand/collapse
+all actions still override the initial state. This fixes the local fork's prior
+behavior of always opening all sections, including optional outpatient history.
+
 ### Numeric precision
 
 A number field rejects decimals when its schema sets `disallowDecimals` or its

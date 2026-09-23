@@ -1,5 +1,5 @@
 import type { FormContextProps } from '../provider/form-provider';
-import type { FormField, FormProcessorContextProps } from '../types';
+import type { FormField, FormProcessorContextProps, OpenmrsObs } from '../types';
 import { assignedObsIds, hasPreviousObsValueChanged, ObsAdapter } from './obs-adapter';
 
 const makeField = (): FormField => ({
@@ -19,7 +19,7 @@ beforeEach(() => {
 
 it('saves, reloads and displays a Text select without turning its value into a concept', async () => {
   const field = makeField();
-  const saved = ObsAdapter.transformFieldValue(field, 'Gradual', {} as FormContextProps);
+  const saved = ObsAdapter.transformFieldValue(field, 'Gradual', {} as FormContextProps) as Partial<OpenmrsObs>;
   expect(saved).toMatchObject({ value: 'Gradual', concept: 'text-concept', formFieldPath: 'rfe-forms-onset' });
   const reloaded = makeField();
   const encounter = {

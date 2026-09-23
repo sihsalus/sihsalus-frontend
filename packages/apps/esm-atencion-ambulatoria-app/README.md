@@ -128,8 +128,8 @@ Los valores de `formsList` para consulta externa usan los nombres estables publi
 
 ### Captura simplificada de anamnesis y examen físico
 
-Requiere la anamnesis `1.1.0` de content **1.25.27** y el formulario independiente
-`CE-EXF-001-EXAMEN FISICO` `1.0.0`. `anamnesisFormVersion` y
+Requiere content **1.25.28**, que reúne la anamnesis `1.1.0` y el formulario
+independiente `CE-EXF-001-EXAMEN FISICO` `1.0.0`. `anamnesisFormVersion` y
 `physicalExamFormVersion` fijan esas versiones respectivamente. La cabecera usa
 Anamnesis o Examen físico; SOAP queda únicamente como historia retirada.
 El examen contiene estado general y sistemas, sin Subjetivo, Objetivo,

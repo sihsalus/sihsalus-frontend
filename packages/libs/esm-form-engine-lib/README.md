@@ -35,6 +35,14 @@ Key features of the Form Engine include:
   - **View Mode** - This mode allows the user to view data that has already been entered into the form. The form is rendered in a read-only mode.
   - **Embedded View** - This mode is a condensed version of the `view mode` without the section headers and form actions. It can be used to display entered form data within a widget.
 
+### Numeric precision
+
+A number field rejects decimals when its schema sets `disallowDecimals` or its
+loaded concept explicitly sets `allowDecimal: false`. A concept permitting
+decimals does not override a stricter schema. Missing concept metadata does not
+invent an integer restriction; required-field and numeric bounds checks still
+apply. Regression cases are in `src/validators/form-validator.test.ts`.
+
 ### Fail-closed encounter editing
 
 An edit session must load the encounter selected by `encounterUUID` before rendering editable values or accepting a

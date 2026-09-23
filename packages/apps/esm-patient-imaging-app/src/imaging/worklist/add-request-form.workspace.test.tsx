@@ -97,6 +97,7 @@ describe('AddNewProcedureStepWorkspace', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Save and Close/i }));
     expect(await screen.findAllByText(/required/i)).not.toHaveLength(0);
+    expect(await screen.findByText('Please select a valid Orthanc server')).toBeInTheDocument();
   });
 
   it('generates accession number when clicking button', async () => {

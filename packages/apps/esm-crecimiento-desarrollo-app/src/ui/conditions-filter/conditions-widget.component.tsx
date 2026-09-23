@@ -98,7 +98,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
     },
     ref,
   ) => {
-    const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
     const inputId = useId();
     const mounted = useRef(true);
     useEffect(() => {

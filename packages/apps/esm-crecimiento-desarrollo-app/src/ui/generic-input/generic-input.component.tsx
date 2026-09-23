@@ -57,7 +57,7 @@ const GenericInput = <T extends FormData>({
   showErrorMessage = false,
   unitSymbol,
 }: GenericInputProps<T>): JSX.Element => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const fieldId = useId();
   const isTablet = useLayoutType() === 'tablet';
   const [invalid, setInvalid] = useState(false);

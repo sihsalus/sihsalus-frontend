@@ -66,13 +66,23 @@ formulario siguen en el
 - Confirmar que todos los formularios guardados en un mismo control comparten `Número de control CRED` y que al reabrir el mismo día/consulta se conserva ese número.
 - Mantener un set de pacientes de prueba para CRED con casos vacío, recién nacido, lactante y niño con controles previos.
 
-## TODO i18n/UI
+## i18n/UI
 
-- Ampliar smoke tests de i18n más allá de dashboards: workspaces, botones de acción, estados vacíos y formularios sloteados.
-- Agregar smoke test para textos duplicados de estados vacíos, por ejemplo `No hay no hay`.
-- Revisar componentes CRED que usan `useTranslation()` sin namespace explícito cuando se renderizan dentro de slots compartidos.
+Los componentes y el lanzador de formularios usan explícitamente el catálogo
+`@sihsalus/esm-cred-app`, también dentro de slots de otros módulos. El estado
+vacío reutiliza `EmptyState` con el nombre del dato; el catálogo compartido
+construye el mensaje de ausencia una sola vez. Las pruebas con i18next real
+cubren etiquetas, acciones, valores ausentes, estados de control y secciones
+no disponibles en español e inglés bajo un namespace ajeno.
+
+El catálogo inglés incluye las etiquetas neonatales y de reacciones adversas;
+los formularios declarativos y los nombres de conceptos siguen perteneciendo
+a content. La revisión clínica de esos textos no se sustituye con etiquetas
+del frontend. El alcance pendiente y la aceptación del módulo se siguen en el
+[issue #91](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/91).
+
+- Ampliar el recorrido en QLTY a todos los workspaces y formularios sloteados.
 - Acortar labels largos en tabs para evitar truncamiento visual; por ejemplo, evaluar `Consejería en lactancia materna` como `Lactancia`.
-- Revisar `en.json` porque aún conserva textos heredados en español y puede confundir validaciones bilingües.
 
 ## TODO ya cubiertos en código
 

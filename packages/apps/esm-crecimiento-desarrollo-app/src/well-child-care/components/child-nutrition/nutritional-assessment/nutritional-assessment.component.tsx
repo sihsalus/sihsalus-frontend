@@ -23,7 +23,7 @@ interface NutritionalAssessmentProps {
 }
 
 const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { nutritionClassification, weight, height, lastMeasurementDate, isLoading, error } =

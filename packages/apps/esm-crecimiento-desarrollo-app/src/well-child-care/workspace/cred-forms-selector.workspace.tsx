@@ -39,7 +39,7 @@ type CREDCompletedFormInfo = CompletedFormInfo & {
 };
 
 const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (props) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const workspaceProps = props.workspaceProps ?? {};

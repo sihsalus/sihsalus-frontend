@@ -239,7 +239,7 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
 }
 
 export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFallbacks[formKey]) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const formIdentifier = getCREDFormIdentifier(config?.formsList, formKey, fallback);
   const fallbackDisplay = fallback?.display ?? formKey;

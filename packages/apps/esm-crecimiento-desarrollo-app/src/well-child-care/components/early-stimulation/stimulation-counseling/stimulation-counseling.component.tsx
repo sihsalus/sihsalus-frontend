@@ -23,7 +23,7 @@ interface StimulationCounselingProps {
 }
 
 const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { totalSessions, lastCounselingDate, lastCounselingResult, isLoading, error } =

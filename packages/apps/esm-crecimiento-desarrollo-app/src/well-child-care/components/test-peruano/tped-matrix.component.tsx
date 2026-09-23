@@ -22,7 +22,7 @@ interface TpedMatrixProps {
 }
 
 const TpedMatrix: React.FC<TpedMatrixProps> = ({ focusedAgeColumn, onSelectCell, selectedCell }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   return (
     <div className={styles.matrixScroller} data-testid="tped-matrix-scroller">

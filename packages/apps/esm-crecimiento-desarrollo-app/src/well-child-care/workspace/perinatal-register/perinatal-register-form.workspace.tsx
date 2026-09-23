@@ -93,7 +93,7 @@ export type PerinatalRegisterFormType = z.infer<typeof PerinatalRegisterSchema>;
 
 const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspace, workspaceProps }) => {
   const patientUuid = workspaceProps?.patientUuid ?? '';
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const { activeVisit, currentVisit } = useVisit(patientUuid);

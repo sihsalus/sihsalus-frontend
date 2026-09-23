@@ -12,7 +12,7 @@ interface ImmediateNewbornAttentionProps {
 }
 
 const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig() as ConfigObject;

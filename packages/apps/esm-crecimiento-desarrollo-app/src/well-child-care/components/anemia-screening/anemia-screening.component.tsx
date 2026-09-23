@@ -23,7 +23,7 @@ interface AnemiaScreeningProps {
 }
 
 const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { lastHb, lastDate, nextDueDate, isLoading, error } = useAnemiaScreening(patientUuid);

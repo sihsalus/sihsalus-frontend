@@ -14,7 +14,7 @@ const SlotPlaceholder: React.FC<SlotPlaceholderProps> = ({
   titleKey = 'slotComingSoon',
   descriptionKey = 'slotComingSoonDescription',
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   return (
     <Layer>

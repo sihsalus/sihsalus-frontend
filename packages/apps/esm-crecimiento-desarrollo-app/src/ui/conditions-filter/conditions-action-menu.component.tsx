@@ -13,7 +13,7 @@ interface conditionsActionMenuProps {
 }
 
 export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActionMenuProps) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const actionId = useId();
   const canEditStatus = isSupportedConditionStatus(condition?.clinicalStatus);
   const isTablet = useLayoutType() === 'tablet';

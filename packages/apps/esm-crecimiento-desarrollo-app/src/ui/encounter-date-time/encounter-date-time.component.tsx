@@ -38,7 +38,7 @@ interface Field {
  * date / time fields based on the visit status (new / ongoing / past)
  */
 const EncounterDateTimeSection: React.FC<EncounterDateTimeSectionProps> = ({ control, minDate, sectionTitle }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   return (
     <section>

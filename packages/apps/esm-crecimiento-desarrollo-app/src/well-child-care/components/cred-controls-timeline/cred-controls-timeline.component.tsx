@@ -18,7 +18,7 @@ interface CredAgeGroupsProps {
 }
 
 const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const { ageGroupsCRED } = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);

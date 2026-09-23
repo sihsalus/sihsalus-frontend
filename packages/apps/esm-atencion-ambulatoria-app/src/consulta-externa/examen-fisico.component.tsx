@@ -35,6 +35,8 @@ const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
     formIdentifier: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
     encounterTypeUuid: config.encounterTypes?.externalConsultation,
     ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    formVersion: config.formsList?.physicalExamFormVersion,
+    workspaceTitle: t('physicalExam', 'Examen físico'),
     mutate,
     entryMode: 'one-per-visit',
   });

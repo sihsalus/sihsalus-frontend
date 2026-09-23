@@ -34,6 +34,8 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
     formIdentifier: config.formsList?.anamnesisForm ?? config.formsList?.consultaExternaForm,
     encounterTypeUuid: config.encounterTypes?.externalConsultation,
     ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    formVersion: config.formsList?.anamnesisFormVersion,
+    workspaceTitle: t('anamnesis', 'Anamnesis'),
     mutate,
     entryMode: 'one-per-visit',
   });

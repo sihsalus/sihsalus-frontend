@@ -1,7 +1,7 @@
 import { Accordion, AccordionItem } from '@carbon/react';
 import { ChevronDownIcon, ChevronUpIcon } from '@openmrs/esm-framework/src/internal';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Waypoint } from 'react-waypoint';
 import { type FormPage, type FormSection } from '../../../types';
@@ -114,10 +114,17 @@ function CollapsibleSectionContainer({
   isFormExpanded,
 }: CollapsibleSectionContainerProps): React.JSX.Element {
   const { t } = useTranslation();
-  const [isSectionOpen, setIsSectionOpen] = useState(isFormExpanded);
+  const [isSectionOpen, setIsSectionOpen] = useState(
+    isFormExpanded && (section.isExpanded == null || isTrue(section.isExpanded)),
+  );
+  const previousFormExpanded = useRef(isFormExpanded);
 
   useEffect(() => {
-    setIsSectionOpen(isFormExpanded);
+    // Initial section state belongs to the schema; later expand/collapse-all actions override it.
+    if (previousFormExpanded.current !== isFormExpanded) {
+      setIsSectionOpen(isFormExpanded);
+      previousFormExpanded.current = isFormExpanded;
+    }
   }, [isFormExpanded]);
 
   return (

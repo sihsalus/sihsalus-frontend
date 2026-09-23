@@ -122,6 +122,28 @@ para los roles previstos. Las pruebas locales con mocks no sustituyen esa revisi
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, el identificador histórico `CE-SOAP-001-NOTA SOAP` para el formulario de examen físico y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos. El nombre y la clave internos de SOAP se conservan temporalmente para resolver el formulario y los encuentros ya instalados; no se presentan como SOAP en el flujo ambulatorio. Consulta Externa registra nuevas referencias mediante el workspace nativo **Hoja de Referencia Institucional**; el esquema AMPATH se conserva solo como compatibilidad de captura básica y no es el punto de entrada de Consulta Externa.
 
+### Captura simplificada de anamnesis y examen físico
+
+Requiere content **1.25.27**: `anamnesisFormVersion` fija `1.1.0` y
+`physicalExamFormVersion` fija `1.2.0`. La cabecera usa Anamnesis o Examen físico;
+el nombre técnico histórico de SOAP solo identifica el recurso.
+El examen contiene estado general y sistemas, sin Subjetivo, Objetivo,
+Apreciación ni Plan duplicados. El diagnóstico y tratamiento siguen en sus
+secciones canónicas.
+
+Anamnesis conserva motivo, tiempo de enfermedad y un detalle breve opcional.
+Inicio, evolución y funciones biológicas usan selectores sin respuesta
+predeterminada; las funciones biológicas se presentan contraídas. Las opciones
+persisten valores Text existentes mediante el motor compartido, no conceptos
+nuevos ni conversiones de registros históricos.
+
+El lanzador exige la versión configurada. Si la visita ya contiene un formulario
+de una versión anterior, informa y bloquea otra captura; no duplica encuentros
+ni les reasigna el esquema nuevo. El historial mantiene los datos anteriores.
+Probar frontend/content juntos en QLTY: creación, selección, guardado, recarga,
+edición, solo lectura, versión faltante y visita abierta durante la actualización.
+La aceptación clínica y el despliegue siguen pendientes hasta esa comprobación.
+
 El dashboard muestra una cabecera compacta propia para garantizar que `Consulta Externa` se traduzca en el namespace del módulo. El orden operativo de las pestañas sigue el flujo clínico: Triajes previos, Antecedentes, Anamnesis, Examen físico, Pruebas complementarias, Diagnóstico, Plan de Tratamiento y Referencia / Contrarreferencia. **Pruebas complementarias** va antes de Diagnóstico porque el clínico lee lo que devolvió el laboratorio antes de clasificar. La pestaña no implementa su propia vista: expone el slot `consulta-externa-pruebas-complementarias-slot`, donde `esm-patient-tests-app` monta el mismo card de resultados (`externalOverview`) que ya usan la hoja clínica y el resumen de visitas, así que las tres superficies comparten una sola implementación y respetan `app:hoja.clinica.resultados`.
 
 Anamnesis y examen físico son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; el workspace crea un encounter nuevo adjunto a la visita ambulatoria verificada y persiste únicamente destino, especialidad, prioridad, condición de salida, transporte y motivo. Paciente, visita, triaje, diagnósticos, tratamiento y profesional no se duplican.

@@ -34,6 +34,7 @@ describe('Anamnesis', () => {
         externalConsultation: 'external-consultation',
       },
       formsList: {
+        anamnesisFormVersion: '1.1.0',
         anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
@@ -71,6 +72,8 @@ describe('Anamnesis', () => {
       ambulatoryVisitTypeUuid: 'ambulatory-visit',
       mutate,
       entryMode: 'one-per-visit',
+      formVersion: '1.1.0',
+      workspaceTitle: 'Anamnesis',
     });
     expect(mockLaunchForm).toHaveBeenCalledOnce();
   });

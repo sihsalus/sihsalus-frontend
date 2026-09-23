@@ -556,5 +556,10 @@
   "visitType": "Visit type",
   "vitalSigns": "Vital signs and anthropometry",
   "weight": "Weight",
-  "yes": "Yes"
+  "yes": "Yes",
+  "referralDestinationService": "Destination service (UPS)",
+  "referralOriginService": "Origin service",
+  "referralDiagnosticSupport": "Diagnostic support (attach order)",
+  "referralOutpatientService": "Outpatient care",
+  "referralServicesUnavailable": "Review the referral: its origin and destination services could not be verified. No document was generated."
 }

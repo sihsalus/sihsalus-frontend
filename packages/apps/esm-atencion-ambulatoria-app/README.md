@@ -137,6 +137,38 @@ abrir. Este contrato no diagnostica ni corrige errores de descarga del esquema.
 
 El catálogo inicial de destinos se configura en `referralDestinations` con nombre y código RENIPRESS; la selección conserva ambos en el encounter histórico. La exportación **Hoja de Referencia Institucional** se genera localmente a partir de la visita y deja vacíos para llenado manual los bloques de responsable de la referencia, responsable del establecimiento, personal que acompaña, personal que recibe, firmas y sellos.
 
+### Servicios de la referencia institucional
+
+El formulario nativo exige seleccionar la **UPS destino** por separado de la
+especialidad y de la prioridad de la referencia. Persiste la respuesta codificada
+bajo `concepts.referralDestinationServiceUuid`. Los valores predeterminados
+reutilizan el concepto y las tres respuestas de `FormularioHojaDeReferencia`
+(UPS destino, Emergencia, Consulta Externa y Apoyo al Diagnóstico) del contenido
+SIHSALUS; no se infiere una UPS desde la especialidad ni desde la prioridad.
+Verificar que esos conceptos y sus respuestas estén importados antes de habilitar
+esta captura en DEV/QLTY.
+
+El historial muestra la ubicación guardada en el encounter de referencia como
+origen y su observación UPS como destino. El PDF vuelve a leer la visita en el
+servidor, selecciona exactamente esa referencia y usa su ubicación, sin tomar la
+ubicación actual de la sesión ni escribir «Consulta Externa» como valor fijo.
+La ubicación guardada debe corresponder al servicio que realmente emitió la
+referencia; este cambio no reinterpreta una ubicación institucional como una UPSS
+ni reconstruye movimientos que no hayan quedado registrados.
+
+Una referencia ausente, anulada, de otro tipo o con servicios incompletos o
+ambiguos bloquea la descarga. Los registros históricos sin UPS siguen visibles;
+no se rellenan ni migran automáticamente. La especialidad y prioridad conservan
+su significado independiente.
+
+Pendiente de aceptación: guardar, recargar e imprimir con roles sintéticos y
+comparar ambos servicios, las asociaciones con paciente/visita y el catálogo
+instalado. El lanzador y la composición clínica siguen limitados a visitas
+ambulatorias; habilitar el circuito de una visita de Emergencia requiere su
+contrato clínico y no se resuelve cambiando el rótulo del PDF. El caso de extremo
+a extremo desde Emergencia continúa pendiente; las pruebas locales de un origen
+registrado como Emergencia no lo certifican.
+
 ## Resumen de atención ambulatoria
 
 La lectura de la visita para generar Resumen, Indicaciones o Receta Única exige

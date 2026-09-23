@@ -664,6 +664,26 @@ export const configSchema = {
       _description: 'Establecimiento destino de la referencia (proyecto: establecimiento-destino-referencia)',
       _default: '6a1e18c1-8874-45fe-92dd-26758d5d6ba7',
     },
+    referralDestinationServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'UPS destination recorded on the institutional referral',
+      _default: 'fc4f1f22-7529-4606-9e6a-af818f9f8dba',
+    },
+    referralDestinationEmergencyServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Emergency answer for the destination UPS',
+      _default: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974',
+    },
+    referralDestinationOutpatientServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Outpatient answer for the destination UPS',
+      _default: '69ede7d1-a5e8-4db8-9397-5887c9c4dfb0',
+    },
+    referralDestinationDiagnosticServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Diagnostic support answer for the destination UPS',
+      _default: '6f9fc7f1-ea68-4446-9cd4-a59e9cd8ba94',
+    },
     referralDestinationSpecialtyUuid: {
       _type: Type.ConceptUuid,
       _description: 'Especialidad de destino de la referencia institucional',

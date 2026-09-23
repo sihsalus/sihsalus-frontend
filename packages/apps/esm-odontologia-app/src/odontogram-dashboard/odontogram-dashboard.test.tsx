@@ -98,6 +98,40 @@ describe('OdontogramDashboard', () => {
       expect.objectContaining({ patientUuid: 'patient-uuid', workspaceMode: 'base' }),
     );
   });
+
+  it('does not offer a new odontogram when history failed to load', () => {
+    mockUseOdontogramHistory.mockReturnValue({
+      attentionRecords: [],
+      baseRecords: [],
+      error: new Error('Synthetic internal history failure'),
+      groups: [],
+      isLoading: false,
+      mutate: vi.fn(),
+    });
+    render(<OdontogramDashboard patientUuid="synthetic-child" />);
+    expect(screen.queryByRole('button', { name: /registrar odontograma inicial/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/no hay odontograma inicial registrado/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Synthetic internal history failure')).not.toBeInTheDocument();
+    expect(mockUseOdontogramEncounter().save).not.toHaveBeenCalled();
+  });
+
+  it('preserves the dental draft through a failed history refresh', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<OdontogramDashboard patientUuid="synthetic-child" />);
+    await user.click(screen.getByRole('button', { name: /registrar odontograma inicial/i }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Dentition' }), 'child');
+    const draft = useOdontogramDataStore.getState().data;
+    const history = mockUseOdontogramHistory();
+    mockUseOdontogramHistory.mockReturnValue({ ...history, error: new Error('Synthetic refresh failure') });
+    rerender(<OdontogramDashboard patientUuid="synthetic-child" />);
+    expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /registrar odontograma inicial/i })).not.toBeInTheDocument();
+    mockUseOdontogramHistory.mockReturnValue(history);
+    rerender(<OdontogramDashboard patientUuid="synthetic-child" />);
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled();
+    expect(useOdontogramDataStore.getState().data).toEqual(draft);
+    expect(screen.getByText('55')).toBeInTheDocument();
+  });
   it('saves and expands the chosen primary dentition from the first initial record', async () => {
     const user = userEvent.setup();
     render(<OdontogramDashboard patientUuid="patient-uuid" />);

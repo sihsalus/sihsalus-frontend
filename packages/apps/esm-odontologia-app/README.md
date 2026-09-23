@@ -23,6 +23,20 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - UI especializada para la vista dental.
 - Rutas y configuración del módulo odontológico.
 
+El odontograma completo también se muestra en CRED → Cuidado del niño sano →
+Servicios adicionales mediante la extensión `cred-odontogram-dashboard`.
+Reutiliza `odontologiaDashboard`, el mismo paciente, historial, editor, workspace
+y persistencia del módulo odontológico. Conserva el privilegio de consulta
+`app:hoja.clinica.odontologia` y el de edición; no concede permisos por acceder a
+CRED. Es una extensión en línea y no sustituye el formulario CRED-016 de inspección
+de cavidad bucal. La dentición sigue siendo una elección explícita del profesional.
+
+Un error al leer el historial muestra el estado de error compartido, sin ofrecer
+un odontograma inicial como si la lectura hubiera devuelto cero registros. Si la
+lectura se recupera, conserva el borrador en curso. La aceptación de la integración
+con backend/content y rol clínico se sigue en
+[el issue #120](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/120).
+
 ## Dentición y persistencia
 
 El odontograma inicial permite elegir dentición permanente (32 piezas) o temporal

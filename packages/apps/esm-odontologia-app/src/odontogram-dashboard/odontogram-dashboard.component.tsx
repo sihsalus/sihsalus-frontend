@@ -18,6 +18,7 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
+import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { countSolutions } from './count-solutions';
@@ -335,11 +336,15 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     });
   }, [selectedRecord, activeBase, t, setSelectedEncounterUuid, mutate]);
 
+  if (error) {
+    return <ErrorState error={error} headerTitle={t('odontogram', 'Odontograma')} />;
+  }
+
   if (isLoading) {
     return <OdontogramSkeleton />;
   }
 
-  if (error || ((!hasBase || !activeBase) && !isCreatingBase)) {
+  if ((!hasBase || !activeBase) && !isCreatingBase) {
     return <OdontogramEmpty onGenerate={canEdit ? startNewBase : undefined} />;
   }
 

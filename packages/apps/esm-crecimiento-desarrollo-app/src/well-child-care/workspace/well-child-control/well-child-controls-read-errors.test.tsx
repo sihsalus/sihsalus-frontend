@@ -20,10 +20,13 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key, fallback) => fallback }),
 }));
 
+let patientState: ReturnType<typeof usePatient>;
+let historyState: ReturnType<typeof useEncountersCRED>;
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConfig).mockReturnValue({});
-  vi.mocked(usePatient).mockReturnValue({
+  patientState = {
     patient: {
       resourceType: 'Patient',
       id: 'synthetic-child',
@@ -32,20 +35,22 @@ beforeEach(() => {
     patientUuid: 'synthetic-child',
     isLoading: false,
     error: null,
-  });
+  };
+  vi.mocked(usePatient).mockReturnValue(patientState);
   vi.mocked(useVisit).mockReturnValue({
     currentVisit: {
       uuid: 'synthetic-visit',
       startDatetime: '2026-09-01T00:00:00Z',
     },
   } as ReturnType<typeof useVisit>);
-  vi.mocked(useEncountersCRED).mockReturnValue({
+  historyState = {
     encounters: [],
     error: null,
     controlNumberError: null,
     isLoading: false,
     mutate: vi.fn(),
-  });
+  };
+  vi.mocked(useEncountersCRED).mockReturnValue(historyState);
 });
 
 function renderWorkspace() {
@@ -60,12 +65,12 @@ it.each([
   const error = new Error('Synthetic internal read failure');
   if (source === 'patient')
     vi.mocked(usePatient).mockReturnValue({
-      ...usePatient('synthetic-child'),
+      ...patientState,
       error,
     });
   else
     vi.mocked(useEncountersCRED).mockReturnValue({
-      ...useEncountersCRED('synthetic-child'),
+      ...historyState,
       [source === 'encounters' ? 'error' : 'controlNumberError']: error,
     });
   renderWorkspace();
@@ -78,7 +83,7 @@ it.each([
 it('retries the history before allowing the user to continue', async () => {
   const mutate = vi.fn().mockResolvedValue(undefined);
   vi.mocked(useEncountersCRED).mockReturnValue({
-    ...useEncountersCRED('synthetic-child'),
+    ...historyState,
     controlNumberError: new Error('Synthetic failure'),
     mutate,
   });
@@ -87,7 +92,7 @@ it('retries the history before allowing the user to continue', async () => {
   expect(mutate).toHaveBeenCalledOnce();
   expect(launchWorkspace2).not.toHaveBeenCalled();
   vi.mocked(useEncountersCRED).mockReturnValue({
-    ...useEncountersCRED('synthetic-child'),
+    ...historyState,
     controlNumberError: null,
   });
   rerender(<CREDControlsWorkspace patientUuid="synthetic-child" closeWorkspace={vi.fn()} />);
@@ -102,12 +107,12 @@ it('preserves the entered time across a failed history refresh', async () => {
   await userEvent.type(time, '09:30');
   expect(time).toHaveValue('09:30');
   vi.mocked(useEncountersCRED).mockReturnValue({
-    ...useEncountersCRED('synthetic-child'),
+    ...historyState,
     error: new Error('Synthetic refresh failure'),
   });
   rerender(<CREDControlsWorkspace patientUuid="synthetic-child" closeWorkspace={vi.fn()} />);
   expect(screen.queryByRole('button', { name: 'Empezar Control' })).not.toBeInTheDocument();
-  vi.mocked(useEncountersCRED).mockReturnValue({ ...useEncountersCRED('synthetic-child'), error: null });
+  vi.mocked(useEncountersCRED).mockReturnValue({ ...historyState, error: null });
   rerender(<CREDControlsWorkspace patientUuid="synthetic-child" closeWorkspace={vi.fn()} />);
   expect(screen.getByLabelText('Start time')).toHaveValue('09:30');
 });

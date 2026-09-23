@@ -7,8 +7,12 @@ import useEncountersCRED from './useEncountersCRED';
 vi.mock('./useAppointmentsCRED');
 vi.mock('./useEncountersCRED');
 
+let patientState: ReturnType<typeof usePatient>;
+let historyState: ReturnType<typeof useEncountersCRED>;
+let appointmentsState: ReturnType<typeof useAppointmentsCRED>;
+
 beforeEach(() => {
-  vi.mocked(usePatient).mockReturnValue({
+  patientState = {
     patient: {
       resourceType: 'Patient',
       id: 'synthetic-child',
@@ -17,19 +21,22 @@ beforeEach(() => {
     patientUuid: 'synthetic-child',
     isLoading: false,
     error: null,
-  });
-  vi.mocked(useEncountersCRED).mockReturnValue({
+  };
+  vi.mocked(usePatient).mockReturnValue(patientState);
+  historyState = {
     encounters: [],
     isLoading: false,
     error: null,
     controlNumberError: null,
     mutate: vi.fn(),
-  });
-  vi.mocked(useAppointmentsCRED).mockReturnValue({
+  };
+  vi.mocked(useEncountersCRED).mockReturnValue(historyState);
+  appointmentsState = {
     appointments: [],
     isLoading: false,
     error: undefined,
-  });
+  };
+  vi.mocked(useAppointmentsCRED).mockReturnValue(appointmentsState);
 });
 
 it.each([
@@ -39,17 +46,17 @@ it.each([
 ] as const)('waits for %s even if partial data are already available', (source) => {
   if (source === 'patient')
     vi.mocked(usePatient).mockReturnValue({
-      ...usePatient('synthetic-child'),
+      ...patientState,
       isLoading: true,
     });
   if (source === 'encounters')
     vi.mocked(useEncountersCRED).mockReturnValue({
-      ...useEncountersCRED('synthetic-child'),
+      ...historyState,
       isLoading: true,
     });
   if (source === 'appointments')
     vi.mocked(useAppointmentsCRED).mockReturnValue({
-      ...useAppointmentsCRED('synthetic-child'),
+      ...appointmentsState,
       isLoading: true,
     });
   const { result } = renderHook(() => useCREDSchedule('synthetic-child'));
@@ -67,22 +74,22 @@ it.each([
   const error = new Error('Synthetic read failure');
   if (source === 'patient')
     vi.mocked(usePatient).mockReturnValue({
-      ...usePatient('synthetic-child'),
+      ...patientState,
       error,
     });
   if (source === 'encounters')
     vi.mocked(useEncountersCRED).mockReturnValue({
-      ...useEncountersCRED('synthetic-child'),
+      ...historyState,
       error,
     });
   if (source === 'controlNumbers')
     vi.mocked(useEncountersCRED).mockReturnValue({
-      ...useEncountersCRED('synthetic-child'),
+      ...historyState,
       controlNumberError: error,
     });
   if (source === 'appointments')
     vi.mocked(useAppointmentsCRED).mockReturnValue({
-      ...useAppointmentsCRED('synthetic-child'),
+      ...appointmentsState,
       error,
     });
   const { result } = renderHook(() => useCREDSchedule('synthetic-child'));
@@ -93,7 +100,7 @@ it.each([
 
 it('recalculates from the persisted control number after recovery', () => {
   vi.mocked(useEncountersCRED).mockReturnValue({
-    ...useEncountersCRED('synthetic-child'),
+    ...historyState,
     controlNumberError: new Error('Synthetic failure'),
   });
   const { result, rerender } = renderHook(() => useCREDSchedule('synthetic-child'));

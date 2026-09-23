@@ -36,6 +36,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-home/issues"
   },
   "dependencies": {
+    "@sihsalus/esm-patient-search-app": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*"
   },
   "peerDependencies": {

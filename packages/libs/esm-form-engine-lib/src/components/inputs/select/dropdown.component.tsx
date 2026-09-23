@@ -30,10 +30,16 @@ const Dropdown: React.FC<FormFieldInputProps<string | number | null | undefined>
 
   const itemToString = useCallback(
     (item: string | number | null) => {
+      if (item === NullSelectOption) return t('chooseAnOption', 'Choose an option');
       const answer = field.questionOptions.answers?.find((opt) => {
-        return opt.value ? opt.value === item : opt.concept === item;
+        return (opt.value ?? opt.concept) === item;
       });
-      return answer ? t(answer.label) : '';
+      // Text-valued selects must keep a previously recorded narrative visible.
+      return answer
+        ? t(answer.label)
+        : field.questionOptions.answers?.some((opt) => opt.value != null)
+          ? String(item ?? '')
+          : '';
     },
     [field.questionOptions.answers, t],
   );
@@ -46,11 +52,20 @@ const Dropdown: React.FC<FormFieldInputProps<string | number | null | undefined>
         label: t('chooseAnOption', 'Choose an option'),
       });
     }
-    return options
+    const items = options
       .filter((option) => !option.isHidden)
       .map((item) => item.value ?? item.concept)
       .filter((item): item is string | number => item !== undefined && item !== null);
-  }, [field.questionOptions.answers, t]);
+    if (
+      !isEmpty(value) &&
+      value != null &&
+      field.questionOptions.answers?.some((option) => option.value != null) &&
+      !field.questionOptions.answers?.some((option) => (option.value ?? option.concept) === value)
+    ) {
+      items.push(value);
+    }
+    return items;
+  }, [field.questionOptions.answers, t, value]);
 
   const isInline = useMemo(() => {
     if (['view', 'embedded-view'].includes(sessionMode) || isTrue(field.readonly)) {

@@ -215,7 +215,9 @@ export const configSchema = {
       // Use the stable published form names. Schema UUIDs belong to content artifacts and can change between environments.
       consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
+      anamnesisFormVersion: '1.1.0',
       physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
+      physicalExamFormVersion: '1.0.0',
       referralForm: 'CE-REF-001-REFERENCIA-CONTRARREFERENCIA',
       visitNoteFormUuid: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
 
@@ -980,7 +982,9 @@ export interface ConfigObject {
     // Consulta Externa Forms
     consultaExternaForm: string;
     anamnesisForm: string;
+    anamnesisFormVersion?: string;
     physicalExamForm: string;
+    physicalExamFormVersion?: string;
     referralForm: string;
     visitNoteFormUuid: string;
     // HIV/HTS Forms

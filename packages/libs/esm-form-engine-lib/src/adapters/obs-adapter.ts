@@ -386,7 +386,9 @@ function getObsDisplayValue(field: FormField, value: unknown): unknown {
     return value ? field.questionOptions.toggleOptions.labelTrue : field.questionOptions.toggleOptions.labelFalse;
   }
   if (codedTypes.includes(rendering)) {
-    return field.questionOptions.answers?.find((option) => option.concept === value)?.label;
+    const answers = field.questionOptions.answers;
+    const answer = answers?.find((option) => (option.value ?? option.concept) === value);
+    return answer?.label ?? (answers?.some((option) => option.value != null) ? value : undefined);
   }
   return value;
 }

@@ -31,6 +31,7 @@ describe('ExamenFisico', () => {
       encounterTypes: { externalConsultation: 'external-consultation' },
       formsList: {
         physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
+        physicalExamFormVersion: '1.0.0',
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
       visitTypes: { ambulatory: 'ambulatory-visit' },
@@ -113,11 +114,12 @@ describe('ExamenFisico', () => {
     expect(mockUseConsultaExternaFormLauncher).toHaveBeenCalledWith({
       patientUuid: 'synthetic-patient-uuid',
       formIdentifier: 'CE-EXF-001-EXAMEN FISICO',
-      workspaceTitle: 'Examen físico',
       encounterTypeUuid: 'external-consultation',
       ambulatoryVisitTypeUuid: 'ambulatory-visit',
       mutate,
       entryMode: 'one-per-visit',
+      formVersion: '1.0.0',
+      workspaceTitle: 'Examen físico',
     });
     expect(mockLaunchForm).toHaveBeenCalledOnce();
   });

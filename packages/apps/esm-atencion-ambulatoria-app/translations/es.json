@@ -559,5 +559,6 @@
   "referralOriginService": "Servicio origen",
   "referralDiagnosticSupport": "Apoyo al Diagnóstico (Adjuntar orden)",
   "referralOutpatientService": "Consulta Externa",
-  "referralServicesUnavailable": "Revise la referencia: no se pudieron verificar sus servicios de origen y destino. No se generó el documento."
+  "referralServicesUnavailable": "Revise la referencia: no se pudieron verificar sus servicios de origen y destino. No se generó el documento.",
+  "previousConsultationFormVersion": "Esta visita ya contiene un registro de una versión anterior del formulario. Revíselo en el historial clínico antes de continuar."
 }

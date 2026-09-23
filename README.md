@@ -11,387 +11,101 @@ Contact: `sihsalus@pucp.edu.pe`
 Before proposing changes, read [CONTRIBUTING.md](CONTRIBUTING.md). Automated
 coding agents must also follow [AGENTS.md](AGENTS.md).
 
+## Documentación
+
+<!-- Preserve links to sections moved into the documentation index. -->
+
+<a id="development"></a>
+<a id="qué-comando-usar-start-vs-serve-vs-serveprod"></a>
+<a id="building"></a>
+<a id="testing"></a>
+<a id="quality"></a>
+<a id="todo-rbac-auditoria-y-permisos"></a>
+<a id="todo-hardening-transversal"></a>
+<a id="cleaning"></a>
+<a id="concurrency"></a>
+<a id="docker"></a>
+<a id="contrato-de-identidad-del-paciente"></a>
+<a id="dependencias-backendcontent"></a>
+<a id="zonas-de-alto-riesgo"></a>
+<a id="sih-salus-module-overrides"></a>
+<a id="calidad-esperada-antes-de-agregar-features"></a>
+<a id="environment-variables"></a>
+
+El [índice de documentación](docs/README.md) organiza las guías y contratos.
+
+| Tema                         | Referencia                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------ |
+| Entorno, arranque y comandos | [Desarrollo local](docs/development/README.md)                                             |
+| Variables y backend          | [Configuración](docs/development/configuration.md)                                         |
+| Pruebas, tipos y CI          | [Pruebas y calidad](docs/development/testing.md), [E2E](e2e/README.md)                     |
+| Código y módulos             | [Arquitectura](docs/architecture.md), [índice de módulos](docs/modules.md)                 |
+| Flujos y contratos clínicos  | [Contratos](docs/clinical/README.md), [diagramas](docs/workflows/README.md)                |
+| Imágenes y operación         | [Imágenes](docs/runbooks/frontend-images.md), [go-live](docs/runbooks/frontend-go-live.md) |
+| Trabajo pendiente            | [Estado de configuración](docs/development/tooling-status.md), [backlog](docs/backlog.md)  |
+
 ## Prerequisites
 
-- **Node.js** 24 LTS
-- **Yarn** 4.13.0 (via Corepack: `corepack enable && corepack prepare yarn@4.13.0 --activate`)
-- **Docker** (for containerized deployment)
+- Node.js 24.
+- Yarn 4.13.0, fijado en `packageManager` de `package.json`, mediante Corepack.
+- Docker para los procedimientos de imágenes, una vez resueltas sus recetas.
 
 ## Quick Start
 
-```bash
-# 1. Clonar e instalar
-git clone https://github.com/sihsalus/sihsalus-frontend.git
-cd sihsalus-frontend
-corepack enable          # activa la versión de Yarn incluida en .yarn/releases/
-nvm use                  # usa la versión definida en .nvmrc
-yarn install
+Sigue [desarrollo local](docs/development/README.md#preparación-y-arranque) para
+instalar, configurar `.env`, ensamblar el SPA y levantar el servidor.
+La rama de limpieza tiene [pendientes de Yarn, Docker y catálogos](docs/development/tooling-status.md):
+los ajustes locales documentados no equivalen a una instalación estándar o CI
+aprobados.
 
-# 2. Configurar entorno (recomendado)
-cp .env.template .env    # editar si se necesita apuntar a otro backend
-
-# 3. Construir el SPA inicial y levantar el dev server
-yarn package:spa
-SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
-# → http://localhost:8080/openmrs/spa/
-
-# Para usar un puerto distinto:
-yarn start --port 3000
-# → http://localhost:3000/openmrs/spa/
-```
-
-`yarn start` necesita primero un SPA válido en `dist/spa`; `yarn package:spa` compila las apps, ensambla ese artefacto y lo valida. El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.template](.env.template)). Si no se define, usa `http://gidis-hsc-dev.inf.pucp.edu.pe` y lo advierte al arrancar.
-
-`SIHSALUS_BACKEND_URL` acepta el origen o la base de API terminada en `/openmrs`;
-el proxy normaliza esta última para no enviar `/openmrs/openmrs/...`. La URL debe
-usar HTTP(S), sin credenciales, query ni fragmento. Las rutas de contexto
-personalizadas se conservan. Esta normalización no cambia el backend elegido ni
-la política TLS.
-
-`yarn start` también reenvía el heartbeat de actividad clínica al endpoint
-`/_sihsalus/clinical-activity` del gateway configurado, con la misma política TLS
-y un límite de tres segundos. Solo admite POST a esa ruta exacta, sin query,
-cuerpo, cookies, autorización ni referer; no reenvía cabeceras del navegador.
-Devuelve 204 únicamente si el gateway confirma 204. Conserva sus errores 4xx/5xx
-sin cuerpos ni cabeceras, devuelve 502 ante redirecciones u otros fallos y 504
-ante timeout. Así la señal real de presencia sigue llegando a la política de
-apagado seguro sin incluir contexto clínico.
+`yarn start` requiere un SPA válido en `dist/spa` y usa el backend configurado
+en [.env.template](.env.template). Revisar el destino antes de arrancar; las
+pruebas clínicas solo usan datos sintéticos en un ambiente coordinado.
 
 ## Repository Structure
 
-```
-packages/
-  declarations.d.ts                     # Global declarations for TS
-  tsconfig.json                         # Root TypeScript configuration
-  test-utils/                           # Shared fixtures, test wrappers and stubs
-  tooling/
-    configs/                            # Shared Jest/Vitest/TS config helpers (including vitest-config.ts)
-    openmrs/                            # CLI (openmrs develop, build, assemble)
-    rspack-config/                      # Shared Rspack configuration
-  apps/                                 # 66 frontend modules (esm-*-app)
-  libs/
-    esm-rbac/                           # @sihsalus/esm-rbac — HIPAA role-based access control
-    esm-audit-logger/                   # @sihsalus/esm-audit-logger — Client-side PHI audit logging
-    esm-api/                            # @openmrs/esm-api — Local API/session utilities and privilege aliases
-    esm-framework/                      # @openmrs/esm-framework — local workspace fork
-    esm-patient-common-lib/             # @openmrs/esm-patient-common-lib — Shared patient utilities
-    esm-styleguide/                     # @openmrs/esm-styleguide — Carbon-based component library
-packages/tooling/scripts/
-  assemble-importmap.js                 # Import map assembly for SPA build
-  start-dev.js                          # Local dev server entrypoint
-  i18next-parser.config.js              # i18n extraction config
-e2e/                                    # Playwright E2E tests
-```
+- `packages/apps/`: aplicaciones clínicas y administrativas.
+- `packages/libs/`: bibliotecas compartidas y forks locales de OpenMRS.
+- `packages/tooling/`: CLI, build y herramientas de validación.
+- `packages/test-utils/`: helpers, fixtures sintéticos y stubs de pruebas.
+- `e2e/`: suites, gates y utilidades Playwright.
+- `docs/`: guías, contratos, diagramas y auditorías.
 
-> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch`).
+El [mapa de arquitectura](docs/architecture.md) explica los entry points,
+dependencias compartidas y reemplazos de módulos upstream.
 
 ## Commands
 
-### Development
-
-```bash
-yarn install                                # Instalar dependencias
-yarn package:spa                            # Primera ejecución: compilar, ensamblar y validar dist/spa
-yarn start                                  # Dev server → proxy a SIHSALUS_BACKEND_URL
-SIHSALUS_BACKEND_URL=http://... yarn start  # Apuntar a otro backend en esta sesión
-```
-
-Después del ensamble inicial, `yarn start` recompila con hot reload las apps de `SIHSALUS_DEV_APPS`. Vuelve a ejecutar `yarn assemble` cuando cambien rutas, el import map o la configuración ensamblada; usa `yarn package:spa` cuando también necesites reconstruir todas las apps.
-
-### Qué comando usar (`start` vs `serve` vs `serve:prod`)
-
-- `yarn start` (**recomendado para desarrollo diario**) usa [packages/tooling/scripts/start-dev.js](packages/tooling/scripts/start-dev.js), que exige un `dist/spa` ensamblado, lanza `openmrs develop` con `--importmap` y `--routes`, y sirve los demás assets/chunks desde ese artefacto mediante proxy.
-- `yarn serve` ejecuta `openmrs start` directamente y no compila antes. Descubre los módulos que ya existan en `packages/apps/*/dist`, genera import map/rutas en memoria y usa `https://dev3.openmrs.org/` como backend salvo que se pase `--backend` (ver [packages/tooling/openmrs/src/commands/start.ts](packages/tooling/openmrs/src/commands/start.ts)).
-- `yarn serve:prod` ejecuta `build:apps`, ensambla `dist/spa` y después lanza `openmrs start`. No ejecuta el build repo-wide de todas las librerías y herramientas por separado.
-
-Resumen práctico:
-
-- Para desarrollo local con hot-reload/control de módulos: `yarn start`.
-- Para validar `openmrs start` con artefactos ya compilados: `yarn serve --backend http://...`.
-- Para compilar las apps, ensamblar y validar antes de servir: `yarn serve:prod --backend http://...`.
-
-### Building
-
-```bash
-yarn build                                  # Build all packages
-yarn build:apps                             # Build only app packages
-yarn assemble                               # Assemble import map
-yarn package:spa                            # Build apps + assemble + validate dist/spa
-yarn turbo run build --filter=<package>     # Build single package
-```
-
-El ensamble agrega al precache del service worker cada hoja de estilos local
-enlazada por `index.html`, incluso si supera el límite de tamaño predeterminado
-de Workbox. `validate-spa-artifact` verifica ese contrato para que una
-reconexión no pueda recuperar el shell sin sus estilos globales.
-
-El service worker conserva el ciclo de vida y las rutas de OpenMRS. La entrada local
-`packages/tooling/app-shell/service-worker.ts` agrega una ruta Workbox `NetworkOnly`
-para lecturas GET que solicitan conjuntamente `cache: 'no-store'` y
-`x-omrs-offline-caching-strategy: network-only-or-cache-only`. Esa combinación exige
-red fresca; las demás estrategias offline mantienen su comportamiento. El cambio
-requiere activar el worker actualizado y cerrar las pestañas de la versión anterior.
-
-### Testing
-
-```bash
-yarn test                                   # Run all unit tests
-yarn turbo run test --filter='@sihsalus/*' # Test SIH Salus packages only
-yarn test:e2e                               # Run Playwright E2E tests
-yarn test:styles                            # Check compiled CSS/SCSS in Chromium, without a backend
-```
-
-Run `yarn playwright install chromium` before the first local `yarn test:styles`.
-This command builds the shared Rspack configuration and checks its CSS/SCSS rules
-through Imágenes, Stock and Onboarding, plus the styleguide's CSS extraction
-and the source-built app shell's Webpack rules.
-It verifies default imports, scoped classes and computed styles using temporary
-fixtures in an offline browser context. CI runs it for every PR and push to
-`main`; it is independent of the clinical E2E suites and their credentials.
-
-Apps using `openmrs/default-rspack-config` obtain `css-loader` from
-`@openmrs/rspack-config`. Keep that dependency in the shared configuration;
-the styleguide declares its own because it has a separate build configuration.
-The app shell also preserves default CSS Module imports with
-`modules.namedExport: false` and automatic module detection. Ordinary CSS/SCSS,
-including the framework stylesheet, must remain global.
-All three build configurations use `exportLocalsConvention: 'camel-case'` to
-preserve original class names and camelCase aliases. Consumers such as numeric
-observations must retain bracket imports like `styles['critical-value']` as
-well as dot imports. The five browser variants check both forms in CSS and SCSS.
-
-### Quality
-
-```bash
-yarn lint                                   # Biome lint in all packages
-yarn typecheck                              # TypeScript check all packages
-yarn verify                                 # lint + typecheck + test
-yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
-yarn validate:test-governance --base origin/main # Validate test debt and reject new suppressions
-```
-
-Apps and `@openmrs/esm-patient-common-lib` extend `packages/tsconfig.json` directly.
-The strict TypeScript migration is incremental. A workspace opts in by setting
-`strict`, `noImplicitAny`, and `strictNullChecks` to `true` in its own
-`tsconfig.json`; once enabled, these options must not be disabled.
-The migration started with `@openmrs/esm-patient-common-lib`, which owns the shared Workspace v1/v2
-contracts used by the clinical applications. `noUncheckedIndexedAccess` is a
-separate follow-up phase; it is not part of TypeScript's `strict` flag.
-
-Repository discipline and workspace ownership expectations should stay close to the touched package README and the relevant quality commands.
-
-Test debt is tracked in [`config/test-governance.json`](config/test-governance.json).
-Every workspace must expose a `test` script and contain a discoverable colocated
-JavaScript or TypeScript test (`*.test.*` or `*.spec.*`). Existing gaps require
-an accountable, risk-rated exception that expires within 180 days of the
-register review date. Remove the exception when the first regression test
-lands. CI compares each change with its Git base and rejects new exceptions and
-new `--passWithNoTests` suppressions.
-
-### TODO RBAC, auditoria y permisos
-
-Estado QLTY actualizado el 2026-07-04: ver [QLTY frontend hardening audit](docs/audits/2026-07-04-qlty-frontend-hardening.md).
-
-- Definir una matriz transversal de permisos por modulo y flujo, usando [@sihsalus/esm-rbac](packages/libs/esm-rbac/README.md) como punto de integracion frontend.
-- Agregar guards de RBAC en rutas, extensiones, botones, workspaces y modales de los modulos clinicos y administrativos.
-- Definir privilegios backend/content para lectura, creacion, edicion, eliminacion y acciones especiales por modulo.
-- Integrar [@sihsalus/esm-audit-logger](packages/libs/esm-audit-logger/README.md) en eventos sensibles: busqueda de paciente, apertura de historia, formulario clinico, ordenes, dispensing, FUA, billing, stock, ward y emergency.
-- Probar roles reales contra backend actualizado: usuario clinico, admision, farmacia, laboratorio, caja, administrador y solo lectura.
-- Documentar feature flags o fallback cuando un modulo no tenga permisos/content/backend listos para produccion.
-
-### TODO hardening transversal
-
-- Auditar `routes.json` de todos los paquetes que usan `fhirBaseUrl`, `useFhirFetchAll` o `useFhirPagination` y declarar `fhir2` como dependencia backend cuando el flujo dependa de FHIR.
-- Revisar paquetes con endpoints `/ws/module/*` y documentar si requieren OMOD obligatorio, OMOD opcional con feature flag, o si deben ocultarse cuando el backend no lo tenga.
-- Agregar pruebas smoke por workspace contra backend actualizado: carga de ruta, carga de datos inicial, apertura de workspace principal y accion de guardado cuando aplique.
-- Identificar configs con `_default: ''` que representan conceptos, forms, encounter types o endpoints obligatorios, y convertirlos en defaults reales o feature flags.
-- Validar que cada app SIHSALUS custom tenga README propio con limites funcionales, dependencias backend/content, permisos y eventos auditables.
-- Agregar owners reales y warning budget a los workspaces custom prioritarios: atencion ambulatoria, CRED, salud materna, vacunacion, orders, dispensing, FUA, indicadores, ward, emergency, stock y billing.
-- Validar en QLTY el flujo end-to-end de vacunas: FHIR2 `Immunization` ya responde `200` para una busqueda vacia validada el 2026-07-04, pero falta probar guardado/recarga con un paciente sintetico y el content y permisos desplegados.
-- Corregir el formulario de visita/consulta: revisar apertura del workspace, dependencia de visita activa, guardado de `visit`/`encounter`, validaciones obligatorias y manejo de errores backend.
-- Corregir/ocultar campos semisoportados del formulario de inicio de visita en QLTY: el endpoint de tipos recomendados `/etl-latest/etl/patient/...` responde `404`; mantener `showRecommendedVisitTypeTab=false` o implementar backend/config real antes de mostrar `Program` y `Recommended`.
-- Revisar si `Upcoming appointments` y campos de cola (`Queue location`, `Service`, `Priority`) deben mostrarse en inicio de visita para QLTY; los endpoints responden, pero el flujo debe validarse con datos sinteticos representativos y sin crear entradas huerfanas.
-- Revisar Consulta Externa / Atencion ambulatoria end-to-end: entrada desde home, busqueda de paciente, inicio de consulta, cola, formularios clinicos, guardado de encounter, ordenes y mensajes de error.
-- Auditar formularios clinicos con el mismo patron de riesgo (vacunacion, visita/consulta, CRED, salud materna, procedimientos y FUA) para detectar `501`, workspace no registrado, rutas rotas, payloads incompletos y mensajes de error sin traducir.
-- Repetir el smoke end-to-end de guardado de signos vitales/Glasgow en QLTY con un paciente sintetico; los UUIDs `glasgowEyeOpeningUuid`, `glasgowVerbalResponseUuid`, `glasgowMotorResponseUuid` y `glasgowTotalUuid` ya resuelven `200` desde el 2026-07-04.
-- Validar nuevo content package.
-- Revisar cambios RBAC doctor.
-
-### Cleaning
-
-```bash
-yarn clean                                  # Remove generated monorepo artifacts
-yarn clean --dry-run                        # Preview what would be removed
-```
-
-`yarn clean` is a repo-wide clean for generated artifacts only. It removes workspace outputs such as `dist/`, `coverage/`, `.turbo/`, `storybook-static/`, Playwright reports, and TypeScript build info files without touching `node_modules/` or source directories.
-
-Use `yarn clean --dry-run` first when you want to inspect what will be deleted.
-
-### Concurrency
-
-This monorepo has 90 workspace packages. Avoid high concurrency on resource-constrained machines:
-
-```bash
-yarn turbo run build --concurrency=4
-yarn turbo run test --filter=@sihsalus/esm-login-app   # Single package
-```
-
-### Docker
-
-La imagen publicada en GHCR usa el target `secure-init`: ensambla el SPA en `/spa` y termina. No contiene un servidor HTTP. El despliegue de `sihsalus-distro-referenceapplication` la ejecuta como init container con un volumen compartido que luego sirve Nginx.
-
-Para validar una corrección en un entorno de pruebas autorizado, el workflow
-`SPA Image` admite `workflow_dispatch` con `publish_candidate=true` y
-`candidate_base=<SHA completo de la base>`. Solo acepta ramas distintas de
-`main` y `pre-release`. Verifica los paquetes afectados y sus consumidores,
-construye `secure-init` y analiza su digest con Trivy. La etiqueta resultante es
-`candidate-<SHA completo>`; solo se debe desplegar el digest de una ejecución
-terminada con éxito. El workflow no promueve etiquetas de release ni dispara
-despliegues. La elección del entorno y su rollback siguen siendo responsabilidad
-del despliegue autorizado en la distribución.
-
-Para fijar un despliegue a la imagen publicada por `main`, resuelve primero su digest y úsalo en la configuración del repositorio de infraestructura:
-
-```bash
-# 1) Traer la etiqueta latest y resolver el digest exacto
-docker pull ghcr.io/sihsalus/sihsalus-frontend:latest
-IMAGE_REF=$(docker inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/sihsalus/sihsalus-frontend:latest)
-echo "$IMAGE_REF"
-
-# Configurar IMAGE_REF en la distribución; ya incluye @sha256:...
-```
-
-Para una imagen local que sí sirva el SPA con Nginx:
-
-```bash
-docker build --target spa-nginx -t sihsalus-frontend:local .
-docker run --rm --name sihsalus-frontend --network sihsalus-network -p 8080:80 sihsalus-frontend:local
-```
-
-La red usada en el ejemplo debe contener o resolver un servicio `backend` en el puerto `8080`; es el upstream configurado en [nginx.spa.conf](nginx.spa.conf). Nginx / reverse proxy y el volumen de producción se administran en el repositorio de infraestructura.
+Consulta los comandos de [desarrollo y build](docs/development/README.md),
+[pruebas y calidad](docs/development/testing.md) e
+[imágenes](docs/runbooks/frontend-images.md). El alcance y la evidencia requerida
+para cada cambio se definen en [CONTRIBUTING](CONTRIBUTING.md#proportional-validation).
 
 ## Architecture
 
-- **Turborepo** orchestrates builds across 90 workspace packages with caching
-- **Yarn 4 (Berry)** manages dependencies with `node-modules` linker
-- **single-spa** orchestrates microfrontend modules at runtime via import maps
-- **Rspack** (Webpack-compatible) is the bundler; Module Federation enables shared deps
-- **Carbon Design System** (v11) is the primary UI framework
-- **FHIR R4** preferred for data access (`/ws/fhir2/R4/`)
-- **Service worker** enables offline-first operation
+El monorepo utiliza single-spa, TypeScript, Turborepo, Rspack, Carbon y FHIR R4.
+La [guía de arquitectura](docs/architecture.md) describe la organización y los
+forks locales; el [índice de módulos](docs/modules.md) dirige a cada README.
 
 ## Contexto operativo SIH Salus
 
-SIH Salus es un frontend OpenMRS 3 adaptado al contexto peruano. No es un ERP completo ni un reemplazo del backend OpenMRS: la capa frontend orquesta microfrontends, pantallas, workspaces, validaciones de UI y configuracion clinica; la persistencia clinica sigue dependiendo de OpenMRS, FHIR2, OMODs instalados y paquetes de contenido.
-
-Terminologia practica usada en este repositorio:
-
-- `person`: datos de filiacion, identidad, atributos personales y direccion.
-- `patient`: persona registrada como paciente, con identificadores clinicos y administrativos.
-- `visit`: episodio/consulta o ingreso operativo. En UI se traduce normalmente como `consulta` o `atencion`, segun contexto.
-- `encounter`: atencion clinica registrada dentro de una visita.
-- `obs`: dato clinico observado dentro de un encounter.
-- `order`: orden medica, laboratorio, radiologia, inmunizacion, interconsulta u otro pedido clinico.
-- `appointment`: cita o turno programado.
-- `queue entry`: posicion del paciente en cola de atencion.
-- `workspace`: panel lateral/modal de OpenMRS 3 usado para crear o editar datos.
-- `extension slot`: punto de extension del shell donde otro microfrontend inyecta UI.
-
-### Contrato de identidad del paciente
-
-El flujo de identidad no debe depender solo del DNI. En registro, emergencia, busqueda y Libro de Atenciones, un paciente debe poder ubicarse por identificadores, codigo temporal, nombre, fecha/hora de atencion, visita/cola, responsable, servicio, ubicacion y estado de identificacion.
-
-Reglas transversales:
-
-- `@sihsalus/esm-care-logbook-app` se presenta como `Libro de Atenciones` en `/home/care-logbook`; `/admission` y `/home/admission` solo redirigen por compatibilidad.
-- Pacientes no identificados o incapaces de comunicarse pueden registrarse sin DNI, telefono, direccion o fecha exacta de nacimiento.
-- Cuando el paciente no puede aportar datos o consentimiento, se debe capturar responsable, institucion o autoridad responsable.
-- `zipcode/postcode` y telefono no son filtros avanzados por defecto en Patient Search. Pueden existir como datos demograficos/contacto, pero no como pivotes principales de busqueda.
+El frontend orquesta flujos clínicos; OpenMRS, FHIR2, OMODs y contenido conservan
+la responsabilidad de persistencia y autorización backend. La terminología y
+los contratos transversales están en [contexto clínico](docs/clinical/README.md).
 
 ### Contratos que no deben romperse
 
-- No agregar UUIDs clinicos hardcodeados si pueden vivir en `config-schema`. Conceptos, encounter types, visit types, forms, order types, identifiers y care settings deben ser configurables.
-- No mostrar claves crudas de i18n en UI. Si aparece algo como `caseMonitoringEncounters`, el modulo tiene una brecha de traduccion o namespace.
-- No registrar workspaces, modales o extension slots con strings sueltos cuando exista una constante reutilizable. Los nombres magicos son una fuente recurrente de pantallas blancas.
-- No asumir que FHIR2 soporta un recurso solo porque el endpoint existe. Algunos backends responden `501 Not Implemented` hasta que el OMOD/content este alineado.
-- No guardar datos clinicos sin visita/consulta activa salvo que el flujo documente explicitamente otra semantica.
-- No mezclar nombres tecnicos de OpenMRS con lenguaje de usuario final. El personal de salud debe ver terminos operativos claros.
-- Los titulos de rutas, dashboards y sidebars son contrato de producto: deben usar keys traducibles y estar alineados con el nombre funcional del modulo. Ejemplo: `esm-care-logbook-app` se presenta como `Libro de Atenciones`, no como `Admisiones`, porque lista atenciones/consultas por UPSS y no ingresos hospitalarios.
-
-### Dependencias backend/content
-
-Cada modulo funcional deberia documentar:
-
-- OMODs obligatorios u opcionales.
-- Endpoints REST OpenMRS usados.
-- Recursos FHIR2 usados.
-- Conceptos, formularios, tipos de visita, tipos de encounter y tipos de identificador requeridos.
-- Privilegios/permisos esperados.
-- Comportamiento cuando una capacidad no existe en backend.
-
-Si una app falla con `501`, `workspace not registered`, `modal not registered`, key i18n visible o pantalla en blanco, normalmente falta uno de esos contratos.
-
-### Zonas de alto riesgo
-
-- `esm-patient-chart-app`: layout principal, left sidebar, right sidebar, banner, visitas, workspaces y extension slots.
-- `esm-styleguide`: componentes compartidos y sistemas de workspace; cambios pequenos impactan muchas apps.
-- `esm-patient-orders-app`: depende de visita activa, workspaces, conceptos de ordenes, stock/billing/FHIR opcional.
-- `esm-patient-immunizations-app`: depende de FHIR2 `Immunization`, conceptos/mappings de inmunizacion y contenido MINSA.
-- `esm-service-queues-app`: depende de configuracion de colas, ubicaciones, servicios, rooms y conceptos de prioridad/estado.
-- `esm-home-app`: rutas y accesos rapidos; no debe esconder errores de registro de extensiones ni dejar paneles huerfanos.
-
-## SIH Salus Module Overrides
-
-| SIH Salus Module (`@sihsalus/*`) | Replaces Upstream (`@openmrs/*`)         |
-| -------------------------------- | ---------------------------------------- |
-| `esm-patient-registration-app`   | `@openmrs/esm-patient-registration-app`  |
-| `esm-patient-search-app`         | `@openmrs/esm-patient-search-app`        |
-| `esm-billing-app`                | `@openmrs/esm-billing-app`               |
-| `esm-patient-immunizations-app`  | `@openmrs/esm-patient-immunizations-app` |
-
-Selected custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-care-logbook-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-interconsultas-app`, `esm-odontologia-app`, `esm-psicologia-app`, `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`, `esm-tamizajes-app` and `esm-terapia-fisica-app`.
-
-## Calidad esperada antes de agregar features
-
-Antes de sumar funcionalidad clinica nueva, revisar:
-
-- `config-schema`: campos clinicos configurables, sin UUIDs nuevos escondidos.
-- `translations`: keys en `en.json` y `es.json`; ninguna key cruda visible.
-- `routes.json`: rutas, extension slots y dependencias de backend declaradas.
-- `README.md` del paquete: limite funcional, integraciones, backend/content requerido y QA minimo.
-- Smoke manual o Playwright si toca patient chart, workspaces, sidebars, ordenes, colas, vacunacion o flujos de guardado.
-- CodeQL/Biome: unused code, useless conditionals y template syntax no son cosmetica; suelen indicar copy-paste o ramas muertas.
-
-## Environment Variables
-
-Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)). `yarn start` carga ese archivo directamente. Los comandos de ensamble leen `SPA_PATH`, `API_URL`, `SIHSALUS_PUBLIC_SPA_URL` y, como respaldo para los metatags sociales, `SIHSALUS_BACKEND_URL` del entorno del proceso; expórtalas en la shell o defínelas en `.env.yarn` cuando deban afectar `yarn assemble`.
-
-| Variable                                         | Ámbito y valor por defecto                                                                          | Descripción                                                                                                                                                                              |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SIHSALUS_BACKEND_URL`                           | Dev server; la plantilla usa HTTPS y el fallback interno es `http://gidis-hsc-dev.inf.pucp.edu.pe`  | Backend OpenMRS al que `yarn start` redirige API y sesión                                                                                                                                |
-| `SIHSALUS_REQUIRE_BACKEND_URL`                   | Dev server; `false`                                                                                 | Si es `true`, `yarn start` falla en vez de usar el fallback                                                                                                                              |
-| `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS`              | `openmrs start`; `5000`                                                                             | Timeout para intentar descargar import map/rutas del backend al usar `yarn serve`                                                                                                        |
-| `SIHSALUS_DEV_APPS`                              | Dev server; lista principal integrada                                                               | Apps con hot reload; usa una lista separada por comas o `none` para servir solo el SPA ensamblado                                                                                        |
-| `SIHSALUS_DEV_TYPECHECK`                         | Build dev; `true`                                                                                   | Usa `false` para evitar un worker TypeScript residente por app y valida el paquete editado con su script `typescript`                                                                    |
-| `SIHSALUS_AUTH_MODE`                             | Dev server; `openmrs`                                                                               | Modo de autenticación: `openmrs` o `keycloak`                                                                                                                                            |
-| `SIHSALUS_ALLOW_SELF_SIGNED_TLS`                 | Dev/E2E; la plantilla usa `true`; si se omite, es automático solo para los hosts DEV/QLTY conocidos | `true` desactiva la verificación TLS para el backend configurado; usa un override explícito solo en entornos controlados                                                                 |
-| `SIHSALUS_FHIR_BASE`                             | Dev server; derivado de `SIHSALUS_BACKEND_URL`                                                      | URL base de FHIR R4 mostrada y propagada al proceso de desarrollo                                                                                                                        |
-| `SIHSALUS_PUBLIC_SPA_URL`                        | Ensamble; vacío                                                                                     | URL pública absoluta usada para metatags Open Graph/Twitter; si falta, el ensamble deriva el origen de `SIHSALUS_BACKEND_URL` + `SPA_PATH` y advierte cuando el resultado no es absoluto |
-| `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_WINDOW_MS` | `openmrs develop`; `60000`                                                                          | Ventana del límite por IP para leer configuración local                                                                                                                                  |
-| `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_MAX`       | `openmrs develop`; `300`                                                                            | Máximo de lecturas por IP y ventana; cero no desactiva esta protección                                                                                                                   |
-| `SPA_PATH`                                       | Ensamble/contenedor; `/openmrs/spa`                                                                 | Ruta base de los assets del SPA                                                                                                                                                          |
-| `API_URL`                                        | Ensamble/contenedor; `/openmrs`                                                                     | Ruta base de la API OpenMRS                                                                                                                                                              |
+Antes de modificar una aplicación, leer los
+[contratos clínicos y de configuración](docs/clinical/README.md#contratos-que-no-deben-romperse)
+y el README del paquete. Mantienen los requisitos de contexto de consulta,
+identidad, permisos, UUIDs configurables, traducciones y navegación.
 
 ## Security and compliance direction
 
-This repository includes frontend building blocks for security and compliance, but final compliance depends on backend configuration, infrastructure, roles, audit policy, operational procedures and deployment evidence.
-
-- **RBAC** (`@sihsalus/esm-rbac`): Role-based access control at component and route level.
-- **Audit logging** (`@sihsalus/esm-audit-logger`): PHI access event logging with offline fallback.
-- **Session timeout**: configurable idle timeout with warning.
-- **Break the glass**: emergency access pattern with mandatory clinical justification where enabled.
-- **TLS 1.2+**: expected at the infrastructure layer.
+Los controles frontend no sustituyen la autorización backend, la configuración
+de infraestructura ni la aceptación clínica. Consultar
+[CONTRIBUTING](CONTRIBUTING.md#non-negotiable-rules) y el
+[canal privado de seguridad](https://github.com/sihsalus/sihsalus-frontend/security/advisories/new).
 
 ## License
 

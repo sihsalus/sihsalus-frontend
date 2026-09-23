@@ -145,6 +145,9 @@ nuevos ni conversiones de registros históricos.
 El lanzador exige la versión configurada. Si la visita ya contiene un formulario
 de una versión anterior, informa y bloquea otra captura; no duplica encuentros
 ni les reasigna el esquema nuevo. El historial mantiene los datos anteriores.
+`physicalExamHistoricalFormNames` reconoce el nombre anterior del examen
+únicamente para impedir una segunda captura en la misma visita; nunca abre
+ese formulario retirado ni lo usa como alternativa.
 Probar frontend/content juntos en QLTY: creación, selección, guardado, recarga,
 edición, solo lectura, versión faltante y visita abierta durante la actualización.
 La aceptación clínica y el despliegue siguen pendientes hasta esa comprobación.

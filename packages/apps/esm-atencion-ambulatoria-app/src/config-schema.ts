@@ -218,6 +218,8 @@ export const configSchema = {
       anamnesisFormVersion: '1.1.0',
       physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
       physicalExamFormVersion: '1.0.0',
+      // Read-only identities used to prevent a second examination during migration.
+      physicalExamHistoricalFormNames: ['CE-SOAP-001-NOTA SOAP'],
       referralForm: 'CE-REF-001-REFERENCIA-CONTRARREFERENCIA',
       visitNoteFormUuid: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
 
@@ -985,6 +987,7 @@ export interface ConfigObject {
     anamnesisFormVersion?: string;
     physicalExamForm: string;
     physicalExamFormVersion?: string;
+    physicalExamHistoricalFormNames?: string[];
     referralForm: string;
     visitNoteFormUuid: string;
     // HIV/HTS Forms

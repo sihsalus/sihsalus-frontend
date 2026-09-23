@@ -32,6 +32,7 @@ describe('ExamenFisico', () => {
       formsList: {
         physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
         physicalExamFormVersion: '1.0.0',
+        physicalExamHistoricalFormNames: ['CE-SOAP-001-NOTA SOAP'],
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
       visitTypes: { ambulatory: 'ambulatory-visit' },
@@ -119,6 +120,7 @@ describe('ExamenFisico', () => {
       mutate,
       entryMode: 'one-per-visit',
       formVersion: '1.0.0',
+      historicalFormNames: ['CE-SOAP-001-NOTA SOAP'],
       workspaceTitle: 'Examen físico',
     });
     expect(mockLaunchForm).toHaveBeenCalledOnce();

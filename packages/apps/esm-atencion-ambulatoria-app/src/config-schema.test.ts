@@ -13,6 +13,7 @@ describe('Atencion Ambulatoria configuration', () => {
   it('requests the dedicated examination version while keeping the anamnesis version contract', () => {
     expect(configSchema.formsList._default.physicalExamFormVersion).toBe('1.0.0');
     expect(configSchema.formsList._default.anamnesisFormVersion).toBe('1.1.0');
+    expect(configSchema.formsList._default.physicalExamHistoricalFormNames).toEqual(['CE-SOAP-001-NOTA SOAP']);
     expect(configSchema.formsList._default).not.toHaveProperty('soapNoteForm');
   });
 

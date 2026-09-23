@@ -12,10 +12,6 @@ export const defaultVisitNoteClinicalConceptUuids = {
   moodConceptUuid: 'f0000185-0000-4000-8000-000000000185',
   urineConceptUuid: 'f0000186-0000-4000-8000-000000000186',
   bowelMovementsConceptUuid: 'f0000187-0000-4000-8000-000000000187',
-  soapSubjectiveConceptUuid: 'f0000202-0000-4000-8000-000000000202',
-  soapObjectiveConceptUuid: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  soapAssessmentConceptUuid: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  soapPlanConceptUuid: 'f0000201-0000-4000-8000-000000000201',
   therapeuticIndicationsConceptUuid: 'b762afd0-dfc6-430d-8963-0be05f77a12a',
   labOrdersConceptUuid: 'f0000204-0000-4000-8000-000000000204',
   proceduresConceptUuid: 'f0000206-0000-4000-8000-000000000206',
@@ -59,7 +55,7 @@ export default {
   anamnesisConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.anamnesisConceptUuid,
-    _description: 'Chronological illness story / anamnesis concept used as fallback source for subjective notes',
+    _description: 'Historical anamnesis concept used to read biological-functions observations by field path',
   },
   biologicalFunctionsConceptUuid: {
     _type: Type.ConceptUuid,
@@ -96,26 +92,6 @@ export default {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.bowelMovementsConceptUuid,
     _description: 'Bowel movements biological function concept used to prefill visit notes',
-  },
-  soapSubjectiveConceptUuid: {
-    _type: Type.ConceptUuid,
-    _default: defaultVisitNoteClinicalConceptUuids.soapSubjectiveConceptUuid,
-    _description: 'SOAP subjective concept used by outpatient forms',
-  },
-  soapObjectiveConceptUuid: {
-    _type: Type.ConceptUuid,
-    _default: defaultVisitNoteClinicalConceptUuids.soapObjectiveConceptUuid,
-    _description: 'SOAP objective / physical exam concept used by outpatient forms',
-  },
-  soapAssessmentConceptUuid: {
-    _type: Type.ConceptUuid,
-    _default: defaultVisitNoteClinicalConceptUuids.soapAssessmentConceptUuid,
-    _description: 'SOAP assessment concept used by outpatient forms',
-  },
-  soapPlanConceptUuid: {
-    _type: Type.ConceptUuid,
-    _default: defaultVisitNoteClinicalConceptUuids.soapPlanConceptUuid,
-    _description: 'SOAP plan / treatment concept used by outpatient forms',
   },
   therapeuticIndicationsConceptUuid: {
     _type: Type.ConceptUuid,
@@ -211,10 +187,6 @@ export interface VisitNoteConfigObject {
   moodConceptUuid: string;
   urineConceptUuid: string;
   bowelMovementsConceptUuid: string;
-  soapSubjectiveConceptUuid: string;
-  soapObjectiveConceptUuid: string;
-  soapAssessmentConceptUuid: string;
-  soapPlanConceptUuid: string;
   therapeuticIndicationsConceptUuid: string;
   labOrdersConceptUuid: string;
   proceduresConceptUuid: string;

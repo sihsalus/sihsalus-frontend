@@ -57,10 +57,6 @@ export interface VisitNoteClinicalContext {
   chiefComplaint?: string;
   illnessDuration?: string;
   biologicalFunctions?: string;
-  subjective?: string;
-  objective?: string;
-  assessment?: string;
-  plan?: string;
   therapeuticIndications?: string;
   auxiliaryExams?: string;
   procedures?: string;
@@ -762,10 +758,6 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
   );
   const getLatest = (conceptUuid: string, formFieldPath?: string) =>
     getLatestObsValue(encounters, conceptUuid, formFieldPath);
-  const getLatestStructuredText = (conceptUuid: string, formFieldPath: string, legacyConceptUuid?: string) =>
-    getLatest(conceptUuid, formFieldPath) ??
-    (legacyConceptUuid ? getLatest(legacyConceptUuid, formFieldPath) : undefined) ??
-    (conceptUuid !== visitNoteConfig.encounterNoteTextConceptUuid ? getLatest(conceptUuid) : undefined);
   const getLatestProceduresText = () =>
     getLatest(visitNoteConfig.proceduresConceptUuid, 'procedures') ??
     getLatest(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ??
@@ -783,14 +775,6 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
       getLatest(visitNoteConfig.biologicalFunctionsConceptUuid, 'biological-functions') ??
       getLatest(legacyStructuredVisitNoteConceptUuids.anamnesisText, 'biological-functions') ??
       buildBiologicalFunctionsSummary(encounters, visitNoteConfig),
-    subjective: getLatest(visitNoteConfig.soapSubjectiveConceptUuid) ?? getLatest(visitNoteConfig.anamnesisConceptUuid),
-    objective: getLatest(visitNoteConfig.soapObjectiveConceptUuid),
-    assessment: getLatest(visitNoteConfig.soapAssessmentConceptUuid),
-    plan: getLatestStructuredText(
-      visitNoteConfig.soapPlanConceptUuid,
-      'soap-plan',
-      legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
-    ),
     therapeuticIndications: getLatest(visitNoteConfig.therapeuticIndicationsConceptUuid),
     auxiliaryExams: getLatest(visitNoteConfig.labOrdersConceptUuid),
     procedures: getLatestProceduresText(),

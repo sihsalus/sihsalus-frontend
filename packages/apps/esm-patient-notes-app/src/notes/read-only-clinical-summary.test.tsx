@@ -58,19 +58,9 @@ test('shows recorded fields as text and omits blank fields and empty sections', 
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 });
 
-test('omits SOAP headings and values even when outpatient care contains all four fields', async () => {
+test('does not expose SOAP sections in the outpatient summary', async () => {
   const user = userEvent.setup();
-  render(
-    <ReadOnlyClinicalSummary
-      {...defaultProps}
-      clinicalContext={{
-        subjective: 'Synthetic subjective content',
-        objective: 'Synthetic physical exam',
-        assessment: 'Synthetic assessment',
-        plan: 'Synthetic treatment plan',
-      }}
-    />,
-  );
+  render(<ReadOnlyClinicalSummary {...defaultProps} />);
   await user.click(getSummaryToggle());
 
   expect(screen.queryByText('SOAP assessment')).not.toBeInTheDocument();
@@ -85,7 +75,7 @@ test('omits SOAP headings and values even when outpatient care contains all four
 
 test('replaces the repeated empty fields with one empty message', async () => {
   const user = userEvent.setup();
-  render(<ReadOnlyClinicalSummary {...defaultProps} clinicalContext={{ objective: ' \n ' }} />);
+  render(<ReadOnlyClinicalSummary {...defaultProps} clinicalContext={{ chiefComplaint: ' \n ' }} />);
   await user.click(getSummaryToggle());
 
   expect(screen.getAllByText(emptyMessage)).toHaveLength(1);

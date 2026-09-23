@@ -59,7 +59,7 @@ Un despliegue que use una versión posterior debe actualizar la URL junto con el
 
 ## Configuración clínica
 
-Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, SOAP, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes.
+Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes. Se eliminan las cuatro opciones `soap*ConceptUuid` y su proyección del resumen; los overrides anteriores deben retirarse.
 
 Motivo de consulta, tiempo de enfermedad, funciones biológicas, exámenes auxiliares, procedimientos, prescripciones y referencia/contrarreferencia son una proyección de solo lectura de lo registrado por Consulta Externa durante la atención. Notas de visita no vuelve a persistir esos valores ni usa su propio encounter como fuente del resumen. Las interconsultas no forman parte del concepto de referencia: permanecen como órdenes en `esm-interconsultas-app`.
 

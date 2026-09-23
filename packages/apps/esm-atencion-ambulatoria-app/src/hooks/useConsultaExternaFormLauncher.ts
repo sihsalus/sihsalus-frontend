@@ -12,6 +12,7 @@ interface ConsultaExternaFormLauncherOptions {
   patientUuid: string;
   formIdentifier?: string | null;
   formVersion?: string;
+  historicalFormNames?: readonly string[];
   workspaceTitle?: string;
   encounterTypeUuid?: string | null;
   ambulatoryVisitTypeUuid?: string | null;
@@ -122,6 +123,7 @@ export async function findSingleEncounterForVisit(
   encounterTypeUuid: string,
   formUuid: string,
   formName?: string,
+  historicalFormNames: readonly string[] = [],
 ): Promise<string | undefined> {
   const matchingEncounters: Array<EncounterReference> = [];
   const seenEncounterUuids = new Set<string>();
@@ -166,7 +168,11 @@ export async function findSingleEncounterForVisit(
         throw new ConsultaExternaLaunchError('verification-failed');
       }
       seenEncounterUuids.add(encounter.uuid);
-      if (sameUuid(encounter.form?.uuid, formUuid) || (formName && encounter.form?.name === formName)) {
+      if (
+        sameUuid(encounter.form?.uuid, formUuid) ||
+        (formName && encounter.form?.name === formName) ||
+        historicalFormNames.includes(encounter.form?.name ?? '')
+      ) {
         matchingEncounters.push(encounter);
       }
     }
@@ -211,6 +217,7 @@ export function useConsultaExternaFormLauncher({
   patientUuid,
   formIdentifier,
   formVersion,
+  historicalFormNames,
   workspaceTitle,
   encounterTypeUuid,
   ambulatoryVisitTypeUuid,
@@ -259,6 +266,7 @@ export function useConsultaExternaFormLauncher({
           currentVisit.visitType.uuid,
           formIdentifier,
           formVersion,
+          historicalFormNames,
           workspaceTitle,
           encounterTypeUuid,
           ambulatoryVisitTypeUuid,
@@ -288,7 +296,14 @@ export function useConsultaExternaFormLauncher({
         const form = await resolvePublishedForm(formIdentifier, encounterTypeUuid, formVersion);
         const encounterUuid =
           entryMode === 'one-per-visit'
-            ? await findSingleEncounterForVisit(patientUuid, currentVisit.uuid, encounterTypeUuid, form.uuid, form.name)
+            ? await findSingleEncounterForVisit(
+                patientUuid,
+                currentVisit.uuid,
+                encounterTypeUuid,
+                form.uuid,
+                form.name,
+                historicalFormNames,
+              )
             : undefined;
         const handleFormClose = () => {
           try {
@@ -367,6 +382,7 @@ export function useConsultaExternaFormLauncher({
     entryMode,
     formIdentifier,
     formVersion,
+    historicalFormNames,
     workspaceTitle,
     mutate,
     patientChartContext.mutateVisitContext,

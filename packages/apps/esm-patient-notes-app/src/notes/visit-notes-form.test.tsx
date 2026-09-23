@@ -5,10 +5,10 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 import {
   ConfigMock,
   diagnosisSearchResponse,
@@ -323,7 +323,6 @@ test('shows saved outpatient context as values that cannot be edited', async () 
     clinicalContext: {
       chiefComplaint: 'Fever and cough',
       biologicalFunctions: 'Appetite: decreased',
-      plan: 'Hydration and follow-up',
     },
     error: undefined,
     isLoading: false,

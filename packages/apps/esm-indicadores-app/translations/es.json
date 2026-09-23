@@ -70,7 +70,7 @@
   "encounterTypes": "Tipos de encuentro",
   "encounterTypesHelperText": "Filtra por el tipo de atención del evento, por ejemplo CRED.",
   "encounterTypesRequired": "Ingrese al menos un tipo de encuentro para el conteo en ventana.",
-  "encounterTypesUnknownUuids": "",
+  "encounterTypesUnknownUuids": "Hay tipos de encuentro que no existen: {{uuids}}.",
   "female": "Femenino",
   "from": "Desde",
   "generalInfo": "Información general",

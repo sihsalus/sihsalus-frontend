@@ -1,6 +1,6 @@
 import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 
-type Translate = (key: string, defaultValue: string) => string;
+type Translate = (key: string, defaultValue: string, options?: { uuids: string }) => string;
 
 export function indicatorsErrorMessageOptions(t: Translate) {
   return {
@@ -61,10 +61,9 @@ function getUnknownEncounterTypesDetail(error: unknown): UnknownEncounterTypesDe
 export function getIndicadorSaveErrorMessage(error: unknown, t: Translate, fallback: string): string {
   const detail = getUnknownEncounterTypesDetail(error);
   if (detail) {
-    return t(
-      'encounterTypesUnknownUuids',
-      `Hay tipos de encuentro que no existen: ${detail.unknown_uuids.join(', ')}.`,
-    );
+    return t('encounterTypesUnknownUuids', 'Hay tipos de encuentro que no existen: {{uuids}}.', {
+      uuids: detail.unknown_uuids.join(', '),
+    });
   }
 
   return getUserFacingErrorMessage(error, fallback, indicatorsErrorMessageOptions(t));

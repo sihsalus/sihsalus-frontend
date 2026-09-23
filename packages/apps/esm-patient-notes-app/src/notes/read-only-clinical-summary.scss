@@ -1,0 +1,65 @@
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.summary {
+  min-width: 0;
+
+  :global(.cds--accordion__content) {
+    padding-inline: layout.$spacing-05;
+  }
+}
+
+.heading {
+  @include type.type-style("heading-compact-01");
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.description,
+.empty {
+  @include type.type-style("body-compact-01");
+  margin: layout.$spacing-03 0;
+  color: colors.$gray-70;
+}
+
+.section {
+  margin-top: layout.$spacing-05;
+
+  h4 {
+    @include type.type-style("heading-compact-01");
+    margin-bottom: layout.$spacing-02;
+    color: colors.$gray-90;
+  }
+}
+
+.fields {
+  margin: 0;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: layout.$spacing-04;
+  padding-block: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+  overflow-wrap: anywhere;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  dt {
+    @include type.type-style("label-01");
+    color: colors.$gray-70;
+  }
+
+  dd {
+    @include type.type-style("body-compact-01");
+    margin: 0;
+    color: colors.$gray-100;
+    white-space: pre-wrap;
+  }
+}

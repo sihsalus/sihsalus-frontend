@@ -1,6 +1,7 @@
 import { showModal, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ConfigObject } from '../config-schema';
 import { useAmbulatoryVisitGuard } from '../hooks';
 import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
@@ -142,9 +143,11 @@ describe('OutpatientVisitSummaryDownload', () => {
       },
       concepts: {},
     });
-    mockUsePatient.mockReturnValue({ patient, isLoading: false, error: null });
+    mockUsePatient.mockReturnValue({ patient, patientUuid: patient.id, isLoading: false, error: null });
     mockUseSession.mockReturnValue({
-      sessionLocation: { uuid: 'hsc-location-uuid', display: 'IPRESS Sintética' },
+      authenticated: true,
+      sessionId: 'synthetic-session',
+      sessionLocation: { uuid: 'hsc-location-uuid', display: 'IPRESS Sintética', links: [] },
     });
     mockUseOutpatientFacilityIdentity.mockReturnValue({
       facilityAddress: 'Dirección vigente desde Location',
@@ -226,7 +229,7 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     it('prints recorded instructions without a current appointment or a new prescription number', async () => {
       mockUseConfig.mockReturnValue({
-        ...mockUseConfig(),
+        ...useConfig<ConfigObject>(),
         recetaUnica: { identifierSourceUuid: 'idgen-source', validityDays: 3 },
       });
       render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />);
@@ -274,7 +277,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       );
       mockBuildSummary.mockImplementation(actual.buildOutpatientVisitSummary);
       mockUseConfig.mockReturnValue({
-        ...mockUseConfig(),
+        ...useConfig<ConfigObject>(),
         concepts: { therapeuticIndicationsUuid: 'instructions-concept' },
       });
       mockFetchSource.mockImplementation(async (uuid) => ({
@@ -775,6 +778,7 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     mockUsePatient.mockReturnValue({
       patient: { ...patient, id: 'other-patient-uuid' },
+      patientUuid: 'other-patient-uuid',
       isLoading: false,
       error: null,
     });
@@ -841,9 +845,12 @@ describe('OutpatientVisitSummaryDownload', () => {
     await waitFor(() => expect(mockFetchNextScheduledAppointment).toHaveBeenCalledOnce());
 
     mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'synthetic-session',
       sessionLocation: {
         uuid: 'other-location-uuid',
         display: 'Otra IPRESS sintética',
+        links: [],
       },
     });
     mockUseOutpatientFacilityIdentity.mockReturnValue({

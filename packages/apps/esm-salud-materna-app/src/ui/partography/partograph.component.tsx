@@ -26,7 +26,7 @@ import { formEntryWorkspace } from '../../types';
 
 import styles from './labour-delivery.scss';
 import PartographChart from './partograph-chart';
-import { buildPartographRecords, type PartographProgressObservation } from './partograph-utils';
+import { buildPartographRecords } from './partograph-utils';
 
 const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
   typeof header === 'object' && header !== null && 'content' in header
@@ -111,12 +111,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
     },
   ];
   const partographRecords = useMemo(
-    () =>
-      buildPartographRecords(
-        encounters as unknown as PartographProgressObservation[],
-        partographyConcepts,
-        descentOfHeadAnswerLabels,
-      ),
+    () => buildPartographRecords(encounters, partographyConcepts, descentOfHeadAnswerLabels),
     [descentOfHeadAnswerLabels, encounters, partographyConcepts],
   );
 

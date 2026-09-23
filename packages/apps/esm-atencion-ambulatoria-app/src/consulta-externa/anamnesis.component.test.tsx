@@ -58,6 +58,7 @@ describe('Anamnesis', () => {
       error: undefined,
       mutate,
       pagination,
+      sourceErrors: [],
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -108,6 +109,7 @@ describe('Anamnesis', () => {
       error: undefined,
       mutate,
       pagination,
+      sourceErrors: [],
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);

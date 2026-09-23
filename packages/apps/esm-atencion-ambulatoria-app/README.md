@@ -292,6 +292,14 @@ Esta iteración contribuye al
 no lo cierra. Quedan pendientes la validación clínica con dos consultas
 sintéticas en DEV/QLTY y los otros casos de persistencia/edición del issue.
 
+## Validación local
+
+`yarn workspace @sihsalus/esm-atencion-ambulatoria-app typescript` comprueba tanto
+el código del módulo como sus tests `.test.ts` y `.test.tsx`. Los mocks deben
+respetar los contratos de los hooks y componentes; no se excluyen del compilador.
+Ejecutar también `yarn workspace @sihsalus/esm-atencion-ambulatoria-app test`
+para validar las aserciones de comportamiento.
+
 ## TODO QA/QLTY
 
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.

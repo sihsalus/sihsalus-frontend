@@ -73,6 +73,7 @@ beforeEach(() => {
     concepts: { referralDestinationServiceUuid: 'service-question' },
   });
   vi.mocked(usePatient).mockReturnValue({
+    patientUuid: 'patient',
     patient: { resourceType: 'Patient', id: 'patient', name: [{ given: ['Paciente'], family: 'Sintético' }] },
     isLoading: false,
     error: null,

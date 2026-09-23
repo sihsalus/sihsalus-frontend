@@ -1,11 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import { getDefaultsFromConfigSchema, UserHasAccess, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
 import OutPatientSocialHistory from './patient-social-history.component';
 import { configSchema } from '../../../config-schema';
-import { useSocialHistory } from '../../../hooks/useSocialHistory';
+import { useSocialHistory, type SocialHistoryEncounter } from '../../../hooks/useSocialHistory';
 import { useSocialHistoryFormLauncher } from '../../../hooks/useSocialHistoryFormLauncher';
+import type { OpenmrsEncounter } from '../../../types';
 
 vi.mock('../../../hooks/useSocialHistory', () => ({ useSocialHistory: vi.fn() }));
 vi.mock('../../../hooks/useSocialHistoryFormLauncher', () => ({ useSocialHistoryFormLauncher: vi.fn() }));
@@ -14,34 +15,63 @@ const launch = vi.fn();
 const refresh = vi.fn();
 const legacyRefresh = vi.fn();
 const concepts = config.socialHistory.concepts;
-const currentRecord = {
+const currentRecord: SocialHistoryEncounter = {
   uuid: 'synthetic-current',
   encounterDatetime: '2026-09-21T10:00:00Z',
+  patient: { uuid: 'synthetic-patient' },
+  form: { uuid: config.socialHistory.formUuid },
+  encounterType: { uuid: config.socialHistory.encounterTypeUuid, display: 'Social history' },
+  visit: {
+    uuid: 'synthetic-visit',
+    startDatetime: '2026-09-21T09:00:00Z',
+    visitType: { uuid: 'synthetic-visit-type', display: 'Consulta externa' },
+  },
   obs: [
-    { concept: { uuid: concepts.alcohol }, value: { uuid: concepts.no, display: 'NO' } },
-    { concept: { uuid: concepts.tobacco }, value: { uuid: concepts.yes, display: 'YES' } },
-    { concept: { uuid: concepts.cigarettesPerDay }, value: 0 },
+    {
+      uuid: 'alcohol-obs',
+      groupMembers: null,
+      concept: { uuid: concepts.alcohol },
+      value: { uuid: concepts.no, display: 'NO' },
+    },
+    {
+      uuid: 'tobacco-obs',
+      groupMembers: null,
+      concept: { uuid: concepts.tobacco },
+      value: { uuid: concepts.yes, display: 'YES' },
+    },
+    { uuid: 'cigarettes-obs', groupMembers: null, concept: { uuid: concepts.cigarettesPerDay }, value: 0 },
   ],
 };
-const legacyRecord = {
+const legacyRecord: OpenmrsEncounter = {
   uuid: 'synthetic-previous',
   encounterDatetime: '2026-09-20T10:00:00Z',
-  obs: [{ concept: { uuid: config.concepts.alcoholUseUuid }, value: 'Previous value' }],
+  patient: 'synthetic-patient',
+  location: 'synthetic-location',
+  encounterType: { uuid: 'synthetic-legacy-type', display: 'Consulta externa' },
+  obs: [
+    {
+      uuid: 'legacy-alcohol-obs',
+      groupMembers: null,
+      concept: { uuid: config.concepts.alcoholUseUuid },
+      value: 'Previous value',
+    },
+  ],
 };
-const props = {
+const props: ComponentProps<typeof OutPatientSocialHistory> = {
   patientUuid: 'synthetic-patient',
   encounters: [legacyRecord],
   isLoading: false,
   isValidating: false,
   error: undefined,
   mutate: legacyRefresh,
-} as never;
-const history = {
+};
+const history: ReturnType<typeof useSocialHistory> = {
   data: [currentRecord],
   isLoading: false,
   isValidating: false,
   error: undefined,
   truncated: false,
+  sourceErrors: [],
   mutate: refresh,
   pagination: { currentPage: 1, totalPages: 1, onPageChange: vi.fn() },
 };
@@ -49,7 +79,7 @@ const history = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConfig).mockReturnValue(config);
-  vi.mocked(useSocialHistory).mockReturnValue(history as never);
+  vi.mocked(useSocialHistory).mockReturnValue(history);
   vi.mocked(useSocialHistoryFormLauncher).mockReturnValue(launch);
   vi.mocked(UserHasAccess).mockImplementation(({ children }: { children?: ReactNode }) => children);
   vi.mocked(useLayoutType).mockReturnValue('small-desktop');
@@ -114,7 +144,7 @@ it.each([
   { error: new Error('private-server-detail') },
   { truncated: true },
 ])('does not present a failed or truncated source as an empty history', (state) => {
-  vi.mocked(useSocialHistory).mockReturnValue({ ...history, data: [], ...state } as never);
+  vi.mocked(useSocialHistory).mockReturnValue({ ...history, data: [], ...state });
   render(<OutPatientSocialHistory {...props} />);
   expect(screen.queryByRole('table', { name: 'Social History' })).not.toBeInTheDocument();
   expect(screen.getByRole('table', { name: 'Previous social history records' })).toBeInTheDocument();
@@ -122,7 +152,7 @@ it.each([
 });
 
 it('shows loading feedback through the shared card', () => {
-  vi.mocked(useSocialHistory).mockReturnValue({ ...history, data: [], isLoading: true } as never);
+  vi.mocked(useSocialHistory).mockReturnValue({ ...history, data: [], isLoading: true });
   render(<OutPatientSocialHistory {...props} />);
   expect(screen.getByRole('progressbar', { name: 'Social History' })).toBeInTheDocument();
 });

@@ -45,7 +45,7 @@ const partographyConfig = {
 describe('Partograph', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue({ partography: partographyConfig });
-    mockUseLayoutType.mockReturnValue('desktop');
+    mockUseLayoutType.mockReturnValue('small-desktop');
     mockIsDesktop.mockReturnValue(true);
   });
 

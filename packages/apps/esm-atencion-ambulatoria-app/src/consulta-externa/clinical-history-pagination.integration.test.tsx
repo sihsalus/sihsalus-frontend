@@ -58,20 +58,28 @@ it('shows an error for an incomplete social history and retains the legacy histo
   mockFetch.mockResolvedValueOnce({ data: { results: [], totalCount: 2 } } as never);
   renderHistory(
     <OutPatientSocialHistory
-      {...({
-        patientUuid: 'synthetic-patient',
-        encounters: [
-          {
-            uuid: 'legacy',
-            encounterDatetime: '2026-09-23T10:00:00Z',
-            obs: [{ concept: { uuid: config.concepts.alcoholUseUuid }, value: 'Synthetic legacy record' }],
-          },
-        ],
-        isLoading: false,
-        isValidating: false,
-        error: undefined,
-        mutate: vi.fn(),
-      } as never)}
+      patientUuid="synthetic-patient"
+      encounters={[
+        {
+          uuid: 'legacy',
+          encounterDatetime: '2026-09-23T10:00:00Z',
+          patient: 'synthetic-patient',
+          location: 'synthetic-location',
+          encounterType: { uuid: 'synthetic-legacy-type', display: 'Consulta externa' },
+          obs: [
+            {
+              uuid: 'legacy-alcohol-obs',
+              groupMembers: null,
+              concept: { uuid: config.concepts.alcoholUseUuid },
+              value: 'Synthetic legacy record',
+            },
+          ],
+        },
+      ]}
+      isLoading={false}
+      isValidating={false}
+      error={undefined}
+      mutate={vi.fn()}
     />,
   );
 

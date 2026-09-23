@@ -251,7 +251,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   patientUuid: directPatientUuid,
 }) => {
   const patientUuid = directPatientUuid ?? workspaceProps?.patientUuid ?? '';
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);

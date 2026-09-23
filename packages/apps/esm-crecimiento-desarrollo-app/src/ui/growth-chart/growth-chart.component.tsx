@@ -76,7 +76,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   dateOfBirth,
   isPercentiles,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   const memoizedChartData = useMemo(() => rawChartData, []);
   const { chartDataForGender } = useChartDataForGender(gender, memoizedChartData);

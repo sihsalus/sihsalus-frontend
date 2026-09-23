@@ -10,7 +10,7 @@ interface BalanceOverviewProps {
 }
 
 const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, pageSize = 10 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
   const { data: balanceData, error, isLoading, isValidating } = useBalance(patientUuid);

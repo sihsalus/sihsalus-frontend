@@ -131,7 +131,7 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & { workspace2?: 
   workspace2 = false,
 }) => {
   const patientUuid = workspaceProps?.patientUuid ?? '';
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const isTablet = useLayoutType() === 'tablet';
   const { conditions, isLoading, error: loadingError } = useConditions(patientUuid);
   const [errorCreating, setErrorCreating] = useState<Error | null>(null);

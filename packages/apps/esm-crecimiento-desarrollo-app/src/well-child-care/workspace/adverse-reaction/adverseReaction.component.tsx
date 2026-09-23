@@ -34,7 +34,7 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   patientUuid: patientUuidProp,
   workspaceProps,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
   const patientUuid = patientUuidProp ?? workspaceProps?.patientUuid;

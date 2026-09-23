@@ -19,7 +19,7 @@ interface ChartMetric {
 }
 
 const LabourHistoryChart: React.FC<LabourHistoryChartProps> = ({ patientHistory }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const [selectedMetric, setSelectedMetric] = useState<ChartMetric>({
     title: t('maternalPulse', 'Maternal Pulse (bpm)'),
     value: 'maternalPulse',

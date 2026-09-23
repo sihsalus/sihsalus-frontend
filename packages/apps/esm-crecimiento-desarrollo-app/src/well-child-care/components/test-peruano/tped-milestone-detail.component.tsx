@@ -17,7 +17,7 @@ const evidenceTranslation = {
 } as const;
 
 const TpedMilestoneDetail: React.FC<TpedMilestoneDetailProps> = ({ milestone, selectedAgeColumn }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   if (!milestone) {
     return (

@@ -18,7 +18,7 @@ export interface MonthlyWorkloadViewProps {
 }
 
 const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, events }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const { selectedDate } = useContext(SelectedDateContext);
 
   const currentData = useMemo(

@@ -35,7 +35,7 @@ const ClinicalDataChart: React.FC<ClinicalDataChartProps> = ({
   mappings,
   maxDataPoints = Infinity, // Por defecto, no hay límite
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const id = useId();
   const [selectedVitalSign, setSelectedVitalSign] = React.useState(vitalSigns[0]);
 

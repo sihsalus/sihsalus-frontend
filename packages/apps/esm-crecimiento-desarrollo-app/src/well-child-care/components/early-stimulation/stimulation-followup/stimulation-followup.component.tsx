@@ -23,7 +23,7 @@ interface StimulationFollowupProps {
 }
 
 const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =

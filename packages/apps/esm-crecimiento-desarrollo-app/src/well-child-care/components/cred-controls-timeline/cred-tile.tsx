@@ -27,7 +27,7 @@ const STATUS_ICONS: Record<ControlStatus, typeof CheckmarkFilled> = {
 };
 
 const CredTile: React.FC<CredTileProps> = ({ label, date, status }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   const statusLabels: Record<ControlStatus, string> = {
     completed: t('statusCompleted', 'Realizado'),

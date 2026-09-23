@@ -15,7 +15,7 @@ interface SupplementationTrackerProps {
 }
 
 const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { delivered, total, percentage, isComplete, isLoading, error } = useSupplementationTracker(patientUuid);

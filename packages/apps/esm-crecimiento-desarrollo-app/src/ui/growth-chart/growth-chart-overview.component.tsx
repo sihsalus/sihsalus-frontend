@@ -23,7 +23,7 @@ interface GrowthChartProps {
 }
 
 const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const headerTitle = t('growthChart', 'Evaluación del Crecimiento y Desarrollo');
   const displayText = t('relatedData', 'datos de crecimiento y desarrollo');
   const formWorkspace = 'patient-vitals-biometrics-form-workspace';

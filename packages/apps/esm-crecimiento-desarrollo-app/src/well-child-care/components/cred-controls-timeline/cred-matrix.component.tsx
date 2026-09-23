@@ -22,7 +22,7 @@ interface CredControlsMatrixProps {
 const CredControlsMatrix: React.FC<CredControlsMatrixProps> = ({ patientUuid }) => {
   const { ageGroupsCRED } = useConfig<ConfigObject>();
   const { controls, completedCount, totalCount, overdueControls, isLoading, error } = useCREDSchedule(patientUuid);
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   const headerTitle = t('controlsAndAtentions', 'Atenciones y controles');
 

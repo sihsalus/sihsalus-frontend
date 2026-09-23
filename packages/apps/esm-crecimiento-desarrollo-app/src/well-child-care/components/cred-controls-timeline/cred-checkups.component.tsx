@@ -20,7 +20,7 @@ interface CredCheckupsProps {
 }
 
 const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);

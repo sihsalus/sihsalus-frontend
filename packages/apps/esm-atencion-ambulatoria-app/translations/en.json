@@ -238,7 +238,7 @@
   "illnessDuration": "Illness duration",
   "inactive": "Inactive",
   "inPatientSummary": "In Patient Summary",
-  "institutionalReferralIntro": "Record only the referral-specific details. Patient identity, visit, triage, history, diagnoses, treatment, and professional are retrieved from the clinical record for the printable sheet.",
+  "institutionalReferralIntro": "Complete the destination and transfer details to record the referral.",
   "institutionalReferralSheetTitle": "Institutional Referral Sheet",
   "insuranceHistory": "Insurance History",
   "insuranceProvider": "Insurance Provider",

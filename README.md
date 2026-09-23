@@ -48,15 +48,14 @@ El [índice de documentación](docs/README.md) organiza las guías y contratos.
 
 - Node.js 24.
 - Yarn 4.13.0, fijado en `packageManager` de `package.json`, mediante Corepack.
-- Docker para los procedimientos de imágenes, una vez resueltas sus recetas.
+- Docker para los procedimientos de imágenes.
 
 ## Quick Start
 
 Sigue [desarrollo local](docs/development/README.md#preparación-y-arranque) para
 instalar, configurar `.env`, ensamblar el SPA y levantar el servidor.
-La rama de limpieza tiene [pendientes de Yarn, Docker y catálogos](docs/development/tooling-status.md):
-los ajustes locales documentados no equivalen a una instalación estándar o CI
-aprobados.
+La [referencia de configuración](docs/development/tooling-status.md) identifica
+los archivos que mantienen los contratos de instalación, imágenes y pruebas.
 
 `yarn start` requiere un SPA válido en `dist/spa` y usa el backend configurado
 en [.env.template](.env.template). Revisar el destino antes de arrancar; las

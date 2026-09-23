@@ -4,11 +4,13 @@
 
 ## Estado de las recetas
 
-En esta rama se eliminaron `Dockerfile`, `.dockerignore`, `nginx.spa.conf` y
-`docker-compose.yml`. Los workflows todavía consumen los targets descritos
-abajo, por lo que la construcción no está disponible hasta resolver esa
-migración. Esta guía conserva el contrato de las imágenes; no acredita una
-imagen construida, publicada o desplegada con la limpieza.
+[Dockerfile](../../Dockerfile) define los targets de construcción y runtime;
+[`.dockerignore`](../../.dockerignore) excluye dependencias, artefactos y entornos
+locales del contexto. [Nginx](../../nginx.spa.conf) conserva el fallback SPA y
+las políticas de caché. [Compose](../../docker-compose.yml) mantiene el entorno
+local. Estos archivos siguen activos y deben cambiar junto con sus consumidores.
+Esta guía describe el contrato; la evidencia de construcción corresponde al SHA
+y al workflow registrados en cada PR.
 
 Consultar el [estado de configuración](../development/tooling-status.md) y el
 [runbook de go-live](frontend-go-live.md). Un PR o una compilación local no
@@ -46,4 +48,4 @@ docker build --target spa-nginx -t sihsalus-frontend:local .
 docker run --rm --name sihsalus-frontend --network sihsalus-network -p 8080:80 sihsalus-frontend:local
 ```
 
-La red usada en el ejemplo debe contener o resolver un servicio `backend` en el puerto `8080`; es el upstream configurado en `nginx.spa.conf`, actualmente eliminado. Nginx / reverse proxy y el volumen de producción se administran en el repositorio de infraestructura.
+La red usada en el ejemplo debe contener o resolver un servicio `backend` en el puerto `8080`; es el upstream configurado en `nginx.spa.conf`. Nginx / reverse proxy y el volumen de producción se administran en el repositorio de infraestructura.

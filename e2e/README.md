@@ -10,13 +10,10 @@ aislamiento, cleanup o aceptación aún no están verificados y no deben ejecuta
 
 ## Catálogo y runner
 
-El runner requiere `e2e/suite-catalog.json` como fuente única de organización.
-Ese archivo está eliminado en esta rama: el runner rechaza la ejecución y el
-contrato del catálogo falla. Consultar el
-[estado de configuración](../docs/development/tooling-status.md) antes de ejecutar
-los comandos de esta guía. Esta reorganización no promueve ninguna suite.
+El runner usa [suite-catalog.json](suite-catalog.json) como fuente única de
+organización. Los cambios al catálogo deben conservar los contratos del runner,
+el typecheck y CI. Esta reorganización no promueve ninguna suite.
 
-El contrato que debe conservarse al resolver el catálogo es el siguiente:
 Cada configuración Playwright y cada `*.spec.ts` deben pertenecer exactamente a
 una de sus 14 suites. El contrato local falla si aparece una configuración o un
 spec sin dueño, si hay solapamientos o si `typecheck`/`ci` dejan de coincidir con
@@ -26,8 +23,8 @@ la configuración real.
 pueda ejecutarse sin las credenciales, datos sintéticos y ambiente coordinado
 que exija su preflight. `quarantined` conserva el código como inventario, pero
 lo rechaza de forma explícita hasta resolver la razón registrada en el catálogo.
-La tabla conserva el inventario anterior a su eliminación; no acredita que las
-suites puedan ejecutarse con el estado actual de la rama.
+La tabla refleja el catálogo; no sustituye el preflight ni acredita aceptación
+clínica de las suites.
 
 | ID                  | Configuración                                | Specs                         | Estado       | Gate | Typecheck | CI navegador |
 | ------------------- | -------------------------------------------- | ----------------------------- | ------------ | ---- | --------- | ------------ |
@@ -57,8 +54,8 @@ el prototipo de notificaciones en JavaScript solo tiene comprobación sintáctic
 y pruebas del bloqueo, no validación clínica. No se promueve ninguna suite ni
 se agrega a CI de navegador.
 
-Los comandos que pasan por el runner necesitan primero resolver el catálogo.
-No sustituirlos por invocaciones directas de Playwright para eludir ese bloqueo.
+Usar los comandos del runner; no invocar Playwright directamente para eludir
+los controles de catálogo, cuarentena o preflight.
 
 ```sh
 # Suite clínica principal (compatible con el comando histórico)
@@ -191,10 +188,9 @@ aceptación requiere la matriz DEV/QLTY del runbook.
 `yarn typecheck:e2e` y el servidor de `offline-local` preparan sus dependencias
 mediante `yarn build:e2e:offline-local`. Este comando usa el grafo de Turborepo
 para compilar `@openmrs/esm-offline` y sus dependencias antes de consumir sus
-exports y declaraciones de tipos. Una vez resuelta la configuración de Yarn,
-esta preparación evita depender de builds manuales anteriores; un fallo detiene
-el chequeo o el arranque del navegador. Los ajustes temporales locales están
-documentados en [desarrollo](../docs/development/README.md).
+exports y declaraciones de tipos. Esta preparación evita depender de builds
+manuales anteriores; un fallo detiene el chequeo o el arranque del navegador.
+La instalación está documentada en [desarrollo](../docs/development/README.md).
 
 ## Cobertura de typecheck
 

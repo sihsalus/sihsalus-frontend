@@ -8,9 +8,8 @@ only. Never use production, real patients, or an arbitrary public demo backend.
 
 ## Running the suite
 
-The central runner is currently blocked by the removed E2E catalog; see the
-[catalog and runner status](../README.md#catálogo-y-runner). The commands below
-also retain the independent supervision and recovery requirements of this suite.
+Use the central runner and its [catalog](../suite-catalog.json). The commands
+below retain the independent supervision and recovery requirements of this suite.
 
 Prepare Node 24 / Yarn 4.13.0 and the SPA as described in the root README.
 Provide credentials through the local secret mechanism or CI secrets, never
@@ -128,9 +127,8 @@ ownership/pagination. Supervised DEV/QLTY execution and recovery remain pending.
 
 Commands construct API fixtures, `core/` owns setup and test fixtures,
 `pages/` owns UI locators, and `specs/` owns the acceptance scenarios.
-All are included in `e2e/tsconfig.json`; the suite's expected catalog entry is
-documented in the [catalog inventory](../README.md#catálogo-y-runner). The catalog
-file itself is currently missing. Do not bypass its runner or add an
+All are included in `e2e/tsconfig.json`; the suite is registered in the
+[catalog](../suite-catalog.json). Do not bypass its runner or add an
 uncatalogued configuration.
 
 CI's local contracts run for every PR. The workflow still lists laboratory in

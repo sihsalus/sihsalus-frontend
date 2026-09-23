@@ -2,7 +2,7 @@
 
 [Documentación](../README.md) · [Inicio](../../README.md)
 
-Crea un archivo `.env` en la raíz del repo (ver [.env.template](../../.env.template)). `yarn start` carga ese archivo directamente. Los comandos de ensamble leen `SPA_PATH`, `API_URL`, `SIHSALUS_PUBLIC_SPA_URL` y, como respaldo para los metatags sociales, `SIHSALUS_BACKEND_URL` del entorno del proceso; expórtalas en la shell cuando deban afectar `yarn assemble`. `.env.yarn` y su configuración de inyección se eliminaron de esta rama; no se deben presentar como un mecanismo activo.
+Crea un archivo `.env` en la raíz del repo (ver [.env.template](../../.env.template)). `yarn start` carga ese archivo directamente. Los comandos de ensamble leen `SPA_PATH`, `API_URL`, `SIHSALUS_PUBLIC_SPA_URL` y, como respaldo para los metatags sociales, `SIHSALUS_BACKEND_URL` del entorno del proceso; expórtalas en la shell cuando deban afectar `yarn assemble`. Yarn inyecta los opt-outs de telemetría de [`.env.yarn`](../../.env.yarn) según [`.yarnrc.yml`](../../.yarnrc.yml); ese archivo no carga la configuración clínica de `.env`.
 
 | Variable                                         | Ámbito y valor por defecto                                                                          | Descripción                                                                                                                                                                              |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -37,5 +37,5 @@ sin cuerpos ni cabeceras, devuelve 502 ante redirecciones u otros fallos y 504
 ante timeout. Así la señal real de presencia sigue llegando a la política de
 apagado seguro sin incluir contexto clínico.
 
-La configuración de instalación y los archivos pendientes de sustitución se
+La configuración de instalación y los consumidores de sus archivos se
 detallan en [estado de configuración](tooling-status.md).

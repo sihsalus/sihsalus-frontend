@@ -8,9 +8,8 @@ This directory preserves the Playwright scenarios for
 ## Execution status
 
 **Quarantined.** Dispensing is not in the central runner's allowlist and is not
-part of the browser CI matrix. Its previous catalog entry recorded unresolved
-type errors and unvalidated order/visit mutations. The catalog itself is now
-missing in this branch; see the [current tooling status](../../docs/development/tooling-status.md).
+part of the browser CI matrix. Its [catalog entry](../suite-catalog.json) records
+unresolved type errors and unvalidated order/visit mutations.
 Neither a documentation change nor a passing root typecheck promotes this suite.
 
 Do not invoke its Playwright config directly to bypass the runner, point it at

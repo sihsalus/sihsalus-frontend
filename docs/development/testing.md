@@ -5,7 +5,7 @@
 La matriz normativa por alcance está en
 [CONTRIBUTING](../../CONTRIBUTING.md#proportional-validation). Prepara el entorno
 según [desarrollo local](README.md) y consulta los
-[bloqueos de configuración](tooling-status.md): una orden documentada no implica
+[contratos de configuración](tooling-status.md): una orden documentada no implica
 que su validación esté aprobada en esta rama.
 
 ## Pruebas locales
@@ -56,9 +56,9 @@ separate follow-up phase; it is not part of TypeScript's `strict` flag.
 
 Repository discipline and workspace ownership expectations should stay close to the touched package README and the relevant quality commands.
 
-The test-governance validator still requires `config/test-governance.json`.
-That register is absent in this branch, so the command currently fails. Its
-removal does not waive the following contribution requirements.
+The test-governance validator uses
+[`config/test-governance.json`](../../config/test-governance.json) as the
+reviewed register of existing test debt.
 Every workspace must expose a `test` script and contain a discoverable colocated
 JavaScript or TypeScript test (`*.test.*` or `*.spec.*`). Existing gaps require
 an accountable, risk-rated exception that expires within 180 days of the

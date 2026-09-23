@@ -1,0 +1,30 @@
+# VCS
+.git
+.gitignore
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.turbo
+**/.turbo
+dist
+**/dist
+coverage
+**/coverage
+/playwright-report
+/test-results
+
+# Local environment / editor
+.env
+.env.*
+!.env.example
+.vscode
+
+# Docs and CI metadata not needed for image build
+docs
+.github
+
+# OS
+.DS_Store

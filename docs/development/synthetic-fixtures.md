@@ -15,9 +15,9 @@ tests use an in-memory API double and private temporary files only:
 yarn test:e2e:contracts
 ```
 
-The root [tooling status](tooling-status.md) also applies: the E2E catalog is
-currently missing, so the central runner/contracts cannot complete. Relocating
-this document does not activate an adapter or bypass that requirement.
+The central runner enforces the [suite catalog](../../e2e/suite-catalog.json).
+Relocating this document does not activate an adapter or bypass its quarantine,
+supervision or recovery requirements.
 
 ## Configuration and scope
 

@@ -6,13 +6,12 @@ Usa esta guía para preparar una copia local y servir el SPA. Los requisitos
 de autorización, datos sintéticos y validación están en
 [CONTRIBUTING](../../CONTRIBUTING.md).
 
-## Estado de esta rama
+## Configuración soportada
 
-La eliminación de la configuración de Yarn deja pendiente el arranque estándar.
-Los ajustes de entorno indicados abajo permiten trabajar con `node_modules` y
-propagarlos a los procesos de Turbo. Son una solución temporal local; no corrigen
-CI ni los contratos de Docker y catálogos. Revisa el
-[estado de configuración](tooling-status.md) antes de interpretar un resultado.
+El repositorio configura Yarn con `nodeLinker: node-modules` y fija Node 24 en
+`.nvmrc`. Los comandos siguientes usan esa configuración sin overrides del
+linker ni del modo de entorno de Turbo. Consulta la
+[referencia de configuración](tooling-status.md) para conocer sus consumidores.
 
 ## Prerequisites
 
@@ -26,17 +25,9 @@ CI ni los contratos de Docker y catálogos. Revisa el
 # 1. Clonar e instalar
 git clone https://github.com/sihsalus/sihsalus-frontend.git
 cd sihsalus-frontend
-node --version           # requiere Node 24; no hay .nvmrc en esta rama
+nvm use                  # opcional si usas nvm; .nvmrc selecciona Node 24
+node --version           # comprobar Node 24
 corepack enable          # usa packageManager de package.json
-
-# Ajustes temporales para validar esta rama; ver el estado de configuración.
-export YARN_NODE_LINKER=node-modules
-export YARN_NM_MODE=hardlinks-local
-export TURBO_ENV_MODE=loose
-export IBM_TELEMETRY_DISABLED=true
-export TURBO_TELEMETRY_DISABLED=1
-export DO_NOT_TRACK=1
-export YARN_ENABLE_TELEMETRY=0
 yarn install --immutable
 
 # 2. Configurar entorno (recomendado)

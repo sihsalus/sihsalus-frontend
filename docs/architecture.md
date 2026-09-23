@@ -33,7 +33,7 @@ e2e/                                    # Playwright E2E tests
 ## Architecture
 
 - **Turborepo** orchestrates builds across 90 workspace packages with caching
-- **Yarn 4 (Berry)** manages dependencies; the scripts expect `node_modules`. The deleted linker configuration is a [pending integration issue](development/tooling-status.md)
+- **Yarn 4 (Berry)** manages dependencies through `node_modules`, as configured in [`.yarnrc.yml`](../.yarnrc.yml). See the [configuration contracts](development/tooling-status.md).
 - **single-spa** orchestrates microfrontend modules at runtime via import maps
 - **Rspack** (Webpack-compatible) is the bundler; Module Federation enables shared deps
 - **Carbon Design System** (v11) is the primary UI framework

@@ -1,4 +1,4 @@
-import { Modal, Tag } from '@carbon/react';
+import { FeatureFlags, Modal, Tag } from '@carbon/react';
 import { CheckmarkFilled } from '@carbon/react/icons';
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -55,7 +55,7 @@ import {
   Finding37Design5,
 } from '../designs/figuras';
 import type { FindingColor, FindingDesign, ToothFinding, ToothRootDesign } from '../types/odontogram';
-import { COLOR_CSS } from './constants';
+import { COLOR_CSS, COLOR_LABEL } from './constants';
 import styles from './DesignSelector.module.scss';
 import Tooth from './Tooth';
 import ToothDesigns from './ToothDesigns';
@@ -153,6 +153,7 @@ const designComponentMap = {
 
 interface DesignSelectorProps {
   isOpen: boolean;
+  launcherButtonRef?: React.RefObject<HTMLButtonElement>;
   onClose: () => void;
   designs: FindingDesign[];
   selectedColor: FindingColor | null;
@@ -173,6 +174,7 @@ interface DesignSelectorProps {
 
 const DesignSelector: React.FC<DesignSelectorProps> = ({
   isOpen,
+  launcherButtonRef,
   onClose,
   designs,
   selectedColor,
@@ -195,12 +197,8 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
     }
   };
 
-  const colorLabel =
-    selectedColor?.name === 'red'
-      ? t('red', 'Rojo')
-      : selectedColor?.name === 'blue'
-        ? t('blue', 'Azul')
-        : t('black', 'Negro');
+  const colorName = selectedColor?.name ?? 'black';
+  const colorLabel = t(colorName, COLOR_LABEL[colorName] ?? colorName);
   const colorTagType: 'red' | 'blue' | 'gray' =
     selectedColor?.name === 'red' ? 'red' : selectedColor?.name === 'blue' ? 'blue' : 'gray';
 
@@ -216,7 +214,9 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
   const modalNode = (
     <Modal
       open={isOpen}
+      launcherButtonRef={launcherButtonRef}
       passiveModal
+      closeButtonLabel={t('close', 'Cerrar')}
       onRequestClose={onClose}
       modalHeading={t('selectDesignForFinding', 'Seleccionar diseño para {{findingName}}', { findingName })}
       size="lg"
@@ -259,10 +259,14 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
           </svg>
         </div>
         <div className={styles.headerInfo}>
-          <span className={styles.headerInfoLabel}>Vista previa</span>
+          <span className={styles.headerInfoLabel}>{t('preview', 'Vista previa')}</span>
           <div className={styles.headerInfoTags}>
-            <Tag type="gray" size="md">{`Diente ${toothId}`}</Tag>
-            <Tag type={colorTagType} size="md">{`Color: ${colorLabel}`}</Tag>
+            <Tag type="gray" size="md">
+              {t('toothWithId', 'Diente {{toothId}}', { toothId })}
+            </Tag>
+            <Tag type={colorTagType} size="md">
+              {t('colorWithName', 'Color: {{name}}', { name: colorLabel })}
+            </Tag>
           </div>
         </div>
       </div>
@@ -283,7 +287,7 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
           if (!DesignComponent) {
             return (
               <div key={design.number} className={styles.designMissing}>
-                Componente no encontrado: {design.componente}
+                {t('designUnavailable', 'Este diseño no está disponible.')}
               </div>
             );
           }
@@ -315,16 +319,22 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
                 </svg>
               </div>
 
-              <div className={styles.designLabel}>{`Diseño ${design.number}`}</div>
+              <div className={styles.designLabel}>
+                {t('designWithNumber', 'Diseño {{designNumber}}', { designNumber: design.number })}
+              </div>
 
               {isApplied && (
                 <>
                   <CheckmarkFilled size={20} className={styles.designAppliedIcon} />
                   <div className={styles.designTags}>
                     <Tag type="green" size="sm">
-                      Aplicado
+                      {t('applied', 'Aplicado')}
                     </Tag>
-                    {appliedTipo && <Tag type="gray" size="sm">{`Tipo: ${appliedTipo}`}</Tag>}
+                    {appliedTipo && (
+                      <Tag type="gray" size="sm">
+                        {t('typeWithName', 'Tipo: {{name}}', { name: appliedTipo })}
+                      </Tag>
+                    )}
                   </div>
                 </>
               )}
@@ -335,7 +345,7 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
     </Modal>
   );
 
-  return createPortal(modalNode, document.body);
+  return createPortal(<FeatureFlags enableFocusWrapWithoutSentinels>{modalNode}</FeatureFlags>, document.body);
 };
 
 export default DesignSelector;

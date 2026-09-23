@@ -36,11 +36,16 @@
   font-weight: 400;
 }
 
+.findingControl {
+  display: flex;
+}
+
 .findingTrigger {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
+  min-width: 0;
   min-height: 2.5rem;
   padding: 0.4375rem 0.75rem;
   background: var(--cds-field-01, #f4f4f4);
@@ -73,23 +78,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.findingTriggerClear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
-  color: var(--cds-icon-secondary, #525252);
-  cursor: pointer;
-  flex-shrink: 0;
-
-  &:hover {
-    background: var(--cds-layer-hover-01, #e8e8e8);
-    color: var(--cds-icon-primary, #161616);
-  }
 }
 
 .findingTriggerChevron {

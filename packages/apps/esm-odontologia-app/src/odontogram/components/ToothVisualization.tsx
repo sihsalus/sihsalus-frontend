@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { isMultiDesignFinding } from '../logic/findingDesignLogic';
 import { useOdontogramContext } from '../providers/OdontogramProvider';
 import type { FindingDesign, ToothRootDesign } from '../types/odontogram';
@@ -6,6 +7,7 @@ import { TOOTH_DESIGN_COMPONENT_MAP } from './constants';
 import DesignSelector from './DesignSelector';
 import Tooth from './Tooth';
 import ToothDesigns from './ToothDesigns';
+import styles from './ToothVisualization.module.scss';
 
 interface ToothVisualizationProps {
   idTooth: number;
@@ -20,7 +22,9 @@ const ToothVisualization = ({
   design = 'default',
   position = 'upper',
 }: ToothVisualizationProps) => {
+  const { t } = useTranslation();
   const [showDesignSelector, setShowDesignSelector] = React.useState(false);
+  const toothButtonRef = React.useRef<HTMLButtonElement>(null);
 
   const { data, config, formSelection, toothActions, readOnly, showToast } = useOdontogramContext();
   const { selectedFindingId, selectedSuboption, selectedColor, isComplete } = formSelection;
@@ -55,12 +59,16 @@ const ToothVisualization = ({
         const opt = config.findingOptions.find((o) => o.id === selectedFindingId);
         const needsColor = (opt?.colores?.length ?? 0) > 0 && !selectedColor;
         const needsSub = (opt?.subopciones?.length ?? 0) > 0 && !selectedSuboption;
-        const parts: string[] = [];
-        if (needsSub) parts.push('tipo');
-        if (needsColor) parts.push('color');
-        if (parts.length) showToast(`Seleccione ${parts.join(' y ')} para "${opt?.nombre}"`);
+        const values = { findingName: opt?.nombre };
+        if (needsSub && needsColor) {
+          showToast(t('selectFindingTypeAndColor', 'Seleccione tipo y color para "{{findingName}}"', values));
+        } else if (needsSub) {
+          showToast(t('selectFindingType', 'Seleccione tipo para "{{findingName}}"', values));
+        } else if (needsColor) {
+          showToast(t('selectFindingColor', 'Seleccione color para "{{findingName}}"', values));
+        }
       } else if (!selectedFindingId) {
-        showToast('Seleccione un hallazgo clínico en el formulario');
+        showToast(t('selectFindingFirst', 'Seleccione un hallazgo clínico en el formulario'));
       }
       return;
     }
@@ -166,25 +174,35 @@ const ToothVisualization = ({
 
   return (
     <>
-      <svg width="60" height="120" onClick={handleFindingToggle} cursor={'pointer'}>
-        <g transform={transform}>
-          <ToothDesigns design={design} />
-          <Tooth zones={toothZones} />
-          {/* Renderizar todos los hallazgos */}
-          {renderAllFindings()}
-          {/* Re-stroke zone lines on top so colored fill designs don't hide the
+      <button
+        ref={toothButtonRef}
+        type="button"
+        className={styles.toothButton}
+        aria-label={t('toothWithId', 'Diente {{toothId}}', { toothId: idTooth })}
+        disabled={readOnly}
+        onClick={handleFindingToggle}
+      >
+        <svg width="60" height="120" aria-hidden="true" focusable="false">
+          <g transform={transform}>
+            <ToothDesigns design={design} />
+            <Tooth zones={toothZones} />
+            {/* Renderizar todos los hallazgos */}
+            {renderAllFindings()}
+            {/* Re-stroke zone lines on top so colored fill designs don't hide the
               tooth's anatomy. */}
-          <Tooth zones={toothZones} strokesOnly />
-          {/* Sombreado cuando se selecciona una opción predefinida */}
-          {selectedFindingId != null && predefinedMarkedOptions.includes(selectedFindingId) && (
-            <rect width="60" height="120" fill="lightgray" opacity="0.45" pointerEvents="none" />
-          )}
-        </g>
-      </svg>
+            <Tooth zones={toothZones} strokesOnly />
+            {/* Sombreado cuando se selecciona una opción predefinida */}
+            {selectedFindingId != null && predefinedMarkedOptions.includes(selectedFindingId) && (
+              <rect width="60" height="120" fill="lightgray" opacity="0.45" pointerEvents="none" />
+            )}
+          </g>
+        </svg>
+      </button>
 
       {/* Selector de diseños */}
       <DesignSelector
         isOpen={showDesignSelector}
+        launcherButtonRef={toothButtonRef}
         onClose={() => setShowDesignSelector(false)}
         designs={filteredDesigns}
         selectedColor={selectedColor}

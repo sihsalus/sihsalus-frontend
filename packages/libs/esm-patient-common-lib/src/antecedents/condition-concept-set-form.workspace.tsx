@@ -1,24 +1,39 @@
-import { Button, ButtonSet, DataTableSkeleton, Form, InlineLoading, InlineNotification } from '@carbon/react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Workspace2 } from '@openmrs/esm-framework';
-import { isActiveConditionStatus, isSupportedConditionStatus } from './condition-status';
-import { isConditionForPatient } from './conditions-model';
-import { useConditionFormLifecycle } from './use-condition-form-lifecycle';
-import type { PatientWorkspace2DefinitionProps } from '../workspaces';
-import type { TFunction } from 'i18next';
-import React, { useMemo, useState } from 'react';
-import { FormProvider, type SubmitHandler, useForm, type UseFormReturn } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
+import {
+  Button,
+  ButtonSet,
+  DataTableSkeleton,
+  Form,
+  InlineLoading,
+  InlineNotification,
+} from "@carbon/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Workspace2 } from "@openmrs/esm-framework";
+import {
+  isActiveConditionStatus,
+  isSupportedConditionStatus,
+} from "./condition-status";
+import { isConditionForPatient } from "./conditions-model";
+import { useConditionFormLifecycle } from "./use-condition-form-lifecycle";
+import type { PatientWorkspace2DefinitionProps } from "../workspaces";
+import type { TFunction } from "i18next";
+import React, { useMemo, useState } from "react";
+import {
+  FormProvider,
+  type SubmitHandler,
+  useForm,
+  type UseFormReturn,
+} from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { z } from "zod";
 
-import type { Condition } from './conditions.types';
-import { usePatientConditions } from './conditions.resource';
-import styles from './condition-concept-set-form.scss';
-import ConditionsWidget from './condition-concept-set-fields.component';
+import type { Condition } from "./conditions.types";
+import { usePatientConditions } from "./conditions.resource";
+import styles from "./condition-concept-set-form.scss";
+import ConditionsWidget from "./condition-concept-set-fields.component";
 
 interface ConditionFormPayload {
   condition?: Condition;
-  formContext: 'creating' | 'editing';
+  formContext: "creating" | "editing";
   conceptSetUuid?: string;
   title?: string;
   workspaceTitle?: string;
@@ -26,8 +41,10 @@ interface ConditionFormPayload {
 }
 
 interface LegacyConditionFormProps extends ConditionFormPayload {
-  closeWorkspace(options?: { discardUnsavedChanges?: boolean }): Promise<boolean>;
-  workspaceProps?: Omit<ConditionFormPayload, 'formContext'> | null;
+  closeWorkspace(options?: {
+    discardUnsavedChanges?: boolean;
+  }): Promise<boolean>;
+  workspaceProps?: Omit<ConditionFormPayload, "formContext"> | null;
   [key: string]: unknown;
 }
 
@@ -35,28 +52,38 @@ interface FormOptions {
   translationNamespace: string;
   defaultConceptSetUuid?: string;
 }
-type ConditionWorkspace2Props = PatientWorkspace2DefinitionProps<ConditionFormPayload>;
-export type ConditionConceptSetWorkspaceProps = LegacyConditionFormProps | ConditionWorkspace2Props;
-export type ConditionConceptSetFormProps = ConditionConceptSetWorkspaceProps & FormOptions;
+type ConditionWorkspace2Props =
+  PatientWorkspace2DefinitionProps<ConditionFormPayload>;
+export type ConditionConceptSetWorkspaceProps =
+  | LegacyConditionFormProps
+  | ConditionWorkspace2Props;
+export type ConditionConceptSetFormProps = ConditionConceptSetWorkspaceProps &
+  FormOptions;
 
-function isWorkspace2Props(props: ConditionConceptSetFormProps): props is ConditionWorkspace2Props & FormOptions {
-  return 'groupProps' in props && 'workspaceProps' in props;
+function isWorkspace2Props(
+  props: ConditionConceptSetFormProps,
+): props is ConditionWorkspace2Props & FormOptions {
+  return "groupProps" in props && "workspaceProps" in props;
 }
 
 export const createConditionConceptSetSchema = (
-  formContext: 'creating' | 'editing',
+  formContext: "creating" | "editing",
   t: TFunction,
   originalCondition?: Condition,
 ) => {
-  const isCreating = formContext === 'creating';
+  const isCreating = formContext === "creating";
 
-  const clinicalStatusValidation = z.string().refine((clinicalStatus) => isSupportedConditionStatus(clinicalStatus), {
-    message: t('clinicalStatusRequired', 'A clinical status is required'),
-  });
+  const clinicalStatusValidation = z
+    .string()
+    .refine((clinicalStatus) => isSupportedConditionStatus(clinicalStatus), {
+      message: t("clinicalStatusRequired", "A clinical status is required"),
+    });
 
-  const conditionNameValidation = z.string().refine((conditionName) => !isCreating || !!conditionName, {
-    message: t('conditionRequired', 'A condition is required'),
-  });
+  const conditionNameValidation = z
+    .string()
+    .refine((conditionName) => !isCreating || !!conditionName, {
+      message: t("conditionRequired", "A condition is required"),
+    });
 
   return z
     .object({
@@ -66,9 +93,15 @@ export const createConditionConceptSetSchema = (
       onsetDateTime: z
         .date()
         .nullable()
-        .refine((onsetDateTime) => !onsetDateTime || onsetDateTime <= new Date(), {
-          message: t('onsetDateCannotBeInTheFuture', 'Onset date cannot be in the future'),
-        }),
+        .refine(
+          (onsetDateTime) => !onsetDateTime || onsetDateTime <= new Date(),
+          {
+            message: t(
+              "onsetDateCannotBeInTheFuture",
+              "Onset date cannot be in the future",
+            ),
+          },
+        ),
     })
     .superRefine((data, ctx) => {
       if (
@@ -77,10 +110,10 @@ export const createConditionConceptSetSchema = (
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['clinicalStatus'],
+          path: ["clinicalStatus"],
           message: t(
-            'antecedentActiveWithEndDate',
-            'An active antecedent cannot have an end date. Review its clinical status and end date.',
+            "antecedentActiveWithEndDate",
+            "An active antecedent cannot have an end date. Review its clinical status and end date.",
           ),
         });
       }
@@ -91,10 +124,10 @@ export const createConditionConceptSetSchema = (
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['onsetDateTime'],
+          path: ["onsetDateTime"],
           message: t(
-            'antecedentDateCannotBeRemoved',
-            'A recorded date can be corrected but cannot be removed from this form.',
+            "antecedentDateCannotBeRemoved",
+            "A recorded date can be corrected but cannot be removed from this form.",
           ),
         });
       }
@@ -105,33 +138,38 @@ export const createConditionConceptSetSchema = (
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['abatementDateTime'],
+          path: ["abatementDateTime"],
           message: t(
-            'antecedentDateCannotBeRemoved',
-            'A recorded date can be corrected but cannot be removed from this form.',
+            "antecedentDateCannotBeRemoved",
+            "A recorded date can be corrected but cannot be removed from this form.",
           ),
         });
       }
 
       if (
         data.abatementDateTime &&
-        (data.abatementDateTime > new Date() || (data.onsetDateTime && data.abatementDateTime < data.onsetDateTime))
+        (data.abatementDateTime > new Date() ||
+          (data.onsetDateTime && data.abatementDateTime < data.onsetDateTime))
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['abatementDateTime'],
+          path: ["abatementDateTime"],
           message: t(
-            'antecedentEndDateInvalid',
-            'The end date must be on or after the onset date and cannot be in the future.',
+            "antecedentEndDateInvalid",
+            "The end date must be on or after the onset date and cannot be in the future.",
           ),
         });
       }
     });
 };
 
-export type ConditionsFormSchema = z.infer<ReturnType<typeof createConditionConceptSetSchema>>;
+export type ConditionsFormSchema = z.infer<
+  ReturnType<typeof createConditionConceptSetSchema>
+>;
 
-const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & { workspace2?: boolean }> = ({
+const ConditionsFormContent: React.FC<
+  LegacyConditionFormProps & FormOptions & { workspace2?: boolean }
+> = ({
   closeWorkspace,
   condition,
   formContext,
@@ -140,12 +178,16 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
   translationNamespace,
   defaultConceptSetUuid,
 }) => {
-  const patientUuid = workspaceProps?.patientUuid ?? '';
+  const patientUuid = workspaceProps?.patientUuid ?? "";
   const { t } = useTranslation(translationNamespace);
-  const { conditions, isLoading, error: loadingError } = usePatientConditions(patientUuid);
-  const [errorCreating, setErrorCreating] = useState<Error | null>(null);
-  const [errorUpdating, setErrorUpdating] = useState<Error | null>(null);
-  const isEditing = formContext === 'editing';
+  const {
+    conditions,
+    isLoading,
+    error: loadingError,
+  } = usePatientConditions(patientUuid);
+  const [creationMessage, setCreationMessage] = useState<string | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const isEditing = formContext === "editing";
 
   const matchingCondition = conditions?.find((c) => c?.id === condition?.id);
 
@@ -157,42 +199,61 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
         /^\d{4}-\d{2}-\d{2}/.test(matchingCondition.abatementDateTime)
           ? new Date(matchingCondition?.abatementDateTime)
           : null,
-      conditionName: '',
-      clinicalStatus: isEditing ? (matchingCondition?.clinicalStatus?.toLowerCase() ?? '') : '',
+      conditionName: "",
+      clinicalStatus: isEditing
+        ? (matchingCondition?.clinicalStatus?.toLowerCase() ?? "")
+        : "",
       onsetDateTime:
-        isEditing && matchingCondition?.onsetDateTime && /^\d{4}-\d{2}-\d{2}/.test(matchingCondition.onsetDateTime)
+        isEditing &&
+        matchingCondition?.onsetDateTime &&
+        /^\d{4}-\d{2}-\d{2}/.test(matchingCondition.onsetDateTime)
           ? new Date(matchingCondition?.onsetDateTime)
           : null,
     }),
     [isEditing, matchingCondition],
   );
 
-  const methods: UseFormReturn<ConditionsFormSchema> = useForm<ConditionsFormSchema>({
-    mode: 'all',
-    resolver: (values, context, options) =>
-      zodResolver(createConditionConceptSetSchema(formContext, t, originalCondition ?? matchingCondition))(
-        values,
-        context,
-        options,
-      ),
-    defaultValues,
-  });
-
-  const { widgetRef, isSubmittingForm, isSaved, isUncertain, originalCondition, setIsSubmittingForm, submitCondition } =
-    useConditionFormLifecycle({
-      patientUuid,
-      isEditing,
-      matchingCondition,
+  const methods: UseFormReturn<ConditionsFormSchema> =
+    useForm<ConditionsFormSchema>({
+      mode: "all",
+      resolver: (values, context, options) =>
+        zodResolver(
+          createConditionConceptSetSchema(
+            formContext,
+            t,
+            originalCondition ?? matchingCondition,
+          ),
+        )(values, context, options),
       defaultValues,
-      reset: methods.reset,
-      onStart: () => {
-        setErrorCreating(null);
-        setErrorUpdating(null);
-      },
-      onError: () => {
-        setErrorCreating(new Error(t('antecedentSaveFailed', 'The antecedent could not be saved. Please try again.')));
-      },
     });
+
+  const {
+    widgetRef,
+    isSubmittingForm,
+    isSaved,
+    isUncertain,
+    originalCondition,
+    setIsSubmittingForm,
+    submitCondition,
+  } = useConditionFormLifecycle({
+    patientUuid,
+    isEditing,
+    matchingCondition,
+    defaultValues,
+    reset: methods.reset,
+    onStart: () => {
+      setCreationMessage(null);
+      setUpdateMessage(null);
+    },
+    onError: () => {
+      setCreationMessage(
+        t(
+          "antecedentSaveFailed",
+          "The antecedent could not be saved. Please try again.",
+        ),
+      );
+    },
+  });
 
   const onSubmit: SubmitHandler<ConditionsFormSchema> = submitCondition;
 
@@ -201,17 +262,22 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
   const unsupportedClinicalStatus =
     isEditing &&
     Boolean(originalCondition ?? matchingCondition) &&
-    !isSupportedConditionStatus((originalCondition ?? matchingCondition)?.clinicalStatus);
+    !isSupportedConditionStatus(
+      (originalCondition ?? matchingCondition)?.clinicalStatus,
+    );
 
   const renderWorkspace = (children: React.ReactNode) =>
     workspace2 ? (
       <Workspace2
         title={
-          typeof workspaceProps?.workspaceTitle === 'string'
+          typeof workspaceProps?.workspaceTitle === "string"
             ? workspaceProps.workspaceTitle
-            : (workspaceProps?.title ?? t('recordCondition', 'Record condition'))
+            : (workspaceProps?.title ??
+              t("recordCondition", "Record condition"))
         }
-        hasUnsavedChanges={methods.formState.isDirty && !isSaved && !isUncertain}
+        hasUnsavedChanges={
+          methods.formState.isDirty && !isSaved && !isUncertain
+        }
       >
         {children}
       </Workspace2>
@@ -240,8 +306,14 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
         role="alert"
         title={
           unsupportedClinicalStatus
-            ? t('antecedentStatusNotEditable', 'This historical clinical status cannot be edited from this form.')
-            : t('antecedentDataUnavailable', 'The antecedent data could not be loaded. Reopen it and try again.')
+            ? t(
+                "antecedentStatusNotEditable",
+                "This historical clinical status cannot be edited from this form.",
+              )
+            : t(
+                "antecedentDataUnavailable",
+                "The antecedent data could not be loaded. Reopen it and try again.",
+              )
         }
       />,
     );
@@ -249,7 +321,10 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
 
   return renderWorkspace(
     <FormProvider {...methods}>
-      <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
+      <Form
+        className={styles.form}
+        onSubmit={methods.handleSubmit(onSubmit, onError)}
+      >
         <div className={styles.formContent}>
           <ConditionsWidget
             ref={widgetRef}
@@ -258,35 +333,37 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
             isEditing={isEditing}
             isSubmittingForm={isSubmittingForm || isSaved || isUncertain}
             patientUuid={patientUuid}
-            setErrorCreating={setErrorCreating}
-            setErrorUpdating={setErrorUpdating}
+            setCreationMessage={setCreationMessage}
+            setUpdateMessage={setUpdateMessage}
             setIsSubmittingForm={setIsSubmittingForm}
-            conceptSetUuid={workspaceProps?.conceptSetUuid ?? defaultConceptSetUuid}
+            conceptSetUuid={
+              workspaceProps?.conceptSetUuid ?? defaultConceptSetUuid
+            }
             translationNamespace={translationNamespace}
           />
         </div>
         <div className={styles.formActions}>
-          {errorCreating ? (
+          {creationMessage ? (
             <div className={styles.errorContainer}>
               <InlineNotification
                 className={styles.error}
                 role="alert"
                 kind="error"
                 lowContrast
-                title={t('errorCreatingCondition', 'Error creating condition')}
-                subtitle={errorCreating?.message}
+                title={t("errorCreatingCondition", "Error creating condition")}
+                subtitle={creationMessage}
               />
             </div>
           ) : null}
-          {errorUpdating ? (
+          {updateMessage ? (
             <div className={styles.errorContainer}>
               <InlineNotification
                 className={styles.error}
                 role="alert"
                 kind="error"
                 lowContrast
-                title={t('errorUpdatingCondition', 'Error updating condition')}
-                subtitle={errorUpdating?.message}
+                title={t("errorUpdatingCondition", "Error updating condition")}
+                subtitle={updateMessage}
               />
             </div>
           ) : null}
@@ -297,7 +374,7 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
               disabled={isSubmittingForm}
               onClick={() => closeWorkspace()}
             >
-              {t('cancel', 'Cancel')}
+              {t("cancel", "Cancel")}
             </Button>
             <Button
               className={styles.button}
@@ -306,13 +383,18 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
               type="submit"
             >
               {isUncertain ? (
-                <span>{t('antecedentSaveUnconfirmed', 'Save unconfirmed')}</span>
+                <span>
+                  {t("antecedentSaveUnconfirmed", "Save unconfirmed")}
+                </span>
               ) : isSaved ? (
-                <span>{t('antecedentSaved', 'Antecedent saved')}</span>
+                <span>{t("antecedentSaved", "Antecedent saved")}</span>
               ) : isSubmittingForm ? (
-                <InlineLoading className={styles.spinner} description={t('saving', 'Saving...')} />
+                <InlineLoading
+                  className={styles.spinner}
+                  description={t("saving", "Saving...")}
+                />
               ) : (
-                <span>{t('saveAndClose', 'Save and close')}</span>
+                <span>{t("saveAndClose", "Save and close")}</span>
               )}
             </Button>
           </ButtonSet>
@@ -325,23 +407,30 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
 const ConditionsForm: React.FC<ConditionConceptSetFormProps> = (props) => {
   const workspace2 = isWorkspace2Props(props);
   const payload = workspace2 ? props.workspaceProps : props;
-  const groupPatientUuid = workspace2 ? props.groupProps?.patientUuid : undefined;
+  const groupPatientUuid = workspace2
+    ? props.groupProps?.patientUuid
+    : undefined;
   const patientUuid = workspace2
-    ? (groupPatientUuid ?? '')
-    : (props.workspaceProps?.patientUuid ?? props.patientUuid ?? '');
+    ? (groupPatientUuid ?? "")
+    : (props.workspaceProps?.patientUuid ?? props.patientUuid ?? "");
   const contextMismatch =
     workspace2 &&
-    ((props.groupProps?.patient && props.groupProps.patient.id !== patientUuid) ||
-      (props.workspaceProps?.patientUuid && props.workspaceProps.patientUuid !== patientUuid));
+    ((props.groupProps?.patient &&
+      props.groupProps.patient.id !== patientUuid) ||
+      (props.workspaceProps?.patientUuid &&
+        props.workspaceProps.patientUuid !== patientUuid));
   const condition = payload?.condition;
   return (
     <ConditionsFormContent
       {...props}
-      key={`${patientUuid}:${condition?.id ?? 'new'}`}
+      key={`${patientUuid}:${condition?.id ?? "new"}`}
       condition={condition}
-      formContext={payload?.formContext ?? 'creating'}
+      formContext={payload?.formContext ?? "creating"}
       workspace2={workspace2}
-      workspaceProps={{ ...props.workspaceProps, patientUuid: contextMismatch ? '' : patientUuid }}
+      workspaceProps={{
+        ...props.workspaceProps,
+        patientUuid: contextMismatch ? "" : patientUuid,
+      }}
     />
   );
 };

@@ -11,9 +11,13 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   TextInput,
   Tile,
 } from '@carbon/react';
@@ -28,11 +32,11 @@ import {
 } from '@openmrs/esm-framework';
 import { age } from '@openmrs/esm-utils';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { careLogbookBasePath, careLogbookPrivilege, moduleName } from '../constants';
-import { useAdmissions } from '../resources/admissions.resource';
+import { type AdmissionRow, useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
 const EXCEL_CSV_PREAMBLE = '\uFEFFsep=,\r\n';
@@ -114,6 +118,92 @@ function CareLogbookTableEmptyState({ title, helper }: CareLogbookTableEmptyStat
   );
 }
 
+function AdmissionTableRow({
+  admission,
+  rowNumber,
+  statusLabel,
+  sexLabels,
+  spaBasePath,
+}: {
+  admission: AdmissionRow;
+  rowNumber: number;
+  statusLabel: string;
+  sexLabels: { female: string; male: string };
+  spaBasePath: string;
+}) {
+  const { t } = useTranslation(moduleName);
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = useId();
+  const expandLabel = expanded
+    ? t('hideAdmissionDetails', 'Ocultar detalles de {{patient}}', { patient: admission.patientName })
+    : t('showAdmissionDetails', 'Ver detalles de {{patient}}', { patient: admission.patientName });
+  const details = [
+    [t('documentType', 'Tipo doc.'), admission.documentType],
+    [t('documentNumber', 'N° documento'), admission.documentNumber],
+    [t('identificationStatus', 'Estado identificación'), admission.identificationStatus],
+    [
+      t('responsiblePerson', 'Responsable'),
+      [admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - '),
+    ],
+    [t('birthDateShort', 'F. Nac.'), formatDate(admission.birthDate)],
+    [t('age', 'Edad'), formatAgeWithUnit(admission.birthDate, admission.startDatetime)],
+    [t('sex', 'Sexo'), formatSex(admission.gender, sexLabels)],
+    [t('address', 'Dirección'), admission.address],
+    [t('communicationCondition', 'Condición comunicación'), admission.communicationCondition],
+    [t('reportRowNumber', 'N° de fila del reporte'), String(rowNumber)],
+  ];
+
+  return (
+    <>
+      <TableExpandRow
+        isExpanded={expanded}
+        onExpand={() => setExpanded((value) => !value)}
+        aria-label={expandLabel}
+        aria-controls={detailsId}
+        expandHeader="admission-expand"
+        expandIconDescription={expandLabel}
+      >
+        <TableCell>{formatDateTime(admission.startDatetime)}</TableCell>
+        <TableCell>
+          {admission.patientUuid ? (
+            <ConfigurableLink
+              to={`${spaBasePath}${careLogbookBasePath}/patient/${admission.patientUuid}`}
+              className={styles.patientLink}
+            >
+              {admission.patientName}
+            </ConfigurableLink>
+          ) : (
+            admission.patientName
+          )}
+          <span className={styles.patientIdentifier}>
+            {t('medicalRecordNumber', 'HCE / código temporal')}: {admission.medicalRecordNumber || '—'}
+          </span>
+        </TableCell>
+        <TableCell>{admission.service || '—'}</TableCell>
+        <TableCell>{admission.location || '—'}</TableCell>
+        <TableCell>
+          <Tag type={admission.status === 'Activa' ? 'blue' : 'gray'} size="sm">
+            {statusLabel}
+          </Tag>
+        </TableCell>
+        <TableCell>{admission.hasSis}</TableCell>
+      </TableExpandRow>
+      <TableExpandedRow id={detailsId} colSpan={7} hidden={!expanded}>
+        {expanded && (
+          <dl className={styles.admissionDetails}>
+            {details.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value || t('notRecorded', 'Sin registrar')}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </TableExpandedRow>
+    </>
+  );
+}
+
 export default function AdmissionHome() {
   const { t } = useTranslation(moduleName);
   const config = useConfig() as AdmissionConfig;
@@ -144,6 +234,10 @@ export default function AdmissionHome() {
     }),
     [t],
   );
+  const visitStatusLabels: Record<string, string> = {
+    Activa: t('activeVisitStatus', 'En curso'),
+    Finalizada: t('finishedVisitStatus', 'Finalizada'),
+  };
 
   const availableStatuses = useMemo(
     () => Array.from(new Set(admissions.map((admission) => admission.status).filter(Boolean))).sort(),
@@ -224,6 +318,7 @@ export default function AdmissionHome() {
       t('location', 'UPSS'),
       t('orderNumber', 'Número de orden'),
       t('communicationCondition', 'Condición comunicación'),
+      t('visitStatus', 'Estado de atención'),
     ];
     const rows = filteredAdmissions.map((admission, index) => [
       formatDateTime(admission.startDatetime),
@@ -242,6 +337,7 @@ export default function AdmissionHome() {
       admission.location,
       String(index + 1),
       admission.communicationCondition,
+      visitStatusLabels[admission.status] ?? admission.status,
     ]);
     const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(',')).join('\r\n');
     const blob = new Blob([`${EXCEL_CSV_PREAMBLE}${csv}`], { type: 'text/csv;charset=utf-8' });
@@ -278,7 +374,7 @@ export default function AdmissionHome() {
                   {t('reportedAdmissions', 'Atenciones registradas')}
                 </header>
                 <div className={styles.summaryTileDetails}>
-                  <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
+                  <div className={styles.summaryTileLabel}>{t('admissionCountUnit', 'Atenciones')}</div>
                   <div className={styles.summaryTileValue}>
                     {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.total}
                   </div>
@@ -287,7 +383,7 @@ export default function AdmissionHome() {
               <Tile className={styles.summaryTile}>
                 <header className={styles.summaryTileHeader}>{t('activeAdmissions', 'En curso')}</header>
                 <div className={styles.summaryTileDetails}>
-                  <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
+                  <div className={styles.summaryTileLabel}>{t('admissionCountUnit', 'Atenciones')}</div>
                   <div className={styles.summaryTileValue}>
                     {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.active}
                   </div>
@@ -296,7 +392,7 @@ export default function AdmissionHome() {
               <Tile className={styles.summaryTile}>
                 <header className={styles.summaryTileHeader}>{t('finishedAdmissions', 'Finalizadas')}</header>
                 <div className={styles.summaryTileDetails}>
-                  <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
+                  <div className={styles.summaryTileLabel}>{t('admissionCountUnit', 'Atenciones')}</div>
                   <div className={styles.summaryTileValue}>
                     {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.finished}
                   </div>
@@ -381,8 +477,21 @@ export default function AdmissionHome() {
                   <SelectItem key={location} value={location} text={location} />
                 ))}
               </Select>
+              <Select
+                id="admission-status-filter"
+                labelText={t('filterByStatus', 'Filtrar por estado')}
+                value={statusFilter}
+                disabled={isLoading || Boolean(error)}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
+                {availableStatuses.map((status) => (
+                  <SelectItem key={status} value={status} text={visitStatusLabels[status] ?? status} />
+                ))}
+              </Select>
               <TextInput
                 id="admission-report-search"
+                className={styles.searchControl}
                 labelText={t(
                   'searchAdmissions',
                   'Buscar por paciente, documento, HCE, código temporal, seguro, responsable, tipo de visita o UPSS',
@@ -395,26 +504,29 @@ export default function AdmissionHome() {
                 disabled={isLoading || Boolean(error)}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
-              <Select
-                id="admission-status-filter"
-                labelText={t('filterByStatus', 'Filtrar por estado')}
-                value={statusFilter}
-                disabled={isLoading || Boolean(error)}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              >
-                <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
-                {availableStatuses.map((status) => (
-                  <SelectItem key={status} value={status} text={status} />
-                ))}
-              </Select>
-              <Button
-                kind="primary"
-                renderIcon={Download}
-                onClick={exportFilteredAdmissions}
-                disabled={isLoading || Boolean(error) || filteredAdmissions.length === 0}
-              >
-                {t('exportCsv', 'Exportar CSV')}
-              </Button>
+              <div className={styles.reportActions}>
+                <Button
+                  kind="ghost"
+                  disabled={!hasActiveFilters}
+                  onClick={() => {
+                    setSearchTerm('');
+                    setServiceFilter('all');
+                    setLocationFilter('all');
+                    setStatusFilter('all');
+                    setPage(1);
+                  }}
+                >
+                  {t('clearFilters', 'Limpiar filtros')}
+                </Button>
+                <Button
+                  kind="primary"
+                  renderIcon={Download}
+                  onClick={exportFilteredAdmissions}
+                  disabled={isLoading || Boolean(error) || filteredAdmissions.length === 0}
+                >
+                  {t('exportCsv', 'Exportar CSV')}
+                </Button>
+              </div>
             </section>
 
             {error ? (
@@ -430,7 +542,7 @@ export default function AdmissionHome() {
                 <div className={styles.tableSkeleton}>
                   <DataTableSkeleton
                     aria-label={t('loadingAdmissions', 'Cargando atenciones')}
-                    columnCount={16}
+                    columnCount={7}
                     rowCount={5}
                     role="progressbar"
                     zebra
@@ -438,81 +550,52 @@ export default function AdmissionHome() {
                 </div>
               ) : (
                 <div className={styles.tableSurface}>
-                  <TableContainer className={styles.tableWrap}>
-                    <Table aria-label={t('reportedAdmissions', 'Atenciones registradas')} className={styles.table}>
+                  <TableContainer
+                    className={styles.tableWrap}
+                    description={t(
+                      'admissionDetailsHint',
+                      'Despliega una atención para ver documento, responsable y datos complementarios.',
+                    )}
+                  >
+                    <Table
+                      aria-label={t('reportedAdmissions', 'Atenciones registradas')}
+                      className={styles.table}
+                      useZebraStyles
+                    >
                       <colgroup>
+                        <col className={styles.expandColumn} />
                         <col className={styles.dateColumn} />
-                        <col className={styles.identifierColumn} />
-                        <col className={styles.documentTypeColumn} />
-                        <col className={styles.identifierColumn} />
-                        <col className={styles.statusColumn} />
-                        <col className={styles.responsibleColumn} />
-                        <col className={styles.shortColumn} />
-                        <col className={styles.shortColumn} />
                         <col className={styles.personColumn} />
-                        <col className={styles.addressColumn} />
-                        <col className={styles.ageColumn} />
-                        <col className={styles.sexColumn} />
-                        <col className={styles.serviceColumn} />
-                        <col className={styles.serviceColumn} />
-                        <col className={styles.orderColumn} />
-                        <col className={styles.communicationColumn} />
+                        <col />
+                        <col />
+                        <col className={styles.statusColumn} />
+                        <col className={styles.sisColumn} />
                       </colgroup>
                       <TableHead>
                         <TableRow>
+                          <TableExpandHeader id="admission-expand">
+                            <span className={styles.visuallyHidden}>
+                              {t('admissionDetails', 'Detalles de atención')}
+                            </span>
+                          </TableExpandHeader>
                           <TableHeader>{t('dateTime', 'Fecha y hora')}</TableHeader>
-                          <TableHeader>{t('medicalRecordNumber', 'HCE / código temporal')}</TableHeader>
-                          <TableHeader>{t('documentType', 'Tipo doc.')}</TableHeader>
-                          <TableHeader>{t('documentNumber', 'N° documento')}</TableHeader>
-                          <TableHeader>{t('identificationStatus', 'Estado identificación')}</TableHeader>
-                          <TableHeader>{t('responsiblePerson', 'Responsable')}</TableHeader>
-                          <TableHeader>{t('birthDateShort', 'F. Nac.')}</TableHeader>
-                          <TableHeader>{t('hasSis', 'Tiene SIS')}</TableHeader>
-                          <TableHeader>{t('fullName', 'Nombres y apellidos')}</TableHeader>
-                          <TableHeader>{t('address', 'Dirección')}</TableHeader>
-                          <TableHeader>{t('age', 'Edad')}</TableHeader>
-                          <TableHeader>{t('sex', 'Sexo')}</TableHeader>
+                          <TableHeader>{t('patient', 'Paciente')}</TableHeader>
                           <TableHeader>{t('visitType', 'Tipo de visita')}</TableHeader>
                           <TableHeader>{t('location', 'UPSS')}</TableHeader>
-                          <TableHeader>{t('orderNumber', 'Número de orden')}</TableHeader>
-                          <TableHeader>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
+                          <TableHeader>{t('visitStatus', 'Estado de atención')}</TableHeader>
+                          <TableHeader>{t('hasSis', 'Tiene SIS')}</TableHeader>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {visibleAdmissions.map((admission, index) => (
-                          <TableRow key={admission.uuid}>
-                            <TableCell>{formatDateTime(admission.startDatetime)}</TableCell>
-                            <TableCell>{admission.medicalRecordNumber}</TableCell>
-                            <TableCell>{admission.documentType || t('pending', 'Pendiente')}</TableCell>
-                            <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
-                            <TableCell>{admission.identificationStatus}</TableCell>
-                            <TableCell>
-                              {[admission.responsibleName, admission.responsibleRelationship]
-                                .filter(Boolean)
-                                .join(' - ')}
-                            </TableCell>
-                            <TableCell>{formatDate(admission.birthDate)}</TableCell>
-                            <TableCell>{admission.hasSis}</TableCell>
-                            <TableCell>
-                              {admission.patientUuid ? (
-                                <ConfigurableLink
-                                  to={`${spaBasePath}${careLogbookBasePath}/patient/${admission.patientUuid}`}
-                                  className={styles.patientLink}
-                                >
-                                  {admission.patientName}
-                                </ConfigurableLink>
-                              ) : (
-                                admission.patientName
-                              )}
-                            </TableCell>
-                            <TableCell>{admission.address}</TableCell>
-                            <TableCell>{formatAgeWithUnit(admission.birthDate, admission.startDatetime)}</TableCell>
-                            <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
-                            <TableCell>{admission.service}</TableCell>
-                            <TableCell>{admission.location}</TableCell>
-                            <TableCell>{(currentPage - 1) * pageSize + index + 1}</TableCell>
-                            <TableCell>{admission.communicationCondition}</TableCell>
-                          </TableRow>
+                          <AdmissionTableRow
+                            key={admission.uuid}
+                            admission={admission}
+                            rowNumber={(currentPage - 1) * pageSize + index + 1}
+                            statusLabel={visitStatusLabels[admission.status] ?? admission.status}
+                            sexLabels={sexLabels}
+                            spaBasePath={spaBasePath}
+                          />
                         ))}
                       </TableBody>
                     </Table>

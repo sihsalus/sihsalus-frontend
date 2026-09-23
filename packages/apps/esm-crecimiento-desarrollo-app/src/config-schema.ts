@@ -291,6 +291,11 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Concept UUIDs used by neonatal and well-child-care summary widgets.',
     _default: {
+      dischargeDateTimeUuid: 'e911fe60-6d45-40c7-8d65-1ab93b3c77f4',
+      birthPlaceUuid: 'b4c79dec-245b-4d9f-ae52-2db757c4561a',
+      deliveryRoomPlaceUuid: 'a60d6efa-8bb3-4a48-b027-745cd6d74c20',
+      emergencyRoomPlaceUuid: '625e9399-ce4a-40f0-b6c7-805b43cd2a8a',
+      homeBirthPlaceUuid: '7bc0bfa1-37fc-4ea2-acd1-a57fd19d8d43',
       skinColorUuid: 'c00971b1-029f-4160-9b68-55e101a512a8',
       fontanelleUuid: '52956c82-e8ad-4f85-8dd7-9b993f3d54df',
       suturesUuid: 'dde87a4f-cd8c-4fe7-b7ef-f0f43bb31637',

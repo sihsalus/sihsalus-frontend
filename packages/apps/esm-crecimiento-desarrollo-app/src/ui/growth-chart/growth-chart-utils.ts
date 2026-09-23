@@ -1,7 +1,9 @@
 import { CategoryCodes, type ChartData, DataSetLabels, MeasurementTypeCodesLabel, TimeUnitCodes } from './data-sets';
+import { calculateLMSZScore, type LMSReference } from './who-lms';
 
 export interface GrowthMeasurementEntry {
   eventDate: Date | string;
+  encounterReference?: string;
   dataValues: Record<string, string>;
 }
 
@@ -15,6 +17,8 @@ export interface GrowthChartPoint {
 
 export type GrowthChartInterpretationCode =
   | 'normal'
+  | 'thinness'
+  | 'severeThinness'
   | 'veryLowWeight'
   | 'lowWeight'
   | 'highWeight'
@@ -116,7 +120,22 @@ export function getMeasurementXValue(
     return Number(ageValues.weeks.toFixed(2));
   }
 
-  return Number(ageValues.months.toFixed(2));
+  return dataset === DataSetLabels.y_5_19 ? ageValues.whoMonths : Number(ageValues.months.toFixed(2));
+}
+
+export function getMeasurementValue(entry: GrowthMeasurementEntry, category: keyof typeof CategoryCodes) {
+  if (category === CategoryCodes.bfa_b || category === CategoryCodes.bfa_g) {
+    if (!entry.encounterReference) return null;
+    const weight = Number(entry.dataValues.weight);
+    const height = Number(entry.dataValues.height);
+    if (!Number.isFinite(weight) || !Number.isFinite(height) || weight <= 0 || height <= 0) return null;
+    return weight / (height / 100) ** 2;
+  }
+  if (category === CategoryCodes.hcfa_b || category === CategoryCodes.hcfa_g)
+    return toFiniteNumber(entry.dataValues.headCircumference);
+  if (category === CategoryCodes.lhfa_b || category === CategoryCodes.lhfa_g)
+    return toFiniteNumber(entry.dataValues.height);
+  return toFiniteNumber(entry.dataValues.weight);
 }
 
 export function isMeasurementUsableForDataset(
@@ -137,6 +156,8 @@ export function isMeasurementUsableForDataset(
   }
 
   switch (dataset) {
+    case DataSetLabels.y_5_19:
+      return ageValues.whoMonths >= 61 && ageValues.whoMonths <= 228;
     case DataSetLabels.w_0_13:
       return ageValues.weeks >= 0 && ageValues.weeks <= 13;
     case DataSetLabels.y_0_2:
@@ -169,19 +190,24 @@ export function getGrowthChartInterpretation({
   measurementValue,
   zScoreDatasetValues,
   startIndex,
+  lmsReferences,
 }: {
   category: keyof typeof CategoryCodes;
   xValue: number;
   measurementValue: number;
   zScoreDatasetValues: Array<Record<string, number>>;
   startIndex: number;
+  lmsReferences?: LMSReference[];
 }): GrowthChartInterpretation | null {
   const referenceRow = getInterpolatedZScoreReferenceRow(zScoreDatasetValues, xValue, startIndex);
   if (!referenceRow) {
     return null;
   }
 
-  const zScore = estimateZScore(measurementValue, referenceRow);
+  const isBmi = category === CategoryCodes.bfa_b || category === CategoryCodes.bfa_g;
+  const zScore = lmsReferences
+    ? calculateLMSZScore(lmsReferences, xValue, measurementValue, isBmi)
+    : estimateZScore(measurementValue, referenceRow);
   if (zScore === null) {
     return null;
   }
@@ -229,6 +255,7 @@ function getAgeValues(date: Date | string, dateOfBirth: Date) {
   return {
     weeks: days / 7,
     months: days / DAYS_PER_MONTH,
+    whoMonths: days / 30.4375,
   };
 }
 
@@ -323,6 +350,15 @@ function interpolateZScore(
 }
 
 function getInterpretationCode(category: keyof typeof CategoryCodes, zScore: number): GrowthChartInterpretationCode {
+  if (category === CategoryCodes.bfa_b || category === CategoryCodes.bfa_g) {
+    // Remove floating-point noise at exact LMS cutoffs, not clinical rounding.
+    zScore = Math.round(zScore * 1e10) / 1e10;
+    if (zScore < -3) return 'severeThinness';
+    if (zScore < -2) return 'thinness';
+    if (zScore > 2) return 'obesity';
+    if (zScore > 1) return 'overweight';
+    return 'normal';
+  }
   if (isWeightForLengthHeightCategory(category)) {
     if (zScore <= -3) return 'severeWasting';
     if (zScore < -2) return 'moderateWasting';
@@ -361,6 +397,7 @@ function getInterpretationSeverity(code: GrowthChartInterpretationCode): GrowthC
     case 'normal':
       return 'normal';
     case 'lowWeight':
+    case 'thinness':
     case 'highWeight':
     case 'moderateWasting':
     case 'overweight':

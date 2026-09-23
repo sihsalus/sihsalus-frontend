@@ -47,6 +47,11 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   };
 
   const rowConfig = [
+    {
+      id: 'newbornDischargeDate',
+      label: t('newbornDischargeDate', 'Fecha y hora de alta del recién nacido'),
+      dataKey: neonatalConcepts.dischargeDateTimeUuid,
+    },
     // Datos antropométricos al nacer
     {
       id: 'gestationalAge',

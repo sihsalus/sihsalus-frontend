@@ -21,7 +21,7 @@ export interface CREDScheduledControl extends CREDControlDefinition {
  * NTS 238-MINSA/DGIESP-2025: 27 controles CRED desde recién nacido
  * hasta 11 años, 11 meses y 29 días.
  *
- * Neonatal (3): 3-6d, 7-14d, 14-21d
+ * Neonatal (3): antes de 7d, 7-14d, 14-21d
  * 29 días-11 meses (7): 1m, 2m, 3m, 4m, 6m, 7m, 9m
  * 1 año (4): 12m, 15m, 18m, 21m
  * 2-4 años (6): 24m, 30m, 36m, 42m, 48m, 54m
@@ -31,18 +31,18 @@ const CRED_CONTROL_DEFINITIONS: CREDControlDefinition[] = [
   // Recién nacido (3 controles)
   {
     controlNumber: 1,
-    label: 'RN - 3 a 6 días',
-    targetAgeDays: 3,
+    label: 'RN - antes de 7 días',
+    targetAgeDays: 0,
     dueEndAgeDays: 6,
-    ageGroupLabel: 'RN - 3 a 6d',
+    ageGroupLabel: 'RN - antes de 7d',
     phase: 'neonatal',
   },
   {
     controlNumber: 2,
-    label: 'RN - 7 a 13 días',
+    label: 'RN - 7 a 14 días',
     targetAgeDays: 7,
-    dueEndAgeDays: 13,
-    ageGroupLabel: 'RN - 7 a 13d',
+    dueEndAgeDays: 14,
+    ageGroupLabel: 'RN - 7 a 14d',
     phase: 'neonatal',
   },
   {

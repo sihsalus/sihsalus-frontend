@@ -38,6 +38,7 @@ interface DatedEncounter {
 interface OpenmrsEncounterPage<T> {
   results?: Array<T>;
   totalCount?: number;
+  links?: Array<{ rel: string }>;
 }
 
 export interface ClinicalHistorySource {
@@ -99,42 +100,67 @@ export async function fetchClinicalHistorySource<T extends DatedEncounter>(
   signal?: AbortSignal,
 ): Promise<ClinicalHistorySourceResult<T>> {
   const encounters: Array<T> = [];
+  const seenUuids = new Set<string>();
   let receivedCount = 0;
+  let expectedTotalCount: number | undefined;
 
   for (let page = 0; page < CLINICAL_HISTORY_MAX_SOURCE_PAGES; page++) {
     const response = await openmrsFetch<OpenmrsEncounterPage<T>>(getPaginatedSourceUrl(source.url, receivedCount), {
       signal,
     });
     const results = response?.data?.results;
-    if (!Array.isArray(results)) throw new Error('invalid-clinical-history');
+    const links = response?.data?.links;
     if (
-      results.some(
-        (encounter) =>
-          !encounter ||
-          (source.expectedPatientUuid &&
-            (typeof encounter.patient === 'object' ? encounter.patient?.uuid : encounter.patient) !==
-              source.expectedPatientUuid) ||
-          (source.expectedEncounterTypeUuid &&
-            (typeof encounter.encounterType === 'object' ? encounter.encounterType?.uuid : encounter.encounterType) !==
-              source.expectedEncounterTypeUuid),
-      )
+      !Array.isArray(results) ||
+      (links != null && (!Array.isArray(links) || links.some((link) => !link || typeof link.rel !== 'string')))
     ) {
-      throw new Error('invalid-clinical-history-identity');
+      throw new Error('invalid-clinical-history');
+    }
+    const totalCount = response.data.totalCount;
+    // Null/absent totals remain unknown. Once supplied, a total must stay stable,
+    // even if a later page omits it; otherwise the crawl cannot prove completeness.
+    if (totalCount != null) {
+      if (!Number.isSafeInteger(totalCount) || totalCount < 0) throw new Error('invalid-clinical-history-total');
+      expectedTotalCount ??= totalCount;
+      if (expectedTotalCount !== totalCount) throw new Error('inconsistent-clinical-history-total');
+    }
+    for (const encounter of results) {
+      if (
+        !encounter ||
+        (source.expectedPatientUuid &&
+          (typeof encounter.patient === 'object' ? encounter.patient?.uuid : encounter.patient) !==
+            source.expectedPatientUuid) ||
+        (source.expectedEncounterTypeUuid &&
+          (typeof encounter.encounterType === 'object' ? encounter.encounterType?.uuid : encounter.encounterType) !==
+            source.expectedEncounterTypeUuid)
+      ) {
+        throw new Error('invalid-clinical-history-identity');
+      }
+      if (typeof encounter.uuid !== 'string' || !encounter.uuid.trim() || seenUuids.has(encounter.uuid)) {
+        throw new Error('inconsistent-clinical-history-page');
+      }
+      seenUuids.add(encounter.uuid);
     }
     receivedCount += results.length;
 
     encounters.push(...results.filter((encounter) => isRelevantToSource(encounter, source)));
 
-    // `Number(null)` and `Number('')` are 0, which would end the crawl on the
-    // first page; only a genuine number may be treated as the total.
-    const rawTotalCount = response?.data?.totalCount;
-    const hasTotalCount = typeof rawTotalCount === 'number' && Number.isFinite(rawTotalCount);
-    const reachedKnownTotal = hasTotalCount && receivedCount >= rawTotalCount;
-    const reachedLastUnknownPage = !hasTotalCount && results.length < CLINICAL_HISTORY_SOURCE_PAGE_SIZE;
-
-    if (!results.length || reachedKnownTotal || reachedLastUnknownPage) {
+    // Only use next as pagination metadata. Never follow its URI: each request
+    // retains this source's patient/type filters and advances by consumed rows.
+    const hasNext = links?.some((link) => link.rel === 'next') ?? false;
+    if (expectedTotalCount !== undefined) {
+      if (
+        receivedCount > expectedTotalCount ||
+        (receivedCount === expectedTotalCount && hasNext) ||
+        (receivedCount < expectedTotalCount && (!results.length || (links != null && !hasNext)))
+      ) {
+        throw new Error('inconsistent-clinical-history-page');
+      }
+      if (receivedCount === expectedTotalCount) return { encounters, truncated: false };
+    } else if (!hasNext && (links != null || results.length < CLINICAL_HISTORY_SOURCE_PAGE_SIZE)) {
       return { encounters, truncated: false };
     }
+    if (!results.length) throw new Error('inconsistent-clinical-history-page');
   }
 
   console.warn(
@@ -145,7 +171,7 @@ export async function fetchClinicalHistorySource<T extends DatedEncounter>(
 
 export interface ClinicalHistorySourcesResult<T> {
   encounters: Array<T>;
-  /** Reasons the sources that could not be read failed; empty when all succeeded. */
+  /** Reasons sources failed or hit the page cap; empty only when all were read completely. */
   sourceErrors: Array<Error>;
   truncated: boolean;
 }
@@ -165,6 +191,11 @@ export async function fetchClinicalHistorySources<T extends DatedEncounter>(
   const sourceErrors = results
     .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
     .map((result) => (result.reason instanceof Error ? result.reason : new Error(String(result.reason))));
+  // Existing history cards consume sourceErrors; do not silently drop the cap
+  // warning in consumers that do not separately expose `truncated`.
+  for (const result of fulfilled) {
+    if (result.value.truncated) sourceErrors.push(new Error('truncated-clinical-history'));
+  }
 
   if (sources.length > 0 && fulfilled.length === 0) {
     throw sourceErrors[0] ?? new Error('The clinical history could not be loaded.');
@@ -258,7 +289,7 @@ export function useMergedClinicalHistoryPagination<T extends DatedEncounter>(
     isLoading,
     isValidating,
     mutate,
-    /** Sources that failed while others succeeded — the history shown is partial. */
+    /** Sources that failed or hit the cap — the history shown is partial. */
     sourceErrors: data?.sourceErrors ?? [],
     truncated: data?.truncated ?? false,
     pagination: {

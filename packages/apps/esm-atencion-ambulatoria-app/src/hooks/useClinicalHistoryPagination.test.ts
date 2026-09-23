@@ -168,13 +168,18 @@ describe('useMergedClinicalHistoryPagination', () => {
     ).rejects.toThrow('HTTP 500');
   });
 
-  it('stops at the page cap instead of looping when the server ignores startIndex', async () => {
-    // A server or proxy that drops startIndex returns a full page forever.
-    mockOpenmrsFetch.mockResolvedValue({ data: { results: datedEntries('looping', 100) } } as never);
+  it('stops at the page cap while retaining an explicit partial-history warning', async () => {
+    mockOpenmrsFetch.mockImplementation((url) =>
+      Promise.resolve({ data: { results: datedEntries(String(url), 100) } } as never),
+    );
 
-    const { truncated } = await fetchClinicalHistorySource<DatedTestEntry>({ url: '/encounter?patient=patient-a' });
+    const { encounters, truncated, sourceErrors } = await fetchClinicalHistorySources<DatedTestEntry>([
+      { url: '/encounter?patient=patient-a' },
+    ]);
 
+    expect(encounters).toHaveLength(2000);
     expect(truncated).toBe(true);
+    expect(sourceErrors).toHaveLength(1);
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(20);
   });
 
@@ -186,6 +191,133 @@ describe('useMergedClinicalHistoryPagination', () => {
     const { encounters } = await fetchClinicalHistorySource<DatedTestEntry>({ url: '/encounter?patient=patient-a' });
 
     expect(encounters).toHaveLength(103);
+  });
+});
+
+describe('clinical history pagination integrity', () => {
+  const source = { url: '/encounter?patient=synthetic-patient&encounterType=social-type' };
+
+  beforeEach(() => {
+    mockOpenmrsFetch.mockReset();
+  });
+
+  it.each([
+    ['empty page with existing records', [{ results: [], totalCount: 2 }]],
+    [
+      'duplicate UUIDs in one page',
+      [{ results: [...datedEntries('same', 1), ...datedEntries('same', 1)], totalCount: 2 }],
+    ],
+    [
+      'repeated page',
+      [
+        { results: datedEntries('same', 100), totalCount: 200 },
+        { results: datedEntries('same', 100), totalCount: 200 },
+      ],
+    ],
+    [
+      'shrinking total',
+      [
+        { results: datedEntries('first', 100), totalCount: 200 },
+        { results: datedEntries('last', 5), totalCount: 105 },
+      ],
+    ],
+    [
+      'growing total',
+      [
+        { results: datedEntries('first', 100), totalCount: 105 },
+        { results: datedEntries('last', 6), totalCount: 106 },
+      ],
+    ],
+    ['more records than total', [{ results: datedEntries('first', 2), totalCount: 1 }]],
+    ['next link after total', [{ results: datedEntries('first', 1), totalCount: 1, links: [{ rel: 'next' }] }]],
+    ['empty page promising a next page', [{ results: [], links: [{ rel: 'next' }] }]],
+    ['explicit end before total', [{ results: datedEntries('first', 1), totalCount: 2, links: [] }]],
+    [
+      'missing total on an incomplete final page',
+      [
+        { results: datedEntries('first', 100), totalCount: 105 },
+        { results: [], totalCount: null },
+      ],
+    ],
+    ['missing UUID', [{ results: [{ encounterDatetime: '2026-09-23T10:00:00Z' }] }]],
+    ['invalid links', [{ results: [], links: {} }]],
+  ])('rejects %s instead of publishing a complete history', async (_name, pages) => {
+    for (const data of pages) mockOpenmrsFetch.mockResolvedValueOnce({ data } as never);
+
+    await expect(fetchClinicalHistorySources([source])).rejects.toThrow();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(pages.length);
+  });
+
+  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '2'])('rejects invalid totalCount %s', async (totalCount) => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: datedEntries('first', 1), totalCount } } as never);
+
+    await expect(fetchClinicalHistorySource(source)).rejects.toThrow();
+  });
+
+  it('continues a short page with next while preserving the original patient and type filters', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: {
+          results: datedEntries('first', 2),
+          links: [{ rel: 'next', uri: 'https://untrusted.invalid/encounter?patient=other' }],
+        },
+      } as never)
+      .mockResolvedValueOnce({ data: { results: datedEntries('last', 1), links: [] } } as never);
+    const signal = new AbortController().signal;
+
+    const result = await fetchClinicalHistorySources([source], signal);
+
+    expect(result.encounters).toHaveLength(3);
+    expect(result).toMatchObject({ truncated: false, sourceErrors: [] });
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, `${source.url}&limit=100&startIndex=2&totalCount=true`, {
+      signal,
+    });
+  });
+
+  it('remembers a known total when a later page omits it', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: datedEntries('first', 100), totalCount: 103 } } as never)
+      .mockResolvedValueOnce({ data: { results: datedEntries('last', 3) } } as never);
+
+    expect(await fetchClinicalHistorySources([source])).toMatchObject({
+      encounters: expect.any(Array),
+      sourceErrors: [],
+      truncated: false,
+    });
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('accepts a genuinely empty history', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [], totalCount: 0, links: [] } } as never);
+
+    expect(await fetchClinicalHistorySources([source])).toEqual({ encounters: [], sourceErrors: [], truncated: false });
+  });
+
+  it('reports an inconsistent source while preserving independently verified history', async () => {
+    mockOpenmrsFetch.mockImplementation((url) =>
+      Promise.resolve({
+        data: String(url).includes('broken')
+          ? { results: [], totalCount: 2 }
+          : { results: datedEntries('valid', 2), totalCount: 2 },
+      } as never),
+    );
+
+    const result = await fetchClinicalHistorySources([
+      { url: '/encounter?source=broken' },
+      { url: '/encounter?source=valid' },
+    ]);
+
+    expect(result.encounters.map((entry) => entry.uuid)).toEqual(['valid-0', 'valid-1']);
+    expect(result.sourceErrors).toHaveLength(1);
+  });
+
+  it('allows the same verified encounter in distinct sources and deduplicates it', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: datedEntries('shared', 1), totalCount: 1 } } as never);
+
+    const result = await fetchClinicalHistorySources([{ url: '/encounter?source=a' }, { url: '/encounter?source=b' }]);
+
+    expect(result.encounters).toHaveLength(1);
+    expect(result.sourceErrors).toEqual([]);
   });
 });
 

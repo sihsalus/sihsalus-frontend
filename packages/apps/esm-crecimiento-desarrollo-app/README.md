@@ -116,6 +116,27 @@ del frontend. El alcance pendiente y la aceptación del módulo se siguen en el
 - Selector CRED: `useCREDFormsForAgeGroup` ya convierte keys de `formsList` en objetos `Form` válidos para el selector.
 - Traducciones base de dashboards: `dashboard-translations.test.ts` cubre keys principales como `neonatalCare`, `newbornVitals`, `wellChildCare` y `childNutrition`.
 
+## Estado de la iteración clínica — 23/09/2026
+
+[Frontend #1093](https://github.com/sihsalus/sihsalus-frontend/pull/1093) está integrado
+en `main` desde `84f371aec`. El alta neonatal de
+[content #241](https://github.com/sihsalus/sihsalus-content/pull/241) también está
+integrada; corresponde al paquete 1.25.26. La corrección de límites de altitud de
+CRED-001 1.2.1 proviene de
+[content #240](https://github.com/sihsalus/sihsalus-content/pull/240).
+
+La [documentación conjunta de CRED](https://github.com/sihsalus/sihsalus-content/blob/main/docs/contracts/cred-clinical-completion.md)
+centraliza el estado de los seis issues, los SHA probados y los requisitos para
+QLTY. En `0ce17cb9b` pasaron 290 pruebas CRED y 12 casos visuales locales; el CI del
+PR pasó sus controles técnicos, con E2E omitido. Es evidencia de esa revisión,
+no de persistencia, permisos operativos o despliegue del frontend integrado.
+
+Siguen pendientes la persistencia de z/clasificación por indicador, el cálculo y
+guardado de Hb ajustada y la captura íntegra de EDI (`CRED-009`), Huanca (`CRED-026`)
+y M-CHAT-R/F (`CRED-010`). Se requieren conceptos OCL canónicos, versiones clínicas
+aprobadas y documentación del permiso M-CHAT. Los casos de aceptación y la
+coordinación de content antes del frontend están en el contrato conjunto.
+
 ## Curvas escolares y primer control neonatal
 
 Las curvas escolares reutilizan el componente Carbon de crecimiento para IMC/edad y
@@ -124,7 +145,8 @@ parámetros LMS, procedencia y límites están en
 [src/ui/growth-chart/data-sets/WhoReference2007/README.md](src/ui/growth-chart/data-sets/WhoReference2007/README.md).
 El IMC exige peso y talla de la misma atención. La interpretación del gráfico es
 referencial: no persiste nuevas observaciones ni sustituye una clasificación clínica.
-Los conceptos y la persistencia estructurada del issue #58 siguen pendientes.
+Los conceptos y la persistencia estructurada del
+[issue #58](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/58) siguen pendientes.
 
 Para el primer control de un recién nacido, la lectura paginada de antecedentes
 perinatales obtiene el lugar del parto de Embarazo y Parto y el alta del niño de
@@ -142,4 +164,4 @@ paciente está en período neonatal. La reanudación de controles conserva su n�
 y no aplica otra espera desde el alta. Partos domiciliarios documentados pueden
 atenderse al conocerse el nacimiento; falta persistir esa notificación y validar los
 registros retrospectivos y la captación tardía en QLTY. Estos límites mantienen
-abierto el issue #98.
+abierto el [issue #98](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/98).

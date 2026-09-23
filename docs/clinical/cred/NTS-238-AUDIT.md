@@ -1,6 +1,16 @@
 # Auditoria CRED frente a NTS 238
 
-Fecha de revision: 2026-07-14
+Fecha de revision original: 2026-07-14
+
+Actualización de referencias: 2026-09-23. Las tablas siguientes conservan el estado
+histórico de julio. Para el estado actual, consultar el
+[contrato CRED y su evidencia](https://github.com/sihsalus/sihsalus-content/blob/main/docs/contracts/cred-clinical-completion.md).
+Las curvas escolares y el contexto de alta neonatal ya se integraron en
+[frontend #1093](https://github.com/sihsalus/sihsalus-frontend/pull/1093) y
+[content #241](https://github.com/sihsalus/sihsalus-content/pull/241).
+La advertencia de Hb incluye 500 m desde CRED-001 1.2.1; no calcula Hb ajustada.
+La persistencia DEV descrita abajo pertenece a la revisión original y no acredita
+QLTY para estos cambios.
 
 ## Fuentes normativas
 
@@ -39,7 +49,7 @@ Enlaces oficiales:
    El tamizaje del nino corresponde anualmente de 3 a 11 anos.
 9. Descarte de parasitosis corresponde anualmente desde el ano de edad.
 10. Vitamina A solo corresponde en zonas de riesgo: 100 000 UI a los 6 meses y 200 000 UI
-   a 12, 18, 24, 30, 36, 42, 48 y 54 meses.
+    a 12, 18, 24, 30, 36, 42, 48 y 54 meses.
 11. El examen fisico integral y las evaluaciones oral, visual, auditiva, neurologica,
     de cadera, cancer, metales y violencia forman parte de la evaluacion segun edad/riesgo.
 12. La hemoglobina debe interpretarse con corte por edad y correccion por altitud cuando
@@ -49,20 +59,20 @@ Enlaces oficiales:
 
 ## Estado del frontend
 
-| Area | Estado | Evidencia o limite |
-| --- | --- | --- |
-| Seleccion por edad | Implementado | La fecha real de atencion alimenta `useCREDFormsForAgeGroup`; ya no se usa la fecha ideal atrasada. |
-| Numero real de control | Implementado | Se calcula con controles registrados + 1, se persiste en cada encuentro con `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`) y no permite crear un control 28. Reabrir el mismo control conserva su numero. |
-| Encuentro nuevo / edicion | Implementado | Un control nuevo usa `encounterUuid` vacio. Al reabrir un formulario, solo se edita el encounter que coincide con el mismo formulario y `Número de control CRED`; un encounter historico de otro control nunca se reutiliza. |
-| Matriz Anexo 18 | Implementado en frontend | Matriz central `cred-nts238-form-groups.ts`, con cortes de 42 y 54 meses e instrumentos vigentes. |
-| Calendario | Implementado en frontend | Conserva como referencia las 27 edades ideales y calcula por separado el siguiente control real desde la ultima atencion, aplicando los intervalos de los numerales 6.3 y 6.4, la siguiente banda etaria y el limite anterior al cumpleanos 12. El registro rechaza fechas anteriores a ese minimo. |
-| Citas | Implementado en frontend | Programa solo la siguiente recomendacion real cuando su fecha es futura; no crea cadenas especulativas ni citas historicas. Reconoce la primera cita CRED activa posterior al minimo y descarta citas desde el cumpleanos 12. Un control vencido se registra primero y luego se recalcula la siguiente cita. |
-| Desarrollo vigente | Implementado con limites de contenido | Huanca, EDI, M-CHAT y habilidades sustituyen el acceso TEPSI como evaluaciones vigentes. |
-| Codigo TEPSI simulado | Retirado | Se elimino el workspace sin persistencia; los identificadores legados quedan solo para lectura historica. |
-| Anemia | Parcial seguro | El formulario 1.16.3 exige edad, altitud y clasificacion ajustada; el widget muestra Hb sin inventar diagnostico. Falta calcular Hb ajustada con conceptos especificos. |
-| Crecimiento escolar | Bloqueado de forma segura | No se reutilizan curvas OMS 0-5 en escolares; faltan IMC/edad y talla/edad 5-19. |
-| Tamizajes | Parcial seguro | El widget se presenta como historial, no como cumplimiento obligatorio por haber ocurrido alguna vez. |
-| Persistencia DEV | Verificada | Se guardaron y editaron formularios CRED en un paciente sintetico; se conservaron fecha, visita, formulario y observaciones sin duplicar el encuentro editado. El concepto numerico de control y su lectura por encounter tambien se validaron. |
+| Area                      | Estado                                | Evidencia o limite                                                                                                                                                                                                                                                                                           |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Seleccion por edad        | Implementado                          | La fecha real de atencion alimenta `useCREDFormsForAgeGroup`; ya no se usa la fecha ideal atrasada.                                                                                                                                                                                                          |
+| Numero real de control    | Implementado                          | Se calcula con controles registrados + 1, se persiste en cada encuentro con `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`) y no permite crear un control 28. Reabrir el mismo control conserva su numero.                                                                                 |
+| Encuentro nuevo / edicion | Implementado                          | Un control nuevo usa `encounterUuid` vacio. Al reabrir un formulario, solo se edita el encounter que coincide con el mismo formulario y `Número de control CRED`; un encounter historico de otro control nunca se reutiliza.                                                                                 |
+| Matriz Anexo 18           | Implementado en frontend              | Matriz central `cred-nts238-form-groups.ts`, con cortes de 42 y 54 meses e instrumentos vigentes.                                                                                                                                                                                                            |
+| Calendario                | Implementado en frontend              | Conserva como referencia las 27 edades ideales y calcula por separado el siguiente control real desde la ultima atencion, aplicando los intervalos de los numerales 6.3 y 6.4, la siguiente banda etaria y el limite anterior al cumpleanos 12. El registro rechaza fechas anteriores a ese minimo.          |
+| Citas                     | Implementado en frontend              | Programa solo la siguiente recomendacion real cuando su fecha es futura; no crea cadenas especulativas ni citas historicas. Reconoce la primera cita CRED activa posterior al minimo y descarta citas desde el cumpleanos 12. Un control vencido se registra primero y luego se recalcula la siguiente cita. |
+| Desarrollo vigente        | Implementado con limites de contenido | Huanca, EDI, M-CHAT y habilidades sustituyen el acceso TEPSI como evaluaciones vigentes.                                                                                                                                                                                                                     |
+| Codigo TEPSI simulado     | Retirado                              | Se elimino el workspace sin persistencia; los identificadores legados quedan solo para lectura historica.                                                                                                                                                                                                    |
+| Anemia                    | Parcial seguro                        | El formulario 1.16.3 exige edad, altitud y clasificacion ajustada; el widget muestra Hb sin inventar diagnostico. Falta calcular Hb ajustada con conceptos especificos.                                                                                                                                      |
+| Crecimiento escolar       | Bloqueado de forma segura             | No se reutilizan curvas OMS 0-5 en escolares; faltan IMC/edad y talla/edad 5-19.                                                                                                                                                                                                                             |
+| Tamizajes                 | Parcial seguro                        | El widget se presenta como historial, no como cumplimiento obligatorio por haber ocurrido alguna vez.                                                                                                                                                                                                        |
+| Persistencia DEV          | Verificada                            | Se guardaron y editaron formularios CRED en un paciente sintetico; se conservaron fecha, visita, formulario y observaciones sin duplicar el encuentro editado. El concepto numerico de control y su lectura por encounter tambien se validaron.                                                              |
 
 ## Auditoria de contenido y conceptos
 
@@ -73,16 +83,16 @@ a conformidad clinica ni prueba su instalacion en DEV.
 
 Estado luego de 1.16.3 y brechas que aun requieren terminologia o digitalizacion completa:
 
-| Formulario | Brecha |
-| --- | --- |
-| CRED-001 anemia | Ya exige edad y altitud, cita NTS 213/RM 429 y elimina cortes fijos. Falta calcular y guardar factor de correccion y Hb ajustada. |
-| CRED-003 y CRED-005 | Mantienen referencias textuales a NTS 137. |
-| CRED-009 EDI | Exige edad y resumen auditable de los cinco ejes; no contiene cada item del instrumento oficial. |
-| CRED-010 M-CHAT | Exige edad, puntaje y numeros de respuestas de riesgo; no contiene las 20 preguntas ni el seguimiento R/F. |
+| Formulario            | Brecha                                                                                                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CRED-001 anemia       | Ya exige edad y altitud, cita NTS 213/RM 429 y elimina cortes fijos. Falta calcular y guardar factor de correccion y Hb ajustada.                                          |
+| CRED-003 y CRED-005   | Mantienen referencias textuales a NTS 137.                                                                                                                                 |
+| CRED-009 EDI          | Exige edad y resumen auditable de los cinco ejes; no contiene cada item del instrumento oficial.                                                                           |
+| CRED-010 M-CHAT       | Exige edad, puntaje y numeros de respuestas de riesgo; no contiene las 20 preguntas ni el seguimiento R/F.                                                                 |
 | CRED-011 salud mental | Identifica instrumento principal, puntaje, resultado, instrumentos adicionales y violencia; faltan grupos repetibles e items especificos de PHQ-9, AUDIT-C, PPSC y PSC-17. |
-| CRED-015 crecimiento | Retira clasificaciones genericas ambiguas, calcula IMC y registra perimetro abdominal desde los 5 anos; faltan z-score y clasificaciones estructuradas por indicador. |
-| CRED-026 Huanca | Exige las cinco areas y detalle de cada hito no logrado, pero no registra cada hito normativo. |
-| CRED-027 habilidades | Exige edad, ausencias por area y factor de riesgo para decidir EDI/referencia, pero no registra cada habilidad de la lista por edad. |
+| CRED-015 crecimiento  | Retira clasificaciones genericas ambiguas, calcula IMC y registra perimetro abdominal desde los 5 anos; faltan z-score y clasificaciones estructuradas por indicador.      |
+| CRED-026 Huanca       | Exige las cinco areas y detalle de cada hito no logrado, pero no registra cada hito normativo.                                                                             |
+| CRED-027 habilidades  | Exige edad, ausencias por area y factor de riesgo para decidir EDI/referencia, pero no registra cada habilidad de la lista por edad.                                       |
 
 Auditoria relacionada:
 https://github.com/sihsalus/sihsalus-content/blob/1fe481da65b66e821f5064eed97a4339e8657fd4/docs/audits/2026-07-10-cred-nts238-forms.md

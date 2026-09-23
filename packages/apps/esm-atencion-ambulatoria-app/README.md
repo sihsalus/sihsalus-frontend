@@ -50,6 +50,17 @@ Las entradas de Historia Social usan `socialHistory.formUuid` y `socialHistory.e
 
 La tabla de antecedentes médicos conserva el resto del historial cuando un diagnóstico antiguo no trae su representación codificada: muestra `--` en esa celda en lugar de bloquear la pantalla. No infiere un diagnóstico ni modifica el registro histórico.
 
+El lector compartido de Historia Social, anamnesis, examen físico, diagnósticos,
+tratamiento y referencias verifica UUID únicos por fuente, un total estable y
+la coherencia entre el fin de las páginas y ese total. Un enlace `next` exige
+continuar, también en páginas cortas; se conservan los filtros originales y no
+se sigue la dirección recibida. Las fuentes inconsistentes fallan sin publicar
+un historial aparentemente completo. Otras fuentes válidas permanecen visibles
+con advertencia; si no aportan registros, se muestra error en lugar de afirmar
+que no hay antecedentes. El límite de 20 páginas también informa lectura parcial.
+Se conserva la política offline existente del historial; estas comprobaciones
+no garantizan una instantánea transaccional frente a cambios concurrentes.
+
 Fuera del registro canónico de Consulta Externa, los formularios históricos de antecedentes médicos y sociales reciben una función que actualiza la consulta del historial al completar el cierre desde el formulario. Abrir el formulario no dispara esa actualización. La X del workspace mantiene su contrato de cierre y no ejecuta ese callback.
 
 Los antecedentes personales comparten con Conditions, CRED y Salud Materna el lector y los payloads de `esm-patient-common-lib`: cargan todas las páginas REST, incluyendo los estados inactivos, antes de publicar el historial. Para crear o editar exigen que la sesión tenga un proveedor clínico; el backend deriva el autor desde la sesión autenticada. Las correcciones conservan la versión anterior con su autor y fecha, y generan una nueva versión atribuida al editor; sólo se envían los campos clínicos modificados. El uso de REST evita la pérdida de estados del traductor FHIR2 y su consulta privilegiada del registrador. Un fallo de recarga posterior no se trata como un fallo de escritura ni permite repetirla. En Historia Social, `encounterUuid` solo identifica un encuentro verificado; nunca se usa el UUID del tipo como UUID del registro.

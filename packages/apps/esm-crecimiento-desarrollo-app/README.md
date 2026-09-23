@@ -23,6 +23,13 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Vistas de grupo clínico, cuidado del niño sano y plan de inmunización.
 - Configuración y tipos compartidos del frontend.
 
+Servicios adicionales de Cuidado del niño sano incluye el odontograma completo
+mediante una extensión del módulo odontológico. Reutiliza su pantalla, historial,
+permisos y guardado para el paciente actual; complementa el formulario CRED-016.
+Requiere conexión y los privilegios odontológicos correspondientes. La integración
+y su aceptación en QLTY se siguen en
+[el issue #120](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/120).
+
 El historial de condiciones comparte lectura, creación, corrección y anulación REST, con paginación completa y estados clínicos precisos. Crear o editar una condición exige un proveedor clínico asociado a la sesión. La creación deriva el registrador de la sesión autenticada; la corrección parcial usa REST y conserva la versión original mediante el versionado de core. Cada versión tiene su autor y fecha de registro; la fecha clínica no cambia si no se edita. El UUID del proveedor no identifica al usuario registrador. Este contrato se ha revisado contra core 2.8.9 y REST 3.5.0; la validación con el backend instalado sigue pendiente. Los límites de persistencia, contenido y auditoría se documentan en el [contrato de antecedentes](../../../docs/clinical/antecedents-data-contract.md).
 
 Las dos entradas de antecedentes patológicos del menor muestran los registros patológicos, los diagnósticos previos del propio paciente y los históricos sin tipo. Excluyen clasificaciones explícitas familiares, sociales, quirúrgicas, hospitalizaciones previas y otros antecedentes, incluso cuando comparten un concepto del conjunto pediátrico. Las tablas genéricas conservan su selección por conjunto salvo que su consumidor solicite ese filtro clínico.

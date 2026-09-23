@@ -34,6 +34,14 @@
       "order": 0,
       "online": true,
       "offline": false
+    },
+    {
+      "name": "cred-odontogram-dashboard",
+      "component": "odontologiaDashboard",
+      "privileges": "app:hoja.clinica.odontologia",
+      "slot": "additional-health-services-slot",
+      "online": true,
+      "offline": false
     }
   ],
   "workspaces": [

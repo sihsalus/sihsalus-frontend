@@ -51,6 +51,14 @@ Vacíos conocidos:
 - Conectar los componentes placeholder de prevención de cáncer y planificación familiar a hooks SWR reales cuando estén definidos los conceptos clínicos.
 - Probar formularios de salud materna contra backend actualizado: prenatal, postnatal, partograma, planificación familiar y prevención de cáncer.
 
+## Validación local
+
+`yarn workspace @sihsalus/esm-salud-materna-app typescript` comprueba tanto el
+código del módulo como sus tests `.test.ts` y `.test.tsx`. Los mocks deben respetar
+los contratos de los hooks y componentes; no se excluyen del compilador.
+Ejecutar también `yarn workspace @sihsalus/esm-salud-materna-app test`
+para validar las aserciones de comportamiento.
+
 ## TODO QA/QLTY
 
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.

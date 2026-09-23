@@ -45,6 +45,7 @@ describe('ReferenciaContraReferencia', () => {
       },
     });
     mockUseAmbulatoryVisitGuard.mockReturnValue({
+      verifiedAmbulatoryVisitUuid: 'visit-uuid',
       requireAmbulatoryVisit: () =>
         ({
           uuid: 'visit-uuid',
@@ -60,6 +61,8 @@ describe('ReferenciaContraReferencia', () => {
           visitUuid: 'visit-uuid',
           encounterDatetime: '2026-08-25T10:00:00.000Z',
           provider: 'Dra. Perez',
+          originService: null,
+          destinationService: null,
           referralType: 'Urgencia',
           referralReason: 'Evaluación especializada',
           referralDestination: 'Hospital Regional de Loreto',

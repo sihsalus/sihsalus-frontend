@@ -63,7 +63,7 @@ describe('Consulta Externa integration with Antecedents', () => {
       }: PropsWithChildren<{
         privilege: string | string[];
         fallback?: ReactNode;
-      }>) => (userHasAccess(privilege) ? children : fallback),
+      }>) => (userHasAccess(privilege, { privileges: [], roles: [] }) ? children : fallback),
     );
     vi.mocked(useConfig).mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     vi.mocked(useLayoutType).mockReturnValue('small-desktop');
@@ -95,6 +95,13 @@ describe('Consulta Externa integration with Antecedents', () => {
       conditions: [
         {
           id: 'synthetic-active-problem',
+          source: {
+            uuid: 'synthetic-active-problem',
+            patient: { uuid: syntheticPatient.id },
+            condition: { coded: { uuid: 'synthetic-active-concept', display: 'Synthetic active problem' } },
+            clinicalStatus: 'ACTIVE',
+            voided: false,
+          },
           conceptId: 'synthetic-active-concept',
           display: 'Synthetic active problem',
           clinicalStatus: 'Active',
@@ -103,6 +110,13 @@ describe('Consulta Externa integration with Antecedents', () => {
         },
         {
           id: 'synthetic-past-diagnosis',
+          source: {
+            uuid: 'synthetic-past-diagnosis',
+            patient: { uuid: syntheticPatient.id },
+            condition: { coded: { uuid: 'synthetic-past-concept', display: 'Synthetic past diagnosis' } },
+            clinicalStatus: 'INACTIVE',
+            voided: false,
+          },
           conceptId: 'synthetic-past-concept',
           display: 'Synthetic past diagnosis',
           clinicalStatus: 'Inactive',
@@ -111,6 +125,13 @@ describe('Consulta Externa integration with Antecedents', () => {
         },
         {
           id: 'synthetic-antecedent',
+          source: {
+            uuid: 'synthetic-antecedent',
+            patient: { uuid: syntheticPatient.id },
+            condition: { coded: { uuid: 'synthetic-antecedent-concept', display: 'Synthetic family antecedent' } },
+            clinicalStatus: 'INACTIVE',
+            voided: false,
+          },
           conceptId: 'synthetic-antecedent-concept',
           display: 'Synthetic family antecedent',
           clinicalStatus: 'Inactive',
@@ -163,7 +184,6 @@ describe('Consulta Externa integration with Antecedents', () => {
 
     const antecedentsHeader = screen.getByRole('heading', {
       name: 'Antecedents',
-      exact: true,
     }).parentElement;
     await user.click(within(antecedentsHeader).getByRole('button', { name: /^Add\b/ }));
 

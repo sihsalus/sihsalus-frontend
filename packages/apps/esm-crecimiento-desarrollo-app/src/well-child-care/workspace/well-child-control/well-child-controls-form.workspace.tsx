@@ -10,6 +10,7 @@ import {
   usePatient,
   useVisit,
 } from '@openmrs/esm-framework';
+import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -254,10 +255,17 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
-  const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
+  const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { activeVisit, currentVisit } = useVisit(patientUuid);
   const visit = currentVisit ?? activeVisit;
-  const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
+  const {
+    encounters: rawEncounters,
+    isLoading: isEncountersLoading,
+    error: encountersError,
+    controlNumberError,
+    mutate: refreshHistory,
+  } = useCREDEncounters(patientUuid);
+  const loadingError = patientError ?? encountersError ?? controlNumberError;
   const encounters = useMemo(() => groupCREDControlEncounters(rawEncounters ?? []), [rawEncounters]);
   const nextControlMinimumDate = useMemo(
     () => (patient?.birthDate ? getNextCREDMinimumDate(patient.birthDate, encounters) : null),
@@ -336,6 +344,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const handleStartControl = useCallback(
     (consultationData: CREDControlsFormType) => {
+      if (isPatientLoading || isEncountersLoading || loadingError) return;
       if (
         !consultationData.visitStartDate ||
         !consultationData.visitStartTime ||
@@ -363,7 +372,18 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         backWorkspace: 'wellchild-control-form',
       });
     },
-    [patientUuid, visit, allAvailableForms, formattedAge, patient?.birthDate, credControlNumber, t],
+    [
+      patientUuid,
+      visit,
+      allAvailableForms,
+      formattedAge,
+      patient?.birthDate,
+      credControlNumber,
+      t,
+      isPatientLoading,
+      isEncountersLoading,
+      loadingError,
+    ],
   );
 
   useEffect(() => {
@@ -385,6 +405,24 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   useEffect(() => {
     setValue('controlNumber', credControlNumber?.toString() ?? '');
   }, [setValue, credControlNumber]);
+
+  if (loadingError) {
+    return (
+      <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
+        <ResponsiveWrapper>
+          <ErrorState
+            error={loadingError}
+            headerTitle={t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo')}
+          />
+          {!patientError && (
+            <Button kind="tertiary" onClick={() => void refreshHistory()}>
+              {t('retry', 'Reintentar')}
+            </Button>
+          )}
+        </ResponsiveWrapper>
+      </RequirePrivilege>
+    );
+  }
 
   if (isPatientLoading || isEncountersLoading) {
     return (

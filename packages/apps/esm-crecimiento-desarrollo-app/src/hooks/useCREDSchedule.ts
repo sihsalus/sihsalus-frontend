@@ -162,18 +162,21 @@ export function matchAppointmentsToControls(
 
 export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
-  const { encounters, isLoading: isEncountersLoading, error: encountersError } = useEncountersCRED(patientUuid);
+  const {
+    encounters,
+    isLoading: isEncountersLoading,
+    error: encountersError,
+    controlNumberError,
+  } = useEncountersCRED(patientUuid);
   const { appointments, isLoading: isAppointmentsLoading, error: appointmentsError } = useAppointmentsCRED(patientUuid);
 
-  // Only block on patient loading; encounters/appointments errors are non-fatal
-  // (the schedule can render from birthDate alone)
-  const isLoading =
-    isPatientLoading || (isEncountersLoading && !encounters) || (isAppointmentsLoading && !appointments);
-  const error = (patientError ?? encountersError ?? appointmentsError ?? null) as Error | null;
+  const error = (patientError ?? encountersError ?? controlNumberError ?? appointmentsError ?? null) as Error | null;
+  // Partial history must not determine completed controls or the next control number.
+  const isLoading = !error && (isPatientLoading || isEncountersLoading || isAppointmentsLoading);
   const realControls = useMemo(() => groupCREDControlEncounters(encounters ?? []), [encounters]);
 
   const controls = useMemo<CREDControlWithStatus[]>(() => {
-    if (!patient?.birthDate) return [];
+    if (!patient?.birthDate || isLoading || error) return [];
 
     const schedule = generateCREDSchedule(patient.birthDate);
     const today = dayjs();
@@ -222,10 +225,10 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
         appointmentDate: appointment?.date,
       };
     });
-  }, [patient?.birthDate, realControls, appointments]);
+  }, [patient?.birthDate, realControls, appointments, isLoading, error]);
 
   const nextDueControl = useMemo(() => {
-    if (!patient?.birthDate) return null;
+    if (!patient?.birthDate || isLoading || error) return null;
 
     const recommendation = getNextCREDControlRecommendation(
       patient.birthDate,
@@ -261,7 +264,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
       appointmentUuid: recommendation.appointmentUuid,
       appointmentDate: recommendation.appointmentDate,
     };
-  }, [appointments, patient?.birthDate, realControls]);
+  }, [appointments, patient?.birthDate, realControls, isLoading, error]);
 
   const overdueControls = useMemo(() => controls.filter((control) => control.status === 'overdue'), [controls]);
 

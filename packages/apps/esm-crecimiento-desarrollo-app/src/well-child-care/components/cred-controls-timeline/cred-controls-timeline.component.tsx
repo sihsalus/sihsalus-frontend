@@ -1,6 +1,6 @@
-import { ClickableTile, Tile } from '@carbon/react';
+import { ClickableTile, InlineLoading, Tile } from '@carbon/react';
 import { useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +23,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
-  const { controls } = useCREDSchedule(patientUuid);
+  const { controls, isLoading: isScheduleLoading, error: scheduleError } = useCREDSchedule(patientUuid);
   const { getAgeGroupForDisplay } = useAgeGroups();
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeRange | null>(null);
   const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{
@@ -78,9 +78,12 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
     });
   };
 
-  if (isPatientLoading) return <div>{t('loadingPatient', 'Cargando paciente...')}</div>;
-  if (patientError)
-    return <p className={styles.error}>{t('errorLoadingPatient', 'Error cargando los datos del paciente.')}</p>;
+  if (patientError || scheduleError) {
+    return <ErrorState error={patientError ?? scheduleError} headerTitle={t('credAgeGroups', 'Control Según Edad')} />;
+  }
+  if (isPatientLoading || isScheduleLoading) {
+    return <InlineLoading description={t('loadingSchedule', 'Cargando calendario Crecimiento y Desarrollo...')} />;
+  }
 
   return (
     <div className={styles.widgetCard}>

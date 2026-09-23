@@ -5,6 +5,11 @@ import { SWRConfig } from 'swr';
 import { formEntryWorkspace } from '../../types';
 import CREDFormsSelectorWorkspace from './cred-forms-selector.workspace';
 
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  useOpenmrsFetchAll: (await import('../../../../../libs/esm-react-utils/src/useOpenmrsFetchAll')).useOpenmrsFetchAll,
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));

@@ -20,6 +20,7 @@ type OpenmrsFormResponse = Partial<Omit<Form, 'resources'>> & {
 
 type OpenmrsFormSearchResponse = {
   results?: Array<OpenmrsFormResponse>;
+  links?: Array<{ rel?: string }>;
 };
 
 export const childNutritionFormFallbacks = {
@@ -220,7 +221,11 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
   if (uuidPattern.test(normalizedIdentifier)) {
     const response = await openmrsFetch<OpenmrsFormResponse>(
       `${restBaseUrl}/form/${normalizedIdentifier}?v=custom:${formRepresentation}`,
+      { cache: 'no-store' },
     );
+    if (!isPublishedForm(response.data) || normalizeKey(response.data.uuid) !== normalizeKey(normalizedIdentifier)) {
+      throw new Error('The configured CRED form is unavailable');
+    }
     return normalizeForm(response.data, fallbackDisplay);
   }
 
@@ -228,7 +233,12 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
   searchParams.set('q', normalizedIdentifier);
   searchParams.set('v', `custom:${formRepresentation}`);
 
-  const response = await openmrsFetch<OpenmrsFormSearchResponse>(`${restBaseUrl}/form?${searchParams.toString()}`);
+  const response = await openmrsFetch<OpenmrsFormSearchResponse>(`${restBaseUrl}/form?${searchParams.toString()}`, {
+    cache: 'no-store',
+  });
+  if (!Array.isArray(response.data?.results) || response.data.links?.some(({ rel }) => rel === 'next')) {
+    throw new Error('The configured CRED form search could not be verified');
+  }
   const form = findBestFormMatch(response.data.results ?? [], normalizedIdentifier);
 
   if (!form?.uuid) {
@@ -299,14 +309,16 @@ function normalizeKey(value?: string) {
 
 function findBestFormMatch(forms: Array<OpenmrsFormResponse>, identifier: string) {
   const normalizedIdentifier = normalizeKey(identifier);
-  const publishedForms = forms.filter((form) => form.published !== false && form.retired !== true);
-  const candidates = publishedForms.length ? publishedForms : forms;
-
-  return (
-    candidates.find((form) =>
+  const matches = forms.filter(
+    (form) =>
+      isPublishedForm(form) &&
       [form.uuid, form.name, form.display].some((value) => normalizeKey(value) === normalizedIdentifier),
-    ) ?? candidates[0]
   );
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function isPublishedForm(form: OpenmrsFormResponse | undefined): boolean {
+  return Boolean(form?.uuid && form.published === true && form.retired === false);
 }
 
 function normalizeForm(form: OpenmrsFormResponse, fallbackDisplay: string): Form {

@@ -19,6 +19,8 @@ const ToothDesigns: React.FC<ToothDesignProps> = ({ design }) => {
             <line x1="10" y1="0" x2="12.5" y2="10" stroke="black" strokeWidth="0.15" />
           </>
         );
+      case 'twoRoots':
+        return <polyline points="0,20 5,0 10,20 15,0 20,20" fill="none" stroke="black" strokeWidth="0.15" />;
       case 'design2':
         return (
           <>

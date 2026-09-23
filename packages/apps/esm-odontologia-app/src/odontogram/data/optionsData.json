@@ -132,25 +132,25 @@
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding5Design5",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 6,
           "nombre": "Diseño 6",
           "componente": "Finding5Design6",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 7,
           "nombre": "Diseño 7",
           "componente": "Finding5Design7",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 8,
           "nombre": "Diseño 8",
           "componente": "Finding5Design8",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 9,
@@ -162,19 +162,19 @@
           "number": 10,
           "nombre": "Diseño 10",
           "componente": "Finding5Design10",
-          "zones": 6
+          "zones": [6, 7]
         },
         {
           "number": 11,
           "nombre": "Diseño 11",
           "componente": "Finding5Design11",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 12,
           "nombre": "Diseño 12",
           "componente": "Finding5Design12",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 13,
@@ -187,6 +187,42 @@
           "nombre": "Diseño 14",
           "componente": "Finding5Design14",
           "zones": 8
+        },
+        {
+          "number": 15,
+          "nombre": "Diseño 15",
+          "componente": "Finding5Design15",
+          "zones": 10
+        },
+        {
+          "number": 16,
+          "nombre": "Diseño 16",
+          "componente": "Finding5Design16",
+          "zones": 10
+        },
+        {
+          "number": 17,
+          "nombre": "Diseño 17",
+          "componente": "Finding5Design17",
+          "zones": 10
+        },
+        {
+          "number": 18,
+          "nombre": "Diseño 18",
+          "componente": "Finding5Design18",
+          "zones": 10
+        },
+        {
+          "number": 19,
+          "nombre": "Diseño 19",
+          "componente": "Finding5Design19",
+          "zones": 10
+        },
+        {
+          "number": 20,
+          "nombre": "Diseño 20",
+          "componente": "Finding5Design20",
+          "zones": 10
         }
       ],
       "abreviaturaSource": "tipo"
@@ -271,49 +307,49 @@
           "number": 1,
           "nombre": "Diseño 1",
           "componente": "Finding10Design1",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 2,
           "nombre": "Diseño 2",
           "componente": "Finding10Design2",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 3,
           "nombre": "Diseño 3",
           "componente": "Finding10Design3",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 4,
           "nombre": "Diseño 4",
           "componente": "Finding10Design4",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding10Design5",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 6,
           "nombre": "Diseño 6",
           "componente": "Finding10Design6",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 7,
           "nombre": "Diseño 7",
           "componente": "Finding10Design7",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 8,
           "nombre": "Diseño 8",
           "componente": "Finding10Design8",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         }
       ],
       "abreviaturaSource": "none"
@@ -448,25 +484,25 @@
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding5Design5",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 6,
           "nombre": "Diseño 6",
           "componente": "Finding5Design6",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 7,
           "nombre": "Diseño 7",
           "componente": "Finding5Design7",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 8,
           "nombre": "Diseño 8",
           "componente": "Finding5Design8",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 9,
@@ -478,19 +514,19 @@
           "number": 10,
           "nombre": "Diseño 10",
           "componente": "Finding5Design10",
-          "zones": 6
+          "zones": [6, 7]
         },
         {
           "number": 11,
           "nombre": "Diseño 11",
           "componente": "Finding5Design11",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 12,
           "nombre": "Diseño 12",
           "componente": "Finding5Design12",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 13,
@@ -503,6 +539,42 @@
           "nombre": "Diseño 14",
           "componente": "Finding5Design14",
           "zones": 8
+        },
+        {
+          "number": 15,
+          "nombre": "Diseño 15",
+          "componente": "Finding5Design15",
+          "zones": 10
+        },
+        {
+          "number": 16,
+          "nombre": "Diseño 16",
+          "componente": "Finding5Design16",
+          "zones": 10
+        },
+        {
+          "number": 17,
+          "nombre": "Diseño 17",
+          "componente": "Finding5Design17",
+          "zones": 10
+        },
+        {
+          "number": 18,
+          "nombre": "Diseño 18",
+          "componente": "Finding5Design18",
+          "zones": 10
+        },
+        {
+          "number": 19,
+          "nombre": "Diseño 19",
+          "componente": "Finding5Design19",
+          "zones": 10
+        },
+        {
+          "number": 20,
+          "nombre": "Diseño 20",
+          "componente": "Finding5Design20",
+          "zones": 10
         }
       ],
       "abreviaturaSource": "tipo"
@@ -686,31 +758,31 @@
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding5Design5",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 6,
           "nombre": "Diseño 6",
           "componente": "Finding5Design6",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 7,
           "nombre": "Diseño 7",
           "componente": "Finding5Design7",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 8,
           "nombre": "Diseño 8",
           "componente": "Finding5Design8",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 9,
           "nombre": "Diseño 9",
           "componente": "Finding27Design9",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         }
       ],
       "abreviaturaSource": "identificador"
@@ -886,25 +958,25 @@
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding5Design5",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 6,
           "nombre": "Diseño 6",
           "componente": "Finding5Design6",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 7,
           "nombre": "Diseño 7",
           "componente": "Finding5Design7",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 8,
           "nombre": "Diseño 8",
           "componente": "Finding5Design8",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 9,
@@ -916,19 +988,19 @@
           "number": 10,
           "nombre": "Diseño 10",
           "componente": "Finding5Design10",
-          "zones": 6
+          "zones": [6, 7]
         },
         {
           "number": 11,
           "nombre": "Diseño 11",
           "componente": "Finding5Design11",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 12,
           "nombre": "Diseño 12",
           "componente": "Finding5Design12",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 13,
@@ -941,6 +1013,42 @@
           "nombre": "Diseño 14",
           "componente": "Finding5Design14",
           "zones": 8
+        },
+        {
+          "number": 15,
+          "nombre": "Diseño 15",
+          "componente": "Finding5Design15",
+          "zones": 10
+        },
+        {
+          "number": 16,
+          "nombre": "Diseño 16",
+          "componente": "Finding5Design16",
+          "zones": 10
+        },
+        {
+          "number": 17,
+          "nombre": "Diseño 17",
+          "componente": "Finding5Design17",
+          "zones": 10
+        },
+        {
+          "number": 18,
+          "nombre": "Diseño 18",
+          "componente": "Finding5Design18",
+          "zones": 10
+        },
+        {
+          "number": 19,
+          "nombre": "Diseño 19",
+          "componente": "Finding5Design19",
+          "zones": 10
+        },
+        {
+          "number": 20,
+          "nombre": "Diseño 20",
+          "componente": "Finding5Design20",
+          "zones": 10
         }
       ],
       "abreviaturaSource": "tipo"
@@ -983,25 +1091,25 @@
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding35Design5",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 6,
           "nombre": "Diseño 6",
           "componente": "Finding35Design6",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 7,
           "nombre": "Diseño 7",
           "componente": "Finding35Design7",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 8,
           "nombre": "Diseño 8",
           "componente": "Finding35Design8",
-          "zones": [6, 8]
+          "zones": [6, 7, 8, 10]
         },
         {
           "number": 9,
@@ -1013,19 +1121,19 @@
           "number": 10,
           "nombre": "Diseño 10",
           "componente": "Finding35Design10",
-          "zones": 6
+          "zones": [6, 7]
         },
         {
           "number": 11,
           "nombre": "Diseño 11",
           "componente": "Finding35Design11",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 12,
           "nombre": "Diseño 12",
           "componente": "Finding35Design12",
-          "zones": 8
+          "zones": [7, 8]
         },
         {
           "number": 13,
@@ -1038,6 +1146,42 @@
           "nombre": "Diseño 14",
           "componente": "Finding35Design14",
           "zones": 8
+        },
+        {
+          "number": 15,
+          "nombre": "Diseño 15",
+          "componente": "Finding35Design15",
+          "zones": 10
+        },
+        {
+          "number": 16,
+          "nombre": "Diseño 16",
+          "componente": "Finding35Design16",
+          "zones": 10
+        },
+        {
+          "number": 17,
+          "nombre": "Diseño 17",
+          "componente": "Finding35Design17",
+          "zones": 10
+        },
+        {
+          "number": 18,
+          "nombre": "Diseño 18",
+          "componente": "Finding35Design18",
+          "zones": 10
+        },
+        {
+          "number": 19,
+          "nombre": "Diseño 19",
+          "componente": "Finding35Design19",
+          "zones": 10
+        },
+        {
+          "number": 20,
+          "nombre": "Diseño 20",
+          "componente": "Finding35Design20",
+          "zones": 10
         }
       ]
     },
@@ -1066,7 +1210,19 @@
           "number": 2,
           "nombre": "Diseño 2",
           "componente": "Finding36Design2",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
+        },
+        {
+          "number": 3,
+          "nombre": "Diseño 3",
+          "componente": "Finding36Design3",
+          "zones": 7
+        },
+        {
+          "number": 4,
+          "nombre": "Diseño 4",
+          "componente": "Finding36Design4",
+          "zones": 10
         }
       ],
       "abreviaturaSource": "identificador"
@@ -1086,31 +1242,31 @@
           "number": 1,
           "nombre": "Diseño 1",
           "componente": "Finding37Design1",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 2,
           "nombre": "Diseño 2",
           "componente": "Finding37Design2",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 3,
           "nombre": "Diseño 3",
           "componente": "Finding37Design3",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 4,
           "nombre": "Diseño 4",
           "componente": "Finding37Design4",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         },
         {
           "number": 5,
           "nombre": "Diseño 5",
           "componente": "Finding37Design5",
-          "zones": [4, 6, 8]
+          "zones": [4, 6, 7, 8, 10]
         }
       ],
       "abreviaturaSource": "identificador"

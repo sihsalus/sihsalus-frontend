@@ -142,5 +142,10 @@
   "viewLarge": "View large",
   "visitType": "Visit type",
   "white": "White",
-  "yellow": "Yellow"
+  "yellow": "Yellow",
+  "chooseDentition": "Choose the dentition before recording findings. It will be preserved when saved.",
+  "dentition": "Dentition",
+  "dentitionHasEntries": "The dentition cannot change while this odontogram contains clinical data.",
+  "permanentDentition": "Permanent dentition (32 teeth)",
+  "primaryDentition": "Primary dentition (20 teeth)"
 }

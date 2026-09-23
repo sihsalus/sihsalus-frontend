@@ -198,7 +198,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
       ) : isLoading ? (
         <InlineLoading description={t('loadingData', 'Cargando datos...')} />
       ) : null}
-      <div hidden={isLoading || Boolean(historyError)}>
+      <div hidden={isLoading || Boolean(historyError)} style={{ height: '100%' }}>
         <FormsSelectorWorkspace
           availableForms={formsWithHistory}
           patientAge={patientAge}

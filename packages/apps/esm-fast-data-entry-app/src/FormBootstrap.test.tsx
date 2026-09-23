@@ -1,5 +1,6 @@
 import { detach, ExtensionSlot } from '@openmrs/esm-framework';
 import { act, render, screen } from '@testing-library/react';
+import type { MockedFunction } from 'vitest';
 import GroupFormWorkflowContext from './context/GroupFormWorkflowContext';
 import FormBootstrap from './FormBootstrap';
 import useGetPatient from './hooks/useGetPatient';
@@ -8,7 +9,7 @@ vi.mock('./hooks/useGetPatient', () => ({ default: vi.fn() }));
 
 const mockDetach = vi.mocked(detach);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
-const mockUseGetPatient = useGetPatient as vi.MockedFunction<typeof useGetPatient>;
+const mockUseGetPatient = useGetPatient as MockedFunction<typeof useGetPatient>;
 
 const renderFormBootstrap = (props = {}) =>
   render(

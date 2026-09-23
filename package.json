@@ -11,9 +11,9 @@
     "node": ">=24.0.0"
   },
   "workspaces": [
-    "packages/tooling/*",
     "packages/apps/*",
-    "packages/libs/*"
+    "packages/libs/*",
+    "packages/tooling/*"
   ],
   "scripts": {
     "start": "node packages/tooling/scripts/start-dev.js",

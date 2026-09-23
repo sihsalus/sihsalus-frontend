@@ -1,6 +1,7 @@
 import * as framework from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import type { Mock } from 'vitest';
 import * as imagingApi from '../../api/api';
 import { maxUploadImageDataSize } from '../constants';
 import { useImagingAccess } from '../utils/use-imaging-access';
@@ -66,7 +67,7 @@ describe('UploadStudiesWorkspace', () => {
       ],
     } as ReturnType<typeof imagingApi.useOrthancConfigurations>);
     mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
-    (framework.useLayoutType as vi.Mock).mockReturnValue('desktop');
+    (framework.useLayoutType as Mock).mockReturnValue('desktop');
   });
 
   beforeAll(() => {

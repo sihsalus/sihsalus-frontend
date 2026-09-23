@@ -2,6 +2,7 @@ import { logError, openmrsFetch } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { mockDrugSearchResultApiData } from 'test-utils';
+import type { Mock } from 'vitest';
 import {
   getTemplateOrderBasketItem,
   useConceptSets,
@@ -10,7 +11,7 @@ import {
   useDrugsByConcepts,
 } from './drug-search.resource';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockLogError = vi.mocked(logError);
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (

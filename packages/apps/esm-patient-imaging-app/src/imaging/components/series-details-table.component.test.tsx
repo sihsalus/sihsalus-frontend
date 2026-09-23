@@ -1,6 +1,7 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import SeriesDetailsTable from './series-details-table.component';
 
@@ -126,7 +127,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('renders EmptyState when no series are available', async () => {
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       results: [],
       error: null,
       isLoading: false,
@@ -148,7 +149,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('renders rows and triggers row actions', async () => {
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -190,7 +191,7 @@ describe('SeriesDetailsTable', () => {
 
   it('triggers pagination goto function', async () => {
     const goToMock = vi.fn();
-    (usePagination as vi.Mock).mockReturnValue({
+    (usePagination as Mock).mockReturnValue({
       results: mockSeries,
       currentPage: 1,
       goTo: goToMock,
@@ -214,7 +215,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('renders series rows when data is returned', async () => {
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -253,7 +254,7 @@ describe('SeriesDetailsTable', () => {
         orthancSeriesUID: 'UID125',
       },
     ];
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       data: mockSeriesWithEmptyFields,
       error: null,
       isLoading: false,
@@ -265,7 +266,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('triggers action buttons', async () => {
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -307,7 +308,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('sorts table when clicking headers', async () => {
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -343,7 +344,7 @@ describe('SeriesDetailsTable', () => {
       },
     ];
 
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       data: mockSeriesRT,
       error: null,
       isLoading: false,

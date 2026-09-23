@@ -2,9 +2,10 @@ import { openmrsFetch } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { mockFhirAllergyIntoleranceResponse, mockFhirPatient, renderWithSwr } from 'test-utils';
+import type { Mock } from 'vitest';
 import AllergiesTile from './allergies-tile.extension';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 void React;
 
 describe('AllergiesTile', () => {

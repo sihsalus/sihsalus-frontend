@@ -35,7 +35,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## Tipado y validación
 
-El código y las pruebas usan [TypeScript estricto](../../tooling/tsconfig.strict.json).
+El código y las pruebas usan las [opciones estrictas de TypeScript](tsconfig.json) declaradas en este paquete.
 Desde la raíz, ejecutar `yarn workspace @sihsalus/esm-help-menu-app typescript`
 y los scripts `lint`, `test` y `build` del mismo paquete. Las pruebas del menú
 cubren el cierre al pulsar fuera con ratón o pantalla táctil y su permanencia

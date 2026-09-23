@@ -1,6 +1,7 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import type { Mock } from 'vitest';
 import StudiesDetailTable from './studies-details-table.component';
 
 type IconProps = Record<string, unknown>;
@@ -83,7 +84,7 @@ describe('StudiesDetailsTable', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (usePagination as vi.Mock).mockReturnValue({
+    (usePagination as Mock).mockReturnValue({
       results: mockStudies,
       currentPage: 1,
       goTo: vi.fn(),
@@ -91,7 +92,7 @@ describe('StudiesDetailsTable', () => {
   });
 
   it('renders EmptyState when no studies are available', () => {
-    (usePagination as vi.Mock).mockReturnValue({
+    (usePagination as Mock).mockReturnValue({
       results: [],
       currentPage: 1,
       goTo: vi.fn(),

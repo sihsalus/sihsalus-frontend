@@ -1,6 +1,7 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import { mockLocationInpatientWard, mockPatientAlice, mockPatientBrian } from 'test-utils';
+import type { Mock } from 'vitest';
 import { mockAdmissionLocation } from '../../test-utils/mocks';
 import { configSchema, type WardConfigObject } from '../config-schema';
 import { useObs } from '../hooks/useObs';
@@ -30,7 +31,7 @@ vi.mocked(useObs).mockReturnValue({
   data: [],
 });
 
-const mockedUseWardLocation = useWardLocation as vi.Mock;
+const mockedUseWardLocation = useWardLocation as Mock;
 mockedUseWardLocation.mockReturnValue({
   location: mockLocationInpatientWard,
   isLoadingLocation: false,

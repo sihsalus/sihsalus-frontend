@@ -1,6 +1,7 @@
-import { getDefaultsFromConfigSchema, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Mock } from 'vitest';
 import { type BillingConfig, configSchema } from '../config-schema';
 import { useBillableServices } from './billable-service.resource';
 import BillableServices from './billable-services.component';
@@ -10,7 +11,7 @@ vi.mock('./billable-service.resource', () => ({
 }));
 
 describe('BillableService', () => {
-  const mockedUseBillableServices = useBillableServices as vi.Mock;
+  const mockedUseBillableServices = useBillableServices as Mock;
   const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
   const mockUseSession = vi.mocked(useSession);
   const mockUserHasAccess = vi.mocked(userHasAccess);

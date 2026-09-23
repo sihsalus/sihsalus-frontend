@@ -1,8 +1,9 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 
+import type { Mock } from 'vitest';
 import { buildAddressHierarchyPath, fetchAddressHierarchyQuickSearch } from '../address-hierarchy.resource';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),

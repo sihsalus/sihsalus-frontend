@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type FieldValues, useForm } from 'react-hook-form';
+import type { Mock } from 'vitest';
 import { type Drug } from '../../../core/api/types/concept/Drug';
 import { fetchStockItem } from '../../stock-items.resource';
 import DrugSelector from './drug-selector.component';
@@ -32,7 +33,7 @@ function DrugSelectorWrapper({
   defaultDrugUuid?: string;
   initialDrugName?: string;
   readOnly?: boolean;
-  onDrugChanged?: vi.Mock;
+  onDrugChanged?: Mock;
 }) {
   const methods = useForm<FieldValues>({ defaultValues: { drugUuid: defaultDrugUuid } });
   return (

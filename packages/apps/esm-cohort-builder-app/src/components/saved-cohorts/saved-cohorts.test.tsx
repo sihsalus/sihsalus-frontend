@@ -1,5 +1,6 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import type { DefinitionDataRow } from '../../types';
 import SavedCohorts from './saved-cohorts.component';
 import { useCohorts } from './saved-cohorts.resources';
@@ -17,7 +18,7 @@ const mockCohorts: DefinitionDataRow[] = [
   },
 ];
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockUseCohorts = vi.mocked(useCohorts);
 
 vi.mock('./saved-cohorts.resources', () => ({

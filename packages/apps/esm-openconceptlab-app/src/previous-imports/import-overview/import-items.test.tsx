@@ -1,6 +1,7 @@
 import { usePagination } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithSwr } from 'test-utils';
+import type { Mock } from 'vitest';
 import { mockImportItems, mockPreviousImports } from '../../../test-utils/mocks/openconceptlab.mock';
 
 import ImportItems from './import-items.component';
@@ -10,8 +11,8 @@ const defaultProps = {
   importUuid: mockPreviousImports[1].uuid,
 };
 
-const mockUseImportItems = useImportItems as vi.Mock;
-const mockUsePagination = usePagination as vi.Mock;
+const mockUseImportItems = useImportItems as Mock;
+const mockUsePagination = usePagination as Mock;
 
 vi.mock('./import-items.resource', () => ({
   useImportItems: vi.fn(),

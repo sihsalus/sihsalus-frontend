@@ -1,8 +1,10 @@
 # Test support
 
 `packages/test-utils` contains the test support shared by the microfrontends.
-It is an internal directory, resolved through the TypeScript and Vitest aliases,
-not a published workspace. Application code must not import it.
+It is an internal directory, resolved through the shared TypeScript base URL and
+Vitest aliases, not a published workspace. Application code must not import it.
+See [testing and quality](../../docs/development/testing.md) for repository-wide
+commands and [the documentation index](../../docs/README.md) for other guides.
 
 ## Where to put test support
 
@@ -37,11 +39,12 @@ Prefer a fixture's direct path for new imports. Import app-local helpers and
 fixtures by relative path; do not add another `@mocks`, `__mocks__` or `@tools`
 alias for them.
 
-TypeScript aliases and test globals come from `packages/tsconfig.json` and
-`packages/declarations.d.ts`. App configs extend
-`packages/tooling/tsconfig.app.json`. A config that overrides `paths` must retain
-the `test-utils` mappings if its tests use them, because TypeScript replaces the
-inherited map.
+Apps extend [`packages/tsconfig.json`](../tsconfig.json) directly. Its `baseUrl`
+resolves `test-utils` from `packages/`; the shared `paths` map has been removed.
+Test globals come from [`packages/declarations.d.ts`](../declarations.d.ts).
+A package that overrides `baseUrl` must still resolve the shared test support,
+using its existing explicit mappings where needed. TypeScript replaces an
+inherited `paths` map when a package supplies its own.
 
 Vitest apps use `defineAppVitestConfig` from
 `packages/tooling/configs/vitest-config.ts`. Its shared runtime setup is
@@ -61,12 +64,13 @@ for synchronous assertions and awaited `resolves`/`rejects` assertions. The
 runtime setup continues to register jest-dom's matchers through `expect.extend`.
 
 Test globals come from `vitest/globals`; do not redeclare `vi` manually.
-`packages/types/vi-namespace/index.d.ts` keeps legacy `vi.Mock` and related type
-names as aliases to Vitest's types. Prefer `vi.mocked(fn)` or types imported
-from `vitest` in new tests. Specialize generic hooks before mocking them, and
-use `vi.importActual<typeof import('module')>('module')` for partial module mocks.
-An unparameterized `vi.Mock` retains Vitest's broad function signature; migrating
-those casts to inferred mocks remains incremental.
+Use `vi.mocked(fn)` for inferred mocks or import `Mock`, `MockedFunction`,
+`MockInstance`, and `MockedObject` with `import type` from `vitest`.
+Specialize generic hooks before mocking them, and use
+`vi.importActual<typeof import('module')>('module')` for partial module mocks.
+An unparameterized `Mock` retains Vitest's broad function signature; migrating
+those casts to inferred mocks remains incremental. The tooling type-contract
+test checks the native mock types and global helpers without compatibility declarations.
 
 ## Validation and caching
 

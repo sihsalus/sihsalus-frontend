@@ -3,13 +3,14 @@ import { useStartVisitIfNeeded } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 
+import type { Mock } from 'vitest';
 import ClinicalFormActionButton from './clinical-form-action-button.component';
 
 void React;
 
 const mockActionMenuButton2 = vi.mocked(ActionMenuButton2);
 const mockUserHasAccess = vi.mocked(UserHasAccess);
-const mockUseStartVisitIfNeeded = useStartVisitIfNeeded as vi.Mock;
+const mockUseStartVisitIfNeeded = useStartVisitIfNeeded as Mock;
 
 mockActionMenuButton2.mockImplementation(({ label }: { label?: React.ReactNode }) => (
   <button type="button">{label}</button>

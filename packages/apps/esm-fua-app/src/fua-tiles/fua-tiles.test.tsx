@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 
-import { useFuaRequests } from '../hooks/useFuaRequests';
+import type { MockedFunction } from 'vitest';
 import useFuaFormats from '../hooks/useFuaFormats';
+import { useFuaRequests } from '../hooks/useFuaRequests';
 import { useVisits } from '../hooks/useVisit';
 
 import AllFuaRequestsTile from './all-fua-requests-tile.component';
@@ -13,9 +14,9 @@ vi.mock('../hooks/useFuaRequests');
 vi.mock('../hooks/useFuaFormats');
 vi.mock('../hooks/useVisit');
 
-const mockUseFuaRequests = useFuaRequests as vi.MockedFunction<typeof useFuaRequests>;
-const mockUseFuaFormats = useFuaFormats as vi.MockedFunction<typeof useFuaFormats>;
-const mockUseVisits = useVisits as vi.MockedFunction<typeof useVisits>;
+const mockUseFuaRequests = useFuaRequests as MockedFunction<typeof useFuaRequests>;
+const mockUseFuaFormats = useFuaFormats as MockedFunction<typeof useFuaFormats>;
+const mockUseVisits = useVisits as MockedFunction<typeof useVisits>;
 
 const makeMockOrders = (n: number) =>
   Array.from({ length: n }, (_, i) => ({

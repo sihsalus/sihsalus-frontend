@@ -5,19 +5,20 @@ import React from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { mockPatient } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import FormEntryWorkspace from './form-entry.workspace';
 
 void React;
 
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
-const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as vi.Mock;
+const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as Mock;
 const mockUsePatient = vi.mocked(usePatient);
 const mockWorkspace2 = vi.mocked(Workspace2);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
-const mockUseSWR = useSWR as vi.Mock;
-const mockUseSWRConfig = useSWRConfig as vi.Mock;
+const mockUseSWR = useSWR as Mock;
+const mockUseSWRConfig = useSWRConfig as Mock;
 type Workspace2MockProps = {
   hasUnsavedChanges?: boolean;
   title?: string;

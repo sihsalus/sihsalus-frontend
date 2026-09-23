@@ -1,5 +1,6 @@
 import { createAttachment, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
+import type { Mock } from 'vitest';
 import {
   fetchPerson,
   fetchPersonRegistrationCopyData,
@@ -10,7 +11,7 @@ import {
   savePerson,
 } from './patient-registration.resource';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockCreateAttachment = vi.mocked(createAttachment);
 
 vi.mock('@openmrs/esm-framework', async () => ({

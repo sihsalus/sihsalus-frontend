@@ -1,19 +1,23 @@
 # Recoverable synthetic fixture foundation
 
 Status: **draft; supervised adapters exist, browser CI remains blocked**.
-The [laboratory adapter](laboratory/README.md) reuses this foundation for one
+The [laboratory adapter](../../e2e/laboratory/README.md) reuses this foundation for one
 patient/visit pair per local test attempt, with private retained journals.
-The separate [supervised O3 Forms adapter](scripts/O3FORMS_SUPERVISED.md) provides
+The separate [supervised O3 Forms adapter](../../e2e/scripts/O3FORMS_SUPERVISED.md) provides
 an explicit opt-in CLI and retains the requirements below; it has not passed
 remote clinical acceptance. Importing these utilities does not run a remote
 test, promote a suite, or create accounts in DEV/QLTY.
 
-Follow [CONTRIBUTING](../CONTRIBUTING.md) and the [E2E gate](README.md). Local
+Follow [CONTRIBUTING](../../CONTRIBUTING.md) and the [E2E gate](../../e2e/README.md). Local
 tests use an in-memory API double and private temporary files only:
 
 ```sh
 yarn test:e2e:contracts
 ```
+
+The central runner enforces the [suite catalog](../../e2e/suite-catalog.json).
+Relocating this document does not activate an adapter or bypass its quarantine,
+supervision or recovery requirements.
 
 ## Configuration and scope
 

@@ -3,12 +3,13 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, renderWithSwr, visitOverviewDetailMockData, waitForLoadingToFinish } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { type ChartConfig, esmPatientChartSchema } from '../../config-schema';
 
 import VisitDetailOverview from './visit-detail-overview.component';
 
-const mockGetConfig = getConfig as vi.Mock;
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockGetConfig = getConfig as Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
 
 mockUseConfig.mockReturnValue({

@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { mockSession, renderWithSwr } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import OverviewComponent from './overview.component';
 import { useReports } from './reports.resource';
 
@@ -101,7 +102,7 @@ vi.mock('./reports.resource', () => ({
 
 const mockUseSession = vi.mocked(useSession);
 
-const mockUseConfig = useConfig as vi.Mock;
+const mockUseConfig = useConfig as Mock;
 
 describe('OverviewComponent', () => {
   beforeEach(() => {

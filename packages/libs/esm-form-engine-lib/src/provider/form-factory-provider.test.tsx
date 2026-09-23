@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import React, { useEffect } from 'react';
 
+import type { Mock } from 'vitest';
 import { FormFactoryProvider, useFormFactory } from './form-factory-provider';
 
 vi.mock('react-i18next', () => ({
@@ -28,7 +29,7 @@ vi.mock('./form-factory-helper', () => ({
 }));
 
 type RegisteredFormProps = {
-  processSubmission: vi.Mock;
+  processSubmission: Mock;
 };
 
 const RegisteredForm = ({ processSubmission }: RegisteredFormProps): React.JSX.Element => {

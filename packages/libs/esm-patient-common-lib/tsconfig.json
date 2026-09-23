@@ -1,7 +1,10 @@
 {
-  "extends": "../../tooling/tsconfig.strict.json",
+  "extends": "../../tsconfig.json",
   "include": ["declarations.d.ts", "src/**/*", "../../tooling/scripts/setup-tests.ts"],
   "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
       "@openmrs/esm-api": ["../../../node_modules/@openmrs/esm-api/dist/index"],

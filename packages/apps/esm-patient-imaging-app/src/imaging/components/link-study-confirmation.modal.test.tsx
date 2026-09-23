@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import { updateStudyLinkStatus, useStudiesByPatient } from '../../api';
 import LinkingStudyModal from './link-study-confirmation.modal';
 
@@ -23,7 +24,7 @@ describe('LinkingStudyModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useStudiesByPatient as vi.Mock).mockReturnValue({ mutate: mutateMock });
+    (useStudiesByPatient as Mock).mockReturnValue({ mutate: mutateMock });
   });
 
   const defaultProps = {
@@ -62,7 +63,7 @@ describe('LinkingStudyModal', () => {
   });
 
   it('calls confirm API and shows success snackbar', async () => {
-    (updateStudyLinkStatus as vi.Mock).mockResolvedValueOnce({});
+    (updateStudyLinkStatus as Mock).mockResolvedValueOnce({});
     render(<LinkingStudyModal {...defaultProps} />);
 
     fireEvent.click(screen.getByText('Confirm'));
@@ -76,7 +77,7 @@ describe('LinkingStudyModal', () => {
   });
 
   it('shows error snackbar on API failure', async () => {
-    (updateStudyLinkStatus as vi.Mock).mockRejectedValueOnce(new Error('API Error'));
+    (updateStudyLinkStatus as Mock).mockRejectedValueOnce(new Error('API Error'));
     render(<LinkingStudyModal {...defaultProps} />);
 
     fireEvent.click(screen.getByText('Confirm'));

@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import PastVisitOverview from './past-visit-overview.component';
 
 const defaultProps = {
@@ -56,8 +57,8 @@ const mockPastVisits = {
   },
 };
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
-const mockSetCurrentVisit = setCurrentVisit as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
+const mockSetCurrentVisit = setCurrentVisit as Mock;
 
 describe('PastVisitOverview', () => {
   it(`renders a tabular overview view of the patient's past visits data`, async () => {

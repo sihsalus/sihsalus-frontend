@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockFhirPatient, mockPatient, mockPatientFlags } from 'test-utils';
+import type { Mock } from 'vitest';
 import { usePatientFlags } from '../hooks/usePatientFlags';
 import FlagsWorkspace from './flags.workspace';
 
-const mockUsePatientFlags = usePatientFlags as vi.Mock;
+const mockUsePatientFlags = usePatientFlags as Mock;
 
 vi.mock('../hooks/usePatientFlags', async () => {
   const originalModule = await vi.importActual('../hooks/usePatientFlags');

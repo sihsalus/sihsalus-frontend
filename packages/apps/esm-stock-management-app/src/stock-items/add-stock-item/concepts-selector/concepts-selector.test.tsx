@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type FieldValues, useForm } from 'react-hook-form';
+import type { Mock } from 'vitest';
 import { type Concept } from '../../../core/api/types/concept/Concept';
 import { useConcepts } from '../../../stock-lookups/stock-lookups.resource';
 import ConceptsSelector from './concepts-selector.component';
@@ -22,7 +23,7 @@ function ConceptsSelectorWrapper({
   onConceptUuidChange,
 }: {
   defaultConceptUuid?: string;
-  onConceptUuidChange?: vi.Mock;
+  onConceptUuidChange?: Mock;
 }) {
   const methods = useForm<FieldValues>({ defaultValues: { conceptUuid: defaultConceptUuid } });
   return (

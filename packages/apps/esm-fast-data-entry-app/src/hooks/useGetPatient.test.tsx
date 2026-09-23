@@ -1,5 +1,6 @@
 import { fetchCurrentPatient } from '@openmrs/esm-framework';
 import { act, render, screen } from '@testing-library/react';
+import type { MockedFunction } from 'vitest';
 import useGetPatient from './useGetPatient';
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -24,7 +25,7 @@ const createDeferred = <T,>(): Deferred<T> => {
   };
 };
 
-const mockFetchCurrentPatient = fetchCurrentPatient as vi.MockedFunction<typeof fetchCurrentPatient>;
+const mockFetchCurrentPatient = fetchCurrentPatient as MockedFunction<typeof fetchCurrentPatient>;
 
 const TestHarness = ({ patientUuid }: { patientUuid?: string }) => {
   const patient = useGetPatient(patientUuid);

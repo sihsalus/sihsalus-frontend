@@ -3,6 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockEncounters, mockPatient, renderWithSwr } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import VisitsTable from './visits-table.component';
 
 const defaultProps = {
@@ -12,8 +13,8 @@ const defaultProps = {
 };
 
 const mockShowModal = vi.mocked(showModal);
-const mockGetConfig = getConfig as vi.Mock;
-const mockUserHasAccess = userHasAccess as vi.Mock;
+const mockGetConfig = getConfig as Mock;
+const mockUserHasAccess = userHasAccess as Mock;
 const getProviderName = (provider: unknown) =>
   typeof provider === 'string'
     ? provider

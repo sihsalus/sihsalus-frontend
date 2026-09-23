@@ -2,12 +2,13 @@ import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-fra
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithSwr } from 'test-utils';
+import type { Mock } from 'vitest';
 import { mockSubscription } from '../../test-utils/mocks/openconceptlab.mock';
 
 import Import from './import.component';
 import { startImportWithSubscription } from './import.resource';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockStartImportWithSubscription = vi.mocked(startImportWithSubscription);
 

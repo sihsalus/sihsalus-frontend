@@ -23,6 +23,7 @@
   "errorLoadingFormSchema": "Error al cargar el esquema del formulario",
   "errorLoadingInitialValues": "Error al cargar los valores iniciales",
   "errorRenderingField": "Error al renderizar el campo",
+  "errorRenderingFieldDescription": "No se pudo mostrar este campo. Revise la configuración del formulario o contacte a Soporte.",
   "errorTitle": "Hubo un error con este formulario",
   "expandAll": "Expandir todo",
   "fieldErrorDescriptionTitle": "Errores de Validación",
@@ -45,6 +46,7 @@
   "nullMandatoryField": "Por favor, complete los campos obligatorios.",
   "or": "o",
   "preview": "Vista Previa",
+  "previewActionUnavailable": "Esta acción o control personalizado no está disponible en la vista previa del esquema.",
   "previousValue": "Valor anterior:",
   "remove": "Quitar",
   "required": "Requerido",
@@ -65,7 +67,5 @@
   "valueMustBeLessThanOrEqualTo": "El valor debe ser menor o igual que {{max}}",
   "valueMustBeNumber": "El valor debe ser numérico",
   "valueNotFoundInCodedAnswersList": "El valor no se encuentra en la lista de respuestas codificadas",
-  "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos.",
-  "previewActionUnavailable": "Esta acción o control personalizado no está disponible en la vista previa del esquema.",
-  "errorRenderingFieldDescription": "No se pudo mostrar este campo. Revise la configuración del formulario o contacte a Soporte."
+  "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos."
 }

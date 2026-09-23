@@ -23,6 +23,7 @@
   "errorLoadingFormSchema": "Error loading form schema",
   "errorLoadingInitialValues": "Error loading initial values",
   "errorRenderingField": "Error rendering field",
+  "errorRenderingFieldDescription": "This field could not be displayed. Check the form configuration or contact support.",
   "errorTitle": "There was an error with this form",
   "expandAll": "Expand all",
   "fieldErrorDescriptionTitle": "Validation Errors",
@@ -45,6 +46,7 @@
   "nullMandatoryField": "Please fill the required fields",
   "or": "or",
   "preview": "Preview",
+  "previewActionUnavailable": "This action or custom control is not available in the schema preview.",
   "previousValue": "Previous value:",
   "remove": "Remove",
   "required": "Required",
@@ -65,7 +67,5 @@
   "valueMustBeLessThanOrEqualTo": "Value must be less than or equal to {{max}}",
   "valueMustBeNumber": "Value must be a number",
   "valueNotFoundInCodedAnswersList": "Value not found in coded answers list",
-  "valuesOutOfBound": "Some of the values are out of bounds",
-  "previewActionUnavailable": "This action or custom control is not available in the schema preview.",
-  "errorRenderingFieldDescription": "This field could not be displayed. Check the form configuration or contact support."
+  "valuesOutOfBound": "Some of the values are out of bounds"
 }

@@ -1,14 +1,14 @@
 {
-  "patientIdNotFound": "ID de paciente no encontrado",
-  "printInProgress": "La impresión ya está en curso",
-  "printPatientIdentification": "Imprimir datos de identificación",
-  "patientPrintUnavailable": "No se pueden imprimir los datos de identificación. Verifique su acceso y seleccione nuevamente al paciente.",
+  "close": "Cerrar",
   "loadingPatientIdentification": "Cargando datos de identificación",
   "patientIdentificationLoadFailed": "No se pudo cargar al paciente. Reintente antes de imprimir.",
   "patientIdentityDocumentDescription": "Imprima el documento de identificación del paciente generado por el hospital. Esta acción no modifica la cita ni la historia clínica.",
-  "preparingPatientPrint": "Preparando los datos de identificación para imprimir",
   "patientIdentityPrintFailed": "No se pudo imprimir el documento de identificación. Reintente o contacte a Soporte si el problema continúa.",
-  "retry": "Reintentar",
-  "close": "Cerrar",
-  "print": "Imprimir"
+  "patientIdNotFound": "ID de paciente no encontrado",
+  "patientPrintUnavailable": "No se pueden imprimir los datos de identificación. Verifique su acceso y seleccione nuevamente al paciente.",
+  "preparingPatientPrint": "Preparando los datos de identificación para imprimir",
+  "print": "Imprimir",
+  "printInProgress": "La impresión ya está en curso",
+  "printPatientIdentification": "Imprimir datos de identificación",
+  "retry": "Reintentar"
 }

@@ -605,7 +605,7 @@ describe('RelationshipsSection', () => {
     true,
   ])('handles an underage relative with responsible selection %s and translates validation errors', (isCompanion) => {
     const translation = vi.spyOn(reactI18next, 'useTranslation').mockReturnValue({
-        t: (key: string) => es[key as keyof typeof es] ?? key,
+      t: (key: string) => es[key as keyof typeof es] ?? key,
     } as unknown as ReturnType<typeof reactI18next.useTranslation>);
     const formValues = {
       ...minorPatientValues,

@@ -52,6 +52,8 @@
   "offlineActionsTablePatient": "Patient",
   "offlineActionsUpdateOfflinePatients": "Update offline patients",
   "offlineDownloadsVerified": "Selected downloads verified",
+  "offlineModeChangeFailed": "Could not change offline use. Please try again.",
+  "offlineModeUnavailable": "Offline use is not available in this session.",
   "offlineNotPersistent": "Persistent storage has not been granted",
   "offlineOldestDownload": "Oldest verified download: {{date}}",
   "offlinePatients": "Offline patients",
@@ -108,7 +110,5 @@
   "offlineStorageUnverified": "Storage reserve is insufficient or could not be checked",
   "offlineToolsAppMenuLink": "Offline tools",
   "requestPersistentStorage": "Request persistent storage",
-  "retry": "Retry",
-  "offlineModeUnavailable": "Offline use is not available in this session.",
-  "offlineModeChangeFailed": "Could not change offline use. Please try again."
+  "retry": "Retry"
 }

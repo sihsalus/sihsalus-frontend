@@ -43,8 +43,10 @@ describe('indicatorsErrorMessageOptions', () => {
 });
 
 describe('getIndicadorSaveErrorMessage', () => {
-  const t = (key: string, defaultValue: string) =>
-    key === 'encounterTypesUnknownUuids' ? `custom: ${defaultValue}` : defaultValue;
+  const t = (key: string, defaultValue: string, options?: { uuids: string }) =>
+    key === 'encounterTypesUnknownUuids'
+      ? `custom: ${defaultValue.replace('{{uuids}}', options?.uuids ?? '')}`
+      : defaultValue;
 
   beforeEach(() => {
     mockedGetUserFacingErrorMessage.mockClear();

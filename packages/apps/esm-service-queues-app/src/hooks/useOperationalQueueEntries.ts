@@ -56,7 +56,8 @@ export function useOperationalQueueEntries(searchCriteria?: QueueEntrySearchCrit
   );
   const result = useQueueEntries(backendSearchCriteria);
   const queueEntries = useMemo(
-    () => result.queueEntries.filter((entry) => matchesOperationalQueueLocation(entry, selectedLocation, triageQueueUuid)),
+    () =>
+      result.queueEntries.filter((entry) => matchesOperationalQueueLocation(entry, selectedLocation, triageQueueUuid)),
     [result.queueEntries, selectedLocation, triageQueueUuid],
   );
 

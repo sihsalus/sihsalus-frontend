@@ -122,14 +122,11 @@ it.each([
   'View Appointments',
   'Manage Queue Entries',
   'app:home.colasAtencion.editar',
-])(
-  'hides care without %s',
-  (missingPrivilege) => {
-    vi.mocked(userHasAccess).mockImplementation((privilege) => privilege !== missingPrivilege);
-    render(<ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />);
-    expect(screen.queryByRole('button', { name: 'Atender Obstetricia' })).not.toBeInTheDocument();
-  },
-);
+])('hides care without %s', (missingPrivilege) => {
+  vi.mocked(userHasAccess).mockImplementation((privilege) => privilege !== missingPrivilege);
+  render(<ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />);
+  expect(screen.queryByRole('button', { name: 'Atender Obstetricia' })).not.toBeInTheDocument();
+});
 
 it('does not treat administrative queue permissions as clinical authorization', () => {
   vi.mocked(userHasAccess).mockImplementation((privilege) => !String(privilege).startsWith('app:hoja.clinica.'));
@@ -191,36 +188,36 @@ it('keeps failures actionable without navigating or exposing backend details', a
   expect(screen.getByRole('button', { name: 'Atender Obstetricia' })).toBeEnabled();
 });
 
-it.each(['unmount', 'patient', 'session', 'privilege'] as const)(
-  'does not navigate after the pending action changes %s context',
-  async (change) => {
-    const user = userEvent.setup();
-    let resolveStart: (entry: QueueEntry) => void;
-    vi.mocked(startObstetricCare).mockReturnValue(new Promise((resolve) => (resolveStart = resolve)));
-    const { unmount, rerender } = render(
-      <ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />,
+it.each([
+  'unmount',
+  'patient',
+  'session',
+  'privilege',
+] as const)('does not navigate after the pending action changes %s context', async (change) => {
+  const user = userEvent.setup();
+  let resolveStart: (entry: QueueEntry) => void;
+  vi.mocked(startObstetricCare).mockReturnValue(new Promise((resolve) => (resolveStart = resolve)));
+  const { unmount, rerender } = render(<ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />);
+  await user.click(screen.getByRole('button', { name: 'Atender Obstetricia' }));
+  if (change === 'unmount') {
+    unmount();
+  } else if (change === 'patient') {
+    rerender(
+      <ObstetricCareActions
+        queueEntry={{ ...entry, patient: { ...entry.patient, uuid: 'another-patient' } }}
+        mode="outpatient"
+        config={config}
+      />,
     );
-    await user.click(screen.getByRole('button', { name: 'Atender Obstetricia' }));
-    if (change === 'unmount') {
-      unmount();
-    } else if (change === 'patient') {
-      rerender(
-        <ObstetricCareActions
-          queueEntry={{ ...entry, patient: { ...entry.patient, uuid: 'another-patient' } }}
-          mode="outpatient"
-          config={config}
-        />,
-      );
-    } else if (change === 'session') {
-      currentSession = { ...mockSession.data, user: { ...mockSession.data.user, uuid: 'another-user' } };
-    } else {
-      vi.mocked(userHasAccess).mockReturnValue(false);
-    }
-    await act(async () => resolveStart(entry));
-    expect(navigate).not.toHaveBeenCalled();
-    expect(showSnackbar).not.toHaveBeenCalled();
-  },
-);
+  } else if (change === 'session') {
+    currentSession = { ...mockSession.data, user: { ...mockSession.data.user, uuid: 'another-user' } };
+  } else {
+    vi.mocked(userHasAccess).mockReturnValue(false);
+  }
+  await act(async () => resolveStart(entry));
+  expect(navigate).not.toHaveBeenCalled();
+  expect(showSnackbar).not.toHaveBeenCalled();
+});
 
 it('offers an explicit queue-only confirmation after care starts', async () => {
   const user = userEvent.setup();
@@ -237,7 +234,9 @@ it('offers an explicit queue-only confirmation after care starts', async () => {
 
 it('preserves generic queue actions for other services and disabled configuration', () => {
   const { rerender } = render(
-    <QueueTableActionCell queueEntry={{ ...entry, workflow: { ...entry.workflow, appointmentServiceUuid: 'other' } }} />,
+    <QueueTableActionCell
+      queueEntry={{ ...entry, workflow: { ...entry.workflow, appointmentServiceUuid: 'other' } }}
+    />,
   );
   expect(screen.getByRole('button', { name: 'Transition' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Atender Obstetricia' })).not.toBeInTheDocument();

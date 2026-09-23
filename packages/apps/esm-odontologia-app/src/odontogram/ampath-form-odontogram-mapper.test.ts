@@ -100,6 +100,12 @@ describe('AMPATH odontogram form mapper', () => {
     const data = createEmptyOdontogramData(childConfig);
     const finding = { id: 'synthetic-finding', findingId: 1, color: { id: 1, name: 'red' } };
     data.teeth[0].findings = [finding];
+    data.teeth[10].findings = [
+      { id: 'synthetic-primary-surface', findingId: 16, designNumber: 15, color: { id: 102, name: 'red' } },
+    ];
+    data.teeth[1].findings = [
+      { id: 'synthetic-primary-sealant', findingId: 36, designNumber: 3, color: { id: 101, name: 'blue' } },
+    ];
     data.teeth[0].notes = 'Synthetic tooth note';
     data.teeth[0].annotations = [{ findingId: 1, text: 'Synthetic annotation', color: 'red' }];
     data.spacingFindings[1][0].findings = [finding];

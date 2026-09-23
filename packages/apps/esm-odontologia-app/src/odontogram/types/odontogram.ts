@@ -205,7 +205,7 @@ export interface ToothConfig {
   position: ToothPosition;
   /** Tipo de diente */
   type: ToothType;
-  /** Número de zonas del diente (4, 6 u 8) */
+  /** Número de zonas del diente (4, 6, 7, 8 o 10) */
   zones: number;
   /** Diseño visual de la raíz ("default" = 3 raíces, "design2" = 1 raíz, etc.) */
   rootDesign: ToothRootDesign;

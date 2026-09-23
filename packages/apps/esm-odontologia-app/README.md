@@ -56,11 +56,21 @@ compartidos; no se incorporan los stores ni los componentes infantiles duplicado
 Las siluetas de raíces temporales se contrastaron con el anexo, página 22, de la
 [NTS 188-MINSA/DGIESP-2022](https://cdn.www.gob.pe/uploads/document/file/3456674/NTS%20N%C2%BA%20188-MINSA/DGIESP-2022.pdf).
 
-**Pendiente antes de habilitar para uso clínico:** conciliar con Mauricio/Odontología
-la subdivisión de coronas y sus diseños de hallazgos. La entrega recuperada usa
-ocho zonas para todos los molares temporales; el gráfico del anexo distingue las
-superficies de 54/64 y 85/75. Integrar el selector no certifica la conformidad de
-toda la simbología. Seguimiento: [backlog #63](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/63).
+Las coronas 54/64 usan siete zonas (cuatro periféricas y tres centrales), y 85/75
+usan diez (cuatro periféricas y seis centrales). El catálogo ofrece los diseños
+compatibles de caries, alteraciones del esmalte, restauraciones, pulpotomía,
+fractura, sellantes y desgaste para estas geometrías. El selector, el lienzo y el
+detalle resuelven los dibujos desde el mismo registro de componentes. Las seis
+superficies centrales nuevas comparten sus polígonos entre el diente, los rellenos
+y los contornos; se agregan los números de diseño 15–20 sin renumerar los anteriores.
+Los sellantes incorporan los diseños 3/4 para los surcos de las nuevas coronas.
+Los números y dibujos de los registros permanentes existentes se conservan.
+
+**Pendiente antes de habilitar para uso clínico:** aceptación de Mauricio/Odontología
+y prueba coordinada de guardado y recarga contra el backend/content desplegados.
+Las pruebas técnicas y la comparación del dibujo con el anexo no certifican toda
+la simbología ni la operación clínica. Seguimiento:
+[backlog #63](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/63).
 
 QA mínimo: permanente/temporal, crear inicial, guardar/recargar/editar, evolutivo
 con su inicial, consulta histórica durante un borrador, pantalla completa, bloqueo

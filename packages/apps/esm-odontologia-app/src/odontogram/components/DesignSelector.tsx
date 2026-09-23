@@ -3,153 +3,13 @@ import { CheckmarkFilled } from '@carbon/react/icons';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Finding5Design1,
-  Finding5Design2,
-  Finding5Design3,
-  Finding5Design4,
-  Finding5Design5,
-  Finding5Design6,
-  Finding5Design7,
-  Finding5Design8,
-  Finding5Design9,
-  Finding5Design10,
-  Finding5Design11,
-  Finding5Design12,
-  Finding5Design13,
-  Finding5Design14,
-  Finding8Design1,
-  Finding8Design2,
-  Finding8Design3,
-  Finding10Design1,
-  Finding10Design2,
-  Finding10Design3,
-  Finding10Design4,
-  Finding10Design5,
-  Finding10Design6,
-  Finding10Design7,
-  Finding10Design8,
-  Finding13Design1,
-  Finding13Design2,
-  Finding27Design9,
-  Finding35Design1,
-  Finding35Design2,
-  Finding35Design3,
-  Finding35Design4,
-  Finding35Design5,
-  Finding35Design6,
-  Finding35Design7,
-  Finding35Design8,
-  Finding35Design9,
-  Finding35Design10,
-  Finding35Design11,
-  Finding35Design12,
-  Finding35Design13,
-  Finding35Design14,
-  Finding36Design1,
-  Finding36Design2,
-  Finding37Design1,
-  Finding37Design2,
-  Finding37Design3,
-  Finding37Design4,
-  Finding37Design5,
-} from '../designs/figuras';
 import type { FindingColor, FindingDesign, ToothFinding, ToothRootDesign } from '../types/odontogram';
-import { COLOR_CSS, COLOR_LABEL } from './constants';
+import { COLOR_CSS, COLOR_LABEL, DESIGN_COMPONENT_MAP } from './constants';
 import styles from './DesignSelector.module.scss';
 import Tooth from './Tooth';
 import ToothDesigns from './ToothDesigns';
 
 const TOOTH_SVG_HEIGHT = 120;
-
-// Mapeo de nombres de componentes a componentes reales
-const designComponentMap = {
-  Finding8Design1: Finding8Design1,
-  Finding8Design2: Finding8Design2,
-  Finding8Design3: Finding8Design3,
-  Finding37Design1: Finding37Design1,
-  Finding37Design2: Finding37Design2,
-  Finding37Design3: Finding37Design3,
-  Finding37Design4: Finding37Design4,
-  Finding37Design5: Finding37Design5,
-  Finding36Design1: Finding36Design1,
-  Finding36Design2: Finding36Design2,
-  Finding10Design1: Finding10Design1,
-  Finding10Design2: Finding10Design2,
-  Finding10Design3: Finding10Design3,
-  Finding10Design4: Finding10Design4,
-  Finding10Design5: Finding10Design5,
-  Finding10Design6: Finding10Design6,
-  Finding10Design7: Finding10Design7,
-  Finding10Design8: Finding10Design8,
-  Finding5Design1: Finding5Design1,
-  Finding5Design2: Finding5Design2,
-  Finding5Design3: Finding5Design3,
-  Finding5Design4: Finding5Design4,
-  Finding5Design5: Finding5Design5,
-  Finding5Design6: Finding5Design6,
-  Finding5Design7: Finding5Design7,
-  Finding5Design8: Finding5Design8,
-  Finding5Design9: Finding5Design9,
-  Finding5Design10: Finding5Design10,
-  Finding5Design11: Finding5Design11,
-  Finding5Design12: Finding5Design12,
-  Finding5Design13: Finding5Design13,
-  Finding5Design14: Finding5Design14,
-  Finding16Design1: Finding5Design1,
-  Finding16Design2: Finding5Design2,
-  Finding16Design3: Finding5Design3,
-  Finding16Design4: Finding5Design4,
-  Finding16Design5: Finding5Design5,
-  Finding16Design6: Finding5Design6,
-  Finding16Design7: Finding5Design7,
-  Finding16Design8: Finding5Design8,
-  Finding16Design9: Finding5Design9,
-  Finding16Design10: Finding5Design10,
-  Finding16Design11: Finding5Design11,
-  Finding16Design12: Finding5Design12,
-  Finding16Design13: Finding5Design13,
-  Finding16Design14: Finding5Design14,
-  Finding27Design1: Finding5Design1,
-  Finding27Design2: Finding5Design2,
-  Finding27Design3: Finding5Design3,
-  Finding27Design4: Finding5Design4,
-  Finding27Design5: Finding5Design5,
-  Finding27Design6: Finding5Design6,
-  Finding27Design7: Finding5Design7,
-  Finding27Design8: Finding5Design8,
-  Finding27Design9: Finding27Design9,
-  Finding34Design1: Finding5Design1,
-  Finding34Design2: Finding5Design2,
-  Finding34Design3: Finding5Design3,
-  Finding34Design4: Finding5Design4,
-  Finding34Design5: Finding5Design5,
-  Finding34Design6: Finding5Design6,
-  Finding34Design7: Finding5Design7,
-  Finding34Design8: Finding5Design8,
-  Finding34Design9: Finding5Design9,
-  Finding34Design10: Finding5Design10,
-  Finding34Design11: Finding5Design11,
-  Finding34Design12: Finding5Design12,
-  Finding34Design13: Finding5Design13,
-  Finding34Design14: Finding5Design14,
-  Finding35Design1: Finding35Design1,
-  Finding35Design2: Finding35Design2,
-  Finding35Design3: Finding35Design3,
-  Finding35Design4: Finding35Design4,
-  Finding35Design5: Finding35Design5,
-  Finding35Design6: Finding35Design6,
-  Finding35Design7: Finding35Design7,
-  Finding35Design8: Finding35Design8,
-  Finding35Design9: Finding35Design9,
-  Finding35Design10: Finding35Design10,
-  Finding35Design11: Finding35Design11,
-  Finding35Design12: Finding35Design12,
-  Finding35Design13: Finding35Design13,
-  Finding35Design14: Finding35Design14,
-  Finding13Design1: Finding13Design1,
-  Finding13Design2: Finding13Design2,
-};
 
 interface DesignSelectorProps {
   isOpen: boolean;
@@ -246,7 +106,7 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
                 if (!finding.designNumber) return null;
                 const designConfig = designs.find((d) => d.number === finding.designNumber);
                 if (!designConfig) return null;
-                const Component = designComponentMap[designConfig.componente as keyof typeof designComponentMap];
+                const Component = DESIGN_COMPONENT_MAP[designConfig.componente];
                 if (!Component) return null;
                 return (
                   <g key={finding.id}>
@@ -282,7 +142,7 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
 
       <div className={styles.designsGrid}>
         {designs.map((design) => {
-          const DesignComponent = designComponentMap[design.componente as keyof typeof designComponentMap];
+          const DesignComponent = DESIGN_COMPONENT_MAP[design.componente];
 
           if (!DesignComponent) {
             return (

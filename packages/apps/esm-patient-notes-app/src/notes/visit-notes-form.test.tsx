@@ -5,10 +5,10 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 import {
   ConfigMock,
   diagnosisSearchResponse,
@@ -245,8 +245,8 @@ test('renders outpatient clinical context as a non-editable visit summary', () =
   expect(screen.getByText(/Test Provider/i)).toBeInTheDocument();
   expect(screen.getByText(/CMP-12345/i)).toBeInTheDocument();
   expect(screen.getByText(/clinical summary/i)).toBeInTheDocument();
-  expect(screen.getByText(/chief complaint/i)).toBeInTheDocument();
-  expect(screen.getByText(/objective \/ physical exam/i)).toBeInTheDocument();
+  expect(screen.queryByText(/chief complaint/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/objective \/ physical exam/i)).not.toBeInTheDocument();
   expect(screen.getByText(/read-only/i)).toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /chief complaint/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /objective \/ physical exam/i })).not.toBeInTheDocument();
@@ -318,11 +318,11 @@ test('keeps the resolved form mounted while revalidating and blocks saving until
 });
 
 test('shows saved outpatient context as values that cannot be edited', async () => {
+  const user = userEvent.setup();
   mockUseVisitNoteClinicalContext.mockReturnValue({
     clinicalContext: {
       chiefComplaint: 'Fever and cough',
       biologicalFunctions: 'Appetite: decreased',
-      plan: 'Hydration and follow-up',
     },
     error: undefined,
     isLoading: false,
@@ -331,9 +331,11 @@ test('shows saved outpatient context as values that cannot be edited', async () 
 
   renderVisitNotesForm();
 
-  await waitFor(() => expect(screen.getByText('Fever and cough')).toBeInTheDocument());
+  await user.click(screen.getByRole('button', { name: /clinical summary/i }));
+  expect(screen.getByText('Fever and cough')).toBeInTheDocument();
   expect(screen.getByText('Appetite: decreased')).toBeInTheDocument();
-  expect(screen.getByText('Hydration and follow-up')).toBeInTheDocument();
+  expect(screen.queryByText('Hydration and follow-up')).not.toBeInTheDocument();
+  expect(screen.queryByText('SOAP assessment')).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /chief complaint/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /biological functions/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /treatment plan/i })).not.toBeInTheDocument();

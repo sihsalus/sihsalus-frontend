@@ -225,11 +225,9 @@ export interface OutpatientVisitSummary {
       bowelMovements: string | null;
     };
   };
-  soap: {
-    subjective: string | null;
-    objective: string | null;
-    assessment: string | null;
-    plan: string | null;
+  legacyNotes: {
+    narrative: string | null;
+    physicalExam: string | null;
   };
   physicalExam: PhysicalExamValues;
   diagnoses: OutpatientSummaryDiagnosis[];
@@ -754,17 +752,14 @@ export function buildOutpatientVisitSummary({
     narrative: getObservationText(encounters, concepts.anamnesisUuid),
     biologicalFunctions,
   };
-  const soap = {
-    subjective: getObservationText(encounters, concepts.soapSubjectiveUuid),
-    objective: null as string | null,
-    assessment: getObservationText(encounters, concepts.soapAssessmentUuid),
-    plan: getObservationText(encounters, concepts.soapPlanUuid),
+  const legacyNotes = {
+    narrative: getObservationText(encounters, concepts.legacyNarrativeUuid),
+    physicalExam: getObservationText(encounters, concepts.legacyPhysicalExamUuid, null),
   };
   const physicalExam = physicalExamFields.reduce((values, field) => {
     values[field.key] = getObservationText(encounters, undefined, getFormEngineFieldPath(field.questionId));
     return values;
   }, {} as PhysicalExamValues);
-  soap.objective = getObservationText(encounters, concepts.soapObjectiveUuid, null);
   const treatment = {
     therapeuticIndications: getObservationText(encounters, concepts.therapeuticIndicationsUuid),
     procedures: getObservationText(encounters, concepts.proceduresUuid),
@@ -788,7 +783,7 @@ export function buildOutpatientVisitSummary({
       (Object.values(vitals).some(Boolean) ||
         Object.values({ ...anamnesis, biologicalFunctions: null }).some(Boolean) ||
         Object.values(biologicalFunctions).some(Boolean) ||
-        Object.values(soap).some(Boolean) ||
+        Object.values(legacyNotes).some(Boolean) ||
         Object.values(physicalExam).some(Boolean) ||
         diagnoses.length ||
         Object.values(treatment).some(Boolean) ||
@@ -820,7 +815,7 @@ export function buildOutpatientVisitSummary({
     ...responsibility,
     vitals,
     anamnesis,
-    soap,
+    legacyNotes,
     physicalExam,
     diagnoses,
     treatment,

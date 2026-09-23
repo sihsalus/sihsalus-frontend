@@ -83,10 +83,10 @@ import {
   updateVisitNote,
   useCanonicalVisitNoteEncounter,
   useProviderSignatureDetails,
-  type VisitNoteClinicalContext,
   useVisitNoteClinicalContext,
   useVisitNotes,
 } from './visit-notes.resource';
+import ReadOnlyClinicalSummary from './read-only-clinical-summary.component';
 import styles from './visit-notes-form.scss';
 
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
@@ -1360,12 +1360,16 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                 ) : null}
               </Column>
             </Row>
-            <ReadOnlyClinicalSummary
-              clinicalContext={clinicalContext}
-              error={clinicalContextError}
-              isLoading={isClinicalContextLoading}
-              isValidating={isClinicalContextValidating}
-            />
+            <Row className={styles.clinicalSummaryRow}>
+              <Column sm={4}>
+                <ReadOnlyClinicalSummary
+                  clinicalContext={clinicalContext}
+                  error={clinicalContextError}
+                  isLoading={isClinicalContextLoading}
+                  isValidating={isClinicalContextValidating}
+                />
+              </Column>
+            </Row>
             {isOutpatientVisit ? (
               <Row className={styles.row}>
                 <Column sm={1}>
@@ -1534,186 +1538,6 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     </Workspace2>
   );
 };
-
-function ReadOnlyClinicalSummary({
-  clinicalContext,
-  error,
-  isLoading,
-  isValidating,
-}: {
-  clinicalContext: VisitNoteClinicalContext;
-  error?: Error;
-  isLoading: boolean;
-  isValidating: boolean;
-}) {
-  const { t } = useTranslation();
-  const sections = [
-    {
-      id: 'clinical-summary',
-      title: t('clinicalSummary', 'Clinical summary'),
-      fields: [
-        {
-          id: 'chief-complaint',
-          label: t('chiefComplaint', 'Chief complaint'),
-          value: clinicalContext.chiefComplaint,
-        },
-        {
-          id: 'illness-duration',
-          label: t('illnessDuration', 'Illness duration'),
-          value: clinicalContext.illnessDuration,
-        },
-        {
-          id: 'biological-functions',
-          label: t('biologicalFunctions', 'Biological functions'),
-          value: clinicalContext.biologicalFunctions,
-        },
-      ],
-    },
-    {
-      id: 'soap-assessment',
-      title: t('soapSection', 'SOAP assessment'),
-      fields: [
-        {
-          id: 'subjective',
-          label: t('subjective', 'Subjective'),
-          value: clinicalContext.subjective,
-        },
-        {
-          id: 'objective',
-          label: t('objective', 'Objective / physical exam'),
-          value: clinicalContext.objective,
-        },
-        {
-          id: 'assessment',
-          label: t('assessment', 'Assessment'),
-          value: clinicalContext.assessment,
-        },
-        {
-          id: 'plan',
-          label: t('plan', 'Treatment plan'),
-          value: clinicalContext.plan,
-        },
-      ],
-    },
-    {
-      id: 'orders-and-continuity',
-      title: t('workPlan', 'Orders and continuity of care'),
-      fields: [
-        {
-          id: 'auxiliary-exams',
-          label: t('auxiliaryExams', 'Auxiliary exams'),
-          value: clinicalContext.auxiliaryExams,
-        },
-        {
-          id: 'procedures',
-          label: t('procedures', 'Procedures'),
-          value: clinicalContext.procedures,
-        },
-        {
-          id: 'prescriptions',
-          label: t('prescriptions', 'Prescriptions'),
-          value: clinicalContext.prescriptions,
-        },
-        {
-          id: 'referral',
-          label: t('referral', 'Referral / counter-referral'),
-          value: clinicalContext.referral,
-        },
-      ],
-    },
-  ];
-
-  return (
-    <>
-      <Row className={styles.summaryIntroduction}>
-        <Column sm={4}>
-          <div className={styles.summaryHeading}>
-            <h3>{sections[0].title}</h3>
-            <span className={styles.readOnlyBadge}>{t('readOnly', 'Read-only')}</span>
-          </div>
-          <p className={styles.summaryDescription}>
-            {t(
-              'clinicalSummaryReadOnlyDescription',
-              'This section summarizes records from outpatient care and cannot be edited here.',
-            )}
-          </p>
-          {isLoading || isValidating ? (
-            <InlineLoading
-              description={t('clinicalSummaryLoading', 'Loading the outpatient clinical summary...')}
-              status="active"
-            />
-          ) : null}
-          {error ? (
-            <InlineNotification
-              hideCloseButton
-              kind="error"
-              lowContrast
-              title={t('clinicalSummaryLoadErrorTitle', 'The clinical summary could not be loaded')}
-              subtitle={t('clinicalSummaryLoadErrorDescription', 'Reload before relying on this outpatient summary.')}
-            />
-          ) : null}
-        </Column>
-      </Row>
-      {sections.map((section, sectionIndex) => (
-        <React.Fragment key={section.id}>
-          {sectionIndex > 0 ? (
-            <Row className={styles.summarySectionHeading}>
-              <Column sm={4}>
-                <h3>{section.title}</h3>
-              </Column>
-            </Row>
-          ) : null}
-          {section.fields.map((field) => (
-            <ReadOnlyClinicalField
-              id={field.id}
-              isLoading={isLoading}
-              key={field.id}
-              label={field.label}
-              value={field.value}
-            />
-          ))}
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
-
-function ReadOnlyClinicalField({
-  id,
-  isLoading,
-  label,
-  value,
-}: {
-  id: string;
-  isLoading: boolean;
-  label: string;
-  value?: string;
-}) {
-  const { t } = useTranslation();
-  const labelId = `${id}-summary-label`;
-  const normalizedValue = value?.trim();
-
-  return (
-    <Row className={styles.row}>
-      <Column sm={1}>
-        <span className={styles.columnLabel} id={labelId}>
-          {label}
-        </span>
-      </Column>
-      <Column sm={3}>
-        <div aria-labelledby={labelId} className={styles.readOnlyValue} role="group">
-          {isLoading ? (
-            <SkeletonText />
-          ) : normalizedValue ? (
-            normalizedValue
-          ) : (
-            <span className={styles.emptySummaryValue}>{t('notRecorded', 'Not recorded')}</span>
-          )}
-        </div>
-      </Column>
-    </Row>
-  );
-}
 
 function SelectedDiagnosis({ diagnosis, kind, onRemove, t }: SelectedDiagnosisProps) {
   const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);

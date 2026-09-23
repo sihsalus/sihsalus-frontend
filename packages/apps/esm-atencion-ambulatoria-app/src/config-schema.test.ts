@@ -4,10 +4,17 @@ describe('Atencion Ambulatoria configuration', () => {
   it.each([
     ['consultaExternaForm', 'CE-001-CONSULTA EXTERNA'],
     ['anamnesisForm', 'CE-ANAM-001-ANAMNESIS'],
-    ['soapNoteForm', 'CE-SOAP-001-NOTA SOAP'],
+    ['physicalExamForm', 'CE-EXF-001-EXAMEN FISICO'],
     ['referralForm', 'CE-REF-001-REFERENCIA-CONTRARREFERENCIA'],
   ] as const)('identifies %s by its stable published name', (configKey, publishedName) => {
     expect(configSchema.formsList._default[configKey]).toBe(publishedName);
+  });
+
+  it('requests the dedicated examination version while keeping the anamnesis version contract', () => {
+    expect(configSchema.formsList._default.physicalExamFormVersion).toBe('1.0.0');
+    expect(configSchema.formsList._default.anamnesisFormVersion).toBe('1.1.0');
+    expect(configSchema.formsList._default.physicalExamHistoricalFormNames).toEqual(['CE-SOAP-001-NOTA SOAP']);
+    expect(configSchema.formsList._default).not.toHaveProperty('soapNoteForm');
   });
 
   it.each([

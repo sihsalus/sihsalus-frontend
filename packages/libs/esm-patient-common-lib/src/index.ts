@@ -1,3 +1,8 @@
+export {
+  default as ConditionConceptSetForm,
+  createConditionConceptSetSchema,
+  type ConditionConceptSetWorkspaceProps,
+} from './antecedents/condition-concept-set-form.workspace';
 // Modules absorbed from @sihsalus/esm-sihsalus-shared
 export * from './antecedents/antecedent-types';
 export * from './antecedents/condition-concept-set.resource';

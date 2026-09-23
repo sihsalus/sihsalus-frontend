@@ -19,35 +19,6 @@ const anamnesisConceptDefaults = {
 // ===============================
 
 export const configSchema = {
-  conditionPageSize: {
-    _type: Type.Number,
-    _description: 'The default page size for the conditions',
-    _default: 5,
-  },
-  conditionConceptClassUuid: {
-    _type: Type.ConceptUuid,
-    _description: 'Concept class UUID for condition concepts',
-    _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
-  },
-  // CONCEPT SETS FOR CONDITIONS
-  conditionConceptSets: {
-    _type: Type.Object,
-    _description: 'ConceptSets for different condition categories',
-    _default: {
-      antecedentesPatologicos: {
-        uuid: 'c33ef45d-aa69-4d9a-9214-1dbb52609601',
-        title: 'Antecedentes Patológicos del Menor',
-        description: 'ConceptSet para antecedentes patológicos en menores',
-      },
-    },
-  },
-  // Fallback concept for free-text antecedents
-  conditionFreeTextFallbackConceptUuid: {
-    _type: Type.ConceptUuid,
-    _description:
-      'Concept UUID used when saving free-text antecedents (Otros). This should be a generic "Antecedente" concept.',
-    _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  },
   // 1. ENCOUNTER TYPES
   encounterTypes: {
     _type: Type.Object,
@@ -89,7 +60,7 @@ export const configSchema = {
       clinicalFileUpload: '319dcd44-19c5-432c-9733-d1f3798fffd6', // Carga de Archivos Clínicos — RM 546-2011
       order: '39da3525-afe4-45ff-8977-c53b7b359158', // Órdenes Médicas
       // The manual visit-note workspace (esm-patient-notes-app) records the same
-      // clinical subdomains (diagnoses P/D/R, SOAP, plan, referral) under this
+      // clinical subdomains (diagnoses P/D/R, physical examination, plan, referral) under this
       // encounter type; the CE readers merge it with externalConsultation.
       visitNote: 'd7151f82-c1f3-4152-a605-2f9ea7414a79', // Visit Note (O3 core)
     },
@@ -245,8 +216,10 @@ export const configSchema = {
       consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
       anamnesisFormVersion: '1.1.0',
-      soapNoteForm: 'CE-SOAP-001-NOTA SOAP',
-      physicalExamFormVersion: '1.2.0',
+      physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
+      physicalExamFormVersion: '1.0.0',
+      // Read-only identities used to prevent a second examination during migration.
+      physicalExamHistoricalFormNames: ['CE-SOAP-001-NOTA SOAP'],
       referralForm: 'CE-REF-001-REFERENCIA-CONTRARREFERENCIA',
       visitNoteFormUuid: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
 
@@ -471,29 +444,18 @@ export const configSchema = {
       _default: anamnesisConceptDefaults.bowelMovementsUuid,
     },
 
-    // Segmented physical examination and legacy SOAP notes (CE-5)
-    soapSubjectiveUuid: {
+    // Read-only compatibility with narrative and examination findings from historical notes.
+    legacyNarrativeUuid: {
       _type: Type.ConceptUuid,
-      _description: 'SOAP Subjective concept',
+      _description: 'Narrative concept used only when reading historical notes',
       _default: 'f0000202-0000-4000-8000-000000000202',
     },
-    soapObjectiveUuid: {
+    legacyPhysicalExamUuid: {
       _type: Type.ConceptUuid,
       _description:
-        'Physical examination findings (CIEL 160532). Segmented CE-SOAP fields share this concept and are distinguished by formFieldPath.',
+        'Historical examination findings (CIEL 160532). New physical-examination fields are read by formFieldPath.',
       _default: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
-    soapAssessmentUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Assessment concept (CIEL 160533)',
-      _default: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    soapPlanUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Plan concept',
-      _default: 'f0000201-0000-4000-8000-000000000201',
-    },
-
     // Insurance Provider (CE-6)
     insuranceProviderUuid: {
       _type: Type.ConceptUuid,
@@ -939,16 +901,6 @@ export interface LegendConfigObject {
 }
 
 export interface ConfigObject {
-  conditionPageSize: number;
-  conditionConceptClassUuid: string;
-  conditionConceptSets: {
-    antecedentesPatologicos: {
-      uuid: string;
-      title: string;
-      description: string;
-    };
-  };
-  conditionFreeTextFallbackConceptUuid: string;
   encounterTypes: {
     externalConsultation: string;
     specializedConsultation: string;
@@ -1033,8 +985,9 @@ export interface ConfigObject {
     consultaExternaForm: string;
     anamnesisForm: string;
     anamnesisFormVersion?: string;
-    soapNoteForm: string;
+    physicalExamForm: string;
     physicalExamFormVersion?: string;
+    physicalExamHistoricalFormNames?: string[];
     referralForm: string;
     visitNoteFormUuid: string;
     // HIV/HTS Forms

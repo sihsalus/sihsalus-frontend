@@ -7,10 +7,8 @@ vi.mock('swr', () => ({ default: vi.fn() }));
 const mockUseSWR = vi.mocked(useSWR);
 
 const concepts = {
-  soapSubjectiveUuid: 'subjective',
-  soapObjectiveUuid: 'objective',
-  soapAssessmentUuid: 'assessment',
-  soapPlanUuid: 'plan',
+  legacyNarrativeUuid: 'subjective',
+  legacyPhysicalExamUuid: 'objective',
 };
 
 describe('mapPhysicalExamEntry', () => {

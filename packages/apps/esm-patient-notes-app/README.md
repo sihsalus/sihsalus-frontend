@@ -59,9 +59,13 @@ Un despliegue que use una versión posterior debe actualizar la URL junto con el
 
 ## Configuración clínica
 
-Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, SOAP, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes.
+Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes. Se eliminan las cuatro opciones `soap*ConceptUuid` y su proyección del resumen; los overrides anteriores deben retirarse.
 
-Motivo de consulta, tiempo de enfermedad, funciones biológicas, SOAP, exámenes auxiliares, procedimientos, prescripciones y referencia/contrarreferencia son una proyección de solo lectura de lo registrado por Consulta Externa durante la atención. Notas de visita no vuelve a persistir esos valores ni usa su propio encounter como fuente del resumen. Las interconsultas no forman parte del concepto de referencia: permanecen como órdenes en `esm-interconsultas-app`.
+Motivo de consulta, tiempo de enfermedad, funciones biológicas, exámenes auxiliares, procedimientos, prescripciones y referencia/contrarreferencia son una proyección de solo lectura de lo registrado por Consulta Externa durante la atención. Notas de visita no vuelve a persistir esos valores ni usa su propio encounter como fuente del resumen. Las interconsultas no forman parte del concepto de referencia: permanecen como órdenes en `esm-interconsultas-app`.
+
+SOAP (subjetivo, examen físico, evaluación y plan) no se repite en este resumen. Este cambio de presentación conserva las observaciones históricas.
+
+El resumen de solo lectura se presenta en un único acordeón Carbon, cerrado al abrir el workspace. Al desplegarlo, muestra únicamente los campos con información en filas compactas; una atención sin datos tiene un único mensaje de vacío. Los avisos de carga, actualización y error permanecen fuera del acordeón para que sean visibles aunque esté cerrado.
 
 Los defaults con contrato de datatype son:
 

@@ -108,12 +108,14 @@ function renderLauncher({
   configuredForm = formIdentifier,
   formVersion = undefined,
   workspaceTitle = undefined,
+  historicalFormNames,
 }: {
   entryMode?: 'one-per-visit' | 'repeatable';
   mutate?: () => unknown;
   configuredForm?: string | null;
   formVersion?: string;
   workspaceTitle?: string;
+  historicalFormNames?: string[];
 } = {}) {
   const hook = renderHook(() =>
     useConsultaExternaFormLauncher({
@@ -121,6 +123,7 @@ function renderLauncher({
       formIdentifier: configuredForm,
       formVersion,
       workspaceTitle,
+      historicalFormNames,
       encounterTypeUuid,
       ambulatoryVisitTypeUuid,
       mutate,
@@ -358,6 +361,70 @@ describe('useConsultaExternaFormLauncher', () => {
         expect.objectContaining({ patientUuid }),
       ),
     );
+  });
+
+  it('opens the physical examination form with its clinical title', async () => {
+    mockPublishedFormResponse('CE-EXF-001-EXAMEN FISICO');
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { results: [matchingEncounter('existing-physical-exam')] },
+    } as never);
+    const { result } = renderLauncher({
+      configuredForm: 'CE-EXF-001-EXAMEN FISICO',
+      workspaceTitle: 'Examen físico',
+    });
+
+    act(() => result.current());
+
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+        patientFormEntryWorkspace,
+        expect.objectContaining({
+          workspaceTitle: 'Examen físico',
+          formInfo: expect.objectContaining({ formUuid, encounterUuid: 'existing-physical-exam' }),
+        }),
+        null,
+        expect.objectContaining({ patientUuid }),
+      ),
+    );
+    expect(getRequestedUrl(0).searchParams.get('q')).toBe('CE-EXF-001-EXAMEN FISICO');
+  });
+
+  it('does not create another examination when the visit contains the previous outpatient form name', async () => {
+    mockPublishedFormResponse('CE-EXF-001-EXAMEN FISICO');
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            ...matchingEncounter('historical-examination'),
+            form: { uuid: 'historical-form', name: 'CE-SOAP-001-NOTA SOAP' },
+          },
+        ],
+      },
+    } as never);
+    const { result } = renderLauncher({
+      configuredForm: 'CE-EXF-001-EXAMEN FISICO',
+      historicalFormNames: ['CE-SOAP-001-NOTA SOAP'],
+    });
+
+    act(() => result.current());
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ subtitle: expect.stringContaining('previous form version') }),
+      ),
+    );
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back to the historical form when the physical examination form is unavailable', async () => {
+    mockPublishedFormResponse('CE-SOAP-001-NOTA SOAP');
+    const { result } = renderLauncher({ configuredForm: 'CE-EXF-001-EXAMEN FISICO' });
+
+    act(() => result.current());
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
   });
 
   it('blocks ambiguous duplicate encounters without silently choosing one', async () => {

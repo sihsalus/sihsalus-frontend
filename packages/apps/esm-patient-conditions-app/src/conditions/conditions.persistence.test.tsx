@@ -190,8 +190,10 @@ it('persists native narrative text and its surgical classification through real 
   const table = await screen.findByRole('table', { name: 'Antecedents summary' });
   expect(within(table).getByText('Synthetic uncoded surgery')).toBeInTheDocument();
   expect(
-    within(screen.getByRole('table', { name: 'Active problems summary' })).queryByText('Synthetic uncoded surgery'),
-  ).not.toBeInTheDocument();
+    within(table).getByRole('row', {
+      name: /Synthetic uncoded surgery.*quirúrgico|Synthetic uncoded surgery.*surgical/i,
+    }),
+  ).toBeInTheDocument();
   const writes = backend.requests.filter(({ method }) => method === 'POST');
   expect(writes).toHaveLength(1);
   expect(writes[0].body?.condition).toEqual({ nonCoded: 'Synthetic uncoded surgery' });
@@ -270,16 +272,11 @@ it('keeps recurrence, relapse, remission and resolution distinct after reading t
   installBackend(conditions);
   const props = renderHistory();
 
-  const active = await screen.findByRole('table', { name: 'Active problems summary' });
-  const history = screen.getByRole('table', { name: 'Antecedents summary' });
+  const history = await screen.findByRole('table', { name: 'Antecedents summary' });
   expect(props.readErrors).toEqual([]);
-  for (const status of ['Recurrence', 'Relapse']) {
-    expect(within(active).getByText(status)).toBeInTheDocument();
-    expect(within(history).queryByText(status)).not.toBeInTheDocument();
-  }
-  for (const status of ['Remission', 'Resolved']) {
+  expect(screen.getAllByRole('table')).toHaveLength(1);
+  for (const status of ['Recurrence', 'Relapse', 'Remission', 'Resolved']) {
     expect(within(history).getByText(status)).toBeInTheDocument();
-    expect(within(active).queryByText(status)).not.toBeInTheDocument();
   }
 });
 

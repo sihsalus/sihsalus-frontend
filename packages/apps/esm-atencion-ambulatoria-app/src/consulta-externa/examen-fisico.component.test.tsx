@@ -30,16 +30,15 @@ describe('ExamenFisico', () => {
     mockUseConfig.mockReturnValue({
       encounterTypes: { externalConsultation: 'external-consultation' },
       formsList: {
-        physicalExamFormVersion: '1.2.0',
-        soapNoteForm: 'CE-SOAP-001-NOTA SOAP',
+        physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
+        physicalExamFormVersion: '1.0.0',
+        physicalExamHistoricalFormNames: ['CE-SOAP-001-NOTA SOAP'],
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
       visitTypes: { ambulatory: 'ambulatory-visit' },
       concepts: {
-        soapSubjectiveUuid: 'subjective',
-        soapObjectiveUuid: 'objective',
-        soapAssessmentUuid: 'assessment',
-        soapPlanUuid: 'plan',
+        legacyNarrativeUuid: 'subjective',
+        legacyPhysicalExamUuid: 'objective',
       },
     });
   });
@@ -115,12 +114,13 @@ describe('ExamenFisico', () => {
 
     expect(mockUseConsultaExternaFormLauncher).toHaveBeenCalledWith({
       patientUuid: 'synthetic-patient-uuid',
-      formIdentifier: 'CE-SOAP-001-NOTA SOAP',
+      formIdentifier: 'CE-EXF-001-EXAMEN FISICO',
       encounterTypeUuid: 'external-consultation',
       ambulatoryVisitTypeUuid: 'ambulatory-visit',
       mutate,
       entryMode: 'one-per-visit',
-      formVersion: '1.2.0',
+      formVersion: '1.0.0',
+      historicalFormNames: ['CE-SOAP-001-NOTA SOAP'],
       workspaceTitle: 'Examen físico',
     });
     expect(mockLaunchForm).toHaveBeenCalledOnce();

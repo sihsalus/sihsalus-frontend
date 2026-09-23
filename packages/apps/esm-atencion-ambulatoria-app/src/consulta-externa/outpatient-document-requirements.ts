@@ -32,11 +32,11 @@ export interface OutpatientDocumentRequirement {
 }
 
 const clinicalRecordIssueRequirements: Record<OutpatientClinicalRecordIssue, OutpatientDocumentRequirement> = {
-  'canonical-encounter-missing': { id: 'clinicalEncounter', tab: 'soap' },
+  'canonical-encounter-missing': { id: 'clinicalEncounter', tab: 'physicalExam' },
   'canonical-encounter-ambiguous': { id: 'ambiguousClinicalEncounter' },
   'primary-diagnosis-missing-or-ambiguous': { id: 'primaryDiagnosis', tab: 'diagnosis' },
   'primary-diagnosis-cie10-mapping-missing': { id: 'primaryDiagnosisCie10', tab: 'diagnosis' },
-  'responsible-provider-missing-or-ambiguous': { id: 'responsibleProfessional', tab: 'soap' },
+  'responsible-provider-missing-or-ambiguous': { id: 'responsibleProfessional', tab: 'physicalExam' },
 };
 
 function dedupeById(requirements: OutpatientDocumentRequirement[]): OutpatientDocumentRequirement[] {
@@ -77,7 +77,7 @@ export function getMissingRecetaUnicaRequirements(summary: OutpatientVisitSummar
     requirements.push(...summary.clinicalRecordIssues.map((issue) => clinicalRecordIssueRequirements[issue]));
     // A dated clinical encounter is part of the contract but is not reported as
     // an issue on its own, so an unexplained failure still names it.
-    if (!requirements.length) requirements.push({ id: 'clinicalEncounter', tab: 'soap' });
+    if (!requirements.length) requirements.push({ id: 'clinicalEncounter', tab: 'physicalExam' });
   }
 
   if (!hasOutpatientRecetaUnicaContent(summary)) {

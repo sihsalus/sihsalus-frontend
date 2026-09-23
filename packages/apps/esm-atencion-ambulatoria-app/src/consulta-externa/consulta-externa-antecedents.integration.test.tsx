@@ -38,7 +38,7 @@ const conditionsReadPrivilege = 'app:hoja.clinica.condiciones';
 const conditionsEditPrivilege = 'app:hoja.clinica.condiciones.editar';
 const grantedPrivileges = new Set<string>();
 
-describe('Consulta Externa integration with Antecedents and problems', () => {
+describe('Consulta Externa integration with Antecedents', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     grantedPrivileges.clear();
@@ -152,13 +152,14 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
     expect(screen.getByRole('row', { name: /Synthetic active problem/ })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Synthetic past diagnosis/ })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Synthetic family antecedent/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Previous medical records' }));
     expect(
       screen.getByRole('row', {
         name: /Synthetic historical encounter diagnosis/,
       }),
     ).toBeInTheDocument();
     expect(vi.mocked(useConditions)).toHaveBeenCalledWith(syntheticPatient.id);
-    expect(screen.getAllByRole('button', { name: /^Add\b/ })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: /^Add\b/ })).toHaveLength(1);
 
     const antecedentsHeader = screen.getByRole('heading', {
       name: 'Antecedents',
@@ -172,11 +173,13 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
     });
   });
 
-  it('keeps both histories readable without offering edits when conditions editing is denied', () => {
+  it('keeps both histories readable without offering edits when conditions editing is denied', async () => {
+    const user = userEvent.setup();
     grantedPrivileges.delete(conditionsEditPrivilege);
     render(<ConsultaExternaAntecedents patientUuid={syntheticPatient.id} />);
 
     expect(screen.getByRole('row', { name: /Synthetic family antecedent/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Previous medical records' }));
     expect(
       screen.getByRole('row', {
         name: /Synthetic historical encounter diagnosis/,

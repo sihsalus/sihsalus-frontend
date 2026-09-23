@@ -16,16 +16,12 @@ import {
   OpenmrsDatePicker,
   ResponsiveWrapper,
   showSnackbar,
-  useConfig,
   useDebounce,
   useSession,
 } from '@openmrs/esm-framework';
-import {
-  type ConditionFormSubmissionResult,
-  isConditionForPatient,
-  isUnconfirmedConditionWriteError,
-  matchesConditionStatusFilter,
-} from '@openmrs/esm-patient-common-lib';
+import type { ConditionFormSubmissionResult } from './use-condition-form-lifecycle';
+import { isConditionForPatient } from './conditions-model';
+import { matchesConditionStatusFilter } from './condition-status';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import 'dayjs/plugin/utc';
@@ -34,39 +30,33 @@ import React, { type Dispatch, useCallback, useEffect, useId, useImperativeHandl
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-import type { ConfigObject } from '../../config-schema';
-import { type DefaultPatientWorkspaceProps } from '../../types';
 import {
-  type CodedCondition,
-  type Condition,
   createCondition,
-  type FormFields,
   syncConditionCache,
   updateCondition,
-  useConditions,
-  useConditionsSearchFromConceptSet,
+  usePatientConditions,
+  isUnconfirmedConditionWriteError,
 } from './conditions.resource';
-import styles from './conditions-form.scss';
-import { type ConditionsFormSchema } from './conditions-form.workspace';
+import type { CodedCondition, Condition, FormFields } from './conditions.types';
+import { useConditionsSearchFromConceptSet } from './condition-concept-set.resource';
+import styles from './condition-concept-set-form.scss';
+import { type ConditionsFormSchema } from './condition-concept-set-form.workspace';
 
 export interface ConditionsWidgetHandle {
   submit: () => Promise<ConditionFormSubmissionResult>;
 }
 
 interface ConditionsWidgetProps {
-  closeWorkspace?: DefaultPatientWorkspaceProps['closeWorkspace'];
+  closeWorkspace: (options?: { discardUnsavedChanges?: boolean }) => Promise<boolean>;
   conditionToEdit?: Condition;
   isEditing?: boolean;
   isSubmittingForm: boolean;
   patientUuid: string;
-  setErrorCreating?: (error: Error) => void;
-  setErrorUpdating?: (error: Error) => void;
-  setHasSubmissibleValue?: (value: boolean) => void;
+  setCreationMessage?: (message: string) => void;
+  setUpdateMessage?: (message: string) => void;
   setIsSubmittingForm: Dispatch<boolean>;
-  workspaceProps?: {
-    conceptSetUuid?: string;
-    title?: string;
-  };
+  conceptSetUuid?: string;
+  translationNamespace: string;
 }
 
 interface RequiredFieldLabelProps {
@@ -78,7 +68,7 @@ interface SearchResultsProps {
   isSearching: boolean;
   onConditionChange: (condition: CodedCondition) => void;
   searchResults: CodedCondition[];
-  selectedCondition: CodedCondition;
+  selectedCondition: CodedCondition | null;
   t: TFunction;
   value: string;
 }
@@ -91,14 +81,15 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
       isEditing,
       isSubmittingForm,
       patientUuid,
-      setErrorCreating,
-      setErrorUpdating,
+      setCreationMessage,
+      setUpdateMessage,
       setIsSubmittingForm,
-      workspaceProps,
+      conceptSetUuid,
+      translationNamespace,
     },
     ref,
   ) => {
-  const { t } = useTranslation('@sihsalus/esm-cred-app');
+    const { t } = useTranslation(translationNamespace);
     const inputId = useId();
     const mounted = useRef(true);
     useEffect(() => {
@@ -107,8 +98,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         mounted.current = false;
       };
     }, []);
-    const config = useConfig<ConfigObject>();
-    const { conditions, mutate } = useConditions(patientUuid);
+    const { conditions, mutate } = usePatientConditions(patientUuid);
     const {
       control,
       formState: { errors, dirtyFields },
@@ -121,21 +111,16 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
     const matchingCondition = conditions?.find((condition) => condition?.id === conditionToEdit?.id);
 
     const displayName = conditionToEdit?.display;
-    const editableClinicalStatus = conditionToEdit?.clinicalStatus;
     const editableRecordedDate = conditionToEdit?.recordedDate;
-    const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
+    const [selectedCondition, setSelectedCondition] = useState<CodedCondition | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm);
-
-    // Get conceptSetUuid from workspace props or use default from config
-    const conceptSetUuid =
-      workspaceProps?.conceptSetUuid || config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
 
     const {
       searchResults,
       isSearching,
       error: searchError,
-    } = useConditionsSearchFromConceptSet(debouncedSearchTerm, conceptSetUuid);
+    } = useConditionsSearchFromConceptSet(debouncedSearchTerm, conceptSetUuid ?? '');
 
     const handleConditionChange = useCallback((selectedCondition: CodedCondition) => {
       setSelectedCondition(selectedCondition);
@@ -153,19 +138,17 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
     const handleCreate = useCallback(async () => {
       if (!selectedCondition || searchError) {
         setIsSubmittingForm(false);
-        setErrorCreating?.(new Error(t('conditionSelectionRequired', 'Select a condition from the search results.')));
+        setCreationMessage?.(t('conditionSelectionRequired', 'Select a condition from the search results.'));
         return false;
       }
 
       const providerUuid = session?.currentProvider?.uuid;
       if (!providerUuid) {
         setIsSubmittingForm(false);
-        setErrorCreating?.(
-          new Error(
-            t(
-              'clinicalProviderRequiredForCondition',
-              'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
-            ),
+        setCreationMessage?.(
+          t(
+            'clinicalProviderRequiredForCondition',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
           ),
         );
         return false;
@@ -210,32 +193,28 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         if (writeConfirmed) return true;
         if (!mounted.current) return false;
         if (isUnconfirmedConditionWriteError(error)) {
-          setErrorCreating?.(
-            new Error(
-              t(
-                'antecedentSaveUnconfirmedMessage',
-                'The save could not be confirmed. Close this form and reload the history before recording it again.',
-              ),
+          setCreationMessage?.(
+            t(
+              'antecedentSaveUnconfirmedMessage',
+              'The save could not be confirmed. Close this form and reload the history before recording it again.',
             ),
           );
           return 'uncertain' as const;
         }
         setIsSubmittingForm(false);
-        setErrorCreating?.(
-          new Error(
-            getUserFacingErrorMessage(
-              error,
-              t('conditionSaveFailed', 'The condition could not be saved. Please try again.'),
-              {
-                logContext: 'Create CRED condition',
-                codeMessages: {
-                  CONDITION_TEXT_TOO_LONG: t(
-                    'antecedentTextTooLong',
-                    'Shorten the antecedent description or note before saving.',
-                  ),
-                },
+        setCreationMessage?.(
+          getUserFacingErrorMessage(
+            error,
+            t('conditionSaveFailed', 'The condition could not be saved. Please try again.'),
+            {
+              logContext: 'Create condition',
+              codeMessages: {
+                CONDITION_TEXT_TOO_LONG: t(
+                  'antecedentTextTooLong',
+                  'Shorten the antecedent description or note before saving.',
+                ),
               },
-            ),
+            },
           ),
         );
         return false;
@@ -249,7 +228,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
       selectedCondition,
       searchError,
       session?.currentProvider?.uuid,
-      setErrorCreating,
+      setCreationMessage,
       setIsSubmittingForm,
       t,
     ]);
@@ -258,12 +237,10 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
       const providerUuid = session?.currentProvider?.uuid;
       if (!providerUuid) {
         setIsSubmittingForm(false);
-        setErrorUpdating?.(
-          new Error(
-            t(
-              'clinicalProviderRequiredForCondition',
-              'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
-            ),
+        setUpdateMessage?.(
+          t(
+            'clinicalProviderRequiredForCondition',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
           ),
         );
         return false;
@@ -276,10 +253,8 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         // Sin el antecedente resuelto el PUT saldría con conceptId/display
         // indefinidos y corrompería el registro clínico.
         setIsSubmittingForm(false);
-        setErrorUpdating?.(
-          new Error(
-            t('conditionEditUnavailable', 'No se pudo cargar la condición a editar. Recargue e intente nuevamente.'),
-          ),
+        setUpdateMessage?.(
+          t('conditionEditUnavailable', 'No se pudo cargar la condición a editar. Recargue e intente nuevamente.'),
         );
         return false;
       }
@@ -287,9 +262,9 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
       const payload: FormFields = {
         clinicalStatus: dirtyFields.clinicalStatus
           ? getValues('clinicalStatus')
-          : editableClinicalStatus?.toLowerCase(),
+          : conditionToEdit.clinicalStatus.toLowerCase(),
         conceptId: conditionToEdit?.conceptId,
-        display: displayName,
+        display: conditionToEdit.display,
         abatementDateTime: dirtyFields.abatementDateTime
           ? getValues('abatementDateTime')
             ? dayjs(getValues('abatementDateTime')).format()
@@ -327,36 +302,32 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         if (writeConfirmed) return true;
         if (!mounted.current) return false;
         if (isUnconfirmedConditionWriteError(error)) {
-          setErrorUpdating?.(
-            new Error(
-              t(
-                'antecedentSaveUnconfirmedMessage',
-                'The save could not be confirmed. Close this form and reload the history before recording it again.',
-              ),
+          setUpdateMessage?.(
+            t(
+              'antecedentSaveUnconfirmedMessage',
+              'The save could not be confirmed. Close this form and reload the history before recording it again.',
             ),
           );
           return 'uncertain' as const;
         }
         setIsSubmittingForm(false);
-        setErrorUpdating?.(
-          new Error(
-            getUserFacingErrorMessage(
-              error,
-              t('conditionUpdateFailed', 'The condition could not be updated. Please try again.'),
-              {
-                logContext: 'Update CRED condition',
-                codeMessages: {
-                  CONDITION_TEXT_TOO_LONG: t(
-                    'antecedentTextTooLong',
-                    'Shorten the antecedent description or note before saving.',
-                  ),
-                  CONDITION_CHANGED: t(
-                    'antecedentChanged',
-                    'This antecedent changed. Close this form and reopen it before editing.',
-                  ),
-                },
+        setUpdateMessage?.(
+          getUserFacingErrorMessage(
+            error,
+            t('conditionUpdateFailed', 'The condition could not be updated. Please try again.'),
+            {
+              logContext: 'Update condition',
+              codeMessages: {
+                CONDITION_TEXT_TOO_LONG: t(
+                  'antecedentTextTooLong',
+                  'Shorten the antecedent description or note before saving.',
+                ),
+                CONDITION_CHANGED: t(
+                  'antecedentChanged',
+                  'This antecedent changed. Close this form and reopen it before editing.',
+                ),
               },
-            ),
+            },
           ),
         );
         return false;
@@ -366,13 +337,11 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
       matchingCondition,
       conditionToEdit,
       closeWorkspace,
-      displayName,
-      editableClinicalStatus,
       getValues,
       refreshAfterSave,
       patientUuid,
       session?.currentProvider?.uuid,
-      setErrorUpdating,
+      setUpdateMessage,
       setIsSubmittingForm,
       t,
       editableRecordedDate,
@@ -391,11 +360,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
     );
 
     return (
-      <fieldset
-        className={styles.formContainer}
-        disabled={isSubmittingForm}
-        style={{ border: 0, padding: 0, margin: 0 }}
-      >
+      <fieldset className={styles.formContainer} disabled={isSubmittingForm}>
         {isEditing &&
           [conditionToEdit?.onsetDateTime, conditionToEdit?.abatementDateTime].some(
             (date) => date && !/^\d{4}-\d{2}-\d{2}/.test(date),
@@ -416,7 +381,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
             title={t('antecedentSearchFailed', 'Antecedent search is unavailable. Please try again.')}
           />
         ) : null}
-        <Stack gap={7}>
+        <Stack gap={5}>
           <FormGroup legendText={<RequiredFieldLabel label={t('condition', 'Condition')} t={t} />}>
             {isEditing ? (
               <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
@@ -548,7 +513,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
                             !/^\d{4}-\d{2}-\d{2}/.test(conditionToEdit.abatementDateTime),
                         )}
                         data-testid={`${inputId}-endDate`}
-                        minDate={new Date(watch('onsetDateTime'))}
+                        minDate={watch('onsetDateTime') ?? undefined}
                         maxDate={new Date()}
                         labelText={t('endDate', 'End date')}
                         invalid={Boolean(fieldState?.error?.message)}

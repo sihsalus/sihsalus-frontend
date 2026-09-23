@@ -54,7 +54,7 @@ const summary: OutpatientVisitSummary = {
       bowelMovements: null,
     },
   },
-  soap: { subjective: null, objective: 'Hallazgo sintético', assessment: null, plan: null },
+  legacyNotes: { narrative: null, physicalExam: 'Hallazgo sintético' },
   physicalExam: {
     generalState: 'Estable',
     consciousness: null,

@@ -51,6 +51,26 @@ schema; a failed load discards the previous schema and reports only a fixed gene
 error. This does not establish live renderer/dirty-field reconciliation for schema
 edits, or the cause of an error observed in a deployed environment.
 
+### Schema-only preview
+
+`FormPreview` renders an in-memory schema through the existing schema loader,
+processor factory and field components. It mounts a separate provider context
+without the clinical submission lifecycle or patient loader. The preview
+processor reuses schema preparation and default-value logic, has no clinical
+history/dependency hooks, and rejects direct submission. Ordinary `FormEngine`
+patient and encounter checks remain required.
+
+Preview sessions reset when schema content changes. Their translations and page
+observer state are isolated from clinical sessions. Empty forms complete their
+initial-value load through the common hook; nonempty forms wait for fields,
+adapters and context dependencies before initializing values once.
+
+Built-in controls and metadata datasources are available; custom controls,
+custom datasources, workspace launchers and file actions render a descriptive
+placeholder. Concept and referenced-form reads use the existing authorized
+endpoints. This is a schema preview, not a simulation of clinical submission or
+patient-dependent calculations.
+
 ## Documentation
 
 Read the full docs in the OpenMRS Wiki [here](https://openmrs.atlassian.net/wiki/spaces/projects/pages/68747273/O3+Form+Docs).

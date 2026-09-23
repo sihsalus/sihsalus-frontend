@@ -312,5 +312,8 @@
   "viewErrors": "View the errors in the interactive builder",
   "welcomeExplainer": "Add pages, sections and questions to your form. The Preview tab automatically updates as you build your form. For a detailed explanation of what constitutes an OpenMRS form schema, please read through the ",
   "welcomeHeading": "Interactive schema builder",
-  "yes": "Yes"
+  "yes": "Yes",
+  "schemaPreviewTitle": "Form preview",
+  "schemaPreviewDescription": "Try sample values here. They are not saved; actions requiring a patient encounter are unavailable.",
+  "schemaPreviewValidationHint": "Check the questions and the Validation tab for schema errors."
 }

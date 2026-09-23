@@ -1,4 +1,5 @@
 import { getGlobalStore, type OpenmrsResource } from '@openmrs/esm-framework/src/internal';
+import PreviewUnavailable from '../components/inputs/preview-unavailable/preview-unavailable.component';
 import { FormsStore } from '../constants';
 import {
   type DataSource,
@@ -157,6 +158,21 @@ export function getFieldControlWithFallback(question: FormField): Promise<FormFi
 
   // Retrieve the registered control based on the specified rendering
   return getRegisteredControl(question.questionOptions.rendering);
+}
+
+/** Preview uses built-in controls only; custom widgets cannot launch clinical workflows. */
+export function getPreviewFieldControl(
+  question: FormField,
+  rendering = question.questionOptions.rendering,
+): FormFieldInputComponent {
+  if (rendering === 'workspace-launcher' || rendering === 'file') return PreviewUnavailable;
+  const datasource = question.questionOptions.datasource;
+  if (datasource?.name && !inbuiltDataSources.some((source) => source.name === datasource.name))
+    return PreviewUnavailable;
+  return (
+    inbuiltControls.find((control) => control.name === rendering || control.alias === rendering)?.component ??
+    PreviewUnavailable
+  );
 }
 
 export async function getRegisteredFieldValueAdapter(type: string): Promise<FormFieldValueAdapter> {

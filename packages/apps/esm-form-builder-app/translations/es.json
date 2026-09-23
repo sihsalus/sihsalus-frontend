@@ -313,5 +313,8 @@
   "viewErrors": "Visualizar los errores en el constructor interactivo",
   "welcomeExplainer": "Agregar páginas, secciones y preguntas a su formulario. La sección Vista Previa actualiza automáticamente a medida que construye su formulario. Para una explicación detallada de lo que constituye un esquema de formulario de OpenMRS, por favor lea el siguiente documento.",
   "welcomeHeading": "Constructor de esquemas interactivo",
-  "yes": "Sí"
+  "yes": "Sí",
+  "schemaPreviewTitle": "Vista previa del formulario",
+  "schemaPreviewDescription": "Pruebe valores de ejemplo aquí. No se guardan; las acciones que requieren una atención de paciente no están disponibles.",
+  "schemaPreviewValidationHint": "Revise las preguntas y la pestaña Validación para identificar errores del esquema."
 }

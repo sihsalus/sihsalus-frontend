@@ -7,6 +7,7 @@ import { type FormField, type FormFieldValue, type FormSchema } from './schema';
 export type SessionMode = 'edit' | 'enter' | 'view' | 'embedded-view';
 
 export interface FormProcessorContextProps {
+  isPreview?: boolean;
   patient: fhir.Patient;
   formJson: FormSchema;
   visit: Visit;

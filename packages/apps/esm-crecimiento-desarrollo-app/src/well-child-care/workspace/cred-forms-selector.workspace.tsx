@@ -1,3 +1,4 @@
+import { Button, InlineLoading } from '@carbon/react';
 import {
   launchWorkspace2,
   showSnackbar,
@@ -7,7 +8,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
-import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
+import { ErrorState, FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -65,7 +66,14 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const patientUuid = props.patientUuid ?? workspaceProps.patientUuid ?? '';
   const submittedEncounterUuids = useRef(new Map<string, string>());
   const { patient } = usePatient(patientUuid);
-  const { encounters, mutate: mutateCREDEncounters } = useEncountersCRED(patientUuid);
+  const {
+    encounters,
+    isLoading,
+    error,
+    controlNumberError,
+    mutate: mutateCREDEncounters,
+  } = useEncountersCRED(patientUuid);
+  const historyError = error ?? controlNumberError;
   const fallbackAvailableForms = useCREDFormsForAgeGroup(
     config,
     patientBirthDate ?? patient?.birthDate,
@@ -122,6 +130,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
 
   const launchForm = useCallback(
     async (form: Form, _latestEncounterUuid: string, onFormSubmitted: () => void) => {
+      if (isLoading || historyError) return;
       try {
         const resolvedForm = await resolveCREDForm(form.uuid, form.display ?? form.name ?? form.uuid);
         const controlFormKey = `${patientUuid}:${controlNumber}:${form.uuid}`;
@@ -161,7 +170,17 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         });
       }
     },
-    [config.CRED?.controlNumber, consultationDatetime, controlNumber, encounters, mutateCREDEncounters, patientUuid, t],
+    [
+      config.CRED?.controlNumber,
+      consultationDatetime,
+      controlNumber,
+      encounters,
+      historyError,
+      isLoading,
+      mutateCREDEncounters,
+      patientUuid,
+      t,
+    ],
   );
   const handleComplete = useCallback(() => {
     void mutateCREDEncounters();
@@ -169,21 +188,33 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
 
   return (
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
-      <FormsSelectorWorkspace
-        availableForms={formsWithHistory}
-        patientAge={patientAge}
-        controlNumber={controlNumber}
-        patientUuid={patientUuid}
-        closeWorkspace={closeWorkspace}
-        title={title}
-        subtitle={subtitle}
-        backWorkspace={backWorkspace}
-        onFormLaunch={launchForm}
-        onComplete={handleComplete}
-        promptBeforeClosing={promptBeforeClosing}
-        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
-        setTitle={setTitle}
-      />
+      {historyError ? (
+        <>
+          <ErrorState error={historyError} headerTitle={title} />
+          <Button kind="ghost" onClick={() => void mutateCREDEncounters()}>
+            {t('retry', 'Reintentar')}
+          </Button>
+        </>
+      ) : isLoading ? (
+        <InlineLoading description={t('loadingData', 'Cargando datos...')} />
+      ) : null}
+      <div hidden={isLoading || Boolean(historyError)}>
+        <FormsSelectorWorkspace
+          availableForms={formsWithHistory}
+          patientAge={patientAge}
+          controlNumber={controlNumber}
+          patientUuid={patientUuid}
+          closeWorkspace={closeWorkspace}
+          title={title}
+          subtitle={subtitle}
+          backWorkspace={backWorkspace}
+          onFormLaunch={launchForm}
+          onComplete={handleComplete}
+          promptBeforeClosing={promptBeforeClosing}
+          closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+          setTitle={setTitle}
+        />
+      </div>
     </RequirePrivilege>
   );
 };

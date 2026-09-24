@@ -24,6 +24,16 @@ OCL is the terminology source, not a runtime browser dependency: this change add
 
 It provides tabular and chart-based overviews of the test results available for a patient.
 
+The default urine-results filter uses the published **Examen completo de orina**
+concept (`laboratorio:4148`, `7e750f3a-8d5c-45b1-8e94-ebf850208e35`) from the
+SIHSALUS laboratory catalog distributed by content 1.25.28. The former local
+`Uroanalisis Grupo` UUID was not distributed in content; requesting it on a
+fresh or production installation returned 404 and blocked the entire viewer.
+The published group reuses its existing panel hierarchy. This selection does
+not create concepts, substitute test identities, change datatypes or convert
+historical values. Local catalog additions require a reviewed content release
+before becoming shared defaults.
+
 The reusable recent-results card is registered in `consulta-externa-pruebas-complementarias-slot` for the **Pruebas complementarias** tab in Consulta Externa. The host passes the active `patientUuid`; the extension keeps its FHIR loading, empty state, and navigation to the complete Results dashboard. This Consulta Externa registration requires `app:hoja.clinica.resultados` and remains read-only.
 
 ### Recent-results loading and interpretation

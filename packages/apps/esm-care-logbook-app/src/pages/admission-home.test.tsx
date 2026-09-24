@@ -77,7 +77,7 @@ describe('AdmissionHome', () => {
     mockUseConfig.mockReturnValue({ admissionReportPageSize: 75 });
   });
 
-  it('starts with today in Lima, allows date history and rejects inverted ranges', () => {
+  it('starts with today in Lima and makes the historical choices explicit', () => {
     mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: false });
     renderAdmissionHome();
     const today = new Intl.DateTimeFormat('en-CA', {
@@ -86,18 +86,30 @@ describe('AdmissionHome', () => {
       month: '2-digit',
       day: '2-digit',
     }).format(new Date());
-    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: today, to: today });
-    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'history' } });
+    const [year, month, day] = today.split('-').map(Number);
+    const thirtyDaysStart = new Date(Date.UTC(year, month - 1, day - 29)).toISOString().slice(0, 10);
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: today, to: today }, true);
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'range' } });
+    expect(screen.getByLabelText('Desde')).toHaveValue(thirtyDaysStart);
+    expect(screen.getByLabelText('Hasta')).toHaveValue(today);
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: thirtyDaysStart, to: today }, true);
+    expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeEnabled();
     fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-01-01' } });
     fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2026-01-31' } });
-    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '2026-01-01', to: '2026-01-31' });
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '2026-01-01', to: '2026-01-31' }, true);
     fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2025-12-31' } });
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '2026-01-01', to: '2025-12-31' }, false);
     expect(screen.getByText('La fecha final debe ser igual o posterior a la inicial')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Todo el histórico' }));
-    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '', to: '' });
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '' } });
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '2026-01-01', to: '' }, false);
+    expect(screen.getByText('Seleccione una fecha')).toBeInTheDocument();
+    expect(screen.getByText('Selecciona un rango de fechas válido')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'all' } });
+    expect(screen.queryByLabelText('Desde')).not.toBeInTheDocument();
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: '', to: '' }, true);
     fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'today' } });
-    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: today, to: today });
+    expect(mockUseAdmissions).toHaveBeenLastCalledWith(75, { from: today, to: today }, true);
   });
 
   it('filters the complete dataset by type and UPSS, including rows after the first table page', () => {
@@ -171,6 +183,8 @@ describe('AdmissionHome', () => {
     expect(screen.getAllByRole('columnheader')).toHaveLength(7);
     expect(screen.getByRole('link', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByText('HCE / código temporal: HC-99')).toBeInTheDocument();
+    expect(screen.getByText('DNI: 12345678')).toBeInTheDocument();
+    expect(screen.getByText('CE: CE-876543')).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'En curso' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Finalizada' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Sí' })).toBeInTheDocument();
@@ -232,6 +246,7 @@ describe('AdmissionHome', () => {
     expect(mockUseAdmissions).toHaveBeenCalledWith(
       75,
       expect.objectContaining({ from: expect.any(String), to: expect.any(String) }),
+      true,
     );
   });
 
@@ -298,7 +313,7 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), { target: { value: '87654321' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar atención/i }), { target: { value: '87654321' } });
 
     expect(screen.queryByRole('link', { name: 'Ada Lovelace' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Grace Hopper' })).toBeInTheDocument();
@@ -342,7 +357,7 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    const searchInput = screen.getByRole('textbox', { name: /buscar por paciente/i });
+    const searchInput = screen.getByRole('textbox', { name: /buscar atención/i });
     for (const query of ['TEMP-001', 'SIS-183299', 'María Quispe', 'Madre']) {
       fireEvent.change(searchInput, { target: { value: query } });
 
@@ -421,10 +436,11 @@ describe('AdmissionHome', () => {
     expect(mockUseAdmissions).toHaveBeenCalledWith(
       50,
       expect.objectContaining({ from: expect.any(String), to: expect.any(String) }),
+      true,
     );
   });
 
-  it('clears the operational filters without discarding the selected historical period', () => {
+  it('clears all filters including the selected historical period', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [createAdmission({})],
       error: undefined,
@@ -432,22 +448,23 @@ describe('AdmissionHome', () => {
     });
     renderAdmissionHome();
     expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'history' } });
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'range' } });
     fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-01-01' } });
     fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2026-01-31' } });
     fireEvent.change(screen.getByLabelText('Tipo de visita'), { target: { value: 'Consulta externa' } });
     fireEvent.change(screen.getByLabelText('UPSS'), { target: { value: 'Admision Central' } });
     fireEvent.change(screen.getByLabelText('Filtrar por estado'), { target: { value: 'Activa' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), { target: { value: 'missing' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar atención/i }), { target: { value: 'missing' } });
     expect(screen.getByText('No hay atenciones que coincidan')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
     expect(screen.getByRole('link', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByLabelText('Tipo de visita')).toHaveValue('all');
     expect(screen.getByLabelText('UPSS')).toHaveValue('all');
     expect(screen.getByLabelText('Filtrar por estado')).toHaveValue('all');
-    expect(screen.getByRole('textbox', { name: /buscar por paciente/i })).toHaveValue('');
-    expect(screen.getByLabelText('Desde')).toHaveValue('2026-01-01');
-    expect(screen.getByLabelText('Hasta')).toHaveValue('2026-01-31');
+    expect(screen.getByRole('textbox', { name: /buscar atención/i })).toHaveValue('');
+    expect(screen.getByLabelText('Periodo')).toHaveValue('today');
+    expect(screen.queryByLabelText('Desde')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toBeDisabled();
   });
 
   it('keeps a patient without DNI or birthday identifiable and searchable by their responsible person', () => {
@@ -467,7 +484,8 @@ describe('AdmissionHome', () => {
     });
     renderAdmissionHome();
     expect(screen.getByText('HCE / código temporal: TEMP-900')).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), {
+    expect(screen.queryByText(/^DNI:/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar atención/i }), {
       target: { value: 'Charles Babbage' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Ver detalles de SYNTHETIC Sin identificar' }));
@@ -517,7 +535,7 @@ describe('AdmissionHome', () => {
     expect(screen.queryByTestId('care-logbook-empty-state')).not.toBeInTheDocument();
     expect(screen.queryByText(/no hay atenciones/i)).not.toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).not.toHaveTextContent('0');
-    expect(screen.getByRole('textbox', { name: /buscar por paciente/i })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: /buscar atención/i })).toBeDisabled();
     expect(screen.getByLabelText(/filtrar por estado/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /exportar csv/i })).toBeDisabled();
   });
@@ -531,7 +549,7 @@ describe('AdmissionHome', () => {
     expect(screen.queryByTestId('care-logbook-empty-state')).not.toBeInTheDocument();
     expect(screen.queryByText(/no hay atenciones/i)).not.toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).toHaveTextContent('—');
-    expect(screen.getByRole('textbox', { name: /buscar por paciente/i })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: /buscar atención/i })).toBeDisabled();
     expect(screen.getByLabelText(/filtrar por estado/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /exportar csv/i })).toBeDisabled();
   });
@@ -545,6 +563,17 @@ describe('AdmissionHome', () => {
     expect(screen.getByTestId('care-logbook-empty-state-illustration')).toBeInTheDocument();
     expect(screen.getByText(/no hay atenciones recientes para mostrar/i)).toBeInTheDocument();
     expect(screen.getByText(/las atenciones registradas aparecerán aquí/i)).toBeInTheDocument();
+  });
+
+  it('distinguishes an empty selected period from an empty search result', () => {
+    mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: false });
+    renderAdmissionHome();
+
+    fireEvent.change(screen.getByLabelText('Periodo'), { target: { value: 'all' } });
+    expect(screen.getByText('No hay atenciones en el periodo seleccionado')).toBeInTheDocument();
+    expect(screen.getByText('Prueba con otro rango de fechas o periodo')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar atención/i }), { target: { value: 'SYNTHETIC' } });
+    expect(screen.getByText('No hay atenciones que coincidan')).toBeInTheDocument();
   });
 
   it('renders data without a table skeleton or empty-state messaging', () => {

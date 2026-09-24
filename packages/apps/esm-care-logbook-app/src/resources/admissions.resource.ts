@@ -426,17 +426,17 @@ export async function fetchAdmissionPages(url: string): Promise<{ data: VisitRes
   return { data: { results: Array.from(visits.values()) } };
 }
 
-export function useAdmissions(limit: number, range: AdmissionDateRange = {}) {
+export function useAdmissions(limit: number, range: AdmissionDateRange = {}, enabled = true) {
   const pageSize = Number.isFinite(limit) ? Math.max(1, Math.min(200, Math.floor(limit))) : 50;
   let url = `${restBaseUrl}/visit?includeInactive=true&v=${visitRepresentation}&limit=${pageSize}`;
   if (range.from) url += `&fromStartDate=${encodeURIComponent(`${range.from}T00:00:00.000-0500`)}`;
   if (range.to) url += `&toStartDate=${encodeURIComponent(`${range.to}T23:59:59.999-0500`)}`;
   const invalidRange = !!(range.from && range.to && range.from > range.to);
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }, Error>(
-    invalidRange ? null : url,
+    !enabled || invalidRange ? null : url,
     fetchAdmissionPages,
   );
-  const visits = data?.data.results ?? [];
+  const visits = enabled && !invalidRange ? (data?.data.results ?? []) : [];
   const patientUuids = Array.from(new Set(visits.map((visit) => visit.patient?.uuid).filter(Boolean))).sort();
   const relationshipsKey = patientUuids.length ? `admission-relationships:${patientUuids.join(',')}` : null;
   const {
@@ -451,8 +451,8 @@ export function useAdmissions(limit: number, range: AdmissionDateRange = {}) {
     admissions: visits
       .map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? '']))
       .sort((a, b) => (Date.parse(b.startDatetime ?? '') || 0) - (Date.parse(a.startDatetime ?? '') || 0)),
-    error: error ?? relationshipsError,
-    isLoading: isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient),
+    error: enabled && !invalidRange ? (error ?? relationshipsError) : undefined,
+    isLoading: enabled && !invalidRange && (isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient)),
   };
 }
 

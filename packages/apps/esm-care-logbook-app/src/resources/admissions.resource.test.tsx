@@ -72,6 +72,15 @@ describe('admissions resources', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
+  it('does not turn an incomplete custom range into an unbounded history request', () => {
+    const { result } = renderHook(() => useAdmissions(50, { from: '2026-09-01', to: '' }, false), { wrapper });
+
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(result.current.admissions).toEqual([]);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('loads a large history completely with one relationship request per patient and at most five in flight', async () => {
     const visits = Array.from({ length: 1001 }, (_, index) => ({
       uuid: `visit-${index}`,

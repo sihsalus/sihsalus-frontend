@@ -55,7 +55,9 @@ Las entradas de Historia Social usan `socialHistory.formUuid` y `socialHistory.e
 La tabla de antecedentes médicos conserva el resto del historial cuando un diagnóstico antiguo no trae su representación codificada: muestra `--` en esa celda en lugar de bloquear la pantalla. No infiere un diagnóstico ni modifica el registro histórico.
 
 El lector compartido de Historia Social, anamnesis, examen físico, diagnósticos,
-tratamiento y referencias verifica UUID únicos por fuente, un total estable y
+tratamiento y referencias solicita y verifica el paciente y tipo de encuentro
+de cada registro antes de mostrarlo. También verifica UUID únicos por fuente,
+un total estable y
 la coherencia entre el fin de las páginas y ese total. Un enlace `next` exige
 continuar, también en páginas cortas; se conservan los filtros originales y no
 se sigue la dirección recibida. Las fuentes inconsistentes fallan sin publicar
@@ -153,6 +155,9 @@ edición, solo lectura, versión faltante y visita abierta durante la actualizac
 La aceptación clínica y el despliegue siguen pendientes hasta esa comprobación.
 
 El dashboard muestra una cabecera compacta propia para garantizar que `Consulta Externa` se traduzca en el namespace del módulo. El orden operativo de las pestañas sigue el flujo clínico: Triajes previos, Antecedentes, Anamnesis, Examen físico, Pruebas complementarias, Diagnóstico, Plan de Tratamiento y Referencia / Contrarreferencia. **Pruebas complementarias** va antes de Diagnóstico porque el clínico lee lo que devolvió el laboratorio antes de clasificar. La pestaña no implementa su propia vista: expone el slot `consulta-externa-pruebas-complementarias-slot`, donde `esm-patient-tests-app` monta el mismo card de resultados (`externalOverview`) que ya usan la hoja clínica y el resumen de visitas, así que las tres superficies comparten una sola implementación y respetan `app:hoja.clinica.resultados`.
+
+**Triajes previos** utiliza el slot compartido `consulta-externa-vitals-summary-slot`;
+no mantiene un lector local alternativo de encuentros de triaje.
 
 Anamnesis y examen físico son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; el workspace crea un encounter nuevo adjunto a la visita ambulatoria verificada y persiste únicamente destino, especialidad, prioridad, condición de salida, transporte y motivo. Paciente, visita, triaje, diagnósticos, tratamiento y profesional no se duplican.
 

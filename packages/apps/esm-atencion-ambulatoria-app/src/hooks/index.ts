@@ -30,4 +30,3 @@ export { useInsuranceProvider } from './useInsuranceProvider';
 export { usePatientTracing } from './usePatientTracing';
 export { usePhysicalExam } from './usePhysicalExam';
 export { useTreatmentPlan } from './useTreatmentPlan';
-export { type TriageVitals, useTriageVitals } from './useTriageVitals';

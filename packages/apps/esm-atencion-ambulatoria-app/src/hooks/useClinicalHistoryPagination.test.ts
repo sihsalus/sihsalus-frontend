@@ -333,6 +333,8 @@ describe('clinical history identity verification', () => {
     {},
     { results: null },
     { results: 'invalid' },
+    { results: [{ uuid: 'missing-patient', encounterType: { uuid: 'social-type' } }] },
+    { results: [{ uuid: 'missing-type', patient: { uuid: 'synthetic-patient' } }] },
     { results: [{ patient: { uuid: 'other-patient' }, encounterType: { uuid: 'social-type' } }] },
     { results: [{ patient: { uuid: 'synthetic-patient' }, encounterType: { uuid: 'therapy-type' } }] },
   ])('rejects malformed data or clinical identity mismatches: %j', async (data) => {

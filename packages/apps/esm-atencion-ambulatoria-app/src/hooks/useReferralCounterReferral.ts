@@ -86,7 +86,9 @@ export function useReferralCounterReferral(
           {
             url:
               `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${referralCounterReferralEncounterTypeUuid}` +
-              `&v=custom:(uuid,encounterDatetime,encounterType:(uuid),visit:(uuid),location:(uuid,display),encounterProviders:(display),obs:(voided,concept:(uuid),value,display))&order=desc`,
+              `&v=custom:(uuid,patient:(uuid),encounterDatetime,encounterType:(uuid),visit:(uuid),location:(uuid,display),encounterProviders:(display),obs:(voided,concept:(uuid),value,display))&order=desc`,
+            expectedPatientUuid: patientUuid,
+            expectedEncounterTypeUuid: referralCounterReferralEncounterTypeUuid,
           },
         ]
       : null;

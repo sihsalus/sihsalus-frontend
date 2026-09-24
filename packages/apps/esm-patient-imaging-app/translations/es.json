@@ -142,7 +142,6 @@
   "requestingPhysician": "Médico solicitante",
   "requestingPhysicianMsg": "Ingrese el nombre del médico solicitante",
   "requestProcedure": "Procedimientos solicitados",
-  "requestProcedureEmptyState": "No se encontraron solicitudes",
   "requestSaved": "Solicitud guardada correctamente",
   "requestsSummary": "Resumen de solicitudes",
   "requestStatusCompleted": "completado",
@@ -179,7 +178,6 @@
   "stepTimeWarn": "La hora de inicio del paso es obligatoria",
   "stoneviewer": "Ver imagen",
   "Studies": "Estudios",
-  "studiesNoFoundMessage": "No se encontraron estudios",
   "studiesSummary": "Resumen de estudios",
   "studyAssigned": "El estudio se asignó correctamente",
   "studyDate": "Fecha",
@@ -213,5 +211,7 @@
   "validStepTime": "Ingresa una hora válida entre 01:00 y 12:59",
   "viewerUnavailable": "Visor no disponible para este servidor de imágenes",
   "worklist": "Lista de trabajo",
-  "worklistNoFoundMessage": "No se encontró lista de trabajo"
+  "uploadStudy": "Subir estudio",
+  "linkStudiesTitle": "Vincular estudios",
+  "requests": "Solicitudes"
 }

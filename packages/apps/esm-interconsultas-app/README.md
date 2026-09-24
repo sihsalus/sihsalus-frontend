@@ -94,3 +94,14 @@ yarn workspace @sihsalus/esm-interconsultas-app typescript
 ```
 
 E2E: `e2e/tests/interconsultas-flow.spec.ts` (flujo Doctor A solicita → Doctor B recibe/atiende/responde → respuesta visible vía API del chart).
+
+## Presentación de la bandeja
+
+La barra de filtros crece con su contenido y conserva el orden servicio destino,
+UPSS de origen y búsqueda. Las etiquetas van sobre los controles; en anchos
+reducidos se distribuyen en filas antes del contador y la tabla. La tabla mantiene
+sus columnas y desplazamiento horizontal dentro de la tarjeta. Se conserva el
+orden de pestañas, solicitudes, filtros, paginación y acciones por permiso.
+
+Validar menús abiertos, búsquedas sin coincidencias y limpieza de filtros en
+escritorio y tablet; las comprobaciones locales usan datos sintéticos.

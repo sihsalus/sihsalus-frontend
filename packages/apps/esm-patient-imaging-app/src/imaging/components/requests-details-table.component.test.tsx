@@ -111,7 +111,7 @@ describe('RequestProcedureTable', () => {
     await act(async () => {
       render(<RequestProcedureTable requests={[]} patientUuid={patientUuid} />);
     });
-    expect(screen.getByText(/No requests found/i)).toBeInTheDocument();
+    expect(screen.getByText(/RequestProcedure: Requests/i)).toBeInTheDocument();
   });
 
   it('renders table rows when requests are provided', async () => {

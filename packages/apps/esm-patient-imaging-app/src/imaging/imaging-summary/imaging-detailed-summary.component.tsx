@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { useRequestsByPatient, useStudiesByPatient } from '../../api';
 import RequestProcedureTable from '../components/requests-details-table.component';
 import StudiesDetailTable from '../components/studies-details-table.component';
-import { useImagingAccess } from '../utils/use-imaging-access';
 import { addNewRequestWorkspace, linkStudiesFormWorkspace, uploadStudiesFormWorkspace } from '../constants';
+import { useImagingAccess } from '../utils/use-imaging-access';
+import styles from './imaging-detailed-summary.scss';
 
 interface ImagingDetailedSummaryProps {
   patientUuid: string;
@@ -28,7 +29,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
     () => launchWorkspace<DefaultPatientWorkspaceProps>(addNewRequestWorkspace, { patientUuid }),
     [patientUuid],
   );
-  const headerTitle = t('managerStudies', 'Manager studies');
+  const headerTitle = t('managerStudies', 'Manage studies');
 
   const {
     data: studies,
@@ -45,7 +46,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
   } = useRequestsByPatient(patientUuid);
 
   return (
-    <div>
+    <div className={styles.summary}>
       {!isOnline && (
         <InlineNotification
           kind="warning"
@@ -54,31 +55,33 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
           title={t('imagingOffline', 'Connect to the network to change imaging data or open images.')}
         />
       )}
-      <div style={{ marginBottom: '2rem' }}>
-        <CardHeader title={headerTitle}>
-          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '1rem', width: '60%' }}>
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <AddIcon size={16} {...props} />}
-              iconDescription={t('linkStudies', 'Studies')}
-              onClick={launchLinkStudiesWorkspace}
-              disabled={!canWrite}
-            >
-              <strong>{t('linkStudie', 'Link studies')}</strong>
-            </Button>
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <AddIcon size={16} {...props} />}
-              iconDescription={t('upload', 'Upload')}
-              onClick={launchUploadStudiesWorkspace}
-              disabled={!canWrite}
-            >
-              <strong>{t('upload', 'Upload')}</strong>
-            </Button>
-          </div>
-        </CardHeader>
+      <section>
+        <div className={styles.managementHeader}>
+          <CardHeader title={headerTitle}>
+            <div className={styles.actions}>
+              <Button
+                kind="ghost"
+                renderIcon={(props) => <AddIcon size={16} {...props} />}
+                iconDescription={t('linkStudies', 'Studies')}
+                onClick={launchLinkStudiesWorkspace}
+                disabled={!canWrite}
+              >
+                <strong>{t('linkStudie', 'Link studies')}</strong>
+              </Button>
+              <Button
+                kind="ghost"
+                renderIcon={(props) => <AddIcon size={16} {...props} />}
+                iconDescription={t('upload', 'Upload')}
+                onClick={launchUploadStudiesWorkspace}
+                disabled={!canWrite}
+              >
+                <strong>{t('upload', 'Upload')}</strong>
+              </Button>
+            </div>
+          </CardHeader>
+        </div>
         {(() => {
-          const displayTextStudies = t('studiesNoFoundMessage', 'No studies found');
+          const displayTextStudies = t('Studies', 'Studies');
           const headerTitle = t('Studies', 'Studies');
 
           if (isLoadingPatientStudies)
@@ -104,10 +107,10 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
             />
           );
         })()}
-      </div>
-      <div>
+      </section>
+      <section>
         {(() => {
-          const displayTextWorklist = t('worklistNoFoundMessage', 'No worklist found');
+          const displayTextWorklist = t('requests', 'Requests');
           const headerTitle = t('worklist', 'Worklist');
 
           if (isLoadingRequests) return <DataTableSkeleton role="progressbar" zebra />;
@@ -131,7 +134,7 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
             />
           );
         })()}
-      </div>
+      </section>
     </div>
   );
 }

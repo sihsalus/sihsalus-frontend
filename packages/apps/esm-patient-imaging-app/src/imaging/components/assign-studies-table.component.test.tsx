@@ -94,7 +94,7 @@ describe('AssignStudiesTable', () => {
 
   it('renders empty state when no studies are available', () => {
     render(<AssignStudiesTable {...defaultProps} data={{ studies: [], scores: new Map<string, number>() }} />);
-    expect(screen.getByTestId('empty-state')).toHaveTextContent('studies');
+    expect(screen.getByTestId('empty-state')).toHaveTextContent('Studies');
   });
 
   it('renders table with studies and pagination', () => {

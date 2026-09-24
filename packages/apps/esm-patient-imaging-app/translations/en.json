@@ -141,7 +141,6 @@
   "requestingPhysician": "Physician",
   "requestingPhysicianMsg": "Enter the requesting physician name",
   "requestProcedure": "Requested procedures",
-  "requestProcedureEmptyState": "No requests found",
   "requestSaved": "Request saved successfully",
   "requestsSummary": "Requests summary",
   "requestStatusCompleted": "completed",
@@ -178,7 +177,6 @@
   "stepTimeWarn": "Step start time is required",
   "stoneviewer": "Show image",
   "Studies": "Studies",
-  "studiesNoFoundMessage": "No studies found",
   "studiesSummary": "Studies summary",
   "studyAssigned": "The study has been successfully assigned",
   "studyDate": "Date",
@@ -210,5 +208,7 @@
   "validStepTime": "Enter a valid time from 01:00 to 12:59",
   "viewerUnavailable": "Viewer unavailable for this imaging server",
   "worklist": "Worklist",
-  "worklistNoFoundMessage": "No worklist found"
+  "uploadStudy": "Upload study",
+  "linkStudiesTitle": "Link studies",
+  "requests": "Requests"
 }

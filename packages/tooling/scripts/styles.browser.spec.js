@@ -112,6 +112,108 @@ test('antecedent workspaces keep fields scrollable and actions visible at narrow
   }
 });
 
+test('imaging actions remain visible and interconsulta filters do not overlap the table', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'clinical-layout-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-imaging-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import imaging from ${JSON.stringify(path.join(workspace, 'src/imaging/studies/study-form.scss'))};
+import tray from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-interconsultas-app/src/dashboard/interconsultas-table.scss'))};
+window.clinicalStyles = { imaging, tray };`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<main id="workspace"><form id="form"><div id="content" class="cds--stack-vertical cds--stack-scale-6">' +
+      '<section id="server" style="height:64px">Servidor de imágenes</section>' +
+      '<section id="files"><p>Selecciona archivos DICOM</p></section></div>' +
+      '<div id="buttons" class="cds--btn-set"><button class="cds--btn cds--btn--secondary">Cancelar</button>' +
+      '<button class="cds--btn cds--btn--primary">Subir</button></div></form></main>' +
+      '<section id="tray"><section class="cds--table-toolbar"><div id="toolbar" class="cds--toolbar-content">' +
+      '<div id="filters"><div><label>Servicio destino</label><select><option>Todos</option></select></div>' +
+      '<div><label>UPSS de origen</label><select><option>Todos</option></select></div></div>' +
+      '<div id="search"><input aria-label="Buscar"><button>Limpiar filtros</button></div></div></section>' +
+      '<p id="results">Resultados: 0 de 0</p><div id="scroll"><table id="table"><thead>' +
+      '<tr><th>Fecha solicitud</th><th>Paciente</th></tr></thead></table></div></section>',
+  );
+  await page.addStyleTag({ path: require.resolve('@carbon/styles/css/styles.css') });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({
+    content:
+      'body{margin:0}#workspace{height:500px}#filters label{display:block}#filters select{height:48px;width:100%}#search input{height:48px}',
+  });
+  await page.evaluate(() => {
+    const { imaging, tray } = window.clinicalStyles;
+    for (const [id, key] of Object.entries({ form: 'form', content: 'formContent', buttons: 'buttonSet' })) {
+      document.getElementById(id).classList.add(imaging[key]);
+    }
+    document.querySelectorAll('#buttons button').forEach((button) => {
+      button.classList.add(imaging.button);
+    });
+    for (const [id, key] of Object.entries({
+      tray: 'tableContainer',
+      toolbar: 'tableToolbar',
+      filters: 'filterGroup',
+      search: 'searchGroup',
+      results: 'resultCount',
+      scroll: 'tableScroll',
+      table: 'table',
+    })) {
+      document.getElementById(id).classList.add(tray[key]);
+    }
+  });
+  for (const width of [320, 420, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.locator('#files').evaluate((files) => {
+      files.style.height = '';
+    });
+    const server = await page.locator('#server').boundingBox();
+    const files = await page.locator('#files').boundingBox();
+    assert.ok(files.y - (server.y + server.height) <= 24, `form fields stay together at ${width}px`);
+    const actions = await page.locator('#buttons').boundingBox();
+    assert.ok(actions.y + actions.height <= 500, `actions fit at ${width}px`);
+    await page.locator('#files').evaluate((files) => {
+      files.style.height = '1200px';
+    });
+    await page.locator('#content').evaluate((content) => {
+      content.scrollTop = content.scrollHeight;
+    });
+    assert.ok(await page.locator('#content').evaluate((content) => content.scrollTop > 0));
+    assert.deepEqual(await page.locator('#buttons').boundingBox(), actions, 'scrolling does not move actions');
+    const toolbar = await page.locator('#toolbar').boundingBox();
+    const results = await page.locator('#results').boundingBox();
+    const table = await page.locator('#table').boundingBox();
+    assert.ok(toolbar.y + toolbar.height <= results.y, `filters do not overlap results at ${width}px`);
+    assert.ok(results.y + results.height <= table.y, `results do not overlap table at ${width}px`);
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      'only the table scrolls horizontally',
+    );
+  }
+});
+
 test('workspace rail reserves desktop chart space without changing overlay or tablet layout', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'workspace-rail-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));

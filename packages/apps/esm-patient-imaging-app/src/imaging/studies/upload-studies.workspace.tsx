@@ -1,5 +1,6 @@
 import {
   Button,
+  ButtonSet,
   ComboBox,
   FileUploaderButton,
   FileUploaderItem,
@@ -21,11 +22,12 @@ import { StudyUploadError, uploadStudies, useOrthancConfigurations, useStudiesBy
 import { type OrthancConfiguration } from '../../types';
 import { maxUploadImageDataSize } from '../constants';
 import { useImagingOperation } from '../utils/use-imaging-operation';
-import styles from './studies.scss';
+import styles from './study-form.scss';
 
-const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientUuid, closeWorkspace }) => {
+const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientUuid, closeWorkspace, setTitle }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  useEffect(() => setTitle?.(t('uploadStudy', 'Upload study')), [setTitle, t]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const mounted = useRef(true);
   const patientScope = useRef({ patientUuid });
@@ -221,10 +223,10 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
       <Form className={styles.form} encType="multipart/form-data" onSubmit={handleSubmit(onSubmit)} id="uploadStudies">
         {isTablet ? (
           <Row className={styles.header}>
-            <ExtensionSlot className={styles.content} name="patient-details-header-slot" state={patientState} />
+            <ExtensionSlot name="patient-details-header-slot" state={patientState} />
           </Row>
         ) : null}
-        <Stack gap={1} className={styles.formContent}>
+        <Stack gap={6} className={styles.formContent}>
           {orthancConfigurations.error && (
             <InlineNotification
               kind="error"
@@ -262,9 +264,9 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
             </ResponsiveWrapper>
           </section>
           <section>
-            <div className={styles.container}>
+            <div>
               <div data-testid="upload-studies-fileuploader">
-                <p>
+                <p className={styles.fileHelp}>
                   {t('selectDicomFiles', 'Select DICOM files (.dcm). Maximum size per file:')}{' '}
                   {maxUploadImageDataSize / 1000000} MB
                 </p>
@@ -281,48 +283,49 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
                     event.target.value = '';
                   }}
                 />
-                {selectedFiles.map((file, index) => (
-                  <FileUploaderItem
-                    key={`${file.name}-${index}`}
-                    name={file.name}
-                    status={isSubmitting || isPending ? 'uploading' : 'edit'}
-                    iconDescription={t('removeFile', 'Remove file')}
-                    onDelete={() =>
-                      setSelectedFiles((files) => files.filter((_, selectedIndex) => selectedIndex !== index))
-                    }
-                  />
-                ))}
+                <div className={styles.files}>
+                  {selectedFiles.map((file, index) => (
+                    <FileUploaderItem
+                      key={`${file.name}-${index}`}
+                      name={file.name}
+                      status={isSubmitting || isPending ? 'uploading' : 'edit'}
+                      iconDescription={t('removeFile', 'Remove file')}
+                      onDelete={() =>
+                        setSelectedFiles((files) => files.filter((_, selectedIndex) => selectedIndex !== index))
+                      }
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </section>
           {isSubmitting ? (
-            <div className={styles.uploadProgress} data-testid="upload-studies-loading">
+            <div data-testid="upload-studies-loading">
               <InlineLoading description={t('uploadingStudies', 'Uploading studies...')} />
             </div>
           ) : null}
-          <div className={styles['popup-box-btn']}>
-            <Button
-              type="submit"
-              kind="primary"
-              data-testid="upload-studies-submit"
-              disabled={isSubmitting || isPending || !canWrite}
-            >
-              {isSubmitting ? (
-                <InlineLoading description={t('uploading', 'Uploading') + '...'} />
-              ) : (
-                t('upload', 'Upload')
-              )}
-            </Button>
-            <Button
-              kind="secondary"
-              onClick={() => closeWorkspace()}
-              data-testid="upload-studies-cancel"
-              disabled={isSubmitting || isPending}
-            >
-              {t('cancel', 'Cancel')}
-            </Button>
-          </div>
         </Stack>
+        <ButtonSet className={styles.buttonSet}>
+          <Button
+            className={styles.button}
+            type="button"
+            kind="secondary"
+            onClick={() => closeWorkspace()}
+            data-testid="upload-studies-cancel"
+            disabled={isSubmitting || isPending}
+          >
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button
+            className={styles.button}
+            type="submit"
+            kind="primary"
+            data-testid="upload-studies-submit"
+            disabled={isSubmitting || isPending || !canWrite}
+          >
+            {isSubmitting ? <InlineLoading description={t('uploading', 'Uploading') + '...'} /> : t('upload', 'Upload')}
+          </Button>
+        </ButtonSet>
       </Form>
     </FormProvider>
   );

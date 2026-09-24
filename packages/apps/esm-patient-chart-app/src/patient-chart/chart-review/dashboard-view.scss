@@ -16,6 +16,10 @@
   margin: 0 layout.$spacing-05;
 }
 
+[data-extension-slot-name='patient-chart-test-results-dashboard-slot'] {
+  margin-top: layout.$spacing-05;
+}
+
 .dashboardContainer:not(
   :has([data-extension-slot-name="patient-chart-attachments-dashboard-slot"])
 ) {

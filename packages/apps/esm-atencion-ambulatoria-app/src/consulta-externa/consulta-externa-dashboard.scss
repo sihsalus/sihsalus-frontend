@@ -38,12 +38,6 @@
   padding: layout.$spacing-03 layout.$spacing-05;
 }
 
-.dashboardHeading {
-  @include type.type-style("heading-03");
-  color: $text-02;
-  margin: 0;
-}
-
 .dashboardActions {
   align-items: center;
   display: flex;

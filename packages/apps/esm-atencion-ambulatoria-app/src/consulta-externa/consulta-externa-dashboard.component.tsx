@@ -43,7 +43,6 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
       <div>
         <SisFinancingWarning patientUuid={patientUuid} />
         <header className={styles.dashboardHeader}>
-          <h1 className={styles.dashboardHeading}>{t('consultaExterna', 'Consulta Externa')}</h1>
           <div className={styles.dashboardActions}>
             <RequirePrivilege privilege={patientVisitsPrivilege} hideUnauthorized>
               <Tooltip

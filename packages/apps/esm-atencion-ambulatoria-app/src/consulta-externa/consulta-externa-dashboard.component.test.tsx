@@ -69,7 +69,9 @@ describe('ConsultaExternaDashboard', () => {
       'Plan de Tratamiento',
       'Referencia / Contrarreferencia',
     ]);
-    expect(screen.getByRole('heading', { level: 1, name: 'Consulta Externa' })).toBeVisible();
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous consultations' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Download report' })).toBeVisible();
     expect(screen.queryByText('consultaExterna')).not.toBeInTheDocument();
     expect(screen.getByText('Triage panel')).toBeVisible();
 

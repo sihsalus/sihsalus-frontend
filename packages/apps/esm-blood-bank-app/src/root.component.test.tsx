@@ -2,9 +2,9 @@ import { useConfig, useLeftNav } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import type { BloodBankConfig } from './config-schema';
+import frontendConfig from '../../../../config/frontend.json';
 import { bloodBankPrivileges } from './access/blood-bank-privileges';
+import type { BloodBankConfig } from './config-schema';
 import Root from './root.component';
 
 type RequirePrivilegeProps = {
@@ -62,11 +62,17 @@ describe('Blood Bank root', () => {
     expect(mockUseLeftNav).not.toHaveBeenCalled();
   });
 
-  it('renders a safe disabled state', () => {
-    mockUseConfig.mockReturnValue({ enabled: false, useMockData: true });
+  it('keeps the institutional configuration disabled even for an authorized user', () => {
+    mockUseConfig.mockReturnValue({
+      enabled: true,
+      useMockData: true,
+      ...frontendConfig['@sihsalus/esm-blood-bank-app'],
+    });
 
     render(<Root />);
 
     expect(screen.getByText('Banco de Sangre deshabilitado')).toBeInTheDocument();
+    expect(screen.queryByText('Blood Bank application')).not.toBeInTheDocument();
+    expect(mockUseLeftNav).not.toHaveBeenCalled();
   });
 });

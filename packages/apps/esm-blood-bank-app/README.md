@@ -4,6 +4,12 @@ Microfrontend base para construir los flujos de Banco de Sangre. Incluye Inicio,
 
 ## Límites actuales
 
+- La configuración institucional `config/frontend.json` deshabilita el módulo
+  (`enabled: false`) y retira sus enlaces de `app-menu-slot` y
+  `homepage-dashboard-slot` mediante `extensionSlots.remove`. Así tampoco se
+  selecciona como dashboard al iniciar sesión. El acceso directo con el privilegio
+  de entrada muestra el estado deshabilitado y no monta la aplicación ni su barra
+  lateral, incluso si el usuario tiene todos los privilegios del módulo.
 - Inicio, Donantes e Inventario consumen el contrato `BloodBankApi` con datos sintéticos.
 - Las demás rutas son bases visuales; todavía no guardan información clínica.
 - `useMockData` está habilitado por defecto. Desactivarlo requiere una API real compatible.
@@ -34,7 +40,11 @@ Después de preparar el SPA según el README principal:
 SIHSALUS_DEV_APPS=esm-blood-bank-app yarn start
 ```
 
-El usuario de pruebas necesita el privilegio `app:home.bancoSangre`.
+Para habilitarlo en un entorno de desarrollo autorizado, configurar `enabled: true`
+y retirar las dos exclusiones de `extensionSlots.remove` descritas arriba. Después
+hay que volver a ensamblar el SPA. Estas opciones controlan disponibilidad; no
+crean ni conceden privilegios. El usuario de pruebas sigue necesitando
+`app:home.bancoSangre` y los privilegios específicos de cada sección.
 Tras cambiar `src/routes.json`, vuelve a ejecutar `yarn assemble` y reinicia `yarn start` para registrar el nuevo slot. Prueba la barra compartida en `http://localhost:8080/openmrs/spa/blood-bank` con un usuario de pruebas autorizado.
 
 El cliente HMR de la versión local de Rspack falla al cargar este ESM (`setLogLevel`). Por ahora, `rspack.config.js` desactiva solo ese cliente para Banco de Sangre: el servidor recompila los cambios, pero debes recargar el navegador manualmente. Reinicia `yarn start` después de cambiar esta configuración.

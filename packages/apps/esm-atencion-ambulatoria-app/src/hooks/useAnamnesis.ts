@@ -20,7 +20,9 @@ export function useAnamnesis(
   const encounterTypes = toEncounterTypeSources(encounterType);
   const sources = patientUuid
     ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
-        url: `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))`,
+        url: `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,patient:(uuid),encounterType:(uuid),encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))`,
+        expectedPatientUuid: patientUuid,
+        expectedEncounterTypeUuid: encounterTypeUuid,
         expectedFormUuid: formUuid,
         expectedVisitTypeUuid: visitTypeUuid,
       }))

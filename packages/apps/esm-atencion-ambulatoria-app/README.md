@@ -55,7 +55,9 @@ Las entradas de Historia Social usan `socialHistory.formUuid` y `socialHistory.e
 La tabla de antecedentes médicos conserva el resto del historial cuando un diagnóstico antiguo no trae su representación codificada: muestra `--` en esa celda en lugar de bloquear la pantalla. No infiere un diagnóstico ni modifica el registro histórico.
 
 El lector compartido de Historia Social, anamnesis, examen físico, diagnósticos,
-tratamiento y referencias verifica UUID únicos por fuente, un total estable y
+tratamiento y referencias solicita y verifica el paciente y tipo de encuentro
+de cada registro antes de mostrarlo. También verifica UUID únicos por fuente,
+un total estable y
 la coherencia entre el fin de las páginas y ese total. Un enlace `next` exige
 continuar, también en páginas cortas; se conservan los filtros originales y no
 se sigue la dirección recibida. Las fuentes inconsistentes fallan sin publicar

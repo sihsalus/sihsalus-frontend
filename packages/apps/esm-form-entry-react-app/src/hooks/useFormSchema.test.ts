@@ -200,6 +200,29 @@ describe('useFormSchema', () => {
     expect(result.current.error).toBe(testError);
   });
 
+  it('keeps the loaded schema stable across workspace renders and replaces it when server data changes', () => {
+    const response: FormSchemaApiResponse = {
+      data: { uuid: 'form-uuid', name: 'Test Form', encounterType: 'enc-type-uuid', pages: [] },
+    };
+    mockUseSWR.mockReturnValue(createSwrResponse<FormSchemaApiResponse>({ data: response }));
+    const { result, rerender } = renderHook(() => useFormSchema('form-uuid'));
+    const loadedSchema = result.current.schema;
+
+    rerender();
+
+    // FormEngine rebuilds its processor when this prop changes. Marking a
+    // workspace dirty must not supply another schema and discard its draft.
+    expect(result.current.schema).toBe(loadedSchema);
+
+    mockUseSWR.mockReturnValue(
+      createSwrResponse<FormSchemaApiResponse>({ data: { data: { ...response.data, name: 'Updated Form' } } }),
+    );
+    rerender();
+
+    expect(result.current.schema).not.toBe(loadedSchema);
+    expect(result.current.schema?.name).toBe('Updated Form');
+  });
+
   it('passes null URL when formUuid is empty', () => {
     mockUseSWR.mockReturnValue(createSwrResponse<FormSchemaApiResponse>({}));
 

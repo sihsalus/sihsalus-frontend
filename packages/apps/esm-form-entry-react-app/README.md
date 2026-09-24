@@ -16,6 +16,9 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - No implementa flujos del paciente por sí misma; actúa como capa de presentación y entrada.
 - Las ediciones fallan de forma cerrada si la atención indicada no puede cargarse: se muestra un error genérico y no
   se habilita el guardado ni se crea una atención nueva como alternativa.
+- El esquema normalizado conserva su referencia mientras no cambien los datos recibidos ni el mapa de compatibilidad.
+  Actualizar el estado de la ventana, por ejemplo al marcar cambios sin guardar, no reinicia el procesador del formulario.
+  Validar en QLTY que los valores persistan al completar otros campos, guardar, recargar y editar la misma atención.
 
 ## Integraciones
 

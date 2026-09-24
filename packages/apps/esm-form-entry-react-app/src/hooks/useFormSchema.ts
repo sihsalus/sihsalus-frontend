@@ -1,5 +1,6 @@
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type FormSchema } from '@sihsalus/esm-form-engine-lib';
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { type ConfigObject, defaultLegacyConceptCompatibilityMap } from '../config-schema';
 
@@ -36,7 +37,10 @@ const useFormSchema = (formUuid: string) => {
 
   const { data, error, isLoading } = useSWR<FormSchemaResponse, Error>(url, openmrsFetch);
   const schemaError = error instanceof Error ? error : undefined;
-  const schema = normalizeSchema(data, legacyConceptCompatibilityMap);
+  const schema = useMemo(
+    () => normalizeSchema(data, legacyConceptCompatibilityMap),
+    [data, legacyConceptCompatibilityMap],
+  );
 
   return { schema, error: schemaError, isLoading };
 };

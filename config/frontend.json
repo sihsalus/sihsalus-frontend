@@ -1,4 +1,21 @@
 {
+  "@sihsalus/esm-blood-bank-app": {
+    "enabled": false
+  },
+  "@sihsalus/esm-home-app": {
+    "extensionSlots": {
+      "homepage-dashboard-slot": {
+        "remove": ["blood-bank-home-dashboard-link"]
+      }
+    }
+  },
+  "@sihsalus/esm-primary-navigation-app": {
+    "extensionSlots": {
+      "app-menu-slot": {
+        "remove": ["blood-bank-app-menu-link"]
+      }
+    }
+  },
   "@sihsalus/esm-help-menu-app": {
     "releaseNotesUrl": "/ayuda/novedades/",
     "documentationUrl": "/ayuda/",

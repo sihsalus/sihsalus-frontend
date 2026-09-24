@@ -156,6 +156,9 @@ La aceptación clínica y el despliegue siguen pendientes hasta esa comprobació
 
 El dashboard muestra una cabecera compacta propia para garantizar que `Consulta Externa` se traduzca en el namespace del módulo. El orden operativo de las pestañas sigue el flujo clínico: Triajes previos, Antecedentes, Anamnesis, Examen físico, Pruebas complementarias, Diagnóstico, Plan de Tratamiento y Referencia / Contrarreferencia. **Pruebas complementarias** va antes de Diagnóstico porque el clínico lee lo que devolvió el laboratorio antes de clasificar. La pestaña no implementa su propia vista: expone el slot `consulta-externa-pruebas-complementarias-slot`, donde `esm-patient-tests-app` monta el mismo card de resultados (`externalOverview`) que ya usan la hoja clínica y el resumen de visitas, así que las tres superficies comparten una sola implementación y respetan `app:hoja.clinica.resultados`.
 
+**Triajes previos** utiliza el slot compartido `consulta-externa-vitals-summary-slot`;
+no mantiene un lector local alternativo de encuentros de triaje.
+
 Anamnesis y examen físico son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; el workspace crea un encounter nuevo adjunto a la visita ambulatoria verificada y persiste únicamente destino, especialidad, prioridad, condición de salida, transporte y motivo. Paciente, visita, triaje, diagnósticos, tratamiento y profesional no se duplican.
 
 Antes de abrir un formulario, la verificación de su publicación y cada página

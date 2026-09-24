@@ -137,6 +137,12 @@ Las pruebas unitarias marcadas con `[brecha]` usan `expectKnownGap`: pasan solam
 - Pendiente: las acciones no se filtran todavía por pertenencia del usuario al servicio destino.
 - Pendiente: validar los cuatro privilegios con roles reales del backend; un superusuario no sustituye esta prueba.
 
+## Estado de la bandeja - 2026-09-24
+
+- Resuelto en pruebas unitarias: la bandeja recorre más de 100 órdenes sin ocultar páginas posteriores; una página repetida o fallida produce un error visible en vez de una lista incompleta.
+- Resuelto en pruebas de componente: la bandeja distingue entre ausencia de solicitudes y filtros sin resultados, permite limpiar los filtros y muestra el total visible.
+- Pendiente: validar en DEV/QLTY con datos sintéticos la carga de alto volumen y las escrituras concurrentes; AC-06 sigue pendiente hasta esa prueba y la validación clínica.
+
 ## Criterio de cierre
 
 Un caso se considera aprobado solo cuando su prueba automatizada pasa sin usar `skip`, `fixme`, credenciales de administrador como reemplazo de los actores clinicos ni creacion manual de la orden para evitar el workspace.

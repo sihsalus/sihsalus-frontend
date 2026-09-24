@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { userHasAccess } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
+import type { InterconsultaOrder } from '../types';
 import InterconsultasTable from './interconsultas-table.component';
 
 const mockUseInterconsultas = vi.mocked(useInterconsultas);
@@ -16,7 +17,7 @@ const interconsulta = {
   orderer: { uuid: 'provider-1', display: 'Dra. Torres' },
   encounter: { location: { uuid: 'location-1', display: 'Consulta externa' } },
   urgency: 'ROUTINE',
-} as never;
+} as InterconsultaOrder;
 
 vi.mock('../interconsultas.resource', () => ({
   deriveStatus: vi.fn(),
@@ -47,7 +48,7 @@ describe('InterconsultasTable', () => {
     mockDeriveStatus.mockReturnValue('REQUESTED');
   });
 
-  it('uses the shared empty-state card when a tray has no interconsultations', () => {
+  it('explains an empty tray without suggesting filters that are not active', () => {
     mockUseInterconsultas.mockReturnValue({
       interconsultas: [],
       isLoading: false,
@@ -59,10 +60,85 @@ describe('InterconsultasTable', () => {
     render(<InterconsultasTable filter="REQUESTED" />);
 
     expect(mockUseInterconsultas).toHaveBeenCalledWith('REQUESTED');
-    expect(screen.getByRole('heading', { level: 3, name: 'No hay interconsultas para mostrar' })).toBeInTheDocument();
-    expect(screen.getByText('Comprobar los filtros anteriores')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Esta bandeja no tiene interconsultas' })).toBeInTheDocument();
+    expect(screen.getByText('Las solicitudes aparecerán aquí cuando alcancen este estado.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Limpiar filtros' })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Paciente' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('distinguishes an empty search from an empty tray and clears all filters', () => {
+    mockUseInterconsultas.mockReturnValue({
+      interconsultas: [interconsulta],
+      isLoading: false,
+      error: undefined,
+      isValidating: false,
+      mutate: vi.fn(async () => undefined),
+    });
+
+    render(<InterconsultasTable filter="REQUESTED" />);
+    fireEvent.change(screen.getByPlaceholderText('Paciente, orden, solicitante o motivo'), {
+      target: { value: 'sin coincidencias' },
+    });
+
+    expect(screen.getByRole('heading', { name: 'Ninguna interconsulta coincide con los filtros' })).toBeInTheDocument();
+    expect(screen.getByText('Resultados: 0 de 1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+
+    expect(screen.getByRole('cell', { name: 'Paciente Uno' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Limpiar filtros' })).not.toBeInTheDocument();
+  });
+
+  it('finds a destination service when the search omits accents', () => {
+    mockUseInterconsultas.mockReturnValue({
+      interconsultas: [interconsulta],
+      isLoading: false,
+      error: undefined,
+      isValidating: false,
+      mutate: vi.fn(async () => undefined),
+    });
+
+    render(<InterconsultasTable filter="REQUESTED" />);
+    fireEvent.change(screen.getByPlaceholderText('Paciente, orden, solicitante o motivo'), {
+      target: { value: 'cardiologia' },
+    });
+
+    expect(screen.getByRole('cell', { name: 'Paciente Uno' })).toBeInTheDocument();
+    expect(screen.getByText('Resultados: 1 de 1')).toBeInTheDocument();
+  });
+
+  it('puts urgent orders first, then older routine orders', () => {
+    mockUseInterconsultas.mockReturnValue({
+      interconsultas: [
+        { ...interconsulta, uuid: 'routine', patient: { uuid: 'patient-1', display: 'Paciente Rutina' } },
+        {
+          ...interconsulta,
+          uuid: 'urgent',
+          urgency: 'STAT',
+          patient: { uuid: 'patient-2', display: 'Paciente Urgente' },
+        },
+        {
+          ...interconsulta,
+          uuid: 'older-routine',
+          dateActivated: '2026-08-09T10:00:00.000Z',
+          patient: { uuid: 'patient-3', display: 'Paciente Anterior' },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      isValidating: false,
+      mutate: vi.fn(async () => undefined),
+    });
+
+    render(<InterconsultasTable filter="REQUESTED" />);
+
+    const patientCells = screen.getAllByRole('cell').filter((cell) => cell.textContent?.startsWith('Paciente'));
+    expect(patientCells.map((cell) => cell.textContent)).toEqual([
+      'Paciente Urgente',
+      'Paciente Anterior',
+      'Paciente Rutina',
+    ]);
   });
 
   it('shows the list but no modification commands to a read-only user', () => {

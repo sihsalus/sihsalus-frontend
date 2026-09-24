@@ -68,6 +68,38 @@ export function interconsultaOrdersUrl(orderTypeUuid: string, patientUuid?: stri
   return patientUuid ? `${base}&patient=${patientUuid}` : base;
 }
 
+/** Fetch every page before classifying a tray, so later orders cannot disappear from filters. */
+export async function fetchInterconsultaOrders(url: string): Promise<Array<InterconsultaOrder>> {
+  const orders = new Map<string, InterconsultaOrder>();
+  let startIndex = 0;
+
+  for (;;) {
+    const pageUrl = startIndex ? `${url}&startIndex=${startIndex}` : url;
+    const response = await openmrsFetch<{
+      results: Array<InterconsultaOrder>;
+      links?: Array<{ rel: string }>;
+    }>(pageUrl);
+    if (!response.ok || !Array.isArray(response.data?.results)) {
+      throw new Error('Could not load the complete interconsultation list');
+    }
+
+    const page = response.data.results;
+    const previousSize = orders.size;
+    for (const order of page) {
+      orders.set(order.uuid, order);
+    }
+
+    const hasNext = response.data.links?.some((link) => link.rel === 'next');
+    if ((startIndex > 0 && page.length > 0 && orders.size === previousSize) || (hasNext && page.length === 0)) {
+      throw new Error('Interconsultation pagination did not advance');
+    }
+    if (!hasNext && page.length < ORDER_QUERY_LIMIT) {
+      return [...orders.values()];
+    }
+    startIndex += page.length;
+  }
+}
+
 /**
  * Bandeja global de interconsultas. Trae todas las órdenes del order type
  * (incluidas las descontinuadas, para poder mostrar las canceladas) y
@@ -78,12 +110,13 @@ export function useInterconsultas(filter: InterconsultaTrayFilter) {
   const { interconsultaOrderTypeUuid } = useConfig<ConfigObject>();
   const url = interconsultaOrdersUrl(interconsultaOrderTypeUuid);
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{
-    data: { results: Array<InterconsultaOrder> };
-  }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<Array<InterconsultaOrder>>(
+    url,
+    fetchInterconsultaOrders,
+  );
 
   const interconsultas = useMemo(
-    () => (data?.data?.results ?? []).filter((order) => matchesTrayFilter(order, filter)),
+    () => (data ?? []).filter((order) => matchesTrayFilter(order, filter)),
     [data, filter],
   );
 
@@ -95,14 +128,9 @@ export function usePatientInterconsultas(patientUuid: string) {
   const { interconsultaOrderTypeUuid } = useConfig<ConfigObject>();
   const url = patientUuid ? interconsultaOrdersUrl(interconsultaOrderTypeUuid, patientUuid) : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{
-    data: { results: Array<InterconsultaOrder> };
-  }>(url, openmrsFetch);
+  const { data, error, isLoading, mutate } = useSWR<Array<InterconsultaOrder>>(url, fetchInterconsultaOrders);
 
-  const interconsultas = useMemo(
-    () => (data?.data?.results ?? []).filter((order) => order.action !== 'DISCONTINUE'),
-    [data],
-  );
+  const interconsultas = useMemo(() => (data ?? []).filter((order) => order.action !== 'DISCONTINUE'), [data]);
 
   return { interconsultas, isLoading, error, mutate };
 }

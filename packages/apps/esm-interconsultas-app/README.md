@@ -5,7 +5,7 @@ Microfrontend independiente para el flujo de **Interconsultas** (NTS 030-MINSA, 
 ## Qué hace
 
 - **Item en Home** → `Home > Interconsultas` (slot `homepage-dashboard-slot`).
-- **Bandeja global** con tabs por estado: Solicitadas, Recibidas/Pendientes, En atención, Respondidas, Rechazadas/Canceladas; filtros por servicio destino, location origen y búsqueda.
+- **Bandeja global** con tabs por estado: Solicitadas, Recibidas/Pendientes, En atención, Respondidas, Rechazadas/Canceladas; filtros por servicio destino, location origen y búsqueda, con contador de resultados y limpieza de filtros. Muestra primero las solicitudes urgentes y luego las más antiguas.
 - **Solicitud desde el chart** del paciente / consulta externa: workspace `request-interconsulta-workspace` (canasta de órdenes, botón en `patient-actions-slot` y widget del chart).
 - **Destino externo o remoto**: permite registrar una consulta clínica a una especialidad no disponible en Santa Clotilde sin convertirla en referencia, contrarreferencia ni traslado.
 - **Pickup por otro profesional**: acciones Recibir → Atender → Responder/Rechazar desde la bandeja, sin pasar por el chart del paciente.
@@ -81,7 +81,7 @@ La interconsulta local se enruta por **servicio destino = `order.concept`**. Tam
 
 1. **No existe recurso backend propio `interconsulta`**: el estado vive en `fulfillerStatus` de Orders. Si la norma exige más campos estructurados (p. ej. profesional destino _asignado_ explícitamente antes del pickup, plazos por prioridad), se necesitará un módulo OMOD propio o atributos de orden; hoy el profesional que atiende queda registrado por auditoría (creador de obs/cambio de estado), no como campo asignable.
 2. **Respuesta y recomendaciones**: por defecto la respuesta usa el concept `f0000174` (respuesta de contrarreferencia). Si el diccionario incorpora concepts específicos de interconsulta (respuesta/recomendaciones), configurar `concepts.respuestaConceptUuid` y `concepts.recomendacionesConceptUuid`. Mientras `recomendacionesConceptUuid` esté vacío, las recomendaciones se anexan al texto de la respuesta (sin pérdida de dato, pero sin obs separada).
-3. **Filtrado en cliente**: la bandeja trae todas las órdenes del order type y filtra por estado en el navegador. Con volúmenes altos conviene paginación server-side (requiere extender el REST API o un endpoint propio).
+3. **Filtrado en cliente**: la bandeja recorre las páginas del REST de Orders antes de filtrar por estado, servicio y búsqueda. La carga puede ser lenta con volúmenes altos; la paginación y los filtros server-side requieren extender el REST API o un endpoint propio. La lectura con escrituras concurrentes aún necesita validación E2E.
 4. **RECEIVED es manual**: el estado "Recibida" lo marca el servicio destino desde la bandeja; no hay notificación push.
 5. **Destino externo no estructurado**: hasta disponer de atributos de orden o un catálogo propio, la especialidad externa se conserva en `instructions` y comparte el concept `Otro no codificado`. No debe usarse para inferir una referencia o un traslado.
 

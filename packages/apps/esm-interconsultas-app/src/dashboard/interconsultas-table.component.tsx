@@ -1,5 +1,6 @@
 import {
   ActionableNotification,
+  Button,
   DataTable,
   DataTableSkeleton,
   Dropdown,
@@ -28,7 +29,7 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { interconsultasHomeEditPrivilege } from '../constants';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
@@ -46,6 +47,12 @@ interface FilterOption {
 
 const ALL_OPTION: FilterOption = { uuid: '', display: '' };
 
+const normalizeSearchText = (value?: string) =>
+  (value ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase();
+
 interface InterconsultasTableProps {
   filter: InterconsultaTrayFilter;
 }
@@ -59,6 +66,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
   const [serviceFilter, setServiceFilter] = useState<string>('');
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [currentPageSize, setPageSize] = useState(10);
+  const hasActiveFilters = Boolean(searchString.trim() || serviceFilter || locationFilter);
 
   const allOption = useMemo(() => ({ ...ALL_OPTION, display: t('allFilterOption', 'Todos') }), [t]);
 
@@ -90,28 +98,52 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
   }, [interconsultas, allOption]);
 
   const filteredInterconsultas = useMemo(() => {
-    const lowerSearch = searchString.trim().toLowerCase();
-    return interconsultas.filter((order) => {
-      if (serviceFilter && order.concept?.uuid !== serviceFilter) {
-        return false;
-      }
-      if (locationFilter && order.encounter?.location?.uuid !== locationFilter) {
-        return false;
-      }
-      if (lowerSearch) {
-        return (
-          order.patient?.display?.toLowerCase().includes(lowerSearch) ||
-          order.orderNumber?.toLowerCase().includes(lowerSearch) ||
-          order.orderer?.display?.toLowerCase().includes(lowerSearch) ||
-          getInterconsultaDestinationDisplay(order).toLowerCase().includes(lowerSearch) ||
-          getInterconsultaReason(order).toLowerCase().includes(lowerSearch)
-        );
-      }
-      return true;
-    });
+    const lowerSearch = normalizeSearchText(searchString.trim());
+    return interconsultas
+      .filter((order) => {
+        if (serviceFilter && order.concept?.uuid !== serviceFilter) {
+          return false;
+        }
+        if (locationFilter && order.encounter?.location?.uuid !== locationFilter) {
+          return false;
+        }
+        if (lowerSearch) {
+          return (
+            normalizeSearchText(order.patient?.display).includes(lowerSearch) ||
+            normalizeSearchText(order.orderNumber).includes(lowerSearch) ||
+            normalizeSearchText(order.orderer?.display).includes(lowerSearch) ||
+            normalizeSearchText(getInterconsultaDestinationDisplay(order)).includes(lowerSearch) ||
+            normalizeSearchText(getInterconsultaReason(order)).includes(lowerSearch) ||
+            normalizeSearchText(order.encounter?.location?.display).includes(lowerSearch)
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const urgency = Number(b.urgency === 'STAT') - Number(a.urgency === 'STAT');
+        if (urgency) return urgency;
+        const activated = (Date.parse(a.dateActivated) || Infinity) - (Date.parse(b.dateActivated) || Infinity);
+        return activated || a.uuid.localeCompare(b.uuid);
+      });
   }, [interconsultas, serviceFilter, locationFilter, searchString]);
 
-  const { goTo, results: paginatedOrders, currentPage } = usePagination(filteredInterconsultas, currentPageSize);
+  const {
+    goTo,
+    results: paginatedOrders,
+    currentPage,
+    totalPages,
+  } = usePagination(filteredInterconsultas, currentPageSize);
+
+  useEffect(() => {
+    if (currentPage > totalPages) goTo(totalPages);
+  }, [currentPage, totalPages, goTo]);
+
+  const clearFilters = () => {
+    setSearchString('');
+    setServiceFilter('');
+    setLocationFilter('');
+    goTo(1);
+  };
 
   const openModal = useCallback((modalName: string, order: InterconsultaOrder) => {
     const dispose = showModal(modalName, {
@@ -259,16 +291,18 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
         <TableContainer className={styles.tableContainer}>
           <TableToolbar>
             <TableToolbarContent className={styles.tableToolbar}>
-              <Layer className={styles.toolbarItem}>
+              <Layer className={styles.filterGroup}>
                 <Dropdown
                   id={`service-filter-${filter}`}
                   items={serviceOptions}
                   itemToString={(item: FilterOption) => item?.display ?? ''}
                   label={t('allFilterOption', 'Todos')}
-                  onChange={({ selectedItem }: { selectedItem: FilterOption }) =>
-                    setServiceFilter(selectedItem?.uuid ?? '')
-                  }
-                  titleText={t('filterByService', 'Servicio destino') + ':'}
+                  onChange={({ selectedItem }: { selectedItem: FilterOption }) => {
+                    setServiceFilter(selectedItem?.uuid ?? '');
+                    goTo(1);
+                  }}
+                  selectedItem={serviceOptions.find((option) => option.uuid === serviceFilter) ?? allOption}
+                  titleText={t('filterByService', 'Servicio destino')}
                   type="inline"
                 />
                 <Dropdown
@@ -276,53 +310,83 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
                   items={locationOptions}
                   itemToString={(item: FilterOption) => item?.display ?? ''}
                   label={t('allFilterOption', 'Todos')}
-                  onChange={({ selectedItem }: { selectedItem: FilterOption }) =>
-                    setLocationFilter(selectedItem?.uuid ?? '')
-                  }
-                  titleText={t('filterByOriginLocation', 'Origin UPSS') + ':'}
+                  onChange={({ selectedItem }: { selectedItem: FilterOption }) => {
+                    setLocationFilter(selectedItem?.uuid ?? '');
+                    goTo(1);
+                  }}
+                  selectedItem={locationOptions.find((option) => option.uuid === locationFilter) ?? allOption}
+                  titleText={t('filterByOriginLocation', 'UPSS de origen')}
                   type="inline"
                 />
               </Layer>
-              <Layer className={styles.toolbarItem}>
+              <Layer className={styles.searchGroup}>
                 <TableToolbarSearch
                   expanded
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchString(e.target.value ?? '')}
-                  placeholder={t('searchThisList', 'Buscar en esta lista')}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSearchString(e.target.value ?? '');
+                    goTo(1);
+                  }}
+                  placeholder={t('searchThisList', 'Paciente, orden, solicitante o motivo')}
                   size="sm"
+                  value={searchString}
                 />
+                {hasActiveFilters && (
+                  <Button kind="ghost" onClick={clearFilters} size="sm">
+                    {t('clearFilters', 'Limpiar filtros')}
+                  </Button>
+                )}
               </Layer>
             </TableToolbarContent>
           </TableToolbar>
-          <Table {...getTableProps()} className={styles.table}>
-            <TableHead>
-              <TableRow>
-                {tableHeaders.map((header) => {
-                  const { key, ...headerProps } = getHeaderProps({ header });
+          <p className={styles.resultCount} role="status">
+            {t('trayResultsCount', 'Resultados: {{visible}} de {{total}}', {
+              visible: filteredInterconsultas.length,
+              total: interconsultas.length,
+            })}
+          </p>
+          <div className={styles.tableScroll}>
+            <Table {...getTableProps()} className={styles.table}>
+              <TableHead>
+                <TableRow>
+                  {tableHeaders.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row) => {
+                  const { key, ...rowProps } = getRowProps({ row });
                   return (
-                    <TableHeader key={key} {...headerProps}>
-                      {header.header}
-                    </TableHeader>
+                    <TableRow key={key} {...rowProps}>
+                      {row.cells.map((cell) => (
+                        <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                      ))}
+                    </TableRow>
                   );
                 })}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row) => {
-                const { key, ...rowProps } = getRowProps({ row });
-                return (
-                  <TableRow key={key} {...rowProps}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-          {rows.length === 0 ? (
+              </TableBody>
+            </Table>
+          </div>
+          {filteredInterconsultas.length === 0 ? (
             <InterconsultasEmptyState
-              title={t('noInterconsultasFound', 'No hay interconsultas para mostrar')}
-              helperText={t('checkFilters', 'Comprobar los filtros anteriores')}
+              title={
+                hasActiveFilters
+                  ? t('noMatchingInterconsultas', 'Ninguna interconsulta coincide con los filtros')
+                  : t('noInterconsultasInTray', 'Esta bandeja no tiene interconsultas')
+              }
+              helperText={
+                hasActiveFilters
+                  ? t(
+                      'adjustInterconsultaFilters',
+                      'Cambie la búsqueda o limpie los filtros para ver todas las solicitudes.',
+                    )
+                  : t('noInterconsultasInTrayHelper', 'Las solicitudes aparecerán aquí cuando alcancen este estado.')
+              }
             />
           ) : (
             <Pagination
@@ -335,8 +399,8 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
               onChange={({ pageSize, page }: { pageSize: number; page: number }) => {
                 if (pageSize !== currentPageSize) {
                   setPageSize(pageSize);
-                }
-                if (page !== currentPage) {
+                  goTo(1);
+                } else if (page !== currentPage) {
                   goTo(page);
                 }
               }}

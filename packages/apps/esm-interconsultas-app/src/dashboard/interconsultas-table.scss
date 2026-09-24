@@ -8,16 +8,50 @@
 
 .tableToolbar {
   display: flex;
-  align-items: center;
+  align-items: end;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
 }
 
-.toolbarItem {
+.filterGroup,
+.searchGroup {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-04;
   background-color: transparent;
+}
+
+.filterGroup {
+  flex: 2 1 30rem;
+
+  > * {
+    flex: 1 1 13rem;
+    min-width: 0;
+  }
+}
+
+.searchGroup {
+  flex: 1 1 19rem;
+
+  > :first-child {
+    flex: 1 1 13rem;
+  }
+}
+
+.resultCount {
+  margin: 0;
+  padding: layout.$spacing-03 layout.$spacing-05;
+  color: var(--cds-text-secondary, #525252);
+}
+
+.tableScroll {
+  overflow-x: auto;
 }
 
 .table {
   width: 100%;
+  min-width: 68rem;
 }

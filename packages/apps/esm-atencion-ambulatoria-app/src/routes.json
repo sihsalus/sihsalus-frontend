@@ -38,7 +38,6 @@
         "title": "consultaExterna",
         "path": "consulta-externa",
         "icon": "omrs-icon-document",
-        "hideDashboardTitle": true,
         "layoutMode": "anchored"
       }
     },

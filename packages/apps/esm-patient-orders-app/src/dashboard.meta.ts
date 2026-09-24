@@ -3,5 +3,4 @@ export const ordersDashboardMeta = {
   path: 'Orders',
   title: 'Orders',
   icon: 'omrs-icon-shopping-cart',
-  hideDashboardTitle: true,
 };

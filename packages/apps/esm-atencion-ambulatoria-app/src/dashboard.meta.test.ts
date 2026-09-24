@@ -10,7 +10,6 @@ describe('consulta ambulatoria dashboard meta', () => {
         columns: 1,
         title: 'consultaExterna',
         path: 'consulta-externa',
-        hideDashboardTitle: true,
       }),
     );
 

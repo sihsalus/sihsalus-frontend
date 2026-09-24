@@ -78,6 +78,10 @@ al agregar un acceso visible al producto, ubícalo explícitamente en esta lista
 Un override del implementador puede reemplazar `order` y seguir usando `remove`
 sin que el chart vuelva a insertar elementos retirados.
 
+El contenedor de dashboards no añade un título exterior sobre las tarjetas.
+Cada sección conserva sus encabezados internos; los títulos de los metadatos
+siguen disponibles para los enlaces del menú.
+
 La regresión `esm-extensions/src/patient-chart-navigation.test.ts` contrasta la
 lista con todos los manifests y prueba el motor real de asignación, permisos,
 modo offline, extensiones opcionales y overrides. Antes de integrar un cambio

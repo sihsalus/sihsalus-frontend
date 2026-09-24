@@ -1,10 +1,4 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-
-.dashboardTitle {
-  @include type.type-style('heading-03');
-  margin: layout.$spacing-05 0 layout.$spacing-05 1.3125rem;
-}
+@use "@carbon/layout";
 
 .dashboard {
   display: grid;
@@ -22,7 +16,9 @@
   margin: 0 layout.$spacing-05;
 }
 
-.dashboardContainer:not(:has([data-extension-slot-name='patient-chart-attachments-dashboard-slot'])) {
+.dashboardContainer:not(
+  :has([data-extension-slot-name="patient-chart-attachments-dashboard-slot"])
+) {
   container-name: dashboard;
   container-type: inline-size;
 }
@@ -112,11 +108,4 @@
 
 :global(.omrs-breakpoint-lt-tablet) .dashboard > div {
   margin: layout.$spacing-01 0px;
-}
-
-// Overriding styles for RTL support
-html[dir='rtl'] {
-  .dashboardTitle {
-    margin: layout.$spacing-05 1.3125rem layout.$spacing-05 0;
-  }
 }

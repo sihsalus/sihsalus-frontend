@@ -1,8 +1,7 @@
 import { Extension, ExtensionSlot, useExtensionSlotMeta } from '@openmrs/esm-framework';
 import { launchPatientWorkspace, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 import { useMatch } from 'react-router-dom';
 
 import { dashboardPath } from '../../constants';
@@ -22,7 +21,6 @@ export interface DashboardConfig {
   slot: string;
   title: string | (() => string | Promise<string>);
   path: string;
-  hideDashboardTitle?: boolean;
   layoutMode?: LayoutMode;
   moduleName: string;
 }
@@ -35,7 +33,6 @@ interface DashboardViewProps {
 
 export function DashboardView({ dashboard, patientUuid, patient }: DashboardViewProps) {
   const widgetMetas = useExtensionSlotMeta(dashboard.slot);
-  const { t } = useTranslation(dashboard.moduleName);
   const match = useMatch(dashboardPath);
   const view = match?.params?.view;
 
@@ -50,31 +47,9 @@ export function DashboardView({ dashboard, patientUuid, patient }: DashboardView
     [patient, patientUuid, view],
   );
 
-  const [resolvedTitle, setResolvedTitle] = useState<string | undefined>();
-
-  useEffect(() => {
-    // A slow title promise from a previous dashboard must not overwrite the current title
-    let ignore = false;
-    if (typeof dashboard?.title === 'function') {
-      Promise.resolve(dashboard.title()).then((title) => {
-        if (!ignore) {
-          setResolvedTitle(title);
-        }
-      });
-    } else if (typeof dashboard?.title === 'string') {
-      setResolvedTitle(dashboard.title);
-    } else {
-      setResolvedTitle(undefined);
-    }
-    return () => {
-      ignore = true;
-    };
-  }, [dashboard]);
-
   return (
     <>
       <ExtensionSlot state={state} name="top-of-all-patient-dashboards-slot" />
-      {!dashboard.hideDashboardTitle && resolvedTitle && <h1 className={styles.dashboardTitle}>{t(resolvedTitle)}</h1>}
       <div className={styles.dashboardContainer}>
         <ExtensionSlot key={dashboard.slot} name={dashboard.slot} className={styles.dashboard}>
           {(extension) => {

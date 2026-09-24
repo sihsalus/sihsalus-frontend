@@ -88,8 +88,8 @@
       "status": "runnable",
       "gate": true,
       "typecheck": true,
-      "ci": true,
-      "reason": "Gate de laboratorio activo; requiere datos sintéticos y un ambiente DEV o QLTY coordinado."
+      "ci": false,
+      "reason": "Gate manual activo; CI de navegador suspendido temporalmente hasta disponer de retención privada recuperable para sus journals."
     },
     {
       "id": "offline-laptop",

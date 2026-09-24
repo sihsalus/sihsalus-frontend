@@ -60,7 +60,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [clinical, laboratory]
+        # Laboratory stays manual until its fixture journals have private,
+        # durable recovery retention. Its CI preflight deliberately rejects CI.
+        suite: [clinical]
     permissions:
       contents: read
     steps:

@@ -72,7 +72,7 @@ test('allows only the four explicitly approved suites', () => {
   assert.deepEqual(runner.RUNNABLE_SUITE_IDS, runnableSuites);
 
   assert.equal(catalog.suites.find(({ id }) => id === 'clinical').ci, true);
-  assert.equal(catalog.suites.find(({ id }) => id === 'laboratory').ci, true);
+  assert.equal(catalog.suites.find(({ id }) => id === 'laboratory').ci, false);
   assert.equal(catalog.suites.find(({ id }) => id === 'offline-laptop').ci, false);
   assert.equal(catalog.suites.find(({ id }) => id === 'offline-local').ci, false);
 });

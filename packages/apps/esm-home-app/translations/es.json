@@ -21,6 +21,8 @@
   "laboratoryDescription": "Órdenes y resultados",
   "pageNotFound": "Página no encontrada",
   "peruHomeActions": "Accesos de atención",
+  "recentPatients": "Pacientes recientes",
+  "recentPatientsDescription": "Volver a las últimas historias abiertas",
   "registerPatient": "Registrar paciente",
   "registerPatientDescription": "DNI preferente; CE/CNV si aplica",
   "returnToHome": "Volver al inicio",

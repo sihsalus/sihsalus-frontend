@@ -1,6 +1,6 @@
-import { ConfigurableLink } from '@openmrs/esm-framework';
+import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React from 'react';
+import React, { Suspense, type PropsWithChildren } from 'react';
 import { useTranslation } from 'react-i18next';
 import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
 import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg';
@@ -30,6 +30,8 @@ const fuaReadPrivilege = 'app:home.fua';
 
 // t('searchPatient', 'Search patient')
 // t('searchPatientDescription', 'Find an existing patient record')
+// t('recentPatients', 'Recent patients')
+// t('recentPatientsDescription', 'Reopen recently viewed charts')
 // t('registerPatient', 'Register patient')
 // t('registerPatientDescription', 'Create a new patient record')
 // t('careQueues', 'Care queues')
@@ -49,6 +51,14 @@ const actions = [
     href: '/search',
     illustrationSrc: patientSearchIllustration,
     privilege: patientSearchPrivilege,
+    toneClass: 'admissionAction',
+  },
+  {
+    key: 'recentPatients',
+    descriptionKey: 'recentPatientsDescription',
+    href: '/recent-patients',
+    illustrationSrc: patientSearchIllustration,
+    privilege: [patientSearchPrivilege, 'app:hoja.clinica'],
     toneClass: 'admissionAction',
   },
   {
@@ -105,14 +115,22 @@ const ActionIllustration: React.FC<{ illustrationSrc: string }> = ({ illustratio
   <img className={styles.actionIllustration} src={illustrationSrc} alt="" loading="lazy" />
 );
 
+function RecentPatientsEnabled({ children }: PropsWithChildren) {
+  const config = useConfig<{ search?: { showRecentlySearchedPatients?: boolean } }>({
+    externalModuleName: '@sihsalus/esm-patient-search-app',
+  });
+
+  return config.search?.showRecentlySearchedPatients ? children : null;
+}
+
 const PeruHomeActions: React.FC = () => {
   const { t } = useTranslation();
   const spaBase = globalThis.spaBase ?? globalThis.getOpenmrsSpaBase?.() ?? '/openmrs/spa';
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, illustrationSrc, privilege, toneClass }) => (
-        <RequirePrivilege key={key} privilege={privilege} hideUnauthorized>
+      {actions.map(({ key, descriptionKey, href, illustrationSrc, privilege, toneClass }) => {
+        const link = (
           <ConfigurableLink className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
             <span className={styles.actionHeader}>
               <span className={styles.actionText}>
@@ -124,8 +142,20 @@ const PeruHomeActions: React.FC = () => {
               <ActionIllustration illustrationSrc={illustrationSrc} />
             </span>
           </ConfigurableLink>
-        </RequirePrivilege>
-      ))}
+        );
+
+        return (
+          <RequirePrivilege key={key} privilege={privilege} hideUnauthorized>
+            {key === 'recentPatients' ? (
+              <Suspense fallback={null}>
+                <RecentPatientsEnabled>{link}</RecentPatientsEnabled>
+              </Suspense>
+            ) : (
+              link
+            )}
+          </RequirePrivilege>
+        );
+      })}
     </section>
   );
 };

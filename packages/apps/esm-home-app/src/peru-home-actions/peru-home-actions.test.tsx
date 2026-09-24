@@ -11,12 +11,14 @@ type RequirePrivilegeProps = {
 };
 
 const mockRequirePrivilege = vi.hoisted(() => vi.fn((_props: RequirePrivilegeProps): ReactNode => null));
+const mockUseConfig = vi.hoisted(() => vi.fn(() => ({ search: { showRecentlySearchedPatients: true } })));
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   RequirePrivilege: (props: RequirePrivilegeProps) => mockRequirePrivilege(props),
 }));
 
 vi.mock('@openmrs/esm-framework', () => ({
+  useConfig: mockUseConfig,
   ConfigurableLink: ({ children, to, ...props }: { children?: ReactNode; to: string }) => (
     <a href={to} {...props}>
       {children}
@@ -33,6 +35,7 @@ vi.mock('react-i18next', () => ({
 describe('PeruHomeActions', () => {
   beforeEach(() => {
     vi.stubGlobal('spaBase', '/openmrs/spa');
+    mockUseConfig.mockReturnValue({ search: { showRecentlySearchedPatients: true } });
     mockRequirePrivilege.mockImplementation(({ children }) => <>{children}</>);
   });
 
@@ -41,6 +44,12 @@ describe('PeruHomeActions', () => {
 
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
       expect.objectContaining({ privilege: 'app:opciones.busquedaPaciente', hideUnauthorized: true }),
+    );
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(
+      expect.objectContaining({
+        privilege: ['app:opciones.busquedaPaciente', 'app:hoja.clinica'],
+        hideUnauthorized: true,
+      }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
       expect.objectContaining({ privilege: 'app:opciones.registrarPaciente', hideUnauthorized: true }),
@@ -71,7 +80,7 @@ describe('PeruHomeActions', () => {
     ]);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
-      return privileges.some((item) => admissionPrivileges.has(item)) ? <>{children}</> : null;
+      return privileges.every((item) => admissionPrivileges.has(item)) ? <>{children}</> : null;
     });
 
     render(<PeruHomeActions />);
@@ -89,7 +98,7 @@ describe('PeruHomeActions', () => {
     const laboratoryPrivileges = new Set(['app:opciones.busquedaPaciente', 'app:home.laboratorio']);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
-      return privileges.some((item) => laboratoryPrivileges.has(item)) ? <>{children}</> : null;
+      return privileges.every((item) => laboratoryPrivileges.has(item)) ? <>{children}</> : null;
     });
 
     render(<PeruHomeActions />);
@@ -105,7 +114,7 @@ describe('PeruHomeActions', () => {
     const fuaPrivileges = new Set(['app:opciones.busquedaPaciente', 'app:home.fua']);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
-      return privileges.some((item) => fuaPrivileges.has(item)) ? <>{children}</> : null;
+      return privileges.every((item) => fuaPrivileges.has(item)) ? <>{children}</> : null;
     });
 
     render(<PeruHomeActions />);
@@ -128,5 +137,61 @@ describe('PeruHomeActions', () => {
     expect(screen.queryByText('registerPatient')).not.toBeInTheDocument();
     expect(screen.queryByText('laboratory')).not.toBeInTheDocument();
     expect(screen.queryByText('fua')).not.toBeInTheDocument();
+  });
+
+  it('links recent patients immediately after search for a user with both permissions', () => {
+    const grantedPrivileges = new Set(['app:opciones.busquedaPaciente', 'app:hoja.clinica']);
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
+      const privileges = Array.isArray(privilege) ? privilege : [privilege];
+      return privileges.every((item) => grantedPrivileges.has(item)) ? <>{children}</> : null;
+    });
+
+    render(<PeruHomeActions />);
+
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute('href', '/openmrs/spa/search');
+    expect(links[1]).toHaveAccessibleName('recentPatients recentPatientsDescription');
+    expect(links[1]).toHaveAttribute('href', '/openmrs/spa/recent-patients');
+    expect(mockUseConfig).toHaveBeenCalledWith({ externalModuleName: '@sihsalus/esm-patient-search-app' });
+  });
+
+  it.each([
+    [],
+    ['app:opciones.busquedaPaciente'],
+    ['app:hoja.clinica'],
+  ])('hides recent patients without both permissions: %j', (...grantedPrivileges: string[]) => {
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
+      const privileges = Array.isArray(privilege) ? privilege : [privilege];
+      return privileges.every((item) => grantedPrivileges.includes(item)) ? <>{children}</> : null;
+    });
+
+    render(<PeruHomeActions />);
+
+    expect(screen.queryByText('recentPatients')).not.toBeInTheDocument();
+    expect(mockUseConfig).not.toHaveBeenCalled();
+  });
+
+  it('hides recent patients when disabled while preserving the other shortcuts', () => {
+    mockUseConfig.mockReturnValue({ search: { showRecentlySearchedPatients: false } });
+
+    render(<PeruHomeActions />);
+
+    expect(screen.queryByText('recentPatients')).not.toBeInTheDocument();
+    expect(screen.getByText('searchPatient')).toBeInTheDocument();
+    expect(screen.getByText('registerPatient')).toBeInTheDocument();
+  });
+
+  it('keeps the other shortcuts visible while recent-patients configuration is unavailable', () => {
+    const pendingConfig = new Promise<never>(() => {});
+    mockUseConfig.mockImplementation(() => {
+      throw pendingConfig;
+    });
+
+    render(<PeruHomeActions />);
+
+    expect(screen.queryByText('recentPatients')).not.toBeInTheDocument();
+    expect(screen.getByText('searchPatient')).toBeInTheDocument();
+    expect(screen.getByText('registerPatient')).toBeInTheDocument();
   });
 });

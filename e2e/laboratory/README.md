@@ -28,10 +28,11 @@ content pins. Their optional `E2E_FIXTURE_*_UUID` settings must match exactly;
 they cannot redirect fixture creation to another metadata catalogue.
 
 **Browser CI is deliberately blocked** while a private durable handoff of the
-recovery journals remains unavailable. Any `CI` setting or
-`GITHUB_ACTIONS=true` fails before metadata requests, login or fixture creation.
-The ordinary local contracts still run in CI. Do not remove this guard, set an
-`e2e` label or dispatch remote browser CI until journal retention is resolved.
+recovery journals remains unavailable. Laboratory is temporarily absent from
+the browser CI matrix. Any `CI` setting or `GITHUB_ACTIONS=true` still fails
+before metadata requests, login or fixture creation. The ordinary local
+contracts still run in CI. Do not remove this guard or add laboratory back to
+the matrix until journal retention and recovery are verified.
 
 ```sh
 # Safe local contracts: no browser, credentials, or backend calls
@@ -131,10 +132,10 @@ All are included in `e2e/tsconfig.json`; the suite is registered in the
 [catalog](../suite-catalog.json). Do not bypass its runner or add an
 uncatalogued configuration.
 
-CI's local contracts run for every PR. The workflow still lists laboratory in
-its opt-in browser matrix, but its explicit retention guard blocks that job
-until durable private recovery is available. Record the exact tested SHA,
-target, role, assertions and verified cleanup; listing, cached tasks, or
-typechecking are not clinical evidence. Inspect reports before sharing:
+CI's local contracts run for every PR. The opt-in browser matrix includes only
+clinical while laboratory's explicit retention guard remains in place. Record
+the exact tested SHA, target, role, assertions and verified cleanup; listing,
+cached tasks, or typechecking are not clinical evidence. Inspect reports before
+sharing:
 authentication state, response bodies, screenshots and videos must not expose
 credentials or identifiable data.

@@ -36,7 +36,7 @@ clínica de las suites.
 | `dyaku`             | `e2e/dyaku/playwright.config.ts`             | `e2e/dyaku/specs`             | quarantined  | no   | sí        | no           |
 | `fast-data-entry`   | `e2e/fast-data-entry/playwright.config.ts`   | `e2e/fast-data-entry/specs`   | quarantined  | no   | no        | no           |
 | `form-builder`      | `e2e/form-builder/playwright.config.ts`      | `e2e/form-builder/specs`      | quarantined  | no   | no        | no           |
-| `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | sí           |
+| `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | no           |
 | `offline-laptop`    | `e2e/offline-laptop/playwright.config.ts`    | `e2e/offline-laptop/specs`    | **runnable** | sí   | sí        | no           |
 | `offline-local`     | `e2e/offline-local/playwright.config.ts`     | `e2e/offline-local/specs`     | **runnable** | sí   | sí        | no           |
 | `patient-imaging`   | `e2e/patient-imaging/playwright.config.ts`   | `e2e/patient-imaging/specs`   | quarantined  | no   | sí        | no           |
@@ -88,16 +88,18 @@ configuración aprobada. No existe un `test:e2e:all`: promover una suite exige
 resolver su razón de cuarentena y actualizar catálogo, typecheck y CI de forma
 explícita.
 
-En CI (`.github/workflows/e2e.yml`) los contratos locales corren en cada PR. Las
-suites de navegador principal y laboratorio corren **solo** en PRs con la
-etiqueta `e2e` o por `workflow_dispatch`, y exigen 7 variables/secretos
-(preflight que falla si falta alguna). Un gate que solo corre cuando alguien se
-acuerda no protege de nada: si tocas flujos clínicos, pon la etiqueta.
+En CI (`.github/workflows/e2e.yml`) los contratos locales corren en cada PR. La
+suite clínica de navegador corre **solo** en PRs con la etiqueta `e2e` o por
+`workflow_dispatch`, y exige 7 variables/secretos (preflight que falla si falta
+alguna). Un gate que solo corre cuando alguien se acuerda no protege de nada:
+si tocas flujos clínicos, pon la etiqueta.
 
-Laboratorio añade ahora un bloqueo explícito de navegador en CI mientras no
-exista retención privada y duradera de sus journals de recuperación. Su adapter
-permite ejecución local supervisada con estado persistente; revisar
-[sus requisitos](laboratory/README.md) antes de etiquetar o lanzar esa matriz.
+Laboratorio permanece ejecutable localmente con supervisión y typecheck, pero
+se retira temporalmente de la matriz de navegador en CI: su preflight rechaza
+CI mientras no exista retención privada y recuperable de sus journals. Los
+contratos locales siguen corriendo en cada PR. Para reponerlo en la matriz,
+primero debe existir esa retención y una recuperación verificada; consultar
+[sus requisitos](laboratory/README.md).
 
 El preflight exige `E2E_GATE_TARGET=DEV|QLTY`, comprueba que el backend sea el
 origen HTTPS exacto del ambiente elegido y solo permite que el SPA sea ese mismo

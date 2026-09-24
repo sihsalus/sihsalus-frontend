@@ -37,9 +37,9 @@ import {
   requestCount,
   requestDeleteConfirmationDialog,
 } from '../constants';
-import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
 import { useImagingAccess } from '../utils/use-imaging-access';
 import { usePaginationBounds } from '../utils/use-pagination-bounds';
+import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
 import styles from './details-table.scss';
 import ProcedureStepTable from './procedureStep-details-table.component';
 
@@ -58,7 +58,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({
 }) => {
   const { t } = useTranslation();
   const { canWrite } = useImagingAccess();
-  const displayText = t('requestProcedureEmptyState', 'No requests found');
+  const displayText = t('requests', 'Requests');
   const headerTitle = t('requestProcedure', 'RequestProcedure');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');

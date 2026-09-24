@@ -100,7 +100,7 @@ describe('StudiesDetailsTable', () => {
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={[]} />);
 
-    expect(screen.getByText(/Studies: No studies found/i)).toBeInTheDocument();
+    expect(screen.getByText(/Studies: Studies/i)).toBeInTheDocument();
   });
 
   it('renders table headers and study row', () => {

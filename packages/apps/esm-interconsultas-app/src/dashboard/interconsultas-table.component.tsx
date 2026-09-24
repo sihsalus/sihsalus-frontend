@@ -303,7 +303,6 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
                   }}
                   selectedItem={serviceOptions.find((option) => option.uuid === serviceFilter) ?? allOption}
                   titleText={t('filterByService', 'Servicio destino')}
-                  type="inline"
                 />
                 <Dropdown
                   id={`location-filter-${filter}`}
@@ -316,18 +315,19 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
                   }}
                   selectedItem={locationOptions.find((option) => option.uuid === locationFilter) ?? allOption}
                   titleText={t('filterByOriginLocation', 'UPSS de origen')}
-                  type="inline"
                 />
               </Layer>
               <Layer className={styles.searchGroup}>
                 <TableToolbarSearch
                   expanded
+                  persistent
+                  labelText={t('searchThisList', 'Paciente, orden, solicitante o motivo')}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchString(e.target.value ?? '');
                     goTo(1);
                   }}
                   placeholder={t('searchThisList', 'Paciente, orden, solicitante o motivo')}
-                  size="sm"
+                  size="lg"
                   value={searchString}
                 />
                 {hasActiveFilters && (

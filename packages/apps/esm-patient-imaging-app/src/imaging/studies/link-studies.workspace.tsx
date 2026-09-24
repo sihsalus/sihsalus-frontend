@@ -14,7 +14,6 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExtensionSlot, launchWorkspace, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
-import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -23,12 +22,13 @@ import { getLinkStudies, useOrthancConfigurations } from '../../api';
 import { type OrthancConfiguration } from '../../types';
 import { assignStudiesFormWorkspace } from '../constants';
 import { useImagingOperation } from '../utils/use-imaging-operation';
-import styles from './studies.scss';
+import styles from './study-form.scss';
 
-const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientUuid, closeWorkspace }) => {
+const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientUuid, closeWorkspace, setTitle }) => {
   const { t } = useTranslation();
   const { start, isCurrent, finish, isPending, canWrite } = useImagingOperation(patientUuid);
   const isTablet = useLayoutType() === 'tablet';
+  useEffect(() => setTitle?.(t('linkStudiesTitle', 'Link studies')), [setTitle, t]);
   const orthancConfigurations = useOrthancConfigurations();
   const patientState = useMemo(() => ({ patientUuid }), [patientUuid]);
 
@@ -113,14 +113,14 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
 
   return (
     <FormProvider {...formProps}>
-      {isPending && <InlineLoading description={t('linkingStudies', 'Linking studies...')} />}
-      <Form className={styles.formContainer} onSubmit={handleSubmit(onSubmit)} id="linkStudies">
+      <Form className={styles.form} onSubmit={handleSubmit(onSubmit)} id="linkStudies">
         {isTablet ? (
           <Row className={styles.header}>
-            <ExtensionSlot className={styles.content} name="patient-details-header-slot" state={patientState} />
+            <ExtensionSlot name="patient-details-header-slot" state={patientState} />
           </Row>
         ) : null}
-        <Stack gap={1} className={styles.formContent}>
+        <Stack gap={6} className={styles.formContent}>
+          {isPending && <InlineLoading description={t('linkingStudies', 'Linking studies...')} />}
           {orthancConfigurations.error && (
             <InlineNotification
               kind="error"
@@ -172,15 +172,21 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
               </FormGroup>
             </ResponsiveWrapper>
           </section>
-          <ButtonSet className={classNames(isTablet ? styles.tabletButtons : styles.desktopButtons)}>
-            <Button kind="primary" type="submit" disabled={isPending || !canWrite}>
-              {t('fetchStudy', 'Fetch Study')}
-            </Button>
-            <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isPending}>
-              {t('cancel', 'Cancel')}
-            </Button>
-          </ButtonSet>
         </Stack>
+        <ButtonSet className={styles.buttonSet}>
+          <Button
+            className={styles.button}
+            kind="secondary"
+            type="button"
+            onClick={() => closeWorkspace()}
+            disabled={isPending}
+          >
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button className={styles.button} kind="primary" type="submit" disabled={isPending || !canWrite}>
+            {t('fetchStudy', 'Fetch Study')}
+          </Button>
+        </ButtonSet>
       </Form>
     </FormProvider>
   );

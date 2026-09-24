@@ -147,3 +147,17 @@ The [legacy imaging E2E suite](../../../e2e/patient-imaging/README.md) is explic
 quarantined before authentication/fixture creation. Its unsafe global cleanup is
 retired. A target-bound synthetic DICOM journal with verified cleanup must replace
 the old fixtures before enabling it. No production or real-patient testing is allowed.
+
+## Studies and worklist presentation
+
+The study actions wrap at narrow widths. Empty states pass translated resource
+names to the shared patient-chart component so its message and action label do
+not repeat “No studies found”. Linking and uploading use the same scrollable
+content and fixed two-button footer pattern as the request form, with translated
+workspace titles. File restrictions, queue reconciliation, patient association,
+permissions and network checks retain their existing contracts.
+
+Validate desktop, tablet and 320/420 px workspaces, long filenames, open server
+menus, pending/error states and keyboard access. Local browser checks use only
+synthetic fixtures; they do not establish PACS connectivity or deployed upload
+behavior.

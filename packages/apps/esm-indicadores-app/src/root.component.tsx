@@ -1,10 +1,12 @@
 import { InlineLoading, InlineNotification, Tab, TabList, Tabs } from '@carbon/react';
 import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
+import { useConfig } from '@openmrs/esm-framework';
 import React, { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import { useMockMode } from './api/mock-mode';
+import { type ConfigObject } from './config-schema';
 import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
 import styles from './indicators-dashboard.module.scss';
 
@@ -111,10 +113,21 @@ const IndicatorsContent: React.FC = () => {
   );
 };
 
-const RootComponent: React.FC = () => (
-  <RequireModulePrivilege privilege={modulePrivileges.indicators}>
-    <IndicatorsContent />
-  </RequireModulePrivilege>
-);
+const RootComponent: React.FC = () => {
+  const { bypassPrivilegeGuard } = useConfig<ConfigObject>();
+
+  // Dev-only escape hatch (config `bypassPrivilegeGuard`). Skips the
+  // app:indicadores guard so the module mounts without the privilege.
+  // NEVER enable in production.
+  if (bypassPrivilegeGuard) {
+    return <IndicatorsContent />;
+  }
+
+  return (
+    <RequireModulePrivilege privilege={modulePrivileges.indicators}>
+      <IndicatorsContent />
+    </RequireModulePrivilege>
+  );
+};
 
 export default RootComponent;

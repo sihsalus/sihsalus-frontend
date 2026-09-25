@@ -23,10 +23,18 @@ export const configSchema = {
       'Enables local example data when reportes-sql is unavailable. Keep disabled outside explicit demos; ' +
       'write operations always require the real backend even when this option is enabled.',
   },
+  bypassPrivilegeGuard: {
+    _type: Type.Boolean,
+    _default: false,
+    _description:
+      'Dev-only escape hatch: skips the app:indicadores privilege guard so the module ' +
+      'mounts without the privilege. NEVER enable in production.',
+  },
 };
 
 export type ConfigObject = {
   indicatorsApiPath: string;
   reportesSqlApiPath: string;
   enableDemoData: boolean;
+  bypassPrivilegeGuard: boolean;
 };

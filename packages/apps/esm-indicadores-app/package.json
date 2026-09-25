@@ -15,6 +15,8 @@
     "prettier": "node ../../tooling/scripts/run-biome.js format --write src",
     "typescript": "tsc",
     "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "verify": "turbo run lint test typescript",
     "coverage": "vitest run --coverage --passWithNoTests",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
@@ -45,6 +47,7 @@
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
+    "@carbon/styles": "1.x",
     "@openmrs/esm-framework": "*",
     "dayjs": "1.x",
     "react": "18.x",
@@ -56,7 +59,6 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@rspack/cli": "1.7.11",
-    "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
@@ -67,6 +69,7 @@
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.2",
     "rxjs": "^6.6.7",
+    "turbo": "^2.9.14",
     "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"

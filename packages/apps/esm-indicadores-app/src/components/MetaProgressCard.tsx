@@ -34,15 +34,15 @@ const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue 
     <Tile className={styles.metaProgressCard}>
       <div className={styles.metaProgressHeader}>
         <div>
-          <span className={styles.metaProgressLabel}>{t('target', 'Meta')}</span>
+          <span className={styles.metaProgressLabel}>{t('annualTarget', 'Meta anual')}</span>
           <strong className={styles.metaProgressValue}>{meta}</strong>
         </div>
         <div>
-          <span className={styles.metaProgressLabel}>{t('currentValue', 'Valor actual')}</span>
+          <span className={styles.metaProgressLabel}>{t('annualProgressValue', 'Avance anual acumulado')}</span>
           <strong className={styles.metaProgressValue}>{currentValue}</strong>
         </div>
         <div>
-          <span className={styles.metaProgressLabel}>{t('progress', 'Progreso')}</span>
+          <span className={styles.metaProgressLabel}>{t('annualProgressPercent', 'Progreso anual')}</span>
           <strong className={styles.metaProgressValue}>
             {hasTarget ? `${percentage}%` : t('noTarget', 'Sin meta')}
           </strong>
@@ -56,6 +56,9 @@ const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue 
             aria-valuenow={percentage}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label={t('annualProgressBarAria', 'Progreso anual: {{percentage}}% de la meta anual', {
+              percentage,
+            })}
             style={{ width: `${percentage}%` }}
           />
         </div>

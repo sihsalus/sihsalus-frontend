@@ -479,6 +479,10 @@
       "en-GB": "es-ES"
     }
   },
+  "@sihsalus/esm-indicadores-app": {
+    "reportesSqlApiPath": "http://localhost:8000",
+    "bypassPrivilegeGuard": true
+  },
   "core": {
     "Translation overrides": {
       "es": {

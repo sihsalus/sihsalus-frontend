@@ -214,6 +214,52 @@ window.clinicalStyles = { imaging, tray };`,
   }
 });
 
+test('results dashboard keeps its top gap when shared dashboard styles load later', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'results-dashboard-spacing-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-chart-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import chart from ${JSON.stringify(path.join(workspace, 'src/patient-chart/chart-review/dashboard-view.scss'))};
+import ${JSON.stringify(path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/tabbed-dashboard/tabbed-dashboard.scss'))};
+window.chartStyles = chart;`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<div data-extension-slot-name="patient-chart-test-results-dashboard-slot" id="results"></div>' +
+      '<div data-extension-slot-name="patient-chart-encounters-dashboard-slot" id="encounters"></div>',
+  );
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.evaluate(() => {
+    document.getElementById('results').className = window.chartStyles.dashboard;
+    document.getElementById('encounters').className = window.chartStyles.dashboard;
+  });
+  await expect(page.locator('#results')).toHaveCSS('margin-top', '16px');
+  await expect(page.locator('#encounters')).toHaveCSS('margin-top', '0px');
+});
+
 test('workspace rail reserves desktop chart space without changing overlay or tablet layout', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'workspace-rail-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));

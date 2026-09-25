@@ -1,11 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useConfig } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
 import { useMockMode } from './api/mock-mode';
+import { type ConfigObject } from './config-schema';
 import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
 import RootComponent from './root.component';
 
 const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
+vi.mock('@openmrs/esm-framework', () => ({ useConfig: vi.fn() }));
 vi.mock('./hooks/useIndicatorsHealth', () => ({ useIndicatorsHealth: vi.fn() }));
 vi.mock('./api/mock-mode', () => ({ useMockMode: vi.fn() }));
 vi.mock('./pages/IndicadoresPage', () => ({ default: () => <div>Indicadores page content</div> }));
@@ -21,6 +24,14 @@ vi.mock('@sihsalus/esm-rbac', () => ({
 
 const mockUseIndicatorsHealth = vi.mocked(useIndicatorsHealth);
 const mockUseMockMode = vi.mocked(useMockMode);
+const mockUseConfig = vi.mocked(useConfig);
+
+const defaultTestConfig: ConfigObject = {
+  indicatorsApiPath: '/ws/module/indicators/api',
+  reportesSqlApiPath: '/services/reportes-sql',
+  enableDemoData: false,
+  bypassPrivilegeGuard: false,
+};
 
 const indicatorsBaseUrl = '/openmrs/spa/indicators';
 
@@ -33,6 +44,7 @@ describe('RootComponent health state', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
+    mockUseConfig.mockReturnValue(defaultTestConfig);
     mockUseMockMode.mockReturnValue({ isMockMode: false, isBackendAvailable: true });
   });
 
@@ -74,6 +86,7 @@ describe('RootComponent lazy routed pages', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
+    mockUseConfig.mockReturnValue(defaultTestConfig);
     mockUseMockMode.mockReturnValue({ isMockMode: false, isBackendAvailable: true });
   });
 
@@ -118,5 +131,29 @@ describe('RootComponent lazy routed pages', () => {
     expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
+  });
+});
+
+describe('RootComponent privilege guard bypass (dev-only)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
+    mockUseMockMode.mockReturnValue({ isMockMode: false, isBackendAvailable: true });
+  });
+
+  it('enforces the guard by default (bypassPrivilegeGuard: false)', async () => {
+    mockUseConfig.mockReturnValue(defaultTestConfig);
+    renderAt('/');
+
+    expect(mockRequireModulePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:indicadores' }));
+    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
+  });
+
+  it('skips RequireModulePrivilege when bypassPrivilegeGuard is true', async () => {
+    mockUseConfig.mockReturnValue({ ...defaultTestConfig, bypassPrivilegeGuard: true });
+    renderAt('/');
+
+    expect(mockRequireModulePrivilege).not.toHaveBeenCalled();
+    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
   });
 });

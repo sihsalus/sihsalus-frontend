@@ -25,6 +25,7 @@ const defaultConfig: ConfigObject = {
   indicatorsApiPath: '/ws/module/indicators/api',
   reportesSqlApiPath: '/services/reportes-sql',
   enableDemoData: false,
+  bypassPrivilegeGuard: false,
 };
 
 describe('useIndicatorsHealth', () => {

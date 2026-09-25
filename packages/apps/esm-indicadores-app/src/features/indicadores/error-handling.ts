@@ -12,6 +12,7 @@ export function indicatorsErrorMessageOptions(t: Translate) {
       404: t('indicatorsError404', 'El registro solicitado ya no existe.'),
       409: t('indicatorsError409', 'El registro fue modificado por otra operación. Actualice e intente nuevamente.'),
       422: t('indicatorsError422', 'Los datos enviados no cumplen las reglas del indicador.'),
+      429: t('indicatorsError429', 'Demasiadas solicitudes. Espere unos minutos e intente nuevamente.'),
       500: t('indicatorsError500', 'El servicio de indicadores encontró un error. Intente nuevamente.'),
       502: t('indicatorsError502', 'El servicio de indicadores no está disponible en este momento.'),
       503: t('indicatorsError503', 'El servicio de indicadores no está disponible en este momento.'),

@@ -5,10 +5,11 @@ describe('MetaProgressCard', () => {
   it('renders the meta, current value and progress percentage', () => {
     render(<MetaProgressCard meta={1000} currentValue={750} />);
 
-    expect(screen.getByText('Meta')).toBeInTheDocument();
+    expect(screen.getByText('Meta anual')).toBeInTheDocument();
     expect(screen.getByText('1000')).toBeInTheDocument();
-    expect(screen.getByText('Valor actual')).toBeInTheDocument();
+    expect(screen.getByText('Avance anual acumulado')).toBeInTheDocument();
     expect(screen.getByText('750')).toBeInTheDocument();
+    expect(screen.getByText('Progreso anual')).toBeInTheDocument();
     expect(screen.getByText('75%')).toBeInTheDocument();
   });
 

@@ -3,6 +3,7 @@ import {
   openmrsFetch,
   showSnackbar,
   useLayoutType,
+  useConfig,
   usePatient,
   userHasAccess,
   useSession,
@@ -74,10 +75,13 @@ function installBackend(initial: Array<OpenmrsCondition> = [], creationFailure?:
       expect(parsedUrl.searchParams.get('v')).toBe('full');
       return { data: structuredClone(condition) } as FetchResponse;
     }
+    if (method === 'GET' && path.endsWith('/concept')) {
+      return { data: { results: [{ uuid: 'synthetic-cough-concept', display: 'Tos' }] } } as FetchResponse;
+    }
     if (method === 'POST' && path.endsWith('/condition')) {
       const incoming = body as unknown as {
         patient: string;
-        condition: { nonCoded: string };
+        condition: { nonCoded: string } | { coded: string };
         clinicalStatus: string;
         verificationStatus?: string;
         onsetDate?: string;
@@ -86,6 +90,10 @@ function installBackend(initial: Array<OpenmrsCondition> = [], creationFailure?:
       };
       const persisted: OpenmrsCondition = {
         ...structuredClone(incoming),
+        condition:
+          'coded' in incoming.condition
+            ? { coded: { uuid: incoming.condition.coded, display: 'Tos' } }
+            : incoming.condition,
         uuid: 'synthetic-created-condition',
         patient: { uuid: incoming.patient },
         verificationStatus: incoming.verificationStatus ?? null,
@@ -160,6 +168,7 @@ function renderHistory(workspaceProps: ConditionFormProps = { formContext: 'crea
 }
 
 beforeEach(() => {
+  vi.mocked(useConfig).mockReturnValue({ conditionConceptClassUuid: 'synthetic-diagnosis-class' });
   vi.mocked(useLayoutType).mockReturnValue('small-desktop');
   vi.mocked(useSession).mockReturnValue({
     user: { uuid: 'synthetic-editor', privileges: [{ name: 'Get Conditions' }, { name: 'Edit Conditions' }] },
@@ -167,6 +176,22 @@ beforeEach(() => {
   } as never);
   vi.mocked(userHasAccess).mockReturnValue(true);
   vi.mocked(usePatient).mockReturnValue({ patient, patientUuid: patient.id, isLoading: false, error: null });
+});
+
+it('saves a selected coded pathological antecedent without converting it to free text', async () => {
+  const backend = installBackend();
+  const props = renderHistory();
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('radio', { name: /pathological|patológico/i }));
+  await user.type(screen.getByRole('combobox', { name: /coded antecedent/i }), 'Tos');
+  await user.click(await screen.findByRole('option', { name: 'Tos' }));
+  await user.click(screen.getByRole('radio', { name: 'Inactive' }));
+  await user.click(screen.getByRole('button', { name: /save.*close/i }));
+
+  await waitFor(() => expect(props.closeWorkspace).toHaveBeenCalledOnce());
+  const write = backend.requests.find(({ method }) => method === 'POST');
+  expect(write?.body?.condition).toEqual({ coded: 'synthetic-cough-concept' });
+  expect(backend.records()[0].condition).toEqual({ coded: { uuid: 'synthetic-cough-concept', display: 'Tos' } });
 });
 
 async function fillNarrative() {

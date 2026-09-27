@@ -35,6 +35,8 @@
   "deleting": "Eliminando",
   "diagnoses": "Diagnósticos",
   "diagnosisCie10MappingRequired": "Seleccione diagnósticos con código CIE-10 válido en el catálogo",
+  "diagnosisCatalogReload": "Cierre y vuelva a abrir este resumen antes de editarlo.",
+  "diagnosisCatalogUnavailable": "No se pudieron verificar los diagnósticos guardados en el catálogo",
   "discard": "Descartar",
   "editStickyNote": "Editar nota fija",
   "emptyDiagnosisText": "No se ha seleccionado ningún diagnóstico. Ingrese un diagnóstico en el buscador de arriba",

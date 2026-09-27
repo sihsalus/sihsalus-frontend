@@ -22,6 +22,7 @@ import { type ConfigObject, configSchema } from '../config-schema';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   assertCanonicalVisitNoteCanBeCreated,
+  fetchDiagnosisConceptByUuid,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   saveCanonicalVisitNote,
@@ -91,6 +92,7 @@ function renderVisitNotesForm(
 }
 
 const mockFetchDiagnosisConceptsByName = vi.mocked(fetchDiagnosisConceptsByName);
+const mockFetchDiagnosisConceptByUuid = vi.mocked(fetchDiagnosisConceptByUuid);
 const mockFetchPrestacionalConceptsByName = vi.mocked(fetchPrestacionalConceptsByName);
 const mockAssertCanonicalVisitNoteCanBeCreated = vi.mocked(assertCanonicalVisitNoteCanBeCreated);
 const mockSaveCanonicalVisitNote = vi.mocked(saveCanonicalVisitNote);
@@ -124,6 +126,7 @@ vi.mock('./visit-notes.resource', async () => ({
   // Pure P/D/R mapping helpers carry no side effects — use the real ones.
   ...(await vi.importActual<typeof import('./visit-notes.resource')>('./visit-notes.resource')),
   fetchDiagnosisConceptsByName: vi.fn(),
+  fetchDiagnosisConceptByUuid: vi.fn(),
   fetchPrestacionalConceptsByName: vi.fn(),
   assertCanonicalVisitNoteCanBeCreated: vi.fn(),
   updateVisitNote: vi.fn(),
@@ -158,6 +161,11 @@ beforeEach(() => {
   mockUseSession.mockReturnValue(mockSessionDataResponse.data);
   mockUseConfig.mockReturnValue(getMockConfig());
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
+  mockFetchDiagnosisConceptByUuid.mockResolvedValue({
+    uuid: '789',
+    display: 'Diabetes Mellitus',
+    names: [{ display: 'E149', conceptNameType: 'SHORT' }],
+  });
   mockFetchPrestacionalConceptsByName.mockResolvedValue([]);
   mockAssertCanonicalVisitNoteCanBeCreated.mockResolvedValue();
   mockUseCanonicalVisitNoteEncounter.mockReturnValue({
@@ -1012,6 +1020,62 @@ test('updates existing visit note when in edit mode', async () => {
     expect.objectContaining(updatePayload),
   );
   expect(mockUpdateVisitNote.mock.calls[0][2]).not.toHaveProperty('visit');
+});
+
+test('keeps saved outpatient diagnoses valid when editing only the note', async () => {
+  const user = userEvent.setup();
+  const config = getMockConfig();
+  mockUseConfig.mockReturnValue(config);
+  mockUpdateVisitNote.mockResolvedValue({ status: 200 } as Awaited<ReturnType<typeof updateVisitNote>>);
+  const encounter = {
+    id: 'synthetic-encounter',
+    uuid: 'synthetic-encounter',
+    rawDatetime: '2026-09-23T10:00:00.000Z',
+    obs: [
+      { concept: { uuid: config.visitNoteConfig.encounterNoteTextConceptUuid }, value: 'Original note' },
+      {
+        concept: { uuid: config.visitNoteConfig.codigoPrestacionalConceptUuid },
+        formFieldPath: 'codigo-prestacional',
+        value: { uuid: 'synthetic-service-code', display: 'Synthetic service' },
+      },
+    ],
+    diagnoses: [
+      {
+        uuid: 'synthetic-encounter-diagnosis',
+        diagnosis: { coded: { uuid: '789', display: 'Diabetes Mellitus' } },
+        certainty: 'CONFIRMED',
+        rank: 1,
+        display: 'Diabetes Mellitus',
+      },
+    ],
+  };
+
+  renderVisitNotesForm(
+    { formContext: 'editing', encounter: encounter as unknown as EditableVisitNoteEncounter },
+    {
+      visitContext: {
+        ...defaultProps.groupProps.visitContext,
+        visitType: { uuid: config.visitNoteConfig.outpatientVisitTypeUuid },
+      } as never,
+    },
+  );
+
+  await waitFor(() => expect(mockFetchDiagnosisConceptByUuid).toHaveBeenCalledWith('789'));
+  expect(screen.queryByLabelText('Next appointment')).not.toBeInTheDocument();
+  const note = screen.getByRole('textbox', { name: /Additional notes/i });
+  await user.clear(note);
+  await user.type(note, 'Updated note');
+  const save = screen.getByRole('button', { name: /Save and close/i });
+  await selectCodigoPrestacional(user);
+  await waitFor(() => expect(save).toBeEnabled());
+  await user.click(save);
+
+  await waitFor(() => expect(mockUpdateVisitNote).toHaveBeenCalledOnce());
+  expect(mockUpdateVisitNote.mock.calls[0][2].obs).not.toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ concept: { uuid: config.visitNoteConfig.nextAppointmentConceptUuid } }),
+    ]),
+  );
 });
 
 test('handles existing diagnoses correctly when in edit mode', async () => {

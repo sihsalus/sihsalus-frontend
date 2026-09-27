@@ -31,7 +31,7 @@ describe('ExamenFisico', () => {
       encounterTypes: { externalConsultation: 'external-consultation' },
       formsList: {
         physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
-        physicalExamFormVersion: '1.0.0',
+        physicalExamFormVersion: '1.0.1',
         physicalExamHistoricalFormNames: ['CE-SOAP-001-NOTA SOAP'],
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
@@ -107,7 +107,10 @@ describe('ExamenFisico', () => {
 
     expect(screen.getByText('Historial de examen físico')).toBeInTheDocument();
     for (const finding of expectedFindings) {
-      expect(screen.getByText(finding)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(finding))).toBeInTheDocument();
+    }
+    if (generalState) {
+      expect(screen.getByText('Estado general:')).toBeInTheDocument();
     }
 
     await user.click(screen.getByRole('button', { name: 'Registrar examen físico' }));
@@ -119,7 +122,7 @@ describe('ExamenFisico', () => {
       ambulatoryVisitTypeUuid: 'ambulatory-visit',
       mutate,
       entryMode: 'one-per-visit',
-      formVersion: '1.0.0',
+      formVersion: '1.0.1',
       historicalFormNames: ['CE-SOAP-001-NOTA SOAP'],
       workspaceTitle: 'Examen físico',
     });

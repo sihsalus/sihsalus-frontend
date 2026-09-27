@@ -19,6 +19,8 @@ const TextArea: React.FC<FormFieldInputProps<string | number | null | undefined>
   const { t } = useTranslation();
   const [lastBlurredValue, setLastBlurredValue] = useState(value);
   const { layoutType, sessionMode, workspaceLayout } = useFormProviderContext();
+  const configuredMaxLength = Number(field.questionOptions.maxLength);
+  const maxLength = Number.isInteger(configuredMaxLength) && configuredMaxLength > 0 ? configuredMaxLength : undefined;
 
   const onBlur = (event: React.FocusEvent<HTMLTextAreaElement>): void => {
     event.preventDefault();
@@ -59,6 +61,8 @@ const TextArea: React.FC<FormFieldInputProps<string | number | null | undefined>
             readOnly={isTrue(field.readonly)}
             invalid={errors.length > 0}
             invalidText={errors[0]?.message}
+            enableCounter={Boolean(maxLength)}
+            maxCount={maxLength}
             warn={warnings.length > 0}
             warnText={warnings[0]?.message}
           />

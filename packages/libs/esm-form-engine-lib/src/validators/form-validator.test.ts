@@ -41,6 +41,17 @@ describe('form validators', () => {
     );
   });
 
+  it('rejects textarea content that exceeds its configured character limit', () => {
+    const field = {
+      questionOptions: { rendering: 'textarea', maxLength: '5' },
+    } as FormField;
+
+    expect(FieldValidator.validate(field, '12345')).toEqual([]);
+    expect(FieldValidator.validate(field, '123456')).toEqual([
+      expect.objectContaining({ errCode: 'field.outOfBound' }),
+    ]);
+  });
+
   it('translates inclusive numeric upper-bound validation messages', () => {
     const result = numberInputRangeValidator(Number.NaN, 10, 1000);
 

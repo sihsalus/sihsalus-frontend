@@ -42,8 +42,9 @@ carga el microfrontend ni exige el permiso `app:home.citas`. Mientras este contr
 `Verificando` y no ofrece una acción genérica que pueda confundirse con el triaje.
 
 Después de guardar el triaje y recibir la confirmación del encounter, la entrada se mueve a la cola clínica configurada
-para la cita, conserva su prioridad y adopta el estado definido por `finishedServiceStatusConceptUuid` (por defecto,
-`Servicio Finalizado`). Ya no se reutiliza `defaultStatusConceptUuid` (`Esperando`) para esta transición.
+para la cita, conserva su prioridad y adopta el estado definido por `defaultStatusConceptUuid` (por defecto,
+`Esperando`). El triaje completado no finaliza la atención clínica; `finishedServiceStatusConceptUuid` queda
+reservado para cuando el servicio realmente termine.
 
 ## Contrato RBAC actual
 

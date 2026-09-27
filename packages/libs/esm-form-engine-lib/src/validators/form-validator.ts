@@ -20,7 +20,7 @@ export const FieldValidator: FormFieldValidator = {
         return addError(fieldRequiredErrCode, translateValidationMessage('fieldMandatory', 'Field is mandatory'));
       }
     }
-    if (field.questionOptions.rendering === 'text') {
+    if (field.questionOptions.rendering === 'text' || field.questionOptions.rendering === 'textarea') {
       const minLength = field.questionOptions.minLength;
       const maxLength = field.questionOptions.maxLength;
       const inputLength = typeof value === 'string' ? value.length : undefined;

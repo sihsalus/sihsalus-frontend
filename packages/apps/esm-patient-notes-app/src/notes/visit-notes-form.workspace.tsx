@@ -73,6 +73,7 @@ import {
 import {
   AmbiguousVisitNoteSaveError,
   assertCanonicalVisitNoteCanBeCreated,
+  fetchDiagnosisConceptByUuid,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   getCanonicalVisitNoteEncounterUuid,
@@ -316,6 +317,10 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<Array<Diagnosis>>([]);
+  const [isLoadingSavedDiagnoses, setIsLoadingSavedDiagnoses] = useState(
+    Boolean(isEditing && isOutpatientVisit && encounter?.diagnoses?.length),
+  );
+  const [savedDiagnosisError, setSavedDiagnosisError] = useState(false);
   const [searchPrimaryResults, setSearchPrimaryResults] = useState<Array<Concept>>(null);
   const [searchSecondaryResults, setSearchSecondaryResults] = useState<Array<Concept>>(null);
   const [searchPrestacionalResults, setSearchPrestacionalResults] = useState<Array<Concept>>([]);
@@ -517,12 +522,13 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   useEffect(() => {
     const nextAppointment = parseOpenmrsDateValue(clinicalContext?.nextAppointment);
-    if (!isEditing && nextAppointment && !dirtyFields.nextAppointment && !watch('nextAppointment')) {
+    if (!isOutpatientVisit && !isEditing && nextAppointment && !dirtyFields.nextAppointment && !watch('nextAppointment')) {
       setValue('nextAppointment', nextAppointment, { shouldDirty: true });
     }
-  }, [clinicalContext?.nextAppointment, dirtyFields.nextAppointment, isEditing, setValue, watch]);
+  }, [clinicalContext?.nextAppointment, dirtyFields.nextAppointment, isEditing, isOutpatientVisit, setValue, watch]);
 
   useEffect(() => {
+    let cancelled = false;
     if (encounter?.diagnoses?.length) {
       try {
         const transformedDiagnoses = encounter.diagnoses
@@ -537,6 +543,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               display: codedConcept?.display ? formatDiagnosisDisplay(codedConcept) : d.display,
               conceptMappings: codedConcept?.conceptMappings,
               mappings: codedConcept?.mappings,
+              names: codedConcept?.names,
             };
           });
 
@@ -547,6 +554,45 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         setSelectedSecondaryDiagnoses(secondaryDiagnoses);
         setCombinedDiagnoses([...primaryDiagnoses, ...secondaryDiagnoses]);
 
+        const missingMetadata = isOutpatientVisit
+          ? transformedDiagnoses.filter((diagnosis) => !getCie10MappedCode(diagnosis))
+          : [];
+        if (missingMetadata.length) {
+          setIsLoadingSavedDiagnoses(true);
+          setSavedDiagnosisError(false);
+          void Promise.all(
+            missingMetadata.map((diagnosis) => fetchDiagnosisConceptByUuid(diagnosis.diagnosis.coded)),
+          )
+            .then((concepts) => {
+              if (cancelled) return;
+              const metadata = new Map(concepts.map((concept) => [concept.uuid, concept]));
+              const enrich = (diagnoses: Array<Diagnosis>) =>
+                diagnoses.map((diagnosis) => {
+                  const concept = metadata.get(diagnosis.diagnosis.coded);
+                  return concept
+                    ? {
+                        ...diagnosis,
+                        conceptMappings: concept.conceptMappings,
+                        mappings: concept.mappings,
+                        names: concept.names,
+                      }
+                    : diagnosis;
+                });
+              setSelectedPrimaryDiagnoses(enrich);
+              setSelectedSecondaryDiagnoses(enrich);
+              setCombinedDiagnoses(enrich);
+            })
+            .catch(() => {
+              if (!cancelled) setSavedDiagnosisError(true);
+            })
+            .finally(() => {
+              if (!cancelled) setIsLoadingSavedDiagnoses(false);
+            });
+        } else {
+          setIsLoadingSavedDiagnoses(false);
+          setSavedDiagnosisError(false);
+        }
+
         // Restore the exact MINSA diagnosis type (P/D/R) saved alongside the
         // encounter, keyed back to its coded diagnosis via the formFieldPath.
         const restored = parseTipoDxObs((encounter.obs ?? []) as Array<EncounterFormObs>);
@@ -554,14 +600,22 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
           setDiagnosisTipos(restored);
         }
       } catch (caughtError) {
+        setIsLoadingSavedDiagnoses(false);
+        setSavedDiagnosisError(true);
         const transformedError = new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses'), {
           cause: caughtError,
         });
         setError(transformedError);
         createErrorHandler()(transformedError);
       }
+    } else {
+      setIsLoadingSavedDiagnoses(false);
+      setSavedDiagnosisError(false);
     }
-  }, [encounter, patientUuid, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [encounter, isOutpatientVisit, patientUuid, t]);
 
   const currentImages = watch('images');
 
@@ -834,6 +888,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
           });
           return;
         }
+        if (isLoadingSavedDiagnoses || savedDiagnosisError) return;
         if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) return;
         if (isOutpatientVisit && selectedPrimaryDiagnoses.length !== 1) {
           showSnackbar({
@@ -910,13 +965,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               },
             ],
           ),
-          ...reconcileObservation(
-            encounterObs,
-            nextAppointmentConceptUuid,
-            toOpenmrsDateValue(nextAppointment),
-            undefined,
-            [{ conceptUuid: legacyNextAppointmentConceptUuid }],
-          ),
+          ...(!isOutpatientVisit
+            ? reconcileObservation(
+                encounterObs,
+                nextAppointmentConceptUuid,
+                toOpenmrsDateValue(nextAppointment),
+                undefined,
+                [{ conceptUuid: legacyNextAppointmentConceptUuid }],
+              )
+            : []),
           ...(isOutpatientVisit
             ? reconcileObservation(
                 encounterObs,
@@ -1055,6 +1112,8 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       formConceptUuid,
       globalMutate,
       isCanonicalVerificationBlocked,
+      isLoadingSavedDiagnoses,
+      savedDiagnosisError,
       isEditing,
       isPrimaryDiagnosisRequired,
       isOutpatientVisit,
@@ -1400,29 +1459,31 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                 </Column>
               </Row>
             ) : null}
-            <Row className={styles.row}>
-              <Column sm={1}>
-                <span className={styles.columnLabel}>{t('nextAppointment', 'Next appointment')}</span>
-              </Column>
-              <Column sm={3}>
-                <Controller
-                  name="nextAppointment"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <ResponsiveWrapper>
-                      <OpenmrsDatePicker
-                        {...field}
-                        id="nextAppointment"
-                        labelText={t('nextAppointment', 'Next appointment')}
-                        minDate={new Date()}
-                        invalid={Boolean(fieldState.error?.message)}
-                        invalidText={fieldState.error?.message}
-                      />
-                    </ResponsiveWrapper>
-                  )}
-                />
-              </Column>
-            </Row>
+            {!isOutpatientVisit ? (
+              <Row className={styles.row}>
+                <Column sm={1}>
+                  <span className={styles.columnLabel}>{t('nextAppointment', 'Next appointment')}</span>
+                </Column>
+                <Column sm={3}>
+                  <Controller
+                    name="nextAppointment"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <ResponsiveWrapper>
+                        <OpenmrsDatePicker
+                          {...field}
+                          id="nextAppointment"
+                          labelText={t('nextAppointment', 'Next appointment')}
+                          minDate={new Date()}
+                          invalid={Boolean(fieldState.error?.message)}
+                          invalidText={fieldState.error?.message}
+                        />
+                      </ResponsiveWrapper>
+                    )}
+                  />
+                </Column>
+              </Row>
+            ) : null}
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>{t('note', 'Note')}</span>
@@ -1502,6 +1563,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             )}
           />
         )}
+        {savedDiagnosisError ? (
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            title={t('diagnosisCatalogUnavailable', 'The saved diagnoses could not be verified in the catalog')}
+            subtitle={t('diagnosisCatalogReload', 'Close and reopen this summary before editing it.')}
+          />
+        ) : null}
         {canonicalVerificationStatus === 'validating' && (
           <InlineNotification
             hideCloseButton
@@ -1524,7 +1594,13 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             className={styles.button}
             kind="primary"
             onClick={() => handleSubmit}
-            disabled={!hasUserUnsavedChanges || isSubmitting || isCanonicalVerificationBlocked}
+            disabled={
+              !hasUserUnsavedChanges ||
+              isSubmitting ||
+              isCanonicalVerificationBlocked ||
+              isLoadingSavedDiagnoses ||
+              savedDiagnosisError
+            }
             type="submit"
           >
             {isSubmitting ? (

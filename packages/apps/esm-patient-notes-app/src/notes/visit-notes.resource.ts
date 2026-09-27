@@ -518,6 +518,19 @@ export async function fetchDiagnosisConceptsByName(searchTerm: string, diagnosis
     .map(({ concept }) => concept);
 }
 
+/** Encounter diagnoses do not consistently include catalog mappings or SHORT names in their nested concept. */
+export async function fetchDiagnosisConceptByUuid(conceptUuid: string): Promise<Concept> {
+  const representation = `custom:(uuid,display,${catalogConceptMappingsRepresentation},${catalogConceptNamesRepresentation})`;
+  const { data } = await openmrsFetch<Concept>(
+    `${restBaseUrl}/concept/${encodeURIComponent(conceptUuid)}?v=${representation}`,
+    { cache: 'no-store', rejectOnAuthFailure: true },
+  );
+  if (!data || data.uuid !== conceptUuid) {
+    throw new Error('The diagnosis catalog entry could not be verified.');
+  }
+  return data;
+}
+
 export function fetchPrestacionalConceptsByName(searchTerm: string, conceptSourceName = 'Codigos Prestacionales') {
   const configuredConceptSetNames = getConfiguredConceptSourceNames(conceptSourceName);
   const conceptSetQuery = encodeURIComponent(configuredConceptSetNames[0] ?? conceptSourceName);

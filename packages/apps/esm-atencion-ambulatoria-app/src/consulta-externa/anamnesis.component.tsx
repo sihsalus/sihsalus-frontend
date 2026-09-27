@@ -85,7 +85,9 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
               <p>
                 <strong>{t('course', 'Curso')}:</strong> {entry.course || t('noData', 'Sin datos')}
               </p>
-              <p>{entry.narrative || t('noData', 'Sin datos')}</p>
+              <p>
+                <strong>{t('briefDetail', 'Detalle breve')}:</strong> {entry.narrative || t('noData', 'Sin datos')}
+              </p>
             </div>
             <div className={styles.clinicalSection}>
               <h5>{t('biologicalFunctions', 'Funciones biológicas')}</h5>

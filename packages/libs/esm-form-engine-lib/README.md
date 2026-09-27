@@ -77,6 +77,12 @@ schema; a failed load discards the previous schema and reports only a fixed gene
 error. This does not establish live renderer/dirty-field reconciliation for schema
 edits, or the cause of an error observed in a deployed environment.
 
+### Text area limits
+
+When a schema declares a positive `questionOptions.maxLength`, a text area shows
+Carbon's character counter and the shared validator rejects values above that
+limit. Schemas without a limit retain their previous behavior.
+
 ### Schema-only preview
 
 `FormPreview` renders an in-memory schema through the existing schema loader,

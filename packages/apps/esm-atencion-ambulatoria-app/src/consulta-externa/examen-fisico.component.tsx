@@ -74,16 +74,15 @@ const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
             {hasSegmentedPhysicalExam(entry.physicalExam) ? (
               <div className={`${styles.clinicalSection} ${styles.physicalExamSection}`}>
                 <h5>{t('physicalExam', 'Examen físico')}</h5>
-                <dl className={styles.physicalExamGrid}>
+                <div>
                   {physicalExamFields.map((field) =>
                     entry.physicalExam[field.key] ? (
-                      <div key={field.key}>
-                        <dt>{t(field.translationKey, field.defaultLabel)}</dt>
-                        <dd>{entry.physicalExam[field.key]}</dd>
-                      </div>
+                      <p key={field.key}>
+                        <strong>{t(field.translationKey, field.defaultLabel)}:</strong> {entry.physicalExam[field.key]}
+                      </p>
                     ) : null,
                   )}
-                </dl>
+                </div>
               </div>
             ) : (
               <div className={`${styles.clinicalSection} ${styles.physicalExamSection}`}>

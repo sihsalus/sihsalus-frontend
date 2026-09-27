@@ -34,7 +34,7 @@ describe('Anamnesis', () => {
         externalConsultation: 'external-consultation',
       },
       formsList: {
-        anamnesisFormVersion: '1.1.0',
+        anamnesisFormVersion: '1.1.1',
         anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
         consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       },
@@ -73,7 +73,7 @@ describe('Anamnesis', () => {
       ambulatoryVisitTypeUuid: 'ambulatory-visit',
       mutate,
       entryMode: 'one-per-visit',
-      formVersion: '1.1.0',
+      formVersion: '1.1.1',
       workspaceTitle: 'Anamnesis',
     });
     expect(mockLaunchForm).toHaveBeenCalledOnce();
@@ -116,6 +116,7 @@ describe('Anamnesis', () => {
 
     expect(screen.getByText('Dolor abdominal')).toBeInTheDocument();
     expect(screen.getByText('Dolor posterior a ingesta de alimentos.')).toBeInTheDocument();
+    expect(screen.getByText('Detalle breve:')).toBeInTheDocument();
     expect(screen.getByText(/Disminuido/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Dra\. Perez/ })).toHaveTextContent(/\d{1,2}:\d{2}/);
 

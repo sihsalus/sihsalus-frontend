@@ -160,7 +160,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
         clinicalStatus: selectedClinicalStatus,
         conceptId: narrative ? '' : selectedCondition?.uuid,
         nonCodedText: narrative,
-        display: narrative ?? selectedCondition?.display,
+        display: narrative || selectedCondition?.display,
         abatementDateTime: dirtyFields.abatementDateTime
           ? getValues('abatementDateTime')
             ? dayjs(getValues('abatementDateTime')).format()

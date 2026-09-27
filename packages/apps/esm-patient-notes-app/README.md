@@ -75,7 +75,9 @@ Los defaults con contrato de datatype son:
 | Prescripciones      | `f0000215-0000-4000-8000-000000000215` | `Text`                |
 | Próxima cita        | `f0000004-0000-4000-8000-000000000004` | `Date` (`YYYY-MM-DD`) |
 
-Se usa `f0000004` para próxima cita porque es la pregunta `Date` de CE-001. El UUID histórico `47ce3ee6-ee9f-4037-901b-2a6381c4b340` se lee y se limpia como alias de migración, pero no recibe observaciones nuevas. El formulario `c75f120a-04ec-11e3-8780-2b40bef9a44b` conserva su UUID y debe ser provisionado por el paquete de content coordinado.
+Se usa `f0000004` para próxima cita porque es la pregunta `Date` de CE-001. El UUID histórico `47ce3ee6-ee9f-4037-901b-2a6381c4b340` se lee como alias de migración y se limpia al guardar en los flujos que conservan este campo, pero no recibe observaciones nuevas. El formulario `c75f120a-04ec-11e3-8780-2b40bef9a44b` conserva su UUID y debe ser provisionado por el paquete de content coordinado.
+
+En Consulta Externa se oculta Próxima cita porque una fecha en esta nota no crea una cita en Agenda. El guardado ambulatorio conserva cualquier observación histórica de esa fecha, sin actualizarla. Los demás tipos de visita mantienen el campo. Al editar un resumen ambulatorio, los diagnósticos existentes se completan con sus mapeos CIE-10 desde el catálogo antes de validar; si no se puede verificar el catálogo, el guardado queda bloqueado para proteger los diagnósticos ya registrados.
 
 `visitNoteConfig.encounterTypeUuid`, `formConceptUuid`, `clinicianEncounterRole` y `visitDiagnosesConceptUuid` también deben corresponder al modelo de encounters y diagnósticos del backend desplegado.
 

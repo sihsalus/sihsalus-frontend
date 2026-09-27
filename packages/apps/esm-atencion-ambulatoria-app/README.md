@@ -130,8 +130,8 @@ Los valores de `formsList` para consulta externa usan los nombres estables publi
 
 ### Captura simplificada de anamnesis y examen físico
 
-Requiere content **1.25.28**, que reúne la anamnesis `1.1.0` y el formulario
-independiente `CE-EXF-001-EXAMEN FISICO` `1.0.0`. `anamnesisFormVersion` y
+Requiere content **1.25.29**, que reúne la anamnesis `1.1.1` y el formulario
+independiente `CE-EXF-001-EXAMEN FISICO` `1.0.1`. `anamnesisFormVersion` y
 `physicalExamFormVersion` fijan esas versiones respectivamente. La cabecera usa
 Anamnesis o Examen físico; SOAP queda únicamente como historia retirada.
 El examen contiene estado general y sistemas, sin Subjetivo, Objetivo,
@@ -143,6 +143,9 @@ Inicio, evolución y funciones biológicas usan selectores sin respuesta
 predeterminada; las funciones biológicas se presentan contraídas. Las opciones
 persisten valores Text existentes mediante el motor compartido, no conceptos
 nuevos ni conversiones de registros históricos.
+Las áreas de texto de ambos formularios muestran un contador y admiten hasta
+4000 caracteres. El profesional responsable se muestra de solo lectura: en
+nuevas capturas se toma de la sesión y al editar se conserva el del encuentro.
 
 El lanzador exige la versión configurada. Si la visita ya contiene un formulario
 de una versión anterior, informa y bloquea otra captura; no duplica encuentros

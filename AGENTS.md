@@ -57,6 +57,14 @@ yarn install --immutable
 - Declare cross-workspace dependencies in `package.json`.
 - Keep configurable clinical UUIDs in `config-schema`, workspace names in shared
   constants, and user-visible text in both `en.json` and `es.json`.
+- Follow the [text limits and save feedback contract](docs/clinical/text-input-and-save-feedback.md)
+  when adding or changing text fields or submission messages. Derive each limit
+  from the verified persistence contract and documented functional requirement;
+  do not invent a global maximum or copy another field's number. Reuse the
+  field's canonical definition for the counter and validation, never silently
+  truncate input, and preserve historical values. Name the saved item/action
+  and distinguish confirmed persistence from local drafts, queued sync and
+  partial failures. Record the rationale and boundary tests in the change.
 - Treat navigation order as a product contract. Prefer the existing extension
   slot configuration over competing per-module positions or a second sorter;
   preserve permissions, visibility conditions, routes, and translated labels.

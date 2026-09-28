@@ -36,6 +36,7 @@ Reglas transversales:
 - No asumir que FHIR2 soporta un recurso solo porque el endpoint existe. Algunos backends responden `501 Not Implemented` hasta que el OMOD/content este alineado.
 - No guardar datos clinicos sin visita/consulta activa salvo que el flujo documente explicitamente otra semantica.
 - No mezclar nombres tecnicos de OpenMRS con lenguaje de usuario final. El personal de salud debe ver terminos operativos claros.
+- Aplicar el [contrato de límites de texto y mensajes de guardado](text-input-and-save-feedback.md): límites justificados por campo, sin recortes silenciosos, y mensajes específicos que reflejen el estado real del guardado.
 - Los titulos de rutas, dashboards y sidebars son contrato de producto: deben usar keys traducibles y estar alineados con el nombre funcional del modulo. Ejemplo: `esm-care-logbook-app` se presenta como `Libro de Atenciones`, no como `Admisiones`, porque lista atenciones/consultas por UPSS y no ingresos hospitalarios.
 
 ## Dependencias backend/content

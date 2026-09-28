@@ -127,6 +127,13 @@ and these rules when applicable:
   messages to users. Keep technical detail only in safe logging.
 - User-visible text must use i18n and maintain both `en.json` and `es.json`. A
   raw translation key in the UI is a defect.
+- Text fields and submission messages must follow the
+  [text limits and save feedback contract](docs/clinical/text-input-and-save-feedback.md).
+  Document the field's persistence limit, counting semantics and functional
+  rationale before selecting a maximum. Share the definition across consumers,
+  reject overflow without truncating input, and make feedback specific to the
+  action and actual persistence state. Existing inconsistent values are not
+  precedents for new fields.
 - Navigation order is a product contract, not a side effect of module load
   order. Use the existing extension-slot ordering mechanism and document its
   canonical owner. Keep related tasks adjacent without changing privileges,

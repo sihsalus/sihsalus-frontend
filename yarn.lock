@@ -7948,7 +7948,7 @@ __metadata:
     "@testing-library/react": "npm:^16.3.2"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
-    css-loader: "npm:6.11.0"
+    css-loader: "npm:7.1.5"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -13956,30 +13956,6 @@ __metadata:
   version: 1.0.1
   resolution: "css-color-names@npm:1.0.1"
   checksum: 10c0/e2f486215994987e46e281490f08288dca45dd17b5e40ead80b60e143e312f06ccd5122e009e740108883f6eb0984a61e926a4ad4e0c1e7d2e8e932dc9073df5
-  languageName: node
-  linkType: hard
-
-"css-loader@npm:6.11.0":
-  version: 6.11.0
-  resolution: "css-loader@npm:6.11.0"
-  dependencies:
-    icss-utils: "npm:^5.1.0"
-    postcss: "npm:^8.4.33"
-    postcss-modules-extract-imports: "npm:^3.1.0"
-    postcss-modules-local-by-default: "npm:^4.0.5"
-    postcss-modules-scope: "npm:^3.2.0"
-    postcss-modules-values: "npm:^4.0.0"
-    postcss-value-parser: "npm:^4.2.0"
-    semver: "npm:^7.5.4"
-  peerDependencies:
-    "@rspack/core": 0.x || 1.x
-    webpack: ^5.0.0
-  peerDependenciesMeta:
-    "@rspack/core":
-      optional: true
-    webpack:
-      optional: true
-  checksum: 10c0/bb52434138085fed06a33e2ffbdae9ee9014ad23bf60f59d6b7ee67f28f26c6b1764024d3030bd19fd884d6ee6ee2224eaed64ad19eb18fbbb23d148d353a965
   languageName: node
   linkType: hard
 

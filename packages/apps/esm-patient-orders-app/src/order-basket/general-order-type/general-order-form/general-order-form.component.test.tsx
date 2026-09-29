@@ -3,7 +3,7 @@ import { type OrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSessionDataResponse } from 'test-utils';
-import { configSchema } from '../../../config-schema';
+import { type ConfigObject, configSchema } from '../../../config-schema';
 import { OrderForm } from './general-order-form.component';
 
 const mocks = vi.hoisted(() => ({ setOrders: vi.fn(), useOrderBasket: vi.fn() }));
@@ -30,7 +30,7 @@ const otherOrder: OrderBasketItem = {
 
 beforeEach(() => {
   vi.mocked(useConfig).mockReturnValue({
-    ...getDefaultsFromConfigSchema(configSchema),
+    ...getDefaultsFromConfigSchema<ConfigObject>(configSchema),
     priorityConfigs: [{ conceptUuid: 'ROUTINE', label: 'Routine', urgency: 'ROUTINE' }],
   });
   vi.mocked(useSession).mockReturnValue(mockSessionDataResponse.data);

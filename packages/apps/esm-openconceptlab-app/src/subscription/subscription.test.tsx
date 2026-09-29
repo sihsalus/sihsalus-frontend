@@ -31,7 +31,7 @@ describe('Subscription component', () => {
 
     expect(screen.getByText('Setup Subscription')).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Unsubscribe' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'danger Unsubscribe' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Unsubscribe' })).toBeDisabled();
   });
 
   it('renders the subscription if a subscription exists', async () => {
@@ -46,7 +46,7 @@ describe('Subscription component', () => {
     expect(
       screen.getByLabelText('Disable validation (should be used with care for well curated collections or sources)'),
     ).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'danger Unsubscribe' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Unsubscribe' })).toBeEnabled();
   });
 
   it('allows adding a new subscription', async () => {
@@ -159,7 +159,7 @@ describe('Subscription component', () => {
     await waitForLoadingToFinish();
     await waitForLoadingSubscription();
 
-    const unsubscribeButton = screen.getByRole('button', { name: 'danger Unsubscribe' });
+    const unsubscribeButton = screen.getByRole('button', { name: 'Unsubscribe' });
 
     mockDeleteSubscription.mockResolvedValueOnce({ status: 204 } as unknown as FetchResponse);
 

@@ -9935,7 +9935,7 @@ __metadata:
     vite: "npm:8.0.16"
     vitest: "npm:5.0.1"
     workbox-routing: "npm:7.4.1"
-    workbox-strategies: "npm:6.6.0"
+    workbox-strategies: "npm:7.4.1"
   languageName: unknown
   linkType: soft
 
@@ -26269,6 +26269,15 @@ __metadata:
   dependencies:
     workbox-core: "npm:6.6.0"
   checksum: 10c0/ba61b00d36afd27a9f52068b91bc8dbe14530f9816a81b6be31242ba3003e3ce77ae6e350f9dc8b97badb67083ce330f86a2d7e3cb7f929a1b012eb44081ca94
+  languageName: node
+  linkType: hard
+
+"workbox-strategies@npm:7.4.1":
+  version: 7.4.1
+  resolution: "workbox-strategies@npm:7.4.1"
+  dependencies:
+    workbox-core: "npm:7.4.1"
+  checksum: 10c0/db96df6ef1260e281c580a963e68390e64df198b0684f37a693449af928edb3679ac97390dabe2ec11dc617a632cf4410a65854dd399bfdeaafbb74aea6532d8
   languageName: node
   linkType: hard
 

@@ -1,7 +1,24 @@
 import { Accordion, AccordionItem, InlineLoading, InlineNotification, Tag } from '@carbon/react';
+import type { ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VisitNoteClinicalContext } from './visit-notes.resource';
 import styles from './read-only-clinical-summary.scss';
+
+function ClinicalSummaryToggle(props: ComponentProps<'button'>) {
+  return (
+    <button
+      {...props}
+      type="button"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && event.currentTarget.getAttribute('aria-expanded') === 'true') {
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.click();
+        }
+      }}
+    />
+  );
+}
 
 export default function ReadOnlyClinicalSummary({
   clinicalContext,
@@ -86,6 +103,7 @@ export default function ReadOnlyClinicalSummary({
       ) : null}
       <Accordion size="sm">
         <AccordionItem
+          renderToggle={ClinicalSummaryToggle}
           title={
             <span className={styles.heading}>
               <span>{t('clinicalSummary', 'Clinical summary')}</span>

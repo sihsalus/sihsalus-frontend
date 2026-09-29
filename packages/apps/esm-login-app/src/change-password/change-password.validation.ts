@@ -19,13 +19,15 @@ export function createChangePasswordFormSchema(t: Translate) {
 
   return z
     .object({
-      oldPassword: z.string({ required_error: oldPasswordRequired }).min(1, oldPasswordRequired),
+      oldPassword: z
+        .string({ error: (issue) => (issue.input === undefined ? oldPasswordRequired : undefined) })
+        .min(1, oldPasswordRequired),
       newPassword: z
-        .string({ required_error: newPasswordRequired })
+        .string({ error: (issue) => (issue.input === undefined ? newPasswordRequired : undefined) })
         .min(1, newPasswordRequired)
         .regex(passwordRequirementsPattern, getPasswordRequirements(t)),
       passwordConfirmation: z
-        .string({ required_error: passwordConfirmationRequired })
+        .string({ error: (issue) => (issue.input === undefined ? passwordConfirmationRequired : undefined) })
         .min(1, passwordConfirmationRequired),
     })
     .refine((data) => data.newPassword === data.passwordConfirmation, {

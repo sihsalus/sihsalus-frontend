@@ -98,7 +98,11 @@ function handleAppointmentRequest(
   const transitionUuid = requestUrl.match(/\/appointments\/([^/]+)\/status-change$/)?.[1];
   if (transitionUuid) {
     const appointment = appointments.find(({ uuid }) => uuid === decodeURIComponent(transitionUuid));
-    const targetStatus = (init?.body as { toStatus: string }).toStatus;
+    const body = init?.body as { toStatus: string } | undefined;
+    if (!body) {
+      throw new Error('Expected a status transition request body');
+    }
+    const targetStatus = body.toStatus;
     if (appointment) {
       appointment.status = targetStatus;
     }

@@ -440,7 +440,7 @@ const AppointmentsForm: React.FC<
       timeFormat: z.enum(['AM', 'PM']),
       appointmentDateTime: z.object({
         startDate: z.date({
-          errorMap: () => ({ message: t('appointmentDateRequired', 'Enter a valid appointment date') }),
+          error: () => t('appointmentDateRequired', 'Enter a valid appointment date'),
         }),
         startDateText: z.string(),
         recurringPatternEndDate: z.date().nullable(),

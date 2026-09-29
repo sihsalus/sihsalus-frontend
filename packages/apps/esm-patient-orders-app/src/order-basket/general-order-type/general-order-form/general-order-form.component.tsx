@@ -63,10 +63,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
           accessionNumber: z.string().nullish(),
           concept: z.object(
             { display: z.string(), uuid: z.string() },
-            {
-              required_error: t('orderableConceptRequired', 'Orderable concept is required'),
-              invalid_type_error: t('orderableConceptRequired', 'Orderable concept is required'),
-            },
+            { error: t('orderableConceptRequired', 'Orderable concept is required') },
           ),
           scheduledDate: z.date().nullish(),
         })
@@ -89,7 +86,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
     formState: { errors, defaultValues, isDirty },
     setValue,
     watch,
-  } = useForm<OrderBasketItem>({
+  } = useForm<z.input<typeof OrderFormSchema>, unknown, z.output<typeof OrderFormSchema>>({
     mode: 'all',
     resolver: zodResolver(OrderFormSchema),
     defaultValues: {
@@ -102,7 +99,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
   const isScheduledDateRequired = selectedPriority?.requiresScheduledDate ?? false;
 
   const handleFormSubmission = useCallback(
-    (data: OrderBasketItem) => {
+    (data: z.output<typeof OrderFormSchema>) => {
       const finalizedOrder: OrderBasketItem = {
         ...initialOrder,
         ...data,
@@ -134,7 +131,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
   );
 
   const cancelOrder = useCallback(() => {
-    setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.conceptUuid));
+    setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.uuid));
     returnToOrderBasket(true);
   }, [orders, setOrders, defaultValues, returnToOrderBasket]);
 

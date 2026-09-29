@@ -5,7 +5,7 @@ import {
   validatePlainNumberInput,
 } from '@openmrs/esm-utils';
 import React, { useCallback, useMemo } from 'react';
-import { type Control, useController } from 'react-hook-form';
+import { type ControllerFieldState, type ControllerRenderProps } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ImmunizationSequenceDefinition } from '../../types/fhir-immunization-domain';
 import styles from './../immunizations-form.scss';
@@ -15,12 +15,12 @@ const doseNumberConstraints = { integer: true, min: 1, nonNegative: true };
 export const DoseInput: React.FC<{
   vaccine: string;
   sequences: ImmunizationSequenceDefinition[];
-  control: Control;
+  field: Pick<ControllerRenderProps<{ doseNumber?: number }, 'doseNumber'>, 'value' | 'onChange'>;
+  fieldState: ControllerFieldState;
   existingDoseNumbers?: number[];
   warningMessage?: string;
-}> = ({ vaccine, sequences, control, existingDoseNumbers = [], warningMessage }) => {
+}> = ({ vaccine, sequences, field, fieldState, existingDoseNumbers = [], warningMessage }) => {
   const { t } = useTranslation();
-  const { field, fieldState } = useController({ name: 'doseNumber', control });
   const showWarning = !!warningMessage && !fieldState.error;
 
   const vaccineSequences = useMemo(

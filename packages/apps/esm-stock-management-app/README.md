@@ -164,3 +164,12 @@ For full documentation, visit the [OpenMRS Wiki - Stock Module](https://openmrs.
 ## License
 
 This app is released under the [MPL 2.0 license with Healthcare Disclaimer](https://openmrs.org/license).
+
+### Form validation compatibility
+
+The [Zod 4 form contract](../../../docs/development/zod-form-validation.md)
+applies to stock forms. An operation draft may lack fields that are still being
+entered, but its operation-specific schema must validate before submission.
+Receipt batch/date, packaging units, selected existing batches and quantity
+restrictions remain enforced. Stock references use their dedicated reference
+schema rather than the unrelated stock-item details schema.

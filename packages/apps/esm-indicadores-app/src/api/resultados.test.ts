@@ -294,7 +294,7 @@ describe('recalcularAnio routing', () => {
     const fetchOptions = mockedOpenmrsFetch.mock.calls[0][1];
     expect(fetchOptions).toBeDefined();
     expect(fetchOptions?.method).toBe('POST');
-    expect((fetchOptions?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect((fetchOptions?.headers as Record<string, string> | undefined)?.['Content-Type']).toBe('application/json');
     expect(fetchOptions?.body).toEqual({ anio: 2026 });
   });
 

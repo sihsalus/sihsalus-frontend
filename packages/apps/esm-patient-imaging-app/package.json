@@ -42,10 +42,10 @@
     "url": "https://github.com/sadrezhao/openmrs-esm-patient-imaging-app/issues"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.x",
+    "@hookform/resolvers": "^5.2.2",
     "react-hook-form": "^7.x",
     "react-is": "^19.1.0",
-    "zod": "^3.x"
+    "zod": "^4.x"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

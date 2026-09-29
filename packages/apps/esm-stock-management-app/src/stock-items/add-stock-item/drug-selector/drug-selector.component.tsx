@@ -1,12 +1,12 @@
 import { ComboBox, InlineLoading } from '@carbon/react';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type Drug } from '../../../core/api/types/concept/Drug';
 import { fetchStockItem } from '../../stock-items.resource';
 import { useDrugsHook } from './drug-selector.resource';
 
-interface DrugSelectorProps<T> {
+interface DrugSelectorProps<T extends FieldValues, C, O> {
   placeholder?: string;
   onDrugChanged?: (drug: Drug | null | undefined) => void;
   title?: string;
@@ -16,12 +16,12 @@ interface DrugSelectorProps<T> {
   readOnly?: boolean;
 
   // Control
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const DrugSelector = <T,>(props: DrugSelectorProps<T>) => {
+const DrugSelector = <T extends FieldValues, C, O>(props: DrugSelectorProps<T, C, O>) => {
   const [inputValue, setInputValue] = useState(props.initialDrugName ?? '');
   const { t } = useTranslation();
   const { isLoading, drugList } = useDrugsHook(inputValue, undefined, !props.readOnly);
@@ -74,8 +74,8 @@ const DrugSelector = <T,>(props: DrugSelectorProps<T>) => {
           // When the drug hasn't been fetched yet (e.g. initial edit load),
           // create a placeholder so Carbon can display the name
           const placeholder =
-            value && !resolvedItems.some((d) => d.uuid === value) && props.initialDrugName
-              ? ({ uuid: value, name: props.initialDrugName } as Drug)
+            typeof value === 'string' && value && !resolvedItems.some((d) => d.uuid === value) && props.initialDrugName
+              ? ({ uuid: String(value), name: props.initialDrugName } as Drug)
               : null;
           const comboItems = placeholder ? [placeholder, ...resolvedItems] : resolvedItems;
 

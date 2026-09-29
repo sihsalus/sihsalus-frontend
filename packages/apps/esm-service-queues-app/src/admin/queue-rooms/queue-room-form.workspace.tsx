@@ -37,21 +37,21 @@ const createQueueRoomSchema = (t: TFunction, isEditMode: boolean) =>
   z.object({
     queueRoomName: z
       .string({
-        required_error: t('queueRoomNameIsRequired', 'Queue room name is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('queueRoomNameIsRequired', 'Queue room name is required') : undefined,
       })
       .trim()
       .min(1, t('queueRoomNameIsRequired', 'Queue room name is required')),
     queueRoomService: z
-      .string({
-        required_error: t('queueRequired', 'Queue is required'),
-      })
+      .string({ error: (issue) => (issue.input === undefined ? t('queueRequired', 'Queue is required') : undefined) })
       .trim()
       .min(1, t('queueRequired', 'Queue is required')),
     queueLocation: isEditMode
       ? z.string().optional()
       : z
           .string({
-            required_error: t('queueLocationRequired', 'Queue UPSS is required'),
+            error: (issue) =>
+              issue.input === undefined ? t('queueLocationRequired', 'Queue UPSS is required') : undefined,
           })
           .trim()
           .min(1, t('queueLocationRequired', 'Queue UPSS is required')),

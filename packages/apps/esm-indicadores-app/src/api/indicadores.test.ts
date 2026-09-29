@@ -71,10 +71,9 @@ describe('indicadores API contract', () => {
       '/services/reportes-sql/indicadores/',
       expect.objectContaining({ method: 'POST', body: createPayload }),
     );
-    expect((mockedOpenmrsFetch.mock.calls[0][1]?.body as typeof createPayload).definicion.evento?.ordenes).toEqual([
-      { concepto_uuid: 'order-a' },
-      { concepto_uuid: 'order-b' },
-    ]);
+    expect(
+      (mockedOpenmrsFetch.mock.calls[0][1]?.body as typeof createPayload | undefined)?.definicion.evento?.ordenes,
+    ).toEqual([{ concepto_uuid: 'order-a' }, { concepto_uuid: 'order-b' }]);
   });
 
   it('updates only supported metadata fields', async () => {

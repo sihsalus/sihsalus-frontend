@@ -49,14 +49,15 @@ const createProviderQueueRoomSchema = (t: TFunction) =>
   z.object({
     queueLocationUuid: z
       .string({
-        required_error: t('queueLocationIsRequired', 'Queue UPSS is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('queueLocationIsRequired', 'Queue UPSS is required') : undefined,
       })
       .trim()
       .min(1, t('queueLocationIsRequired', 'Queue UPSS is required')),
     queueProviderMapUuid: z.string(),
     queueRoomUuid: z
       .string({
-        required_error: t('queueRoomIsRequired', 'Queue room is required'),
+        error: (issue) => (issue.input === undefined ? t('queueRoomIsRequired', 'Queue room is required') : undefined),
       })
       .trim()
       .min(1, t('queueRoomIsRequired', 'Queue room is required')),

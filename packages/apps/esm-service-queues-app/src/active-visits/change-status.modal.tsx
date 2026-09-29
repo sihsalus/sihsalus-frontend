@@ -67,10 +67,19 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
   const schema = useMemo(
     () =>
       z.object({
-        location: z.string({ required_error: t('queueLocationRequired', 'Queue UPSS is required') }),
-        priority: z.string({ required_error: t('priorityIsRequired', 'Priority is required') }),
-        service: z.string({ required_error: t('serviceIsRequired', 'Service is required') }),
-        status: z.string({ required_error: t('statusIsRequired', 'Status is required') }),
+        location: z.string({
+          error: (issue) =>
+            issue.input === undefined ? t('queueLocationRequired', 'Queue UPSS is required') : undefined,
+        }),
+        priority: z.string({
+          error: (issue) => (issue.input === undefined ? t('priorityIsRequired', 'Priority is required') : undefined),
+        }),
+        service: z.string({
+          error: (issue) => (issue.input === undefined ? t('serviceIsRequired', 'Service is required') : undefined),
+        }),
+        status: z.string({
+          error: (issue) => (issue.input === undefined ? t('statusIsRequired', 'Status is required') : undefined),
+        }),
       }),
     [t],
   );

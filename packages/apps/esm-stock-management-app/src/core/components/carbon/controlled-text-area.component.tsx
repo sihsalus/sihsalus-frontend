@@ -1,15 +1,15 @@
 import { TextArea } from '@carbon/react';
 import { type TextAreaProps } from '@carbon/react/lib/components/TextArea/TextArea';
 import { type ChangeEvent } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 
-interface ControlledTextAreaProps<T> extends TextAreaProps {
-  controllerName: string;
+interface ControlledTextAreaProps<T extends FieldValues, C, O> extends TextAreaProps {
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const ControlledTextArea = <T,>(props: ControlledTextAreaProps<T>) => {
+const ControlledTextArea = <T extends FieldValues, C, O>(props: ControlledTextAreaProps<T, C, O>) => {
   return (
     <Controller
       name={props.controllerName}

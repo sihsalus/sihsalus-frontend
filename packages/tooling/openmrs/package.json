@@ -34,7 +34,7 @@
   "dependencies": {
     "@openmrs/esm-app-shell": "9.0.2",
     "@openmrs/rspack-config": "workspace:*",
-    "@pnpm/npm-conf": "^2.1.0",
+    "@pnpm/npm-conf": "^3.0.3",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
     "@rspack/dev-server": "2.2.0",

@@ -91,6 +91,7 @@
   "linkStudie": "Link studies",
   "linkStudies": "Studies",
   "linkStudiesError": "An error occurred while linking the studies to the patient",
+  "linkStudiesTitle": "Link studies",
   "linkStudyChanged": "Study link is changed",
   "linkStudyConfirm": "Study link is confirmed",
   "loadingImage": "Loading image",
@@ -141,6 +142,7 @@
   "requestingPhysician": "Physician",
   "requestingPhysicianMsg": "Enter the requesting physician name",
   "requestProcedure": "Requested procedures",
+  "requests": "Requests",
   "requestSaved": "Request saved successfully",
   "requestsSummary": "Requests summary",
   "requestStatusCompleted": "completed",
@@ -204,11 +206,9 @@
   "uploadStopped_one": "{{count}} file confirmed. Upload stopped before sending the next file. Unsent files remain in the queue.",
   "uploadStopped_other": "{{count}} files confirmed. Upload stopped before sending the next file. Unsent files remain in the queue.",
   "uploadStudiesError": "Upload studies error",
+  "uploadStudy": "Upload study",
   "uploadStuiesError": "Upload stuies error",
   "validStepTime": "Enter a valid time from 01:00 to 12:59",
   "viewerUnavailable": "Viewer unavailable for this imaging server",
-  "worklist": "Worklist",
-  "uploadStudy": "Upload study",
-  "linkStudiesTitle": "Link studies",
-  "requests": "Requests"
+  "worklist": "Worklist"
 }

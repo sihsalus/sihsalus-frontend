@@ -5,5 +5,10 @@ import { SectionPlaceholderPage } from '../../../shared/section-placeholder-page
 
 export function FractionationPage() {
   const { t } = useTranslation(moduleName);
-  return <SectionPlaceholderPage title={t('fractionation', 'Fraccionamiento')} description={t('fractionationDescription', 'Producción y trazabilidad de hemocomponentes.')} />;
+  return (
+    <SectionPlaceholderPage
+      title={t('fractionation', 'Fraccionamiento')}
+      description={t('fractionationDescription', 'Producción y trazabilidad de hemocomponentes.')}
+    />
+  );
 }

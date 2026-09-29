@@ -237,7 +237,8 @@ export default function AdmissionHome() {
   const [period, setPeriod] = useState<ReportPeriod>('today');
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(today);
-  const range = period === 'today' ? { from: today, to: today } : period === 'all' ? { from: '', to: '' } : { from, to };
+  const range =
+    period === 'today' ? { from: today, to: today } : period === 'all' ? { from: '', to: '' } : { from, to };
   const missingRange = period === 'range' && (!from || !to);
   const invalidRange = period === 'range' && Boolean(from && to && from > to);
   const validRange = !missingRange && !invalidRange;
@@ -249,10 +250,16 @@ export default function AdmissionHome() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const availableServices = Array.from(
-    new Set([...admissions.map((item) => item.service).filter(Boolean), ...(serviceFilter === 'all' ? [] : [serviceFilter])]),
+    new Set([
+      ...admissions.map((item) => item.service).filter(Boolean),
+      ...(serviceFilter === 'all' ? [] : [serviceFilter]),
+    ]),
   ).sort();
   const availableLocations = Array.from(
-    new Set([...admissions.map((item) => item.location).filter(Boolean), ...(locationFilter === 'all' ? [] : [locationFilter])]),
+    new Set([
+      ...admissions.map((item) => item.location).filter(Boolean),
+      ...(locationFilter === 'all' ? [] : [locationFilter]),
+    ]),
   ).sort();
   const sexLabels = useMemo(
     () => ({
@@ -526,11 +533,11 @@ export default function AdmissionHome() {
                 id="admission-report-search"
                 className={styles.searchControl}
                 labelText={t('searchAdmissions', 'Buscar atención')}
-                placeholder={t(
-                  'searchAdmissionsPlaceholder',
-                  'Paciente, DNI, HCE, código temporal o responsable',
+                placeholder={t('searchAdmissionsPlaceholder', 'Paciente, DNI, HCE, código temporal o responsable')}
+                helperText={t(
+                  'searchAdmissionsHint',
+                  'Busca dentro del periodo seleccionado; incluye seguro, tipo y UPSS.',
                 )}
-                helperText={t('searchAdmissionsHint', 'Busca dentro del periodo seleccionado; incluye seguro, tipo y UPSS.')}
                 value={searchTerm}
                 disabled={isLoading || Boolean(error) || !validRange}
                 onChange={(event) => setSearchTerm(event.target.value)}

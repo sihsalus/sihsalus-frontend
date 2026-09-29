@@ -1,8 +1,8 @@
 {
   "actions": "Acciones",
   "actionsForPatient": "Acciones para {{patient}}",
-  "adjustInterconsultaFilters": "Cambie la búsqueda o limpie los filtros para ver todas las solicitudes.",
   "addInterconsultaToBasket": "Agregar a la canasta",
+  "adjustInterconsultaFilters": "Cambie la búsqueda o limpie los filtros para ver todas las solicitudes.",
   "allFilterOption": "Todos",
   "cancel": "Cancelar",
   "cancelledDate": "Fecha de cancelación",

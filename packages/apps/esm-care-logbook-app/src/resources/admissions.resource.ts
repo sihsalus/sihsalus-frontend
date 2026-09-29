@@ -452,7 +452,10 @@ export function useAdmissions(limit: number, range: AdmissionDateRange = {}, ena
       .map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? '']))
       .sort((a, b) => (Date.parse(b.startDatetime ?? '') || 0) - (Date.parse(a.startDatetime ?? '') || 0)),
     error: enabled && !invalidRange ? (error ?? relationshipsError) : undefined,
-    isLoading: enabled && !invalidRange && (isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient)),
+    isLoading:
+      enabled &&
+      !invalidRange &&
+      (isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient)),
   };
 }
 

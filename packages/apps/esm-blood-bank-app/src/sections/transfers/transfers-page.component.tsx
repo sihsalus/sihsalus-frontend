@@ -5,5 +5,10 @@ import { SectionPlaceholderPage } from '../../shared/section-placeholder-page.co
 
 export function TransfersPage() {
   const { t } = useTranslation(moduleName);
-  return <SectionPlaceholderPage title={t('transfers', 'Transferencias')} description={t('transfersDescription', 'Ingreso y salida de unidades entre establecimientos.')} />;
+  return (
+    <SectionPlaceholderPage
+      title={t('transfers', 'Transferencias')}
+      description={t('transfersDescription', 'Ingreso y salida de unidades entre establecimientos.')}
+    />
+  );
 }

@@ -5,5 +5,10 @@ import { SectionPlaceholderPage } from '../../shared/section-placeholder-page.co
 
 export function TransfusionsPage() {
   const { t } = useTranslation(moduleName);
-  return <SectionPlaceholderPage title={t('transfusions', 'Transfusiones')} description={t('transfusionsDescription', 'Solicitudes, reservas, entrega y registro transfusional.')} />;
+  return (
+    <SectionPlaceholderPage
+      title={t('transfusions', 'Transfusiones')}
+      description={t('transfusionsDescription', 'Solicitudes, reservas, entrega y registro transfusional.')}
+    />
+  );
 }

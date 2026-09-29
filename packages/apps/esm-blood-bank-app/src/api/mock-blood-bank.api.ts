@@ -1,7 +1,7 @@
 import { dashboardMock, donorsMock, inventoryMock } from '../mocks/blood-bank.mock';
 import type { BloodBankApi } from './blood-bank.api';
 
-const copy = <T,>(value: T): T => structuredClone(value);
+const copy = <T>(value: T): T => structuredClone(value);
 
 export const mockBloodBankApi: BloodBankApi = {
   async getDashboard() {

@@ -17,7 +17,8 @@ export function startupApp() {
   registerBreadcrumbs([
     {
       path: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`,
-      title: () => Promise.resolve(globalThis.i18next.t('appTitle', { defaultValue: 'Banco de Sangre', ns: moduleName })),
+      title: () =>
+        Promise.resolve(globalThis.i18next.t('appTitle', { defaultValue: 'Banco de Sangre', ns: moduleName })),
       parent: `${globalThis.spaBase}/home`,
     },
   ]);

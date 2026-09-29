@@ -21,6 +21,7 @@
   "black": "Black",
   "blue": "Blue",
   "cancel": "Cancel",
+  "chooseDentition": "Choose the dentition before recording findings. It will be preserved when saved.",
   "clearFinding": "Clear finding",
   "clearFindingSearch": "Clear finding search",
   "close": "Close",
@@ -38,6 +39,8 @@
   "dentalAttentionEmptyDescription": "There are no dental care records to display for this patient.",
   "dentalAttentionSectionDescription": "Record and review the patient’s dental care in this view.",
   "dentalConfigMissing": "Dental configuration is missing.",
+  "dentition": "Dentition",
+  "dentitionHasEntries": "The dentition cannot change while this odontogram contains clinical data.",
   "designSelector": {
     "keepOpenHint": "Select the designs you want to apply. Click an applied one to remove it.",
     "singleSelectHint": "Select a design to apply or remove the finding."
@@ -110,7 +113,9 @@
   "odontogramTimeline": "Odontogram timeline",
   "odontogramWorkspaceTitle": "Odontogram",
   "optionalInParentheses": "(optional)",
+  "permanentDentition": "Permanent dentition (32 teeth)",
   "preview": "Preview",
+  "primaryDentition": "Primary dentition (20 teeth)",
   "provider": "Provider",
   "red": "Red",
   "registerBaseOdontogram": "Register base odontogram",
@@ -142,10 +147,5 @@
   "viewLarge": "View large",
   "visitType": "Visit type",
   "white": "White",
-  "yellow": "Yellow",
-  "chooseDentition": "Choose the dentition before recording findings. It will be preserved when saved.",
-  "dentition": "Dentition",
-  "dentitionHasEntries": "The dentition cannot change while this odontogram contains clinical data.",
-  "permanentDentition": "Permanent dentition (32 teeth)",
-  "primaryDentition": "Primary dentition (20 teeth)"
+  "yellow": "Yellow"
 }

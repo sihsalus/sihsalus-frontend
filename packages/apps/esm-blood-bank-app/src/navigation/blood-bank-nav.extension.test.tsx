@@ -9,8 +9,17 @@ import BloodBankNav from './blood-bank-nav.extension';
 const allowedPrivileges = vi.hoisted(() => new Set<string>());
 
 vi.mock('@sihsalus/esm-rbac', () => ({
-  RequirePrivilege: ({ privilege, children, hideUnauthorized, fallback }: { privilege: string; children: ReactNode; hideUnauthorized?: boolean; fallback?: ReactNode }) =>
-    allowedPrivileges.has(privilege) ? children : hideUnauthorized ? null : fallback ?? null,
+  RequirePrivilege: ({
+    privilege,
+    children,
+    hideUnauthorized,
+    fallback,
+  }: {
+    privilege: string;
+    children: ReactNode;
+    hideUnauthorized?: boolean;
+    fallback?: ReactNode;
+  }) => (allowedPrivileges.has(privilege) ? children : hideUnauthorized ? null : (fallback ?? null)),
 }));
 
 describe('BloodBankNav', () => {

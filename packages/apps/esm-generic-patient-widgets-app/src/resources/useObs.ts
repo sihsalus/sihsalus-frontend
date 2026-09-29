@@ -71,7 +71,7 @@ function filterAndMapObservations(
     entries
       ?.filter((entry) => entry?.resource?.resourceType === 'Observation')
       ?.map((entry) => {
-        const resource = entry.resource as fhir.Observation;
+        const resource = entry.resource as fhir.Observation & Pick<ObsResult, 'encounter'>;
         const observation: ObsResult = {
           ...resource,
           conceptUuid: resource.code.coding.find((c) => isUuid(c.code))?.code,
@@ -92,13 +92,10 @@ function filterAndMapObservations(
           observation.dataType = 'Coded';
         }
 
-        const encounter = encounters.find(
-          (e) =>
-            e.reference === (resource as fhir.Observation & { encounter: { reference?: string } }).encounter.reference,
-        );
-
-        if (observation.encounter) {
-          observation.encounter.name = encounter?.display;
+        if (resource.encounter) {
+          const encounter = encounters?.find((e) => e.reference === resource.encounter.reference);
+          // The FHIR resource belongs to SWR's cache. Enrich a copy only.
+          observation.encounter = { ...resource.encounter, name: encounter?.display };
         }
 
         return observation;

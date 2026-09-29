@@ -3,26 +3,6 @@
   "recordedOn": "2026-09-03",
   "exceptions": [
     {
-      "workspace": "@sihsalus/esm-bed-management-app",
-      "path": "packages/apps/esm-bed-management-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "high",
-      "priority": "P1",
-      "missing": ["test-files"],
-      "reason": "La administración de camas no tiene regresiones automatizadas para asignación, traslado y liberación.",
-      "expiresOn": "2026-12-31"
-    },
-    {
-      "workspace": "@sihsalus/esm-generic-patient-widgets-app",
-      "path": "packages/apps/esm-generic-patient-widgets-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "medium",
-      "priority": "P1",
-      "missing": ["test-files"],
-      "reason": "Los widgets compartidos de observaciones no cubren carga, estados vacíos, errores ni representación de datos.",
-      "expiresOn": "2026-12-31"
-    },
-    {
       "workspace": "@sihsalus/esm-psicologia-app",
       "path": "packages/apps/esm-psicologia-app",
       "owner": "sihsalus@pucp.edu.pe",

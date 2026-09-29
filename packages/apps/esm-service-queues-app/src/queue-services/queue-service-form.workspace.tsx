@@ -32,31 +32,35 @@ const createQueueServiceSchema = (t: TFunction) =>
   z.object({
     queueName: z
       .string({
-        required_error: t('queueNameRequired', 'Queue name is required'),
+        error: (issue) => (issue.input === undefined ? t('queueNameRequired', 'Queue name is required') : undefined),
       })
       .trim()
       .min(1, t('queueNameRequired', 'Queue name is required')),
     queueServiceType: z
       .string({
-        required_error: t('queueConceptRequired', 'Queue concept is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('queueConceptRequired', 'Queue concept is required') : undefined,
       })
       .trim()
       .min(1, t('queueConceptRequired', 'Queue concept is required')),
     priorityConceptSet: z
       .string({
-        required_error: t('priorityConceptSetRequired', 'Priority concept set is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('priorityConceptSetRequired', 'Priority concept set is required') : undefined,
       })
       .trim()
       .min(1, t('priorityConceptSetRequired', 'Priority concept set is required')),
     statusConceptSet: z
       .string({
-        required_error: t('statusConceptSetRequired', 'Status concept set is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('statusConceptSetRequired', 'Status concept set is required') : undefined,
       })
       .trim()
       .min(1, t('statusConceptSetRequired', 'Status concept set is required')),
     userLocation: z
       .string({
-        required_error: t('queueLocationRequired', 'Queue UPSS is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('queueLocationRequired', 'Queue UPSS is required') : undefined,
       })
       .trim()
       .min(1, t('queueLocationRequired', 'Queue UPSS is required')),

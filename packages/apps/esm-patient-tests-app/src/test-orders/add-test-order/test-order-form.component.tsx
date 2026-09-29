@@ -100,15 +100,13 @@ export function LabOrderForm({
           accessionNumber: z.string().nullish(),
           testType: z.object(
             { label: z.string(), conceptUuid: z.string() },
-            {
-              required_error: t('testTypeRequired', 'Test type is required'),
-              invalid_type_error: t('testTypeRequired', 'Test type is required'),
-            },
+            { error: t('testTypeRequired', 'Test type is required') },
           ),
           orderReason: orderReasonRequired
             ? z
                 .string({
-                  required_error: t('orderReasonRequired', 'Order reason is required'),
+                  error: (issue) =>
+                    issue.input === undefined ? t('orderReasonRequired', 'Order reason is required') : undefined,
                 })
                 .refine((value) => !!value, t('orderReasonRequired', 'Order reason is required'))
             : z.string().optional(),
@@ -133,7 +131,7 @@ export function LabOrderForm({
     formState: { errors, defaultValues, isDirty },
     setValue,
     watch,
-  } = useForm<TestOrderBasketItem>({
+  } = useForm<z.input<typeof labOrderFormSchema>, unknown, z.output<typeof labOrderFormSchema>>({
     mode: 'all',
     resolver: zodResolver(labOrderFormSchema),
     defaultValues: {
@@ -162,7 +160,7 @@ export function LabOrderForm({
   }, []);
 
   const handleFormSubmission = useCallback(
-    (data: TestOrderBasketItem) => {
+    (data: z.output<typeof labOrderFormSchema>) => {
       if (!orderingProviderUuid) {
         setShowErrorNotification(true);
         return;

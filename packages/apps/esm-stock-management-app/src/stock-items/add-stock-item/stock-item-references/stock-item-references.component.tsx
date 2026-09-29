@@ -22,11 +22,10 @@ import ControlledTextInput from '../../../core/components/carbon/controlled-text
 import { type CustomTableHeader, type CustomTableRow } from '../../../core/components/table/types';
 import { handleMutate } from '../../../utils';
 import { createStockItemReference, deleteStockItemReference } from '../../stock-items.resource';
-import { createStockItemDetailsSchema } from '../../validationSchema';
 import { useStockItemReferencesHook } from './stock-item-references.resource';
 import styles from './stock-item-references.scss';
 import StockSourceSelector from './stock-references-selector.component';
-import { type StockItemReferenceData } from './validation-schema';
+import { type StockItemReferenceData, stockItemReferenceschema } from './validation-schema';
 
 interface StockReferencesProps {
   isEditing?: boolean;
@@ -76,7 +75,7 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
   const stockReferenceForm = useForm<StockItemReferenceData>({
     defaultValues: {},
     mode: 'all',
-    resolver: zodResolver(createStockItemDetailsSchema(t)),
+    resolver: zodResolver(stockItemReferenceschema),
   });
 
   const handleSaveStockItemReference = () => {

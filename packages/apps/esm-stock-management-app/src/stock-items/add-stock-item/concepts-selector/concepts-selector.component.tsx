@@ -1,13 +1,13 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { type ReactNode, useMemo, useState } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { type Concept } from '../../../core/api/types/concept/Concept';
 import { useConcepts } from '../../../stock-lookups/stock-lookups.resource';
 
-interface ConceptsSelectorProps<T> {
+interface ConceptsSelectorProps<T extends FieldValues, C, O> {
   conceptUuid?: string;
-  control: Control<FieldValues, T>;
-  controllerName: string;
+  control: Control<T, C, O>;
+  controllerName: FieldPath<T>;
   invalid?: boolean;
   invalidText?: ReactNode;
   name: string;
@@ -16,7 +16,7 @@ interface ConceptsSelectorProps<T> {
   title?: string;
 }
 
-const ConceptsSelector = <T,>(props: ConceptsSelectorProps<T>) => {
+const ConceptsSelector = <T extends FieldValues, C, O>(props: ConceptsSelectorProps<T, C, O>) => {
   const {
     items: { results: concepts },
     isLoading,

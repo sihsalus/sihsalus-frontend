@@ -12,7 +12,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
-import { createCompanionPerson, type CompanionRecord } from './companion.resource';
+import { type CompanionRecord, createCompanionPerson } from './companion.resource';
 import { type CompanionWorkspaceProps } from './companion-person-search.workspace';
 import styles from './companion-workspace.scss';
 
@@ -63,11 +63,11 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
           .refine((value) => !value || namePattern.test(value), {
             message: t('nameContainsInvalidCharacters', 'El nombre contiene caracteres no válidos'),
           }),
-        gender: z.enum(['M', 'F', 'O', 'U'], {
-          errorMap: () => ({
-            message: t('genderRequired', 'Seleccione el sexo'),
+        gender: z
+          .enum(['M', 'F', 'O', 'U', ''], { error: () => t('genderRequired', 'Seleccione el sexo') })
+          .refine((value) => value !== '', {
+            error: () => t('genderRequired', 'Seleccione el sexo'),
           }),
-        }),
         estimatedAge: z
           .string()
           .trim()

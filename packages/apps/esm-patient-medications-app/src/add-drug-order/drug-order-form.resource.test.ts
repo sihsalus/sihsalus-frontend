@@ -1,7 +1,13 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
+import { mockDrugSearchResultApiData } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
-import { durationToDays, useCreateMedicationOrderFormSchema } from './drug-order-form.resource';
+import {
+  drugOrderBasketItemToFormValue,
+  durationToDays,
+  useCreateMedicationOrderFormSchema,
+} from './drug-order-form.resource';
+import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
 
 vi.mock('../api', () => ({
   useRequireOutpatientQuantity: () => ({ requireOutpatientQuantity: true }),
@@ -52,6 +58,39 @@ describe('single-dose schema', () => {
   it('accepts structured single-dose prescribing without treatment duration', () => {
     const { result } = renderHook(useCreateMedicationOrderFormSchema);
     expect(result.current.safeParse(validSingleDose).success).toBe(true);
+  });
+
+  it.each([
+    { drug: { ...validSingleDose.drug, uuid: undefined }, path: ['drug', 'uuid'] },
+    { drug: { ...validSingleDose.drug, concept: {} }, path: ['drug', 'concept', 'uuid'] },
+  ])('rejects a medication missing its coded identity at $path', ({ drug, path }) => {
+    const { result } = renderHook(useCreateMedicationOrderFormSchema);
+    const parsed = result.current.safeParse({ ...validSingleDose, drug });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path })]));
+    }
+  });
+
+  it('preserves medication catalog metadata when mapping a basket draft to the form', () => {
+    const catalogDrug = {
+      ...mockDrugSearchResultApiData[0],
+      catalogMetadata: { source: 'synthetic' },
+    };
+    const draft = getTemplateOrderBasketItem(catalogDrug, null);
+    const originalDrug = structuredClone(draft.drug);
+    const startDate = new Date();
+    const form = drugOrderBasketItemToFormValue(draft, startDate);
+    expect(form.drug).toEqual(originalDrug);
+    expect(form.drug).not.toBe(draft.drug);
+    expect(form.drug.concept).not.toBe(draft.drug.concept);
+    expect(form.drug.catalogMetadata).toEqual({ source: 'synthetic' });
+    expect(draft.drug).toEqual(originalDrug);
+    expect(form.startDate).toBe(startDate);
+    const { result } = renderHook(useCreateMedicationOrderFormSchema);
+    const parsed = result.current.safeParse({ ...validSingleDose, drug: form.drug });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.drug).toEqual(originalDrug);
   });
 
   it.each([

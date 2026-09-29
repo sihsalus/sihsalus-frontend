@@ -1,11 +1,11 @@
 import { ComboBox } from '@carbon/react';
 import { type ReactNode } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { translateStockLocation } from '../../../../core/utils/translationUtils';
 import { useStockTagLocations } from '../../../../stock-lookups/stock-lookups.resource';
 
-interface TransactionsLocationsFilterProps<T> {
+interface TransactionsLocationsFilterProps<T extends FieldValues, C, O> {
   onLocationIdChange?: (location: string) => void;
   title?: string;
   placeholder?: string;
@@ -13,12 +13,12 @@ interface TransactionsLocationsFilterProps<T> {
   invalidText?: ReactNode;
 
   // Control
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const TransactionsLocationsFilter = <T,>(props: TransactionsLocationsFilterProps<T>) => {
+const TransactionsLocationsFilter = <T extends FieldValues, C, O>(props: TransactionsLocationsFilterProps<T, C, O>) => {
   const { t } = useTranslation();
   const { stockLocations } = useStockTagLocations();
   return (

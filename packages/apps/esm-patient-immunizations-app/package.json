@@ -39,12 +39,12 @@
   },
   "dependencies": {
     "@carbon/react": "^1.117.0",
-    "@hookform/resolvers": "^3.3.1",
+    "@hookform/resolvers": "^5.2.2",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
     "react-hook-form": "^7.89.0",
-    "zod": "^3.23.8"
+    "zod": "^4.6.5"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

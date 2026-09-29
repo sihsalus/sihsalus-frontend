@@ -50,17 +50,13 @@ interface ErrorType {
 }
 
 const createSchema = (t: TFunction) => {
-  const numberInString = z.string().transform((val, ctx) => {
-    const parsed = parseInt(val, 10);
-    if (Number.isNaN(parsed) || parsed < 1) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: t('invalidNumber', 'Please enter a valid number'),
-      });
-      return z.NEVER;
-    }
-    return val;
-  });
+  const numberInString = z.string().refine(
+    (val) => {
+      const parsed = parseInt(val, 10);
+      return !Number.isNaN(parsed) && parsed >= 1;
+    },
+    { message: t('invalidNumber', 'Please enter a valid number') },
+  );
 
   return z.object({
     bedId: z
@@ -106,7 +102,7 @@ const BedAdministrationForm: React.FC<BedAdministrationFormProps> = ({
     control,
     formState: { isDirty },
     setValue,
-  } = useForm<BedAdministrationData>({
+  } = useForm<z.input<typeof BedAdministrationSchema>, unknown, z.output<typeof BedAdministrationSchema>>({
     mode: 'all',
     resolver: zodResolver(BedAdministrationSchema),
     defaultValues: {
@@ -119,7 +115,7 @@ const BedAdministrationForm: React.FC<BedAdministrationFormProps> = ({
     },
   });
 
-  const onSubmit = (formData: BedAdministrationData) => {
+  const onSubmit = (formData: z.output<typeof BedAdministrationSchema>) => {
     const result = BedAdministrationSchema.safeParse(formData);
     if (result.success) {
       setShowErrorNotification(false);

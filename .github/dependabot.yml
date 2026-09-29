@@ -58,21 +58,27 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      # Type definitions — almost always safe, group together
+      # Type definitions — review compatibility; FHIR needs a separate migration.
       types:
         patterns:
           - "@types/*"
+        exclude-patterns:
+          - "@types/fhir"
         update-types:
           - "minor"
           - "patch"
       # Everything else (runtime deps) — minor+patch grouped by dependency type
       production-minor-patch:
         dependency-type: "production"
+        exclude-patterns:
+          - "@types/fhir"
         update-types:
           - "minor"
           - "patch"
       development-minor-patch:
         dependency-type: "development"
+        exclude-patterns:
+          - "@types/fhir"
         update-types:
           - "minor"
           - "patch"

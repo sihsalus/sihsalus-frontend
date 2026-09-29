@@ -2,14 +2,16 @@ import { z } from 'zod';
 
 export const reportSchema = z
   .object({
-    startDate: z.coerce.date().optional(),
-    endDate: z.coerce.date().optional(),
-    location: z.string({ required_error: 'Location Required' }).min(1, {
+    startDate: z.coerce.date<Date>().optional(),
+    endDate: z.coerce.date<Date>().optional(),
+    location: z.string({ error: (issue) => (issue.input === undefined ? 'Location Required' : undefined) }).min(1, {
       message: 'Location Required',
     }),
-    reportName: z.string({ required_error: 'Report Name Required' }).min(1, {
-      message: 'Report Name Required',
-    }),
+    reportName: z
+      .string({ error: (issue) => (issue.input === undefined ? 'Report Name Required' : undefined) })
+      .min(1, {
+        message: 'Report Name Required',
+      }),
     stockReportItemCategory: z.string().optional(),
     mostLeastMoving: z.string().optional(),
     mostLeastMovingName: z.string().optional(),
@@ -32,7 +34,7 @@ export const reportSchema = z
     fulfillment: z.string().array().optional(),
     fullFillment: z.string().array().optional(),
     limit: z.string().optional(),
-    date: z.coerce.date().optional(),
+    date: z.coerce.date<Date>().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.reportName !== 'Stock Status Report' && data.reportName !== 'Stock-Out Report') {

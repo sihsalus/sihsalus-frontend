@@ -42,7 +42,7 @@
     "@carbon/charts-react": "^1.27.20",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
-    "zod": "^3.24.1"
+    "zod": "^4.6.5"
   },
   "peerDependencies": {
     "@carbon/colors": "11.x",

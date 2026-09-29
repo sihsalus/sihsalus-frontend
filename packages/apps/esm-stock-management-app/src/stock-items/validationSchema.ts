@@ -7,21 +7,26 @@ const nullableString = z.string().max(255).nullish();
 export const createStockItemDetailsSchema = (t: TFunction) =>
   z
     .object({
-      isDrug: z.boolean({ required_error: t('selectItemType', 'Please select an item type') }),
+      isDrug: z.boolean({
+        error: (issue) => (issue.input === undefined ? t('selectItemType', 'Please select an item type') : undefined),
+      }),
       drugUuid: z.string().nullish(),
       drugName: z.string().nullish(),
       commonName: nullableString,
       acronym: nullableString,
       hasExpiration: z.boolean({
-        required_error: t('indicateWhetherItemExpires', 'Please indicate whether the item expires'),
+        error: (issue) =>
+          issue.input === undefined
+            ? t('indicateWhetherItemExpires', 'Please indicate whether the item expires')
+            : undefined,
       }),
-      expiryNotice: z.coerce.number().nullish(),
+      expiryNotice: z.coerce.number<number>().nullish(),
       uuid: z.string().nullish(),
       conceptUuid: z.string().nullish(),
       conceptName: z.string().nullish(),
       preferredVendorUuid: z.string().nullish(),
       preferredVendorName: z.string().nullish(),
-      purchasePrice: z.coerce.number().nullish(),
+      purchasePrice: z.coerce.number<number>().nullish(),
       purchasePriceUoMUuid: z.string().nullish(),
       purchasePriceUoMName: z.string().nullish(),
       categoryUuid: z.string().nullish(),
@@ -32,10 +37,10 @@ export const createStockItemDetailsSchema = (t: TFunction) =>
       dispensingUnitPackagingUoMName: z.string().nullish(),
       defaultStockOperationsUoMUuid: z.string().nullish(),
       defaultStockOperationsUoMName: z.string().nullish(),
-      reorderLevel: z.coerce.number().nullish(),
+      reorderLevel: z.coerce.number<number>().nullish(),
       reorderLevelUoMUuid: z.string().nullish(),
       reorderLevelUoMName: z.string().nullish(),
-      dateCreated: z.coerce.date().nullish(),
+      dateCreated: z.coerce.date<Date>().nullish(),
       creatorGivenName: z.string().nullish(),
       creatorFamilyName: z.string().nullish(),
       voided: z.boolean().nullish(),

@@ -37,7 +37,7 @@ import PatientInfo from './patient-info.component';
 const schema = z.object({
   caseManager: z.string().nonempty({ message: 'Case Manager is required' }),
   relationship: z.string().nonempty({ message: 'Relationship is required' }),
-  startDate: z.date({ required_error: 'Start Date is required' }),
+  startDate: z.date({ error: (issue) => (issue.input === undefined ? 'Start Date is required' : undefined) }),
   notes: z.string().optional(),
 });
 

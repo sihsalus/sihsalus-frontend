@@ -51,11 +51,11 @@ export const responsibleTypeLabels = Object.fromEntries(
 const incapacitatingCommunicationConditions = new Set(['unconscious', 'comatose', 'disoriented', 'non_verbal']);
 
 const optionalTrimmedString = z.preprocess(
-  (value) => (typeof value === 'string' ? value.trim() : value),
+  (value: string | undefined) => (typeof value === 'string' ? value.trim() : value),
   z.string().optional(),
 );
 
-const optionalEstimatedYears = z.preprocess((value) => {
+const optionalEstimatedYears = z.preprocess((value: string | number | null | undefined) => {
   if (value === '' || value === null || value === undefined || Number.isNaN(value)) {
     return undefined;
   }
@@ -98,7 +98,9 @@ export const quickRegistrationSchema = z
     givenName: z.string().trim().min(1, 'Primer nombre es requerido'),
     familyName: z.string().trim().min(1, 'Apellido paterno es requerido'),
     familyName2: optionalTrimmedString,
-    gender: z.enum(['M', 'F', 'U'], { required_error: 'Sexo es requerido' }),
+    gender: z.enum(['M', 'F', 'U'], {
+      error: (issue) => (issue.input === undefined ? 'Sexo es requerido' : undefined),
+    }),
     yearsEstimated: optionalEstimatedYears,
     birthdate: optionalTrimmedString,
     identifierType: optionalTrimmedString,

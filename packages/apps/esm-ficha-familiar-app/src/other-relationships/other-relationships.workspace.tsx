@@ -55,7 +55,7 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
     text: relationship.display,
   }));
 
-  const form = useForm<FormData>({
+  const form = useForm<z.input<typeof relationshipFormSchema>, unknown, FormData>({
     mode: 'all',
     defaultValues: {
       personA: resolvedPatientUuid,

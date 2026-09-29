@@ -1,14 +1,14 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type ReactNode } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { type ConfigObject } from '../../../config-schema';
 import { type Concept } from '../../../core/api/types/concept/Concept';
 import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 
-interface DispensingUnitSelectorProps<T> {
-  control: Control<FieldValues, T>;
-  controllerName: string;
+interface DispensingUnitSelectorProps<T extends FieldValues, C, O> {
+  control: Control<T, C, O>;
+  controllerName: FieldPath<T>;
   dispensingUnitUuid?: string;
   invalid?: boolean;
   invalidText?: ReactNode;
@@ -18,7 +18,7 @@ interface DispensingUnitSelectorProps<T> {
   title?: string;
 }
 
-const DispensingUnitSelector = <T,>(props: DispensingUnitSelectorProps<T>) => {
+const DispensingUnitSelector = <T extends FieldValues, C, O>(props: DispensingUnitSelectorProps<T, C, O>) => {
   const { dispensingUnitsUUID } = useConfig<ConfigObject>();
   const {
     items: { answers: dispensingUnits },

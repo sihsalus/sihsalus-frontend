@@ -41,7 +41,7 @@
     "@datasert/cronjs-matcher": "^1.2.0",
     "@datasert/cronjs-parser": "^1.2.0",
     "@sihsalus/esm-rbac": "workspace:*",
-    "cronstrue": "^2.41.0",
+    "cronstrue": "^3.27.0",
     "dayjs": "^1.11.23",
     "lodash-es": "^4.17.21"
   },

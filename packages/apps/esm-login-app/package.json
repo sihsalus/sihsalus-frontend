@@ -58,6 +58,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-api": "workspace:*",
+    "@openmrs/esm-framework": "workspace:*",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
     "react": "^18.3.1",
@@ -67,7 +68,6 @@
     "rxjs": "^6.5.3",
     "swr": "2.5.1",
     "vite": "8.3.1",
-    "vitest": "^5.0.2",
-    "@openmrs/esm-framework": "workspace:*"
+    "vitest": "^5.0.2"
   }
 }

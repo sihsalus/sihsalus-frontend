@@ -1,7 +1,7 @@
 {
   "name": "@sihsalus/esm-cred-app",
   "version": "1.0.10",
-  "description": "M\u00f3dulo CRED - Control de Crecimiento y Desarrollo del Ni\u00f1o - OpenMRS O3",
+  "description": "Módulo CRED - Control de Crecimiento y Desarrollo del Niño - OpenMRS O3",
   "browser": "dist/sihsalus-esm-cred-app.js",
   "main": "src/index.ts",
   "source": true,

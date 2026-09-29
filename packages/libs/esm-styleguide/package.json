@@ -2,7 +2,7 @@
   "name": "@openmrs/esm-styleguide",
   "version": "9.0.2",
   "license": "MPL-2.0",
-  "description": "OpenMRS Styleguide \u2014 vendored fork with local patches",
+  "description": "OpenMRS Styleguide — vendored fork with local patches",
   "browser": "dist/openmrs-esm-styleguide.js",
   "main": "src/index.ts",
   "source": true,

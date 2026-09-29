@@ -137,7 +137,6 @@ const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
                 dateFormat="d/m/Y"
                 datePickerType="single"
                 invalid={!!form.formState.errors[field.name]?.message}
-                invalidText={form.formState.errors[field.name]?.message}
               >
                 <DatePickerInput
                   id="startDate"
@@ -162,7 +161,6 @@ const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
                 dateFormat="d/m/Y"
                 datePickerType="single"
                 invalid={!!form.formState.errors[field.name]?.message}
-                invalidText={form.formState.errors[field.name]?.message}
               >
                 <DatePickerInput
                   id="endDate"

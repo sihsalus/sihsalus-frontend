@@ -52,6 +52,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
+    "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
     "ace-builds": "^1.44.0",
@@ -63,7 +64,6 @@
     "rxjs": "^6.5.3",
     "swr": "2.5.1",
     "vite": "8.3.1",
-    "vitest": "^5.0.2",
-    "@openmrs/esm-framework": "workspace:*"
+    "vitest": "^5.0.2"
   }
 }

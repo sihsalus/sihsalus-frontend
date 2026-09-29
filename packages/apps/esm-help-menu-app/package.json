@@ -47,6 +47,7 @@
     "rxjs": "6.x"
   },
   "devDependencies": {
+    "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
@@ -54,8 +55,7 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
     "vite": "8.3.1",
-    "vitest": "^5.0.2",
-    "@openmrs/esm-framework": "workspace:*"
+    "vitest": "^5.0.2"
   },
   "dependencies": {
     "@carbon/react": "^1.117.0",

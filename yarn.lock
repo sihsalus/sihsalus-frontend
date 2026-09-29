@@ -6919,7 +6919,7 @@ __metadata:
     concurrently: "npm:^8.2.2"
     d3-selection: "npm:^3.0.0"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^16.4.1"
+    dotenv: "npm:^18.0.4"
     fuzzy: "npm:^0.1.3"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
@@ -7044,7 +7044,7 @@ __metadata:
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^16.3.1"
+    dotenv: "npm:^18.0.4"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.0.2"
     lodash: "npm:^4.18.1"
@@ -7083,7 +7083,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^17.3.1"
+    dotenv: "npm:^18.0.4"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.0.2"
     lodash-es: "npm:^4.17.21"
@@ -7205,7 +7205,7 @@ __metadata:
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^16.3.1"
+    dotenv: "npm:^18.0.4"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"
@@ -7309,7 +7309,7 @@ __metadata:
     "@types/testing-library__jest-dom": "npm:^5.14.9"
     "@typescript/native": "npm:typescript@7.0.2"
     concurrently: "npm:^6.5.1"
-    dotenv: "npm:^16.4.7"
+    dotenv: "npm:^18.0.4"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
@@ -8066,7 +8066,7 @@ __metadata:
     "@types/react-dom": "npm:^18.2.6"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
-    dotenv: "npm:^17.3.1"
+    dotenv: "npm:^18.0.4"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.0.2"
     openmrs: "npm:*"
@@ -8886,7 +8886,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
-    dotenv: "npm:^16.0.3"
+    dotenv: "npm:^18.0.4"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
@@ -8959,7 +8959,7 @@ __metadata:
     acorn: "npm:8.18.0"
     chalk: "npm:^4.1.2"
     cross-env: "npm:^10.1.0"
-    dotenv: "npm:^17.3.1"
+    dotenv: "npm:^18.0.4"
     eslint-scope: "npm:9.1.2"
     express: "npm:^4.22.0"
     express-rate-limit: "npm:8.7.0"
@@ -14235,17 +14235,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^16.0.3, dotenv@npm:^16.3.1, dotenv@npm:^16.4.1, dotenv@npm:^16.4.7":
-  version: 16.6.1
-  resolution: "dotenv@npm:16.6.1"
-  checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
-  languageName: node
-  linkType: hard
-
-"dotenv@npm:^17.3.1":
-  version: 17.3.1
-  resolution: "dotenv@npm:17.3.1"
-  checksum: 10c0/c78e0c2d5a549c751e544cc60e2b95e7cb67e0c551f42e094d161c6b297aa44b630a3c2dcacf5569e529a6c2a6b84e2ab9be8d37b299d425df5a18b81ce4a35f
+"dotenv@npm:^18.0.4":
+  version: 18.0.4
+  resolution: "dotenv@npm:18.0.4"
+  bin:
+    dotenv: dist/index.cjs
+  checksum: 10c0/33be95df15269c0f1106da53b97bf8dd2ad17cec34aaa9e05ea1e97135195d50a9fbf0cdcac27a736b1dcd20575b2bfdea2287a5c86bf950430eb45de7ec4eda
   languageName: node
   linkType: hard
 

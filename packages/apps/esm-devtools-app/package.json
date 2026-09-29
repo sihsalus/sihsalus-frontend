@@ -58,7 +58,7 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
+    "@carbon/react": "^1.117.0",
     "fuzzy": "^0.1.3"
   }
 }

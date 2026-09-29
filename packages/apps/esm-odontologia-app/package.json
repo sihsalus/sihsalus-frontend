@@ -36,8 +36,8 @@
     "rxjs": "6.x"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
-    "@carbon/styles": "^1.102.0",
+    "@carbon/react": "^1.117.0",
+    "@carbon/styles": "^1.116.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "zustand": "^4.5.5"

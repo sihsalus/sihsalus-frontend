@@ -37,7 +37,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-chart/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.117.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "d3": "^7.6.1",
     "lodash-es": "^4.17.21"
@@ -52,12 +52,12 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

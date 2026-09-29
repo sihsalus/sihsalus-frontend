@@ -44,16 +44,16 @@
     "url": "https://github.com/openmrs/openmrs-esm-form-builder/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.117.0",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "ace-builds": "^1.43.3",
-    "ajv": "^8.17.1",
+    "ace-builds": "^1.44.0",
+    "ajv": "^8.20.0",
     "lodash-es": "^4.17.21",
     "react-ace": "^15.0.0",
     "react-markdown": "^10.1.0",
     "react-mde": "^11.5.0",
-    "sass": "^1.67.0"
+    "sass": "^1.105.0"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -75,11 +75,11 @@
     "@openmrs/esm-styleguide": "workspace:*",
     "@playwright/test": "^1.63.0",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.16.2",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.2",
     "i18next-parser": "^9.3.0",
     "openmrs": "*",
     "react": "^18.3.1",

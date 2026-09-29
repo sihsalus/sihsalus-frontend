@@ -1,7 +1,7 @@
 {
   "name": "@sihsalus/esm-referrals-app",
   "version": "1.0.10",
-  "description": "Módulo de referencias y contrarreferencias para SIHSALUS - OpenMRS O3",
+  "description": "M\u00f3dulo de referencias y contrarreferencias para SIHSALUS - OpenMRS O3",
   "browser": "dist/sihsalus-esm-referrals-app.js",
   "main": "src/index.ts",
   "source": true,
@@ -55,12 +55,12 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

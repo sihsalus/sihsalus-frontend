@@ -38,10 +38,10 @@
     "url": "https://github.com/openmrs/openmrs-esm-admin-tools/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.117.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "swr": "^2.2.5"
+    "swr": "^2.5.1"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -54,10 +54,10 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

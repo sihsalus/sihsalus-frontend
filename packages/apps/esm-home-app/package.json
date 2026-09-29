@@ -47,12 +47,12 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
     "@typescript/native": "npm:typescript@7.0.2",
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.2",
     "i18next-parser": "^9.3.0",
     "openmrs": "*",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

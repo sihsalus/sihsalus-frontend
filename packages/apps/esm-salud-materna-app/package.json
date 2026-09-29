@@ -1,7 +1,7 @@
 {
   "name": "@sihsalus/esm-salud-materna-app",
   "version": "1.0.10",
-  "description": "Módulo de Salud Materna - Atención Prenatal, Parto y Puerperio - OpenMRS O3",
+  "description": "M\u00f3dulo de Salud Materna - Atenci\u00f3n Prenatal, Parto y Puerperio - OpenMRS O3",
   "browser": "dist/sihsalus-esm-salud-materna-app.js",
   "main": "src/index.ts",
   "source": true,
@@ -38,8 +38,8 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@carbon/charts": "^1.23.7",
-    "@carbon/charts-react": "^1.23.7",
+    "@carbon/charts": "^1.27.20",
+    "@carbon/charts-react": "^1.27.20",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
     "zod": "^4.6.5"
@@ -63,25 +63,25 @@
   "devDependencies": {
     "@carbon/colors": "^11.59.0",
     "@carbon/layout": "^11.60.0",
-    "@carbon/react": "^1.102.0",
-    "@carbon/styles": "^1.102.0",
+    "@carbon/react": "^1.117.0",
+    "@carbon/styles": "^1.116.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
-    "dayjs": "^1.11.13",
-    "i18next": "^26.3.6",
+    "dayjs": "^1.11.23",
+    "i18next": "^26.4.2",
     "openmrs": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-is": "^19.1.1",
+    "react-is": "^19.3.0",
     "react-router-dom": "7.18.4",
     "rxjs": "^6.6.7",
-    "sass": "^1.98.0",
+    "sass": "^1.105.0",
     "single-spa": "^6.0.3",
-    "swr": "^2.4.1",
+    "swr": "^2.5.1",
     "vite": "8.3.1",
     "vitest": "^5.0.2"
   }

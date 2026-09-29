@@ -39,10 +39,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.58.0",
+    "@carbon/icons-react": "^11.89.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "swr": "2.2.5"
+    "swr": "2.5.1"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
@@ -55,8 +55,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@carbon/react": "^1.92.1",
-    "@openmrs/esm-framework": "workspace:*",
+    "@carbon/react": "^1.117.0",
     "@rspack/cli": "1.7.11",
     "@types/lodash-es": "^4.17.12",
     "@typescript/native": "npm:typescript@7.0.2",
@@ -67,6 +66,7 @@
     "react-router-dom": "7.18.4",
     "rxjs": "^6.5.3",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

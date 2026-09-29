@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
+    "@carbon/react": "^1.117.0",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21"
@@ -55,7 +55,6 @@
     "single-spa": "6.x"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
@@ -65,6 +64,7 @@
     "react-router-dom": "7.18.4",
     "rxjs": "^6.5.3",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

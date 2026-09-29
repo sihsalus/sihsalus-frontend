@@ -39,7 +39,7 @@
   "dependencies": {
     "html-entities": "^2.5.2",
     "lodash-es": "^4.17.23",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.2"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -52,12 +52,12 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "@openmrs/esm-framework": "workspace:*"
   }
 }

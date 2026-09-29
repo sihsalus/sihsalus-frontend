@@ -43,11 +43,11 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.66.0",
-    "swr": "^2.3.6",
+    "react-hook-form": "^7.89.0",
+    "swr": "^2.5.1",
     "zod": "^4.6.5"
   },
   "peerDependencies": {
@@ -65,13 +65,13 @@
     "@playwright/test": "^1.63.0",
     "@rspack/cli": "1.7.11",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.16.2",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.23",
     "dotenv": "^17.3.1",
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.2",
     "i18next-parser": "^9.0.2",
     "openmrs": "*",
     "react": "^18.3.1",

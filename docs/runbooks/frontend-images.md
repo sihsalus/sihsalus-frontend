@@ -20,6 +20,17 @@ autoriza publicación, promoción, rollback ni acceso a un servidor.
 
 La imagen publicada en GHCR usa el target `secure-init`: ensambla el SPA en `/spa` y termina. No contiene un servidor HTTP. El despliegue de `sihsalus-distro-referenceapplication` la ejecuta como init container con un volumen compartido que luego sirve Nginx.
 
+Los targets `init` y `secure-init` reciben sus dependencias desde
+`init-dependencies`, que excluye el compilador nativo de TypeScript y sus paquetes
+por plataforma antes de copiarlos a la imagen final. El builder conserva ese
+compilador para desarrollo y validaciones. La API JavaScript de TypeScript y los
+bundlers siguen disponibles para ensamblar el app shell al iniciar el contenedor.
+No se deben eliminar binarios después de copiarlos al target final: seguirían
+presentes en las capas anteriores. Los cambios en este límite requieren validar
+el ensamblado y analizar la nueva imagen; las alertas del digest anterior no
+demuestran el estado de la nueva imagen ni se cierran manualmente como sustituto
+del análisis.
+
 Para validar una corrección en un entorno de pruebas autorizado, el workflow
 `SPA Image` admite `workflow_dispatch` con `publish_candidate=true` y
 `candidate_base=<SHA completo de la base>`. Solo acepta ramas distintas de

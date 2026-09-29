@@ -1,12 +1,12 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type Concept } from '../../../core/api/types/concept/Concept';
 import { type StockItemReferenceDTO } from '../../../core/api/types/stockItem/StockItemReference';
 import { type StockSource } from '../../../core/api/types/stockOperation/StockSource';
 import { useStockSources } from '../../../stock-sources/stock-sources.resource';
 
-interface StockSourceSelectorProps<T> {
+interface StockSourceSelectorProps<T extends FieldValues, C, O> {
   row?: StockItemReferenceDTO;
   onSourceChange?: (unit: StockSource) => void;
   title?: string;
@@ -14,12 +14,12 @@ interface StockSourceSelectorProps<T> {
   invalid?: boolean;
 
   // Control
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const StockSourceSelector = <T,>(props: StockSourceSelectorProps<T>) => {
+const StockSourceSelector = <T extends FieldValues, C, O>(props: StockSourceSelectorProps<T, C, O>) => {
   const {
     items: { results: sourcesList },
     isLoading,

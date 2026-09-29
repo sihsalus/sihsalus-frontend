@@ -20,8 +20,7 @@ const updateRelationship = (relationshipUuid: string, payload: { endDate?: Date 
 
 const EndRelationshipSchema = z.object({
   endDate: z.date({
-    required_error: 'End date is required',
-    invalid_type_error: 'Please select a valid date',
+    error: (issue) => (issue.input === undefined ? 'End date is required' : 'Please select a valid date'),
   }),
 });
 

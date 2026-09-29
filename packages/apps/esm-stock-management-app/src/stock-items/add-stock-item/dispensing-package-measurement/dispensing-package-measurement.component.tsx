@@ -1,9 +1,10 @@
 import { ComboBox, SelectSkeleton } from '@carbon/react';
 import { type ReactNode, useMemo } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath } from 'react-hook-form';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import type { StockItemFormData } from '../../validationSchema';
 
-interface DispensingPackageMeasurementProps<T> {
+interface DispensingPackageMeasurementProps {
   dispensingUnitPackagingUoMUuid?: string;
   onDispensingUnitPackagingUoMUuidChange?: (unit: StockItemPackagingUOMDTO) => void;
   isLoading?: boolean;
@@ -14,12 +15,12 @@ interface DispensingPackageMeasurementProps<T> {
   invalidText?: ReactNode;
 
   // Control
-  controllerName: string;
+  controllerName: FieldPath<StockItemFormData>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<StockItemFormData>;
 }
 
-const DispensingPackageMeasurement = <T,>(props: DispensingPackageMeasurementProps<T>) => {
+const DispensingPackageMeasurement = (props: DispensingPackageMeasurementProps) => {
   const initialSelectedItem = useMemo<StockItemPackagingUOMDTO | null>(
     () =>
       props?.packagingUnits.length > 0

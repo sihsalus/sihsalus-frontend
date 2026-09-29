@@ -94,7 +94,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
             },
           ),
         // null means unset; when provided, must be an integer ≥ 1
-        doseNumber: z.union([z.number({ coerce: true }).int().min(1), z.null()]).optional(),
+        doseNumber: z.union([z.coerce.number<number>().int().min(1), z.null()]).optional(),
         // FHIR supports not-done immunizations; MINSA workflows need this for
         // missed, deferred or contraindicated doses without deleting the event.
         status: z.enum(['completed', 'not-done']).default('completed'),
@@ -118,7 +118,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   }, [patient.birthDate, t]);
 
   type ImmunizationFormInputData = z.infer<typeof immunizationFormSchema>;
-  const formProps = useForm<ImmunizationFormInputData>({
+  const formProps = useForm<z.input<typeof immunizationFormSchema>, unknown, ImmunizationFormInputData>({
     mode: 'all',
     resolver: zodResolver(immunizationFormSchema),
     defaultValues: {
@@ -470,12 +470,19 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
               </ResponsiveWrapper>
               {vaccineUuid && (
                 <ResponsiveWrapper>
-                  <DoseInput
-                    vaccine={vaccineUuid}
-                    sequences={activeScheduleSequenceDefinitions}
+                  <Controller
+                    name="doseNumber"
                     control={control}
-                    existingDoseNumbers={existingDoseNumbers}
-                    warningMessage={duplicateDoseWarning}
+                    render={({ field, fieldState }) => (
+                      <DoseInput
+                        vaccine={vaccineUuid}
+                        sequences={activeScheduleSequenceDefinitions}
+                        field={field}
+                        fieldState={fieldState}
+                        existingDoseNumbers={existingDoseNumbers}
+                        warningMessage={duplicateDoseWarning}
+                      />
+                    )}
                   />
                 </ResponsiveWrapper>
               )}

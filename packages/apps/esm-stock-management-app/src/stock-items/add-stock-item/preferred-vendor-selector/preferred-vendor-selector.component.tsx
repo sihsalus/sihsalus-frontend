@@ -1,11 +1,11 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { type ReactNode } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockSource } from '../../../core/api/types/stockOperation/StockSource';
 import { useStockSources } from '../../../stock-sources/stock-sources.resource';
 
-interface PreferredVendorSelectorProps<T> {
+interface PreferredVendorSelectorProps<T extends FieldValues, C, O> {
   onPreferredVendorChange?: (unit: StockSource | null | undefined) => void;
   title?: string;
   placeholder?: string;
@@ -13,12 +13,12 @@ interface PreferredVendorSelectorProps<T> {
   invalidText?: ReactNode;
 
   // Control
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const PreferredVendorSelector = <T,>(props: PreferredVendorSelectorProps<T>) => {
+const PreferredVendorSelector = <T extends FieldValues, C, O>(props: PreferredVendorSelectorProps<T, C, O>) => {
   const {
     items: { results: sourcesList },
     isLoading,

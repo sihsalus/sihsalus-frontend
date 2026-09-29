@@ -40,7 +40,8 @@ export const createCREDControlsSchema = (
   z
     .object({
       visitStartDate: z.date({
-        required_error: t('consultationDateRequired', 'Fecha de atención es requerida'),
+        error: (issue) =>
+          issue.input === undefined ? t('consultationDateRequired', 'Fecha de atención es requerida') : undefined,
       }),
       visitStartTime: z
         .string()
@@ -133,7 +134,7 @@ export const createCREDControlsSchema = (
       }
     });
 
-type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
+export type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
 
 export function getConsultationDatetime({
   visitStartDate,

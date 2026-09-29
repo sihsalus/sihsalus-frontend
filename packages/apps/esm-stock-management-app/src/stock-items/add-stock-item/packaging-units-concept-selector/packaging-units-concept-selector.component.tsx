@@ -1,13 +1,13 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { type ReactNode } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { type ConfigObject } from '../../../config-schema';
 import { type Concept } from '../../../core/api/types/concept/Concept';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
 import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 
-interface PackagingUnitsConceptSelectorProps<T> {
+interface PackagingUnitsConceptSelectorProps<T extends FieldValues, C, O> {
   row?: StockItemPackagingUOMDTO;
   onPackageUnitChange?: (unit: { uuid: string; display: string }) => void;
   title?: string;
@@ -16,12 +16,14 @@ interface PackagingUnitsConceptSelectorProps<T> {
   invalidText?: ReactNode;
 
   // Control
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const PackagingUnitsConceptSelector = <T,>(props: PackagingUnitsConceptSelectorProps<T>) => {
+const PackagingUnitsConceptSelector = <T extends FieldValues, C, O>(
+  props: PackagingUnitsConceptSelectorProps<T, C, O>,
+) => {
   const { packingUnitsUUID } = useConfig<ConfigObject>();
 
   const {

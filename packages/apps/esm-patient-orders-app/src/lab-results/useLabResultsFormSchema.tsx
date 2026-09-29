@@ -16,7 +16,7 @@ export const useLabResultsFormSchema = (labOrderConceptUuid: string) => {
     if (!concept) {
       console.warn(`Couldn't load concept ${labOrderConceptUuid}`);
     }
-    return z.object({});
+    return z.object<SchemaRecord>({});
   }
 
   if (concept.setMembers && concept.setMembers.length > 0) {

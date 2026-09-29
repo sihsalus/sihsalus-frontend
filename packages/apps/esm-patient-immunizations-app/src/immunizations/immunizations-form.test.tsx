@@ -10,7 +10,7 @@ import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-comm
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
-import { mockCurrentVisit, mockPatient, mockSessionDataResponse } from 'test-utils';
+import { mockCurrentVisit, mockFhirPatient, mockPatient, mockSessionDataResponse } from 'test-utils';
 import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { FHIR_NEXT_DOSE_DATE_EXTENSION_URL } from './immunization-mapper';
@@ -83,7 +83,7 @@ const testProps: PatientWorkspace2DefinitionProps<Record<string, never>, Record<
   closeWorkspace: mockCloseWorkspace,
   groupProps: {
     patientUuid: mockPatient.uuid,
-    patient: mockPatient as unknown as fhir.Patient,
+    patient: { ...mockFhirPatient, id: mockPatient.uuid },
     visitContext: mockCurrentVisit,
     mutateVisitContext: null,
   },

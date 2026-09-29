@@ -27,7 +27,7 @@ const BedTagAdministrationSchema = z.object({
 interface BedTagAdministrationFormProps {
   allLocations: Location[];
   availableBedTags: Array<BedTagData>;
-  handleCreateBedTag?: (formData: BedTagData) => void;
+  handleCreateBedTag?: (formData: z.output<typeof BedTagAdministrationSchema>) => void;
   handleDeleteBedTag?: () => void;
   headerTitle: string;
   initialData: BedTagData;
@@ -55,7 +55,7 @@ const BedTagsAdministrationForm: React.FC<BedTagAdministrationFormProps> = ({
     handleSubmit,
     control,
     formState: { isDirty },
-  } = useForm<BedTagData>({
+  } = useForm<z.input<typeof BedTagAdministrationSchema>, unknown, z.output<typeof BedTagAdministrationSchema>>({
     mode: 'all',
     resolver: zodResolver(BedTagAdministrationSchema),
     defaultValues: {
@@ -63,7 +63,7 @@ const BedTagsAdministrationForm: React.FC<BedTagAdministrationFormProps> = ({
     },
   });
 
-  const onSubmit = (formData: BedTagData) => {
+  const onSubmit = (formData: z.output<typeof BedTagAdministrationSchema>) => {
     const result = BedTagAdministrationSchema.safeParse(formData);
     if (result.success) {
       setShowErrorNotification(false);

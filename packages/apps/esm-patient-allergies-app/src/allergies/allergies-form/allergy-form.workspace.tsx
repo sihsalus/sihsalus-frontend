@@ -48,14 +48,7 @@ import {
 } from './allergy-form.resource';
 import styles from './allergy-form.scss';
 
-interface AllergyFormData {
-  allergen: Allergen;
-  allergicReactions: string[];
-  comment: string;
-  nonCodedAllergen: string;
-  nonCodedAllergicReaction: string;
-  severityOfWorstReaction: string;
-}
+type AllergyFormData = z.infer<ReturnType<typeof allergyFormSchema>>;
 
 export interface AllergyFormWorkspaceProps {
   allergy?: Allergy;

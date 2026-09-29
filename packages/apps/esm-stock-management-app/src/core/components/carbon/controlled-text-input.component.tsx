@@ -1,15 +1,15 @@
 import { TextInput } from '@carbon/react';
 import { type TextInputProps } from '@carbon/react/lib/components/TextInput/TextInput';
 import { type ChangeEvent } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 
-interface ControlledTextInputProps<T> extends TextInputProps {
-  controllerName: string;
+interface ControlledTextInputProps<T extends FieldValues, C, O> extends TextInputProps {
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const ControlledTextInput = <T,>(props: ControlledTextInputProps<T>) => {
+const ControlledTextInput = <T extends FieldValues, C, O>(props: ControlledTextInputProps<T, C, O>) => {
   return (
     <Controller
       name={props.controllerName}

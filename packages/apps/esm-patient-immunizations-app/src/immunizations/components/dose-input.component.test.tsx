@@ -1,10 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { type Control, useForm } from 'react-hook-form';
+import { useController, useForm } from 'react-hook-form';
 import { DoseInput } from './dose-input.component';
 
 function TestDoseInput() {
   const { control } = useForm({ defaultValues: { doseNumber: undefined } });
-  return <DoseInput control={control as unknown as Control} vaccine="bcg-vaccine-uuid" sequences={[]} />;
+  const { field, fieldState } = useController({ name: 'doseNumber', control });
+  return <DoseInput field={field} fieldState={fieldState} vaccine="bcg-vaccine-uuid" sequences={[]} />;
 }
 
 describe('DoseInput', () => {

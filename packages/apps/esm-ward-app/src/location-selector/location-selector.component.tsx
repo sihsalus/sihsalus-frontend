@@ -30,13 +30,9 @@ interface LocationSelectorProps extends RadioButtonGroupProps {
    */
   excludeLocations?: Location[];
 
-  field: ControllerRenderProps<
-    {
-      note?: string;
-      location?: string;
-      transferType?: string;
-    },
-    'location'
+  field: Pick<
+    ControllerRenderProps<{ location?: string }, 'location'>,
+    'value' | 'onChange' | 'onBlur' | 'ref' | 'name' | 'disabled'
   >;
 }
 

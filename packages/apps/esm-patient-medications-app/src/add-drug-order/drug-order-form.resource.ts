@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { parseDate, useConfig } from '@openmrs/esm-framework';
-import { type Drug, type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
+import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { useMemo } from 'react';
 import { type UseFormReturn, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +33,11 @@ export function useDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItem) {
 
 export function drugOrderBasketItemToFormValue(item: DrugOrderBasketItem, startDate: Date): MedicationOrderFormData {
   return {
-    drug: item?.drug as Partial<Drug>,
+    drug: item?.drug && {
+      ...item.drug,
+      concept: item.drug.concept && { ...item.drug.concept },
+      dosageForm: item.drug.dosageForm && { ...item.drug.dosageForm },
+    },
     isFreeTextDosage: item?.isFreeTextDosage ?? false,
     freeTextDosage: item?.freeTextDosage,
     dosage: item?.dosage ?? null,

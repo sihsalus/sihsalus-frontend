@@ -71,13 +71,17 @@ export default function PatientAdmitOrTransferForm({
     () =>
       z.object({
         location: z.string({
-          required_error: t('pleaseSelectTransferLocation', 'Please select transfer location'),
+          error: (issue) =>
+            issue.input === undefined
+              ? t('pleaseSelectTransferLocation', 'Please select transfer location')
+              : undefined,
         }),
         note: z.string().optional(),
         transferType:
           dispositionsWithTypeTransfer?.length > 1
             ? z.string({
-                required_error: t('pleaseSelectTransferType', 'Please select transfer type'),
+                error: (issue) =>
+                  issue.input === undefined ? t('pleaseSelectTransferType', 'Please select transfer type') : undefined,
               })
             : z.string().optional(),
       }),
@@ -87,7 +91,7 @@ export default function PatientAdmitOrTransferForm({
   type FormValues = z.infer<typeof zodSchema>;
 
   const formDefaultValues: Partial<FormValues> = useMemo(() => {
-    const defaultValues: FormValues = {};
+    const defaultValues: Partial<FormValues> = {};
     if (dispositionsWithTypeTransfer?.length === 1) {
       defaultValues.transferType = dispositionsWithTypeTransfer[0].uuid;
     }

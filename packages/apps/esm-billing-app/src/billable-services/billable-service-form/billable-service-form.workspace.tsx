@@ -16,8 +16,8 @@ import {
 import { Add, TrashCan } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  getUserFacingErrorMessage,
   getCoreTranslation,
+  getUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   useDebounce,
@@ -54,17 +54,11 @@ export interface BillableServiceFormWorkspaceProps {
   onWorkspaceClose?: () => void;
 }
 
-interface BillableServiceFormData {
-  name: string;
-  payment: PaymentModeForm[];
-  serviceType: ServiceType | null;
-  concept?: { uuid: string; display: string } | null;
-  shortName?: string;
-}
+type BillableServiceFormData = z.infer<ReturnType<typeof createBillableServiceSchema>>;
 
 interface PaymentModeForm {
   paymentMode: string;
-  price: string | number | undefined;
+  price?: string | number;
 }
 
 interface ServiceType {
@@ -130,7 +124,8 @@ const createBillableServiceSchema = (t: TFunction) => {
   const servicePriceSchema = z.object({
     paymentMode: z
       .string({
-        required_error: t('paymentModeRequired', 'Payment mode is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('paymentModeRequired', 'Payment mode is required') : undefined,
       })
       .trim()
       .min(1, t('paymentModeRequired', 'Payment mode is required')),
@@ -156,7 +151,8 @@ const createBillableServiceSchema = (t: TFunction) => {
   return z.object({
     name: z
       .string({
-        required_error: t('serviceNameRequired', 'Service name is required'),
+        error: (issue) =>
+          issue.input === undefined ? t('serviceNameRequired', 'Service name is required') : undefined,
       })
       .trim()
       .min(1, t('serviceNameRequired', 'Service name is required'))

@@ -117,9 +117,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   const schema = z.object({
     fileName: z
-      .string({
-        required_error: t('nameIsRequired', 'Name is required'),
-      })
+      .string({ error: (issue) => (issue.input === undefined ? t('nameIsRequired', 'Name is required') : undefined) })
       .trim()
       .min(1, { message: t('nameIsRequired', 'Name is required') }),
     fileDescription: z.string().optional(),

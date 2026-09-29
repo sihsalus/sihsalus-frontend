@@ -37,7 +37,7 @@ export const stockOperationItemSchema = z.object({
   stockItemPackagingUOMName: z.string().nullish(),
   stockBatchUuid: z.string().nullish(),
   batchNo: z.string().nullish(),
-  expiration: z.coerce.date().nullish(),
+  expiration: z.coerce.date<Date>().nullish(),
   quantity: z.number().nullish(),
   purchasePrice: z.number().nullish(),
   permission: recordPermissionSchema.nullish(),
@@ -59,27 +59,27 @@ export type StockOperationItemFormData = z.infer<typeof stockOperationItemSchema
 export const stockOperationSchema = z.object({
   uuid: z.string().nullish(),
   cancelReason: z.string().nullish(),
-  cancelledBy: z.coerce.number(),
+  cancelledBy: z.coerce.number<number>(),
   cancelledByGivenName: z.string().nullish(),
   cancelledByFamilyName: z.string().nullish(),
-  cancelledDate: z.coerce.date(),
-  completedBy: z.coerce.number(),
+  cancelledDate: z.coerce.date<Date>(),
+  completedBy: z.coerce.number<number>(),
   completedByGivenName: z.string().nullish(),
   completedByFamilyName: z.string().nullish(),
-  completedDate: z.coerce.date(),
+  completedDate: z.coerce.date<Date>(),
   destinationUuid: z.string().nullish(),
   destinationName: z.string().nullish(),
   externalReference: z.string().nullish(),
   atLocationUuid: z.string().nullish(),
   atLocationName: z.string().nullish(),
-  operationDate: z.coerce.date(),
+  operationDate: z.coerce.date<Date>(),
   submitted: z.boolean(),
   submittedBy: z.string().nullish(),
   submittedByGivenName: z.string().nullish(),
   submittedByFamilyName: z.string().nullish(),
   locked: z.boolean(),
   operationNumber: z.string().nullish(),
-  operationOrder: z.coerce.number(),
+  operationOrder: z.coerce.number<number>(),
   remarks: z.string().nullish(),
   sourceUuid: z.string().nullish(),
   sourceName: z.string().nullish(),
@@ -89,13 +89,13 @@ export const stockOperationSchema = z.object({
   operationTypeUuid: z.string().nullish(),
   operationType: z.string().nullish(),
   operationTypeName: z.string().nullish(),
-  responsiblePerson: z.coerce.number(),
+  responsiblePerson: z.coerce.number<number>(),
   responsiblePersonUuid: z.string().nullish(),
   responsiblePersonGivenName: z.string().nullish(),
   responsiblePersonFamilyName: z.string().nullish(),
   responsiblePersonOther: z.string().nullish(),
-  creator: z.coerce.number(),
-  dateCreated: z.coerce.date(),
+  creator: z.coerce.number<number>(),
+  dateCreated: z.coerce.date<Date>(),
   creatorGivenName: z.string().nullish(),
   creatorFamilyName: z.string().nullish(),
   permission: recordPermissionSchema.nullish(),
@@ -104,16 +104,16 @@ export const stockOperationSchema = z.object({
   approvalRequired: z.boolean().nullish(),
   stockOperationItems: stockOperationItemSchema.array(),
 
-  submittedDate: z.coerce.date(),
+  submittedDate: z.coerce.date<Date>(),
   returnedByGivenName: z.string().nullish(),
   returnedByFamilyName: z.string().nullish(),
-  returnedDate: z.coerce.date(),
+  returnedDate: z.coerce.date<Date>(),
   rejectedByGivenName: z.string().nullish(),
   rejectedByFamilyName: z.string().nullish(),
-  rejectedDate: z.coerce.date(),
+  rejectedDate: z.coerce.date<Date>(),
   dispatchedByGivenName: z.string().nullish(),
   dispatchedByFamilyName: z.string().nullish(),
-  dispatchedDate: z.coerce.date(),
+  dispatchedDate: z.coerce.date<Date>(),
   requisitionStockOperationUuid: z.string().uuid().nullish(),
 });
 export const baseStockOperationItemSchema = z.object({
@@ -122,13 +122,19 @@ export const baseStockOperationItemSchema = z.object({
   stockItemPackagingUOMUuid: z.string().min(1, { message: 'Required' }),
   batchNo: z.string().min(1, { message: 'Required' }),
   stockBatchUuid: z.string().optional(),
-  expiration: z.coerce.date({ required_error: 'Required' }),
-  quantity: z.coerce.number().min(1, { message: 'Required' }),
-  purchasePrice: z.coerce.number().nullish(),
+  expiration: z.coerce.date<Date>({ error: (issue) => (issue.input === undefined ? 'Required' : undefined) }),
+  quantity: z.coerce.number<number>().min(1, { message: 'Required' }),
+  purchasePrice: z.coerce.number<number>().nullish(),
   hasExpiration: z.boolean().nullish(),
 });
 
-export type BaseStockOperationItemFormData = z.infer<typeof baseStockOperationItemSchema>;
+// Operation-specific schemas require different batch fields. The draft can omit
+// those fields; getStockOperationItemFormSchema still enforces them on submit.
+export type BaseStockOperationItemFormData = Pick<
+  z.infer<typeof baseStockOperationItemSchema>,
+  'uuid' | 'stockItemUuid'
+> &
+  Partial<z.infer<typeof baseStockOperationItemSchema>>;
 
 export const getStockOperationItemFormSchema = (operationType: OperationType) => {
   switch (operationType) {
@@ -152,7 +158,7 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
         .extend({
           stockBatchUuid: z.string().min(1, { message: 'Required' }),
           // Override quantity to allow negative values for negative adjustment operation
-          quantity: z.coerce.number().refine((value) => value !== 0, {
+          quantity: z.coerce.number<number>().refine((value) => value !== 0, {
             message: 'Quantity cannot be zero.',
           }),
         });
@@ -175,22 +181,22 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
   }
 };
 export const stockOperationItemDtoSchema = z.object({
-  operationDate: z.coerce.date(),
-  sourceUuid: z.string({ required_error: 'Location Required' }).min(1, {
+  operationDate: z.coerce.date<Date>(),
+  sourceUuid: z.string({ error: (issue) => (issue.input === undefined ? 'Location Required' : undefined) }).min(1, {
     message: 'Location Required',
   }),
-  destinationUuid: z.string({ required_error: 'Location Required' }).min(1, {
-    message: 'Location Required',
-  }),
+  destinationUuid: z
+    .string({ error: (issue) => (issue.input === undefined ? 'Location Required' : undefined) })
+    .min(1, {
+      message: 'Location Required',
+    }),
   atLocationUuid: z.string().nullish(),
   atLocationName: z.string().nullish(),
-  reasonUuid: z.string({ required_error: 'Reason Required' }).min(1, {
+  reasonUuid: z.string({ error: (issue) => (issue.input === undefined ? 'Reason Required' : undefined) }).min(1, {
     message: 'Reason Required',
   }),
   responsiblePersonUuid: z
-    .string({
-      required_error: 'Responsible Person Required',
-    })
+    .string({ error: (issue) => (issue.input === undefined ? 'Responsible Person Required' : undefined) })
     .min(1, {
       message: 'Responsible Person Required',
     }),
@@ -201,11 +207,18 @@ export const stockOperationItemDtoSchema = z.object({
   requisitionStockOperationUuid: z.string().uuid().optional(), // Suplied only for stock issue operation
 });
 
-export type StockOperationItemDtoSchema = z.infer<typeof stockOperationItemDtoSchema>;
+export type StockOperationItemDtoSchema = Omit<
+  z.infer<typeof stockOperationItemDtoSchema>,
+  'destinationUuid' | 'reasonUuid' | 'stockOperationItems'
+> & {
+  destinationUuid?: string;
+  reasonUuid?: string;
+  stockOperationItems: BaseStockOperationItemFormData[];
+};
 
 export type StockOperationFormData = z.infer<typeof stockOperationSchema>;
 
-export const getStockOperationFormSchema = (operation: OperationType): z.Schema => {
+export const getStockOperationFormSchema = (operation: OperationType) => {
   switch (operation) {
     case OperationType.OPENING_STOCK_OPERATION_TYPE:
       return stockOperationItemDtoSchema
@@ -235,9 +248,11 @@ export const getStockOperationFormSchema = (operation: OperationType): z.Schema 
       return stockOperationItemDtoSchema.omit({ reasonUuid: true }).merge(
         z.object({
           // Merged to overid initial one with error message having  location instead of destination
-          destinationUuid: z.string({ required_error: 'Destination Required' }).min(1, {
-            message: 'Destination Required',
-          }),
+          destinationUuid: z
+            .string({ error: (issue) => (issue.input === undefined ? 'Destination Required' : undefined) })
+            .min(1, {
+              message: 'Destination Required',
+            }),
           stockOperationItems: getStockOperationItemFormSchema(operation)
             .array()
             .nonempty('You must add atleast one stock item'),
@@ -249,9 +264,11 @@ export const getStockOperationFormSchema = (operation: OperationType): z.Schema 
       return stockOperationItemDtoSchema.omit({ reasonUuid: true }).merge(
         z.object({
           // Merged to overid initial one with error message having location instead of source
-          sourceUuid: z.string({ required_error: 'Source Required' }).min(1, {
-            message: 'Source Required',
-          }),
+          sourceUuid: z
+            .string({ error: (issue) => (issue.input === undefined ? 'Source Required' : undefined) })
+            .min(1, {
+              message: 'Source Required',
+            }),
           stockOperationItems: getStockOperationItemFormSchema(operation)
             .array()
             .nonempty('You must add atleast one stock item'),

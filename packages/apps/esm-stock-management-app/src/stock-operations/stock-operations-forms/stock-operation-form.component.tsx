@@ -108,7 +108,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
       atLocationName: stockOperation?.atLocationName ?? '',
     },
     mode: 'all',
-    resolver: zodResolver(formschema),
+    resolver: zodResolver<StockOperationItemDtoSchema, unknown, StockOperationItemDtoSchema>(formschema),
   });
   const initializedFromRequisition = useRef<string | null>(null);
   const [renderItemForm, setRenderItemForm] = useState(false);

@@ -6,7 +6,7 @@ export const packageUnitSchema = z.object({
   stockItemUuid: z.string().nullish(),
   packagingUomName: z.string().nullish(),
   packagingUomUuid: z.string().nullish(),
-  factor: z.coerce.number().nullish(),
+  factor: z.coerce.number<number>().nullish(),
   isDefaultStockOperationsUoM: z.boolean().nullish(),
   isDispensingUnit: z.boolean().nullish(),
 });

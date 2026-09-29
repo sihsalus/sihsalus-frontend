@@ -7,7 +7,9 @@ expone su ejecutable `tsc` en cada workspace que lo declara.
 La API JavaScript sigue siendo TypeScript 6.0.3, mediante el paquete oficial
 `@typescript/typescript6` 6.0.2 bajo el nombre `typescript`. Es necesaria para el
 validador de exposición de errores, las pruebas que usan el AST y
-`transpileModule`, TypeDoc y el chequeo del servidor de desarrollo de Rspack.
+`transpileModule`, TypeDoc, los loaders de TypeScript y el chequeo del servidor
+de desarrollo de Rspack. Framework, Cohortes, carga rápida e Imágenes conservan
+además la declaración requerida por sus herramientas y peers.
 No retirar esa compatibilidad mientras existan esos consumidores. `tsc6` permite
 comparar ambos compiladores explícitamente; no sustituye el chequeo nativo de CI.
 

@@ -42,6 +42,15 @@ publica una mejora para ese módulo. Ejecutarlo sin otros builds o pruebas activ
 Las cifras representan el chequeo de tipos local; no miden navegación, bundle,
 backend, tiempo total de CI ni despliegue.
 
+Medición local del 29/09/2026, código `ecbf1c5c6`, macOS arm64, Node 24.15.0,
+TypeScript 6.0.3 y 7.0.2. Todos los chequeos medidos terminaron correctamente:
+
+| Módulo                        | TS 6, mediana | TS 7, mediana | Relación |
+| ----------------------------- | ------------: | ------------: | -------: |
+| Consulta Externa              |       2942 ms |        778 ms |    3,78× |
+| Stock                         |       3095 ms |        892 ms |    3,47× |
+| Biblioteca clínica compartida |       2073 ms |        502 ms |    4,13× |
+
 ## Validación de la migración
 
 Además de `yarn verify:changed --base origin/main --head HEAD`, ejecutar

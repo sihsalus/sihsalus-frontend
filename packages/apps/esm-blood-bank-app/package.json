@@ -49,8 +49,8 @@
     "rxjs": "6.x"
   },
   "devDependencies": {
-    "@carbon/react": "^1.92.1",
-    "@carbon/styles": "^1.102.0",
+    "@carbon/react": "^1.117.0",
+    "@carbon/styles": "^1.116.0",
     "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
@@ -64,7 +64,7 @@
     "react-i18next": "^16.0.0",
     "react-router-dom": "7.18.2",
     "rxjs": "^6.6.7",
-    "sass-embedded": "1.98.0",
+    "sass-embedded": "1.105.0",
     "sass-loader": "16.0.5",
     "style-loader": "4.0.0",
     "swc-loader": "0.2.7",

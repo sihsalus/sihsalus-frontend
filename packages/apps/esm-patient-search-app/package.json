@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.7",
     "@typescript/native": "npm:typescript@7.0.2",
     "i18next": "^26.4.2",
     "openmrs": "*",

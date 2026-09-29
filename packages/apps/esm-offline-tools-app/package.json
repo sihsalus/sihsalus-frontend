@@ -57,7 +57,7 @@
   "devDependencies": {
     "@carbon/react": "^1.117.0",
     "@openmrs/esm-framework": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.7",
     "@types/lodash-es": "^4.17.12",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",

@@ -45,7 +45,7 @@
     "@hookform/resolvers": "^3.x",
     "react-hook-form": "^7.x",
     "react-is": "^19.1.0",
-    "zod": "^3.x"
+    "zod": "^4.x"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

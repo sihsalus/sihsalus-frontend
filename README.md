@@ -47,7 +47,7 @@ El [índice de documentación](docs/README.md) organiza las guías y contratos.
 ## Prerequisites
 
 - Node.js 24.
-- Yarn 4.13.0, fijado en `packageManager` de `package.json`, mediante Corepack.
+- Yarn 4.18.1, fijado en `packageManager` de `package.json`, mediante Corepack.
 - Docker para los procedimientos de imágenes.
 
 ## Quick Start

@@ -47,10 +47,10 @@
     "swr": "2.x"
   },
   "devDependencies": {
+    "@typescript/native": "npm:typescript@7.0.2",
     "i18next": "^26.3.6",
     "i18next-parser": "^9.3.0",
     "openmrs": "*",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   }

@@ -154,7 +154,7 @@ change.
 
 ## Local development
 
-The supported environment uses Node 24 and Yarn 4.13.0:
+The supported environment uses Node 24 and Yarn 4.18.1:
 
 ```sh
 corepack enable

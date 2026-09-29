@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "es2015",
     "strict": true,
     "strictFunctionTypes": false,

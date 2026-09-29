@@ -16,7 +16,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "typescript": "node ../../../node_modules/typescript/bin/tsc --noEmit",
+    "typescript": "tsc --noEmit",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
@@ -62,9 +62,9 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
+    "@typescript/native": "npm:typescript@7.0.2",
     "cross-env": "^7.0.3",
     "openmrs": "*",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   }

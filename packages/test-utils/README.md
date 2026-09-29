@@ -1,7 +1,7 @@
 # Test support
 
 `packages/test-utils` contains the test support shared by the microfrontends.
-It is an internal directory, resolved through the shared TypeScript base URL and
+It is an internal directory, resolved through the shared TypeScript path aliases and
 Vitest aliases, not a published workspace. Application code must not import it.
 See [testing and quality](../../docs/development/testing.md) for repository-wide
 commands and [the documentation index](../../docs/README.md) for other guides.
@@ -39,12 +39,12 @@ Prefer a fixture's direct path for new imports. Import app-local helpers and
 fixtures by relative path; do not add another `@mocks`, `__mocks__` or `@tools`
 alias for them.
 
-Apps extend [`packages/tsconfig.json`](../tsconfig.json) directly. Its `baseUrl`
-resolves `test-utils` from `packages/`; the shared `paths` map has been removed.
-Test globals come from [`packages/declarations.d.ts`](../declarations.d.ts).
-A package that overrides `baseUrl` must still resolve the shared test support,
-using its existing explicit mappings where needed. TypeScript replaces an
-inherited `paths` map when a package supplies its own.
+Apps extend [`packages/tsconfig.json`](../tsconfig.json) directly. Its explicit
+`test-utils` and `test-utils/*` paths resolve shared support from `packages/`;
+TypeScript 7 no longer supports `baseUrl`. Test globals come from
+[`packages/declarations.d.ts`](../declarations.d.ts). TypeScript replaces an
+inherited `paths` map when a package supplies its own; packages with overrides
+must preserve these mappings if their tests import shared support.
 
 Vitest apps use `defineAppVitestConfig` from
 `packages/tooling/configs/vitest-config.ts`. Its shared runtime setup is

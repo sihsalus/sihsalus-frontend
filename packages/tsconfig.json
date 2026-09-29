@@ -16,9 +16,11 @@
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
+    "paths": {
+      "test-utils": ["./test-utils/index"],
+      "test-utils/*": ["./test-utils/*"]
+    },
     "noEmit": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

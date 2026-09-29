@@ -2,12 +2,10 @@
   "extends": "../../../tsconfig.base.json",
   "include": ["src", "src/index.d.ts", "setup-tests.ts", "vitest.config.ts"],
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "moduleResolution": "node",
-    "baseUrl": ".",
+    "moduleResolution": "bundler",
     "paths": {
       "@openmrs/esm-api/src/public": ["../../../node_modules/@openmrs/esm-api/dist/public"],
       "@openmrs/esm-config/src/public": ["../../../node_modules/@openmrs/esm-config/dist/public"],

@@ -43,9 +43,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.x",
-    "@internationalized/date": "^3.x",
-    "lodash-es": "^4.17.21",
-    "open": "^8.4.0",
     "react-hook-form": "^7.x",
     "react-is": "^19.1.0",
     "zod": "^3.x"
@@ -71,6 +68,7 @@
     "@swc/core": "1.15.21",
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.6",
+    "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "1.x",
     "dotenv": "^17.3.1",
     "i18next": "^26.3.6",
@@ -85,7 +83,7 @@
     "swr": "^2.x",
     "ts-node": "^10.9.2",
     "turbo": "^2.9.14",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   },

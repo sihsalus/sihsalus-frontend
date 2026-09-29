@@ -41,7 +41,6 @@
     "@sihsalus/esm-patient-conditions-app": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
-    "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21",
     "pdf-lib": "^1.17.1"
   },
@@ -70,6 +69,7 @@
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
+    "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "^1.11.13",
     "i18next": "^26.3.6",
     "openmrs": "workspace:*",
@@ -82,7 +82,6 @@
     "sass": "^1.98.0",
     "single-spa": "^6.0.3",
     "swr": "^2.4.1",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   }

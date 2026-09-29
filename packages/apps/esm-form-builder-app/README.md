@@ -141,3 +141,19 @@ This approach should avoid issues caused by Webpack and static file changes.
 ```sh
 yarn turbo run build
 ```
+
+## JSON editor assets
+
+The schema editor bundles only Ace's JSON mode, TextMate theme, language tools
+and search box. Its JSON worker is emitted as a local asset using `new URL`,
+with the same bundling pattern as Implementer Tools. It no longer imports the
+complete Webpack resolver or requires `file-loader`. Syntax diagnostics, schema
+validation, completion, markers, editing and save/publish permissions retain their
+existing contracts. Ace is an explicit dependency of this workspace.
+
+`yarn test:form-builder-browser` builds the actual Ace configuration and tests it
+in local Chromium with synthetic JSON: worker syntax errors and recovery, theme,
+autocompletion and search. It rejects failed or external asset requests and
+checks that the full language catalog is not emitted. Install Chromium through
+`yarn playwright install chromium` when needed. This is local asset validation;
+it does not authenticate, save a form or replace the coordinated QLTY checks.

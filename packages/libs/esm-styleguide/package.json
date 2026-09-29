@@ -44,7 +44,7 @@
     "test": "cross-env TZ=UTC vitest run --passWithNoTests",
     "test:watch": "cross-env TZ=UTC vitest watch --passWithNoTests",
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
-    "typescript": "tsc --noEmit && tsc -p tsconfig.build.json",
+    "typescript": "tsc --noEmit && tsc -p tsconfig.build.json --noEmit",
     "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "dependencies": {
@@ -74,13 +74,12 @@
     "@openmrs/esm-utils": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
+    "@typescript/native": "npm:typescript@7.0.2",
     "clean-webpack-plugin": "4.0.0",
     "css-loader": "7.1.5",
     "react-router-dom": "7.18.2",
     "sass-embedded": "1.89.0",
     "sass-loader": "16.0.5",
-    "swc-loader": "0.2.7",
-    "typescript": "6.0.3",
     "webpack-bundle-analyzer": "5.4.0"
   },
   "peerDependencies": {

@@ -40,9 +40,7 @@
     "@carbon/react": "^1.83.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "linkify-react": "^4.3.2",
-    "linkifyjs": "^4.3.2",
-    "lodash-es": "^4.17.23",
-    "react-grid-gallery": "^0.5.6"
+    "linkifyjs": "^4.3.2"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -57,8 +55,8 @@
   "devDependencies": {
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
+    "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   }

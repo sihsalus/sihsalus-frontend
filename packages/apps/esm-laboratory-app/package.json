@@ -41,8 +41,6 @@
   "dependencies": {
     "@carbon/react": "^1.83.0",
     "@sihsalus/esm-rbac": "workspace:*",
-    "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.52.1",
     "react-to-print": "^3.1.1"
   },
   "peerDependencies": {
@@ -62,6 +60,7 @@
     "@swc/core": "1.15.21",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
+    "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "^1.11.11",
     "file-saver": "^2.0.5",
     "i18next-parser": "^9.3.0",
@@ -70,7 +69,6 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.2",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   }

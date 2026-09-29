@@ -48,6 +48,7 @@
     "validate:lint-coverage": "node packages/tooling/scripts/validate-lint-coverage.js",
     "validate:test-governance": "node packages/tooling/scripts/validate-test-governance.js",
     "validate:workspaces": "node packages/tooling/scripts/audit-workspaces.js",
+    "benchmark:typescript": "node packages/tooling/scripts/benchmark-typescript.js",
     "typecheck": "node node_modules/turbo/bin/turbo run typescript",
     "typecheck:e2e": "yarn build:e2e:offline-local && tsc -p e2e/tsconfig.json && tsc -p e2e/offline-local/tsconfig.browser.json",
     "verify": "cross-env TZ=UTC node node_modules/turbo/bin/turbo run lint typescript && cross-env TZ=UTC node node_modules/turbo/bin/turbo run test --concurrency=2",
@@ -58,7 +59,8 @@
     "react-doctor": "react-doctor",
     "sihsalus:doctor": "node packages/tooling/scripts/sihsalus-doctor.js",
     "clean": "node packages/tooling/scripts/clean-monorepo.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:form-builder-browser": "yarn workspace @openmrs/rspack-config build && node --test packages/tooling/scripts/form-builder.browser.spec.js"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",
@@ -73,6 +75,7 @@
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "@types/webpack-env": "^1.18.8",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
     "@vitest/ui": "5.0.0",
     "acorn": "8.16.0",
@@ -97,7 +100,7 @@
     "react-dom": "^18.3.1",
     "swc-loader": "0.2.7",
     "turbo": "2.9.16",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "undici": "7.29.0",
     "vite": "8.0.16",
     "vitest": "5.0.1",
@@ -109,10 +112,10 @@
     "!(*.d).ts": "biome check --write",
     "*.scss": "prettier --write"
   },
-  "packageManager": "yarn@4.13.0",
+  "packageManager": "yarn@4.18.1",
   "resolutions": {
     "file-type": "npm:^21.3.1",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "@rspack/core": "1.7.11",
     "@rspack/cli": "1.7.11",
     "@babel/core": "7.29.6",
@@ -123,7 +126,7 @@
     "swr": "2.4.1",
     "cross-env": "^10.1.0",
     "@carbon/styles": "^1.102.0",
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.7",
     "form-data": "^4.0.5",
     "picomatch": "^4.0.4",
     "cookie": "^0.7.2",

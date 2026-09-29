@@ -106,7 +106,7 @@ inspect that profile or validate a PWA installation.
 5. Ask the selected environment's metadata owner for the isolated login
    location, identifier source, matching identifier type, and offline visit
    type UUIDs. Do not choose an arbitrary clinical location or metadata record.
-6. From a clean checkout of the test branch, use Node 24 and Yarn 4.13.0:
+6. From a clean checkout of the test branch, use Node 24 and Yarn 4.18.1:
 
    ```sh
    corepack enable

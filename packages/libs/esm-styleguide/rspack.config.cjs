@@ -49,16 +49,16 @@ module.exports = (env, argv = {}) => ({
       },
       {
         test: /\.(js|jsx|ts|tsx)$/,
-        use: 'swc-loader',
+        loader: 'builtin:swc-loader',
         options: {
           jsc: {
             parser: {
               syntax: 'typescript',
               tsx: true,
-              transform: {
-                react: {
-                  runtime: 'automatic',
-                },
+            },
+            transform: {
+              react: {
+                runtime: 'automatic',
               },
             },
           },

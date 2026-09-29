@@ -7,7 +7,6 @@
     "strictNullChecks": true,
     "noUncheckedIndexedAccess": false,
     "types": ["node", "fhir", "vitest/globals"],
-    "baseUrl": ".",
     "paths": {
       "@openmrs/esm-api": ["../../../node_modules/@openmrs/esm-api/dist/index"],
       "@openmrs/esm-api/src/public": ["../../../node_modules/@openmrs/esm-api/dist/public"],

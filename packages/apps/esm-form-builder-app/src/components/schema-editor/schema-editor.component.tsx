@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import AceEditor from 'react-ace';
-import 'ace-builds/webpack-resolver';
 import { ActionableNotification } from '@carbon/react';
 import { ChevronLeft, ChevronRight } from '@carbon/react/icons';
 import { useStandardFormSchema } from '@hooks/useStandardFormSchema';
-import { addCompleter } from 'ace-builds/src-noconflict/ext-language_tools';
 import Ajv, { type AnySchema, type ErrorObject } from 'ajv';
 import debounce from 'lodash-es/debounce';
+import React, { useCallback, useEffect, useState } from 'react';
 import type { IMarker } from 'react-ace';
+import AceEditor from 'react-ace';
 import { useTranslation } from 'react-i18next';
+import { addCompleter } from './ace-config';
 import styles from './schema-editor.scss';
 
 interface MarkerProps extends IMarker {

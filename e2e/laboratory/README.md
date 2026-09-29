@@ -11,7 +11,7 @@ only. Never use production, real patients, or an arbitrary public demo backend.
 Use the central runner and its [catalog](../suite-catalog.json). The commands
 below retain the independent supervision and recovery requirements of this suite.
 
-Prepare Node 24 / Yarn 4.13.0 and the SPA as described in the root README.
+Prepare Node 24 / Yarn 4.18.1 and the SPA as described in the root README.
 Provide credentials through the local secret mechanism or CI secrets, never
 command-line password examples or committed configuration. Configure
 `E2E_GATE_TARGET`, `E2E_API_BASE_URL`, `E2E_BASE_URL`, and

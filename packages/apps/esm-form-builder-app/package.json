@@ -47,6 +47,7 @@
     "@carbon/react": "^1.83.0",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
+    "ace-builds": "^1.43.3",
     "ajv": "^8.17.1",
     "lodash-es": "^4.17.21",
     "react-ace": "^15.0.0",

@@ -32,7 +32,8 @@ bucket. Restoring the old exclusion rule fails that size regression.
 ## Dependency removal
 
 The cleanup removes 26 dependency declarations across 13 workspaces and 31 package
-resolutions from the lockfile, without adding a package resolution. Removal was
+resolutions from the lockfile, without adding a package resolution. Ace, already
+installed transitively, is now declared directly by Form Builder. Removal was
 checked against source imports, tests, scripts, configuration and consumers;
 static analyzer findings alone are insufficient.
 
@@ -40,7 +41,9 @@ Three unused appointment spreadsheet helpers were copied into Consulta Externa,
 CRED and Salud Materna. Removing these copies deletes 421 lines and their ExcelJS
 declarations. The live appointment exporter, FUA export and patient import retain
 ExcelJS. Other removals include the unused Konva renderer, old image gallery,
-webcam declaration, file loader and unused form/search dependencies. Clinical
+webcam declaration and unused form/search dependencies. Form Builder replaces
+Ace's legacy `file-loader` resolver with explicit JSON/theme/search imports and
+a locally emitted JSON worker; its synthetic browser test covers those assets. Clinical
 cross-workspace dependencies and stylesheet dependencies remain declared.
 
 Knip's current Rspack configuration reader invokes application factories from the
@@ -75,6 +78,8 @@ inferred from bundle size or compiler timings.
 Run immutable installation, security audit, tooling tests and
 `yarn verify:changed --base origin/main --head HEAD`. The shared Rspack/styleguide
 change also requires the full build and SPA assembly, E2E typechecking and a
-local development build. Confirm icons, permissions, styles and keyboard behavior
+local development build. Run `yarn test:styles` and
+`yarn test:form-builder-browser` with local Chromium for browser asset checks.
+Confirm icons, permissions, styles and keyboard behavior
 in coordinated synthetic DEV/QLTY before release. Local component and SVG tests
 do not establish deployed browser or clinical acceptance.

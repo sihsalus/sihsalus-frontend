@@ -8379,6 +8379,7 @@ __metadata:
     "@types/react": "npm:^18.3.2"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
+    ace-builds: "npm:^1.43.3"
     ajv: "npm:^8.17.1"
     i18next: "npm:^26.3.6"
     i18next-parser: "npm:^9.3.0"

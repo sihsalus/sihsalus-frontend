@@ -59,7 +59,8 @@
     "react-doctor": "react-doctor",
     "sihsalus:doctor": "node packages/tooling/scripts/sihsalus-doctor.js",
     "clean": "node packages/tooling/scripts/clean-monorepo.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:form-builder-browser": "yarn workspace @openmrs/rspack-config build && node --test packages/tooling/scripts/form-builder.browser.spec.js"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.12",

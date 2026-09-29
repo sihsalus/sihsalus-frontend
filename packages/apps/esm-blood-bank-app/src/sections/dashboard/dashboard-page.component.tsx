@@ -32,7 +32,10 @@ export function DashboardPage({ api }: { api: BloodBankApi }) {
 
   return (
     <div className={styles.page}>
-      <PageHeader description={t('dashboardDescription', 'Resumen operativo y actividades que requieren atención.')} title={t('home', 'Inicio')} />
+      <PageHeader
+        description={t('dashboardDescription', 'Resumen operativo y actividades que requieren atención.')}
+        title={t('home', 'Inicio')}
+      />
       <section className={styles.metricGrid} aria-label={t('operationalSummary', 'Resumen operativo')}>
         {data.metrics.map((metric) => (
           <Tile className={styles.metric} key={metric.id}>
@@ -45,17 +48,21 @@ export function DashboardPage({ api }: { api: BloodBankApi }) {
         <h2>{t('operationalWorklist', 'Bandeja operativa')}</h2>
         {data.workItems.length === 0 ? (
           <EmptyState message={t('emptyWorklist', 'No hay actividades pendientes.')} />
-        ) : <div className={styles.workList}>
-          {data.workItems.map((item) => (
-            <article key={item.id}>
-              <div>
-                <strong>{item.id}</strong>
-                <span>{item.section} · {item.description}</span>
-              </div>
-              <Tag type={statusType[item.status]}>{statusLabels[item.status]}</Tag>
-            </article>
-          ))}
-        </div>}
+        ) : (
+          <div className={styles.workList}>
+            {data.workItems.map((item) => (
+              <article key={item.id}>
+                <div>
+                  <strong>{item.id}</strong>
+                  <span>
+                    {item.section} · {item.description}
+                  </span>
+                </div>
+                <Tag type={statusType[item.status]}>{statusLabels[item.status]}</Tag>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -117,10 +117,10 @@ describe('fetchDiagnosisConceptByUuid', () => {
     mockOpenmrsFetch.mockResolvedValue({ data: concept } as Awaited<ReturnType<typeof openmrsFetch>>);
 
     await expect(fetchDiagnosisConceptByUuid(concept.uuid)).resolves.toEqual(concept);
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/concept/synthetic-diagnosis?v=custom:'),
-      { cache: 'no-store', rejectOnAuthFailure: true },
-    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/concept/synthetic-diagnosis?v=custom:'), {
+      cache: 'no-store',
+      rejectOnAuthFailure: true,
+    });
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       expect.stringContaining('names:(display,conceptNameType,locale)'),
       expect.anything(),

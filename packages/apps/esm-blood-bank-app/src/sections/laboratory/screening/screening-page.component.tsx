@@ -5,5 +5,10 @@ import { SectionPlaceholderPage } from '../../../shared/section-placeholder-page
 
 export function ScreeningPage() {
   const { t } = useTranslation(moduleName);
-  return <SectionPlaceholderPage title={t('donorScreening', 'Tamizaje de donantes')} description={t('screeningDescription', 'Registro y validación de pruebas de tamizaje del donante.')} />;
+  return (
+    <SectionPlaceholderPage
+      title={t('donorScreening', 'Tamizaje de donantes')}
+      description={t('screeningDescription', 'Registro y validación de pruebas de tamizaje del donante.')}
+    />
+  );
 }

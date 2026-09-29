@@ -23,27 +23,50 @@ export function InventoryPage({ api }: { api: BloodBankApi }) {
 
   return (
     <div className={styles.page}>
-      <PageHeader description={t('inventoryDescription', 'Disponibilidad, ubicación, vencimiento y estado de hemocomponentes.')} title={t('inventory', 'Inventario')} />
-      {units.length === 0 ? <EmptyState message={t('emptyInventory', 'No hay unidades registradas.')} /> : <TableContainer title={t('unitsAndComponents', 'Unidades y hemocomponentes')}>
-        <Table useZebraStyles>
-          <TableHead><TableRow>{[
-            t('code', 'Código'), t('component', 'Componente'), t('bloodGroup', 'Grupo'),
-            t('expiration', 'Vencimiento'), t('location', 'Ubicación'), t('status', 'Estado'),
-          ].map((label) => <TableHeader key={label}>{label}</TableHeader>)}</TableRow></TableHead>
-          <TableBody>
-            {units.map((unit) => (
-              <TableRow key={unit.id}>
-                <TableCell>{unit.id}</TableCell>
-                <TableCell>{unit.component}</TableCell>
-                <TableCell>{unit.bloodGroup}</TableCell>
-                <TableCell>{unit.expiresAt}</TableCell>
-                <TableCell>{unit.location}</TableCell>
-                <TableCell><Tag type={unit.status === 'Disponible' ? 'green' : unit.status === 'Reservada' ? 'purple' : 'gray'}>{inventoryStatusLabels[unit.status]}</Tag></TableCell>
+      <PageHeader
+        description={t('inventoryDescription', 'Disponibilidad, ubicación, vencimiento y estado de hemocomponentes.')}
+        title={t('inventory', 'Inventario')}
+      />
+      {units.length === 0 ? (
+        <EmptyState message={t('emptyInventory', 'No hay unidades registradas.')} />
+      ) : (
+        <TableContainer title={t('unitsAndComponents', 'Unidades y hemocomponentes')}>
+          <Table useZebraStyles>
+            <TableHead>
+              <TableRow>
+                {[
+                  t('code', 'Código'),
+                  t('component', 'Componente'),
+                  t('bloodGroup', 'Grupo'),
+                  t('expiration', 'Vencimiento'),
+                  t('location', 'Ubicación'),
+                  t('status', 'Estado'),
+                ].map((label) => (
+                  <TableHeader key={label}>{label}</TableHeader>
+                ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>}
+            </TableHead>
+            <TableBody>
+              {units.map((unit) => (
+                <TableRow key={unit.id}>
+                  <TableCell>{unit.id}</TableCell>
+                  <TableCell>{unit.component}</TableCell>
+                  <TableCell>{unit.bloodGroup}</TableCell>
+                  <TableCell>{unit.expiresAt}</TableCell>
+                  <TableCell>{unit.location}</TableCell>
+                  <TableCell>
+                    <Tag
+                      type={unit.status === 'Disponible' ? 'green' : unit.status === 'Reservada' ? 'purple' : 'gray'}
+                    >
+                      {inventoryStatusLabels[unit.status]}
+                    </Tag>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </div>
   );
 }

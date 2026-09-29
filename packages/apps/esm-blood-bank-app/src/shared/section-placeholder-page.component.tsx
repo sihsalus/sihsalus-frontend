@@ -11,7 +11,11 @@ interface SectionPlaceholderPageProps {
   primaryAction?: string;
 }
 
-export function SectionPlaceholderPage({ title, description, primaryAction = 'Registrar nuevo' }: SectionPlaceholderPageProps) {
+export function SectionPlaceholderPage({
+  title,
+  description,
+  primaryAction = 'Registrar nuevo',
+}: SectionPlaceholderPageProps) {
   const { t } = useTranslation(moduleName);
 
   return (
@@ -21,7 +25,12 @@ export function SectionPlaceholderPage({ title, description, primaryAction = 'Re
         <div>
           <Tag type="cyan">{t('screenFoundation', 'Base de pantalla')}</Tag>
           <h2>{title}</h2>
-          <p>{t('screenFoundationDescription', 'Este espacio está preparado para añadir los componentes del diseño, validaciones y consumo de API.')}</p>
+          <p>
+            {t(
+              'screenFoundationDescription',
+              'Este espacio está preparado para añadir los componentes del diseño, validaciones y consumo de API.',
+            )}
+          </p>
         </div>
         <Button>{primaryAction === 'Registrar nuevo' ? t('registerNew', primaryAction) : primaryAction}</Button>
       </Tile>

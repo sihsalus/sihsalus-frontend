@@ -10,8 +10,17 @@ import { BloodBankApp } from './blood-bank-app.component';
 const allowedPrivileges = vi.hoisted(() => new Set<string>());
 
 vi.mock('@sihsalus/esm-rbac', () => ({
-  RequirePrivilege: ({ privilege, children, hideUnauthorized, fallback }: { privilege: string; children: ReactNode; hideUnauthorized?: boolean; fallback?: ReactNode }) =>
-    allowedPrivileges.has(privilege) ? children : hideUnauthorized ? null : fallback ?? <div>Sin acceso</div>,
+  RequirePrivilege: ({
+    privilege,
+    children,
+    hideUnauthorized,
+    fallback,
+  }: {
+    privilege: string;
+    children: ReactNode;
+    hideUnauthorized?: boolean;
+    fallback?: ReactNode;
+  }) => (allowedPrivileges.has(privilege) ? children : hideUnauthorized ? null : (fallback ?? <div>Sin acceso</div>)),
 }));
 
 describe('BloodBankApp', () => {

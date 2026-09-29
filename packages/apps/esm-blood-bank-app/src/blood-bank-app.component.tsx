@@ -34,16 +34,31 @@ function BloodBankRoutes({ api }: { api: BloodBankApi }) {
       <Route element={<BloodBankLayout />}>
         <Route index element={<DashboardPage api={api} />} />
         <Route path="donors" element={protectedPage(bloodBankPrivileges.donors, <DonorsPage api={api} />)} />
-        <Route path="applicant-selection" element={protectedPage(bloodBankPrivileges.applicantSelection, <ApplicantSelectionPage />)} />
+        <Route
+          path="applicant-selection"
+          element={protectedPage(bloodBankPrivileges.applicantSelection, <ApplicantSelectionPage />)}
+        />
         <Route path="collection" element={protectedPage(bloodBankPrivileges.collection, <CollectionPage />)} />
         <Route path="laboratory" element={<Navigate replace to="screening" />} />
         <Route path="laboratory/screening" element={protectedPage(bloodBankPrivileges.screening, <ScreeningPage />)} />
         <Route path="laboratory/follow-up" element={<Navigate replace to="/follow-up/donor" />} />
-        <Route path="laboratory/compatibility" element={protectedPage(bloodBankPrivileges.compatibility, <CompatibilityPage />)} />
-        <Route path="laboratory/fractionation" element={protectedPage(bloodBankPrivileges.fractionation, <FractionationPage />)} />
+        <Route
+          path="laboratory/compatibility"
+          element={protectedPage(bloodBankPrivileges.compatibility, <CompatibilityPage />)}
+        />
+        <Route
+          path="laboratory/fractionation"
+          element={protectedPage(bloodBankPrivileges.fractionation, <FractionationPage />)}
+        />
         <Route path="follow-up" element={<Navigate replace to="donor" />} />
-        <Route path="follow-up/donor" element={protectedPage(bloodBankPrivileges.donorFollowUp, <DonorFollowUpPage />)} />
-        <Route path="follow-up/recipient" element={protectedPage(bloodBankPrivileges.recipientFollowUp, <RecipientFollowUpPage />)} />
+        <Route
+          path="follow-up/donor"
+          element={protectedPage(bloodBankPrivileges.donorFollowUp, <DonorFollowUpPage />)}
+        />
+        <Route
+          path="follow-up/recipient"
+          element={protectedPage(bloodBankPrivileges.recipientFollowUp, <RecipientFollowUpPage />)}
+        />
         <Route path="transfers" element={protectedPage(bloodBankPrivileges.transfers, <TransfersPage />)} />
         <Route path="inventory" element={protectedPage(bloodBankPrivileges.inventory, <InventoryPage api={api} />)} />
         <Route path="transfusions" element={protectedPage(bloodBankPrivileges.transfusions, <TransfusionsPage />)} />
@@ -55,8 +70,16 @@ function BloodBankRoutes({ api }: { api: BloodBankApi }) {
 
 export function BloodBankApp({ api, router = 'memory', initialPath = '/', basename }: BloodBankAppProps) {
   if (router === 'browser') {
-    return <BrowserRouter basename={basename}><BloodBankRoutes api={api} /></BrowserRouter>;
+    return (
+      <BrowserRouter basename={basename}>
+        <BloodBankRoutes api={api} />
+      </BrowserRouter>
+    );
   }
 
-  return <MemoryRouter initialEntries={[initialPath]}><BloodBankRoutes api={api} /></MemoryRouter>;
+  return (
+    <MemoryRouter initialEntries={[initialPath]}>
+      <BloodBankRoutes api={api} />
+    </MemoryRouter>
+  );
 }

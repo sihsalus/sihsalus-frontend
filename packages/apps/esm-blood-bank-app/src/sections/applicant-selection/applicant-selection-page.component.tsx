@@ -5,5 +5,10 @@ import { SectionPlaceholderPage } from '../../shared/section-placeholder-page.co
 
 export function ApplicantSelectionPage() {
   const { t } = useTranslation(moduleName);
-  return <SectionPlaceholderPage title={t('applicantSelection', 'Selección del postulante')} description={t('applicantSelectionDescription', 'Evaluación, entrevista y decisión de aptitud del postulante.')} />;
+  return (
+    <SectionPlaceholderPage
+      title={t('applicantSelection', 'Selección del postulante')}
+      description={t('applicantSelectionDescription', 'Evaluación, entrevista y decisión de aptitud del postulante.')}
+    />
+  );
 }

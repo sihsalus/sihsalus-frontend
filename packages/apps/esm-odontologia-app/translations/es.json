@@ -21,6 +21,7 @@
   "black": "Negro",
   "blue": "Azul",
   "cancel": "Cancelar",
+  "chooseDentition": "Seleccione la dentición antes de registrar hallazgos. Se conservará al guardar.",
   "clearFinding": "Limpiar hallazgo",
   "clearFindingSearch": "Limpiar búsqueda de hallazgos",
   "close": "Cerrar",
@@ -38,6 +39,8 @@
   "dentalAttentionEmptyDescription": "No hay registros de atención odontológica para mostrar para este paciente.",
   "dentalAttentionSectionDescription": "Registra y consulta las atenciones odontológicas del paciente en esta misma vista.",
   "dentalConfigMissing": "Falta configurar odontología.",
+  "dentition": "Dentición",
+  "dentitionHasEntries": "La dentición no puede cambiar mientras este odontograma contenga datos clínicos.",
   "designSelector": {
     "keepOpenHint": "Selecciona los diseños que desees aplicar. Haz click en uno aplicado para quitarlo.",
     "singleSelectHint": "Selecciona un diseño para aplicar o eliminar el hallazgo."
@@ -111,7 +114,9 @@
   "odontogramTimeline": "Cronología de odontogramas",
   "odontogramWorkspaceTitle": "Odontograma",
   "optionalInParentheses": "(opcional)",
+  "permanentDentition": "Dentición permanente (32 piezas)",
   "preview": "Vista previa",
+  "primaryDentition": "Dentición temporal (20 piezas)",
   "provider": "Personal de salud",
   "red": "Rojo",
   "registerBaseOdontogram": "Registrar odontograma inicial",
@@ -143,10 +148,5 @@
   "viewLarge": "Ver en grande",
   "visitType": "Tipo de visita",
   "white": "Blanco",
-  "yellow": "Amarillo",
-  "chooseDentition": "Seleccione la dentición antes de registrar hallazgos. Se conservará al guardar.",
-  "dentition": "Dentición",
-  "dentitionHasEntries": "La dentición no puede cambiar mientras este odontograma contenga datos clínicos.",
-  "permanentDentition": "Dentición permanente (32 piezas)",
-  "primaryDentition": "Dentición temporal (20 piezas)"
+  "yellow": "Amarillo"
 }

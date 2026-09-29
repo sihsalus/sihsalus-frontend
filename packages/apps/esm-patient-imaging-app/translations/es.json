@@ -92,6 +92,7 @@
   "linkStudie": "Vincular estudios",
   "linkStudies": "Estudios",
   "linkStudiesError": "Ocurrió un error al vincular los estudios al paciente",
+  "linkStudiesTitle": "Vincular estudios",
   "linkStudyChanged": "Se cambió el vínculo del estudio",
   "linkStudyConfirm": "Se confirmó el vínculo del estudio",
   "loadingImage": "Cargando imagen",
@@ -142,6 +143,7 @@
   "requestingPhysician": "Médico solicitante",
   "requestingPhysicianMsg": "Ingrese el nombre del médico solicitante",
   "requestProcedure": "Procedimientos solicitados",
+  "requests": "Solicitudes",
   "requestSaved": "Solicitud guardada correctamente",
   "requestsSummary": "Resumen de solicitudes",
   "requestStatusCompleted": "completado",
@@ -207,11 +209,9 @@
   "uploadStopped_many": "{{count}} archivos confirmados. La carga se detuvo antes de enviar el siguiente archivo. Los archivos no enviados permanecen en la cola.",
   "uploadStopped_other": "{{count}} archivos confirmados. La carga se detuvo antes de enviar el siguiente archivo. Los archivos no enviados permanecen en la cola.",
   "uploadStudiesError": "Error al cargar estudios",
+  "uploadStudy": "Subir estudio",
   "uploadStuiesError": "Error al cargar estudios",
   "validStepTime": "Ingresa una hora válida entre 01:00 y 12:59",
   "viewerUnavailable": "Visor no disponible para este servidor de imágenes",
-  "worklist": "Lista de trabajo",
-  "uploadStudy": "Subir estudio",
-  "linkStudiesTitle": "Vincular estudios",
-  "requests": "Solicitudes"
+  "worklist": "Lista de trabajo"
 }

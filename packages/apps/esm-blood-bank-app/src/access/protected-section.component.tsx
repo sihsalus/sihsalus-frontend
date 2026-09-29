@@ -10,5 +10,9 @@ interface ProtectedSectionProps {
 }
 
 export function ProtectedSection({ children, privilege, hideUnauthorized = false }: ProtectedSectionProps) {
-  return <RequirePrivilege privilege={privilege} hideUnauthorized={hideUnauthorized}>{children}</RequirePrivilege>;
+  return (
+    <RequirePrivilege privilege={privilege} hideUnauthorized={hideUnauthorized}>
+      {children}
+    </RequirePrivilege>
+  );
 }

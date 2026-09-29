@@ -321,9 +321,15 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
         merge(
           {
             test: /\.m?(js|ts|tsx)$/,
+            // Carbon's generated icon buckets contain unannotated React.forwardRef
+            // calls. SWC's React transform marks these pure so unused icons can
+            // be removed, instead of retaining an entire bucket per used icon.
             exclude: (path: string) =>
-              path.includes('node_modules') && !path.includes('@openmrs') && !path.includes('@sihsalus'),
-            loader: require.resolve('swc-loader'),
+              path.includes('node_modules') &&
+              !path.includes('@openmrs') &&
+              !path.includes('@sihsalus') &&
+              !/[/\\]@carbon[/\\]icons-react[/\\]/.test(path),
+            loader: 'builtin:swc-loader',
             options: {
               jsc: {
                 parser: {

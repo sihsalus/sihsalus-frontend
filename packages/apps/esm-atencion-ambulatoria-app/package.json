@@ -41,7 +41,6 @@
     "@sihsalus/esm-patient-conditions-app": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
-    "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21",
     "pdf-lib": "^1.17.1"
   },

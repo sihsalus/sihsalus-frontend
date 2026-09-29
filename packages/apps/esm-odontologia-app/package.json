@@ -40,8 +40,6 @@
     "@carbon/styles": "^1.102.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "konva": "^10.5.0",
-    "react-konva": "^19.0.5",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

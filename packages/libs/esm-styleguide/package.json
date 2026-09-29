@@ -80,7 +80,6 @@
     "react-router-dom": "7.18.2",
     "sass-embedded": "1.89.0",
     "sass-loader": "16.0.5",
-    "swc-loader": "0.2.7",
     "webpack-bundle-analyzer": "5.4.0"
   },
   "peerDependencies": {

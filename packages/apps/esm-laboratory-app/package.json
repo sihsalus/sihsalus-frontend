@@ -41,8 +41,6 @@
   "dependencies": {
     "@carbon/react": "^1.83.0",
     "@sihsalus/esm-rbac": "workspace:*",
-    "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.52.1",
     "react-to-print": "^3.1.1"
   },
   "peerDependencies": {

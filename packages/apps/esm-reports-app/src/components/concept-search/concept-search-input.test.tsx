@@ -64,8 +64,8 @@ describe('ConceptSearchInput', () => {
     render(<ConceptSearchInput {...defaultProps} placeholder="Custom placeholder" labelText="Custom label" />);
 
     expect(screen.getByRole('searchbox')).toHaveAttribute('placeholder', 'Custom placeholder');
-    expect(screen.getByRole('search', { name: 'Custom placeholder' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Custom label')).toBeInTheDocument();
+    expect(screen.getByRole('search', { name: 'Custom label' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Custom label' })).toBeInTheDocument();
   });
 
   it('should show search results when typing', async () => {

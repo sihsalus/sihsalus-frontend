@@ -185,7 +185,7 @@ export const useLocalizedHivStatus = (encounters: HTSEncounter[], enrollment: En
   };
 };
 
-export const saveContact = async (data: z.infer<typeof ContactListFormSchema>, config: ConfigObject) => {
+export const saveContact = async (data: z.input<typeof ContactListFormSchema>, config: ConfigObject) => {
   const { baselineStatus, ipvOutcome, preferedPNSAproach, livingWithClient, dataConsent } = data;
 
   // Save contact with relationship

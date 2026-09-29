@@ -93,6 +93,11 @@ para lecturas GET que solicitan conjuntamente `cache: 'no-store'` y
 red fresca; las demás estrategias offline mantienen su comportamiento. El cambio
 requiere activar el worker actualizado y cerrar las pestañas de la versión anterior.
 
+## Validación de formularios
+
+Consulta [Zod 4 y React Hook Form](zod-form-validation.md) para los contratos de
+entrada/salida, errores y pruebas de la migración.
+
 ## Cleaning
 
 ```bash

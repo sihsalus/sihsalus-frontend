@@ -42,21 +42,21 @@ import {
   convertTime12to24,
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
-  fetchFreshPatientIdentifiers,
-  fetchFreshPersonInsurance,
-  fetchFreshPatientVitalStatus,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  fetchFreshPatientIdentifiers,
+  fetchFreshPatientVitalStatus,
+  fetchFreshPersonInsurance,
   getSisFinancingState,
   INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   isFinanciadorCopyAuthorizationError,
-  isTriageFinancingEligible,
   isTemporarySisAffiliationCode,
   isTemporarySisAffiliationLikeCode,
+  isTriageFinancingEligible,
   normalizeFinanciadorConceptUuid,
   type PatientIdentifierInput,
-  type PersonInsurance,
   type PatientWorkspace2DefinitionProps,
+  type PersonInsurance,
   type SafeCopyFinanciadorToVisitResult,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -703,7 +703,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     const createVisitAttributeSchema = (required: boolean) =>
       required
         ? z.string({
-            required_error: t('fieldRequired', 'This field is required'),
+            error: (issue) => (issue.input === undefined ? t('fieldRequired', 'This field is required') : undefined),
           })
         : z.string().optional();
 
@@ -716,7 +716,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     const invalidTimeFormatMessage = t('invalidTimeFormat', 'Enter a valid time in hh:mm format (01:00 to 12:59)');
     const timeFormatRequiredMessage = t('timeFormatRequired', 'Select AM or PM');
     const timeFormatSchema = z.enum(['AM', 'PM'], {
-      errorMap: () => ({ message: timeFormatRequiredMessage }),
+      error: () => timeFormatRequiredMessage,
     });
     const createTimeSchema = (required: boolean) =>
       z.preprocess(
@@ -785,7 +785,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           display: z.string().optional(),
           uuid: z
             .string({
-              required_error: t('visitLocationRequired', 'Care UPSS is required'),
+              error: (issue) =>
+                issue.input === undefined ? t('visitLocationRequired', 'Care UPSS is required') : undefined,
             })
             .min(1, t('visitLocationRequired', 'Care UPSS is required')),
         }),

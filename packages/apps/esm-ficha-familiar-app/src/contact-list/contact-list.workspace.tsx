@@ -54,7 +54,7 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
   workspaceProps,
 }) => {
   const resolvedPatientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? patientUuid ?? '';
-  const form = useForm<ContactListFormType>({
+  const form = useForm<z.input<typeof ContactListFormSchema>, unknown, ContactListFormType>({
     mode: 'all',
     defaultValues: {
       personA: resolvedPatientUuid,

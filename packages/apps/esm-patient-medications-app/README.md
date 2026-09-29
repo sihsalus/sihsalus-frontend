@@ -129,3 +129,18 @@ without the flag conservatively retain their date. Explicit dates from a previou
 day are still sent and remain subject to backend encounter/date validation.
 Single-dose STAT drafts from an earlier day still require review before signing;
 this change does not bypass that guard or change dose/frequency/quantity.
+
+### Form validation compatibility
+
+The medication form declares its Zod and React Hook Form dependencies directly.
+Zod 4 requires a compatible resolver; this workspace uses `@hookform/resolvers`
+5.2.2 or later within major version 5. Validation errors must reach the existing
+field messages instead of escaping as unhandled promise rejections.
+
+Basket-to-form mapping retains the drug and concept UUIDs and all catalog
+metadata. Missing coded identities remain invalid. Carbon medication selectors
+use the coded-value type for dose units, routes, frequencies, duration units and
+dispensing units. The migration does not relax prescription rules or change
+the backend payload. Local regressions cover invalid orders, coded identities,
+metadata preservation and existing selection/submission flows; remote clinical
+acceptance remains separate.

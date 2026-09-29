@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.92.1",
-    "@hookform/resolvers": "^3.3.0",
+    "@hookform/resolvers": "^5.2.2",
     "@sihsalus/esm-rbac": "workspace:*",
     "dompurify": "3.4.13",
     "file-saver": "^2.0.5",

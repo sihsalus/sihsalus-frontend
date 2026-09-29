@@ -58,13 +58,17 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
     return z.object({
       cancellationDate: z
         .date({
-          required_error: t('cancellationDateRequired', 'Cancellation date is required'),
+          error: (issue) =>
+            issue.input === undefined ? t('cancellationDateRequired', 'Cancellation date is required') : undefined,
         })
         .refine((date) => date >= dayjs().startOf('day').toDate(), {
           message: t('dateCannotBeBeforeToday', 'Date cannot be before today'),
         }),
       reasonForCancellation: z.string({
-        required_error: t('reasonForCancellationRequired', 'Reason for cancellation is required'),
+        error: (issue) =>
+          issue.input === undefined
+            ? t('reasonForCancellationRequired', 'Reason for cancellation is required')
+            : undefined,
       }),
     });
   }, [t]);

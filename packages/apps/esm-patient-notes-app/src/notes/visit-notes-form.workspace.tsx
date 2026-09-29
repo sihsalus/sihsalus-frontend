@@ -46,7 +46,7 @@ import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
 import { debounce } from 'lodash-es';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Control, Controller, useForm } from 'react-hook-form';
+import { type Control, Controller, type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
@@ -59,6 +59,7 @@ import {
   getCie10MappedCode,
   getPrestacionalDisplayParts,
 } from './catalog-concept.utils';
+import ReadOnlyClinicalSummary from './read-only-clinical-summary.component';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   type ExistingEncounterDiagnosis,
@@ -87,7 +88,6 @@ import {
   useVisitNoteClinicalContext,
   useVisitNotes,
 } from './visit-notes.resource';
-import ReadOnlyClinicalSummary from './read-only-clinical-summary.component';
 import styles from './visit-notes-form.scss';
 
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
@@ -216,7 +216,7 @@ const createSchema = (_t: TFunction) => {
     nextAppointment: z.date().nullable().optional(),
     therapeuticIndications: z.string().optional(),
     clinicalNote: z.string().optional(),
-    images: z.array(z.any()).optional(),
+    images: z.array(z.custom<UploadedFile>()).optional(),
   });
 };
 
@@ -385,7 +385,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     [getEncounterObsValue, nextAppointmentConceptUuid],
   );
 
-  const customResolver = useCallback(
+  const customResolver = useCallback<Resolver<VisitNotesFormData>>(
     async (data, context, options) => {
       const zodResult = await zodResolver(visitNoteFormSchema)(data, context, options);
 
@@ -428,7 +428,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
       if (Object.keys(requiredErrors).length > 0) {
         return {
-          ...zodResult,
+          values: {},
           errors: {
             ...zodResult.errors,
             ...requiredErrors,
@@ -522,7 +522,13 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   useEffect(() => {
     const nextAppointment = parseOpenmrsDateValue(clinicalContext?.nextAppointment);
-    if (!isOutpatientVisit && !isEditing && nextAppointment && !dirtyFields.nextAppointment && !watch('nextAppointment')) {
+    if (
+      !isOutpatientVisit &&
+      !isEditing &&
+      nextAppointment &&
+      !dirtyFields.nextAppointment &&
+      !watch('nextAppointment')
+    ) {
       setValue('nextAppointment', nextAppointment, { shouldDirty: true });
     }
   }, [clinicalContext?.nextAppointment, dirtyFields.nextAppointment, isEditing, isOutpatientVisit, setValue, watch]);
@@ -560,9 +566,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         if (missingMetadata.length) {
           setIsLoadingSavedDiagnoses(true);
           setSavedDiagnosisError(false);
-          void Promise.all(
-            missingMetadata.map((diagnosis) => fetchDiagnosisConceptByUuid(diagnosis.diagnosis.coded)),
-          )
+          void Promise.all(missingMetadata.map((diagnosis) => fetchDiagnosisConceptByUuid(diagnosis.diagnosis.coded)))
             .then((concepts) => {
               if (cancelled) return;
               const metadata = new Map(concepts.map((concept) => [concept.uuid, concept]));

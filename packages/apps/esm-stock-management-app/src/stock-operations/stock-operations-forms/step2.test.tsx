@@ -334,7 +334,7 @@ describe('Stock Operation step 2 (stock operation items details)', () => {
           quantity: mockQuantity,
           expiration: mockExpiration,
         },
-      ] as BaseStockOperationItemFormData),
+      ] satisfies Partial<BaseStockOperationItemFormData>[]),
       resetField: vi.fn(),
       formState: {
         errors: {},
@@ -354,7 +354,7 @@ describe('Stock Operation step 2 (stock operation items details)', () => {
       setValue: vi.fn(),
       handleSubmit: vi.fn(),
       trigger: vi.fn().mockReturnValue(true),
-    } as unknown as UseFormReturn<BaseStockOperationItemFormData>);
+    } as unknown as ReturnType<typeof useFormContext>);
 
     render(
       <StockOperationForm

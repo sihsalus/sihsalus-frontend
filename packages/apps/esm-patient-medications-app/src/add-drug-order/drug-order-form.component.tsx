@@ -59,8 +59,8 @@ import { useOrderConfig } from '../api/order-config';
 import { type ConfigObject } from '../config-schema';
 import { translateCarbonWithId } from './carbon-translation';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
-import { DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES, findSpecialPrescriptionMatch } from './special-prescription';
 import styles from './drug-order-form.scss';
+import { DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES, findSpecialPrescriptionMatch } from './special-prescription';
 
 const DAYS_DURATION_UNIT_UUID = '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const WEEKS_DURATION_UNIT_UUID = '1073AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -1283,7 +1283,10 @@ type ControlledFieldInputProps = BaseControlledFieldInputProps &
         })
     | ({ type: 'textArea' } & Omit<ComponentProps<typeof TextArea>, 'onChange' | 'onBlur' | 'value' | 'ref'>)
     | ({ type: 'textInput' } & Omit<ComponentProps<typeof TextInput>, 'onChange' | 'onBlur' | 'value' | 'ref'>)
-    | ({ type: 'comboBox' } & Omit<ComponentProps<typeof ComboBox>, 'onChange' | 'onBlur' | 'selectedItem' | 'ref'>)
+    | ({ type: 'comboBox'; name: 'unit' | 'route' | 'frequency' | 'durationUnit' | 'quantityUnits' } & Omit<
+        ComponentProps<typeof ComboBox<CommonMedicationValueCoded>>,
+        'onChange' | 'onBlur' | 'selectedItem' | 'ref'
+      >)
   );
 
 const ControlledFieldInput = ({
@@ -1416,18 +1419,20 @@ const ControlledFieldInput = ({
     }
 
     if (type === 'comboBox') {
-      const comboBoxProps = restProps as ComponentProps<typeof ComboBox>;
+      const comboBoxProps = restProps as ComponentProps<typeof ComboBox<CommonMedicationValueCoded>>;
+      // Only coded medication fields can select this input branch.
+      const selectedItem = value as CommonMedicationValueCoded | null;
       const itemToString =
         comboBoxProps.itemToString ?? ((item: CommonMedicationValueCoded | null) => item?.value ?? '');
       return (
-        <ComboBox
+        <ComboBox<CommonMedicationValueCoded>
           className={fieldErrorStyles}
           onBlur={onBlur}
           onChange={({ selectedItem }) => handleChange(selectedItem)}
           ref={ref}
           size={isTablet ? 'md' : 'sm'}
-          selectedItem={value}
-          initialSelectedItem={value}
+          selectedItem={selectedItem}
+          initialSelectedItem={selectedItem}
           {...comboBoxProps}
           itemToString={itemToString}
           translateWithId={translateCarbonWithId}

@@ -27,7 +27,7 @@ export function createRefineSearchSchema(
       age: optionalFilterInteger(MIN_PATIENT_AGE_YEARS, MAX_PATIENT_AGE_YEARS, invalidAgeMessage),
       ageUnit: z.enum(['days', 'months', 'years']),
       activeVisitStatus: z.enum(['any', 'active', 'inactive']),
-      attributes: z.record(z.string()),
+      attributes: z.record(z.string(), z.string()),
     })
     .superRefine(({ age, ageUnit }, context) => {
       if (age == null) {

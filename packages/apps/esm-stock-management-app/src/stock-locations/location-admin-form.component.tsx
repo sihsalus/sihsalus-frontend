@@ -22,6 +22,7 @@ import styles from './stock-locations-table.scss';
 
 const LocationAdministrationSchema = z.object({
   name: z.string().max(255),
+  tags: z.custom<locationData['tags']>().optional(),
 });
 
 interface LocationAdministrationFormProps {
@@ -57,7 +58,7 @@ const LocationAdministrationForm: React.FC<LocationAdministrationFormProps> = ({
     control,
     getValues,
     formState: { isDirty },
-  } = useForm<locationData>({
+  } = useForm<z.infer<typeof LocationAdministrationSchema>>({
     mode: 'all',
     resolver: zodResolver(LocationAdministrationSchema),
     defaultValues: {
@@ -66,7 +67,7 @@ const LocationAdministrationForm: React.FC<LocationAdministrationFormProps> = ({
     },
   });
 
-  const onSubmit = (formData: locationData) => {
+  const onSubmit = (formData: z.infer<typeof LocationAdministrationSchema>) => {
     const formDataFormSubmission = getValues();
     const locationTagsUuid = formDataFormSubmission?.tags?.['selectedItems']?.map((tag) => tag.uuid) ?? [];
 

@@ -1,17 +1,17 @@
 import { NumberInput } from '@carbon/react';
 import { type NumberInputProps } from '@carbon/react/lib/components/NumberInput/NumberInput';
 import React from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { type StockItemPackagingUOMDTO } from '../../api/types/stockItem/StockItemPackagingUOM';
 
-interface ControlledNumberInputProps<T> extends NumberInputProps {
+interface ControlledNumberInputProps<T extends FieldValues, C, O> extends NumberInputProps {
   row?: StockItemPackagingUOMDTO;
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
 }
 
-const ControlledNumberInput = <T,>(props: ControlledNumberInputProps<T>) => {
+const ControlledNumberInput = <T extends FieldValues, C, O>(props: ControlledNumberInputProps<T, C, O>) => {
   const { controllerName, name, control, row, onChange: onChangeProp, id, ...numberInputProps } = props;
 
   return (

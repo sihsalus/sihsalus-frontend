@@ -81,7 +81,7 @@ const FamilyRelationshipForm: React.FC<FichaFamiliarWorkspaceComponentProps> = (
       },
     );
 
-  const form = useForm<FormData>({
+  const form = useForm<z.input<typeof relationshipFormSchema>, unknown, FormData>({
     mode: 'all',
     defaultValues: {
       personA: resolvedPatientUuid,

@@ -19,10 +19,8 @@
     "resolveJsonModule": true,
     "incremental": true,
     "isolatedModules": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
-      "@sihsalus/libs/*": ["packages/libs/*/src"]
+      "@sihsalus/libs/*": ["./packages/libs/*/src"]
     }
   },
   "exclude": ["node_modules", "dist", "coverage", "e2e"]

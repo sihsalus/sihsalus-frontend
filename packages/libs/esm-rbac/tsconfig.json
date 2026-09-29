@@ -2,9 +2,7 @@
   "extends": "../../../tsconfig.base.json",
   "include": ["src", "vitest.config.ts"],
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
-    "moduleResolution": "node",
-    "baseUrl": ".",
+    "moduleResolution": "bundler",
     "paths": {
       "@openmrs/esm-framework": ["../../../node_modules/@openmrs/esm-framework/dist/index"],
       "@openmrs/esm-framework/src/internal": ["../../../node_modules/@openmrs/esm-framework/dist/internal"],

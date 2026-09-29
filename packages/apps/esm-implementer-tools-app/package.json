@@ -53,6 +53,7 @@
   },
   "devDependencies": {
     "@rspack/cli": "1.7.11",
+    "@typescript/native": "npm:typescript@7.0.2",
     "ace-builds": "^1.43.3",
     "openmrs": "*",
     "react": "^18.3.1",
@@ -61,7 +62,6 @@
     "react-i18next": "^17.0.11",
     "rxjs": "^6.5.3",
     "swr": "2.2.5",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   }

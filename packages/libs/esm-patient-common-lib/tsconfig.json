@@ -5,7 +5,6 @@
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "baseUrl": ".",
     "paths": {
       "@openmrs/esm-api": ["../../../node_modules/@openmrs/esm-api/dist/index"],
       "@openmrs/esm-framework": ["../../../node_modules/@openmrs/esm-framework/dist/index"],

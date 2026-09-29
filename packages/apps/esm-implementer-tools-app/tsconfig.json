@@ -3,7 +3,7 @@
   "compilerOptions": {
     "target": "es2015",
     "strictNullChecks": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "declaration": true,
     "declarationDir": "dist",
     "emitDeclarationOnly": true,

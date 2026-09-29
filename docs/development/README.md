@@ -16,7 +16,7 @@ linker ni del modo de entorno de Turbo. Consulta la
 ## Prerequisites
 
 - **Node.js** 24 LTS
-- **Yarn** 4.13.0 (via Corepack: `corepack enable && corepack prepare yarn@4.13.0 --activate`)
+- **Yarn** 4.18.1 (via Corepack: `corepack enable && corepack prepare yarn@4.18.1 --activate`)
 - **Docker** (for containerized deployment)
 
 ## Preparación y arranque

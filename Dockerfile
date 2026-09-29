@@ -4,7 +4,7 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 RUN apk upgrade --no-cache
-RUN corepack enable && corepack prepare yarn@4.13.0 --activate
+RUN corepack enable && corepack prepare yarn@4.18.1 --activate
 
 # Copy root manifests first
 COPY package.json yarn.lock .yarnrc.yml turbo.json tsconfig.base.json ./

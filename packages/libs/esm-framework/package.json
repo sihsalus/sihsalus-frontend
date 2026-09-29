@@ -34,7 +34,7 @@
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
     "build": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
     "build:development": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
-    "typescript": "tsc --project tsconfig.build.json",
+    "typescript": "tsc --project tsconfig.build.json --noEmit",
     "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "keywords": [
@@ -94,6 +94,7 @@
     "@swc/core": "1.15.21",
     "@types/fhir": "0.0.31",
     "@types/node": "^26.4.0",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
@@ -103,7 +104,6 @@
     "typedoc": "^0.28.5",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-no-inherit": "^1.6.1",
-    "typescript": "6.0.3",
     "vite": "8.0.16",
     "vitest": "^5.0.1"
   },

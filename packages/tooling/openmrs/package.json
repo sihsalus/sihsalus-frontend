@@ -35,7 +35,7 @@
     "@openmrs/esm-app-shell": "9.0.2",
     "@openmrs/rspack-config": "workspace:*",
     "@pnpm/npm-conf": "^3.0.3",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.7",
     "@rspack/core": "1.7.11",
     "@rspack/dev-server": "2.2.1",
     "@swc/core": "1.16.2",

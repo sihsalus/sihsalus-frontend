@@ -62,7 +62,7 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.63.0",
     "@rspack/cli": "1.7.11",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
@@ -82,10 +82,10 @@
     "swc-loader": "^0.2.3",
     "swr": "^2.x",
     "ts-node": "^10.9.2",
-    "turbo": "^2.9.14",
+    "turbo": "^2.11.4",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.0.16",
-    "vitest": "^5.0.1"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   },
   "author": "Wei Sadre (Uclouvain-ICTEAM)"
 }

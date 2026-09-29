@@ -1,4 +1,6 @@
-const { readFileSync } = require('node:fs');
+const { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } = require('node:fs');
+const { execFileSync } = require('node:child_process');
+const { tmpdir } = require('node:os');
 const { resolve } = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -43,6 +45,43 @@ test('copies the SPA assembly sources into both init images', () => {
   assert.equal(scriptDirectoryCopies.length, 2);
   assert.equal(appShellDirectoryCopies.length, 2);
   assert.doesNotMatch(dockerfile, /COPY[^\n]*packages\/tooling\/scripts\/assemble-importmap\.js/);
+});
+
+test('init dependency preparation removes native compilers while retaining SPA assembly dependencies', () => {
+  const dockerfile = readFileSync(resolve(workspaceRoot, 'Dockerfile'), 'utf8');
+  const stage = dockerfile.match(/FROM builder AS init-dependencies\n([\s\S]*?)(?=\nFROM )/)?.[1];
+  assert.ok(stage, 'native compilers must be removed before final image layers are created');
+  const command = stage.replace(/\\\n\s*/g, ' ').match(/^RUN (.+)$/m)?.[1];
+  assert.ok(command, 'the dependency preparation stage must prune build-only compilers');
+  for (const target of ['init', 'secure-init']) {
+    const body = dockerfile.split(new RegExp(`FROM [^\\n]+ AS ${target}\\n`))[1]?.split('\nFROM ')[0];
+    assert.ok(body, `missing ${target}`);
+    assert.match(body, /COPY --from=init-dependencies[^\n]* \/app\/node_modules \.\/node_modules/);
+    assert.doesNotMatch(body, /COPY --from=builder[^\n]* \/app\/node_modules/);
+  }
+
+  const directory = mkdtempSync(resolve(tmpdir(), 'sihsalus-init-dependencies-'));
+  const removed = [
+    '@typescript/native/bin/tsc',
+    '@typescript/typescript-linux-x64/lib/tsc',
+    '@typescript/typescript-linux-arm64/lib/tsc',
+    '.bin/tsc',
+  ];
+  const retained = ['typescript/lib/typescript.js', '@rspack/core/package.json', 'webpack/package.json'];
+  try {
+    for (const file of [...removed, ...retained]) {
+      const path = resolve(directory, 'node_modules', file);
+      mkdirSync(resolve(path, '..'), { recursive: true });
+      writeFileSync(path, 'synthetic dependency');
+    }
+    execFileSync('sh', ['-ec', command], { cwd: directory });
+    for (const file of removed) assert.equal(existsSync(resolve(directory, 'node_modules', file)), false, file);
+    for (const file of retained) {
+      assert.equal(readFileSync(resolve(directory, 'node_modules', file), 'utf8'), 'synthetic dependency');
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('prevents the local SPA shell and module registries from being cached', () => {

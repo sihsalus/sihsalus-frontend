@@ -26,6 +26,13 @@ RUN --mount=type=cache,target=/root/.yarn/berry/cache \
 RUN --mount=type=cache,target=/app/node_modules/.cache \
     yarn turbo run build --filter='./packages/apps/*' --filter='./packages/libs/*'
 
+# TypeScript's native compiler is needed for development checks only. Prune it
+# before COPY so neither init image retains its binaries in a lower layer.
+# Keep the JavaScript compiler API and bundlers used by runtime SPA assembly.
+FROM builder AS init-dependencies
+RUN rm -rf node_modules/@typescript/native node_modules/@typescript/typescript-* \
+    && rm -f node_modules/.bin/tsc
+
 # Stage 2: Init container image
 # Runs at deployment time: assembles built modules into SPA_OUTPUT_DIR,
 # patches index.html with env vars (SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE,
@@ -53,7 +60,7 @@ ENV APP_VERSION=${APP_VERSION}
 ENV GIT_SHA=${GIT_SHA}
 ENV BUILD_TIME=${BUILD_TIME}
 
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=init-dependencies /app/node_modules ./node_modules
 COPY --from=builder /app/packages/apps ./packages/apps
 COPY --from=builder /app/packages/libs ./packages/libs
 COPY --from=builder /app/packages/tooling/app-shell/ ./packages/tooling/app-shell/
@@ -87,7 +94,7 @@ ENV APP_VERSION=${APP_VERSION}
 ENV GIT_SHA=${GIT_SHA}
 ENV BUILD_TIME=${BUILD_TIME}
 
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=init-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/packages/apps ./packages/apps
 COPY --from=builder --chown=node:node /app/packages/libs ./packages/libs
 COPY --from=builder --chown=node:node /app/packages/tooling/app-shell/ ./packages/tooling/app-shell/

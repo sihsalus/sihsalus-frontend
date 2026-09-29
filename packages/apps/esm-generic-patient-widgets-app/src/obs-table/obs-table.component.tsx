@@ -25,10 +25,17 @@ const ObsTable: React.FC<ObsTableProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig();
   const { data: obss } = useObs(patientUuid, config.showEncounterType);
-  const uniqueEncounterUuids = [...new Set(obss.map((o) => o.encounter.reference))].sort((a, b) => a.localeCompare(b));
-  const obssGroupedByEncounters = uniqueEncounterUuids.map((date) =>
-    obss.filter((o) => o.encounter.reference === date),
-  );
+  const groups = new Map<string, typeof obss>();
+  obss.forEach((obs, index) => {
+    // Observations without an encounter must not collapse into a shared row.
+    const key = obs.encounter?.reference || `unlinked:${index}`;
+    const group = groups.get(key) ?? [];
+    group.push(obs);
+    groups.set(key, group);
+  });
+  const obssGroupedByEncounters = [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([, observations]) => observations);
 
   const tableHeaders = [
     {
@@ -58,7 +65,7 @@ const ObsTable: React.FC<ObsTableProps> = ({ patientUuid }) => {
           date: formatDatetime(new Date(obss[0].effectiveDateTime), {
             mode: 'wide',
           }),
-          encounter: obss[0].encounter.name,
+          encounter: obss[0].encounter?.name,
         };
 
         for (const obs of obss) {

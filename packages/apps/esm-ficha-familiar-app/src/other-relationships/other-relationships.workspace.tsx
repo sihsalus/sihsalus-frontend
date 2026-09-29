@@ -97,7 +97,6 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
                   {...field}
                   ref={undefined}
                   invalid={!!form.formState.errors[field.name]?.message}
-                  invalidText={form.formState.errors[field.name]?.message}
                 >
                   <DatePickerInput
                     id="startDate"
@@ -124,7 +123,6 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
                   {...field}
                   ref={undefined}
                   invalid={!!form.formState.errors[field.name]?.message}
-                  invalidText={form.formState.errors[field.name]?.message}
                 >
                   <DatePickerInput
                     id="endDate"

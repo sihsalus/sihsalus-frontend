@@ -241,7 +241,6 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                     form.setValue('personBInfo.birthdateEstimated', false, { shouldDirty: true });
                   }}
                   invalid={!!error?.message}
-                  invalidText={error?.message}
                   className={styles.datePickerInput}
                 >
                   <DatePickerInput

@@ -4493,6 +4493,7 @@ __metadata:
   resolution: "@openmrs/esm-form-engine-app@workspace:packages/apps/esm-form-engine-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-form-engine-lib": "workspace:*"
@@ -4659,6 +4660,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^5.2.2"
     "@openmrs/esm-extensions": "workspace:*"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
@@ -8383,6 +8385,7 @@ __metadata:
   resolution: "@sihsalus/esm-active-visits-app@workspace:packages/apps/esm-active-visits-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -8409,6 +8412,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -8506,6 +8510,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8798,6 +8803,7 @@ __metadata:
   resolution: "@sihsalus/esm-devtools-app@workspace:packages/apps/esm-devtools-app"
   dependencies:
     "@carbon/react": "npm:^1.92.1"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@types/node": "npm:^26.6.3"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8863,6 +8869,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-dyaku-app@workspace:packages/apps/esm-dyaku-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9115,6 +9122,7 @@ __metadata:
   resolution: "@sihsalus/esm-form-entry-react-app@workspace:packages/apps/esm-form-entry-react-app"
   dependencies:
     "@carbon/react": "npm:^1.47.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9142,6 +9150,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-fua-app@workspace:packages/apps/esm-fua-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9173,6 +9182,7 @@ __metadata:
   dependencies:
     "@carbon/charts-react": "npm:^1.27.0"
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9198,6 +9208,7 @@ __metadata:
   resolution: "@sihsalus/esm-help-menu-app@workspace:packages/apps/esm-help-menu-app"
   dependencies:
     "@carbon/react": "npm:^1.92.1"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9221,6 +9232,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-home-app@workspace:packages/apps/esm-home-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-patient-search-app": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9243,6 +9255,7 @@ __metadata:
   resolution: "@sihsalus/esm-implementer-tools-app@workspace:packages/apps/esm-implementer-tools-app"
   dependencies:
     "@carbon/react": "npm:^1.92.1"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
     ace-builds: "npm:^1.43.3"
@@ -9305,6 +9318,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-interconsultas-app@workspace:packages/apps/esm-interconsultas-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -9371,6 +9385,7 @@ __metadata:
     "@carbon/react": "npm:^1.92.1"
     "@hookform/resolvers": "npm:^5.2.2"
     "@openmrs/esm-api": "workspace:*"
+    "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
@@ -9403,6 +9418,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@carbon/styles": "npm:^1.102.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9425,6 +9441,7 @@ __metadata:
   dependencies:
     "@carbon/icons-react": "npm:^11.58.0"
     "@carbon/react": "npm:^1.92.1"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
     "@types/lodash-es": "npm:^4.17.12"
@@ -9456,6 +9473,7 @@ __metadata:
   resolution: "@sihsalus/esm-openconceptlab-app@workspace:packages/apps/esm-openconceptlab-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
@@ -9480,6 +9498,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-allergies-app@workspace:packages/apps/esm-patient-allergies-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9504,6 +9523,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-attachments-app@workspace:packages/apps/esm-patient-attachments-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9529,6 +9549,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-banner-app@workspace:packages/apps/esm-patient-banner-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9556,6 +9577,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-chart-app@workspace:packages/apps/esm-patient-chart-app"
   dependencies:
     "@openmrs/esm-extensions": "workspace:*"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9591,6 +9613,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-conditions-app@workspace:packages/apps/esm-patient-conditions-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9615,6 +9638,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-flags-app@workspace:packages/apps/esm-patient-flags-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9638,6 +9662,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-forms-app@workspace:packages/apps/esm-patient-forms-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9713,6 +9738,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9741,6 +9767,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-label-printing-app@workspace:packages/apps/esm-patient-label-printing-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
@@ -9760,6 +9787,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-list-management-app@workspace:packages/apps/esm-patient-list-management-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9783,6 +9811,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-lists-app@workspace:packages/apps/esm-patient-lists-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9807,6 +9836,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9833,6 +9863,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-notes-app@workspace:packages/apps/esm-patient-notes-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9859,6 +9890,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-orders-app@workspace:packages/apps/esm-patient-orders-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9885,6 +9917,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -9911,6 +9944,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-programs-app@workspace:packages/apps/esm-patient-programs-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -9935,6 +9969,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-registration-app@workspace:packages/apps/esm-patient-registration-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-offline": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -9969,6 +10004,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -9996,6 +10032,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -10021,6 +10058,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-tests-app@workspace:packages/apps/esm-patient-tests-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -10046,6 +10084,7 @@ __metadata:
   dependencies:
     "@carbon/charts-react": "npm:^1.27.0"
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -10073,6 +10112,7 @@ __metadata:
   resolution: "@sihsalus/esm-primary-navigation-app@workspace:packages/apps/esm-primary-navigation-app"
   dependencies:
     "@carbon/react": "npm:^1.92.1"
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-audit-logger": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -10154,6 +10194,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-referrals-app@workspace:packages/apps/esm-referrals-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -10183,6 +10224,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@datasert/cronjs-matcher": "npm:^1.2.0"
     "@datasert/cronjs-parser": "npm:^1.2.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     cronstrue: "npm:^2.41.0"
@@ -10256,6 +10298,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-seguimiento-casos-app@workspace:packages/apps/esm-seguimiento-casos-app"
   dependencies:
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -10284,6 +10327,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@hookform/resolvers": "npm:^5.2.2"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -10311,6 +10355,7 @@ __metadata:
   resolution: "@sihsalus/esm-staff-scheduling-app@workspace:packages/apps/esm-staff-scheduling-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -10380,6 +10425,7 @@ __metadata:
   resolution: "@sihsalus/esm-system-admin-app@workspace:packages/apps/esm-system-admin-app"
   dependencies:
     "@carbon/react": "npm:^1.83.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
@@ -10504,6 +10550,7 @@ __metadata:
   resolution: "@sihsalus/esm-ward-app@workspace:packages/apps/esm-ward-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"

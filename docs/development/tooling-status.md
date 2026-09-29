@@ -19,6 +19,16 @@ la compatibilidad de API que aún se necesita y el benchmark reproducible.
 | E2E                   | [Catálogo](../../e2e/suite-catalog.json)                                                                                                   | El runner, typecheck y CI mantienen la misma pertenencia, cuarentena y gates de las suites.                                  |
 | Código sin uso        | [Knip](../../knip.json)                                                                                                                    | Conserva los entry points y el alcance del análisis del monorepo.                                                            |
 
+## Orden de compilación de workspaces
+
+Los consumidores de `@openmrs/esm-framework` mantienen su contrato de
+`peerDependencies` para el host y declaran además `workspace:*` en
+`devDependencies` para compilar y probar dentro del monorepo. El peer por sí solo
+no establece el orden local de compilación observado con Turbo 2.11.
+`workspace-build-order.test.js` comprueba el plan real de Turbo: los tipos y el
+build del framework deben preceder al typecheck de cada consumidor. No se deben
+compartir instalaciones entre worktrees ni depender de un `dist` de otra rama.
+
 ## Cómo validar cambios a estos contratos
 
 Ejecutar la instalación y los scripts según [desarrollo](README.md) y

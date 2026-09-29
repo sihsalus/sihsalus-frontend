@@ -56,7 +56,8 @@ describe('StockSourcesDeleteActionMenu', () => {
 
     expect(screen.getByText(/delete stock user scope/i)).toBeInTheDocument();
 
-    const deleteButton = screen.getByRole('button', { name: /danger delete/i });
+    const deleteButton = screen.getByRole('button', { name: /^delete$/i });
+    expect(deleteButton).toHaveClass('cds--btn--danger');
     await user.click(deleteButton);
 
     expect(mockOnConfirmation).toHaveBeenCalledTimes(1);
@@ -78,7 +79,7 @@ describe('StockSourcesDeleteActionMenu', () => {
       />,
     );
 
-    const deleteButton = screen.getByRole('button', { name: /danger delete/i });
+    const deleteButton = screen.getByRole('button', { name: /^delete$/i });
     await user.click(deleteButton);
 
     expect(mockOnConfirmation).toHaveBeenCalledTimes(1);
@@ -102,7 +103,7 @@ describe('StockSourcesDeleteActionMenu', () => {
       />,
     );
 
-    const deleteButton = screen.getByRole('button', { name: /danger delete/i });
+    const deleteButton = screen.getByRole('button', { name: /^delete$/i });
     await user.click(deleteButton);
 
     expect(mockDeleteStockSource).toHaveBeenCalledWith([uuid]);
@@ -131,7 +132,7 @@ describe('StockSourcesDeleteActionMenu', () => {
       />,
     );
 
-    const deleteButton = screen.getByRole('button', { name: /danger delete/i });
+    const deleteButton = screen.getByRole('button', { name: /^delete$/i });
     await user.click(deleteButton);
 
     expect(mockDeleteStockSource).toHaveBeenCalledWith([uuid]);
@@ -163,7 +164,7 @@ describe('StockSourcesDeleteActionMenu', () => {
       />,
     );
 
-    const deleteButton = screen.getByRole('button', { name: /danger delete/i });
+    const deleteButton = screen.getByRole('button', { name: /^delete$/i });
     await user.click(deleteButton);
 
     expect(mockDeleteStockSource).toHaveBeenCalledWith([uuid]);

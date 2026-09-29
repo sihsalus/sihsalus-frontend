@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '../../..');
-const targetVersion = '7.18.2';
+const targetVersion = '7.18.4';
 const peerRange = '>=6.30.4 <8';
 const runtimePackageRoots = ['packages/apps', 'packages/libs', 'packages/templates'];
 const dependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];

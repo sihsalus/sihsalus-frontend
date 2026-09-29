@@ -64,7 +64,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@playwright/test": "^1.53.2",
+    "@playwright/test": "^1.63.0",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
     "@types/lodash-es": "^4.17.12",
@@ -83,13 +83,13 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.4",
     "rxjs": "^6.6.7",
     "sass": "^1.70.0",
     "swr": "^2.2.4",
-    "turbo": "^2.9.14",
+    "turbo": "^2.11.4",
     "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.1"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

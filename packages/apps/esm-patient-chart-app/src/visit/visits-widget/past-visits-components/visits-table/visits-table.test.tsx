@@ -104,7 +104,7 @@ describe('Delete Encounter', () => {
     });
 
     await user.click(within(row).getByRole('button', { name: /expand current row/i }));
-    await user.click(screen.getByRole('button', { name: /danger Delete this encounter/i }));
+    await user.click(screen.getByRole('button', { name: /Delete this encounter/i }));
 
     expect(mockShowModal).toHaveBeenCalledTimes(1);
     expect(mockShowModal).toHaveBeenCalledWith(

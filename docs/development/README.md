@@ -98,6 +98,16 @@ requiere activar el worker actualizado y cerrar las pestañas de la versión ant
 Consulta [Zod 4 y React Hook Form](zod-form-validation.md) para los contratos de
 entrada/salida, errores y pruebas de la migración.
 
+## Tipos FHIR
+
+`@types/fhir` permanece en `0.0.31`: el código compartido utiliza su namespace
+global `fhir`, definido con tipos FHIR STU3. `0.0.44` separa los namespaces por
+versión (`fhir2`, `fhir3`, `fhir4`, etc.) y cambia contratos de tipos; no es un
+reemplazo compatible automático. Esto no determina la versión FHIR del backend.
+Su actualización requiere revisar los recursos y consumidores explícitamente,
+sin convertir datos ni sustituir STU3 por R4 mediante un alias global. Dependabot
+la propone por separado, fuera de los grupos ordinarios de versiones.
+
 ## Cleaning
 
 ```bash

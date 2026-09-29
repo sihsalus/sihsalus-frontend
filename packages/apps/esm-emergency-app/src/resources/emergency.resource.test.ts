@@ -479,7 +479,11 @@ describe('endEmergencyQueueEntry', () => {
       headers: { 'Content-Type': 'application/json' },
       body: { endedAt: expect.any(String) },
     });
-    const postedEnd = (mockOpenmrsFetch.mock.calls[1][1]?.body as { endedAt: string }).endedAt;
+    const body = mockOpenmrsFetch.mock.calls[1][1]?.body as { endedAt: string } | undefined;
+    if (!body) {
+      throw new Error('Expected a queue end request body');
+    }
+    const postedEnd = body.endedAt;
     expect(new Date(postedEnd).toISOString()).toBe(activeQueueEntry.startedAt);
   });
 

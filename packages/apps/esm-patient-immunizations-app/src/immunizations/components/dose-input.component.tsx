@@ -15,7 +15,7 @@ const doseNumberConstraints = { integer: true, min: 1, nonNegative: true };
 export const DoseInput: React.FC<{
   vaccine: string;
   sequences: ImmunizationSequenceDefinition[];
-  field: Pick<ControllerRenderProps<{ doseNumber?: number }, 'doseNumber'>, 'value' | 'onChange'>;
+  field: Pick<ControllerRenderProps<{ doseNumber?: number | null }, 'doseNumber'>, 'value' | 'onChange'>;
   fieldState: ControllerFieldState;
   existingDoseNumbers?: number[];
   warningMessage?: string;
@@ -36,7 +36,7 @@ export const DoseInput: React.FC<{
   const handleChange = useCallback(
     (_event, { value }) => {
       const parsedValue = validatePlainNumberInput(value ?? '', doseNumberConstraints).parsedValue;
-      field.onChange(parsedValue);
+      field.onChange(parsedValue ?? null);
     },
     [field],
   );
@@ -93,7 +93,7 @@ export const DoseInput: React.FC<{
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           required
-          value={field.value}
+          value={field.value ?? ''}
           warn={showWarning}
           warnText={warningMessage}
         />

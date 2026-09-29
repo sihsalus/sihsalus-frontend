@@ -54,7 +54,7 @@
     "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
@@ -63,12 +63,12 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.0.0",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.4",
     "rxjs": "^6.6.7",
     "sass-embedded": "1.105.0",
     "sass-loader": "17.0.1",
     "style-loader": "4.0.0",
     "swc-loader": "0.2.7",
-    "vitest": "5.0.1"
+    "vitest": "5.0.2"
   }
 }

@@ -181,7 +181,6 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
                     field.onChange(date[0]);
                   }}
                   invalid={!!error}
-                  invalidText={error?.message}
                 >
                   <DatePickerInput
                     id={`startdate-input`}
@@ -208,7 +207,6 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
                     field.onChange(date[0]);
                   }}
                   invalid={!!error}
-                  invalidText={error?.message}
                 >
                   <DatePickerInput
                     id="enddate-input"

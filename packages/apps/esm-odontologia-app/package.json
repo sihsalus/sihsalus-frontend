@@ -43,9 +43,10 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@openmrs/esm-framework": "workspace:*",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
-    "vite": "8.0.16",
-    "vitest": "^5.0.1"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

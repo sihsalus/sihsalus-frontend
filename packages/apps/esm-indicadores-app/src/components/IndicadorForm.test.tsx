@@ -257,13 +257,13 @@ describe('IndicadorForm conteo_pacientes_ventana contract', () => {
     const onSubmit = vi.fn();
     render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Window' }} onSubmit={onSubmit} />);
 
-    expect(screen.queryByLabelText('Tipos de encuentro')).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: 'Tipos de encuentro' })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'conteo_pacientes_ventana' } });
-    expect(screen.getByLabelText('Tipos de encuentro')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Tipos de encuentro' })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'conteo_atenciones' } });
-    expect(screen.queryByLabelText('Tipos de encuentro')).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: 'Tipos de encuentro' })).not.toBeInTheDocument();
   });
 
   it('adds an encounter type through the picker and submits it in the definicion', async () => {
@@ -271,7 +271,7 @@ describe('IndicadorForm conteo_pacientes_ventana contract', () => {
     render(<IndicadorForm mode="create" defaultValues={{ nombre: 'CRED Neonato' }} onSubmit={onSubmit} />);
 
     fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'conteo_pacientes_ventana' } });
-    fireEvent.change(screen.getByLabelText('Tipos de encuentro'), { target: { value: 'CRED' } });
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Tipos de encuentro' }), { target: { value: 'CRED' } });
     await act(async () => {});
 
     fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));

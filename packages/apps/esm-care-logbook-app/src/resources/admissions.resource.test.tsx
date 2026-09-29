@@ -646,7 +646,11 @@ describe('admissions resources', () => {
         body: expect.any(String),
       }),
     );
-    expect(JSON.parse((mockOpenmrsFetch.mock.calls[0]?.[1] as { body: string }).body)).toEqual(
+    const body = mockOpenmrsFetch.mock.calls[0]?.[1]?.body;
+    if (typeof body !== 'string') {
+      throw new Error('Expected a serialized admission request body');
+    }
+    expect(JSON.parse(body)).toEqual(
       expect.objectContaining({
         patientUuid: 'patient-uuid',
         startDate: expect.any(String),

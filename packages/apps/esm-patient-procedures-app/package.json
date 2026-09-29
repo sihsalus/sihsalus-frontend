@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.117.0",
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^5.9.1",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
     "react-hook-form": "^7.89.0",

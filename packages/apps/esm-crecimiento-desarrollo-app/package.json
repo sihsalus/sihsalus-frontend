@@ -41,7 +41,7 @@
   "dependencies": {
     "@carbon/charts": "^1.27.20",
     "@carbon/charts-react": "^1.27.20",
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^5.9.1",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",

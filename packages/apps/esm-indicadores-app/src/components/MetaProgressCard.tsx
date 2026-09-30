@@ -2,19 +2,13 @@ import { Tile } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { calculateProgress } from '../features/resultados/progress';
+import MetaProgressBar from './MetaProgressBar';
 import styles from '../indicators-dashboard.module.scss';
 
 interface MetaProgressCardProps {
   meta: number | null | undefined;
   currentValue: number;
-}
-
-function calculateProgress(meta: number, currentValue: number): number {
-  if (!Number.isFinite(meta) || !Number.isFinite(currentValue) || meta <= 0) {
-    return 0;
-  }
-  const percentage = Math.round((currentValue / meta) * 100);
-  return Math.min(100, Math.max(0, percentage));
 }
 
 const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue }) => {
@@ -49,19 +43,12 @@ const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue 
         </div>
       </div>
       {hasTarget ? (
-        <div className={styles.metaProgressBarTrack}>
-          <div
-            className={styles.metaProgressBar}
-            role="progressbar"
-            aria-valuenow={percentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={t('annualProgressBarAria', 'Progreso anual: {{percentage}}% de la meta anual', {
-              percentage,
-            })}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
+        <MetaProgressBar
+          percentage={percentage}
+          ariaLabel={t('annualProgressBarAria', 'Progreso anual: {{percentage}}% de la meta anual', {
+            percentage,
+          })}
+        />
       ) : null}
     </Tile>
   );

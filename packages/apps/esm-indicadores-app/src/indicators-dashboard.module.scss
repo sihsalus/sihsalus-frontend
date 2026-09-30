@@ -520,6 +520,107 @@
   transition: width 0.3s ease;
 }
 
+.metaProgressBarLow {
+  background-color: theme.$support-error;
+}
+
+.metaProgressBarMedium {
+  background-color: theme.$support-warning;
+}
+
+.metaProgressBarHigh {
+  background-color: theme.$support-success;
+}
+
+/* Panel */
+.panelYearSelect {
+  min-width: 8rem;
+}
+
+.summaryGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid theme.$border-subtle-00;
+  background: theme.$layer-01;
+}
+
+.summaryCardTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.summaryCardValues {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.summaryCardValue {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.summaryCardMeta {
+  color: theme.$text-secondary;
+  font-size: 0.875rem;
+}
+
+.summaryCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summaryStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: theme.$text-primary;
+}
+
+.summaryStatusDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.summaryStatusLow {
+  color: theme.$support-error;
+}
+
+.summaryStatusMedium {
+  color: theme.$support-warning;
+}
+
+.summaryStatusHigh {
+  color: theme.$support-success;
+}
+
+.summaryCardPercent {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.summaryCardCoverage {
+  margin: 0;
+  font-size: 0.75rem;
+  color: theme.$text-secondary;
+}
+
 /* Metas Table */
 .metasTable {
   margin-top: 1rem;

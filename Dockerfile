@@ -142,5 +142,5 @@ FROM nginx:1.31-alpine AS spa-nginx
 
 RUN apk upgrade --no-cache
 
-COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
+COPY config/nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

@@ -9,6 +9,18 @@ const ts = require('typescript');
 
 const root = path.resolve(__dirname, '../../..');
 
+test('the development server uses a compatible compiler and hot runtime', () => {
+  const cliRequire = Module.createRequire(path.join(root, 'packages/tooling/openmrs/package.json'));
+  const serverRequire = Module.createRequire(cliRequire.resolve('@rspack/dev-server/package.json'));
+  const server = serverRequire('./package.json');
+  const compiler = serverRequire('@rspack/core/package.json');
+  const { satisfies } = cliRequire('semver');
+
+  assert.ok(satisfies(compiler.version, server.peerDependencies['@rspack/core']));
+  const { log } = serverRequire('@rspack/core/hot/log.js');
+  assert.equal(typeof log.setLogLevel, 'function');
+});
+
 function applicationConfig() {
   // Load the checked-in config, so this test does not depend on stale dist output.
   const filename = path.join(root, 'packages/tooling/rspack-config/src/index.ts');

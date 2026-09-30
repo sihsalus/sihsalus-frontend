@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 const workspaceRoot = resolve(__dirname, '..', '..', '..');
 
 test('keeps the nginx SPA fallback and static-asset policy aligned', () => {
-  const config = readFileSync(resolve(workspaceRoot, 'nginx.spa.conf'), 'utf8');
+  const config = readFileSync(resolve(workspaceRoot, 'config/nginx.spa.conf'), 'utf8');
   const avifLocation = config.indexOf('location ~* ^/openmrs/spa/(?<asset>.+\\.avif)$');
   const dottedAssetLocation = config.indexOf('location ~ ^/openmrs/spa/(?<asset>.+\\.[^/]+)$');
   const routeLocation = config.indexOf('location /openmrs/spa/');
@@ -23,7 +23,7 @@ test('keeps the nginx SPA fallback and static-asset policy aligned', () => {
 });
 
 test('absolutizes the social preview tags with the request host', () => {
-  const config = readFileSync(resolve(workspaceRoot, 'nginx.spa.conf'), 'utf8');
+  const config = readFileSync(resolve(workspaceRoot, 'config/nginx.spa.conf'), 'utf8');
   const subFilterMatches =
     config.match(/sub_filter 'content="\/openmrs\/spa' 'content="https:\/\/\$host\/openmrs\/spa';/g) ?? [];
 
@@ -45,6 +45,15 @@ test('copies the SPA assembly sources into both init images', () => {
   assert.equal(scriptDirectoryCopies.length, 2);
   assert.equal(appShellDirectoryCopies.length, 2);
   assert.doesNotMatch(dockerfile, /COPY[^\n]*packages\/tooling\/scripts\/assemble-importmap\.js/);
+});
+
+test('the SPA image and its workflow use the relocated Nginx configuration', () => {
+  const dockerfile = readFileSync(resolve(workspaceRoot, 'Dockerfile'), 'utf8');
+  const workflow = readFileSync(resolve(workspaceRoot, '.github/workflows/spa-image.yml'), 'utf8');
+
+  assert.ok(existsSync(resolve(workspaceRoot, 'config/nginx.spa.conf')));
+  assert.match(dockerfile, /^COPY config\/nginx\.spa\.conf \/etc\/nginx\/conf\.d\/default\.conf$/m);
+  assert.match(workflow, /"config\/nginx\.spa\.conf"/);
 });
 
 test('init dependency preparation removes native compilers while retaining SPA assembly dependencies', () => {

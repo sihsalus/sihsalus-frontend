@@ -371,7 +371,7 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
           },
           scssRuleConfig,
         ),
-        merge(
+        merge<RuleSetRule, Partial<RuleSetRule>>(
           {
             test: /\.(png|jpe?g|gif|svg)$/i,
             type: 'asset/resource',

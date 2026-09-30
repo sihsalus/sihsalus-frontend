@@ -113,7 +113,6 @@ const frameworkInternalSharedDependencies = new Set([
 ]);
 
 const production = 'production';
-const anyVersionIncludingPrereleases = '>=0.0.0-0';
 const { ModuleFederationPluginV1: ModuleFederationPlugin } = container;
 function getFrameworkVersion() {
   try {
@@ -159,7 +158,7 @@ function getInstalledVersion(depName: string): string | undefined {
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pkgUnknown: unknown = require(resolve(process.cwd(), 'node_modules', packageName, 'package.json'));
+    const pkgUnknown: unknown = require(require.resolve(`${packageName}/package.json`, { paths: [process.cwd()] }));
     const pkg = pkgUnknown as VersionedPackageJson;
     return typeof pkg.version === 'string' ? pkg.version : undefined;
   } catch {
@@ -494,12 +493,11 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
             const installedVersion = getInstalledVersion(sharedHostDependency);
             const packageName = getPackageNameForDependency(depName);
             obj[depName] = {
-              // Rspack V1 normalizes `false` back to `*` for host-provided dependencies,
-              // which excludes prereleases. Use an explicit range that also accepts
-              // source-built prerelease versions.
+              // Federation excludes prereleases from broad ranges (even >=0.0.0-0).
+              // Bind wildcard host contracts to the version used by this build.
               requiredVersion:
                 versionSpec === '*' || (!versionSpec && alwaysHostSharedDependencies.has(depName))
-                  ? anyVersionIncludingPrereleases
+                  ? (installedVersion ?? versionSpec)
                   : versionSpec,
               strictVersion: false,
               singleton: true,

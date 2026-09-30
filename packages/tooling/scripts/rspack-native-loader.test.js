@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
+const { globSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
 const Module = require('node:module');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
@@ -9,7 +9,7 @@ const ts = require('typescript');
 
 const root = path.resolve(__dirname, '../../..');
 
-function applicationRule() {
+function applicationConfig() {
   // Load the checked-in config, so this test does not depend on stale dist output.
   const filename = path.join(root, 'packages/tooling/rspack-config/src/index.ts');
   const compiled = ts.transpileModule(readFileSync(filename, 'utf8'), {
@@ -23,11 +23,65 @@ function applicationRule() {
   const previous = process.cwd();
   try {
     process.chdir(path.join(root, 'packages/apps/esm-home-app'));
-    return configModule.exports.default({}, { mode: 'production' }).module.rules[0];
+    return configModule.exports.default({}, { mode: 'production' });
   } finally {
     process.chdir(previous);
   }
 }
+
+function applicationRule() {
+  return applicationConfig().module.rules[0];
+}
+
+test('shared singletons accept their installed versions in the federation runtime', () => {
+  const shellRequire = Module.createRequire(require.resolve('@openmrs/esm-app-shell/package.json'));
+  const { parseRange, satisfy } = shellRequire('webpack/lib/util/semver');
+  const plugin = applicationConfig().plugins.find((plugin) => plugin._options?.shared);
+  const shared = plugin._options.shared;
+  for (const name of [
+    '@openmrs/esm-framework',
+    '@openmrs/esm-framework/src/internal',
+    'react-i18next',
+    'react-router-dom',
+  ]) {
+    const config = shared[name];
+    assert.equal(config.singleton, true, name);
+    assert.equal(typeof config.requiredVersion, 'string', `${name} must keep version validation`);
+    assert.equal(
+      satisfy(parseRange(config.requiredVersion), config.version),
+      true,
+      `${name}: ${config.requiredVersion} must accept ${config.version}`,
+    );
+  }
+});
+
+test('the shared patient library never consumes its own federated provider', () => {
+  const library = path.join(root, 'packages/libs/esm-patient-common-lib');
+  const { name } = JSON.parse(readFileSync(path.join(library, 'package.json'), 'utf8'));
+  for (const filename of globSync('src/**/*.{ts,tsx}', { cwd: library })) {
+    const source = ts.createSourceFile(
+      filename,
+      readFileSync(path.join(library, filename), 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    function visit(node) {
+      if (
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier &&
+        ts.isStringLiteral(node.moduleSpecifier)
+      ) {
+        const specifier = node.moduleSpecifier.text;
+        assert.ok(
+          specifier !== name && !specifier.startsWith(`${name}/`),
+          `${filename}: use internal relative imports to avoid recursive shared-module loading`,
+        );
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
+  }
+});
 
 function compile(config) {
   return new Promise((resolve, reject) => {

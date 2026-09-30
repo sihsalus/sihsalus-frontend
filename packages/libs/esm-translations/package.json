@@ -58,7 +58,7 @@
     "i18next": "^26.4.2"
   },
   "peerDependencies": {
-    "i18next": "25.x"
+    "i18next": "26.x"
   },
   "devDependencies": {
     "@swc/cli": "0.8.1",

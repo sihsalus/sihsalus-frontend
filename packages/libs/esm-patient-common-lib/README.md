@@ -5,6 +5,14 @@ This is a library of components and utilities shared across widgets in the patie
 - Custom components for card headers, error and empty states and pagination.
 - Custom hooks for managing workspaces, concept metadata and pagination.
 
+## Shared module loading
+
+Internal files must import other library files by relative path, never through
+`@openmrs/esm-patient-common-lib`. Its public entry is a Module Federation
+singleton: an internal self-import can make its provider recursively load itself
+on a cold first login. The tooling regression checks this boundary; validate the
+assembled SPA with a fresh browser context when changing shared imports.
+
 ## Antecedents
 
 `ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.

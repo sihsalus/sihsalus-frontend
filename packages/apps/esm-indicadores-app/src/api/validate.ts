@@ -94,6 +94,42 @@ export function isIndicadorDetail(value: unknown): value is {
   );
 }
 
+export function isIndicadorResultado(value: unknown): value is { id: string; periodo_inicio: string; periodo_fin: string; valor: number; calculado_en: string } {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.periodo_inicio === 'string' &&
+    typeof value.periodo_fin === 'string' &&
+    typeof value.valor === 'number' &&
+    typeof value.calculado_en === 'string'
+  );
+}
+
+export function isSerieRow(value: unknown): value is { periodo_label: string; valor: number; meses_disponibles: number; anio: number } {
+  return (
+    isRecord(value) &&
+    typeof value.periodo_label === 'string' &&
+    typeof value.valor === 'number' &&
+    typeof value.meses_disponibles === 'number' &&
+    typeof value.anio === 'number'
+  );
+}
+
+export function isIndicadorMeta(value: unknown): value is { id: string; indicador_version_id: string; anio: number; valor_meta: number; creado_en: string } {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.indicador_version_id === 'string' &&
+    typeof value.anio === 'number' &&
+    typeof value.valor_meta === 'number' &&
+    typeof value.creado_en === 'string'
+  );
+}
+
+export function isBatchResponse(value: unknown): value is { total: number; errores: Array<unknown> } {
+  return isRecord(value) && typeof value.total === 'number' && Array.isArray(value.errores);
+}
+
 export function assertShape<T>(value: T, guard: (value: unknown) => boolean, resource: string): T {
   if (!guard(value)) {
     const template = translate(

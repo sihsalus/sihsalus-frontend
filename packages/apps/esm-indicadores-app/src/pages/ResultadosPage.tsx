@@ -55,7 +55,7 @@ const ResultadosPage: React.FC = () => {
   const [recalcAnio, setRecalcAnio] = useState<number>(currentYear());
   const [recalcAnioError, setRecalcAnioError] = useState<string | null>(null);
   const actionLockRef = useRef(false);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const currentYearValue = currentYear();
   const periodRangeInvalid = Boolean(periodoInicio && periodoFin && periodoInicio > periodoFin);
@@ -77,7 +77,7 @@ const ResultadosPage: React.FC = () => {
             include_historicos: true,
           }
         : null,
-    [viewMode, page, filters.indicador_id, periodRangeInvalid, periodoInicio, periodoFin],
+      [viewMode, page, pageSize, filters.indicador_id, periodRangeInvalid, periodoInicio, periodoFin],
   );
 
   const {
@@ -478,11 +478,14 @@ const ResultadosPage: React.FC = () => {
         ? (() => {
             // Find first row with a non-null meta
             const metaRow = seriesData.items.find((item) => item.meta != null);
-            if (metaRow?.meta == null) {
+            if (metaRow?.meta == null || !Number.isFinite(metaRow.meta)) {
               return null;
             }
             // Calculate accumulated value from all rows
-            const accumulatedValue = seriesData.items.reduce((sum, item) => sum + (item.valor ?? 0), 0);
+            const accumulatedValue = seriesData.items.reduce(
+              (sum, item) => sum + (Number.isFinite(item.valor) ? item.valor : 0),
+              0,
+            );
             return <MetaProgressCard meta={metaRow.meta} currentValue={accumulatedValue} />;
           })()
         : null}
@@ -560,11 +563,14 @@ const ResultadosPage: React.FC = () => {
               </Table>
             </div>
             <Pagination
-              page={historicalData.page}
-              pageSize={historicalData.size}
-              pageSizes={[10]}
+              page={page}
+              pageSize={pageSize}
+              pageSizes={[10, 20, 50]}
               totalItems={historicalData.total}
-              onChange={({ page }: { page: number }) => setPage(page)}
+              onChange={({ page, pageSize }: { page: number; pageSize: number }) => {
+                setPage(page);
+                setPageSize(pageSize);
+              }}
               size="sm"
             />
           </>

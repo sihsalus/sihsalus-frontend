@@ -1,7 +1,13 @@
-import { getSeriesMock, listResultados } from '../mocks/indicators-data';
-import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
+import { fetchJson, mutateJson, toJsonBody } from './client';
 import { getReportesSqlApiPath } from './config';
-import { assertShape, isPaginatedResponse, isSeriesResponse } from './validate';
+import {
+  assertShape,
+  isBatchResponse,
+  isIndicadorResultado,
+  isPaginatedResponse,
+  isSerieRow,
+  isSeriesResponse,
+} from './validate';
 import type {
   BatchCalcularNowResponse,
   GetResultadosParams,
@@ -36,26 +42,31 @@ export async function getResultados(params: GetResultadosParams): Promise<Pagina
     version_id: params.version_id,
   };
 
-  return withMockFallback(
-    () =>
-      fetchJson<PaginatedResponse<IndicadorResultado>>(
-        `${reportesSqlBase}/resultados/${ensureQuery(queryParams)}`,
-      ).then((data) => assertShape(data, isPaginatedResponse, 'resultados')),
-    () => listResultados(params),
+  const data = await fetchJson<PaginatedResponse<IndicadorResultado>>(
+    `${reportesSqlBase}/resultados/${ensureQuery(queryParams)}`,
   );
+  assertShape(data, isPaginatedResponse, 'resultados');
+  for (const item of data.items) {
+    assertShape(item, isIndicadorResultado, 'resultados');
+  }
+  return data;
 }
 
 export async function calcularAhora(): Promise<BatchCalcularNowResponse> {
   const reportesSqlBase = await getReportesSqlApiPath();
-  return mutateJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, { method: 'POST' });
+  const data = await mutateJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, {
+    method: 'POST',
+  });
+  return assertShape(data, isBatchResponse, 'resultados/calcular-ahora');
 }
 
 export async function recalcularAnio(params: RecalcularAnioParams): Promise<RecalcularAnioResponse> {
   const reportesSqlBase = await getReportesSqlApiPath();
-  return mutateJson<RecalcularAnioResponse>(`${reportesSqlBase}/resultados/recalcular-anio`, {
+  const data = await mutateJson<RecalcularAnioResponse>(`${reportesSqlBase}/resultados/recalcular-anio`, {
     method: 'POST',
     ...toJsonBody(params),
   });
+  return assertShape(data, isBatchResponse, 'resultados/recalcular-anio');
 }
 
 export async function getResultadosSeries(params: GetSeriesParams): Promise<SeriesResponse> {
@@ -67,11 +78,10 @@ export async function getResultadosSeries(params: GetSeriesParams): Promise<Seri
     include_meta: params.include_meta,
   };
 
-  return withMockFallback(
-    () =>
-      fetchJson<SeriesResponse>(`${reportesSqlBase}/resultados/series${ensureQuery(queryParams)}`).then((data) =>
-        assertShape(data, isSeriesResponse, 'series'),
-      ),
-    () => getSeriesMock(params),
-  );
+  const data = await fetchJson<SeriesResponse>(`${reportesSqlBase}/resultados/series${ensureQuery(queryParams)}`);
+  assertShape(data, isSeriesResponse, 'series');
+  for (const item of data.items) {
+    assertShape(item, isSerieRow, 'series');
+  }
+  return data;
 }

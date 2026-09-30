@@ -19,6 +19,7 @@ interface MetaFormModalProps {
 
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2100;
+const MAX_META_VALUE = 1_000_000_000;
 
 const MetaFormModal: React.FC<MetaFormModalProps> = ({
   isOpen,
@@ -131,6 +132,9 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
     }
     if (valorMeta === '' || !Number.isFinite(valorMeta) || Number(valorMeta) < 0) {
       return t('metaValidationValue', 'La meta no puede ser negativa.');
+    }
+    if (Number(valorMeta) > MAX_META_VALUE) {
+      return t('metaValidationValueMax', 'La meta no puede ser mayor a {{max}}.', { max: MAX_META_VALUE });
     }
     return null;
   };

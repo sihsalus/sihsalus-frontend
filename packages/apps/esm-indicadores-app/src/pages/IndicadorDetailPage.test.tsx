@@ -126,6 +126,20 @@ describe('IndicadorDetailPage', () => {
     expect(screen.getByText('Cargando indicador...')).toBeInTheDocument();
   });
 
+  it('shows the not-found empty state when the indicator resolves without data or error', () => {
+    mockUseIndicador.mockReturnValue({
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    renderPage();
+
+    expect(screen.getByText('No se encontró el indicador.')).toBeInTheDocument();
+  });
+
   it('shows error banner when useIndicador fails', () => {
     mockUseIndicador.mockReturnValue({
       data: undefined,
@@ -386,9 +400,10 @@ describe('IndicadorDetailPage', () => {
     expect(() => renderPage()).not.toThrow();
 
     // The page should still render the indicator header and the (empty)
-    // version history list, without a "current definition" section.
+    // version history list, with an explicit no-versions empty state.
     expect(screen.getByText('Atenciones de control prenatal')).toBeInTheDocument();
     expect(screen.getByText('Historial de versiones')).toBeInTheDocument();
+    expect(screen.getByText('Este indicador aún no tiene versiones.')).toBeInTheDocument();
     expect(screen.queryByText('Definición actual')).not.toBeInTheDocument();
     // No version summary items should be present
     expect(screen.queryByText('Versión #1')).not.toBeInTheDocument();

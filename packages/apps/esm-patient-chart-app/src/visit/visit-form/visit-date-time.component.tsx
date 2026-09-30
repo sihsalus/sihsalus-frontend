@@ -45,7 +45,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
   const maxDateObj = maxDate ? dayjs(new Date(maxDate).setHours(23, 59, 59, 59)).format('DD/MM/YYYY') : null;
 
   return (
-    <section>
+    <section className={styles.dateTimeField}>
       <h1 className={styles.sectionTitle}>{visitDatetimeLabel}</h1>
       <div className={classNames(styles.dateTimeSection, styles.sectionField)}>
         <Controller
@@ -70,7 +70,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                   labelText={`${t('date', 'Fecha')} *`}
                   placeholder="dd/mm/yyyy"
                   aria-required="true"
-                  style={{ width: '100%' }}
+                  style={{ inlineSize: '100%' }}
                 />
               </DatePicker>
             </ResponsiveWrapper>

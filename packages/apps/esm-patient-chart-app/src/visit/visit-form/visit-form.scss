@@ -54,7 +54,14 @@
 }
 
 .dateTimeSection {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: start;
+  gap: layout.$spacing-05;
+
+  > * {
+    min-width: 0;
+  }
 }
 
 .radioButton {
@@ -103,12 +110,6 @@
 
 .desktop {
   padding: 0;
-}
-
-@media screen and (max-width: 600px) {
-  .dateTimeSection {
-    flex-direction: column;
-  }
 }
 
 .inlineNotification {
@@ -166,18 +167,26 @@
   @include type.type-style("body-compact-02");
 }
 
+.container section.dateTimeField {
+  display: block;
+}
+
 .datePicker {
-  padding-bottom: layout.$spacing-05;
+  inline-size: 100%;
+
+  :global(.cds--date-picker),
+  :global(.cds--date-picker-container),
+  :global(.cds--date-picker-input__wrapper),
+  :global(.cds--date-picker-input__wrapper > span) {
+    inline-size: 100%;
+  }
 }
 
 .timePicker {
-  align-items: baseline;
-  flex: none;
-  margin-left: layout.$spacing-01;
+  align-items: stretch;
 
   :global(.cds--form-requirement) {
-    max-width: 6rem;
-    max-height: 0 !important;
+    max-width: none;
   }
 }
 
@@ -188,13 +197,8 @@
 
 .timerPickerError {
   color: colors.$red-60;
-  display: flex;
-  align-self: flex-end;
-  max-width: layout.$spacing-11;
-  font-size: layout.$spacing-04;
-  margin: 0;
-  letter-spacing: 0.02rem;
-  line-height: 1.33333;
+  @include type.type-style("label-01");
+  margin-top: layout.$spacing-02;
 }
 
 .timePickerContainer {

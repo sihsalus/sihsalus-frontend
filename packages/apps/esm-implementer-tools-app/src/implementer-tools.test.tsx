@@ -1,4 +1,4 @@
-import { showToast } from '@openmrs/esm-framework';
+import { showToast, useSession } from '@openmrs/esm-framework';
 import { render, waitFor } from '@testing-library/react';
 
 import Root from './implementer-tools.component';
@@ -11,6 +11,7 @@ vi.mock('./backend-dependencies/useBackendDependencies', () => ({
 
 describe('ImplementerTools', () => {
   beforeEach(() => {
+    vi.mocked(useSession).mockReturnValue({ authenticated: true, sessionId: 'synthetic' });
     mockUseBackendDependencies.mockReturnValue({
       modules: [],
       error: null,
@@ -18,6 +19,12 @@ describe('ImplementerTools', () => {
       isRetrying: false,
       retry: vi.fn(),
     });
+  });
+
+  it('does not start diagnostics after logout', () => {
+    vi.mocked(useSession).mockReturnValue({ authenticated: false, sessionId: '' });
+    render(<Root />);
+    expect(mockUseBackendDependencies).not.toHaveBeenCalled();
   });
 
   it('renders without dying', () => {

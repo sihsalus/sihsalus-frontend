@@ -292,7 +292,7 @@ describe('openmrs-backend-dependencies', () => {
           links: [],
         },
       } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
-      await supersededRequest;
+      await expect(supersededRequest).rejects.toMatchObject({ name: 'AbortError' });
       const cachedResult = await checkModules();
 
       expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);

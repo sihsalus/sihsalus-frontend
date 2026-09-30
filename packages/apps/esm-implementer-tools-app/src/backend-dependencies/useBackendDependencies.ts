@@ -5,6 +5,7 @@ import {
   checkModules,
   getBackendConnectionErrorMessage,
   getBackendConnectionErrorStatus,
+  retainBackendModuleCheck,
 } from './openmrs-backend-dependencies';
 
 export interface UseBackendDependenciesResult {
@@ -56,10 +57,12 @@ export function useBackendDependencies(): UseBackendDependenciesResult {
   }, []);
 
   useEffect(() => {
+    const release = retainBackendModuleCheck();
     void loadBackendDependencies();
 
     return () => {
       activeRequestId.current += 1;
+      release();
     };
   }, [loadBackendDependencies]);
 

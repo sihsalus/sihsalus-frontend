@@ -56,6 +56,23 @@ describe('useBackendDependencies', () => {
     expect(result.current.modules[0].dependencies[0].type).toBe('okay');
   });
 
+  it('aborts an abandoned inventory without reporting a backend outage', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let signal!: AbortSignal;
+    mockOpenmrsFetch.mockImplementation((_url, options) => {
+      signal = options!.signal as AbortSignal;
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new TypeError('Load failed')), { once: true });
+      });
+    });
+    const { unmount } = renderHook(() => useBackendDependencies());
+    expect(signal.aborted).toBe(false);
+    unmount();
+    await act(async () => {});
+    expect(signal.aborted).toBe(true);
+    expect(log).not.toHaveBeenCalled();
+  });
+
   it('does not duplicate the backend request when mounted in StrictMode', async () => {
     mockOpenmrsFetch.mockResolvedValue({
       data: {

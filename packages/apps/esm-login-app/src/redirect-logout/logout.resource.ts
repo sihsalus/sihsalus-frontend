@@ -1,4 +1,4 @@
-import { clearCurrentUser, openmrsFetch, refetchCurrentUser, restBaseUrl } from '@openmrs/esm-framework';
+import { clearCurrentUser, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { mutate } from 'swr';
 
 export async function performLogout() {
@@ -11,5 +11,4 @@ export async function performLogout() {
   mutate(() => true, undefined, { revalidate: false });
 
   clearCurrentUser();
-  await refetchCurrentUser();
 }

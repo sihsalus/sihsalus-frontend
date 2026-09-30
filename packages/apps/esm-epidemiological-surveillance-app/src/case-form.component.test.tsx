@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseForm } from "./case-form.component";
 import { createSurveillanceCase } from "./api";
@@ -55,12 +61,17 @@ vi.mock("./api", async (importOriginal) => ({
     },
   ]),
   getEncounterObservations: vi.fn(async () => []),
+  addressChildren: vi.fn(async () => []),
   getEncounterDiagnoses: vi.fn(async () => ["diagnosis"]),
   getEncounterDiagnosesDetails: vi.fn(async () => [
     { uuid: "diagnosis", display: "Synthetic disease" },
   ]),
   searchPatients: vi.fn(async () => [
-    { resourceType: "Patient", id: "patient", name: [{ text: "Synthetic Patient" }] },
+    {
+      resourceType: "Patient",
+      id: "patient",
+      name: [{ text: "Synthetic Patient" }],
+    },
   ]),
   references: vi.fn(async (resource: string) =>
     resource === "provider"
@@ -73,7 +84,10 @@ vi.mock("./api", async (importOriginal) => ({
         ]
       : [{ uuid: "location", display: "Synthetic locality" }],
   ),
-  createSurveillanceCase: vi.fn(async () => ({ uuid: "case", diagnosisUuid: "diagnosis" })),
+  createSurveillanceCase: vi.fn(async () => ({
+    uuid: "case",
+    diagnosisUuid: "diagnosis",
+  })),
 }));
 describe("case registration screen", () => {
   beforeEach(() => {
@@ -119,7 +133,9 @@ describe("case registration screen", () => {
     const props = { catalogue, initial: request, onSaved: vi.fn() };
     const view = render(<CaseForm {...props} />);
     await screen.findByText("Synthetic Patient");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    });
     connection.online = false;
     view.rerender(<CaseForm {...props} />);
     expect(screen.getByLabelText("Symptom onset date")).toHaveValue(

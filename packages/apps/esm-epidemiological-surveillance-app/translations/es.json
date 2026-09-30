@@ -1,4 +1,8 @@
 {
+  "infectionChooseProvince": "Selecciona una provincia",
+  "infectionChooseDistrict": "Selecciona un distrito",
+  "infectionChooseCenter": "Selecciona un centro poblado",
+  "infectionPreservedCenter": "Lugar de infección seleccionado anteriormente",
   "reportDiagnosisType": "Casos incluidos",
   "reportDiagnoses": {
     "CONFIRMADO": "Casos confirmados",

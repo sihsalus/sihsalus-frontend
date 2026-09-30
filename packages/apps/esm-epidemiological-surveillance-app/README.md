@@ -70,6 +70,12 @@ Se usa exclusivamente la cola compartida del framework: `queueSynchronizationIte
 
 ## Indicadores y usabilidad
 
+El selector del lugar de infección conserva el valor al volver al paso de captura;
+solo lo limpia cuando el usuario cambia provincia o distrito. Descarta respuestas
+de búsquedas anteriores, muestra los errores de carga y permite reintentar sin
+borrar el valor guardado en el formulario. Si se conserva una referencia sin su
+jerarquía cargada, se muestra como selección anterior, sin inventar su nombre.
+
 Curva por inicio de síntomas y canal endémico desde `period_case_count` del OMOD.
 Filtros: `diagnosisType=CONFIRMADO|PROBABLE|TODOS` (predeterminado `CONFIRMADO`),
 `zoneLevel=DISTRITO|CENTRO_POBLADO` (predeterminado `CENTRO_POBLADO`) y `address`
@@ -119,5 +125,12 @@ yarn workspace @sihsalus/esm-epidemiological-surveillance-app build
 ```
 
 Usar Node/Yarn del monorepo. Pruebas sintéticas de tres pasos, campos/fechas, precarga, permisos concedidos/denegados, cambio de usuario, paginación, errores seguros, cola y reportes.
+
+Validación local del selector de infección (2026-09-30): `test` PASSED (39 pruebas
+Vitest y 2 comprobaciones HMR), `typescript` PASSED, `lint` PASSED con una advertencia
+de variable `revision` no usada en el dashboard, `build` PASSED con dos advertencias
+de tamaño. Pruebas nuevas: conservación de la selección al montar/cambiar callback,
+limpieza al cambiar padres, descarte de respuestas tardías y reintento tras error.
+Validación integrada OpenMRS/MariaDB: NOT RUN, omitida por decisión del usuario.
 
 QA DEV/QLTY pendiente: catálogo/privilegios reales; sospechoso, positivo confirmado y negativo descartado; persistencia tras recarga; duplicados; alertas grave/gestante/foco/umbrales; cotejo de conteos; desconexión/reconexión y cambio de cuenta; teclado y presentación móvil. Solo pacientes sintéticos. Resultados medidos y límites en `epidemiologysurveillance/docs/informe-pruebas-iteracion-1.md`.

@@ -3,7 +3,6 @@ import { configSchema } from "./config-schema";
 import { epidemiologicalSurveillanceRoute } from "./constants";
 import { createLeftPanelLink } from "./left-panel-link.component";
 import rootComponent from "./root.component";
-import { setupSurveillanceSync } from "./offline";
 
 export const importTranslation = require.context(
   "../translations",
@@ -21,7 +20,6 @@ const options = {
 
 export function startupApp(): void {
   defineConfigSchema(moduleName, configSchema);
-  setupSurveillanceSync();
 }
 
 export const root = getSyncLifecycle(rootComponent, options);

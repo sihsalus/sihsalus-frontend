@@ -8,7 +8,7 @@ import {
   caseViewPrivilege,
   reportPrivilege,
 } from "./constants";
-import { catalogue, request } from "./test-fixtures";
+import { catalogue } from "./test-fixtures";
 
 const state = vi.hoisted(() => ({ user: "first", privileges: [] as string[] }));
 vi.mock("@openmrs/esm-framework", () => ({
@@ -25,16 +25,7 @@ vi.mock("@sihsalus/esm-rbac", () => ({
 }));
 vi.mock("./api", () => ({ getCatalogue: vi.fn() }));
 vi.mock("./case-form.component", () => ({
-  CaseForm: ({ initial }: { initial?: typeof request }) => (
-    <div>Form: {initial?.patientUuid ?? "empty"}</div>
-  ),
-}));
-vi.mock("./pending-cases.component", () => ({
-  PendingCases: ({ onReview }: { onReview: (r: typeof request) => void }) => (
-    <button type="button" onClick={() => onReview(request)}>
-      Review draft
-    </button>
-  ),
+  CaseForm: () => <div>Form: empty</div>,
 }));
 vi.mock("./report-panel.component", () => ({
   ReportPanel: () => <div>Report content</div>,
@@ -64,13 +55,11 @@ it("allows report readers without mounting the case form", async () => {
   expect(screen.getByText("Report content")).toBeInTheDocument();
   expect(screen.queryByText("Form: empty")).not.toBeInTheDocument();
 });
-it("clears patient drafts immediately when the authenticated actor changes", async () => {
+it("reloads the catalogue when the authenticated actor changes", async () => {
   const view = render(<Dashboard />);
-  fireEvent.click(await screen.findByText("Review draft"));
-  expect(screen.getByText("Form: patient")).toBeInTheDocument();
+  await screen.findByText("Form: empty");
   state.user = "second";
   view.rerender(<Dashboard />);
-  expect(screen.queryByText("Form: patient")).not.toBeInTheDocument();
   await waitFor(() =>
     expect(screen.getByText("Form: empty")).toBeInTheDocument(),
   );

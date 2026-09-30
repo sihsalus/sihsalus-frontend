@@ -1,7 +1,6 @@
 import { openmrsFetch, restBaseUrl } from "@openmrs/esm-framework";
 import type {
   CaseRequest,
-  CaseResult,
   Catalogue,
   EncounterDiagnosis,
   FhirResource,
@@ -46,7 +45,6 @@ const safeCodes = new Set([
   "LAB_STATUS_CONFLICT",
   "REQUIRED_FIELDS",
   "AMBIGUOUS_SOURCE_DATA",
-  "POSSIBLE_DUPLICATE",
   "IDEMPOTENCY_CONFLICT",
   "CASE_NOT_FOUND",
   "INVALID_CASE_DATA",
@@ -139,28 +137,6 @@ export async function getEncounterDiagnoses(
   const details = await getEncounterDiagnosesDetails(uuid, patientUuid);
   return details.map((d) => d.uuid);
 }
-export const getCase = (uuid: string, signal?: AbortSignal) =>
-  read<CaseResult>(`${apiBase}/cases/${encodeURIComponent(uuid)}`, signal);
-export async function registerCase(
-  request: CaseRequest,
-  signal?: AbortSignal,
-): Promise<CaseResult> {
-  try {
-    return (
-      await openmrsFetch<CaseResult>(`${apiBase}/cases`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: request,
-        signal,
-      })
-    ).data;
-  } catch (error) {
-    throw safeError(error);
-  }
-}
-
 export async function createSurveillanceCase(draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
   try {
     return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: draft })).data;

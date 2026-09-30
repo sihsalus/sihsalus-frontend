@@ -22,9 +22,8 @@ import {
 } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
 import { EventsPanel } from "./events-panel.component";
-import { PendingCases } from "./pending-cases.component";
 import { ReportPanel } from "./report-panel.component";
-import type { CaseRequest, Catalogue } from "./types";
+import type { Catalogue } from "./types";
 import styles from "./dashboard.scss";
 
 export default function Dashboard() {
@@ -44,7 +43,6 @@ function SessionDashboard() {
   const [error, setError] = useState<unknown>();
   const [retry, setRetry] = useState(0);
   const [revision, setRevision] = useState(0);
-  const [initial, setInitial] = useState<CaseRequest>();
   const [formKey, setFormKey] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and session identity must invalidate the catalogue even when authentication stays true.
   useEffect(() => {
@@ -104,7 +102,6 @@ function SessionDashboard() {
                     <Button
                       kind="tertiary"
                       onClick={() => {
-                        setInitial(undefined);
                         setFormKey((value) => value + 1);
                       }}
                     >
@@ -114,16 +111,7 @@ function SessionDashboard() {
                   <CaseForm
                     key={String(session?.user?.uuid) + ":" + formKey}
                     catalogue={catalogue}
-                    initial={initial}
                     onSaved={() => setRevision((value) => value + 1)}
-                  />
-                  <PendingCases
-                    catalogue={catalogue}
-                    revision={revision}
-                    onReview={(request) => {
-                      setInitial(request);
-                      setFormKey((value) => value + 1);
-                    }}
                   />
                 </RequirePrivilege>
               </RequirePrivilege>

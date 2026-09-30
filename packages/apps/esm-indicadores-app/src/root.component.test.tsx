@@ -1,16 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useConfig } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
-import { useMockMode } from './api/mock-mode';
 import { type ConfigObject } from './config-schema';
-import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
 import RootComponent from './root.component';
 
 const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
 vi.mock('@openmrs/esm-framework', () => ({ useConfig: vi.fn() }));
-vi.mock('./hooks/useIndicatorsHealth', () => ({ useIndicatorsHealth: vi.fn() }));
-vi.mock('./api/mock-mode', () => ({ useMockMode: vi.fn() }));
 vi.mock('./pages/IndicadoresPage', () => ({ default: () => <div>Indicadores page content</div> }));
 vi.mock('./pages/IndicadorDetailPage', () => ({ default: () => <div>Detalle page content</div> }));
 vi.mock('./pages/IndicadorFormPage', () => ({ default: () => <div>Formulario page content</div> }));
@@ -22,14 +18,11 @@ vi.mock('@sihsalus/esm-rbac', () => ({
   RequireModulePrivilege: (props: { children: ReactNode; privilege: string }) => mockRequireModulePrivilege(props),
 }));
 
-const mockUseIndicatorsHealth = vi.mocked(useIndicatorsHealth);
-const mockUseMockMode = vi.mocked(useMockMode);
 const mockUseConfig = vi.mocked(useConfig);
 
 const defaultTestConfig: ConfigObject = {
   indicatorsApiPath: '/ws/module/indicators/api',
   reportesSqlApiPath: '/services/reportes-sql',
-  enableDemoData: false,
   bypassPrivilegeGuard: false,
 };
 
@@ -40,45 +33,17 @@ const renderAt = (path: string) => {
   render(<RootComponent />);
 };
 
-describe('RootComponent health state', () => {
+describe('RootComponent privilege guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     mockUseConfig.mockReturnValue(defaultTestConfig);
-    mockUseMockMode.mockReturnValue({ isMockMode: false, isBackendAvailable: true });
   });
 
-  it('runs the health check and enforces the indicators privilege', () => {
+  it('enforces the indicators privilege', () => {
     renderAt('/');
 
-    expect(mockUseIndicatorsHealth).toHaveBeenCalledTimes(1);
     expect(mockRequireModulePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:indicadores' }));
-  });
-
-  it('shows a stable Spanish failure message without technical details', () => {
-    mockUseMockMode.mockReturnValue({
-      isMockMode: false,
-      isBackendAvailable: false,
-      errorMessage: 'Network Error: upstream 502',
-    });
-    renderAt('/');
-
-    expect(screen.getByText('Servicio de indicadores no disponible')).toBeInTheDocument();
-    expect(screen.getByText('No se mostrarán datos de ejemplo ni se simularán operaciones.')).toBeInTheDocument();
-    expect(screen.queryByText(/Network Error|502/)).not.toBeInTheDocument();
-  });
-
-  it('labels explicit demo data and states that writes are not simulated', () => {
-    mockUseMockMode.mockReturnValue({
-      isMockMode: true,
-      isBackendAvailable: false,
-      errorMessage: 'SQL connection refused',
-    });
-    renderAt('/');
-
-    expect(screen.getByText('Datos de demostración activos')).toBeInTheDocument();
-    expect(screen.getByText(/ninguna escritura se simulará/i)).toBeInTheDocument();
-    expect(screen.queryByText(/SQL connection refused/)).not.toBeInTheDocument();
   });
 });
 
@@ -87,7 +52,6 @@ describe('RootComponent lazy routed pages', () => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     mockUseConfig.mockReturnValue(defaultTestConfig);
-    mockUseMockMode.mockReturnValue({ isMockMode: false, isBackendAvailable: true });
   });
 
   it('mounts only the active page and keeps the module header and tabs visible', async () => {
@@ -138,7 +102,6 @@ describe('RootComponent privilege guard bypass (dev-only)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
-    mockUseMockMode.mockReturnValue({ isMockMode: false, isBackendAvailable: true });
   });
 
   it('enforces the guard by default (bypassPrivilegeGuard: false)', async () => {

@@ -32,10 +32,7 @@ const createPayload = {
 describe('indicadores API contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: false,
-    });
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql' });
   });
 
   it('uses the paginated metadata-only list contract', async () => {
@@ -119,7 +116,7 @@ describe('indicadores API contract', () => {
     ['createVersion', () => createVersion('indicator-a', definicion)],
   ] as const;
 
-  it.each(mutations)('%s rejects 422, 500 and network failures without a mock result', async (_name, invoke) => {
+  it.each(mutations)('%s rejects 422, 500 and network failures', async (_name, invoke) => {
     for (const error of [
       Object.assign(new Error('validation details'), { response: { status: 422 } }),
       Object.assign(new Error('database details'), { response: { status: 500 } }),
@@ -197,10 +194,7 @@ describe('indicadores API contract', () => {
 describe('resolveOrdenes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: false,
-    });
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql' });
   });
 
   it('returns an empty record without calling the backend for empty input', async () => {
@@ -215,33 +209,18 @@ describe('resolveOrdenes', () => {
     await expect(resolveOrdenes(['order-a', 'order-b'])).resolves.toEqual(data);
   });
 
-  it('fails closed on network errors when demo data is disabled', async () => {
+  it('propagates network errors to the caller', async () => {
     const error = new TypeError('Failed to fetch');
     mockedOpenmrsFetch.mockRejectedValue(error);
 
     await expect(resolveOrdenes(['order-a'])).rejects.toBe(error);
-  });
-
-  it('uses examples on network errors only when demo data is explicitly enabled', async () => {
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: true,
-    });
-    mockedOpenmrsFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-
-    await expect(resolveOrdenes(['ord-hemograma', 'unknown'])).resolves.toEqual({
-      'ord-hemograma': 'Hemograma',
-    });
   });
 });
 
 describe('getEncounterTypes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: false,
-    });
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql' });
   });
 
   it('fetches the full encounter-type list without a query param', async () => {
@@ -257,23 +236,10 @@ describe('getEncounterTypes', () => {
     });
   });
 
-  it('fails closed on network errors when demo data is disabled', async () => {
+  it('propagates network errors to the caller', async () => {
     const error = new TypeError('Failed to fetch');
     mockedOpenmrsFetch.mockRejectedValue(error);
 
     await expect(getEncounterTypes()).rejects.toBe(error);
-  });
-
-  it('returns the full example list on network errors only when demo data is enabled', async () => {
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: true,
-    });
-    mockedOpenmrsFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-
-    const result = await getEncounterTypes();
-
-    expect(result.length).toBeGreaterThan(0);
-    expect(result.every((item) => typeof item.uuid === 'string' && typeof item.display === 'string')).toBe(true);
   });
 });

@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertShape, isIndicadorDetail, isPaginatedResponse, isSeriesResponse, isSQLPreview } from './validate';
+import {
+  assertShape,
+  isBatchResponse,
+  isIndicadorDetail,
+  isIndicadorMeta,
+  isIndicadorResultado,
+  isPaginatedResponse,
+  isSerieRow,
+  isSeriesResponse,
+  isSQLPreview,
+} from './validate';
 
 describe('isPaginatedResponse', () => {
   const valid = { items: [], total: 0, page: 1, size: 20, pages: 1 };
@@ -152,5 +162,79 @@ describe('assertShape', () => {
 
   it('includes the resource name in the message so contract drift surfaces clearly', () => {
     expect(() => assertShape(null, isSeriesResponse, 'GET /resultados/series')).toThrow(/GET \/resultados\/series/);
+  });
+});
+
+describe('isIndicadorResultado', () => {
+  const valid = {
+    id: 'res-1',
+    periodo_inicio: '2026-01-01',
+    periodo_fin: '2026-01-31',
+    valor: 12,
+    calculado_en: '2026-02-01T00:00:00.000Z',
+  };
+
+  it('accepts a well-formed resultado row', () => {
+    expect(isIndicadorResultado(valid)).toBe(true);
+  });
+
+  it.each([
+    ['valor as string', { ...valid, valor: '12' }],
+    ['valor as NaN-shaped string', { ...valid, valor: 'NaN' }],
+    ['missing calculado_en', { ...valid, calculado_en: undefined }],
+  ])('rejects %s', (_name, value) => {
+    expect(isIndicadorResultado(value)).toBe(false);
+  });
+});
+
+describe('isSerieRow', () => {
+  const valid = { periodo_label: '2026-01', valor: 10, meses_disponibles: 1, anio: 2026 };
+
+  it('accepts a well-formed series row', () => {
+    expect(isSerieRow(valid)).toBe(true);
+  });
+
+  it.each([
+    ['valor as string', { ...valid, valor: '10' }],
+    ['missing periodo_label', { ...valid, periodo_label: undefined }],
+  ])('rejects %s', (_name, value) => {
+    expect(isSerieRow(value)).toBe(false);
+  });
+});
+
+describe('isIndicadorMeta', () => {
+  const valid = {
+    id: 'meta-1',
+    indicador_version_id: 'ver-1',
+    anio: 2026,
+    valor_meta: 100,
+    creado_en: '2026-01-01',
+  };
+
+  it('accepts a well-formed meta record', () => {
+    expect(isIndicadorMeta(valid)).toBe(true);
+  });
+
+  it.each([
+    ['valor_meta as string', { ...valid, valor_meta: '100' }],
+    ['anio as string', { ...valid, anio: '2026' }],
+  ])('rejects %s', (_name, value) => {
+    expect(isIndicadorMeta(value)).toBe(false);
+  });
+});
+
+describe('isBatchResponse', () => {
+  it('accepts calculados/recalculados payloads with total and errores', () => {
+    expect(isBatchResponse({ calculados: 1, errores: [], total: 1 })).toBe(true);
+    expect(
+      isBatchResponse({ anio: 2026, recalculados: 0, errores: [{ indicador_id: 'a' }], total: 1 }),
+    ).toBe(true);
+  });
+
+  it.each([
+    ['missing total', { calculados: 1, errores: [] }],
+    ['errores not an array', { calculados: 1, errores: 'none', total: 1 }],
+  ])('rejects %s', (_name, value) => {
+    expect(isBatchResponse(value)).toBe(false);
   });
 });

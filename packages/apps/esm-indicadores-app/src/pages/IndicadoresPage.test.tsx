@@ -177,4 +177,17 @@ describe('IndicadoresPage backend contract', () => {
     expect(screen.getByText('No se pudieron cargar los indicadores.')).toBeInTheDocument();
     expect(screen.queryByText(/SQL timeout/)).not.toBeInTheDocument();
   });
+
+  it('requests the newly selected page size and resets to page 1', () => {
+    const useIndicadoresMock = vi.mocked(useIndicadores);
+    renderPage();
+
+    const pagination = document.querySelector('.cds--pagination');
+    expect(pagination).toBeInTheDocument();
+    const pageSizeSelect = within(pagination as HTMLElement).getByLabelText(/Items per page|Elementos por página/i);
+    fireEvent.change(pageSizeSelect, { target: { value: '20' } });
+
+    const lastCall = useIndicadoresMock.mock.calls.at(-1);
+    expect(lastCall).toEqual([1, 20]);
+  });
 });

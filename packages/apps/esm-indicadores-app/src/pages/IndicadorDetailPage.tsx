@@ -59,12 +59,11 @@ const IndicadorDetailPage: React.FC = () => {
     [latestVersion],
   );
 
-  const { data: ordenesData, isLoading: ordenesLoading } = useResolvedOrdenes(ordenUuids);
-
   // Resolve names for EVERY version definition once, at page level, instead
   // of letting each DefinicionView fire its own resolve requests (N×3
   // fetches for N versions). SWR dedupes only identical keys, so distinct
-  // uuid subsets still produce distinct network calls.
+  // uuid subsets still produce distinct network calls — hence a single
+  // page-wide `useResolvedOrdenes(allOrdenUuids)` instead of one per subset.
   const allLocationUuids = useMemo(
     () => Array.from(new Set(data?.versiones.flatMap((v) => v.definicion.evento?.location_uuids ?? []) ?? [])),
     [data],
@@ -113,7 +112,6 @@ const IndicadorDetailPage: React.FC = () => {
     [locationNames, diagnosticoNames, ordenNames, encounterTypeNames],
   );
 
-  const ordenesReady = ordenUuids.length === 0 || (!ordenesLoading && Boolean(ordenesData));
   const formNamesReady =
     (latestLocationUuids.length === 0 || !locationNamesLoading) &&
     (latestDiagnosticoUuids.length === 0 || !diagnosticoNamesLoading) &&
@@ -161,7 +159,7 @@ const IndicadorDetailPage: React.FC = () => {
         {t('backToIndicators', 'Volver a indicadores')}
       </Link>
 
-      {isLoading ? <p>{t('loadingIndicator', 'Cargando indicador...')}</p> : null}
+      {isLoading ? <InlineLoading description={t('loadingIndicator', 'Cargando indicador...')} /> : null}
       {error ? (
         <div className={styles.errorBanner}>
           {getUserFacingErrorMessage(
@@ -170,6 +168,10 @@ const IndicadorDetailPage: React.FC = () => {
             indicatorsErrorMessageOptions(t),
           )}
         </div>
+      ) : null}
+
+      {!isLoading && !error && !data ? (
+        <Tile className={styles.empty}>{t('indicatorNotFound', 'No se encontró el indicador.')}</Tile>
       ) : null}
 
       {data ? (
@@ -197,7 +199,7 @@ const IndicadorDetailPage: React.FC = () => {
           {showVersionForm ? (
             <Tile className={styles.section}>
               <h3 className={styles.sectionTitle}>{t('createNewVersion', 'Crear nueva versión')}</h3>
-              {ordenesReady && formNamesReady ? (
+              {formNamesReady ? (
                 <IndicadorForm
                   mode="version"
                   defaultValues={latestVersion ? parseDefinicion(latestVersion.definicion, formNames) : undefined}
@@ -209,8 +211,8 @@ const IndicadorDetailPage: React.FC = () => {
               ) : (
                 <InlineLoading
                   description={t(
-                    ordenesReady ? 'loadingNames' : 'loadingOrders',
-                    ordenesReady ? 'Cargando nombres clínicos...' : 'Cargando órdenes...',
+                    ordenUuids.length ? 'loadingOrders' : 'loadingNames',
+                    ordenUuids.length ? 'Cargando órdenes...' : 'Cargando nombres clínicos...',
                   )}
                 />
               )}
@@ -237,7 +239,11 @@ const IndicadorDetailPage: React.FC = () => {
                     versionNum={latestVersion.version}
                   />
                 </Tile>
-              ) : null}
+              ) : (
+                <Tile className={styles.empty}>
+                  {t('noVersionsYet', 'Este indicador aún no tiene versiones.')}
+                </Tile>
+              )}
             </div>
 
             <aside className={styles.detailAside}>

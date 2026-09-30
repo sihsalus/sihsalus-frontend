@@ -29,7 +29,7 @@ const IndicadoresPage: React.FC = () => {
   const [deactivationTarget, setDeactivationTarget] = useState<Indicador | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
   const deletingIdsRef = useRef(new Set<string>());
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
   const { data, isLoading, error } = useIndicadores(page, pageSize);
   const { deleteIndicador } = useDeleteIndicador();
 
@@ -141,11 +141,14 @@ const IndicadoresPage: React.FC = () => {
               </Table>
             </div>
             <Pagination
-              page={data.page}
-              pageSize={data.size}
-              pageSizes={[10]}
+              page={page}
+              pageSize={pageSize}
+              pageSizes={[10, 20, 50]}
               totalItems={data.total}
-              onChange={({ page }: { page: number }) => setPage(page)}
+              onChange={({ page, pageSize }: { page: number; pageSize: number }) => {
+                setPage(page);
+                setPageSize(pageSize);
+              }}
               size="sm"
             />
           </>

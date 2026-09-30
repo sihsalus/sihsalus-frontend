@@ -10,11 +10,11 @@ interface MetaProgressCardProps {
 }
 
 function calculateProgress(meta: number, currentValue: number): number {
-  if (meta <= 0) {
+  if (!Number.isFinite(meta) || !Number.isFinite(currentValue) || meta <= 0) {
     return 0;
   }
   const percentage = Math.round((currentValue / meta) * 100);
-  return Math.min(100, percentage);
+  return Math.min(100, Math.max(0, percentage));
 }
 
 const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue }) => {
@@ -27,7 +27,7 @@ const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue 
   // A target of zero is not a meaningful progress goal. Show the values but
   // label progress as "no target" instead of fabricating a 0% that is
   // indistinguishable from a target never reached.
-  const hasTarget = meta > 0;
+  const hasTarget = Number.isFinite(meta) && meta > 0;
   const percentage = hasTarget ? calculateProgress(meta, currentValue) : 0;
 
   return (

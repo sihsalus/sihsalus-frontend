@@ -631,7 +631,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
         <TableContainer className={styles.tableContainer}>
           <TableToolbar>
             <TableToolbarContent className={styles.tableToolBar}>
-              <Layer className={`${styles.toolbarItem} ${styles.filterGroup}`}>
+              <Layer className={styles.filterGroup}>
                 {props.useFilter && (
                   <Dropdown
                     id="orderStatusFilter"
@@ -686,7 +686,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                 />
                 <OrdersDateRangePicker />
               </Layer>
-              <Layer className={`${styles.toolbarItem} ${styles.searchGroup}`}>
+              <Layer className={styles.searchGroup}>
                 <Search
                   id="laboratory-orders-search"
                   labelText={t('searchThisList', 'Search this list')}

@@ -102,6 +102,9 @@ UPSS de origen y búsqueda. Las etiquetas van sobre los controles; en anchos
 reducidos se distribuyen en filas antes del contador y la tabla. La tabla mantiene
 sus columnas y desplazamiento horizontal dentro de la tarjeta. Se conserva el
 orden de pestañas, solicitudes, filtros, paginación y acciones por permiso.
+La barra permanece en el flujo normal incluso con los estilos globales del
+framework. El estado vacío usa el patrón de bandeja: texto centrado sobre un
+Tile, sin icono ni tarjeta adicional.
 
 Validar menús abiertos, búsquedas sin coincidencias y limpieza de filtros en
 escritorio y tablet; las comprobaciones locales usan datos sintéticos.

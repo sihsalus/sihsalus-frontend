@@ -112,7 +112,7 @@ test('antecedent workspaces keep fields scrollable and actions visible at narrow
   }
 });
 
-test('imaging actions remain visible and interconsulta filters do not overlap the table', async (t) => {
+test('imaging actions remain visible and clinical tray filters do not overlap the table', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'clinical-layout-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));
   const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-imaging-app');
@@ -122,7 +122,8 @@ test('imaging actions remain visible and interconsulta filters do not overlap th
     path.join(fixture, 'entry.js'),
     `import imaging from ${JSON.stringify(path.join(workspace, 'src/imaging/studies/study-form.scss'))};
 import tray from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-interconsultas-app/src/dashboard/interconsultas-table.scss'))};
-window.clinicalStyles = { imaging, tray };`,
+import laboratory from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-laboratory-app/src/components/orders-table/orders-data-table.scss'))};
+window.clinicalStyles = { imaging, tray, laboratory };`,
   );
   await compile(
     {
@@ -148,7 +149,7 @@ window.clinicalStyles = { imaging, tray };`,
       '<section id="files"><p>Selecciona archivos DICOM</p></section></div>' +
       '<div id="buttons" class="cds--btn-set"><button class="cds--btn cds--btn--secondary">Cancelar</button>' +
       '<button class="cds--btn cds--btn--primary">Subir</button></div></form></main>' +
-      '<section id="tray"><section class="cds--table-toolbar"><div id="toolbar" class="cds--toolbar-content">' +
+      '<section id="tray" class="cds--data-table-container"><section class="cds--table-toolbar"><div id="toolbar" class="cds--toolbar-content">' +
       '<div id="filters"><div><label>Servicio destino</label><select><option>Todos</option></select></div>' +
       '<div><label>UPSS de origen</label><select><option>Todos</option></select></div></div>' +
       '<div id="search"><input aria-label="Buscar"><button>Limpiar filtros</button></div></div></section>' +
@@ -156,6 +157,11 @@ window.clinicalStyles = { imaging, tray };`,
       '<tr><th>Fecha solicitud</th><th>Paciente</th></tr></thead></table></div></section>',
   );
   await page.addStyleTag({ path: require.resolve('@carbon/styles/css/styles.css') });
+  const sharedStyles = await configRequire('sass-embedded').compileAsync(
+    path.join(repositoryRoot, 'packages/libs/esm-styleguide/src/_overrides.scss'),
+    { loadPaths: [path.join(repositoryRoot, 'node_modules')] },
+  );
+  await page.addStyleTag({ content: sharedStyles.css });
   for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
     await page.addStyleTag({ path: path.join(outputPath, asset) });
   }
@@ -211,6 +217,125 @@ window.clinicalStyles = { imaging, tray };`,
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       'only the table scrolls horizontally',
     );
+  }
+
+  // Use Carbon's actual markup: its toolbar sizing and dropdown minimums are
+  // part of the regression, including when a sidebar leaves a narrow container.
+  const { createElement: h } = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const {
+    Button,
+    Dropdown,
+    Layer,
+    Search,
+    TableContainer,
+    TableToolbar,
+    TableToolbarContent,
+  } = require('@carbon/react');
+  const markup = renderToStaticMarkup(
+    h(
+      TableContainer,
+      { id: 'laboratory' },
+      h(
+        TableToolbar,
+        null,
+        h(
+          TableToolbarContent,
+          { id: 'lab-toolbar' },
+          h(
+            Layer,
+            { id: 'lab-filters' },
+            ...['Estado', 'Prioridad', 'Grupo de laboratorio', 'Indicaciones'].map((label, index) =>
+              h(Dropdown, {
+                key: label,
+                id: `lab-filter-${index}`,
+                titleText: label,
+                label: 'Todos',
+                items: ['Todos'],
+              }),
+            ),
+            h(
+              'div',
+              null,
+              h('label', { htmlFor: 'lab-dates' }, 'Rango de fechas'),
+              h('input', {
+                id: 'lab-dates',
+                value: '29/09/2026 – 30/09/2026',
+                readOnly: true,
+                style: { width: '100%' },
+              }),
+            ),
+          ),
+          h(
+            Layer,
+            { id: 'lab-search' },
+            h(Search, { id: 'lab-search-input', labelText: 'Buscar en esta lista', size: 'sm' }),
+            h(Button, { kind: 'tertiary', size: 'sm' }, 'Descargar reporte de exámenes completados'),
+          ),
+        ),
+      ),
+      h(
+        'div',
+        { className: 'cds--data-table-content', id: 'lab-results' },
+        h(
+          'table',
+          { className: 'cds--data-table', style: { minWidth: '68rem' } },
+          h('thead', null, h('tr', null, h('th', null, 'Paciente sintético'))),
+        ),
+      ),
+    ),
+  );
+  await page.evaluate((html) => {
+    document.getElementById('workspace').remove();
+    document.getElementById('tray').remove();
+    document.body.insertAdjacentHTML('beforeend', html);
+    const styles = window.clinicalStyles.laboratory;
+    for (const [id, key] of Object.entries({
+      laboratory: 'tableContainer',
+      'lab-toolbar': 'tableToolBar',
+      'lab-filters': 'filterGroup',
+      'lab-search': 'searchGroup',
+    })) {
+      document.getElementById(id).classList.add(styles[key]);
+    }
+  }, markup);
+  for (const viewport of [320, 768, 1440]) {
+    await page.setViewportSize({ width: viewport, height: 900 });
+    for (const width of [Math.min(320, viewport), viewport]) {
+      await page.locator('#laboratory').evaluate((element, width) => {
+        element.style.width = `${width}px`;
+      }, width);
+      const toolbar = await page.locator('#lab-toolbar').boundingBox();
+      const results = await page.locator('#lab-results').boundingBox();
+      assert.ok(
+        toolbar.y + toolbar.height <= results.y,
+        `laboratory filters stay above table at ${width}/${viewport}px`,
+      );
+      const controls = await page.locator('#lab-filters > *, #lab-search > *').evaluateAll((elements) =>
+        elements.map((element) => {
+          const { x, y, width, height } = element.getBoundingClientRect();
+          return { x, y, width, height };
+        }),
+      );
+      for (const [index, control] of controls.entries()) {
+        assert.ok(control.width >= 150, `laboratory control ${index} does not collapse at ${width}/${viewport}px`);
+        assert.ok(control.x >= 0 && control.x + control.width <= width, 'controls fit inside the tray');
+        assert.ok(control.y + control.height <= results.y, 'controls fit above the table');
+        for (const other of controls.slice(index + 1)) {
+          assert.ok(
+            control.x + control.width <= other.x ||
+              other.x + other.width <= control.x ||
+              control.y + control.height <= other.y ||
+              other.y + other.height <= control.y,
+            'controls do not overlap',
+          );
+        }
+      }
+      assert.ok(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        'only the lab table scrolls horizontally',
+      );
+    }
   }
 });
 

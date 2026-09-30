@@ -377,7 +377,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
               title={
                 hasActiveFilters
                   ? t('noMatchingInterconsultas', 'Ninguna interconsulta coincide con los filtros')
-                  : t('noInterconsultasInTray', 'Esta bandeja no tiene interconsultas')
+                  : t('noInterconsultasInTray', 'No hay interconsultas para mostrar')
               }
               helperText={
                 hasActiveFilters
@@ -385,7 +385,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
                       'adjustInterconsultaFilters',
                       'Cambie la búsqueda o limpie los filtros para ver todas las solicitudes.',
                     )
-                  : t('noInterconsultasInTrayHelper', 'Las solicitudes aparecerán aquí cuando alcancen este estado.')
+                  : t('noInterconsultasInTrayHelper', 'Comprobar los filtros anteriores')
               }
             />
           ) : (

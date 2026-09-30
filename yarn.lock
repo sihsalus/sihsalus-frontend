@@ -4175,7 +4175,7 @@ __metadata:
 
 "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
   version: 9.0.2
-  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=2c224c&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
+  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=c8662c&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@internationalized/date": "npm:^3.8.0"
@@ -4205,7 +4205,7 @@ __metadata:
     workbox-strategies: "npm:^6.1.5"
     workbox-webpack-plugin: "npm:^6.1.5"
     workbox-window: "npm:^6.1.5"
-  checksum: 10c0/432db829478fbd35283d32b848de2c90ee216f40803044638b99a49ae0f5f61de43acfb83479d8d59d7303cf3de0a7ad4f365644badfa5d6dc71c4bca9fe52da
+  checksum: 10c0/d5c209f194d1b9772ff5c01258fd7f7d4043f6c383a46766a80347e98566e3f6555e88829d51c70f6117a17a6118987c4fbd16db1afd0e1856df6d873cfa9bb3
   languageName: node
   linkType: hard
 
@@ -4427,9 +4427,9 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -4477,10 +4477,10 @@ __metadata:
     vitest: "npm:^5.0.2"
   peerDependencies:
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     rxjs: 6.x
     single-spa: 6.x
     swr: 2.x
@@ -4654,10 +4654,10 @@ __metadata:
     "@openmrs/esm-translations": 9.x
     "@openmrs/esm-utils": 9.x
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     rxjs: 6.x
     swr: 2.x
   languageName: unknown
@@ -4771,10 +4771,10 @@ __metadata:
     "@openmrs/esm-translations": 9.x
     "@openmrs/esm-utils": 9.x
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -4795,7 +4795,7 @@ __metadata:
     i18next-parser: "npm:^9.3.0"
     rimraf: "npm:^6.1.3"
   peerDependencies:
-    i18next: 25.x
+    i18next: 26.x
   languageName: unknown
   linkType: soft
 
@@ -4829,7 +4829,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-globals": 9.x
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     rxjs: 6.x
   languageName: unknown
   linkType: soft
@@ -6664,7 +6664,7 @@ __metadata:
     dayjs: 1.x
     react: ^18.3.1
     react-dom: ^18.1.0
-    react-i18next: 16.x
+    react-i18next: 17.x
     swr: 2.x
   languageName: unknown
   linkType: soft
@@ -6696,7 +6696,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -6743,7 +6743,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-is: 19.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
@@ -6788,7 +6788,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -6842,7 +6842,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -6881,7 +6881,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -6918,7 +6918,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -7001,7 +7001,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -7052,7 +7052,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-is: 19.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
@@ -7082,7 +7082,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     rxjs: 6.x
   languageName: unknown
   linkType: soft
@@ -7121,7 +7121,7 @@ __metadata:
     dayjs: 1.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7148,7 +7148,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-is: 19.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
@@ -7184,7 +7184,7 @@ __metadata:
     dayjs: 1.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -7275,7 +7275,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
     react-hook-form: ^7.89.0
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -7322,10 +7322,10 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7373,9 +7373,9 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     swr: 2.x
   languageName: unknown
   linkType: soft
@@ -7401,9 +7401,9 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -7431,7 +7431,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     single-spa: 6.x
@@ -7459,7 +7459,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: ^18.3.1
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7486,7 +7486,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     rxjs: 6.x
   languageName: unknown
   linkType: soft
@@ -7507,7 +7507,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -7537,7 +7537,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     rxjs: 6.x
     swr: 2.x
   languageName: unknown
@@ -7571,7 +7571,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -7598,7 +7598,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     single-spa: 6.x
     swr: 2.x
@@ -7635,7 +7635,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -7668,7 +7668,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7693,7 +7693,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     rxjs: 6.x
   languageName: unknown
   linkType: soft
@@ -7724,7 +7724,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7749,7 +7749,7 @@ __metadata:
     dayjs: 1.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7774,7 +7774,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: ^18.2.0
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7800,7 +7800,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: ^18.2.0
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7828,7 +7828,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7862,7 +7862,7 @@ __metadata:
     dayjs: 1.x
     lodash-es: 4.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     single-spa: 6.x
@@ -7889,7 +7889,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7913,7 +7913,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7940,7 +7940,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -7988,7 +7988,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8018,7 +8018,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8039,7 +8039,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8063,7 +8063,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8086,7 +8086,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8115,7 +8115,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8141,7 +8141,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8167,7 +8167,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8195,7 +8195,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8220,7 +8220,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8255,7 +8255,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8283,7 +8283,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: ^18.3.1
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8309,7 +8309,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8334,7 +8334,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8363,7 +8363,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8394,7 +8394,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     single-spa: 6.x
@@ -8427,7 +8427,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8449,7 +8449,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-audit-logger": "*"
     react: ">=18.0.0"
-    react-i18next: 16.x
+    react-i18next: 17.x
   languageName: unknown
   linkType: soft
 
@@ -8473,7 +8473,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     single-spa: 6.x
     swr: 2.x
@@ -8499,9 +8499,9 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
-    i18next: 25.x
+    i18next: 26.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -8548,7 +8548,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-is: 19.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
@@ -8576,7 +8576,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     single-spa: 6.x
@@ -8607,7 +8607,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: ^18.3.1
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8630,7 +8630,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     swr: 2.x
   languageName: unknown
   linkType: soft
@@ -8676,7 +8676,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8701,7 +8701,7 @@ __metadata:
     dayjs: 1.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     swr: 2.x
@@ -8731,7 +8731,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
   languageName: unknown
   linkType: soft
@@ -8762,7 +8762,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8802,7 +8802,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
     react: 18.x
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
   languageName: unknown
@@ -8828,7 +8828,7 @@ __metadata:
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: ^18.3.1
-    react-i18next: 16.x
+    react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -16484,6 +16484,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"i18next@npm:26.4.2, i18next@npm:^26.4.2":
+  version: 26.4.2
+  resolution: "i18next@npm:26.4.2"
+  peerDependencies:
+    typescript: ^5 || ^6 || ^7
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/f2c9613e03e09e56a84aee939d8fbe3442a58622915e11f97e47f9ab358dfa65be783230b37a21483152711f786fccfe697d7f5ea9269c54f16179dc59960e4b
+  languageName: node
+  linkType: hard
+
 "i18next@npm:^23.5.1 || ^24.2.0":
   version: 24.2.3
   resolution: "i18next@npm:24.2.3"
@@ -16495,32 +16507,6 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/7ac11a67d618ec714beef303aa497c1249bf5f1977dd3ebe9ca2673dfa6cadbba9e2d39ec1337688903ae3866ce9c1bc22cd6b265e66cce54c5db3a9bbedd390
-  languageName: node
-  linkType: hard
-
-"i18next@npm:^25.5.3":
-  version: 25.8.18
-  resolution: "i18next@npm:25.8.18"
-  dependencies:
-    "@babel/runtime": "npm:^7.28.6"
-  peerDependencies:
-    typescript: ^5
-  peerDependenciesMeta:
-    typescript:
-      optional: true
-  checksum: 10c0/a5b68b12a8de7db59c6253f6c714616e0a687f1543300cbcfdc847bf6199aef2e3d3645756e3c36a261fdbdde127ad42f4bd1d25571cfe0519849fcbe7665724
-  languageName: node
-  linkType: hard
-
-"i18next@npm:^26.4.2":
-  version: 26.4.2
-  resolution: "i18next@npm:26.4.2"
-  peerDependencies:
-    typescript: ^5 || ^6 || ^7
-  peerDependenciesMeta:
-    typescript:
-      optional: true
-  checksum: 10c0/f2c9613e03e09e56a84aee939d8fbe3442a58622915e11f97e47f9ab358dfa65be783230b37a21483152711f786fccfe697d7f5ea9269c54f16179dc59960e4b
   languageName: node
   linkType: hard
 
@@ -21010,6 +20996,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-i18next@npm:17.0.11, react-i18next@npm:^17.0.11":
+  version: 17.0.11
+  resolution: "react-i18next@npm:17.0.11"
+  dependencies:
+    "@babel/runtime": "npm:^7.29.2"
+    html-parse-stringify: "npm:^4.0.1"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    i18next: ">= 26.2.0"
+    react: ">= 16.8.0"
+    typescript: ^5 || ^6 || ^7
+  peerDependenciesMeta:
+    react-dom:
+      optional: true
+    react-native:
+      optional: true
+    typescript:
+      optional: true
+  checksum: 10c0/f49e83e377f56d8f6a198a00539925edbc77370b68a51ad8b1829b581abcd22dd57843118a8e541c2284f58899d8035d255c41e246cfc64e9c0ca42df071ed81
+  languageName: node
+  linkType: hard
+
 "react-i18next@npm:^16.0.0":
   version: 16.5.8
   resolution: "react-i18next@npm:16.5.8"
@@ -21029,28 +21037,6 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/a234ed701e53c47ce4c67f2bc74b5718a4fea2865d6eaae06f850cca35a1ead038e6fd25b2a4b629c96947f3e6bb997f6d81d07cc4584997a0373c62c6aba3eb
-  languageName: node
-  linkType: hard
-
-"react-i18next@npm:^17.0.11":
-  version: 17.0.11
-  resolution: "react-i18next@npm:17.0.11"
-  dependencies:
-    "@babel/runtime": "npm:^7.29.2"
-    html-parse-stringify: "npm:^4.0.1"
-    use-sync-external-store: "npm:^1.6.0"
-  peerDependencies:
-    i18next: ">= 26.2.0"
-    react: ">= 16.8.0"
-    typescript: ^5 || ^6 || ^7
-  peerDependenciesMeta:
-    react-dom:
-      optional: true
-    react-native:
-      optional: true
-    typescript:
-      optional: true
-  checksum: 10c0/f49e83e377f56d8f6a198a00539925edbc77370b68a51ad8b1829b581abcd22dd57843118a8e541c2284f58899d8035d255c41e246cfc64e9c0ca42df071ed81
   languageName: node
   linkType: hard
 

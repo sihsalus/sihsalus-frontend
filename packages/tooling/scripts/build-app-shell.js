@@ -227,6 +227,9 @@ function assertCompatibleAppShellConfig(
     '@openmrs/esm-framework': frameworkVersion,
     '@openmrs/esm-framework/src/internal': frameworkVersion,
     'swr/_internal': swrVersion,
+    i18next: require('i18next/package.json').version,
+    'react-i18next': require('react-i18next/package.json').version,
+    'react-router-dom': require('react-router-dom/package.json').version,
   };
   for (const [dependency, expectedVersion] of Object.entries(expectedVersions)) {
     const requiredVersion = shared[dependency]?.requiredVersion;

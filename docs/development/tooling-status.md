@@ -29,6 +29,20 @@ no establece el orden local de compilación observado con Turbo 2.11.
 build del framework deben preceder al typecheck de cada consumidor. No se deben
 compartir instalaciones entre worktrees ni depender de un `dist` de otra rama.
 
+## Versiones compartidas en el navegador
+
+Los peers de traducción siguen las versiones de runtime del monorepo:
+`i18next 26` y `react-i18next 17`. El parche existente del app-shell usa las
+versiones instaladas para esos singletons y para `react-router-dom`; las
+resoluciones del shell evitan compilar copias de las generaciones anteriores.
+
+Los consumidores con un peer comodín del framework usan la versión exacta
+instalada al generar Module Federation, incluida su etiqueta de prerelease.
+El evaluador de Webpack no acepta `9.0.3-pre.4728` con `>=0.0.0-0`. No sustituir
+el contrato por `requiredVersion: false` ni suprimir advertencias de consola.
+Las pruebas de build verifican los rangos con el evaluador del runtime y
+comprueban que los peers de los workspaces acepten las dependencias instaladas.
+
 ## Cómo validar cambios a estos contratos
 
 Ejecutar la instalación y los scripts según [desarrollo](README.md) y

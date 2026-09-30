@@ -43,7 +43,7 @@
     "@openmrs/esm-framework": "*",
     "react": "18.x",
     "react-dom": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "rxjs": "6.x"
   },
   "devDependencies": {

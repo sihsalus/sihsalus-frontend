@@ -311,3 +311,21 @@ test('source shell resolves explicit workspace imports to TypeScript', () => {
   const config = getAppShellWebpackConfig();
   assert.deepEqual(config.resolve.extensionAlias, { '.js': ['.js', '.ts', '.tsx'] });
 });
+
+test('workspace translation peers accept the installed runtime', () => {
+  const { satisfies } = require('semver');
+  for (const parent of ['apps', 'libs', 'templates']) {
+    const directory = path.join(repositoryRoot, 'packages', parent);
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const manifest = path.join(directory, entry.name, 'package.json');
+      if (!entry.isDirectory() || !fs.existsSync(manifest)) continue;
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      for (const dependency of ['i18next', 'react-i18next', 'react-router-dom']) {
+        const range = pkg.peerDependencies?.[dependency];
+        if (!range) continue;
+        const version = require(`${dependency}/package.json`).version;
+        assert.ok(satisfies(version, range), `${pkg.name}: ${dependency} ${version} does not satisfy ${range}`);
+      }
+    }
+  }
+});

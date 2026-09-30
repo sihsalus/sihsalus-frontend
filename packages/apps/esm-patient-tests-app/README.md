@@ -162,3 +162,12 @@ Review your concepts to see that the hierarchy all looks right in the Dictionary
 
 Go here to add the UUIDs for each of your ConvSet concepts which you want to show up in the Lab Results filters:
 <https://github.com/openmrs/openmrs-esm-patient-chart/blob/master/packages/esm-patient-tests-app/src/config-schema.ts#L3>
+
+## Chart dependency ownership
+
+The results trendline imports `@carbon/charts-react` directly, so this workspace
+explicitly declares that existing renderer. It must not rely on another workspace
+or hoisting to supply it. Direct D3 imports are not used by Patient Tests, Vitals
+or Generic Patient Widgets; their redundant D3 declarations are removed while the
+actual Carbon chart consumers remain. Carbon can still require D3 transitively;
+this cleanup does not claim a corresponding reduction in downloaded chart code.

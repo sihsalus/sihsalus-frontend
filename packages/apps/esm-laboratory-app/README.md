@@ -99,6 +99,26 @@ location resolve to the same nearest ancestor tagged `Facility Location`. Standa
 the cursor, the dashboard silently refetches the authoritative worklist without showing a duplicate
 notice. The frontend does not persist order UUIDs or notification history in browser storage.
 
+On every SSE `open`, including the first connection and bounded reconnects, the dashboard
+silently refetches its authoritative worklist. This closes the initial subscription gap and
+reconciles the displayed state even when an individual refresh signal was missed. It does not
+turn ephemeral notifications into guaranteed delivery. Native `EventSource` retains ownership
+of reconnection and `Last-Event-ID`; the frontend adds no retry timers or persistent history.
+With the OMOD's default 25-second streams and 3-second retry interval, this adds roughly two
+worklist refreshes per minute per open dashboard. Event IDs remain deduplicated across these
+reconnects, and an empty ID or mismatched, null, or malformed envelope is ignored.
+
+A transport error is not presented as successful delivery. Terminal failures such as an expired
+session remain subject to normal OpenMRS authentication and worklist error handling; no custom
+retry loop bypasses them. Unmounting or disabling realtime removes all listeners and closes the
+connection. The feature flag remains disabled by default.
+
+Validation: run this package's notification-hook and dashboard tests, then verify authenticated
+initial delivery, reconnection, session expiry, and role/facility isolation with synthetic accounts
+in coordinated DEV/QLTY before enabling the flag. Mocked transport tests do not establish the
+state of a deployed backend. The quarantined `clinical-recovery` suite remains blocked until its
+fixture and cleanup requirements are met; this frontend change does not bypass that gate.
+
 ## Getting Started
 
 ```sh

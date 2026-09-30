@@ -61,7 +61,12 @@ export function useLaboratoryNotifications(
       }
 
       if (
+        !notification ||
+        typeof notification !== 'object' ||
+        Array.isArray(notification) ||
         typeof notification.id !== 'string' ||
+        !notification.id.trim() ||
+        notification.type !== message.type ||
         deliveredIds.has(notification.id) ||
         notification.topic !== laboratoryNotificationTopic ||
         !laboratoryEventTypes.includes(notification.type as LaboratoryNotificationEventType) ||
@@ -87,11 +92,15 @@ export function useLaboratoryNotifications(
     laboratoryEventTypes.forEach((eventType) => {
       eventSource.addEventListener(eventType, handleNotification);
     });
+    // Reconcile on every bounded connection, including the first one: events
+    // may precede subscription or be missed without a usable replay cursor.
+    eventSource.addEventListener('open', handleResyncRequired);
     eventSource.addEventListener(notificationResyncEventType, handleResyncRequired);
     return () => {
       laboratoryEventTypes.forEach((eventType) => {
         eventSource.removeEventListener(eventType, handleNotification);
       });
+      eventSource.removeEventListener('open', handleResyncRequired);
       eventSource.removeEventListener(notificationResyncEventType, handleResyncRequired);
       eventSource.close();
     };

@@ -32,8 +32,8 @@ class FakeEventSource {
     }
   }
 
-  emit(type: string, data: string) {
-    this.listeners.get(type)?.({ data } as MessageEvent<string>);
+  emit(type: string, data = '') {
+    this.listeners.get(type)?.({ type, data } as MessageEvent<string>);
   }
 }
 
@@ -125,6 +125,120 @@ describe('laboratory notifications', () => {
     );
 
     expect(onNotification).not.toHaveBeenCalled();
+  });
+
+  it.each(['null', 'false', '42', '"text"', '[]', '{}', '{"payload":null}'])(
+    'ignores invalid event envelopes without throwing: %s',
+    (data) => {
+      const onNotification = vi.fn();
+      renderHook(() => useLaboratoryNotifications(true, onNotification, vi.fn()));
+      expect(() => FakeEventSource.instances[0].emit(labResultReadyEventType, data)).not.toThrow();
+      expect(onNotification).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects blank IDs and event names that disagree with the envelope', () => {
+    const onNotification = vi.fn();
+    renderHook(() => useLaboratoryNotifications(true, onNotification, vi.fn()));
+    const source = FakeEventSource.instances[0];
+    const envelope = {
+      id: ' ',
+      topic: 'laboratory',
+      type: labResultReadyEventType,
+      payload: { orderUuid: 'b6a5acd3-8c57-47c4-a9af-180c614bbd87' },
+    };
+    source.emit(labResultReadyEventType, JSON.stringify(envelope));
+    // Deliver through the registered listener with a mismatched transport event type.
+    source.listeners.get(labResultReadyEventType)?.({
+      type: 'UNEXPECTED_EVENT',
+      data: JSON.stringify({ ...envelope, id: 'valid-id' }),
+    } as MessageEvent<string>);
+    expect(onNotification).not.toHaveBeenCalled();
+  });
+
+  it('silently refreshes on initial connection and reconnect using the latest callback', () => {
+    const onNotification = vi.fn();
+    const firstRefresh = vi.fn();
+    const nextRefresh = vi.fn();
+    const { rerender } = renderHook(({ refresh }) => useLaboratoryNotifications(true, onNotification, refresh), {
+      initialProps: { refresh: firstRefresh },
+    });
+    const source = FakeEventSource.instances[0];
+    source.emit('open');
+    expect(firstRefresh).toHaveBeenCalledOnce();
+    // EventSource owns retries and Last-Event-ID; rerenders must not recreate it.
+    source.emit('error');
+    rerender({ refresh: nextRefresh });
+    source.emit('open');
+    expect(nextRefresh).toHaveBeenCalledOnce();
+    expect(firstRefresh).toHaveBeenCalledOnce();
+    expect(FakeEventSource.instances).toHaveLength(1);
+    expect(onNotification).not.toHaveBeenCalled();
+  });
+
+  it('keeps replay deduplication across reconnects', () => {
+    const onNotification = vi.fn();
+    renderHook(() => useLaboratoryNotifications(true, onNotification, vi.fn()));
+    const source = FakeEventSource.instances[0];
+    const data = JSON.stringify({
+      id: 'replayed-event',
+      topic: 'laboratory',
+      type: labResultReadyEventType,
+      payload: { orderUuid: 'b6a5acd3-8c57-47c4-a9af-180c614bbd87' },
+    });
+    source.emit('open');
+    source.emit(labResultReadyEventType, data);
+    source.emit('error');
+    source.emit('open');
+    source.emit(labResultReadyEventType, data);
+    expect(onNotification).toHaveBeenCalledOnce();
+  });
+
+  it('removes every listener when disabled and creates a fresh connection when re-enabled', () => {
+    const onNotification = vi.fn();
+    const onRefresh = vi.fn();
+    const { rerender, unmount } = renderHook(
+      ({ enabled }) => useLaboratoryNotifications(enabled, onNotification, onRefresh),
+      {
+        initialProps: { enabled: true },
+      },
+    );
+    const first = FakeEventSource.instances[0];
+    rerender({ enabled: false });
+    expect(first.close).toHaveBeenCalledOnce();
+    expect(first.listeners.size).toBe(0);
+    first.emit('open');
+    expect(onRefresh).not.toHaveBeenCalled();
+    rerender({ enabled: true });
+    expect(FakeEventSource.instances).toHaveLength(2);
+    FakeEventSource.instances[1].emit('open');
+    expect(onRefresh).toHaveBeenCalledOnce();
+    unmount();
+    expect(FakeEventSource.instances[1].close).toHaveBeenCalledOnce();
+    expect(FakeEventSource.instances[1].listeners.size).toBe(0);
+  });
+
+  it('does not invent successful delivery or force retries on connection errors', () => {
+    const onNotification = vi.fn();
+    const onRefresh = vi.fn();
+    renderHook(() => useLaboratoryNotifications(true, onNotification, onRefresh));
+    const source = FakeEventSource.instances[0];
+    source.emit('error');
+    source.emit('error');
+    expect(onNotification).not.toHaveBeenCalled();
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(FakeEventSource.instances).toHaveLength(1);
+  });
+
+  it('does not connect without a base URL or browser EventSource support', () => {
+    vi.stubGlobal('openmrsBase', '');
+    const { unmount } = renderHook(() => useLaboratoryNotifications(true, vi.fn(), vi.fn()));
+    expect(FakeEventSource.instances).toHaveLength(0);
+    unmount();
+    vi.stubGlobal('openmrsBase', '/openmrs');
+    vi.stubGlobal('EventSource', undefined);
+    renderHook(() => useLaboratoryNotifications(true, vi.fn(), vi.fn()));
+    expect(FakeEventSource.instances).toHaveLength(0);
   });
 
   it('does not connect when realtime notifications are disabled', () => {

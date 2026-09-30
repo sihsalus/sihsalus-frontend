@@ -155,7 +155,7 @@ const IndicadorDetailPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <Link to="/" className={styles.backLink}>
+      <Link to="/indicadores" className={styles.backLink}>
         {t('backToIndicators', 'Volver a indicadores')}
       </Link>
 

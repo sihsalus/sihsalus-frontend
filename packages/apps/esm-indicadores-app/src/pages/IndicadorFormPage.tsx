@@ -131,7 +131,7 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <Link to="/" className={styles.backLink}>
+          <Link to="/indicadores" className={styles.backLink}>
             {t('backToIndicators', 'Volver a indicadores')}
           </Link>
           <h2>{mode === 'create' ? t('newIndicator', 'Nuevo indicador') : t('editIndicator', 'Editar indicador')}</h2>

@@ -7,6 +7,7 @@ import RootComponent from './root.component';
 const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
 vi.mock('@openmrs/esm-framework', () => ({ useConfig: vi.fn() }));
+vi.mock('./pages/PanelPage', () => ({ default: () => <div>Panel page content</div> }));
 vi.mock('./pages/IndicadoresPage', () => ({ default: () => <div>Indicadores page content</div> }));
 vi.mock('./pages/IndicadorDetailPage', () => ({ default: () => <div>Detalle page content</div> }));
 vi.mock('./pages/IndicadorFormPage', () => ({ default: () => <div>Formulario page content</div> }));
@@ -54,38 +55,60 @@ describe('RootComponent lazy routed pages', () => {
     mockUseConfig.mockReturnValue(defaultTestConfig);
   });
 
-  it('mounts only the active page and keeps the module header and tabs visible', async () => {
+  it('mounts the Panel page by default and keeps the module header and tabs visible', async () => {
     renderAt('/');
 
     expect(screen.getByText('Indicadores Clínicos')).toBeInTheDocument();
-    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('Panel page content')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Panel' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Metas page content')).not.toBeInTheDocument();
   });
 
+  it('navigates to /indicadores and mounts the Indicadores page when the Indicadores tab is clicked', async () => {
+    renderAt('/');
+    await screen.findByText('Panel page content');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Indicadores' }));
+
+    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
+    await waitFor(() => expect(window.location.pathname).toBe(`${indicatorsBaseUrl}/indicadores`));
+    expect(screen.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
+  });
+
   it('navigates to /resultados and mounts the Resultados page when the Resultados tab is clicked', async () => {
     renderAt('/');
-    await screen.findByText('Indicadores page content');
+    await screen.findByText('Panel page content');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Resultados' }));
 
     expect(await screen.findByText('Resultados page content')).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toBe(`${indicatorsBaseUrl}/resultados`));
     expect(screen.getByRole('tab', { name: 'Resultados' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
   });
 
   it('navigates to /metas and mounts the Metas page when the Metas tab is clicked', async () => {
     renderAt('/');
-    await screen.findByText('Indicadores page content');
+    await screen.findByText('Panel page content');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Metas' }));
 
     expect(await screen.findByText('Metas page content')).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toBe(`${indicatorsBaseUrl}/metas`));
     expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
+  });
+
+  it('deep-links to /indicadores with the Indicadores tab selected and the Indicadores page mounted', async () => {
+    renderAt('/indicadores');
+
+    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
   });
 
   it('deep-links to /metas with the Metas tab selected and the Metas page mounted', async () => {
@@ -93,7 +116,7 @@ describe('RootComponent lazy routed pages', () => {
 
     expect(await screen.findByText('Metas page content')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
   });
 });
@@ -109,7 +132,7 @@ describe('RootComponent privilege guard bypass (dev-only)', () => {
     renderAt('/');
 
     expect(mockRequireModulePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:indicadores' }));
-    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
+    expect(await screen.findByText('Panel page content')).toBeInTheDocument();
   });
 
   it('skips RequireModulePrivilege when bypassPrivilegeGuard is true', async () => {
@@ -117,6 +140,6 @@ describe('RootComponent privilege guard bypass (dev-only)', () => {
     renderAt('/');
 
     expect(mockRequireModulePrivilege).not.toHaveBeenCalled();
-    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
+    expect(await screen.findByText('Panel page content')).toBeInTheDocument();
   });
 });

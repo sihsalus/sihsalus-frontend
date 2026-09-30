@@ -57,7 +57,12 @@ export function useMedicationOrderNotifications(
       }
 
       if (
+        !notification ||
+        typeof notification !== 'object' ||
+        Array.isArray(notification) ||
         typeof notification.id !== 'string' ||
+        !notification.id.trim() ||
+        notification.type !== message.type ||
         deliveredIds.has(notification.id) ||
         notification.topic !== pharmacyNotificationTopic ||
         notification.type !== medicationOrderCreatedEventType ||
@@ -81,9 +86,13 @@ export function useMedicationOrderNotifications(
     };
 
     eventSource.addEventListener(medicationOrderCreatedEventType, handleOrderCreated);
+    // Reconcile on every bounded connection, including the first one: events
+    // may precede subscription or be missed without a usable replay cursor.
+    eventSource.addEventListener('open', handleResyncRequired);
     eventSource.addEventListener(notificationResyncEventType, handleResyncRequired);
     return () => {
       eventSource.removeEventListener(medicationOrderCreatedEventType, handleOrderCreated);
+      eventSource.removeEventListener('open', handleResyncRequired);
       eventSource.removeEventListener(notificationResyncEventType, handleResyncRequired);
       eventSource.close();
     };

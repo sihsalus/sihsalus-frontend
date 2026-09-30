@@ -35,12 +35,12 @@ export interface ClinicalCatalog {
 }
 export interface SurveillanceEvent {
   uuid: string;
-  name: string;
   conceptUuid: string;
   conceptDisplay?: string;
-  periodicity: string;
-  deadlineDays: number;
-  retired?: boolean;
+  periodicity: "SEMANAL" | "INMEDIATA" | "DIARIA";
+  referenceRegulation: string;
+  validFrom: string;
+  validTo?: string | null;
 }
 export interface EncounterDiagnosis {
   uuid: string;

@@ -46,7 +46,7 @@ export function findDiagnosisMapping(
       const event = events.find((e) => e.uuid === disease.eventUuid);
       return {
         eventUuid: disease.eventUuid,
-        eventName: event?.name,
+        eventName: event?.conceptDisplay ?? event?.conceptUuid,
         severity: mapping.severity,
         species: mapping.species,
         diagnosisConceptUuid: mapping.diagnosisConceptUuid,
@@ -58,7 +58,7 @@ export function findDiagnosisMapping(
     const disease = m.diseases.find((d) => d.eventUuid === directEvent.uuid);
     return {
       eventUuid: directEvent.uuid,
-      eventName: directEvent.name,
+      eventName: directEvent.conceptDisplay ?? directEvent.conceptUuid,
       severity: disease?.severities?.[0]?.key,
       diagnosisConceptUuid: diagnosisUuid,
     };

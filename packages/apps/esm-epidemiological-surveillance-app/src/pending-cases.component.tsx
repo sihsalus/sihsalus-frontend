@@ -77,7 +77,7 @@ export function PendingCases({
                 {
                   catalogue.events.find(
                     (event) => event.uuid === item.content.eventUuid,
-                  )?.name
+                  )?.conceptDisplay ?? item.content.eventUuid
                 }
               </td>
               <td>{item.content.onsetDate}</td>

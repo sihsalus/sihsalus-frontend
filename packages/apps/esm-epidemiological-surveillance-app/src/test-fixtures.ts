@@ -3,10 +3,11 @@ export const catalogue: Catalogue = {
   events: [
     {
       uuid: "event",
-      name: "Synthetic disease",
       conceptUuid: "event-concept",
-      periodicity: "semanal",
-      deadlineDays: 7,
+      conceptDisplay: "Synthetic disease",
+      periodicity: "SEMANAL",
+      referenceRegulation: "NTS de prueba",
+      validFrom: "2026-01-01",
     },
   ],
   catalog: {

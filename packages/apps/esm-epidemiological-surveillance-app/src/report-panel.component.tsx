@@ -182,7 +182,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
           onChange={(event) => setEvent(event.target.value)}
         >
           {catalogue.events.map((item) => (
-            <SelectItem key={item.uuid} value={item.uuid} text={item.name} />
+            <SelectItem key={item.uuid} value={item.uuid} text={item.conceptDisplay ?? item.conceptUuid} />
           ))}
         </Select>
         <TextInput
@@ -362,7 +362,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
                         ? t("unknown", "Unknown")
                         : dimension === "disease"
                           ? catalogue.events.find((event) => event.uuid === key)
-                              ?.name
+                              ?.conceptDisplay ?? key
                           : dimension === "pregnancy"
                             ? t(`yesNo.${key}`)
                             : dimension === "sex"

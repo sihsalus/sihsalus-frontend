@@ -655,7 +655,7 @@ export function CaseForm({
         <Tile>
           <h3>{t("reviewBeforeSave", "Review before registering")}</h3>
           <p>
-            {patient ? patientName(patient) : ""} · {event?.name}
+            {patient ? patientName(patient) : ""} · {event?.conceptDisplay ?? event?.conceptUuid}
           </p>
           <dl>
             {(["onsetDate", "status", "origin"] as const)

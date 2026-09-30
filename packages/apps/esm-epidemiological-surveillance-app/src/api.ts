@@ -221,13 +221,13 @@ export async function saveEvent(
 
 export async function updateEvent(
   uuid: string,
-  event: Partial<SurveillanceEvent>,
+  event: Pick<SurveillanceEvent, "validTo">,
   signal?: AbortSignal,
 ): Promise<SurveillanceEvent> {
   try {
     return (
       await openmrsFetch<SurveillanceEvent>(
-        `${apiBase}/events/${encodeURIComponent(uuid)}`,
+        `${apiBase}/events/${encodeURIComponent(uuid)}/valid-to`,
         {
           method: "PUT",
           headers: {
@@ -243,19 +243,6 @@ export async function updateEvent(
   }
 }
 
-export async function deleteEvent(
-  uuid: string,
-  signal?: AbortSignal,
-): Promise<void> {
-  try {
-    await openmrsFetch(`${apiBase}/events/${encodeURIComponent(uuid)}`, {
-      method: "DELETE",
-      signal,
-    });
-  } catch (error) {
-    throw safeError(error);
-  }
-}
 
 export interface RestConcept {
   uuid: string;

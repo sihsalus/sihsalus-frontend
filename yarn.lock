@@ -12153,21 +12153,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"brace-expansion@npm:5.0.11":
-  version: 5.0.11
-  resolution: "brace-expansion@npm:5.0.11"
+"brace-expansion@npm:5.0.12":
+  version: 5.0.12
+  resolution: "brace-expansion@npm:5.0.12"
   dependencies:
     balanced-match: "npm:^4.0.2"
-  checksum: 10c0/ab88e750453420992cfef21c390246e52cba2d6293d8025d83fd99ca9ab93fef6e0cf41c86e39d33beb745faa79c8849835518ab8926cff565a79ca14156fffe
+  checksum: 10c0/a40ac64d3bdb5bb222456514d3633c1f627f03b844f509c69e70f98b78be0ce85e21b44bbfecdd0ddd4cc0855ca4242b41ea96ddccf88c7c3c7a84405474bb3a
   languageName: node
   linkType: hard
 
-"brace-expansion@patch:brace-expansion@npm%3A5.0.11#~/.yarn/patches/brace-expansion-npm-5.0.11-compat.patch":
-  version: 5.0.11
-  resolution: "brace-expansion@patch:brace-expansion@npm%3A5.0.11#~/.yarn/patches/brace-expansion-npm-5.0.11-compat.patch::version=5.0.11&hash=4859e0"
+"brace-expansion@patch:brace-expansion@npm%3A5.0.12#~/.yarn/patches/brace-expansion-npm-5.0.12-compat.patch":
+  version: 5.0.12
+  resolution: "brace-expansion@patch:brace-expansion@npm%3A5.0.12#~/.yarn/patches/brace-expansion-npm-5.0.12-compat.patch::version=5.0.12&hash=3f905e"
   dependencies:
     balanced-match: "npm:^4.0.2"
-  checksum: 10c0/2dbf680464357ca0e7e70c999f83ab7159cfabdbd6a5e47dc09a869b832d467e266dc27a1f6ef4b0334a0e1ca5b466f984005f639fff58e5f0ac800f5d841e6c
+  checksum: 10c0/dacc4e684a8cef7cf3168d38b2d52a5e22e5b7c7194bcb199e094ddc45121a3ed41cf5f7bb969e8c6d583f5cd36c8d96d5af9dbd8db75cb2d87a8a2e126fef72
   languageName: node
   linkType: hard
 
@@ -15126,10 +15126,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-uri@npm:3.1.7":
-  version: 3.1.7
-  resolution: "fast-uri@npm:3.1.7"
-  checksum: 10c0/ca2baa4bde48fc7322bdc692c6636975943ebe4f6dd97e07d70b14e0ab85af2ff30de90f550f5ec2956684fe208e150d85d6cb5f3c74438c8ac1bf86bd435c13
+"fast-uri@npm:3.1.8":
+  version: 3.1.8
+  resolution: "fast-uri@npm:3.1.8"
+  checksum: 10c0/c9c47860a7f9110176d94bb30a02942182f0bfc8d6780e9702f320336dc2dadb83b1d9879cceaf8d4b439642d1ec6d78c317cb808ab155455551bd5d9d7c22d8
   languageName: node
   linkType: hard
 

@@ -11,7 +11,7 @@ const yarnLock = readFileSync(path.join(repositoryRoot, 'yarn.lock'), 'utf8');
 
 const protectedDependencies = [
   { name: 'browserslist', minimumSafeVersion: '4.28.7' },
-  { name: 'fast-uri', minimumSafeVersion: '3.1.6' },
+  { name: 'fast-uri', minimumSafeVersion: '3.1.8' },
   { name: 'flatted', minimumSafeVersion: '3.4.2' },
   { name: 'js-yaml', minimumSafeVersion: '4.3.2' },
   { name: 'nanoid', minimumSafeVersion: '3.3.18' },
@@ -78,19 +78,19 @@ test('brace-expansion stays patched and compatible with every minimatch API gene
   for (const [descriptor, resolution] of braceExpansionResolutions) {
     assert.match(
       resolution,
-      /^patch:brace-expansion@npm%3A5\.0\.11#~\/\.yarn\/patches\/brace-expansion-npm-5\.0\.11-/,
-      `${descriptor} must resolve to the patched brace-expansion@5.0.11 package`,
+      /^patch:brace-expansion@npm%3A5\.0\.12#~\/\.yarn\/patches\/brace-expansion-npm-5\.0\.12-/,
+      `${descriptor} must resolve to the patched brace-expansion@5.0.12 package`,
     );
   }
 
   assert.doesNotMatch(
     yarnLock,
-    /^ {2}resolution: "brace-expansion@npm:(?:[0-4]\.|5\.0\.(?:[0-9]|10)(?:"|$))/m,
+    /^ {2}resolution: "brace-expansion@npm:(?:[0-4]\.|5\.0\.(?:[0-9]|10|11)(?:"|$))/m,
     'yarn.lock must not contain a vulnerable brace-expansion release',
   );
 
   const braceExpand = require('brace-expansion');
-  assert.equal(require('brace-expansion/package.json').version, '5.0.11');
+  assert.equal(require('brace-expansion/package.json').version, '5.0.12');
   assert.equal(typeof braceExpand, 'function', 'legacy CommonJS consumers must receive a callable export');
   assert.equal(typeof braceExpand.expand, 'function', 'current consumers must receive the named expand export');
   assert.deepEqual(braceExpand('{a,b}'), ['a', 'b']);

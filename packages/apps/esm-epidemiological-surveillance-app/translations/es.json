@@ -1,5 +1,10 @@
 {
-  "infectionHierarchyHelp": "Provincia → Distrito → Centro poblado. Busca por nombre y selecciona cada nivel; se guarda únicamente el centro poblado.",
+  "patientAgeUnknown": "Edad no disponible",
+  "patientAgeYear": "año",
+  "patientAgeYears": "años",
+  "infectionSearchAll": "Código del centro poblado o nombre de centro poblado, distrito o provincia",
+  "infectionTypeMore": "Escribe al menos 3 letras, o el código del centro poblado (al menos 6 dígitos).",
+  "infectionHierarchyHelp": "Busca por código o nombre. Selecciona Provincia → Distrito → Centro poblado (código); se guarda únicamente el centro poblado.",
   "infectionChange": "Cambiar lugar",
   "infectionNoResults": "No se encontraron lugares. Prueba con otro nombre.",
   "infectionSearch": {
@@ -170,6 +175,8 @@
     "PARTIAL_PERIOD": "El rango seleccionado incluye periodos parciales; compara con precaución."
   },
   "errors": {
+    "ADDRESS_SEARCH_TOO_BROAD": "La búsqueda es demasiado amplia. Escribe un nombre más específico o el código del centro poblado.",
+    "ADDRESS_METADATA_INCOMPLETE": "Hay lugares sin código o jerarquía completa. Solicita revisar el catálogo de direcciones.",
     "SERVICE_UNAVAILABLE": "Vuelve a intentarlo. Los registros pendientes se conservan en este equipo.",
     "AUTHENTICATION_REQUIRED": "Inicia sesión nuevamente con la cuenta que capturó este registro.",
     "ACCESS_DENIED": "Tu cuenta no tiene permiso para esta acción. Contacta al administrador.",

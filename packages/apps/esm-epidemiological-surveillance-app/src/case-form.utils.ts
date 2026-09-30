@@ -16,6 +16,12 @@ export function patientName(patient: FhirResource): string {
     ""
   );
 }
+export function patientAge(birthDate: string | undefined, today: string): number | undefined {
+  const birth = birthDate?.slice(0, 10);
+  if (!birth || !/^\d{4}-\d{2}-\d{2}$/.test(birth) || !Number.isFinite(Date.parse(birth)) ||
+      new Date(birth).toISOString().slice(0, 10) !== birth || birth > today) return undefined;
+  return Number(today.slice(0, 4)) - Number(birth.slice(0, 4)) - (today.slice(5) < birth.slice(5) ? 1 : 0);
+}
 export function patientDni(patient: FhirResource): string {
   const dniObj =
     patient.identifier?.find((id) =>

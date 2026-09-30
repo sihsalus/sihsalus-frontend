@@ -3,10 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
-import {
-  searchInfectionAddresses,
-  type InfectionAddressLevel,
-} from "./infection-address.resource";
+import { searchInfectionAddresses } from "./infection-address.resource";
 import type { NamedReference } from "./types";
 import styles from "./infection-address-selector.scss";
 
@@ -20,28 +17,20 @@ export function InfectionAddressSelector({
   onChange: (value: string, display?: string) => void;
 }) {
   const { t } = useTranslation(moduleName);
-  const [parents, setParents] = useState<NamedReference[]>([]);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<NamedReference[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>();
   const [retry, setRetry] = useState(0);
-  const parent = parents.at(-1)?.uuid ?? "";
-  const level: InfectionAddressLevel =
-    parents.length === 0
-      ? "stateProvince"
-      : parents.length === 1
-        ? "countyDistrict"
-        : "cityVillage";
   // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit retry reloads the same search.
   useEffect(() => {
     const abort = new AbortController();
     setItems([]);
     setError(undefined);
-    setLoading(!value);
-    if (value) return () => abort.abort();
+    setLoading(!value && query.trim().length >= 3);
+    if (value || query.trim().length < 3) return () => abort.abort();
     const timer = setTimeout(() => {
-      void searchInfectionAddresses(level, parent, query, abort.signal)
+      void searchInfectionAddresses(query, abort.signal)
         .then((next) => {
           if (!abort.signal.aborted) setItems(next);
         })
@@ -56,10 +45,9 @@ export function InfectionAddressSelector({
       clearTimeout(timer);
       abort.abort();
     };
-  }, [level, parent, query, value, retry]);
+  }, [query, value, retry]);
 
   const reset = () => {
-    setParents([]);
     setQuery("");
     setItems([]);
     onChange("", "");
@@ -67,20 +55,15 @@ export function InfectionAddressSelector({
   const choose = (item: NamedReference) => {
     setQuery("");
     setItems([]);
-    if (level === "cityVillage") onChange(item.uuid, item.display);
-    else setParents((current) => [...current, item]);
+    onChange(item.uuid, item.display);
   };
   return (
     <fieldset className={styles.selector}>
       <legend>{t("fields.infectionAddressUuid")}</legend>
       <p>{t("infectionHierarchyHelp")}</p>
-      {(value || parents.length > 0) && (
+      {value && (
         <div className={styles.selection}>
-          <span>
-            {value
-              ? display || t("infectionPreservedCenter")
-              : parents.at(-1)?.display}
-          </span>
+          <span>{display || t("infectionPreservedCenter")}</span>
           <Button kind="ghost" size="sm" onClick={reset}>
             {t("infectionChange")}
           </Button>
@@ -90,8 +73,8 @@ export function InfectionAddressSelector({
         <>
           <Search
             id="infection-address-search"
-            labelText={t(`infectionSearch.${level}`)}
-            placeholder={t(`infectionSearch.${level}`)}
+            labelText={t("infectionSearchAll")}
+            placeholder={t("infectionSearchAll")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -111,10 +94,7 @@ export function InfectionAddressSelector({
               </Button>
             </>
           ) : (
-            <ul
-              className={styles.options}
-              aria-label={t(`infectionSearch.${level}`)}
-            >
+            <ul className={styles.options} aria-label={t("infectionSearchAll")}>
               {items.map((item) => (
                 <li key={item.uuid}>
                   <button type="button" onClick={() => choose(item)}>
@@ -122,7 +102,15 @@ export function InfectionAddressSelector({
                   </button>
                 </li>
               ))}
-              {!items.length && <li>{t("infectionNoResults")}</li>}
+              {!items.length && (
+                <li>
+                  {t(
+                    query.trim().length < 3
+                      ? "infectionTypeMore"
+                      : "infectionNoResults",
+                  )}
+                </li>
+              )}
             </ul>
           )}
         </>

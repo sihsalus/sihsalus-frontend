@@ -29,6 +29,7 @@ import {
   hasConcept,
   patientDni,
   patientName,
+  patientAge,
   prefill,
   referenceId,
   validateCase,
@@ -96,6 +97,10 @@ export function CaseForm({
     (item) => item.uuid === request.eventUuid,
   );
   const userUuid = session?.user?.uuid;
+  const ageLabel = (item: FhirResource) => {
+    const age = patientAge(item.birthDate, dateInZone(m.timezone));
+    return age === undefined ? t("patientAgeUnknown") : `${age} ${t(age === 1 ? "patientAgeYear" : "patientAgeYears")}`;
+  };
 
   useEffect(() => {
     const abort = new AbortController();
@@ -499,7 +504,7 @@ export function CaseForm({
               items={patients}
               itemToString={(item) =>
                 item
-                  ? `${patientName(item)}${patientDni(item) ? ` · DNI: ${patientDni(item)}` : ""}`
+                  ? `${patientName(item)} · ${ageLabel(item)}${patientDni(item) ? ` · DNI: ${patientDni(item)}` : ""}`
                   : ""
               }
               onInputChange={handlePatientInputChange}
@@ -519,6 +524,7 @@ export function CaseForm({
               <p>
                 {patientDni(patient) ? `DNI: ${patientDni(patient)} · ` : ""}
                 {t(`sexValues.${patient.gender ?? "unknown"}`)}
+                {` · ${ageLabel(patient)}`}
               </p>
             </Tile>
           )}

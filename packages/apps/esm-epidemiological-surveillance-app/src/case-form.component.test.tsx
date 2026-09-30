@@ -71,6 +71,7 @@ vi.mock("./api", async (importOriginal) => ({
       resourceType: "Patient",
       id: "patient",
       name: [{ text: "Synthetic Patient" }],
+      birthDate: "2000-01-01",
     },
   ]),
   references: vi.fn(async (resource: string) =>
@@ -112,11 +113,13 @@ describe("case registration screen", () => {
     await waitFor(() =>
       expect(screen.getByText(/Synthetic Patient/)).toBeInTheDocument(),
     );
+    expect(screen.getByText(/Synthetic Patient.*years/)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/Synthetic Patient/));
     await waitFor(() =>
       expect(screen.getByText(/Metaxenicas/)).toBeInTheDocument(),
     );
     expect(screen.getByText(/Other care/)).toBeInTheDocument();
+    expect(screen.getByText(/years/)).toBeInTheDocument();
     expect(screen.queryByLabelText("Recording professional")).not.toBeInTheDocument();
   });
   it("registers a draft within three steps", async () => {

@@ -1,60 +1,91 @@
 import { read, SurveillanceApiError } from "./api";
 import type { NamedReference } from "./types";
 
-export type InfectionAddressLevel =
-  | "stateProvince"
-  | "countyDistrict"
-  | "cityVillage";
 interface HierarchyEntry {
   uuid: string;
   name: string;
+  userGeneratedId?: string;
   parent?: HierarchyEntry;
 }
 
-/** Same Address Hierarchy AJAX contract used by patient-registration; retain UUIDs, not free text. */
+/** Native Address Hierarchy contract, as used by patient-registration. */
 export async function searchInfectionAddresses(
-  level: InfectionAddressLevel,
-  parent: string,
   query: string,
   signal?: AbortSignal,
 ): Promise<NamedReference[]> {
-  const params = new URLSearchParams({
-    addressField: level,
-    limit: "20",
-    searchString: query.trim() || "%",
-    parentUuid: parent,
-  });
-  const entries = await read<HierarchyEntry[]>(
-    `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?${params}`,
-    signal,
-  );
-  if (!Array.isArray(entries))
-    throw new SurveillanceApiError("SERVICE_UNAVAILABLE", 0);
-  return entries.map((entry) => {
-    const path: HierarchyEntry[] = [];
-    let current: HierarchyEntry | undefined = entry;
-    const seen = new Set<string>();
-    while (current) {
-      if (
-        !current.uuid ||
-        typeof current.name !== "string" ||
-        seen.has(current.uuid)
-      )
-        throw new SurveillanceApiError("SERVICE_UNAVAILABLE", 0);
-      seen.add(current.uuid);
-      path.unshift(current);
-      current = current.parent;
-    }
-    const depth =
-      level === "stateProvince" ? 1 : level === "countyDistrict" ? 2 : 3;
-    if (path.length < depth || (parent && entry.parent?.uuid !== parent))
+  const term = query.trim();
+  if (term.length < 3) return [];
+  let requests = 0;
+  async function entries(
+    addressField: string,
+    searchString: string,
+    parentUuid = "",
+    parentCode?: string,
+  ) {
+    if (++requests > 50)
+      throw new SurveillanceApiError("ADDRESS_SEARCH_TOO_BROAD", 0);
+    const params = new URLSearchParams({
+      addressField,
+      limit: "1000",
+      searchString,
+      parentUuid,
+    });
+    if (parentCode) params.set("userGeneratedIdForParent", parentCode);
+    const result = await read<HierarchyEntry[]>(
+      `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?${params}`,
+      signal,
+    );
+    if (
+      !Array.isArray(result) ||
+      result.some((entry) => !entry?.uuid || typeof entry.name !== "string")
+    )
       throw new SurveillanceApiError("SERVICE_UNAVAILABLE", 0);
-    return {
-      uuid: entry.uuid,
-      display: path
-        .slice(-depth)
-        .map((part) => part.name)
-        .join(" → "),
-    };
-  });
+    // Do not silently treat a truncated hierarchy as complete.
+    if (result.length >= 1000)
+      throw new SurveillanceApiError("ADDRESS_SEARCH_TOO_BROAD", 0);
+    return result;
+  }
+  let centers: HierarchyEntry[];
+  if (/^\d+$/.test(term)) {
+    // As in registration, a populated-center UBIGEO extends the six-digit district code.
+    if (term.length < 6) return [];
+    centers = (await entries("cityVillage", "%", "", term.slice(0, 6))).filter(
+      (entry) => entry.userGeneratedId?.startsWith(term),
+    );
+  } else {
+    const [direct, districts, provinces] = await Promise.all([
+      entries("cityVillage", term),
+      entries("countyDistrict", term),
+      entries("stateProvince", term),
+    ]);
+    const allDistricts = new Map(districts.map((entry) => [entry.uuid, entry]));
+    for (const province of provinces) {
+      for (const district of await entries(
+        "countyDistrict",
+        "%",
+        province.uuid,
+      ))
+        allDistricts.set(district.uuid, district);
+    }
+    centers = [...direct];
+    for (const district of allDistricts.values())
+      centers.push(...(await entries("cityVillage", "%", district.uuid)));
+  }
+  return [
+    ...new Map(
+      centers.map((entry) => {
+        const district = entry.parent;
+        const province = district?.parent;
+        if (!district?.name || !province?.name || !entry.userGeneratedId)
+          throw new SurveillanceApiError("ADDRESS_METADATA_INCOMPLETE", 0);
+        return [
+          entry.uuid,
+          {
+            uuid: entry.uuid,
+            display: `${province.name} → ${district.name} → ${entry.name} (${entry.userGeneratedId})`,
+          },
+        ] as const;
+      }),
+    ).values(),
+  ].sort((a, b) => a.display.localeCompare(b.display));
 }

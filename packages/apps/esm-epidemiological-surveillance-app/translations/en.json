@@ -1,5 +1,10 @@
 {
-  "infectionHierarchyHelp": "Province → District → Populated center. Search by name and select each level; only the populated center is saved.",
+  "patientAgeUnknown": "Age unavailable",
+  "patientAgeYear": "year",
+  "patientAgeYears": "years",
+  "infectionSearchAll": "Populated-center code or name of center, district or province",
+  "infectionTypeMore": "Enter at least 3 letters, or the populated-center code (at least 6 digits).",
+  "infectionHierarchyHelp": "Search by code or name. Select Province → District → Populated center (code); only the populated center is saved.",
   "infectionChange": "Change place",
   "infectionNoResults": "No places found. Try another name.",
   "infectionSearch": {
@@ -170,6 +175,8 @@
     "PARTIAL_PERIOD": "The selected range includes partial periods; compare with caution."
   },
   "errors": {
+    "ADDRESS_SEARCH_TOO_BROAD": "Search is too broad. Enter a more specific name or populated-center code.",
+    "ADDRESS_METADATA_INCOMPLETE": "Some places lack a code or complete hierarchy. Ask the administrator to review the address catalog.",
     "SERVICE_UNAVAILABLE": "Please try again. Pending records remain saved on this device.",
     "AUTHENTICATION_REQUIRED": "Sign in again with the account that captured this record.",
     "ACCESS_DENIED": "Your account does not have permission for this action. Contact the administrator.",

@@ -70,18 +70,29 @@ Se usa exclusivamente la cola compartida del framework: `queueSynchronizationIte
 
 ## Indicadores y usabilidad
 
-“Lugar probable de infección” es un único campo agrupado con búsqueda por nombre:
-Provincia → Distrito → Centro poblado. Usa el contrato AJAX de Address Hierarchy
+El paciente muestra su edad en años cumplidos tanto en las opciones como después
+de seleccionarlo, calculada desde `birthDate` con la fecha de la zona horaria del
+catálogo. Una fecha ausente, inválida o futura se muestra como edad no disponible.
+
+“Lugar probable de infección” busca directamente por nombre de centro poblado,
+distrito o provincia, o por código de centro poblado. Todas las opciones muestran
+Provincia → Distrito → Centro poblado (código). Usa el contrato AJAX de Address Hierarchy
 que utiliza patient-registration, sin importar componentes de otro microfrontend:
 `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form`,
 con `addressField=stateProvince|countyDistrict|cityVillage`, `parentUuid`,
-`searchString` y `limit=20`. La búsqueda permite acotar los primeros 20 resultados.
+`searchString` y `limit=1000`. Expande provincias/distritos encontrados hasta sus
+centros poblados y deduplica por UUID. Para código usa `userGeneratedIdForParent`
+con los seis primeros dígitos del UBIGEO, como patient-registration; conserva los
+ceros iniciales y filtra por el prefijo escrito. Requiere al menos tres caracteres
+para nombres o seis dígitos para código. No inventa códigos faltantes. Si alcanza
+el límite de resultados de una consulta o 50 peticiones, pide acotar la búsqueda
+en lugar de presentar una lista silenciosamente incompleta.
 Requiere ese OMOD y autorización de lectura; los errores no se convierten en listas
 vacías ni en direcciones libres. Este cambio no modifica los filtros de indicadores.
 
 Solo el UUID del centro poblado se envía como `infectionAddressUuid`, no los nombres
 ni los UUID de provincia/distrito. Conserva la selección y su ruta al volver del
-resumen; “Cambiar lugar” limpia la selección y reinicia la jerarquía. Descarta
+resumen; “Cambiar lugar” limpia la selección y reinicia la búsqueda. Descarta
 respuestas de búsquedas anteriores y permite reintentar tras un error. Una referencia
 precargada sin ruta se muestra como selección anterior, sin inventar su nombre.
 
@@ -135,10 +146,10 @@ yarn workspace @sihsalus/esm-epidemiological-surveillance-app build
 
 Usar Node/Yarn del monorepo. Pruebas sintéticas de tres pasos, campos/fechas, precarga, permisos concedidos/denegados, cambio de usuario, paginación, errores seguros, cola y reportes.
 
-Validación local del selector unificado (2026-09-30): `test` PASSED (42 pruebas
+Validación local de edad y búsqueda directa (2026-09-30): `test` PASSED (51 pruebas
 Vitest y 2 comprobaciones HMR), `typescript` PASSED, `lint` PASSED con una advertencia
 de variable `revision` no usada en el dashboard. Pruebas: contrato AJAX y UUID/ruta,
-selección de tres niveles, conservación de selección, descarte de respuestas tardías,
+consulta por nombres/código, edad antes/después de cumpleaños, conservación de selección, descarte de respuestas tardías,
 reintento/error/vacío y captura en paso 2 con paso 3 de solo lectura. `build` PASSED
 con dos advertencias de tamaño del bundle. Prueba integrada del selector con sesión
 real y smoke clínico DEV/QLTY: NOT RUN (sin sesión de prueba coordinada).

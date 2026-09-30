@@ -46,11 +46,11 @@ Ace's legacy `file-loader` resolver with explicit JSON/theme/search imports and
 a locally emitted JSON worker; its synthetic browser test covers those assets. Clinical
 cross-workspace dependencies and stylesheet dependencies remain declared.
 
-Knip's current Rspack configuration reader invokes application factories from the
-repository root, where the required app `routes.json` is absent. A static-only
-scan with the Rspack/Webpack plugins disabled was used for investigation, followed
-by manual consumer checks. That scan is not a clean repository dependency audit;
-the normal Knip command still needs its configuration-loading integration fixed.
+The initial investigation disabled Knip's Rspack/Webpack plugins because their
+configuration reader invokes build factories outside the owning workspace.
+The September 30 maintenance pass below replaces that workaround: only runtime
+configuration loading is excluded, while plugin visitors and statically traced
+build configuration entry points remain active.
 
 ## Measurements
 
@@ -237,3 +237,71 @@ local development build. Run `yarn test:styles` and
 Confirm icons, permissions, styles and keyboard behavior
 in coordinated synthetic DEV/QLTY before release. Local component and SVG tests
 do not establish deployed browser or clinical acceptance.
+
+## Maintenance baseline (2026-09-30)
+
+Source reference: `b6141950294712f0ad2634d4ca9b19edb0a6f174`. Measurements below
+are a prioritization baseline, not a new before/after performance claim.
+
+Knip now skips executing Rspack/Webpack configuration factories by setting each
+plugin's `config` patterns to an empty array. Application and library build
+configurations remain explicit static entry points. Both plugins remain enabled,
+including the visitor that discovers `require.context` dependencies. This permits
+analysis after an immutable install without first compiling build-tool workspaces
+or running application factories with the repository root as their working directory.
+A synthetic CLI regression proves that lazy imports and context-loaded modules stay
+reachable while a truly unused file is reported; the fixture's build factory throws
+if evaluated. No exit-code suppression or new global dependency ignore is introduced.
+
+`yarn knip --reporter json` still exits 1 when it finds candidates. This is a
+completed analysis, not a clean audit or permission to delete every reported item.
+Review scripts, styles, tests, Module Federation contracts, extension registrations
+and downstream workspaces before removing any declaration or export. In particular,
+public framework exports and clinical registrations can be consumed outside a
+single workspace's static import graph.
+
+The following sizes sum emitted JavaScript files from the six selected production
+builds, with per-file gzip using Node defaults. Shared/runtime assets can be present
+in multiple output directories: do not sum rows as a page-download estimate.
+
+| Application      | Emitted JS bytes | Per-file gzip bytes | Largest emitted JS bytes |
+| ---------------- | ---------------: | ------------------: | -----------------------: |
+| Consulta Externa |        1,728,193 |             566,819 |                  421,836 |
+| Laboratory       |          939,974 |             305,738 |                  324,191 |
+| Pharmacy         |          785,574 |             251,172 |                  195,819 |
+| Patient Tests    |        3,000,328 |             675,613 |         1,093,384 (main) |
+| Odontologia      |        2,706,745 |             383,753 |        2,032,014 (async) |
+| Form Engine      |        3,509,958 |             903,030 |         1,415,451 (main) |
+
+A synthetic Chromium registration probe requested 1,098,737 bytes across four
+Patient Tests JavaScript assets to resolve its `./start` exports. It used the actual
+production Module Federation artifact with shared host services simulated, UTF-8
+responses, a fresh browser context and all external network requests blocked. All
+nine exports resolved. This isolates module registration; it is not a clinical
+screen render, backend latency measurement or complete SPA download size.
+
+Environment: macOS arm64, Node 24.15.0, Yarn 4.18.1. The selected build graph
+completed 30 tasks in 17.920 seconds, with 24 cache hits. This is neither a cold-build
+time nor a user-facing latency measurement. An initial sandboxed attempt failed
+because SWC could not materialize its native cache; rerunning with filesystem access
+passed without application changes. No local Docker was used. DEV preflight showed
+8.3 GiB free and approximately 3.9 GiB available RAM; availability is transient.
+
+GitHub provides a separate reference for total validation time:
+
+| Run / phase                                                                                            | Duration | Interpretation                                         |
+| ------------------------------------------------------------------------------------------------------ | -------: | ------------------------------------------------------ |
+| [CI 36654174473](https://github.com/sihsalus/sihsalus-frontend/actions/runs/36654174473), quality job  |    120 s | Includes setup and cache restoration                   |
+| Same run, full verification step                                                                       |     67 s | Cache participation must be retained when comparing    |
+| Same run, build step                                                                                   |      1 s | Reused outputs; not compilation speed                  |
+| Same run, SPA assembly                                                                                 |     56 s | Remaining serial packaging work                        |
+| Same run, Node/Yarn setup across jobs                                                                  |  39–61 s | Separate per-job preparation cost                      |
+| [Image 36675429030](https://github.com/sihsalus/sihsalus-frontend/actions/runs/36675429030), build job |    371 s | Verification image, different SHA `a3ddd7453`          |
+| Same image run, Buildx step                                                                            |    335 s | Includes build/export/cache work, not only compilation |
+
+Next measurements should prioritize actual requested assets for Patient Tests and
+Form Engine before changing their loading boundaries. Odontologia's large async
+chunk needs profiling of its contents; its size alone does not justify splitting
+code needed together. Keep browser/network measurements with synthetic data,
+backend timing and cache state separate from artifact sizes. Use existing Turbo
+summaries, Rspack stats and browser tooling rather than a new benchmark framework.

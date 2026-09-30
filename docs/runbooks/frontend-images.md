@@ -12,6 +12,21 @@ local. Estos archivos siguen activos y deben cambiar junto con sus consumidores.
 Esta guía describe el contrato; la evidencia de construcción corresponde al SHA
 y al workflow registrados en cada PR.
 
+La receta usa BuildKit y la sintaxis estable `docker/dockerfile:1.20` para
+copiar los manifiestos de todos los workspaces conservando sus rutas. Yarn
+instala antes de copiar el código y los assets: los cambios de implementación
+pueden reutilizar la capa de dependencias; los cambios de manifiestos, lockfile
+o parches de `.yarn` la invalidan. No mantener una lista manual de paquetes ni
+un script adicional para preparar este contexto. Ver
+[`COPY --parents`](https://docs.docker.com/reference/dockerfile/#copy---parents).
+
+Dentro del builder, `YARN_NM_MODE=hardlinks-local` conserva la deduplicación
+entre paquetes del proyecto sin incluir el almacén global de hardlinks de Yarn
+en las capas. El caché de descargas sigue siendo un mount de BuildKit. Este
+ajuste no modifica el modo de instalación de los entornos de desarrollo.
+Los modos disponibles están documentados en
+[`nmMode`](https://yarnpkg.com/configuration/yarnrc#nmMode).
+
 Consultar el [estado de configuración](../development/tooling-status.md) y el
 [runbook de go-live](frontend-go-live.md). Un PR o una compilación local no
 autoriza publicación, promoción, rollback ni acceso a un servidor.

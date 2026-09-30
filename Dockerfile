@@ -1,27 +1,32 @@
-# Dockerfile
+# syntax=docker/dockerfile:1.20
 
-# Stage 1: Build local @sihsalus/* modules — deterministic, no network required
-FROM node:24-alpine AS builder
+# Install dependencies independently of application source changes.
+FROM node:24-alpine AS dependencies
 WORKDIR /app
 RUN apk upgrade --no-cache
 RUN corepack enable && corepack prepare yarn@4.18.1 --activate
 
 # Copy root manifests first
-COPY package.json yarn.lock .yarnrc.yml turbo.json tsconfig.base.json ./
+COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/ ./.yarn/
 
-# Copy workspaces (required so Yarn can resolve workspace:* deps)
-COPY packages/ ./packages/
-
-# Some apps import shared illustrations and other static assets at build time.
-COPY assets/ ./assets/
+# Preserve workspace paths so source edits can reuse the dependency layer.
+COPY --parents packages/apps/*/package.json packages/libs/*/package.json packages/tooling/*/package.json ./
 
 ENV CI=true \
+    YARN_NM_MODE=hardlinks-local \
     IBM_TELEMETRY_DISABLED=true \
     TURBO_TELEMETRY_DISABLED=1 \
     DO_NOT_TRACK=1
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn install --immutable
+
+# Stage 1: Build local @sihsalus/* modules
+FROM dependencies AS builder
+COPY turbo.json tsconfig.base.json ./
+COPY packages/ ./packages/
+# Some apps import shared illustrations and other static assets at build time.
+COPY assets/ ./assets/
 
 RUN --mount=type=cache,target=/app/node_modules/.cache \
     yarn turbo run build --filter='./packages/apps/*' --filter='./packages/libs/*'

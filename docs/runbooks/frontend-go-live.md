@@ -32,6 +32,11 @@ Notas operativas verificadas el 2026-08-17:
 
 ## 2. Verificación de un despliegue
 
+DEV y QLTY no requieren OpenVPN. Comprobar directamente HTTPS y, cuando esté
+autorizado, SSH mediante los alias `gidis-dev` y `gidis-qlty`, que seleccionan
+la identidad configurada. No usar el estado de OpenVPN o Tailscale como requisito
+para estos dos ambientes. La conectividad debe verificarse en cada operación.
+
 ```sh
 # ¿Qué sirve cada ambiente? (comparar gitSha con el tip esperado)
 curl -sk https://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/spa/build-info.json

@@ -73,6 +73,160 @@ speedup. The measured compiler gains are recorded separately in the TypeScript
 migration document. No page-load latency, backend speed or clinical E2E result is
 inferred from bundle size or compiler timings.
 
+## Follow-up measurements (2026-09-29)
+
+The follow-up uses base `59ed12d0af3814a7f343175704fe56082de6bd4e` and the
+Stock lifecycle change. It keeps all 43 exports and the existing route and
+privilege registrations. Eleven screens and print previews use the existing
+OpenMRS asynchronous lifecycle; navigation links remain synchronous.
+
+The Rspack comparison used the same production settings and dependency
+installation on macOS arm64, Node 24.20.0:
+
+| Stock JavaScript       | Before (bytes) | After (bytes) | Reduction |
+| ---------------------- | -------------: | ------------: | --------: |
+| Main entrypoint        |         619261 |         45792 |     92.6% |
+| Main entrypoint, gzip  |         174724 |         15099 |     91.4% |
+| All emitted JavaScript |        2525768 |       2039702 |     19.2% |
+
+A separate Chromium probe used both Stock builds compiled on DEV (Linux amd64,
+Node 24.21.0) and the same app shell. Opening Stock Settings requested 665919
+bytes of Stock JavaScript before the change and 113339 after it (83.0% less,
+uncompressed). This counts the module's actual requested files, not shared
+framework assets or total page traffic. It is not a page-latency benchmark.
+The synthetic probe loaded all eleven lifecycles, exercised allowed and denied
+access, and recovered after an intentionally failed chunk download. It used
+mocked sessions, blocked external requests and disabled service workers; it
+does not establish backend, clinical or offline acceptance.
+
+A separate Vitest experiment on DEV used two workers, default isolation, one
+warmup and three alternating measurements per pool. All runs executed the same
+135 Stock tests in 22 files. Median wall time was 56.622 seconds with `forks`
+and 54.033 seconds with `threads` (4.6% less). That isolated gain was insufficient
+to justify changing the repository default. A temporary Carbon dependency
+optimizer experiment failed to load 19 test files because its generated ESM
+required `react/jsx-runtime`; it was not incorporated and its duration is not a
+successful-test measurement. No shared Vitest configuration or permanent
+benchmark harness was added.
+
+Workspace lint keeps the existing Biome configuration and path handling, but
+its helper now invokes Biome's installed CLI with Node directly. It no longer
+starts another Yarn process or maintains a separate Yarn-path and Windows-shell
+resolver. Turbo includes this helper in lint task inputs so a helper change
+invalidates cached lint results.
+On macOS arm64 with Node 24.20.0, one warmup and five alternating runs of lint
+on Stock's `src/index.ts` reduced median helper wall time from 569 ms to 51 ms
+(91.0%). This isolates wrapper startup and one file; it does not measure total
+CI lint time. Workspace-relative and absolute paths were checked, and a temporary
+fixture violating the root import rule still returned a failing exit status.
+
+Docker installs dependencies from root and workspace manifests before copying
+application source. An isolated source-only edit on DEV reused the installation
+layer; checking the `dependencies` target took 2.991 seconds. The install layer
+was 1.883 GB with project-local hardlinks versus 2.265 GB previously (16.9% less).
+This measures a build layer, not the published image. The complete uncached
+90-package compilation took 9m33s versus 9m28s before the change on the same
+two-CPU DEV host: there is no demonstrated cold-compilation gain. Installation
+durations are not compared because the download cache was warm in later runs.
+DEV exposes two VMware vCPUs on an Intel Xeon E5-2630 v4 at 2.20 GHz. During
+the later full unit-test run, two one-second `vmstat` samples showed 99% CPU
+busy and no I/O wait or CPU steal. That run also overlapped image validation;
+its wall time is compatibility evidence rather than a controlled CI benchmark.
+
+The starting GitHub evidence separates compilation from tests and packaging:
+
+| Phase                         | Observed time | Evidence                                             |
+| ----------------------------- | ------------: | ---------------------------------------------------- |
+| Lint, typecheck and build     |         6m07s | CI run `36628186863`; 270 tasks, no Turbo cache hits |
+| Unit-test task graph          |        16m43s | Same run; 115 tasks, 25 Turbo cache hits             |
+| SPA assembly                  |         1m15s | Same run; separate build reused all 90 build tasks   |
+| Image dependency installation |         1m04s | Image run `36632460105`                              |
+| Image compilation             |         2m50s | Same image run; 90 tasks, no Turbo cache hits        |
+| Image export                  |           52s | Same image run                                       |
+| GitHub Actions cache export   |         3m56s | Same image run                                       |
+
+These are observations from different jobs, not a controlled before/after
+comparison. In particular, saving compiler time does not imply the same saving
+in total CI or deployment time. The revised dependency-layer reuse still needs
+measurement in GitHub Actions after integration.
+
+For subsequent task-level measurements, use Turbo's native reporting rather
+than a custom timing script: `yarn test --summarize --log-file` retains the
+existing test graph, UTC timezone and concurrency. Run summaries are written
+under `.turbo/runs/` and structured logs under `.turbo/logs/`. Keep cache-hit
+status with each duration; a cached task does not measure test execution.
+The reporting flags were verified with a cached Stock lint task; that check
+does not add another executed functional test.
+
+The complete DEV build also reported large assets in Odontologia (an asynchronous
+chunk of 1985 KiB), Form Engine (main entrypoint of 1382 KiB) and Patient Tests
+(main entrypoint of 1068 KiB). These are candidates for route-level browser
+profiling; emitted size alone does not establish whether a user downloads a
+chunk on the first screen. The nine exceptions in `config/test-governance.json`
+also remain part of the baseline: successful workspace commands do not imply
+complete clinical regression coverage.
+
+The candidate `secure-init` image was tested by its local immutable ID
+`sha256:5e97741c57fefc5494227c7018e8396ab4fc0389bfa186523149683f52eebe47`.
+Trivy 0.70.0, using the database downloaded on 2026-09-29, scanned Alpine and
+Node packages with the release gate's `HIGH,CRITICAL` / `ignore-unfixed`
+threshold: **PASSED**, zero findings at that threshold. This is candidate
+evidence, not a published release or deployment.
+
+Both the default init assembly and the three existing `yarn assemble` steps
+(`generate-assemble-config.js`, `assemble-importmap.js`,
+`validate-spa-artifact.js`) passed inside that image as a non-root user without
+network access. The configured run resolved all 67 expected modules locally.
+Chromium checks using assets extracted from the same image passed allowed and
+denied access, all eleven lifecycle loads, and failed-chunk recovery; the
+Settings request total remained 113339 bytes with no page errors.
+
+The full DEV `yarn verify` completed successfully: 270 lint/typecheck/build
+tasks executed without Turbo cache hits (26m33s), followed by 115 successful
+tasks in the unit-test graph with 25 cache hits for build prerequisites (58m20s).
+DEV E2E typechecking also passed, reusing all ten prerequisite builds. This
+run used the application/dependency candidate before the lint-helper cleanup;
+the final helper was separately checked across all 91 lint tasks below.
+
+The subsequent DEV tooling command initially passed 199 of 200 tests. Its
+governance CLI test failed because the archive-based validation checkout had
+no `origin/main` ref. Importing the actual base commit and tree into that
+temporary checkout allowed the affected test to pass unchanged on retry.
+This fixes the validation environment; it is not a repository test change.
+The original temporary Docker validation target therefore exited with an error,
+and its later lint/audit/help steps did not run. Final lint and tooling evidence
+is recorded below; the same dependency candidate's separate DEV
+`yarn security:audit` passed, as did the final image scan.
+
+Final tooling checks on macOS arm64, Node 24.20.0:
+
+| Command                                      | Status | Scope                                                                   |
+| -------------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| `yarn lint`                                  | PASSED | 91 tasks executed, no cache hits; final Biome helper                    |
+| `yarn lint:all`                              | PASSED | 5863 files; 919 warnings and 8 informational diagnostics remain         |
+| `yarn test:tooling`                          | PASSED | 200 tests, no failures or skips                                         |
+| `yarn typecheck:e2e`                         | PASSED | Both E2E TypeScript projects; prerequisite build had 10 tasks, 8 cached |
+| `yarn prettier --check` on modified Markdown | PASSED | Documentation formatting                                                |
+| `git diff --check`                           | PASSED | Uncommitted change whitespace                                           |
+
+The separate `spa-artifact` target attempt was stopped after BuildKit rebuilt
+missing cache references and began recompiling unchanged packages. The three
+assembly commands above were completed in the already-built image instead;
+the interrupted target is not reported as a successful build. No permanent
+benchmark script, new dependency, test-pool change or deployment was added.
+
+## Integration revalidation
+
+The follow-up was integrated without conflicts onto `6469b8c7e` after the
+subsequent dependency updates. Measurements and DEV image results above remain
+evidence for the recorded original base, not benchmarks of the updated dependency
+graph. Final-head validation is recorded in the integration PR: focused local
+tooling and Stock checks, followed by the existing CI gates for full verification,
+SPA assembly, browser style contracts, E2E typechecking and dependency audit.
+This avoids repeating the full DEV run while still validating the integrated
+code. No clinical persistence, route registration or privilege policy changes
+are included.
+
 ## Validation and rollout
 
 Run immutable installation, security audit, tooling tests and

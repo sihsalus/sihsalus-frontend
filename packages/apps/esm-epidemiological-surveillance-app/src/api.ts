@@ -1,11 +1,11 @@
 import { openmrsFetch, restBaseUrl } from "@openmrs/esm-framework";
 import type {
-  CaseRequest,
   Catalogue,
   EncounterDiagnosis,
   FhirResource,
   NamedReference,
   Report,
+  ReportFilters,
   SurveillanceEvent,
   SurveillanceCase,
   SurveillanceCaseDraft,
@@ -22,6 +22,9 @@ export class SurveillanceApiError extends Error {
   }
 }
 const safeCodes = new Set([
+  "INVALID_ZONE_LEVEL",
+  "INVALID_DIAGNOSIS_TYPE",
+  "INVALID_REPORT_ADDRESS",
   "AUTHENTICATION_REQUIRED",
   "ACCESS_DENIED",
   "CLINICAL_CONCEPT_UNAVAILABLE",
@@ -163,9 +166,10 @@ export const getReport = (
   to: string,
   period: string,
   signal?: AbortSignal,
+  filters: ReportFilters = { zoneLevel: "CENTRO_POBLADO", diagnosisType: "CONFIRMADO" },
 ) =>
   read<Report>(
-    `${apiBase}/reports?${new URLSearchParams({ event, from, to, period })}`,
+    `${apiBase}/reports?${new URLSearchParams({ event, from, to, period, zoneLevel: filters.zoneLevel, diagnosisType: filters.diagnosisType, ...(filters.address ? { address: filters.address } : {}) })}`,
     signal,
   );
 

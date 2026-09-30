@@ -70,7 +70,19 @@ Se usa exclusivamente la cola compartida del framework: `queueSynchronizationIte
 
 ## Indicadores y usabilidad
 
-Confirmados por inicio de síntomas. Edad al inicio, sexo, enfermedad, grupo etario, etnia, gestación y periodo; faltantes como desconocidos. Canal por años previos, sin fabricar ceros fuera de cobertura ni clasificar periodos incompletos como zonas definitivas.
+Curva por inicio de síntomas y canal endémico desde `period_case_count` del OMOD.
+Filtros: `diagnosisType=CONFIRMADO|PROBABLE|TODOS` (predeterminado `CONFIRMADO`),
+`zoneLevel=DISTRITO|CENTRO_POBLADO` (predeterminado `CENTRO_POBLADO`) y `address`
+opcional, UUID de Address Hierarchy del nivel elegido. Provincia y distrito permiten
+buscar una zona; sin seleccionar una zona del nivel elegido se incluyen **todas** las
+zonas de ese nivel, no solo las de la provincia usada para buscar. Cambiar de nivel o
+provincia limpia la selección anterior. `TODOS` excluye descartados. La respuesta
+incluye los filtros aplicados; los títulos de los gráficos reflejan el diagnóstico.
+
+El histórico suma las zonas y diagnósticos de cada año antes de calcular cuartiles,
+sin fabricar ceros para años sin filas ni clasificar períodos incompletos como zonas
+definitivas. La distribución demográfica (RF-22) queda fuera de esta iteración y ya no
+se muestra. Contrato vigente: `epidemiologysurveillance/docs/api-contract.md`.
 
 Gráficos SVG con tablas accesibles; colores, texto e iconos para alertas. Estados de carga, vacío, sin permisos, sin contenido, sin conexión y error accionable. Traducciones en español/inglés; etiquetas del catálogo proceden del servidor.
 

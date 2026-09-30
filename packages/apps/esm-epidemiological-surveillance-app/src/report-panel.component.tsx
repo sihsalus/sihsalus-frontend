@@ -14,7 +14,13 @@ import { dateInZone } from "./case-form.utils";
 import type { Config } from "./config-schema";
 import { moduleName } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
-import type { Catalogue, Report } from "./types";
+import type {
+  Catalogue,
+  Report,
+  ReportDiagnosis,
+  ReportZoneLevel,
+} from "./types";
+import { ReportAddressFilter } from "./report-address-filter.component";
 import styles from "./dashboard.scss";
 
 function SeriesChart({
@@ -123,7 +129,7 @@ function SeriesChart({
         </text>
       </svg>
       <figcaption>
-        {t("confirmedCases", "Confirmed cases")}
+        {t(`reportDiagnoses.${report.diagnosisType}`)}
         {channel ? " · Q1 (25%) · Q2 (50%) · Q3 (75%)" : ""}
       </figcaption>
     </figure>
@@ -152,15 +158,23 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
   const [report, setReport] = useState<Report>();
   const [error, setError] = useState<unknown>();
   const [loading, setLoading] = useState(false);
-  const [dimension, setDimension] = useState("ageGroup");
+  const [zoneLevel, setZoneLevel] = useState<ReportZoneLevel>("CENTRO_POBLADO");
+  const [diagnosisType, setDiagnosisType] =
+    useState<ReportDiagnosis>("CONFIRMADO");
+  const [address, setAddress] = useState("");
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reconnect must refresh the same selected report from the server.
   useEffect(() => {
     const abort = new AbortController();
     setReport(undefined);
     setError(undefined);
+    setLoading(false);
     if (!event || !from || !to || from > to || to > today) return;
     setLoading(true);
-    void getReport(event, from, to, period, abort.signal)
+    void getReport(event, from, to, period, abort.signal, {
+      zoneLevel,
+      diagnosisType,
+      address,
+    })
       .then((value) => {
         if (!abort.signal.aborted) setReport(value);
       })
@@ -171,7 +185,17 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
         if (!abort.signal.aborted) setLoading(false);
       });
     return () => abort.abort();
-  }, [event, from, to, period, today, online]);
+  }, [
+    event,
+    from,
+    to,
+    period,
+    today,
+    online,
+    zoneLevel,
+    diagnosisType,
+    address,
+  ]);
   return (
     <section className={styles.form} aria-label={t("indicators", "Indicators")}>
       <div className={styles.filters}>
@@ -182,7 +206,11 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
           onChange={(event) => setEvent(event.target.value)}
         >
           {catalogue.events.map((item) => (
-            <SelectItem key={item.uuid} value={item.uuid} text={item.conceptDisplay ?? item.conceptUuid} />
+            <SelectItem
+              key={item.uuid}
+              value={item.uuid}
+              text={item.conceptDisplay ?? item.conceptUuid}
+            />
           ))}
         </Select>
         <TextInput
@@ -217,6 +245,39 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             />
           ))}
         </Select>
+        <Select
+          id="report-diagnosis"
+          labelText={t("reportDiagnosisType")}
+          value={diagnosisType}
+          onChange={(event) =>
+            setDiagnosisType(event.target.value as ReportDiagnosis)
+          }
+        >
+          {(["CONFIRMADO", "PROBABLE", "TODOS"] as const).map((value) => (
+            <SelectItem
+              key={value}
+              value={value}
+              text={t(`reportDiagnoses.${value}`)}
+            />
+          ))}
+        </Select>
+        <Select
+          id="report-zone-level"
+          labelText={t("reportZoneLevel")}
+          value={zoneLevel}
+          onChange={(event) => {
+            setZoneLevel(event.target.value as ReportZoneLevel);
+            setAddress("");
+          }}
+        >
+          <SelectItem value="DISTRITO" text={t("reportDistrict")} />
+          <SelectItem value="CENTRO_POBLADO" text={t("reportCenter")} />
+        </Select>
+        <ReportAddressFilter
+          key={zoneLevel}
+          level={zoneLevel}
+          onChange={setAddress}
+        />
       </div>
       {from > to || to > today ? (
         <InlineNotification
@@ -242,7 +303,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
         <>
           <Tile>
             <h3>
-              {t("confirmedCases", "Confirmed cases")}: {report.total}
+              {t(`reportDiagnoses.${report.diagnosisType}`)}: {report.total}
             </h3>
             <p>
               {t("calculatedAt", "Calculated at")}:{" "}
@@ -259,7 +320,9 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             />
           ))}
           {report.total === 0 && (
-            <p>{t("noCases", "No confirmed cases in this period.")}</p>
+            <p>
+              {t("noSelectedCases", "No cases match the selected filters.")}
+            </p>
           )}
           <h3>{t("epidemicCurve", "Epidemic curve")}</h3>
           <SeriesChart report={report} />
@@ -323,58 +386,6 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
               </tbody>
             </table>
           </details>
-          <h3>{t("demographics", "Demographic distribution")}</h3>
-          <Select
-            id="demographic-dimension"
-            labelText={t("groupBy", "Group by")}
-            value={dimension}
-            onChange={(event) => setDimension(event.target.value)}
-          >
-            {[
-              "age",
-              "ageGroup",
-              "sex",
-              "disease",
-              "ethnicity",
-              "pregnancy",
-              "period",
-            ].map((value) => (
-              <SelectItem
-                key={value}
-                value={value}
-                text={t(`dimensions.${value}`)}
-              />
-            ))}
-          </Select>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th scope="col">{t(`dimensions.${dimension}`)}</th>
-                <th scope="col">{t("columns.cases")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(report.demographics[dimension] ?? {}).map(
-                ([key, count]) => (
-                  <tr key={key}>
-                    <td>
-                      {key === "UNKNOWN"
-                        ? t("unknown", "Unknown")
-                        : dimension === "disease"
-                          ? catalogue.events.find((event) => event.uuid === key)
-                              ?.conceptDisplay ?? key
-                          : dimension === "pregnancy"
-                            ? t(`yesNo.${key}`)
-                            : dimension === "sex"
-                              ? t(`sexValues.${key}`, key)
-                              : key}
-                    </td>
-                    <td>{count}</td>
-                  </tr>
-                ),
-              )}
-            </tbody>
-          </table>
         </>
       )}
     </section>

@@ -105,13 +105,23 @@ export interface SurveillanceCase extends SurveillanceCaseDraft {
   uuid: string;
   individualRecordUuid?: string;
 }
+export type ReportDiagnosis = "CONFIRMADO" | "PROBABLE" | "TODOS";
+export type ReportZoneLevel = "DISTRITO" | "CENTRO_POBLADO";
+export interface ReportFilters {
+  zoneLevel: ReportZoneLevel;
+  diagnosisType: ReportDiagnosis;
+  address?: string;
+}
 export interface Report {
   generatedAt: string;
   eventUuid: string;
   from: string;
   to: string;
   period: string;
-  population: "CONFIRMED";
+  population: ReportDiagnosis;
+  zoneLevel: ReportZoneLevel;
+  diagnosisType: ReportDiagnosis;
+  address: string | null;
   total: number;
   curve: { date: string; cases: number }[];
   channel: {

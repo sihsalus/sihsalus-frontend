@@ -1,4 +1,20 @@
 {
+  "reportDiagnosisType": "Included cases",
+  "reportDiagnoses": {
+    "CONFIRMADO": "Confirmed cases",
+    "PROBABLE": "Probable cases",
+    "TODOS": "Confirmed and probable cases"
+  },
+  "reportZoneLevel": "Geographic level",
+  "reportProvince": "Province",
+  "reportDistrict": "District",
+  "reportCenter": "Populated center",
+  "reportChooseProvince": "Select a province to find a zone",
+  "reportChooseDistrict": "Select a district to find a populated center",
+  "reportAllDistricts": "All districts (all provinces)",
+  "reportAllCenters": "All populated centers (all districts)",
+  "reportAddressHelp": "Province helps you find zones. Without a zone selected at the chosen level, all zones at that level are included.",
+  "noSelectedCases": "No cases match the selected filters.",
   "epidemiologicalSurveillance": "Epidemiological Surveillance",
   "surveillanceDescription": "Register cases and review epidemiological indicators.",
   "cases": "Cases",
@@ -162,6 +178,9 @@
     "INVALID_DATE_RANGE": "Select a valid date range of up to two years, ending no later than today.",
     "OUTSIDE_COVERAGE": "Select dates within the verified surveillance coverage.",
     "INVALID_PERIOD": "Choose an available reporting period.",
+    "INVALID_ZONE_LEVEL": "Select district or populated center to view indicators.",
+    "INVALID_DIAGNOSIS_TYPE": "Select confirmed cases, probable cases, or both.",
+    "INVALID_REPORT_ADDRESS": "Select a zone that matches the chosen geographic level.",
     "EVENT_ALREADY_EXISTS": "A notifiable event with this identifier already exists.",
     "EVENT_CONCEPT_ALREADY_EXISTS": "A notifiable event for this disease or concept already exists.",
     "EVENT_CONCEPT_IMMUTABLE": "The clinical concept of an existing notifiable event cannot be changed."

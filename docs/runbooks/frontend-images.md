@@ -6,7 +6,7 @@
 
 [Dockerfile](../../Dockerfile) define los targets de construcción y runtime;
 [`.dockerignore`](../../.dockerignore) excluye dependencias, artefactos y entornos
-locales del contexto. [Nginx](../../nginx.spa.conf) conserva el fallback SPA y
+locales del contexto. [Nginx](../../config/nginx.spa.conf) conserva el fallback SPA y
 las políticas de caché. [Compose](../../docker-compose.yml) mantiene el entorno
 local. Estos archivos siguen activos y deben cambiar junto con sus consumidores.
 Esta guía describe el contrato; la evidencia de construcción corresponde al SHA
@@ -74,4 +74,4 @@ docker build --target spa-nginx -t sihsalus-frontend:local .
 docker run --rm --name sihsalus-frontend --network sihsalus-network -p 8080:80 sihsalus-frontend:local
 ```
 
-La red usada en el ejemplo debe contener o resolver un servicio `backend` en el puerto `8080`; es el upstream configurado en `nginx.spa.conf`. Nginx / reverse proxy y el volumen de producción se administran en el repositorio de infraestructura.
+La red usada en el ejemplo debe contener o resolver un servicio `backend` en el puerto `8080`; es el upstream configurado en `config/nginx.spa.conf`. Nginx / reverse proxy y el volumen de producción se administran en el repositorio de infraestructura.

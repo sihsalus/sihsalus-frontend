@@ -5,6 +5,7 @@
     "target": "es2015",
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "jsx": "react",
     "strictNullChecks": true,
     "moduleResolution": "NodeNext",

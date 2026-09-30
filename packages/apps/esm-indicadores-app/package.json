@@ -55,7 +55,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@rspack/cli": "2.2.7",
+    "@rspack/cli": "2.2.8",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.16.2",
     "@types/react": "^18.3.21",

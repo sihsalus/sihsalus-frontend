@@ -9,15 +9,36 @@ Vitest no requieren retirar estos contratos.
 La [migración al compilador nativo](typescript-native.md) documenta TypeScript 7,
 la compatibilidad de API que aún se necesita y el benchmark reproducible.
 
-| Área                  | Fuente                                                                                                                                     | Consumidores y contrato                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Yarn                  | [`.yarnrc.yml`](../../.yarnrc.yml), [`package.json`](../../package.json)                                                                   | Instalación inmutable con Yarn 4.18.1 y `node_modules`; los scripts de Turbo, Biome y TypeScript dependen de esa estructura. |
-| Node                  | [`.nvmrc`](../../.nvmrc)                                                                                                                   | Selección de Node 24 para desarrollo, alineada con el entorno de CI.                                                         |
-| Telemetría            | [`.env.yarn`](../../.env.yarn)                                                                                                             | Yarn inyecta los opt-outs; Turbo los propaga según `globalPassThroughEnv`. No contiene credenciales ni sustituye `.env`.     |
-| Imágenes              | [Dockerfile](../../Dockerfile), [`.dockerignore`](../../.dockerignore), [Nginx](../../nginx.spa.conf), [Compose](../../docker-compose.yml) | Targets de CI, contexto de build, fallback SPA, caché de assets y entorno local.                                             |
-| Gobernanza de pruebas | [Registro de deuda](../../config/test-governance.json)                                                                                     | El validador conserva responsables, riesgos y vencimientos; restaurar el registro no crea ni prorroga excepciones.           |
-| E2E                   | [Catálogo](../../e2e/suite-catalog.json)                                                                                                   | El runner, typecheck y CI mantienen la misma pertenencia, cuarentena y gates de las suites.                                  |
-| Código sin uso        | [Knip](../../knip.json)                                                                                                                    | Conserva los entry points y el alcance del análisis del monorepo.                                                            |
+| Área                  | Fuente                                                                                                                                            | Consumidores y contrato                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Yarn                  | [`.yarnrc.yml`](../../.yarnrc.yml), [`package.json`](../../package.json)                                                                          | Instalación inmutable con Yarn 4.18.1 y `node_modules`; los scripts de Turbo, Biome y TypeScript dependen de esa estructura. |
+| Node                  | [`.nvmrc`](../../.nvmrc)                                                                                                                          | Selección de Node 24 para desarrollo, alineada con el entorno de CI.                                                         |
+| Telemetría            | [`.env.yarn`](../../.env.yarn)                                                                                                                    | Yarn inyecta los opt-outs; Turbo los propaga según `globalPassThroughEnv`. No contiene credenciales ni sustituye `.env`.     |
+| Imágenes              | [Dockerfile](../../Dockerfile), [`.dockerignore`](../../.dockerignore), [Nginx](../../config/nginx.spa.conf), [Compose](../../docker-compose.yml) | Targets de CI, contexto de build, fallback SPA, caché de assets y entorno local.                                             |
+| Gobernanza de pruebas | [Registro de deuda](../../config/test-governance.json)                                                                                            | El validador conserva responsables, riesgos y vencimientos; restaurar el registro no crea ni prorroga excepciones.           |
+| E2E                   | [Catálogo](../../e2e/suite-catalog.json)                                                                                                          | El runner, typecheck y CI mantienen la misma pertenencia, cuarentena y gates de las suites.                                  |
+| Código sin uso        | [Knip](../../knip.json)                                                                                                                           | Conserva los entry points y el alcance del análisis del monorepo.                                                            |
+
+## Ubicación de configuraciones
+
+Las configuraciones de infraestructura sin descubrimiento automático, como
+`config/nginx.spa.conf`, viven en `config/`. El Dockerfile, el filtro del workflow
+de imágenes y sus pruebas apuntan a esa misma ruta. Los archivos convencionales
+de Yarn, Turbo, Biome, TypeScript y Playwright permanecen en la raíz; moverlos
+exigiría mantener argumentos o rutas adicionales en sus consumidores.
+
+## Rspack y servidor de desarrollo
+
+El compilador y la CLI usan Rspack 2.2.8; `@rspack/dev-server` 2.2.1 requiere
+un compilador de la misma generación. Actualizar las declaraciones de los
+workspaces, la plantilla y las resoluciones juntos: una resolución de Rspack 1
+con un servidor 2 puede compilar sin errores y fallar en el navegador al iniciar
+el cliente de hot reload (`log.setLogLevel`). La prueba del runtime verifica
+el peer del servidor y la exportación que consume su cliente.
+
+La configuración conserva `ModuleFederationPluginV1`, compatible con el host
+Webpack del app-shell. Este plugin no necesita el runtime adicional de Module
+Federation; actualizar el compilador no implica migrar ese protocolo.
 
 ## Orden de compilación de workspaces
 

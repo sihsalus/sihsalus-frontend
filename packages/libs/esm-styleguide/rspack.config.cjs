@@ -80,7 +80,6 @@ module.exports = (env, argv = {}) => ({
     ],
   },
   devServer: {
-    disableHostCheck: true,
     headers: {
       'Access-Control-Allow-Origin': '*',
     },

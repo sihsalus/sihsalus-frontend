@@ -1,4 +1,14 @@
 {
+  "infectionHierarchyHelp": "Provincia → Distrito → Centro poblado. Busca por nombre y selecciona cada nivel; se guarda únicamente el centro poblado.",
+  "infectionChange": "Cambiar lugar",
+  "infectionNoResults": "No se encontraron lugares. Prueba con otro nombre.",
+  "infectionSearch": {
+    "stateProvince": "Buscar provincia",
+    "countyDistrict": "Buscar distrito",
+    "cityVillage": "Buscar centro poblado"
+  },
+  "vaccinationValues": { "SI": "Sí", "NO": "No", "IGN": "Ignorado" },
+  "surveillanceValues": { "PASIVA": "Pasiva", "BUSQUEDA_ACTIVA": "Búsqueda activa" },
   "infectionChooseProvince": "Selecciona una provincia",
   "infectionChooseDistrict": "Selecciona un distrito",
   "infectionChooseCenter": "Selecciona un centro poblado",
@@ -75,6 +85,12 @@
   "groupBy": "Agrupar por",
   "unknown": "Sin información",
   "fields": {
+    "infectionAddressUuid": "Lugar probable de infección",
+    "vaccinationStatus": "Estado de vacunación",
+    "surveillanceType": "Tipo de vigilancia",
+    "investigationDate": "Fecha de investigación",
+    "notificationDate": "Fecha de notificación",
+    "deathDate": "Fecha de defunción",
     "patientUuid": "Paciente",
     "sourceEncounterUuid": "Atención de origen",
     "providerUuid": "Profesional que registra",

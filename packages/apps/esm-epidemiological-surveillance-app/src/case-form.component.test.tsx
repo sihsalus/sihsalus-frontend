@@ -117,7 +117,7 @@ describe("case registration screen", () => {
       expect(screen.getByText(/Metaxenicas/)).toBeInTheDocument(),
     );
     expect(screen.getByText(/Other care/)).toBeInTheDocument();
-    expect(screen.getByText("Synthetic professional")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Recording professional")).not.toBeInTheDocument();
   });
   it("registers a draft within three steps", async () => {
     render(
@@ -128,6 +128,25 @@ describe("case registration screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Register case" }));
     await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalled());
+  });
+  it("captures all case fields on step two and keeps step three read-only", async () => {
+    render(<CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("Synthetic professional")).toBeInTheDocument();
+    for (const label of ["Investigation date", "Notification date", "Death date", "Vaccination status", "Surveillance type"])
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Vaccination status"), { target: { value: "SI" } });
+    fireEvent.change(screen.getByLabelText("Investigation date"), { target: { value: "2026-01-20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.queryByLabelText("Vaccination status")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Investigation date")).not.toBeInTheDocument();
+    expect(screen.getByText("2026-01-20")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByLabelText("Vaccination status")).toHaveValue("SI");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Register case" }));
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(expect.objectContaining({ vaccinationStatus: "SI", investigationDate: "2026-01-20" })));
   });
   it("preserves the active form when connectivity changes", async () => {
     const props = { catalogue, initial: request, onSaved: vi.fn() };

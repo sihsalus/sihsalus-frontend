@@ -6,7 +6,7 @@ Terminología: visita = consulta; encounter = atención.
 
 ## Alcance
 
-Registro en **tres pasos**: paciente/atención de metaxénicas existente; clasificación y laboratorio; revisión y registro. Precarga valores inequívocos de observaciones/diagnósticos existentes. El servidor valida, asocia CIE-10, detecta duplicados y determina periodicidad y alertas. El registro completa esa misma atención; `CaseResult.uuid` es su UUID.
+Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación/defunción. No se incorpora React Form Engine en este cambio.
 
 Cubre RF-01 a RF-07, RF-11 a RF-13, RF-17 a RF-19, RF-22, RF-26 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye edición de casos guardados, padrón de febriles, NOTI/Excel, mapas o clasificación automática de focos. La aceptación con metadatos e instancia real sigue pendiente.
 
@@ -70,11 +70,20 @@ Se usa exclusivamente la cola compartida del framework: `queueSynchronizationIte
 
 ## Indicadores y usabilidad
 
-El selector del lugar de infección conserva el valor al volver al paso de captura;
-solo lo limpia cuando el usuario cambia provincia o distrito. Descarta respuestas
-de búsquedas anteriores, muestra los errores de carga y permite reintentar sin
-borrar el valor guardado en el formulario. Si se conserva una referencia sin su
-jerarquía cargada, se muestra como selección anterior, sin inventar su nombre.
+“Lugar probable de infección” es un único campo agrupado con búsqueda por nombre:
+Provincia → Distrito → Centro poblado. Usa el contrato AJAX de Address Hierarchy
+que utiliza patient-registration, sin importar componentes de otro microfrontend:
+`/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form`,
+con `addressField=stateProvince|countyDistrict|cityVillage`, `parentUuid`,
+`searchString` y `limit=20`. La búsqueda permite acotar los primeros 20 resultados.
+Requiere ese OMOD y autorización de lectura; los errores no se convierten en listas
+vacías ni en direcciones libres. Este cambio no modifica los filtros de indicadores.
+
+Solo el UUID del centro poblado se envía como `infectionAddressUuid`, no los nombres
+ni los UUID de provincia/distrito. Conserva la selección y su ruta al volver del
+resumen; “Cambiar lugar” limpia la selección y reinicia la jerarquía. Descarta
+respuestas de búsquedas anteriores y permite reintentar tras un error. Una referencia
+precargada sin ruta se muestra como selección anterior, sin inventar su nombre.
 
 Curva por inicio de síntomas y canal endémico desde `period_case_count` del OMOD.
 Filtros: `diagnosisType=CONFIRMADO|PROBABLE|TODOS` (predeterminado `CONFIRMADO`),
@@ -126,11 +135,19 @@ yarn workspace @sihsalus/esm-epidemiological-surveillance-app build
 
 Usar Node/Yarn del monorepo. Pruebas sintéticas de tres pasos, campos/fechas, precarga, permisos concedidos/denegados, cambio de usuario, paginación, errores seguros, cola y reportes.
 
-Validación local del selector de infección (2026-09-30): `test` PASSED (39 pruebas
+Validación local del selector unificado (2026-09-30): `test` PASSED (42 pruebas
 Vitest y 2 comprobaciones HMR), `typescript` PASSED, `lint` PASSED con una advertencia
-de variable `revision` no usada en el dashboard, `build` PASSED con dos advertencias
-de tamaño. Pruebas nuevas: conservación de la selección al montar/cambiar callback,
-limpieza al cambiar padres, descarte de respuestas tardías y reintento tras error.
+de variable `revision` no usada en el dashboard. Pruebas: contrato AJAX y UUID/ruta,
+selección de tres niveles, conservación de selección, descarte de respuestas tardías,
+reintento/error/vacío y captura en paso 2 con paso 3 de solo lectura. `build` PASSED
+con dos advertencias de tamaño del bundle. Prueba integrada del selector con sesión
+real y smoke clínico DEV/QLTY: NOT RUN (sin sesión de prueba coordinada).
+`yarn.cmd verify:changed --base origin/main --head HEAD`: BLOCKED; el lanzador
+termina con código 1 antes de las validaciones globales. En este Windows/Node 24,
+`spawnSync('yarn.cmd', ...)` sin shell devuelve `EINVAL`; se ejecutaron directamente
+los scripts del paquete. `git diff --check HEAD^ HEAD`: PASSED para este cambio.
+La comprobación contra `origin/main` señala una línea vacía final en `constants.ts`,
+fuera del cambio actual; no se modificó ese archivo.
 Validación integrada OpenMRS/MariaDB: NOT RUN, omitida por decisión del usuario.
 
 QA DEV/QLTY pendiente: catálogo/privilegios reales; sospechoso, positivo confirmado y negativo descartado; persistencia tras recarga; duplicados; alertas grave/gestante/foco/umbrales; cotejo de conteos; desconexión/reconexión y cambio de cuenta; teclado y presentación móvil. Solo pacientes sintéticos. Resultados medidos y límites en `epidemiologysurveillance/docs/informe-pruebas-iteracion-1.md`.

@@ -1,4 +1,14 @@
 {
+  "infectionHierarchyHelp": "Province → District → Populated center. Search by name and select each level; only the populated center is saved.",
+  "infectionChange": "Change place",
+  "infectionNoResults": "No places found. Try another name.",
+  "infectionSearch": {
+    "stateProvince": "Search province",
+    "countyDistrict": "Search district",
+    "cityVillage": "Search populated center"
+  },
+  "vaccinationValues": { "SI": "Yes", "NO": "No", "IGN": "Unknown" },
+  "surveillanceValues": { "PASIVA": "Passive", "BUSQUEDA_ACTIVA": "Active search" },
   "infectionChooseProvince": "Select a province",
   "infectionChooseDistrict": "Select a district",
   "infectionChooseCenter": "Select a populated center",
@@ -75,6 +85,12 @@
   "groupBy": "Group by",
   "unknown": "Unknown",
   "fields": {
+    "infectionAddressUuid": "Probable place of infection",
+    "vaccinationStatus": "Vaccination status",
+    "surveillanceType": "Surveillance type",
+    "investigationDate": "Investigation date",
+    "notificationDate": "Notification date",
+    "deathDate": "Death date",
     "patientUuid": "Patient",
     "sourceEncounterUuid": "Source care record",
     "providerUuid": "Registering professional",

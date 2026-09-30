@@ -63,6 +63,7 @@ export function CaseForm({
   const online = useConnectivity();
   const { catalog: m } = catalogue;
   const [step, setStep] = useState(0);
+  const [infectionAddressDisplay, setInfectionAddressDisplay] = useState("");
   const [request, setRequest] = useState<Partial<CaseRequest>>(
     () => initial ?? { uuid: globalThis.crypto.randomUUID() },
   );
@@ -194,6 +195,7 @@ export function CaseForm({
     }, 250);
   };
   async function choosePatient(id: string) {
+    setInfectionAddressDisplay("");
     const selected = patients.find((item) => item.id === id);
     const current = ++generation.current;
     setPatient(selected);
@@ -220,6 +222,7 @@ export function CaseForm({
     }
   }
   async function chooseEncounter(id: string) {
+    setInfectionAddressDisplay("");
     const current = ++generation.current;
     const selected = encounters.find((item) => item.id === id);
     setRequest((value) => ({
@@ -325,8 +328,6 @@ export function CaseForm({
             [
               "patientUuid",
               "sourceEncounterUuid",
-              "providerUuid",
-              "locationUuid",
             ].includes(field),
           )
         : errors;
@@ -529,6 +530,10 @@ export function CaseForm({
             })),
             chooseEncounter,
           )}
+        </>
+      )}
+      {step === 1 && (
+        <>
           <Select
             id="case-providerUuid"
             labelText={t("fields.providerUuid")}
@@ -557,10 +562,6 @@ export function CaseForm({
               <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
             ))}
           </Select>
-        </>
-      )}
-      {step === 1 && (
-        <>
           <Select
             id="case-disease-diagnosis"
             labelText={t("fields.eventUuid", "Enfermedad")}
@@ -598,7 +599,10 @@ export function CaseForm({
             "origin",
             m.origins.map((item) => ({ value: item.key, text: item.label })),
           )}
-          <InfectionAddressSelector value={request.infectionAddressUuid} onChange={(value) => update("infectionAddressUuid", value)} />
+          <InfectionAddressSelector value={request.infectionAddressUuid} display={infectionAddressDisplay} onChange={(value, display) => {
+            update("infectionAddressUuid", value);
+            setInfectionAddressDisplay(display ?? "");
+          }} />
           <TextInput
             id="case-onset"
             type="date"
@@ -643,33 +647,34 @@ export function CaseForm({
               <SelectItem key={s.key} value={s.key} text={s.label} />
             ))}
           </Select>
+          {select("vaccinationStatus", ["SI", "NO", "IGN"].map((value) => ({ value, text: t(`vaccinationValues.${value}`) })))}
+          {select("surveillanceType", ["PASIVA", "BUSQUEDA_ACTIVA"].map((value) => ({ value, text: t(`surveillanceValues.${value}`) })))}
+          {(["investigationDate", "notificationDate", "deathDate"] as const).map((key) => (
+            <TextInput key={key} id={`case-${key}`} type="date" labelText={t(`fields.${key}`)} value={request[key] ?? ""} disabled={busy} onChange={(e) => update(key, e.target.value)} />
+          ))}
         </>
       )}
       {step === 2 && (
         <>
-        <Select id="case-vaccination" labelText="Estado de vacunación" value={request.vaccinationStatus ?? ""} onChange={(e) => update("vaccinationStatus", e.target.value)}><SelectItem value="" text="No especificado" /><SelectItem value="SI" text="Sí" /><SelectItem value="NO" text="No" /><SelectItem value="IGN" text="Ignorado" /></Select>
-        <Select id="case-surveillance-type" labelText="Tipo de vigilancia" value={request.surveillanceType ?? ""} onChange={(e) => update("surveillanceType", e.target.value)}><SelectItem value="" text="No especificado" /><SelectItem value="PASIVA" text="Pasiva" /><SelectItem value="BUSQUEDA_ACTIVA" text="Búsqueda activa" /></Select>
-        <TextInput id="case-investigation-date" type="date" labelText="Fecha de investigación" value={request.investigationDate ?? ""} onChange={(e) => update("investigationDate", e.target.value)} />
-        <TextInput id="case-notification-date" type="date" labelText="Fecha de notificación" value={request.notificationDate ?? ""} onChange={(e) => update("notificationDate", e.target.value)} />
-        <TextInput id="case-death-date" type="date" labelText="Fecha de defunción" value={request.deathDate ?? ""} onChange={(e) => update("deathDate", e.target.value)} />
         <Tile>
           <h3>{t("reviewBeforeSave", "Review before registering")}</h3>
           <p>
             {patient ? patientName(patient) : ""} · {event?.conceptDisplay ?? event?.conceptUuid}
           </p>
           <dl>
-            {(["onsetDate", "status", "origin"] as const)
+            {(["onsetDate", "status", "origin", "vaccinationStatus", "surveillanceType", "investigationDate", "notificationDate", "deathDate"] as const)
               .filter((key) => request[key])
               .map((key) => (
                 <div key={key}>
                   <dt>{t(`fields.${key}`)}</dt>
                   <dd>
-                    {[...m.statuses, ...m.origins].find(
+                    {key === "vaccinationStatus" ? t(`vaccinationValues.${request[key]}`) : key === "surveillanceType" ? t(`surveillanceValues.${request[key]}`) : [...m.statuses, ...m.origins].find(
                       (item) => item.key === request[key],
                     )?.label ?? request[key]}
                   </dd>
                 </div>
               ))}
+            {request.infectionAddressUuid && <div><dt>{t("fields.infectionAddressUuid")}</dt><dd>{infectionAddressDisplay || t("infectionPreservedCenter")}</dd></div>}
             {request.severity && (
               <div>
                 <dt>{t("fields.severity")}</dt>

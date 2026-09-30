@@ -78,19 +78,19 @@ test('brace-expansion stays patched and compatible with every minimatch API gene
   for (const [descriptor, resolution] of braceExpansionResolutions) {
     assert.match(
       resolution,
-      /^patch:brace-expansion@npm%3A5\.0\.9#~\/\.yarn\/patches\/brace-expansion-npm-5\.0\.9-/,
-      `${descriptor} must resolve to the patched brace-expansion@5.0.9 package`,
+      /^patch:brace-expansion@npm%3A5\.0\.11#~\/\.yarn\/patches\/brace-expansion-npm-5\.0\.11-/,
+      `${descriptor} must resolve to the patched brace-expansion@5.0.11 package`,
     );
   }
 
   assert.doesNotMatch(
     yarnLock,
-    /^ {2}resolution: "brace-expansion@npm:(?:[0-4]\.|5\.0\.[0-8])/m,
+    /^ {2}resolution: "brace-expansion@npm:(?:[0-4]\.|5\.0\.(?:[0-9]|10)(?:"|$))/m,
     'yarn.lock must not contain a vulnerable brace-expansion release',
   );
 
   const braceExpand = require('brace-expansion');
-  assert.equal(require('brace-expansion/package.json').version, '5.0.9');
+  assert.equal(require('brace-expansion/package.json').version, '5.0.11');
   assert.equal(typeof braceExpand, 'function', 'legacy CommonJS consumers must receive a callable export');
   assert.equal(typeof braceExpand.expand, 'function', 'current consumers must receive the named expand export');
   assert.deepEqual(braceExpand('{a,b}'), ['a', 'b']);
@@ -128,4 +128,15 @@ test('brace-expansion stays patched and compatible with every minimatch API gene
   }
 
   assert.equal(require('minimatch').minimatch('patient.js', '{patient,visit}.js'), true);
+});
+
+test('the downloader resolves the maintained decompression implementation', () => {
+  const downloaderRequire = createRequire(require.resolve('@xhmikosr/downloader'));
+  const entry = downloaderRequire.resolve('@xhmikosr/decompress');
+  const { version } = JSON.parse(readFileSync(path.join(path.dirname(entry), 'package.json'), 'utf8'));
+  assert.ok(compareVersions(version, '11.1.4') >= 0);
+  for (const [, lockedVersion] of yarnLock.matchAll(/^ {2}resolution: "@xhmikosr\/decompress@npm:([^"\n]+)"/gm)) {
+    assert.ok(compareVersions(lockedVersion, '11.1.4') >= 0);
+  }
+  assert.equal(typeof downloaderRequire('@xhmikosr/decompress').default, 'function');
 });

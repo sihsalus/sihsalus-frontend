@@ -8,6 +8,7 @@ import { BrowserRouter, Outlet, Route, Routes, useLocation, useNavigate } from '
 import { type ConfigObject } from './config-schema';
 import styles from './indicators-dashboard.module.scss';
 
+const PanelPage = React.lazy(() => import('./pages/PanelPage'));
 const IndicadoresPage = React.lazy(() => import('./pages/IndicadoresPage'));
 const ResultadosPage = React.lazy(() => import('./pages/ResultadosPage'));
 const MetasPage = React.lazy(() => import('./pages/MetasPage'));
@@ -16,15 +17,23 @@ const IndicadorFormPage = React.lazy(() => import('./pages/IndicadorFormPage'));
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 
+const PANEL_TAB_INDEX = 0;
+const INDICADORES_TAB_INDEX = 1;
+const RESULTADOS_TAB_INDEX = 2;
+const METAS_TAB_INDEX = 3;
+
 const selectedIndexForPath = (pathname: string): number => {
   const normalized = trimTrailingSlash(pathname);
+  if (normalized === '/indicadores') {
+    return INDICADORES_TAB_INDEX;
+  }
   if (normalized === '/resultados') {
-    return 1;
+    return RESULTADOS_TAB_INDEX;
   }
   if (normalized === '/metas') {
-    return 2;
+    return METAS_TAB_INDEX;
   }
-  return 0;
+  return PANEL_TAB_INDEX;
 };
 
 const TabsLayout: React.FC = () => {
@@ -34,9 +43,11 @@ const TabsLayout: React.FC = () => {
   const selectedIndex = selectedIndexForPath(location.pathname);
 
   const handleTabChange = ({ selectedIndex: nextIndex }: { selectedIndex: number }) => {
-    if (nextIndex === 1) {
+    if (nextIndex === INDICADORES_TAB_INDEX) {
+      navigate('/indicadores');
+    } else if (nextIndex === RESULTADOS_TAB_INDEX) {
       navigate('/resultados');
-    } else if (nextIndex === 2) {
+    } else if (nextIndex === METAS_TAB_INDEX) {
       navigate('/metas');
     } else {
       navigate('/');
@@ -55,6 +66,7 @@ const TabsLayout: React.FC = () => {
       </div>
       <Tabs selectedIndex={selectedIndex} onChange={handleTabChange}>
         <TabList aria-label={t('indicatorsTabs', 'Secciones de indicadores')}>
+          <Tab>{t('panel', 'Panel')}</Tab>
           <Tab>{t('indicators', 'Indicadores')}</Tab>
           <Tab>{t('results', 'Resultados')}</Tab>
           <Tab>{t('metasTitle', 'Metas')}</Tab>
@@ -76,7 +88,8 @@ const IndicatorsContent: React.FC = () => {
       <BrowserRouter basename={basePath}>
         <Routes>
           <Route element={<TabsLayout />}>
-            <Route path="/" element={<IndicadoresPage />} />
+            <Route path="/" element={<PanelPage />} />
+            <Route path="/indicadores" element={<IndicadoresPage />} />
             <Route path="/resultados" element={<ResultadosPage />} />
             <Route path="/metas" element={<MetasPage />} />
           </Route>

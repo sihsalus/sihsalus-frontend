@@ -24,6 +24,11 @@ yarn --cwd packages/apps/esm-indicadores-app start
 ## Límites funcionales
 
 - Construye vistas de indicadores, métricas y resúmenes analíticos.
+- La pestaña **Panel** resume el cumplimiento anual de los indicadores activos con
+  una tarjeta por indicador (acumulado del año frente a la meta anual, porcentaje y
+  una banda de color de umbrales fijos: rojo por debajo de 20%, amarillo hasta 60%
+  y verde desde 60%). Reutiliza el endpoint de series por indicador; no requiere un
+  endpoint agregado.
 - Consume datos agregados para monitoreo y toma de decisiones.
 - No captura ni modifica registros clínicos fuente de OpenMRS.
 - Crea y versiona definiciones, configura metas y solicita cálculos persistidos en la base de indicadores mediante el backend autorizado.
@@ -68,7 +73,7 @@ institucional configurado en `OPENMRS_REQUIRED_PRIVILEGE`. Este cambio no crea
 roles ni asigna permisos. Una sesión vencida se rechaza para liberar el estado
 de carga, sin sustituir la respuesta por datos de demostración.
 
-Las páginas de indicadores, resultados y metas tienen rutas propias; detalle,
+Las páginas de panel, indicadores, resultados y metas tienen rutas propias; detalle,
 creación y edición admiten enlaces directos. Las traducciones de formulario,
 errores y estados vacíos están en español e inglés. Las listas auxiliares
 recorren páginas y rechazan respuestas incompletas en lugar de mostrarlas como

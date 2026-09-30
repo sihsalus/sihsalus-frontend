@@ -133,6 +133,27 @@ describe('ResultadosPage series granularity', () => {
     expect(screen.getByText(/Seleccione un indicador/)).toBeInTheDocument();
   });
 
+  it('preselects the indicator and fetches its series from the ?indicador query parameter', () => {
+    mockUseResultadosSeries.mockReturnValue({
+      data: monthlySeries,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    renderWithSwr(
+      <MemoryRouter initialEntries={['/results?indicador=ind-001']}>
+        <ResultadosPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Indicador')).toHaveValue('ind-001');
+    const lastSeriesParams = mockUseResultadosSeries.mock.calls[mockUseResultadosSeries.mock.calls.length - 1][0];
+    expect(lastSeriesParams).toMatchObject({ indicador_id: 'ind-001' });
+    expect(screen.getByText('2026-01')).toBeInTheDocument();
+  });
+
   it('renders monthly series rows with periodo_label and valor columns', () => {
     mockUseResultadosSeries.mockReturnValue({
       data: monthlySeries,

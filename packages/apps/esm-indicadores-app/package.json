@@ -14,10 +14,10 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "prettier": "node ../../tooling/scripts/run-biome.js format --write src",
     "typescript": "tsc",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:watch": "vitest watch",
     "verify": "turbo run lint test typescript",
-    "coverage": "vitest run --coverage --passWithNoTests",
+    "coverage": "vitest run --coverage",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "files": [

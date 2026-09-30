@@ -326,6 +326,18 @@ describe('MetaFormModal', () => {
     expect(screen.getByText(/la meta no puede ser negativa/i)).toBeInTheDocument();
   });
 
+  it('rejects an absurd target value above the persistence cap', async () => {
+    const onSubmit = vi.fn();
+    const { container } = renderModal({ onSubmit });
+    await selectIndicator(container, 'Anemia');
+    fireEvent.change(screen.getByLabelText('Año'), { target: { value: '2026' } });
+    fireEvent.change(screen.getByLabelText('Valor de la meta'), { target: { value: '1000000001' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /Guardar/ })));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(/la meta no puede ser mayor/i)).toBeInTheDocument();
+  });
+
   it('disables saving and shows a stable Spanish message when versions fail to load', () => {
     mockUseIndicador.mockReturnValue({
       data: undefined,

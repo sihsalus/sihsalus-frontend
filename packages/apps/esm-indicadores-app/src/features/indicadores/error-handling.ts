@@ -45,7 +45,8 @@ function getUnknownEncounterTypesDetail(error: unknown): UnknownEncounterTypesDe
   if (
     candidate.field !== 'encounter_type_uuids' ||
     !Array.isArray(candidate.unknown_uuids) ||
-    candidate.unknown_uuids.length === 0
+    candidate.unknown_uuids.length === 0 ||
+    !candidate.unknown_uuids.every((uuid) => typeof uuid === 'string')
   ) {
     return undefined;
   }

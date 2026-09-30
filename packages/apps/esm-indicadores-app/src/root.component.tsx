@@ -1,13 +1,11 @@
-import { InlineLoading, InlineNotification, Tab, TabList, Tabs } from '@carbon/react';
+import { InlineLoading, Tab, TabList, Tabs } from '@carbon/react';
 import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import { useConfig } from '@openmrs/esm-framework';
 import React, { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
-import { useMockMode } from './api/mock-mode';
 import { type ConfigObject } from './config-schema';
-import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
 import styles from './indicators-dashboard.module.scss';
 
 const IndicadoresPage = React.lazy(() => import('./pages/IndicadoresPage'));
@@ -70,34 +68,12 @@ const TabsLayout: React.FC = () => {
 };
 
 const IndicatorsContent: React.FC = () => {
-  const { t } = useTranslation();
-  const { isMockMode, isBackendAvailable } = useMockMode();
-  useIndicatorsHealth();
   const spaBase = trimTrailingSlash(window.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
   const basePath = `${spaBase}/indicators`;
 
   return (
     <AppErrorBoundary appName="esm-indicadores-app">
       <BrowserRouter basename={basePath}>
-        {isMockMode ? (
-          <InlineNotification
-            kind="warning"
-            title={t('demoDataActiveTitle', 'Datos de demostración activos')}
-            subtitle={t(
-              'demoDataActiveBody',
-              'La API no respondió. Los datos visibles son ejemplos y ninguna escritura se simulará.',
-            )}
-            lowContrast
-          />
-        ) : null}
-        {!isMockMode && !isBackendAvailable ? (
-          <InlineNotification
-            kind="error"
-            title={t('backendUnavailableTitle', 'Servicio de indicadores no disponible')}
-            subtitle={t('backendUnavailableBody', 'No se mostrarán datos de ejemplo ni se simularán operaciones.')}
-            lowContrast
-          />
-        ) : null}
         <Routes>
           <Route element={<TabsLayout />}>
             <Route path="/" element={<IndicadoresPage />} />

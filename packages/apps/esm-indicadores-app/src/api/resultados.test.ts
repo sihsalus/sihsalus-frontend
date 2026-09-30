@@ -138,6 +138,45 @@ describe('getResultados routing', () => {
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
     expect(calledUrl).toContain('version_id=v2');
   });
+
+  it('rejects a resultados row with a non-numeric valor', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        items: [
+          {
+            id: 'res-1',
+            periodo_inicio: '2026-01-01',
+            periodo_fin: '2026-01-31',
+            valor: '12',
+            calculado_en: '2026-02-01T00:00:00.000Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        size: 10,
+        pages: 1,
+      },
+    } as never);
+
+    await expect(getResultados({ page: 1, size: 10 })).rejects.toThrow(/inesperada/);
+  });
+
+  it('rejects a series row with a non-numeric valor', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        items: [{ periodo_label: '2026-01', valor: '10', meses_disponibles: 1, anio: 2026 }],
+        indicador_id: 'ind-001',
+        anio: 2026,
+        granularity: 'mensual',
+      },
+    } as never);
+
+    await expect(
+      getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' }),
+    ).rejects.toThrow(/inesperada/);
+  });
 });
 
 describe('calcularAhora routing', () => {
@@ -170,12 +209,19 @@ describe('calcularAhora routing', () => {
     expect(fetchOptions?.method).toBe('POST');
   });
 
-  it('propagates the backend error instead of returning a mock response on failure', async () => {
+  it('propagates the backend error on failure', async () => {
     mockResourcePath('/services/reportes-sql');
     const fetchError = new Error('Backend unavailable');
     mockedOpenmrsFetch.mockRejectedValue(fetchError);
 
     await expect(calcularAhora()).rejects.toBe(fetchError);
+  });
+
+  it('rejects a calcular-ahora payload without total/errores envelope', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({ data: { calculados: 1 } } as never);
+
+    await expect(calcularAhora()).rejects.toThrow(/inesperada/);
   });
 });
 
@@ -318,7 +364,7 @@ describe('recalcularAnio routing', () => {
     expect(fetchOptions?.body).toEqual({ anio: 2025, indicador_id: 'ind-001' });
   });
 
-  it('propagates the backend error instead of returning a mock response on failure', async () => {
+  it('propagates the backend error on failure', async () => {
     mockResourcePath('/services/reportes-sql');
     const fetchError = new Error('Backend unavailable');
     mockedOpenmrsFetch.mockRejectedValue(fetchError);

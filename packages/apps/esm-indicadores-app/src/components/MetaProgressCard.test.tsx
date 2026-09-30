@@ -32,4 +32,10 @@ describe('MetaProgressCard', () => {
 
     expect(container.firstChild).toBeNull();
   });
+
+  it('treats a negative current value as 0% instead of rendering a negative percentage', () => {
+    render(<MetaProgressCard meta={100} currentValue={-25} />);
+
+    expect(screen.getByText('0%')).toBeInTheDocument();
+  });
 });

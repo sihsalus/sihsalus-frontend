@@ -90,6 +90,19 @@ describe('getIndicadorSaveErrorMessage', () => {
     expect(message).toBe('fallback');
   });
 
+  it('ignores non-string unknown_uuids instead of rendering them', () => {
+    const error = Object.assign(new Error('validation'), {
+      responseBody: {
+        detail: { field: 'encounter_type_uuids', unknown_uuids: [123, null] },
+      },
+    });
+
+    const message = getIndicadorSaveErrorMessage(error, t, 'fallback');
+
+    expect(message).toBe('fallback');
+    expect(mockedGetUserFacingErrorMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('delegates to getUserFacingErrorMessage for 502 gateway failures', () => {
     const error = Object.assign(new Error('gateway'), { response: { status: 502 } });
     mockedGetUserFacingErrorMessage.mockReturnValueOnce(

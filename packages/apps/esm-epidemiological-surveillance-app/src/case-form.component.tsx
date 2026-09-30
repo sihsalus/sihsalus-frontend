@@ -21,6 +21,7 @@ import {
   references,
   safeError,
   searchPatients,
+  createSurveillanceCase,
 } from "./api";
 import {
   dateInZone,
@@ -32,11 +33,12 @@ import {
   referenceId,
   validateCase,
   valueConcepts,
+  toSurveillanceCaseDraft,
 } from "./case-form.utils";
 import { moduleName } from "./constants";
 import { CaseResultView } from "./case-result.component";
 import { ErrorNotification } from "./error-notification.component";
-import { saveCase } from "./offline";
+import { InfectionAddressSelector } from "./infection-address-selector.component";
 import type {
   CaseRequest,
   CaseResult,
@@ -351,13 +353,11 @@ export function CaseForm({
     setBusy(true);
     setError(undefined);
     try {
-      const saved = await saveCase(
-        currentRequest as CaseRequest,
-        userUuid,
-        online,
+      const saved = await createSurveillanceCase(
+        toSurveillanceCaseDraft(currentRequest as CaseRequest, selectedDiagnosisUuid),
       );
-      setQueued(saved.queued);
-      setResult(saved.result);
+      setQueued(false);
+      setResult({ uuid: saved.uuid, diagnosisConceptUuid: saved.diagnosisUuid, icd10: "", periodicity: "", deadlineDays: 0, replayed: false, immediateAlerts: [], outbreakAlerts: [], warnings: [] });
       onSaved();
     } catch (failure) {
       setError(safeError(failure));
@@ -388,8 +388,8 @@ export function CaseForm({
         }
       >
         <SelectItem value="" text={t("selectOption", "Select an option")} />
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value} text={item.text} />
+        {items.map((item, index) => (
+          <SelectItem key={item.value || `opt-${index}`} value={item.value} text={item.text} />
         ))}
       </Select>
     );
@@ -408,21 +408,52 @@ export function CaseForm({
         )}
       />
     );
-  const labResults = observations.filter((obs) => {
-    if (!["final", "amended", "corrected"].includes(obs.status ?? ""))
-      return false;
+  const classifyLabObservation = (obs: FhirResource): "CONFIRMED" | "DISCARDED" | null => {
     const test = disease?.laboratoryTests.find((item) =>
       hasConcept(obs, item.resultConceptUuid),
     );
-    if (!test) return false;
     const codes = valueConcepts(obs);
-    const isPositive = test.positiveAnswerUuids.some((code) =>
-      codes.includes(code),
-    );
-    const isNegative = test.negativeAnswerUuids.some((code) =>
-      codes.includes(code),
-    );
-    return isPositive || isNegative;
+    if (test) {
+      if (test.positiveAnswerUuids.some((code) => codes.includes(code))) {
+        return "CONFIRMED";
+      }
+      if (test.negativeAnswerUuids.some((code) => codes.includes(code))) {
+        return "DISCARDED";
+      }
+    }
+    if (m.trueConceptUuid && codes.includes(m.trueConceptUuid)) return "CONFIRMED";
+    if (m.falseConceptUuid && codes.includes(m.falseConceptUuid)) return "DISCARDED";
+    const text = (
+      obs.valueCodeableConcept?.text ||
+      obs.valueCodeableConcept?.coding?.[0]?.display ||
+      obs.valueString ||
+      ""
+    ).toLowerCase();
+    if (
+      text.includes("no reactiv") ||
+      text.includes("non-reactive") ||
+      text.includes("negativ") ||
+      text.includes("no detectad") ||
+      text.includes("ausent")
+    ) {
+      return "DISCARDED";
+    }
+    if (
+      text.includes("reactiv") ||
+      text.includes("positiv") ||
+      text.includes("detectad") ||
+      text.includes("present")
+    ) {
+      return "CONFIRMED";
+    }
+    return null;
+  };
+
+  const labResults = observations.filter((obs) => {
+    if (obs.status && ["cancelled", "entered-in-error"].includes(obs.status))
+      return false;
+    const classification = classifyLabObservation(obs);
+    return classification === "CONFIRMED" || classification === "DISCARDED";
   });
   return (
     <section
@@ -467,7 +498,7 @@ export function CaseForm({
               items={patients}
               itemToString={(item) =>
                 item
-                  ? `${patientName(item)}${patientDni(item) ? ` · DNI: ${patientDni(item)}` : ""}${item.birthDate ? ` · ${item.birthDate}` : ""}`
+                  ? `${patientName(item)}${patientDni(item) ? ` · DNI: ${patientDni(item)}` : ""}`
                   : ""
               }
               onInputChange={handlePatientInputChange}
@@ -486,7 +517,6 @@ export function CaseForm({
               <strong>{patientName(patient)}</strong>
               <p>
                 {patientDni(patient) ? `DNI: ${patientDni(patient)} · ` : ""}
-                {patient.birthDate} ·{" "}
                 {t(`sexValues.${patient.gender ?? "unknown"}`)}
               </p>
             </Tile>
@@ -499,14 +529,34 @@ export function CaseForm({
             })),
             chooseEncounter,
           )}
-          {select(
-            "providerUuid",
-            providers.map((item) => ({ value: item.uuid, text: item.display })),
-          )}
-          {select(
-            "locationUuid",
-            locations.map((item) => ({ value: item.uuid, text: item.display })),
-          )}
+          <Select
+            id="case-providerUuid"
+            labelText={t("fields.providerUuid")}
+            value={request.providerUuid ?? ""}
+            disabled
+            invalid={invalid.includes("providerUuid")}
+            invalidText={t("requiredSelection", "Select a valid value to continue.")}
+            onChange={() => {}}
+          >
+            <SelectItem value="" text={t("selectOption", "Select an option")} />
+            {providers.map((item) => (
+              <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
+            ))}
+          </Select>
+          <Select
+            id="case-locationUuid"
+            labelText={t("fields.locationUuid")}
+            value={request.locationUuid ?? ""}
+            disabled
+            invalid={invalid.includes("locationUuid")}
+            invalidText={t("requiredSelection", "Select a valid value to continue.")}
+            onChange={() => {}}
+          >
+            <SelectItem value="" text={t("selectOption", "Select an option")} />
+            {locations.map((item) => (
+              <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
+            ))}
+          </Select>
         </>
       )}
       {step === 1 && (
@@ -524,9 +574,9 @@ export function CaseForm({
             onChange={(event) => onDiagnosisChange(event.target.value)}
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
-            {diagnosisOptions.map((item) => (
+            {diagnosisOptions.map((item, index) => (
               <SelectItem
-                key={item.uuid}
+                key={item.uuid || `diag-${index}`}
                 value={item.uuid}
                 text={item.label}
               />
@@ -548,6 +598,7 @@ export function CaseForm({
             "origin",
             m.origins.map((item) => ({ value: item.key, text: item.label })),
           )}
+          <InfectionAddressSelector value={request.infectionAddressUuid} onChange={(value) => update("infectionAddressUuid", value)} />
           <TextInput
             id="case-onset"
             type="date"
@@ -569,22 +620,8 @@ export function CaseForm({
             })),
             (value) => {
               const obs = labResults.find((item) => item.id === value);
-              const test = disease?.laboratoryTests.find(
-                (item) => !!obs && hasConcept(obs, item.resultConceptUuid),
-              );
-              const codes = obs ? valueConcepts(obs) : [];
-              let nextStatus = "SUSPECTED";
-              if (obs && test) {
-                if (
-                  test.positiveAnswerUuids.some((code) => codes.includes(code))
-                ) {
-                  nextStatus = "CONFIRMED";
-                } else if (
-                  test.negativeAnswerUuids.some((code) => codes.includes(code))
-                ) {
-                  nextStatus = "DISCARDED";
-                }
-              }
+              const classification = obs ? classifyLabObservation(obs) : null;
+              const nextStatus = classification ?? "SUSPECTED";
               setRequest((current) => ({
                 ...current,
                 laboratoryResultUuid: value,
@@ -592,38 +629,29 @@ export function CaseForm({
               }));
             },
           )}
-          {select(
-            "status",
-            request.laboratoryResultUuid
-              ? request.status === "CONFIRMED"
-                ? [
-                    {
-                      value: "CONFIRMED",
-                      text:
-                        m.statuses.find((s) => s.key === "CONFIRMED")?.label ??
-                        "Confirmado",
-                    },
-                  ]
-                : [
-                    {
-                      value: "DISCARDED",
-                      text:
-                        m.statuses.find((s) => s.key === "DISCARDED")?.label ??
-                        "Descartado",
-                    },
-                  ]
-              : [
-                  {
-                    value: "SUSPECTED",
-                    text:
-                      m.statuses.find((s) => s.key === "SUSPECTED")?.label ??
-                      "Sospechoso",
-                  },
-                ],
-          )}
+          <Select
+            id="case-status"
+            labelText={t("fields.status")}
+            value={request.status ?? ""}
+            disabled
+            invalid={invalid.includes("status")}
+            invalidText={t("requiredSelection", "Select a valid value to continue.")}
+            onChange={() => {}}
+          >
+            <SelectItem value="" text={t("selectOption", "Select an option")} />
+            {m.statuses.map((s) => (
+              <SelectItem key={s.key} value={s.key} text={s.label} />
+            ))}
+          </Select>
         </>
       )}
       {step === 2 && (
+        <>
+        <Select id="case-vaccination" labelText="Estado de vacunación" value={request.vaccinationStatus ?? ""} onChange={(e) => update("vaccinationStatus", e.target.value)}><SelectItem value="" text="No especificado" /><SelectItem value="SI" text="Sí" /><SelectItem value="NO" text="No" /><SelectItem value="IGN" text="Ignorado" /></Select>
+        <Select id="case-surveillance-type" labelText="Tipo de vigilancia" value={request.surveillanceType ?? ""} onChange={(e) => update("surveillanceType", e.target.value)}><SelectItem value="" text="No especificado" /><SelectItem value="PASIVA" text="Pasiva" /><SelectItem value="BUSQUEDA_ACTIVA" text="Búsqueda activa" /></Select>
+        <TextInput id="case-investigation-date" type="date" labelText="Fecha de investigación" value={request.investigationDate ?? ""} onChange={(e) => update("investigationDate", e.target.value)} />
+        <TextInput id="case-notification-date" type="date" labelText="Fecha de notificación" value={request.notificationDate ?? ""} onChange={(e) => update("notificationDate", e.target.value)} />
+        <TextInput id="case-death-date" type="date" labelText="Fecha de defunción" value={request.deathDate ?? ""} onChange={(e) => update("deathDate", e.target.value)} />
         <Tile>
           <h3>{t("reviewBeforeSave", "Review before registering")}</h3>
           <p>
@@ -675,7 +703,7 @@ export function CaseForm({
               "Regulatory export to NOTI is not included in this iteration.",
             )}
           </p>
-        </Tile>
+        </Tile></>
       )}
       <div className={styles.actions}>
         {step > 0 && (

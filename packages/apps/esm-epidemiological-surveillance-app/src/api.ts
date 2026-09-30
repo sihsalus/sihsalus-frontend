@@ -8,6 +8,8 @@ import type {
   NamedReference,
   Report,
   SurveillanceEvent,
+  SurveillanceCase,
+  SurveillanceCaseDraft,
 } from "./types";
 
 export const apiBase = `${restBaseUrl}/sihsalusepidemiologicalsurveillance`;
@@ -147,6 +149,9 @@ export async function registerCase(
     return (
       await openmrsFetch<CaseResult>(`${apiBase}/cases`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: request,
         signal,
       })
@@ -155,6 +160,27 @@ export async function registerCase(
     throw safeError(error);
   }
 }
+
+export async function createSurveillanceCase(draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
+  try {
+    return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: draft })).data;
+  } catch (error) { throw safeError(error); }
+}
+
+export async function updateSurveillanceCase(uuid: string, draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
+  try {
+    return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases/${encodeURIComponent(uuid)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: draft })).data;
+  } catch (error) { throw safeError(error); }
+}
+
+export const closeSurveillanceCase = async (uuid: string): Promise<SurveillanceCase> => {
+  try { return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases/${encodeURIComponent(uuid)}/close`, { method: "POST" })).data; }
+  catch (error) { throw safeError(error); }
+};
+
+export const addressChildren = (level: "provinces" | "districts" | "populated-centers", parent?: string) =>
+  read<{ results: NamedReference[] }>(`${apiBase}/addresses/${level}${parent ? `?parent=${encodeURIComponent(parent)}` : ""}`).then((result) => result.results);
+
 export const getReport = (
   event: string,
   from: string,
@@ -181,6 +207,9 @@ export async function saveEvent(
     return (
       await openmrsFetch<SurveillanceEvent>(`${apiBase}/events`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: event,
         signal,
       })
@@ -201,6 +230,9 @@ export async function updateEvent(
         `${apiBase}/events/${encodeURIComponent(uuid)}`,
         {
           method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: event,
           signal,
         },

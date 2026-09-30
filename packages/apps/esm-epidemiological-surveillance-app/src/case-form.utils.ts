@@ -1,4 +1,11 @@
-import type { CaseRequest, Catalogue, FhirResource, ClinicalCatalog } from "./types";
+import type { CaseRequest, Catalogue, FhirResource, ClinicalCatalog, SurveillanceCaseDraft } from "./types";
+
+export function toSurveillanceCaseDraft(request: CaseRequest, diagnosisUuid: string): SurveillanceCaseDraft {
+  const status = { SUSPECTED: "PROBABLE", CONFIRMED: "CONFIRMADO", DISCARDED: "DESCARTADO" }[request.status];
+  if (!status || !diagnosisUuid) throw new Error("A diagnosis and classification are required.");
+  const origin = ({ AUTOCHTHONOUS: "AUTOCTONO", IMPORTED_NATIONAL: "IMPORTADO_NACIONAL", IMPORTED_INTERNATIONAL: "IMPORTADO_INTERNACIONAL" } as Record<string, string>)[request.origin] ?? request.origin;
+  return { patientUuid: request.patientUuid, encounterUuid: request.sourceEncounterUuid, providerUuid: request.providerUuid, locationUuid: request.locationUuid, diagnosisUuid, laboratoryObservationUuid: request.laboratoryResultUuid, origin, onsetDate: request.onsetDate, infectionAddressUuid: request.infectionAddressUuid, diagnosisType: status as SurveillanceCaseDraft["diagnosisType"], vaccinationStatus: request.vaccinationStatus, investigationDate: request.investigationDate, notificationDate: request.notificationDate, deathDate: request.deathDate, surveillanceType: request.surveillanceType };
+}
 
 export function patientName(patient: FhirResource): string {
   const name = patient.name?.[0];
@@ -52,7 +59,7 @@ export function findDiagnosisMapping(
     return {
       eventUuid: directEvent.uuid,
       eventName: directEvent.name,
-      severity: disease?.severities[0]?.key ?? "MILD",
+      severity: disease?.severities?.[0]?.key,
       diagnosisConceptUuid: diagnosisUuid,
     };
   }
@@ -137,20 +144,22 @@ export function validateCase(
   source?: FhirResource,
 ): string[] {
   const fields: string[] = [];
-  for (const key of [
+  const requiredKeys = [
     "patientUuid",
     "sourceEncounterUuid",
     "providerUuid",
     "locationUuid",
     "eventUuid",
     "status",
-    "severity",
     "origin",
     "onsetDate",
-  ] as const)
+  ] as const;
+  for (const key of requiredKeys) {
     if (!request[key]) fields.push(key);
+  }
   const disease = m.diseases.find((d) => d.eventUuid === request.eventUuid);
-  if (disease?.species.length && !request.species) fields.push("species");
+  if (disease?.severities?.length && !request.severity) fields.push("severity");
+  if (disease?.species?.length && !request.species) fields.push("species");
   const date = request.onsetDate;
   if (
     date &&
@@ -170,6 +179,7 @@ export function validateCase(
     fields.push("laboratoryResultUuid");
   if (
     disease &&
+    disease.diagnoses.length > 0 &&
     !disease.diagnoses.some(
       (mapping) =>
         mapping.severity === request.severity &&

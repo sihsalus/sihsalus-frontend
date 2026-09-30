@@ -63,6 +63,12 @@ export interface CaseRequest {
   species?: string;
   onsetDate: string;
   laboratoryResultUuid?: string;
+  infectionAddressUuid?: string;
+  vaccinationStatus?: "SI" | "NO" | "IGN";
+  investigationDate?: string;
+  notificationDate?: string;
+  deathDate?: string;
+  surveillanceType?: "PASIVA" | "BUSQUEDA_ACTIVA";
 }
 export interface CaseResult {
   uuid: string; // UUID of the completed metaxenicas encounter.
@@ -74,6 +80,30 @@ export interface CaseResult {
   immediateAlerts: string[];
   outbreakAlerts: string[];
   warnings: string[];
+}
+
+export interface SurveillanceCaseDraft {
+  patientUuid: string;
+  encounterUuid: string;
+  providerUuid: string;
+  locationUuid: string;
+  diagnosisUuid: string;
+  testOrderUuid?: string;
+  laboratoryObservationUuid?: string;
+  origin?: string;
+  onsetDate?: string;
+  infectionAddressUuid?: string;
+  diagnosisType: "CONFIRMADO" | "PROBABLE" | "DESCARTADO";
+  vaccinationStatus?: "SI" | "NO" | "IGN";
+  investigationDate?: string;
+  notificationDate?: string;
+  deathDate?: string;
+  surveillanceType?: "PASIVA" | "BUSQUEDA_ACTIVA";
+}
+
+export interface SurveillanceCase extends SurveillanceCaseDraft {
+  uuid: string;
+  individualRecordUuid?: string;
 }
 export interface Report {
   generatedAt: string;

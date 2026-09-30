@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseForm } from "./case-form.component";
-import { saveCase } from "./offline";
+import { createSurveillanceCase } from "./api";
 import { catalogue, request } from "./test-fixtures";
 import en from "../translations/en.json";
 const connection = vi.hoisted(() => ({ online: true }));
@@ -73,8 +73,8 @@ vi.mock("./api", async (importOriginal) => ({
         ]
       : [{ uuid: "location", display: "Synthetic locality" }],
   ),
+  createSurveillanceCase: vi.fn(async () => ({ uuid: "case", diagnosisUuid: "diagnosis" })),
 }));
-vi.mock("./offline", () => ({ saveCase: vi.fn() }));
 describe("case registration screen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -89,7 +89,7 @@ describe("case registration screen", () => {
     expect(
       screen.getByText("Complete the highlighted fields"),
     ).toBeInTheDocument();
-    expect(saveCase).not.toHaveBeenCalled();
+    expect(createSurveillanceCase).not.toHaveBeenCalled();
   });
   it("offers every active encounter of the selected patient", async () => {
     render(<CaseForm catalogue={catalogue} onSaved={vi.fn()} />);
@@ -105,8 +105,7 @@ describe("case registration screen", () => {
     expect(screen.getByText(/Other care/)).toBeInTheDocument();
     expect(screen.getByText("Synthetic professional")).toBeInTheDocument();
   });
-  it("registers within three steps and distinguishes offline persistence", async () => {
-    vi.mocked(saveCase).mockResolvedValue({ queued: true });
+  it("registers a draft within three steps", async () => {
     render(
       <CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />,
     );
@@ -114,11 +113,7 @@ describe("case registration screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Register case" }));
-    await screen.findByText("Pending synchronization");
-    expect(saveCase).toHaveBeenCalledWith(request, "user", true);
-    expect(
-      screen.queryByText("Case registered on the server"),
-    ).not.toBeInTheDocument();
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalled());
   });
   it("preserves the active form when connectivity changes", async () => {
     const props = { catalogue, initial: request, onSaved: vi.fn() };

@@ -122,3 +122,14 @@ Once it is running, a browser window should open with O3 running. Log in and the
 ```sh
 yarn test
 ```
+
+## Presentación de la bandeja
+
+Los filtros se distribuyen en filas según el ancho disponible del contenedor,
+incluido el espacio que dejan las barras laterales. La barra crece con su
+contenido; la búsqueda y la descarga del reporte quedan en una fila propia que
+puede envolverse. Solo la tabla tiene desplazamiento horizontal. El estado
+vacío conserva el patrón de texto centrado sobre un Tile.
+
+Validar filtros y búsqueda a anchos reducidos y con los estilos globales del
+framework cargados; no deben solaparse entre sí ni con las filas de resultados.

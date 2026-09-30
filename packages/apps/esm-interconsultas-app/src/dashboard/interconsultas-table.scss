@@ -9,6 +9,8 @@
 }
 
 .tableContainer > :global(.cds--table-toolbar) {
+  position: relative;
+  top: auto;
   height: auto;
   min-height: 0;
   overflow: visible;

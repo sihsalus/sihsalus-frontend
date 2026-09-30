@@ -48,7 +48,7 @@ describe('InterconsultasTable', () => {
     mockDeriveStatus.mockReturnValue('REQUESTED');
   });
 
-  it('explains an empty tray without suggesting filters that are not active', () => {
+  it('uses the standard empty state while keeping the table headers', () => {
     mockUseInterconsultas.mockReturnValue({
       interconsultas: [],
       isLoading: false,
@@ -60,8 +60,8 @@ describe('InterconsultasTable', () => {
     render(<InterconsultasTable filter="REQUESTED" />);
 
     expect(mockUseInterconsultas).toHaveBeenCalledWith('REQUESTED');
-    expect(screen.getByRole('heading', { level: 3, name: 'Esta bandeja no tiene interconsultas' })).toBeInTheDocument();
-    expect(screen.getByText('Las solicitudes aparecerán aquí cuando alcancen este estado.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'No hay interconsultas para mostrar' })).toBeInTheDocument();
+    expect(screen.getByText('Comprobar los filtros anteriores')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Limpiar filtros' })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Paciente' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();

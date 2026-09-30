@@ -136,6 +136,40 @@ export async function reconcileVisitCreation(
   return visit;
 }
 
+export interface VisitClock {
+  timestamp: number;
+  receivedAt: number;
+}
+
+/** HTTP Date is second-precision; anchoring at receipt stays conservatively behind server time. */
+export async function fetchVisitClock(): Promise<VisitClock> {
+  const response = await openmrsFetch(`${restBaseUrl}/session`, {
+    cache: 'no-store',
+  });
+  const timestamp = Date.parse(response.headers?.get?.('Date') ?? '');
+  if (!Number.isFinite(timestamp)) {
+    throw new Error('VISIT_SERVER_TIME_UNAVAILABLE');
+  }
+  return { timestamp, receivedAt: performance.now() };
+}
+
+export function getVisitClockNow(clock: VisitClock): Date {
+  return new Date(clock.timestamp + Math.max(0, performance.now() - clock.receivedAt));
+}
+
+export function useVisitClock(isOnline: boolean) {
+  const {
+    data: clock,
+    error,
+    isLoading,
+  } = useSWR<VisitClock, Error>(isOnline ? ['visit-clock', restBaseUrl] : null, fetchVisitClock, {
+    revalidateOnMount: true,
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  });
+  return { clock, error, isLoading };
+}
+
 export type VisitFormData = {
   visitStartDate: Date;
   visitStartTime: string;

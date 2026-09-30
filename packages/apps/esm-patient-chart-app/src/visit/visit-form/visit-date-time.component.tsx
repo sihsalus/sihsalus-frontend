@@ -15,6 +15,7 @@ import styles from './visit-form.scss';
 
 interface VisitDateTimeFieldProps {
   visitDatetimeLabel: string;
+  disabled?: boolean;
   dateFieldName: 'visitStartDate' | 'visitStopDate';
   timeFieldName: 'visitStartTime' | 'visitStopTime';
   timeFormatFieldName: 'visitStartTimeFormat' | 'visitStopTimeFormat';
@@ -26,6 +27,7 @@ interface VisitDateTimeFieldProps {
 
 const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
   visitDatetimeLabel,
+  disabled = false,
   dateFieldName,
   timeFieldName,
   timeFormatFieldName,
@@ -65,6 +67,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
               >
                 <DatePickerInput
                   id={`${dateFieldName}Input`}
+                  disabled={disabled}
                   invalid={Boolean(errors[dateFieldName])}
                   invalidText={errors[dateFieldName]?.message}
                   labelText={`${t('date', 'Fecha')} *`}
@@ -85,6 +88,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                 <TimePicker
                   className={styles.timePicker}
                   id={timeFieldName}
+                  disabled={disabled}
                   invalid={Boolean(errors[timeFieldName])}
                   invalidText={errors[timeFieldName]?.message}
                   labelText={`${t('time', 'Hora')} *`}
@@ -102,6 +106,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                     control={control}
                     render={({ field: { onChange, value } }) => (
                       <TimePickerSelect
+                        disabled={disabled}
                         aria-label={t('timeFormat ', 'Time Format')}
                         className={classNames({
                           [styles.timePickerSelectError]: errors[timeFormatFieldName],

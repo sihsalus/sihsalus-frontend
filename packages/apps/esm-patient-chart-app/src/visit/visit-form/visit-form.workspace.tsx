@@ -105,6 +105,9 @@ import VisitAttributeTypeFields from './visit-attribute-type.component';
 import VisitDateTimeField from './visit-date-time.component';
 import {
   createVisitAttribute,
+  fetchVisitClock,
+  getVisitClockNow,
+  useVisitClock,
   deleteVisitAttribute,
   getDefaultVisitAttributesFromPatientAddress,
   getDefaultVisitAttributesFromPersonAttributes,
@@ -323,6 +326,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const isTablet = useLayoutType() === 'tablet';
   const isEmrApiModuleInstalled = useFeatureFlag('emrapi-module');
   const isOnline = useConnectivity();
+  const { clock, error: clockError, isLoading: isLoadingClock } = useVisitClock(isOnline);
+  const getCurrentVisitDatetime = useCallback(
+    () => (isOnline && clock ? getVisitClockNow(clock) : new Date()),
+    [isOnline, clock],
+  );
   const config = useConfig<ChartConfig>();
   const configuredVisitAttributeTypes = useMemo(
     () => resolveCanonicalCoverageVisitAttributeTypes(config.visitAttributeTypes),
@@ -746,7 +754,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         visitStartHours,
         visitStartMinutes,
       );
-      return visitStartDatetime.getTime() <= Date.now();
+      return visitStartDatetime.getTime() <= getCurrentVisitDatetime().getTime();
     };
 
     const hadPreviousStopDateTime = Boolean(visitToEdit?.stopDatetime);
@@ -757,13 +765,13 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           .date()
           .refine(
             (value) => {
-              const today = dayjs();
+              const today = dayjs(getCurrentVisitDatetime());
               const startDate = dayjs(value);
 
               return startDate.isSameOrBefore(today, 'day');
             },
             t('invalidVisitStartDate', 'Start date needs to be on or before {{firstEncounterDatetime}}', {
-              firstEncounterDatetime: formatDatetime(new Date()),
+              firstEncounterDatetime: formatDatetime(getCurrentVisitDatetime()),
             }),
           )
           .refine(
@@ -808,17 +816,26 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           path: ['visitStopTimeFormat'],
         },
       );
-  }, [configuredVisitAttributeTypes, patientBirthDate, visitToEdit?.stopDatetime, t, displayVisitStopDateTimeFields]);
+  }, [
+    configuredVisitAttributeTypes,
+    patientBirthDate,
+    visitToEdit?.stopDatetime,
+    t,
+    displayVisitStopDateTimeFields,
+    getCurrentVisitDatetime,
+  ]);
 
   const defaultValues = useMemo(() => {
-    const visitStartDate = visitToEdit?.startDatetime ? new Date(visitToEdit?.startDatetime) : new Date();
+    const visitStartDate = visitToEdit?.startDatetime
+      ? new Date(visitToEdit?.startDatetime)
+      : getCurrentVisitDatetime();
     const visitStopDate = visitToEdit?.stopDatetime ? new Date(visitToEdit?.stopDatetime) : null;
 
     let defaultValues: Partial<VisitFormData> = {
       visitStartDate,
       visitStartTime: dayjs(visitStartDate).format('hh:mm'),
       visitStartTimeFormat: new Date(visitStartDate).getHours() >= 12 ? 'PM' : 'AM',
-      visitStopTimeFormat: new Date().getHours() >= 12 ? 'PM' : 'AM',
+      visitStopTimeFormat: getCurrentVisitDatetime().getHours() >= 12 ? 'PM' : 'AM',
       visitType: visitToEdit?.visitType?.uuid ?? requiredVisitTypeUuid ?? emrConfiguration?.atFacilityVisitType?.uuid,
       visitLocation: visitToEdit?.location ?? requiredVisitLocation ?? defaultVisitLocation ?? {},
       visitAttributes:
@@ -861,6 +878,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     return defaultValues;
   }, [
     visitToEdit,
+    getCurrentVisitDatetime,
     defaultVisitLocation,
     requiredVisitLocation,
     requiredVisitTypeUuid,
@@ -942,10 +960,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   ]);
 
   const [maxVisitStartDatetime, initialMinVisitStopDatetime] = useMemo(() => {
-    const now = Date.now();
-
     if (!visitToEdit?.encounters?.length) {
-      return [now, null];
+      return [null, null];
     }
 
     const allEncounterDatetimes = visitToEdit?.encounters?.map(({ encounterDatetime }) =>
@@ -957,7 +973,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     return [maxVisitStartDatetime, minVisitStopDatetime];
   }, [visitToEdit]);
 
-  const visitStartDate = getValues('visitStartDate') ?? new Date();
+  const visitStartDate = getValues('visitStartDate') ?? getCurrentVisitDatetime();
   const minVisitStopDatetime = initialMinVisitStopDatetime ?? Date.parse(visitStartDate.toLocaleString());
   const minVisitStopDatetimeFallback = Date.parse(visitStartDate.toLocaleString());
   const resolvedMinVisitStopDatetime = minVisitStopDatetime || minVisitStopDatetimeFallback;
@@ -1230,6 +1246,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
   const onSubmit = useCallback(
     async (data: VisitFormData) => {
+      if (isOnline && !clock && !persistedVisitPendingPostSubmit && !visitCreationRequiresReconciliation) {
+        return;
+      }
       if (visitToEdit && !validateVisitStartStopDatetime()) {
         return;
       }
@@ -1408,10 +1427,27 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
       const abortController = new AbortController();
       const [hours, minutes] = convertTime12to24(visitStartTime, visitStartTimeFormat);
-      const submissionDatetime = new Date();
+      let submissionDatetime = getCurrentVisitDatetime();
+      if (isOnline && !recoveredVisit) {
+        try {
+          submissionDatetime = getVisitClockNow(await fetchVisitClock());
+        } catch {
+          showSnackbar({
+            title: t('visitClockUnavailable', 'Date and time could not be verified'),
+            subtitle: t('visitClockRetry', 'Please try again before saving the consultation.'),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+      }
       const startDatetime = isQueueRegistration
         ? submissionDatetime
         : combineVisitDateAndTimeAtMinute(visitStartDate, hours, minutes);
+      if (!recoveredVisit && startDatetime > submissionDatetime) {
+        setError('visitStartTime', { message: t('futureStartTime', 'Visit start time cannot be in the future') });
+        return;
+      }
 
       // Coverage supplied by an embedding workflow has the same precedence it
       // has in the final create payload, but it must pass through the same
@@ -1842,6 +1878,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       handleVisitAttributes,
       effectiveVisitPersistenceCorrelation,
       isOnline,
+      clock,
+      getCurrentVisitDatetime,
+      setError,
       isQueueRegistration,
       mutateCurrentVisit,
       mutateInfiniteVisits,
@@ -1851,6 +1890,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       patient?.deceasedBoolean,
       patient?.deceasedDateTime,
       persistedVisitPendingPostSubmit,
+      visitCreationRequiresReconciliation,
       queueEntryPersistenceCompleted,
       visitFormCallbacks,
       visitPersistenceCorrelation,
@@ -1924,6 +1964,18 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               }}
             />
           )}
+          {isOnline && isLoadingClock && (
+            <InlineLoading description={t('checkingVisitClock', 'Checking date and time')} />
+          )}
+          {isOnline && clockError && (
+            <InlineNotification
+              kind="error"
+              lowContrast
+              hideCloseButton
+              title={t('visitClockUnavailable', 'Date and time could not be verified')}
+              subtitle={t('visitClockReopen', 'Close and reopen this form to verify the date and time before saving.')}
+            />
+          )}
           {errorFetchingResources && (
             <InlineNotification
               kind={errorFetchingResources?.blockSavingForm ? 'error' : 'warning'}
@@ -1946,8 +1998,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             <Stack gap={1} className={styles.container}>
               {!isQueueRegistration ? (
                 <VisitDateTimeField
+                  disabled={isOnline && (!clock || Boolean(clockError))}
                   dateFieldName="visitStartDate"
-                  maxDate={maxVisitStartDatetime}
+                  maxDate={maxVisitStartDatetime ?? getCurrentVisitDatetime().getTime()}
                   minDate={patientBirthDate?.valueOf()}
                   timeFieldName="visitStartTime"
                   timeFormatFieldName="visitStartTimeFormat"
@@ -1957,6 +2010,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
               {displayVisitStopDateTimeFields && (
                 <VisitDateTimeField
+                  disabled={isOnline && (!clock || Boolean(clockError))}
                   dateFieldName="visitStopDate"
                   minDate={resolvedMinVisitStopDatetime}
                   timeFieldName="visitStopTime"
@@ -2154,6 +2208,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             className={styles.button}
             disabled={
               isSubmitting ||
+              (isOnline &&
+                !persistedVisitPendingPostSubmit &&
+                !visitCreationRequiresReconciliation &&
+                (isLoadingClock || Boolean(clockError) || !clock)) ||
               errorFetchingResources?.blockSavingForm ||
               (visitCreationRequiresReconciliation && !effectiveVisitPersistenceCorrelation)
             }

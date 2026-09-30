@@ -84,7 +84,12 @@
       "outputs": ["coverage/**"]
     },
     "lint": {
-      "inputs": ["src/**/*.{ts,tsx}", "test-utils/**/*.{ts,tsx}", "$TURBO_ROOT$/biome.json"]
+      "inputs": [
+        "src/**/*.{ts,tsx}",
+        "test-utils/**/*.{ts,tsx}",
+        "$TURBO_ROOT$/biome.json",
+        "$TURBO_ROOT$/packages/tooling/scripts/run-biome.js"
+      ]
     },
     "typescript": {
       "dependsOn": ["build", "^build", "^typescript"],

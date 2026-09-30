@@ -173,3 +173,17 @@ entered, but its operation-specific schema must validate before submission.
 Receipt batch/date, packaging units, selected existing batches and quantity
 restrictions remain enforced. Stock references use their dedicated reference
 schema rather than the unrelated stock-item details schema.
+
+### Bundle loading
+
+The root view, dashboard screens and transaction print previews use OpenMRS
+`getAsyncLifecycle` so their implementation loads when the corresponding lifecycle
+is requested. Keep navigation links lightweight and preserve the exports referenced
+by `src/routes.json`; adding eager screen imports to `src/index.ts` makes their
+dependencies part of the initial module load again.
+
+Validate changes with the workspace lint, TypeScript, test and production build
+scripts. Compare production entrypoint sizes using Rspack JSON stats with the same
+dependency installation, and check that emitted assets remain below the configured
+warning threshold. A smaller initial entrypoint does not measure end-to-end page
+latency: opening a screen still loads its required chunks.

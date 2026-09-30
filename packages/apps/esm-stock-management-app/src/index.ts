@@ -2,23 +2,12 @@ import { Box, Home, Location, OperationsRecord, Report, Settings, Store, UserSet
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { createDashboardLink } from './createDashboardLink';
-import Root from './root.component';
 import SideMenu from './side-menu/side-menu.component';
 import appMenu from './stock-app-menu-item/item.component';
-import StockHomeLandingPage from './stock-home/stock-home-landing-page-component';
 import deletePackagingUnitModalButtonComponent from './stock-items/add-stock-item/packaging-units/delete-packaging-unit-action-button.component';
-import TransactionsBincardPrintPreviewModal from './stock-items/add-stock-item/transactions/printout/transactions-print-bincard-preview.modal';
-import TransactionsStockcardPrintPreviewModal from './stock-items/add-stock-item/transactions/printout/transactions-print-stockcard-preview.modal';
-import StockItems from './stock-items/stock-items.component';
-import StockLocations from './stock-locations/stock-locations.component';
 import stockManagementComponent from './stock-management.component';
 import stockManagementAdminCardLinkComponent from './stock-management-admin-card-link.component';
 import StockManagementAppMenuLinkComponent from './stock-management-app-menu-link.component';
-import StockOperationsComponent from './stock-operations/stock-operations.component';
-import StockReports from './stock-reports/report-list/stock-reports.component';
-import StockSettings from './stock-settings/stock-settings.component';
-import StockSources from './stock-sources/stock-sources.component';
-import StockUserScopes from './stock-user-role-scopes/stock-user-role-scopes.component';
 
 const moduleName = '@sihsalus/esm-stock-management-app';
 
@@ -81,7 +70,7 @@ export const issuingStockModal = getAsyncLifecycle(() => import('./stock-home/is
   moduleName,
 });
 
-export const root = getSyncLifecycle(Root, options);
+export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
 export const receivingStockModal = getAsyncLifecycle(() => import('./stock-home/receiving-stock.modal'), {
   featureName: 'receiving-stock-modal',
@@ -93,21 +82,24 @@ export const stockManagementAdminCardLink = getSyncLifecycle(stockManagementAdmi
 export const stockNavMenu = getSyncLifecycle(SideMenu, options);
 
 // t("overview","Overview")
-export const stockOverview = getSyncLifecycle(StockHomeLandingPage, options);
+export const stockOverview = getAsyncLifecycle(() => import('./stock-home/stock-home-landing-page-component'), options);
 export const stockOverviewLink = getSyncLifecycle(
   createDashboardLink({ icon: Home, title: 'Overview', name: 'stock-management' }),
   options,
 );
 
 // t("operations","Operations")
-export const stockOperations = getSyncLifecycle(StockOperationsComponent, options);
+export const stockOperations = getAsyncLifecycle(
+  () => import('./stock-operations/stock-operations.component'),
+  options,
+);
 export const stockOperationsLink = getSyncLifecycle(
   createDashboardLink({ icon: OperationsRecord, title: 'Operations', name: 'operations' }),
   options,
 );
 
 // t("items","Items")
-export const stockItems = getSyncLifecycle(StockItems, options);
+export const stockItems = getAsyncLifecycle(() => import('./stock-items/stock-items.component'), options);
 
 export const stockItemsLink = getSyncLifecycle(
   createDashboardLink({ icon: Box, title: 'Items', name: 'items' }),
@@ -115,35 +107,41 @@ export const stockItemsLink = getSyncLifecycle(
 );
 
 // t("useScopes","User role scopes")
-export const stockUserScopes = getSyncLifecycle(StockUserScopes, options);
+export const stockUserScopes = getAsyncLifecycle(
+  () => import('./stock-user-role-scopes/stock-user-role-scopes.component'),
+  options,
+);
 export const stockUserScopesLink = getSyncLifecycle(
   createDashboardLink({ icon: UserSettings, title: 'User role scopes', name: 'user-scopes' }),
   options,
 );
 
 // t("sources","Sources")
-export const stockSources = getSyncLifecycle(StockSources, options);
+export const stockSources = getAsyncLifecycle(() => import('./stock-sources/stock-sources.component'), options);
 export const stockSourcesLink = getSyncLifecycle(
   createDashboardLink({ icon: Store, title: 'Sources', name: 'sources' }),
   options,
 );
 
 // t("locations","Locations")
-export const stockLocations = getSyncLifecycle(StockLocations, options);
+export const stockLocations = getAsyncLifecycle(() => import('./stock-locations/stock-locations.component'), options);
 export const stockLocationsLink = getSyncLifecycle(
   createDashboardLink({ icon: Location, title: 'Locations', name: 'locations' }),
   options,
 );
 
 // t("reports","Reports")
-export const stockReports = getSyncLifecycle(StockReports, options);
+export const stockReports = getAsyncLifecycle(
+  () => import('./stock-reports/report-list/stock-reports.component'),
+  options,
+);
 export const stockReportsLink = getSyncLifecycle(
   createDashboardLink({ icon: Report, title: 'Reports', name: 'reports' }),
   options,
 );
 
 // t("settings","Settings")
-export const stockSettings = getSyncLifecycle(StockSettings, options);
+export const stockSettings = getAsyncLifecycle(() => import('./stock-settings/stock-settings.component'), options);
 export const stockSettingsLink = getSyncLifecycle(
   createDashboardLink({ icon: Settings, title: 'Settings', name: 'settings' }),
   options,
@@ -196,9 +194,15 @@ export const stockUserScopesFormWorkspace = getAsyncLifecycle(
   options,
 );
 
-export const transactionBincardPrintPreviewModal = getSyncLifecycle(TransactionsBincardPrintPreviewModal, options);
+export const transactionBincardPrintPreviewModal = getAsyncLifecycle(
+  () => import('./stock-items/add-stock-item/transactions/printout/transactions-print-bincard-preview.modal'),
+  options,
+);
 
-export const transactionStockcardPrintPreviewModal = getSyncLifecycle(TransactionsStockcardPrintPreviewModal, options);
+export const transactionStockcardPrintPreviewModal = getAsyncLifecycle(
+  () => import('./stock-items/add-stock-item/transactions/printout/transactions-print-stockcard-preview.modal'),
+  options,
+);
 
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);

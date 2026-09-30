@@ -9,6 +9,17 @@ safety-sensitive actions from a broader request. A closer `AGENTS.md` takes
 precedence within its subtree; nested files should preserve these repository
 safety policies.
 
+## SIHSalus server access
+
+- DEV and QLTY do not require OpenVPN. Check HTTPS and authorized SSH access
+  directly through the configured `gidis-dev` and `gidis-qlty` aliases.
+- For other destinations that require OpenVPN, verify its connection and routes
+  before checking the server. Legacy Tailscale aliases do not establish access.
+- Verify availability for each operation; connectivity is transient.
+- Run Docker builds and container validation on the authorized DEV server, not
+  on the user's local machine. Keep test resources separate from the running
+  services and retain enough disk and memory for recovery.
+
 ## Project overview
 
 - Clinical OpenMRS 3 monorepo using single-spa microfrontends, TypeScript, Yarn,

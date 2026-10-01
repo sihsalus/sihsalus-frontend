@@ -179,8 +179,9 @@ callback and back action through the framework's `NotificationDetailState`.
 The adapter requires `app:hoja.clinica.ordenes`, `Get Orders`, `Get Patients` and
 `Get Observations`. It checks its type/context, fetches the exact order using
 no-store, verifies patient identity and completed/non-voided status, and reuses
-`completed-lab-order-results-slot`. Missing/failed/mismatched results or a missing
-viewer block acknowledgement. The backend rechecks the domain resource and current
+`completed-lab-order-results-slot`. Failed order loads, mismatched patients/status or a missing viewer registration
+block acknowledgement. The existing child viewer owns its result-loading states;
+notification acknowledgement does not certify that result values were reviewed. The backend rechecks the domain resource and current
 permissions when marking read. This marks only the notification as read; it never
 records clinical review, approval or signature.
 

@@ -50,7 +50,7 @@ notification is not clinical review, approval, signature or a clinical action.
 
 The authenticated API is `GET /ws/sihsalus/notifications/inbox?offset=0` and
 `POST /ws/sihsalus/notifications/inbox/{id}/read`. Core Alert/AlertRecipient stores
-only type and subject identifiers; domain content is resolved under current access
+only type, facility and subject identifiers; domain content is resolved under current access
 on each read. Responses use no-store. Users/facilities have distinct memory cache
 keys; nothing is stored in local/session storage. Merely opening never marks read.
 Confirmed acknowledgement remains successful if its subsequent refresh fails.

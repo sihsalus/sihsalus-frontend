@@ -13,12 +13,19 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 
 import { type ConfigSchema } from '../config-schema';
 import { requiresForcedPasswordChange } from '../forced-password-change/forced-password-change';
 import { LoginArtwork } from '../login-artwork.component';
 import Logo from '../logo.component';
 import { buildSpaNavigationTarget, hardNavigate, isSafePostLoginTarget } from '../navigation';
+
+import {
+  getPasswordRecoveryCapability,
+  requestPasswordRecovery,
+  RECOVERY_IDENTIFIER_MAX_LENGTH,
+} from '../password-recovery/password-recovery.resource';
 
 import { LanguageSwitcher } from './language-switcher.component';
 import styles from './login.module.scss';
@@ -138,6 +145,14 @@ const Login: React.FC = () => {
   const [recoveryIdentifier, setRecoveryIdentifier] = useState('');
   const [recoveryIdentifierInvalid, setRecoveryIdentifierInvalid] = useState(false);
   const [recoverySubmitted, setRecoverySubmitted] = useState(false);
+  const [recoveryPending, setRecoveryPending] = useState(false);
+  const [recoveryError, setRecoveryError] = useState(false);
+  const recoveryInFlight = useRef(false);
+  const { data: recoveryEnabled, isLoading: recoveryCapabilityLoading } = useSWR(
+    activeView === 'passwordRecovery' ? 'password-recovery-capability' : null,
+    getPasswordRecoveryCapability,
+    { shouldRetryOnError: false, revalidateOnFocus: false },
+  );
   const [username, setUsername] = useState('');
   const [usernameInvalid, setUsernameInvalid] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false);
@@ -246,6 +261,7 @@ const Login: React.FC = () => {
   }, []);
   const changeRecoveryIdentifier = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
     setRecoveryIdentifier(evt.target.value);
+    setRecoveryError(false);
     if (evt.target.value.trim()) {
       setRecoveryIdentifierInvalid(false);
     }
@@ -257,6 +273,7 @@ const Login: React.FC = () => {
     setRecoveryIdentifier(username.trim());
     setRecoveryIdentifierInvalid(false);
     setRecoverySubmitted(false);
+    setRecoveryError(false);
     setActiveView('passwordRecovery');
   }, [username]);
 
@@ -378,19 +395,37 @@ const Login: React.FC = () => {
   );
 
   const handleRecoverySubmit = useCallback(
-    (evt: React.FormEvent<HTMLFormElement>) => {
+    async (evt: React.FormEvent<HTMLFormElement>) => {
       evt.preventDefault();
-
-      const isInvalid = !recoveryIdentifier.trim();
+      if (recoveryInFlight.current || recoveryCapabilityLoading || !isLoginEnabled) {
+        return;
+      }
+      const identifier = recoveryIdentifier.trim();
+      const isInvalid = !identifier || Array.from(identifier).length > RECOVERY_IDENTIFIER_MAX_LENGTH;
       setRecoveryIdentifierInvalid(isInvalid);
       if (isInvalid) {
         recoveryInputRef.current?.focus();
         return;
       }
-
-      setRecoverySubmitted(true);
+      setRecoveryError(false);
+      if (!recoveryEnabled) {
+        setRecoverySubmitted(true);
+        return;
+      }
+      recoveryInFlight.current = true;
+      setRecoveryPending(true);
+      setRecoverySubmitted(false);
+      try {
+        await requestPasswordRecovery(identifier);
+        setRecoverySubmitted(true);
+      } catch {
+        setRecoveryError(true);
+      } finally {
+        recoveryInFlight.current = false;
+        setRecoveryPending(false);
+      }
     },
-    [recoveryIdentifier],
+    [recoveryIdentifier, recoveryEnabled, recoveryCapabilityLoading, isLoginEnabled],
   );
 
   if (!loginProvider || loginProvider.type === 'basic') {
@@ -567,8 +602,10 @@ const Login: React.FC = () => {
                     <h2 className={styles.recoveryTitle}>{t('recoverPassword', 'Recover password')}</h2>
                     <p className={styles.recoveryDescription}>
                       {t(
-                        'recoverPasswordHelp',
-                        'Enter your username so the facility administrator can identify your account and reset your password.',
+                        recoveryEnabled ? 'recoverPasswordEmailHelp' : 'recoverPasswordHelp',
+                        recoveryEnabled
+                          ? 'Enter your username or registered email to request a recovery link.'
+                          : 'Enter your username so the facility administrator can identify your account and reset your password.',
                       )}
                     </p>
                   </div>
@@ -578,35 +615,70 @@ const Login: React.FC = () => {
                       type="text"
                       name="password-recovery-identifier"
                       autoComplete="username"
-                      labelText={t('passwordRecoveryUsername', 'Username')}
+                      labelText={
+                        recoveryEnabled
+                          ? t('passwordRecoveryIdentifier', 'Username or registered email')
+                          : t('passwordRecoveryUsername', 'Username')
+                      }
+                      helperText={t('passwordRecoveryIdentifierLength', '{{count}} / {{max}} characters', {
+                        count: Array.from(recoveryIdentifier.trim()).length,
+                        max: RECOVERY_IDENTIFIER_MAX_LENGTH,
+                      })}
+                      disabled={recoveryPending}
                       value={recoveryIdentifier}
                       onChange={changeRecoveryIdentifier}
                       ref={recoveryInputRef}
                       required
                       invalid={recoveryIdentifierInvalid}
-                      invalidText={t('validValueRequired', 'A valid value is required')}
+                      invalidText={
+                        Array.from(recoveryIdentifier.trim()).length > RECOVERY_IDENTIFIER_MAX_LENGTH
+                          ? t('passwordRecoveryIdentifierTooLong', 'Enter at most {{max}} characters.', {
+                              max: RECOVERY_IDENTIFIER_MAX_LENGTH,
+                            })
+                          : t('validValueRequired', 'A valid value is required')
+                      }
                     />
                     <Button
                       type="submit"
                       className={styles.continueButton}
                       renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
+                      disabled={recoveryPending || recoveryCapabilityLoading || !isLoginEnabled}
                       iconDescription={t('requestPasswordRecovery', 'Request password recovery')}
                     >
                       {t('requestPasswordRecovery', 'Request password recovery')}
                     </Button>
                   </div>
+                  {recoveryError && (
+                    <InlineNotification
+                      kind="error"
+                      hideCloseButton
+                      title={t('passwordRecoveryRequestFailed', 'Could not request password recovery')}
+                      subtitle={t('passwordRecoveryTryAgain', 'Try again later or contact the facility administrator.')}
+                    />
+                  )}
                   {recoverySubmitted && (
                     <InlineNotification
                       className={styles.recoveryNotice}
                       kind="info"
                       lowContrast
                       hideCloseButton
-                      title={t('passwordRecoveryInstructionsTitle', 'Ask an administrator for help')}
-                      subtitle={t(
-                        'passwordRecoveryInstructions',
-                        'Ask the facility administrator to reset the password for {{username}}. Then return here and log in with the new password.',
-                        { username: recoveryIdentifier.trim() },
-                      )}
+                      title={
+                        recoveryEnabled
+                          ? t('passwordRecoveryAccepted', 'Recovery request accepted')
+                          : t('passwordRecoveryInstructionsTitle', 'Ask an administrator for help')
+                      }
+                      subtitle={
+                        recoveryEnabled
+                          ? t(
+                              'passwordRecoveryAcceptedHelp',
+                              'If the account is eligible and has a registered email, you will receive a recovery link. If it does not arrive, contact the facility administrator.',
+                            )
+                          : t(
+                              'passwordRecoveryInstructions',
+                              'Ask the facility administrator to reset the password for {{username}}. Then return here and log in with the new password.',
+                              { username: recoveryIdentifier.trim() },
+                            )
+                      }
                     />
                   )}
                   <Button
@@ -615,6 +687,7 @@ const Login: React.FC = () => {
                     size="sm"
                     className={styles.recoveryBackButton}
                     onClick={returnToLogin}
+                    disabled={recoveryPending}
                   >
                     {t('backToLogin', 'Back to log in')}
                   </Button>
@@ -647,7 +720,9 @@ const Login: React.FC = () => {
               </div>
               {buildInfo.version ? (
                 <p className={styles.frontendVersion} title={buildInfo.gitSha || undefined}>
-                  {t('frontendVersion', 'v{{version}}', { version: buildInfo.version })}
+                  {t('frontendVersion', 'v{{version}}', {
+                    version: buildInfo.version,
+                  })}
                   {buildInfo.gitSha ? ` · ${buildInfo.gitSha.slice(0, 7)}` : ''}
                 </p>
               ) : null}

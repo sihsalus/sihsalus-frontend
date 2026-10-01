@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ChangePassword from './change-password/change-password.component';
 import LocationPickerView from './location-picker/location-picker-view.component';
 import Login from './login/login.component';
+import ResetPassword from './password-recovery/reset-password.component';
 import RedirectLogout from './redirect-logout/redirect-logout.component';
 
 const Root: React.FC = () => {
@@ -13,6 +14,7 @@ const Root: React.FC = () => {
       <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
         <Routes>
           <Route path="login" element={<Login />} />
+          <Route path="login/reset-password" element={<ResetPassword />} />
           <Route path="login/confirm" element={<Login />} />
           <Route path="login/location" element={<LocationPickerView />} />
           <Route path="login/forced-password" element={null} />

@@ -6,11 +6,12 @@ import {
   restBaseUrl,
   type Session,
   setUserLanguage,
+  showSnackbar,
   useConfig,
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { mutate } from 'swr';
 
 import RedirectLogout from './redirect-logout.component';
@@ -68,7 +69,7 @@ describe('RedirectLogout', () => {
     await waitFor(() => expect(mutate).toHaveBeenCalled());
 
     expect(mockClearCurrentUser).toHaveBeenCalled();
-    expect(mockRefetchCurrentUser).toHaveBeenCalled();
+    expect(mockRefetchCurrentUser).not.toHaveBeenCalled();
     expect(mockSetUserLanguage).toHaveBeenCalledWith({
       locale: 'km',
       authenticated: false,
@@ -76,6 +77,22 @@ describe('RedirectLogout', () => {
     });
     expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
     expect(sessionStorage.length).toBe(0);
+  });
+
+  it('navigates once when clearing the session rerenders logout', async () => {
+    let finishDelete!: (value: FetchResponse<unknown>) => void;
+    mockOpenmrsFetch.mockReturnValue(new Promise((resolve) => { finishDelete = resolve; }));
+    const { rerender } = render(<RedirectLogout />);
+    mockClearCurrentUser.mockImplementationOnce(() => {
+      mockUseSession.mockReturnValue({ authenticated: false, sessionId: '' });
+      rerender(<RedirectLogout />);
+    });
+    await act(async () => finishDelete({} as FetchResponse<unknown>));
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledTimes(1));
+    rerender(<RedirectLogout />);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(mockHardNavigate).toHaveBeenCalledTimes(1);
+    expect(mockRefetchCurrentUser).not.toHaveBeenCalled();
   });
 
   it('should redirect to the configured logout URL if the provider is `oauth2`', async () => {
@@ -95,7 +112,7 @@ describe('RedirectLogout', () => {
     await waitFor(() => expect(mutate).toHaveBeenCalled());
 
     expect(mockClearCurrentUser).toHaveBeenCalled();
-    expect(mockRefetchCurrentUser).toHaveBeenCalled();
+    expect(mockRefetchCurrentUser).not.toHaveBeenCalled();
     expect(mockSetUserLanguage).toHaveBeenCalledWith({
       locale: 'km',
       authenticated: false,
@@ -151,6 +168,20 @@ describe('RedirectLogout', () => {
         sessionId: '',
       });
     });
+  });
+
+  it('keeps the session on failure and allows a later retry', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockOpenmrsFetch.mockRejectedValueOnce(new Error('Synthetic logout failure'));
+    const { rerender } = render(<RedirectLogout />);
+    await waitFor(() => expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    expect(mockClearCurrentUser).not.toHaveBeenCalled();
+    expect(mockHardNavigate).not.toHaveBeenCalled();
+    mockUseConfig.mockReturnValue({ provider: { type: 'basic' } });
+    rerender(<RedirectLogout />);
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledTimes(1));
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    log.mockRestore();
   });
 
   it('should handle config changes appropriately', async () => {

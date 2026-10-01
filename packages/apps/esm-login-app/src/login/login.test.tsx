@@ -27,6 +27,12 @@ vi.mock('../navigation', async (importOriginal) => ({
   hardNavigate: vi.fn(),
 }));
 
+vi.mock('../password-recovery/password-recovery.resource', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../password-recovery/password-recovery.resource')>()),
+  getPasswordRecoveryCapability: vi.fn().mockResolvedValue(false),
+  requestPasswordRecovery: vi.fn(),
+}));
+
 const mockBuildInfo = {
   version: '1.2.3',
   gitSha: 'abc1234def5678901234567890abcdef12345678',

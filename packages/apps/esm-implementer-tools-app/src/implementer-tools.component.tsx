@@ -1,4 +1,4 @@
-import { showToast, UserHasAccess, useStore } from '@openmrs/esm-framework';
+import { showToast, UserHasAccess, useSession, useStore } from '@openmrs/esm-framework';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -114,6 +114,10 @@ function PopupHandler() {
 }
 
 export default function ImplementerTools() {
+  const session = useSession();
+  if (!session.authenticated) {
+    return null;
+  }
   return (
     <UserHasAccess privilege="O3 Implementer Tools">
       <PopupHandler />

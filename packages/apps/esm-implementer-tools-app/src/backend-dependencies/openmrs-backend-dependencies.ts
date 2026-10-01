@@ -42,6 +42,22 @@ let cachedFrontendModules: Array<ResolvedDependenciesModule> | undefined;
 let pendingFrontendModules: Promise<Array<ResolvedDependenciesModule>> | undefined;
 let backendConnectionError: Error | null = null;
 let frontendModulesGeneration = 0;
+let pendingController: AbortController | undefined;
+let consumers = 0;
+
+/** Keep the shared request alive while at least one diagnostic view needs it. */
+export function retainBackendModuleCheck() {
+  consumers += 1;
+  return () => {
+    consumers -= 1;
+    // React StrictMode remounts effects synchronously; retain that shared request.
+    queueMicrotask(() => {
+      if (consumers === 0) {
+        clearCache();
+      }
+    });
+  };
+}
 
 const MAX_PAGES = 50;
 const TRANSIENT_GATEWAY_STATUSES = new Set([502, 503, 504]);
@@ -89,10 +105,15 @@ function wait(delayMs: number) {
   return new Promise<void>((resolve) => globalThis.setTimeout(resolve, delayMs));
 }
 
-async function fetchBackendModulesPage(url: string) {
+async function fetchBackendModulesPage(url: string, signal: AbortSignal) {
   for (let retryIndex = 0; ; retryIndex += 1) {
+    signal.throwIfAborted();
     try {
-      return await openmrsFetch(url, { method: 'GET', rejectOnAuthFailure: true });
+      return await openmrsFetch(url, {
+        method: 'GET',
+        rejectOnAuthFailure: true,
+        signal,
+      });
     } catch (error) {
       const status = getHttpStatus(error);
       const retryDelay = TRANSIENT_RETRY_DELAYS_MS[retryIndex];
@@ -144,7 +165,7 @@ function checkIfModulesAreInstalled(
   };
 }
 
-async function fetchInstalledBackendModules(): Promise<Array<BackendModule>> {
+async function fetchInstalledBackendModules(signal: AbortSignal): Promise<Array<BackendModule>> {
   const collected: Array<BackendModule> = [];
   let nextUrl: string | null = `${restBaseUrl}/module?v=custom:(uuid,version)`;
   let safetyCounter = 0;
@@ -164,12 +185,11 @@ async function fetchInstalledBackendModules(): Promise<Array<BackendModule>> {
 
   while (nextUrl && safetyCounter < MAX_PAGES) {
     try {
-      const response = await fetchBackendModulesPage(nextUrl);
+      const response = await fetchBackendModulesPage(nextUrl, signal);
       const { data } = response;
 
       // Handle error responses (e.g., authentication failures)
       if (data?.error) {
-        console.error(`Backend API error when fetching modules: ${data.error.message || 'Unknown error'}`, data.error);
         throw new Error(
           `Backend returned error: ${data.error.message || 'Unknown error when fetching backend modules'}`,
         );
@@ -185,11 +205,7 @@ async function fetchInstalledBackendModules(): Promise<Array<BackendModule>> {
       nextUrl = resolveNext(nextLink?.uri ?? null);
       safetyCounter += 1;
     } catch (e) {
-      console.error('Failed to fetch backend modules', {
-        error: e,
-        page: safetyCounter + 1,
-        url: nextUrl,
-      });
+      signal.throwIfAborted();
       throw new Error(`Failed to fetch backend modules: ${e instanceof Error ? e.message : 'Unknown error'}`, {
         cause: e,
       });
@@ -233,7 +249,10 @@ function getInstalledAndRequiredBackendModules(
     return [];
   }
 
-  const declaredBackendModules = { ...optionalBackendModules, ...requiredBackendModules };
+  const declaredBackendModules = {
+    ...optionalBackendModules,
+    ...requiredBackendModules,
+  };
 
   const requiredModules = Object.keys(declaredBackendModules).map((key) => ({
     uuid: key,
@@ -260,7 +279,7 @@ function getResolvedModuleType(requiredVersion: string, installedVersion: string
   return 'okay';
 }
 
-async function resolveFrontendModules(): Promise<Array<ResolvedDependenciesModule>> {
+async function resolveFrontendModules(signal: AbortSignal): Promise<Array<ResolvedDependenciesModule>> {
   const modules = (globalThis.installedModules ?? [])
     .filter((module) => Boolean(module[1]?.backendDependencies || module[1]?.optionalBackendDependencies))
     .map((module) => ({
@@ -282,7 +301,7 @@ async function resolveFrontendModules(): Promise<Array<ResolvedDependenciesModul
       moduleName: module[0],
     }));
 
-  const installedBackendModules = await fetchInstalledBackendModules();
+  const installedBackendModules = await fetchInstalledBackendModules(signal);
   const resolvedFrontendModules = modules.map((module) => checkIfModulesAreInstalled(module, installedBackendModules));
   return resolvedFrontendModules;
 }
@@ -293,9 +312,7 @@ export function checkModules({
   forceRefresh?: boolean;
 } = {}): Promise<Array<ResolvedDependenciesModule>> {
   if (forceRefresh) {
-    frontendModulesGeneration += 1;
-    cachedFrontendModules = undefined;
-    pendingFrontendModules = undefined;
+    clearCache();
   }
 
   if (cachedFrontendModules) {
@@ -304,8 +321,13 @@ export function checkModules({
 
   if (!pendingFrontendModules) {
     const requestGeneration = frontendModulesGeneration;
-    const request = resolveFrontendModules().then(
+    const controller = new AbortController();
+    pendingController = controller;
+    const abortOnPageHide = () => controller.abort();
+    globalThis.addEventListener('pagehide', abortOnPageHide, { once: true });
+    const request = resolveFrontendModules(controller.signal).then(
       (resolvedFrontendModules) => {
+        controller.signal.throwIfAborted();
         if (requestGeneration === frontendModulesGeneration) {
           cachedFrontendModules = resolvedFrontendModules;
           clearBackendConnectionError();
@@ -313,6 +335,7 @@ export function checkModules({
         return resolvedFrontendModules;
       },
       (error) => {
+        controller.signal.throwIfAborted();
         const errorMessage =
           error instanceof Error
             ? error.message
@@ -320,14 +343,20 @@ export function checkModules({
               ? error
               : 'Unknown error fetching backend modules';
         const backendError = error instanceof Error ? error : new Error(errorMessage);
-        console.error('Error initializing installed backend modules', error);
         if (requestGeneration === frontendModulesGeneration) {
+          console.error('Failed to fetch backend modules', {
+            status: getHttpStatus(error),
+          });
           backendConnectionError = backendError;
         }
         throw backendError;
       },
     );
     const trackedRequest = request.finally(() => {
+      globalThis.removeEventListener('pagehide', abortOnPageHide);
+      if (pendingController === controller) {
+        pendingController = undefined;
+      }
       if (pendingFrontendModules === trackedRequest) {
         pendingFrontendModules = undefined;
       }
@@ -350,8 +379,9 @@ export function getBackendConnectionErrorStatus(): number | null {
   return getHttpStatus(backendConnectionError);
 }
 
-// For use in tests
 export function clearCache() {
+  pendingController?.abort();
+  pendingController = undefined;
   frontendModulesGeneration += 1;
   cachedFrontendModules = undefined;
   pendingFrontendModules = undefined;

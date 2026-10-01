@@ -153,3 +153,18 @@ vacío conserva el patrón de texto centrado sobre un Tile.
 
 Validar filtros y búsqueda a anchos reducidos y con los estilos globales del
 framework cargados; no deben solaparse entre sí ni con las filas de resultados.
+
+### Realtime refresh behavior
+
+Realtime events are grouped over a one-second window. Only one worklist
+refresh runs at a time; events received during that request schedule a subsequent
+refresh. Resync signals refresh silently. A burst produces one generic notice
+without patient information after a successful refresh. Unmount clears pending
+refreshes.
+
+SWR revalidates existing laboratory queries without clearing their cached rows.
+The initial load still uses the loading state; background updates retain the
+current table. A failed refresh retains cached data and does not announce success.
+This does not replace backend persistence or guarantee delivery while disconnected.
+The dashboard regression covers bursts, slow requests, failures and unmount;
+the resource regression uses a real SWR cache and a deferred response.

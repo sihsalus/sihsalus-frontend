@@ -118,5 +118,7 @@
   "verifySis": "Verify SIS",
   "viewTestResults": "View test results",
   "worklist": "Worklist",
-  "Worklist": "Worklist"
+  "Worklist": "Worklist",
+  "labWorklistUpdated": "Laboratory worklist updated",
+  "labWorklistUpdatesMessage": "{{count}} notifications were grouped into one refresh."
 }

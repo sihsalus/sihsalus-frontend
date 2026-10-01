@@ -150,10 +150,8 @@ export function useInvalidateLabOrders() {
   const { laboratoryOrderTypeUuid } = useConfig<Config>();
 
   return useCallback(() => {
-    mutate(
+    return mutate(
       (key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/order?orderTypes=${laboratoryOrderTypeUuid}`),
-      undefined,
-      { revalidate: true },
     );
   }, [laboratoryOrderTypeUuid]);
 }

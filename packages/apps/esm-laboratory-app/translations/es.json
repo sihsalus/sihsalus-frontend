@@ -125,5 +125,7 @@
   "verifySis": "Verificar SIS",
   "viewTestResults": "Ver resultados de la prueba",
   "worklist": "Lista de trabajo",
-  "Worklist": "Lista de trabajo"
+  "Worklist": "Lista de trabajo",
+  "labWorklistUpdated": "Bandeja de laboratorio actualizada",
+  "labWorklistUpdatesMessage": "Se agruparon {{count}} notificaciones en una actualización."
 }

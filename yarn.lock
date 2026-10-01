@@ -8172,8 +8172,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-primary-navigation-app@workspace:packages/apps/esm-primary-navigation-app"
   dependencies:
+    "@carbon/icons-react": "npm:^11.89.0"
     "@carbon/react": "npm:^1.117.0"
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@sihsalus/esm-audit-logger": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -8196,6 +8198,7 @@ __metadata:
     react-router-dom: ">=6.30.4 <8"
     rxjs: 6.x
     single-spa: 6.x
+    swr: 2.x
   languageName: unknown
   linkType: soft
 

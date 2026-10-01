@@ -1,0 +1,41 @@
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.content {
+  padding: layout.$spacing-05;
+  color: $ui-05;
+  background: $ui-background;
+  overflow-wrap: anywhere;
+  p {
+    margin-block: layout.$spacing-03;
+  }
+  time {
+    @include type.type-style("label-01");
+    display: block;
+  }
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.item {
+  padding-block: layout.$spacing-04;
+  border-bottom: 1px solid $ui-03;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.count {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.125rem;
+  font-size: 0.625rem;
+  padding-inline: 0.2rem;
+  background: $interactive-01;
+  color: $ui-background;
+  border-radius: 1rem;
+}

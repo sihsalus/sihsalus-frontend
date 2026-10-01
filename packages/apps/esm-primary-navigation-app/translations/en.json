@@ -16,5 +16,21 @@
   "userMenu": "User menu",
   "userMenuFor": "My account: {{user}}",
   "userMenuOptions": "User menu options",
-  "userMenuTooltip": "My Account"
+  "userMenuTooltip": "My Account",
+  "resultNotifications": "Laboratory results",
+  "pendingResultCount": "{{count}} results pending review",
+  "pendingResultExplanation": "Results of your laboratory orders pending review.",
+  "refreshResults": "Refresh",
+  "resultInboxError": "Could not load pending results. Retry to confirm the current list.",
+  "loadingResults": "Loading results",
+  "noPendingResults": "No results pending review",
+  "viewResult": "View result",
+  "previousResults": "Previous",
+  "nextResults": "Next",
+  "resultMarkedReviewed": "Result marked as reviewed",
+  "backToPendingResults": "Back to pending results",
+  "resultDetailError": "The result is unavailable. It remains pending review.",
+  "resultReviewError": "Could not mark the result as reviewed. It remains pending.",
+  "markResultReviewed": "Mark as reviewed",
+  "reviewIsNotApproval": "This marks your notification as reviewed; it does not approve or change the laboratory result."
 }

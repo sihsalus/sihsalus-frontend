@@ -125,5 +125,14 @@
   "verifySis": "Verificar SIS",
   "viewTestResults": "Ver resultados de la prueba",
   "worklist": "Lista de trabajo",
-  "Worklist": "Lista de trabajo"
+  "Worklist": "Lista de trabajo",
+  "labWorklistUpdated": "Bandeja de laboratorio actualizada",
+  "labWorklistUpdatesMessage": "Se agruparon {{count}} notificaciones en una actualización.",
+  "notificationMarkedRead": "Notificación marcada como leída",
+  "backToNotifications": "Volver a notificaciones",
+  "loadingResults": "Cargando resultados",
+  "resultDetailError": "El resultado no está disponible. La notificación sigue sin leer.",
+  "notificationReadError": "No se pudo marcar la notificación como leída. Sigue sin leer.",
+  "markNotificationRead": "Marcar como leída",
+  "readIsNotClinicalReview": "Leer esta notificación no registra revisión clínica, aprobación ni firma."
 }

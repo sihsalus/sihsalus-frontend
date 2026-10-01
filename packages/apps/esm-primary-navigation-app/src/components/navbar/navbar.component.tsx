@@ -11,6 +11,9 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
+import { useNotificationInbox } from '../../notification-inbox.resource';
+import { NotificationInboxButton } from '../navbar-header-panels/notification-inbox.component';
+
 import { type ConfigSchema } from '../../config-schema';
 import { isDesktop } from '../../utils';
 import Logo from '../logo/logo.component';
@@ -22,6 +25,9 @@ import styles from './navbar.scss';
 const HeaderItems: React.FC = () => {
   const config = useConfig<ConfigSchema>();
   const session = useSession();
+  const [notificationOffset, setNotificationOffset] = useState(0);
+  const notificationInbox = useNotificationInbox(notificationOffset);
+  const notificationSessionKey = `${session?.user?.uuid}:${session?.sessionLocation?.uuid}`;
   const [activeHeaderPanel, setActiveHeaderPanel] = useState<string | null>(null);
   const [isSideMenuExpanded, setIsSideMenuExpanded] = useState(true);
   const layout = useLayoutType();
@@ -58,7 +64,7 @@ const HeaderItems: React.FC = () => {
   const showHamburger = useMemo(() => mode !== 'hidden' && navMenuItems.length > 0, [navMenuItems.length, mode]);
   const sessionKey =
     session?.authenticated && session?.sessionId
-      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}`
+      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}:${session.sessionLocation?.uuid ?? 'unknown'}`
       : 'anonymous';
 
   useEffect(() => {
@@ -108,6 +114,11 @@ const HeaderItems: React.FC = () => {
             state={{ isActivePanel, togglePanel, hidePanel }}
             className={styles.topNavActionsSlot}
           />
+          <NotificationInboxButton
+            inbox={notificationInbox}
+            expanded={isActivePanel('notificationsMenu')}
+            toggle={() => togglePanel('notificationsMenu')}
+          />
           <ExtensionSlot
             name="notifications-menu-button-slot"
             state={{
@@ -121,7 +132,13 @@ const HeaderItems: React.FC = () => {
             className={styles.topNavActionsSlot}
           />
           <SideMenuPanel key={sessionKey} hidePanel={hidePanel('sideMenu')} expanded={isActivePanel('sideMenu')} />
-          <NotificationsMenuPanel expanded={isActivePanel('notificationsMenu')} />
+          <NotificationsMenuPanel
+            key={notificationSessionKey}
+            expanded={isActivePanel('notificationsMenu')}
+            inbox={notificationInbox}
+            offset={notificationOffset}
+            setOffset={setNotificationOffset}
+          />
         </HeaderGlobalBar>
       </Header>
     </>
@@ -133,7 +150,7 @@ const Navbar: React.FC = () => {
   const openmrsSpaBase = window['getOpenmrsSpaBase']();
   const sessionKey =
     session?.authenticated && session?.sessionId
-      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}`
+      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}:${session.sessionLocation?.uuid ?? 'unknown'}`
       : 'anonymous';
 
   // The REST representation may omit `user.person` when a role does not have

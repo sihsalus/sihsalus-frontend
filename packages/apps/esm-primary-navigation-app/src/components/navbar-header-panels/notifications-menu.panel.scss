@@ -1,9 +1,21 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .heading {
-  @include type.type-style('heading-03');
+  @include type.type-style("heading-03");
   color: $ui-background;
   margin: layout.$spacing-05;
+}
+
+.resultPanel {
+  transition: none;
+  background: $ui-background;
+
+  .heading {
+    color: $ui-05;
+  }
+  inline-size: min(100vw, 32rem);
+  max-block-size: calc(100dvh - 3rem);
+  overflow: auto;
 }

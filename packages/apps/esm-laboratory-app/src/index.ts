@@ -129,3 +129,8 @@ export const amendLabResultsAction = getAsyncLifecycle(
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
+
+export const laboratoryResultNotification = getAsyncLifecycle(
+  () => import('./laboratory-result-notification.component'),
+  options,
+);

@@ -118,5 +118,14 @@
   "verifySis": "Verify SIS",
   "viewTestResults": "View test results",
   "worklist": "Worklist",
-  "Worklist": "Worklist"
+  "Worklist": "Worklist",
+  "labWorklistUpdated": "Laboratory worklist updated",
+  "labWorklistUpdatesMessage": "{{count}} notifications were grouped into one refresh.",
+  "notificationMarkedRead": "Notification marked as read",
+  "backToNotifications": "Back to notifications",
+  "loadingResults": "Loading results",
+  "resultDetailError": "The result is unavailable. The notification remains unread.",
+  "notificationReadError": "Could not mark the notification as read. It remains unread.",
+  "markNotificationRead": "Mark as read",
+  "readIsNotClinicalReview": "Reading this notification does not record clinical review, approval or a signature."
 }

@@ -153,3 +153,41 @@ vacío conserva el patrón de texto centrado sobre un Tile.
 
 Validar filtros y búsqueda a anchos reducidos y con los estilos globales del
 framework cargados; no deben solaparse entre sí ni con las filas de resultados.
+
+### Realtime refresh behavior
+
+Realtime events are grouped over a one-second window. Only one worklist
+refresh runs at a time; events received during that request schedule a subsequent
+refresh. Resync signals refresh silently. A burst produces one generic notice
+without patient information after a successful refresh. Unmount clears pending
+refreshes.
+
+SWR revalidates existing laboratory queries without clearing their cached rows.
+The initial load still uses the loading state; background updates retain the
+current table. A failed refresh retains cached data and does not announce success.
+This does not replace backend persistence or guarantee delivery while disconnected.
+The dashboard regression covers bursts, slow requests, failures and unmount;
+the resource regression uses a real SWR cache and a deferred response.
+
+### Laboratory result inbox adapter
+
+`laboratory-result-notification` contributes the detail view for backend type
+`laboratory-result-ready` to `notification-inbox-detail-slot`. The common header
+provides the notification, authenticated session cache identity, acknowledgement
+callback and back action through the framework's `NotificationDetailState`.
+
+The adapter requires `app:hoja.clinica.ordenes`, `Get Orders`, `Get Patients` and
+`Get Observations`. It checks its type/context, fetches the exact order using
+no-store, verifies patient identity and completed/non-voided status, and reuses
+`completed-lab-order-results-slot`. Failed order loads, mismatched patients/status or a missing viewer registration
+block acknowledgement. The existing child viewer owns its result-loading states;
+notification acknowledgement does not certify that result values were reviewed. The backend rechecks the domain resource and current
+permissions when marking read. This marks only the notification as read; it never
+records clinical review, approval or signature.
+
+The generic inbox flag belongs to primary-navigation. It stays disabled until the
+matching OMOD and coordinated synthetic clinical smoke are validated. The adapter
+covers newly completed laboratory orders only, with no amendment or historical
+backfill. Domain tests cover failed reads/acknowledgements, mismatched patients,
+missing viewer and denied sessions; a deployed completion-to-inbox test remains
+pending.

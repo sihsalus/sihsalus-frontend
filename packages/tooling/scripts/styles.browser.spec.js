@@ -339,6 +339,135 @@ window.clinicalStyles = { imaging, tray, laboratory };`,
   }
 });
 
+test('visit date and time fit the workspace and keep validation readable', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'visit-date-time-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-chart-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import styles from ${JSON.stringify(path.join(workspace, 'src/visit/visit-form/visit-form.scss'))};
+window.visitStyles = styles;`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'styles.js',
+        publicPath: '',
+      },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent('<main id="fixture"></main>');
+  await page.addStyleTag({
+    path: require.resolve('@carbon/styles/css/styles.css'),
+  });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  const styles = await page.evaluate(() => window.visitStyles);
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const { DatePicker, DatePickerInput, TimePicker, TimePickerSelect, SelectItem } = require('@carbon/react');
+  const element = React.createElement;
+  const error = 'Enter a valid time in hh:mm format (01:00 to 12:59)';
+  const markup = renderToStaticMarkup(
+    element(
+      'div',
+      { className: styles.container },
+      element(
+        'section',
+        { className: styles.dateTimeField },
+        element('h1', { className: styles.sectionTitle }, 'Fecha y hora de inicio de consulta'),
+        element(
+          'div',
+          { className: styles.dateTimeSection + ' ' + styles.sectionField },
+          element(
+            DatePicker,
+            { className: styles.datePicker, datePickerType: 'single' },
+            element(DatePickerInput, {
+              id: 'date',
+              labelText: 'Fecha *',
+              placeholder: 'dd/mm/yyyy',
+              style: { inlineSize: '100%' },
+            }),
+          ),
+          element(
+            'div',
+            { className: styles.timePickerContainer },
+            element(
+              TimePicker,
+              {
+                className: styles.timePicker,
+                id: 'time',
+                labelText: 'Hora *',
+                invalid: true,
+                invalidText: error,
+              },
+              element(
+                TimePickerSelect,
+                { id: 'period', 'aria-label': 'AM/PM' },
+                element(SelectItem, { value: 'AM', text: 'AM' }),
+                element(SelectItem, { value: 'PM', text: 'PM' }),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await page.locator('#fixture').evaluate((node, html) => {
+    node.innerHTML = html;
+  }, markup);
+  for (const [viewport, width, tablet] of [
+    [1280, 280, false],
+    [1280, 460, false],
+    [768, 620, true],
+  ]) {
+    await page.setViewportSize({ width: viewport, height: 800 });
+    await page.locator('#fixture').evaluate(
+      (node, state) => {
+        node.style.width = state.width + 'px';
+        node.className = state.tablet ? 'omrs-breakpoint-lt-desktop' : '';
+      },
+      { width, tablet },
+    );
+    const date = await page.locator('#date').boundingBox();
+    const time = await page.locator('#time').boundingBox();
+    const period = await page.locator('#period').boundingBox();
+    if (width === 280) assert.ok(time.y >= date.y + date.height + 16, 'narrow workspace stacks fields');
+    else {
+      assert.ok(Math.abs(date.y - time.y) < 1, 'date and time inputs align');
+      assert.ok(time.x >= date.x + date.width + 16, 'fields have a clear gap');
+    }
+    assert.ok(Math.abs(time.y - period.y) < 1, 'AM/PM aligns with the time input');
+    assert.ok(
+      await page.locator('#fixture').evaluate((node) => node.scrollWidth <= node.clientWidth),
+      'no horizontal overflow',
+    );
+    const message = page.getByText(error, { exact: true });
+    await expect(message).toBeVisible();
+    const box = await message.boundingBox();
+    assert.ok(box.height > 0 && box.width > 100, 'time validation is not clipped or squeezed');
+  }
+});
+
 test('results dashboard keeps its top gap when shared dashboard styles load later', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'results-dashboard-spacing-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));

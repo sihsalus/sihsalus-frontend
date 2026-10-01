@@ -335,5 +335,9 @@
   "visitTypeRequired": "Se requiere un tipo de atención",
   "warning": "Advertencia",
   "yes": "Sí",
-  "youCanAddAdditionalEncounters": "Puede agregar atenciones adicionales a esta consulta en el resumen de la consulta."
+  "youCanAddAdditionalEncounters": "Puede agregar atenciones adicionales a esta consulta en el resumen de la consulta.",
+  "visitClockUnavailable": "No se pudo verificar la fecha y hora",
+  "visitClockRetry": "Intente nuevamente antes de guardar la consulta.",
+  "visitClockReopen": "Cierre y vuelva a abrir el formulario para verificar la fecha y hora antes de guardar.",
+  "checkingVisitClock": "Verificando fecha y hora"
 }

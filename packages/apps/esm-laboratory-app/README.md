@@ -168,3 +168,25 @@ current table. A failed refresh retains cached data and does not announce succes
 This does not replace backend persistence or guarantee delivery while disconnected.
 The dashboard regression covers bursts, slow requests, failures and unmount;
 the resource regression uses a real SWR cache and a deferred response.
+
+### Laboratory result inbox adapter
+
+`laboratory-result-notification` contributes the detail view for backend type
+`laboratory-result-ready` to `notification-inbox-detail-slot`. The common header
+provides the notification, authenticated session cache identity, acknowledgement
+callback and back action through the framework's `NotificationDetailState`.
+
+The adapter requires `app:hoja.clinica.ordenes`, `Get Orders`, `Get Patients` and
+`Get Observations`. It checks its type/context, fetches the exact order using
+no-store, verifies patient identity and completed/non-voided status, and reuses
+`completed-lab-order-results-slot`. Missing/failed/mismatched results or a missing
+viewer block acknowledgement. The backend rechecks the domain resource and current
+permissions when marking read. This marks only the notification as read; it never
+records clinical review, approval or signature.
+
+The generic inbox flag belongs to primary-navigation. It stays disabled until the
+matching OMOD and coordinated synthetic clinical smoke are validated. The adapter
+covers newly completed laboratory orders only, with no amendment or historical
+backfill. Domain tests cover failed reads/acknowledgements, mismatched patients,
+missing viewer and denied sessions; a deployed completion-to-inbox test remains
+pending.

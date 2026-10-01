@@ -11,8 +11,8 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
-import { useDoctorResults } from '../../doctor-results.resource';
-import { DoctorResultsButton } from '../navbar-header-panels/doctor-results.component';
+import { useNotificationInbox } from '../../notification-inbox.resource';
+import { NotificationInboxButton } from '../navbar-header-panels/notification-inbox.component';
 
 import { type ConfigSchema } from '../../config-schema';
 import { isDesktop } from '../../utils';
@@ -25,9 +25,9 @@ import styles from './navbar.scss';
 const HeaderItems: React.FC = () => {
   const config = useConfig<ConfigSchema>();
   const session = useSession();
-  const [resultOffset, setResultOffset] = useState(0);
-  const resultInbox = useDoctorResults(resultOffset);
-  const resultSessionKey = `${session?.user?.uuid}:${session?.sessionLocation?.uuid}`;
+  const [notificationOffset, setNotificationOffset] = useState(0);
+  const notificationInbox = useNotificationInbox(notificationOffset);
+  const notificationSessionKey = `${session?.user?.uuid}:${session?.sessionLocation?.uuid}`;
   const [activeHeaderPanel, setActiveHeaderPanel] = useState<string | null>(null);
   const [isSideMenuExpanded, setIsSideMenuExpanded] = useState(true);
   const layout = useLayoutType();
@@ -114,8 +114,8 @@ const HeaderItems: React.FC = () => {
             state={{ isActivePanel, togglePanel, hidePanel }}
             className={styles.topNavActionsSlot}
           />
-          <DoctorResultsButton
-            inbox={resultInbox}
+          <NotificationInboxButton
+            inbox={notificationInbox}
             expanded={isActivePanel('notificationsMenu')}
             toggle={() => togglePanel('notificationsMenu')}
           />
@@ -133,11 +133,11 @@ const HeaderItems: React.FC = () => {
           />
           <SideMenuPanel key={sessionKey} hidePanel={hidePanel('sideMenu')} expanded={isActivePanel('sideMenu')} />
           <NotificationsMenuPanel
-            key={resultSessionKey}
+            key={notificationSessionKey}
             expanded={isActivePanel('notificationsMenu')}
-            inbox={resultInbox}
-            offset={resultOffset}
-            setOffset={setResultOffset}
+            inbox={notificationInbox}
+            offset={notificationOffset}
+            setOffset={setNotificationOffset}
           />
         </HeaderGlobalBar>
       </Header>

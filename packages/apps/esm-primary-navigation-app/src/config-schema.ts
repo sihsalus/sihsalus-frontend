@@ -1,10 +1,10 @@
 import { Type, validators } from '@openmrs/esm-framework';
 
 export const configSchema = {
-  enableDoctorResultNotifications: {
+  enableNotificationInbox: {
     _type: Type.Boolean,
     _default: false,
-    _description: 'Enable the physician result inbox after notifications OMOD 1.3.0 is validated.',
+    _description: 'Enable the shared notification inbox after notifications OMOD 1.3.0 is validated.',
   },
   logo: {
     src: {
@@ -51,7 +51,7 @@ export const configSchema = {
 };
 
 export type ConfigSchema = {
-  enableDoctorResultNotifications: boolean;
+  enableNotificationInbox: boolean;
   logo: {
     src: string;
     alt: string;

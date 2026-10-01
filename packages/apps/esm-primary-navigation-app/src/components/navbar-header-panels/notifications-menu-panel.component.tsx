@@ -3,14 +3,14 @@ import { ExtensionSlot } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { type useDoctorResults } from '../../doctor-results.resource';
-import { DoctorResultsPanel } from './doctor-results.component';
+import { type useNotificationInbox } from '../../notification-inbox.resource';
+import { NotificationInboxPanel } from './notification-inbox.component';
 
 import styles from './notifications-menu.panel.scss';
 
 interface NotificationsMenuPanelProps extends HeaderPanelProps {
   expanded: boolean;
-  inbox?: ReturnType<typeof useDoctorResults>;
+  inbox?: ReturnType<typeof useNotificationInbox>;
   offset?: number;
   setOffset?: (offset: number) => void;
 }
@@ -31,7 +31,7 @@ const NotificationsMenuPanel: React.FC<NotificationsMenuPanelProps> = ({
       expanded={expanded}
     >
       <h1 className={styles.heading}>{t('notifications', 'Notifications')}</h1>
-      {inbox ? <DoctorResultsPanel inbox={inbox} offset={offset} setOffset={setOffset} /> : null}
+      {inbox ? <NotificationInboxPanel inbox={inbox} offset={offset} setOffset={setOffset} /> : null}
       <ExtensionSlot name="notifications-nav-menu-slot" state={state} />
     </HeaderPanel>
   );

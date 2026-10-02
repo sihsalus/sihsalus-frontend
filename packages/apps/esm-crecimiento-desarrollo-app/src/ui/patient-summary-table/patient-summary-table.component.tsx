@@ -51,6 +51,7 @@ interface RowConfig {
   label: string;
   dataKey: string;
   defaultValue?: string;
+  unit?: string;
 }
 
 interface PatientSummaryTableProps<T> {
@@ -94,7 +95,7 @@ const PatientSummaryTable = <T,>({
     if (!data || data.length === 0) return [];
 
     return data.flatMap((item, index) =>
-      rowConfig.map(({ id, label, dataKey, defaultValue = '--' }) => {
+      rowConfig.map(({ id, label, dataKey, defaultValue = '--', unit }) => {
         const rawValue = item[dataKey as keyof T];
         let value: string;
 
@@ -118,6 +119,9 @@ const PatientSummaryTable = <T,>({
           }
         } else {
           value = defaultValue;
+        }
+        if (typeof rawValue === 'number' && unit) {
+          value = `${value} ${unit}`;
         }
 
         return {

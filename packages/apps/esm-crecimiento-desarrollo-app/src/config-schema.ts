@@ -13,7 +13,7 @@ export const configSchema = {
     _default: 5,
   },
   conditionConceptClassUuid: {
-    _type: Type.ConceptUuid,
+    _type: Type.UUID,
     _description: 'Concept class UUID for condition concepts',
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
   },
@@ -733,11 +733,6 @@ export const configSchema = {
     },
 
     // Additional Assessment Concepts
-    kawaidaUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Kawaida',
-      _default: 'f35aa4ba-9d04-4283-a4c8-ec8f2ee29da5',
-    },
     mamilasUuid: {
       _type: Type.ConceptUuid,
       _description: 'Mamilas',

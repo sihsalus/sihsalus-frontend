@@ -143,3 +143,31 @@ describe.each([
     expect(launchForm).not.toHaveBeenCalled();
   });
 });
+
+it('shows declared birth measurement units, preserves zero scores and leaves missing values empty', () => {
+  vi.mocked(useLatestValidEncounter).mockReturnValue({
+    ...history,
+    encounter: {
+      ...existingEncounter,
+      obs: [
+        {
+          uuid: 'synthetic-birth-weight',
+          concept: { uuid: configSchema.neonatalConcepts._default.birthWeightUuid, display: 'Birth weight' },
+          groupMembers: [],
+          value: 3.25,
+        },
+        {
+          uuid: 'synthetic-apgar',
+          concept: { uuid: configSchema.neonatalConcepts._default.apgar1MinUuid, display: 'APGAR' },
+          groupMembers: [],
+          value: 0,
+        },
+      ],
+    },
+  });
+
+  render(<BirthDataTable patientUuid="synthetic-child" />);
+  expect(screen.getByText('3.25 kg')).toBeInTheDocument();
+  expect(screen.getByText('0 puntos')).toBeInTheDocument();
+  expect(screen.queryByText('-- cm')).not.toBeInTheDocument();
+});

@@ -50,6 +50,24 @@ clasificaciones.
 
 ## TODO QA/QLTY
 
+### Verificación de correcciones neonatales — 01/10/2026
+
+Código validado: `ff1451bdabcd6f01bd72d041c715386c2d2ba1a6`. La revisión conserva
+el esquema histórico al editar y corrige la lectura paginada descrita debajo.
+
+| Estado  | Comprobación                                                                                                                                                                              | Resultado y alcance                                                                                                                                                                                                      |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PASSED  | `yarn workspace @sihsalus/esm-cred-app test`, ejecutado por Turbo                                                                                                                         | 329 pruebas en 37 archivos.                                                                                                                                                                                              |
+| PASSED  | `yarn workspace @openmrs/esm-patient-common-lib test`, ejecutado por Turbo                                                                                                                | 507 pruebas en 32 archivos; incluye historial de más de 100 atenciones y error en una página posterior.                                                                                                                  |
+| PASSED  | `VITEST_MAX_WORKERS=2 TZ=UTC yarn turbo run lint typescript test --concurrency=2 --env-mode=loose`, filtrando los mismos 45 workspaces de `verify:changed --base origin/main --head HEAD` | 223 tareas correctas, 86 de caché, 14 min 53 s; incluye builds dependientes. 6128 pruebas pasaron en 720 archivos. Cuatro workspaces no contienen pruebas: referrals, psicología, terapia física y seguimiento de casos. |
+| PASSED  | Build de CRED incluido en la ejecución anterior                                                                                                                                           | Rspack completó; persisten advertencias de tamaño de bundles.                                                                                                                                                            |
+| FAILED  | Primeras ejecuciones de `yarn verify:changed --base origin/main --head HEAD`                                                                                                              | Restricción local de caché SWC y, al habilitarla, timeouts de alergias con la concurrencia predeterminada. La ejecución limitada anterior completó el mismo alcance sin cambiar timeouts ni omitir pruebas.              |
+| BLOCKED | Persistencia, permisos operativos y aceptación clínica en DEV/QLTY                                                                                                                        | Falta sesión de prueba vigente; QLTY no respondió durante el preflight. No se acredita despliegue ni escritura clínica.                                                                                                  |
+
+La [revisión terminológica de content](https://github.com/sihsalus/sihsalus-content/blob/main/docs/contracts/cred-clinical-completion.md)
+se mantiene por separado: existencia de UUID, equivalencia clínica y lectura de
+datos históricos son condiciones distintas. Las pruebas locales no las sustituyen.
+
 Los seis resúmenes neonatales (nacimiento, embarazo y parto, atención inmediata,
 evaluación cefalocaudal, alojamiento conjunto y lactancia) esperan la lectura
 completa del historial antes de habilitar el registro. La consulta por nombre

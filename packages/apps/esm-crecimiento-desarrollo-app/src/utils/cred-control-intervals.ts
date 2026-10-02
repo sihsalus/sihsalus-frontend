@@ -67,7 +67,11 @@ export function getCREDMinimumIntervalDays(birthDate: string | Date, controlDate
   return null;
 }
 
-export function getNextCREDMinimumDate(birthDate: string | Date, controls: CREDRealControl[]): Date | null {
+export function getNextCREDMinimumDate(
+  birthDate: string | Date,
+  controls: CREDRealControl[],
+  dischargeDate?: Date,
+): Date | null {
   const birth = dayjs(birthDate);
   if (!birth.isValid()) return null;
 
@@ -76,7 +80,14 @@ export function getNextCREDMinimumDate(birthDate: string | Date, controls: CREDR
   if (getNextControlNumber(datedControls) > 27) return null;
 
   const lastControl = datedControls.at(-1);
-  if (!lastControl?.encounterDatetime) return birth.toDate();
+  if (!lastControl?.encounterDatetime) {
+    if (dischargeDate) {
+      const discharge = dayjs(dischargeDate);
+      if (!discharge.isValid() || discharge.isBefore(birth)) return null;
+      return discharge.add(48, 'hour').toDate();
+    }
+    return birth.toDate();
+  }
 
   const minimumInterval = getCREDMinimumIntervalDays(birthDate, lastControl.encounterDatetime);
   if (minimumInterval === null) return null;
@@ -114,6 +125,7 @@ export function getNextCREDControlRecommendation(
   controls: CREDRealControl[],
   appointments: CREDFutureAppointment[] = [],
   now: string | Date = new Date(),
+  dischargeDate?: Date,
 ): CREDControlRecommendation | null {
   const birth = dayjs(birthDate);
   const current = dayjs(now);
@@ -125,7 +137,8 @@ export function getNextCREDControlRecommendation(
   if (nextControlNumber > 27) return null;
 
   const lastControl = datedControls.at(-1);
-  let target = birth.add(3, 'day');
+  let target = dischargeDate ? dayjs(getNextCREDMinimumDate(birthDate, [], dischargeDate)) : current;
+  if (!target.isValid()) return null;
 
   if (lastControl?.encounterDatetime) {
     const minimumDate = getNextCREDMinimumDate(birthDate, datedControls);
@@ -143,7 +156,7 @@ export function getNextCREDControlRecommendation(
         ACTIVE_APPOINTMENT_STATUSES.has(candidate.status) &&
         dayjs(candidate.startDateTime).isValid() &&
         dayjs(candidate.startDateTime).isBefore(credEnd, 'day') &&
-        !dayjs(candidate.startDateTime).isBefore(target, 'day'),
+        !dayjs(candidate.startDateTime).isBefore(target, dischargeDate && !lastControl ? undefined : 'day'),
     )
     .sort((first, second) => dayjs(first.startDateTime).valueOf() - dayjs(second.startDateTime).valueOf())[0];
 

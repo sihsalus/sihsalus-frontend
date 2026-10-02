@@ -1,126 +1,129 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useSession } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const useStickerPdfPrinter = () => {
+export const useStickerPdfPrinter = (contextKey = '') => {
   const { t } = useTranslation();
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const session = useSession();
+  const printContext = JSON.stringify([
+    contextKey,
+    session?.user?.uuid,
+    session?.sessionLocation?.uuid,
+    session?.authenticated,
+  ]);
+  const activeContext = useRef(printContext);
   const [isPrinting, setIsPrinting] = useState(false);
-  const isMountedRef = useRef(true);
-  const timerIdsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
-  const intervalIdsRef = useRef<Array<ReturnType<typeof setInterval>>>([]);
+  const mounted = useRef(true);
+  const cancelPending = useRef<(() => void) | null>(null);
 
   const printPdf = useCallback(
     (url: string) => {
-      if (isPrinting) {
+      if (!mounted.current || activeContext.current !== printContext) {
+        return Promise.reject(new DOMException('Printing cancelled', 'AbortError'));
+      }
+      // The ref also blocks two clicks before React commits the loading state.
+      if (cancelPending.current) {
         return Promise.reject(new Error(t('printInProgress', 'Print already in progress')));
       }
-
-      return new Promise<void>((resolve) => {
+      return new Promise<void>((resolve, reject) => {
         setIsPrinting(true);
-
-        if (!iframeRef.current) {
-          const iframe = document.createElement('iframe');
-          iframe.name = 'pdfPrinterFrame';
-          iframe.setAttribute('aria-hidden', 'true');
-          Object.assign(iframe.style, {
-            position: 'fixed',
-            width: '0',
-            height: '0',
-            border: 'none',
-            visibility: 'hidden',
-            pointerEvents: 'none',
-          });
-          iframeRef.current = iframe;
-          document.body.appendChild(iframe);
-        }
-
-        const iframe = iframeRef.current;
-        let hasClosed = false;
+        const iframe = document.createElement('iframe');
+        iframe.name = 'pdfPrinterFrame';
+        iframe.setAttribute('aria-hidden', 'true');
+        Object.assign(iframe.style, {
+          position: 'fixed',
+          width: '0',
+          height: '0',
+          border: 'none',
+          visibility: 'hidden',
+          pointerEvents: 'none',
+        });
+        let settled = false;
         let loadHandled = false;
-
-        const handleLoad = () => {
-          // load can fire more than once for the same src; a second run would
-          // create a duplicate poll interval that nothing ever clears.
-          if (loadHandled) {
-            return;
-          }
-          loadHandled = true;
-
+        let timeout: ReturnType<typeof setTimeout>;
+        let interval: ReturnType<typeof setInterval> | undefined;
+        let printWindow: Window | null = null;
+        const finish = (error?: Error) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          if (interval) clearInterval(interval);
+          iframe.onload = null;
+          iframe.onerror = null;
           try {
-            const contentWindow = iframe.contentWindow;
-            if (!contentWindow) throw new Error('No content window');
-
-            let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-            const cleanup = () => {
-              if (hasClosed) return;
-              hasClosed = true;
-              if (pollInterval !== null) {
-                clearInterval(pollInterval);
-              }
-              if (isMountedRef.current) {
-                setIsPrinting(false);
-              }
-              resolve();
-            };
-
+            printWindow?.removeEventListener('afterprint', afterPrint);
+          } catch {
+            /* The frame may be unavailable. */
+          }
+          iframe.remove();
+          cancelPending.current = null;
+          if (mounted.current) setIsPrinting(false);
+          if (error) reject(error);
+          else resolve();
+        };
+        const afterPrint = () => finish();
+        const fail = () =>
+          finish(
+            new Error(
+              t(
+                'patientIdentityPrintFailed',
+                'The identification document could not be printed. Retry or contact support if the problem continues.',
+              ),
+            ),
+          );
+        cancelPending.current = () => finish();
+        iframe.onload = () => {
+          if (settled || loadHandled || !mounted.current) return;
+          loadHandled = true;
+          clearTimeout(timeout);
+          try {
+            printWindow = iframe.contentWindow;
+            if (!printWindow) {
+              fail();
+              return;
+            }
             try {
-              contentWindow.addEventListener('afterprint', cleanup, { once: true });
-            } catch (e) {
-              // Cross-origin, use polling fallback
+              printWindow.addEventListener('afterprint', afterPrint, { once: true });
+            } catch {
+              /* Use focus/timeout fallback. */
             }
-
-            contentWindow.focus();
-            contentWindow.print();
-
-            let wasFocused = false;
-            pollInterval = setInterval(() => {
-              const hasFocus = document.hasFocus();
-              if (hasFocus && wasFocused) cleanup();
-              if (!hasFocus) wasFocused = true;
+            printWindow.focus();
+            printWindow.print();
+            if (settled) return;
+            let lostFocus = false;
+            interval = setInterval(() => {
+              const focused = document.hasFocus();
+              if (focused && lostFocus) finish();
+              if (!focused) lostFocus = true;
             }, 250);
-            intervalIdsRef.current.push(pollInterval);
-
-            timerIdsRef.current.push(setTimeout(cleanup, 30000));
-          } catch (error) {
-            if (isMountedRef.current) {
-              setIsPrinting(false);
-            }
-            resolve();
+            // Completion is not a claim that paper was physically printed.
+            timeout = setTimeout(() => finish(), 30000);
+          } catch {
+            fail();
           }
         };
-
-        iframe.onload = handleLoad;
-        iframe.onerror = () => {
-          if (isMountedRef.current) {
-            setIsPrinting(false);
-          }
-          resolve();
-        };
-        iframe.src = url;
+        iframe.onerror = fail;
+        timeout = setTimeout(fail, 30000);
+        try {
+          iframe.src = url;
+          document.body.appendChild(iframe);
+        } catch {
+          fail();
+        }
       });
     },
-    [t, isPrinting],
+    [t, printContext],
   );
 
   useEffect(() => {
-    isMountedRef.current = true;
+    activeContext.current = printContext;
+    mounted.current = true;
+    setIsPrinting(false);
     return () => {
-      isMountedRef.current = false;
-      timerIdsRef.current.forEach((id) => {
-        clearTimeout(id);
-      });
-      timerIdsRef.current = [];
-      intervalIdsRef.current.forEach((id) => {
-        clearInterval(id);
-      });
-      intervalIdsRef.current = [];
-      if (iframeRef.current?.parentNode) {
-        iframeRef.current.parentNode.removeChild(iframeRef.current);
-      }
+      mounted.current = false;
+      cancelPending.current?.();
     };
-  }, []);
+  }, [printContext]);
 
   return { printPdf, isPrinting };
 };

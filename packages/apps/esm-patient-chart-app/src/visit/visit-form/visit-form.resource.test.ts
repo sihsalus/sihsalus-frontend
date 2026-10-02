@@ -10,6 +10,8 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 
 import {
+  fetchVisitClock,
+  getVisitClockNow,
   getDefaultVisitAttributesFromPatientAddress,
   getDefaultVisitAttributesFromPersonAttributes,
   getPatientIdentifierReferences,
@@ -837,5 +839,30 @@ describe('useVisitAttributeTypeExists', () => {
 
     await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
     expect(result.current).toBe(true);
+  });
+});
+
+describe('server visit clock', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('anchors server time at receipt and ignores changes to the wall clock', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      headers: new Headers({ Date: 'Wed, 30 Sep 2026 20:10:16 GMT' }),
+    } as FetchResponse);
+    const clock = await fetchVisitClock();
+    vi.spyOn(Date, 'now').mockReturnValue(0);
+    now.mockReturnValue(61000);
+    expect(getVisitClockNow(clock).toISOString()).toBe('2026-09-30T20:11:16.000Z');
+    expect(mockOpenmrsFetch).toHaveBeenLastCalledWith(expect.stringContaining('/session'), {
+      cache: 'no-store',
+    });
+  });
+
+  it.each([null, 'invalid'])('rejects an absent or invalid server Date header: %s', async (date) => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ headers: new Headers(date ? { Date: date } : {}) } as FetchResponse);
+    await expect(fetchVisitClock()).rejects.toThrow('VISIT_SERVER_TIME_UNAVAILABLE');
   });
 });

@@ -14,6 +14,24 @@ describe('CRED consultation chronology', () => {
   });
 
   it.each([
+    ['03:29', false],
+    ['03:30', true],
+  ])('requires the exact neonatal 48-hour minimum at %s', (time, expected) => {
+    vi.useFakeTimers().setSystemTime(new Date(2026, 0, 6, 16));
+    const schema = createCREDControlsSchema(
+      t,
+      new Date(2026, 0, 1),
+      new Date(2026, 0, 5),
+      undefined,
+      () => new Date(2026, 0, 5, 15, 30),
+    );
+    expect(
+      schema.safeParse({ visitStartDate: new Date(2026, 0, 5), visitStartTime: time, visitStartTimeFormat: 'PM' })
+        .success,
+    ).toBe(expected);
+  });
+
+  it.each([
     ['12:15', 'AM' as const, 0],
     ['12:15', 'PM' as const, 12],
     ['01:15', 'PM' as const, 13],
@@ -182,7 +200,8 @@ describe('CRED consultation chronology', () => {
         expect.arrayContaining([
           expect.objectContaining({
             path: ['visitStartDate'],
-            message: 'La fecha de atención no puede ser anterior al intervalo mínimo del siguiente control CRED.',
+            message:
+              'La fecha y hora de atención no pueden ser anteriores al intervalo mínimo del siguiente control CRED.',
           }),
         ]),
       );

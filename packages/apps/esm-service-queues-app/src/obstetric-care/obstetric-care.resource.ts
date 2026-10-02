@@ -137,9 +137,10 @@ export async function startObstetricCare(
     ) {
       throw new Error('The linked obstetric appointment and triage could not be verified.');
     }
-    const { data: appointment } = await openmrsFetch<
-      Pick<Appointment, 'uuid' | 'patient' | 'service' | 'location'>
-    >(`${restBaseUrl}/appointments/${encodeURIComponent(appointmentUuid)}?_=${freshReadNonce}`, freshReadOptions);
+    const { data: appointment } = await openmrsFetch<Pick<Appointment, 'uuid' | 'patient' | 'service' | 'location'>>(
+      `${restBaseUrl}/appointments/${encodeURIComponent(appointmentUuid)}?_=${freshReadNonce}`,
+      freshReadOptions,
+    );
     const matchingRoutes = triageConfig.appointmentArrivalRules?.filter(
       (rule) =>
         rule.appointmentServiceUuid === appointment?.service?.uuid &&

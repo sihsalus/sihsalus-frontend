@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 /**
  * Patient Search and Quick Registration Component
  *
@@ -208,7 +209,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     setValue,
     control,
     watch,
-  } = useForm<QuickRegistrationFormData>({
+  } = useForm<z.input<typeof quickRegistrationSchema>, unknown, QuickRegistrationFormData>({
     resolver: zodResolver(quickRegistrationSchema),
     defaultValues: {
       isUnknown: false,

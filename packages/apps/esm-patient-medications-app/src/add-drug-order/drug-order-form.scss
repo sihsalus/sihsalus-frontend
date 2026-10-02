@@ -50,6 +50,11 @@
 }
 
 .medicationInfo {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: colors.$cyan-60;
+  color: colors.$white-0;
   border: 0;
   padding: layout.$spacing-05;
   margin-left: calc(layout.$spacing-05 * -1);
@@ -68,20 +73,6 @@
   max-width: unset;
   margin-top: calc(layout.$spacing-03 * -1);
   margin-left: calc(layout.$spacing-05 * -1);
-}
-
-.stickyMedicationInfo {
-  position: sticky;
-  background-color: colors.$cyan-60;
-  color: colors.$white-0;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-
-  .medicationInfo {
-    margin: 0;
-  }
 }
 
 .patientHeader {

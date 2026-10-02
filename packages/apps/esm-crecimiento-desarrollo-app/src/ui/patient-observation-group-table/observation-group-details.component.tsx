@@ -34,7 +34,7 @@ interface ObservationGroupDetailsProps {
 }
 
 const ObservationGroupDetails: React.FC<ObservationGroupDetailsProps> = ({ group }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const desktopLayout = isDesktop(useLayoutType());
   const responsiveSize = desktopLayout ? 'sm' : 'lg';
 

@@ -20,7 +20,7 @@ import { credImmunizationEditPrivilege } from '../../../constants';
 import { useAdverseReactions } from '../../workspace/adverse-reaction/adverse-reaction.resource';
 
 const AdverseReactionsSummary: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const { patientUuid } = usePatient();
   const session = useSession();

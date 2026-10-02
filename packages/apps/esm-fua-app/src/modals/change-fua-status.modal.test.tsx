@@ -2,6 +2,7 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
+import type { Mock } from 'vitest';
 import { setFuaEstado } from '../hooks/useFuaRequests';
 
 import ChangeFuaStatusModal, { FUA_ESTADOS } from './change-fua-status.modal';
@@ -99,7 +100,7 @@ describe('ChangeFuaStatusModal — transitions', () => {
   });
 
   it('calls setFuaEstado with selected estado and calls onStatusChanged', async () => {
-    (setFuaEstado as vi.Mock).mockResolvedValueOnce({ data: {} });
+    (setFuaEstado as Mock).mockResolvedValueOnce({ data: {} });
 
     render(
       <ChangeFuaStatusModal closeModal={closeModal} fuaRequest={mockFuaPendiente} onStatusChanged={onStatusChanged} />,
@@ -114,7 +115,7 @@ describe('ChangeFuaStatusModal — transitions', () => {
   });
 
   it('shows error snackbar when setFuaEstado fails', async () => {
-    (setFuaEstado as vi.Mock).mockRejectedValueOnce(new Error('Network error'));
+    (setFuaEstado as Mock).mockRejectedValueOnce(new Error('Network error'));
 
     render(
       <ChangeFuaStatusModal closeModal={closeModal} fuaRequest={mockFuaPendiente} onStatusChanged={onStatusChanged} />,

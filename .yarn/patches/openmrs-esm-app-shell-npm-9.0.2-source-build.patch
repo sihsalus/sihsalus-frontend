@@ -236,7 +236,7 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
          'lodash.debounce': 'lodash-es/debounce',
          'lodash.findlast': 'lodash-es/findLast',
          'lodash.isequal': 'lodash-es/isEqual',
-@@ -338,28 +381,33 @@ module.exports = (env, argv = []) => {
+@@ -338,28 +381,35 @@ module.exports = (env, argv = []) => {
            openmrsConfigUrls,
            openmrsCoreImportmap: appPatterns.length > 0 && JSON.stringify(coreImportmap),
            openmrsCoreRoutes: Object.keys(coreRoutes).length > 0 && JSON.stringify(coreRoutes),
@@ -281,8 +281,10 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
 +              ? frameworkVersion
 +              : depName === 'swr'
 +                ? require('swr/package.json').version
-+                : dependencies[depName];
-@@ -420,7 +468,7 @@ module.exports = (env, argv = []) => {
++                : ['i18next', 'react-i18next', 'react-router-dom'].includes(depName)
++                  ? require(`${depName}/package.json`).version
++                  : dependencies[depName];
+@@ -420,7 +470,7 @@ module.exports = (env, argv = []) => {
        }),
        openmrsOffline
          ? new InjectManifest({

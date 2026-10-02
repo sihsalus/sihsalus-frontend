@@ -1,13 +1,15 @@
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 import { credNeonatalEditPrivilege } from '../../constants';
 import GrowthChartOverview from './growth-chart-overview.component';
+import { LineChart } from '@carbon/charts-react';
 import { useBiometrics } from './hooks/useBiometrics';
 
 vi.mock('./hooks/useBiometrics', () => ({
   useBiometrics: vi.fn(),
 }));
+vi.mock('@carbon/charts-react', () => ({ LineChart: vi.fn(() => null) }));
 
 const mockUseBiometrics = vi.mocked(useBiometrics);
 const mockUseSession = vi.mocked(useSession);
@@ -38,6 +40,31 @@ describe('GrowthChartOverview', () => {
       error: null,
     } as unknown as ReturnType<typeof useBiometrics>);
     mockUserHasAccess.mockReturnValue(false);
+  });
+
+  it('shows school BMI and height references without offering preschool weight or head curves', () => {
+    mockUseBiometrics.mockReturnValue({
+      data: [
+        {
+          eventDate: new Date('2026-01-01T00:00:00Z'),
+          encounterReference: 'Encounter/synthetic',
+          dataValues: { weight: '24', height: '120', headCircumference: '' },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useBiometrics>);
+    render(<GrowthChartOverview patient={{ ...patient, birthDate: '2018-01-01' }} patientUuid="patient-1" />);
+    expect(
+      within(screen.getByRole('tablist', { name: 'Indicadores de crecimiento' })).getAllByRole('tab'),
+    ).toHaveLength(2);
+    const props = vi.mocked(LineChart).mock.calls.at(-1)?.[0];
+    expect(props).toBeDefined();
+    const points = props?.data as Array<{ date: number; value: number; isPatientMeasurement?: boolean }>;
+    expect(
+      points.filter((point) => !point.isPatientMeasurement).every((point) => point.date >= 61 && point.date <= 228),
+    ).toBe(true);
+    expect(points.find((point) => point.isPatientMeasurement)?.value).toBeCloseTo(24 / 1.2 ** 2, 6);
   });
 
   it('offers to record data when the user has the neonatal edit privilege', () => {

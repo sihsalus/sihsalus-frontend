@@ -13,6 +13,7 @@
 import React from 'react';
 import { OdontogramProvider } from '../providers/OdontogramProvider';
 import FormDentalClinicalFindings from './FormDentalClinicalFindings';
+import DentitionSelector from './DentitionSelector';
 import OdontogramTextFields from './OdontogramTextFields';
 import ResponsiveOdontogramWrapper from './ResponsiveOdontogramWrapper';
 import TeethArch from './TeethArch';
@@ -30,6 +31,8 @@ export interface OdontogramProps {
   onChange: (data: OdontogramData) => void;
   /** Disables all interactions */
   readOnly?: boolean;
+  /** Only a new initial odontogram can change dentition, before clinical data is entered. */
+  allowDentitionChange?: boolean;
   /** Optional title */
   title?: string;
   /** Optional description */
@@ -45,11 +48,15 @@ const Odontogram: React.FC<OdontogramProps> = ({
   data,
   onChange,
   readOnly = false,
+  allowDentitionChange = false,
   title,
   description,
   formSelection,
   onFormSelectionChange,
 }) => {
+  const teethPerArch = Math.max(config.teeth.upper.length, config.teeth.lower.length);
+  const naturalWidth = teethPerArch * 60 + (teethPerArch - 1) * 20;
+
   return (
     <OdontogramProvider
       config={config}
@@ -68,6 +75,7 @@ const Odontogram: React.FC<OdontogramProps> = ({
         )}
 
         <div className="odontogram-content">
+          <DentitionSelector allowChange={allowDentitionChange} onChange={onChange} />
           {/* Formulario de hallazgos clínicos */}
           {!readOnly && (
             <div className="form-section">
@@ -75,13 +83,9 @@ const Odontogram: React.FC<OdontogramProps> = ({
             </div>
           )}
 
-          {/* Visualización del odontograma envuelta en el wrapper responsive
-              que aplica CSS `zoom` para escalar todo en proporción cuando el
-              contenedor es más narrow que el ancho natural (1260px). Con
-              `zoom` el layout-box sigue el escalado visual, así no quedan
-              huecos verticales por debajo del odontograma. */}
+          {/* Scale each variant using its actual arch width. */}
           <div className="teeth-visualization">
-            <ResponsiveOdontogramWrapper>
+            <ResponsiveOdontogramWrapper naturalWidth={naturalWidth}>
               <div className="upper-teeth-section">
                 <TeethArch position="upper" />
               </div>

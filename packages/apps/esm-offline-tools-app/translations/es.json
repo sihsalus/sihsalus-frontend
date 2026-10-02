@@ -54,6 +54,8 @@
   "offlineActionsTablePatient": "Paciente",
   "offlineActionsUpdateOfflinePatients": "Actualizar pacientes sin internet",
   "offlineDownloadsVerified": "Descargas seleccionadas verificadas",
+  "offlineModeChangeFailed": "No se pudo cambiar el uso sin conexión. Vuelve a intentarlo.",
+  "offlineModeUnavailable": "El uso sin conexión no está disponible en esta sesión.",
   "offlineNotPersistent": "No se ha concedido almacenamiento persistente",
   "offlineOldestDownload": "Descarga verificada más antigua: {{date}}",
   "offlinePatients": "Pacientes sin internet",
@@ -112,7 +114,5 @@
   "offlineStorageUnverified": "La reserva de almacenamiento es insuficiente o no pudo verificarse",
   "offlineToolsAppMenuLink": "Herramientas sin internet",
   "requestPersistentStorage": "Solicitar almacenamiento persistente",
-  "retry": "Reintentar",
-  "offlineModeUnavailable": "El uso sin conexión no está disponible en esta sesión.",
-  "offlineModeChangeFailed": "No se pudo cambiar el uso sin conexión. Vuelve a intentarlo."
+  "retry": "Reintentar"
 }

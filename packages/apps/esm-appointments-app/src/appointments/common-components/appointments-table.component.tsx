@@ -56,6 +56,7 @@ import {
 import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { formatCivilDocumentIdentifier } from '../../helpers/patient-identifiers';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { useAppointmentPatientPrint } from '../../hooks/useAppointmentPatientPrint';
 import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
 import { getPageSizes, sortAppointmentsByStartDateDescending, useAppointmentSearchResults } from '../utils';
@@ -123,6 +124,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
 }) => {
   const { t } = useTranslation();
   const [pageSize, setPageSize] = useState(25);
+  const { canPrintPatient, printPatient } = useAppointmentPatientPrint();
   const [searchString, setSearchString] = useState('');
   const [editingAppointmentUuid, setEditingAppointmentUuid] = useState<string | null>(null);
   const sortedAppointments = useMemo(() => sortAppointmentsByStartDateDescending(appointments), [appointments]);
@@ -450,7 +452,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                   styles.actionsColumn,
                                 )}
                               >
-                                {canEditAppointment || canMarkMissed || canCancelAppointment ? (
+                                {canEditAppointment ||
+                                canMarkMissed ||
+                                canCancelAppointment ||
+                                (canPrintPatient && matchingAppointment.patient?.uuid) ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actionsForPatient', 'Acciones para {{patient}}', {
@@ -462,6 +467,13 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                     })}
                                     size={responsiveSize}
                                   >
+                                    {canPrintPatient && matchingAppointment.patient?.uuid && (
+                                      <OverflowMenuItem
+                                        className={styles.menuItem}
+                                        itemText={t('printPatientIdentification', 'Print patient identification')}
+                                        onClick={() => printPatient(matchingAppointment.patient.uuid)}
+                                      />
+                                    )}
                                     {canEditAppointment ? (
                                       <OverflowMenuItem
                                         className={styles.menuItem}

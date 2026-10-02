@@ -77,7 +77,7 @@ describe('PrintIdentifierStickerOverflowMenuItem', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       kind: 'error',
       title: 'Print error',
-      subtitle: expect.stringContaining(errorMessage),
+      subtitle: 'The identification document could not be printed. Retry or contact support if the problem continues.',
     });
   });
 

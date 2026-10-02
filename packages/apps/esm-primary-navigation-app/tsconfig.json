@@ -1,6 +1,9 @@
 {
-  "extends": "../../tooling/tsconfig.strict.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "target": "es2015"
   },
   "include": ["src/**/*", "test-utils/**/*", "setup-tests.ts"]

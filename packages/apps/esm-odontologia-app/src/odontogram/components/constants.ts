@@ -63,6 +63,13 @@ import {
   Finding38Design1,
 } from '../designs/figuras';
 
+import {
+  Finding36Design3,
+  Finding36Design4,
+  primaryFilledSurfaces,
+  primaryOutlinedSurfaces,
+} from '../designs/primary-molar-surfaces';
+
 // ── Color display maps ────────────────────────────────────────────────────────
 
 export const COLOR_CSS: Record<string, string> = {
@@ -109,7 +116,7 @@ export const TOOTH_DESIGN_COMPONENT_MAP: Record<
     '4': Finding37Design4,
     '5': Finding37Design5,
   },
-  '36': { '1': Finding36Design1, '2': Finding36Design2 },
+  '36': { '1': Finding36Design1, '2': Finding36Design2, '3': Finding36Design3, '4': Finding36Design4 },
   '10': {
     '1': Finding10Design1,
     '2': Finding10Design2,
@@ -121,6 +128,7 @@ export const TOOTH_DESIGN_COMPONENT_MAP: Record<
     '8': Finding10Design8,
   },
   '5': {
+    ...primaryFilledSurfaces,
     '1': Finding5Design1,
     '2': Finding5Design2,
     '3': Finding5Design3,
@@ -137,6 +145,7 @@ export const TOOTH_DESIGN_COMPONENT_MAP: Record<
     '14': Finding5Design14,
   },
   '16': {
+    ...primaryFilledSurfaces,
     '1': Finding5Design1,
     '2': Finding5Design2,
     '3': Finding5Design3,
@@ -164,6 +173,7 @@ export const TOOTH_DESIGN_COMPONENT_MAP: Record<
     '9': Finding27Design9,
   },
   '34': {
+    ...primaryFilledSurfaces,
     '1': Finding5Design1,
     '2': Finding5Design2,
     '3': Finding5Design3,
@@ -180,6 +190,7 @@ export const TOOTH_DESIGN_COMPONENT_MAP: Record<
     '14': Finding5Design14,
   },
   '35': {
+    ...primaryOutlinedSurfaces,
     '1': Finding35Design1,
     '2': Finding35Design2,
     '3': Finding35Design3,
@@ -204,3 +215,10 @@ export const TOOTH_DESIGN_COMPONENT_MAP: Record<
   '21': { '1': Finding21Design1 },
   '13': { '1': Finding13Design1, '2': Finding13Design2 },
 };
+
+/** Catalog component names and persisted finding IDs resolve through the same registry. */
+export const DESIGN_COMPONENT_MAP: Record<string, React.ComponentType<{ strokeColor: string }>> = Object.fromEntries(
+  Object.entries(TOOTH_DESIGN_COMPONENT_MAP).flatMap(([findingId, designs]) =>
+    Object.entries(designs).map(([number, component]) => [`Finding${findingId}Design${number}`, component]),
+  ),
+);

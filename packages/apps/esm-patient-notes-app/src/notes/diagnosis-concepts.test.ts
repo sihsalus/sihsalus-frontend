@@ -1,6 +1,6 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { getCie10MappedCode } from './catalog-concept.utils';
-import { fetchDiagnosisConceptsByName } from './visit-notes.resource';
+import { fetchDiagnosisConceptByUuid, fetchDiagnosisConceptsByName } from './visit-notes.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -102,5 +102,35 @@ describe('fetchDiagnosisConceptsByName', () => {
 
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('name=dolor%20%26%20fiebre'));
+  });
+});
+
+describe('fetchDiagnosisConceptByUuid', () => {
+  beforeEach(() => mockOpenmrsFetch.mockReset());
+
+  it('loads structured catalog metadata for a diagnosis saved in an encounter', async () => {
+    const concept = {
+      uuid: 'synthetic-diagnosis',
+      display: 'Synthetic diagnosis',
+      names: [{ display: 'E119', conceptNameType: 'SHORT' }],
+    };
+    mockOpenmrsFetch.mockResolvedValue({ data: concept } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(fetchDiagnosisConceptByUuid(concept.uuid)).resolves.toEqual(concept);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/concept/synthetic-diagnosis?v=custom:'), {
+      cache: 'no-store',
+      rejectOnAuthFailure: true,
+    });
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining('names:(display,conceptNameType,locale)'),
+      expect.anything(),
+    );
+  });
+
+  it('rejects metadata for a different concept', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { uuid: 'other-diagnosis' } } as Awaited<
+      ReturnType<typeof openmrsFetch>
+    >);
+    await expect(fetchDiagnosisConceptByUuid('synthetic-diagnosis')).rejects.toThrow('could not be verified');
   });
 });

@@ -2,7 +2,7 @@ import { Button } from '@carbon/react';
 import { type Order, showModal, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { laboratoryEditPrivilege } from '../../constants';
+import { editLabResultsModalName, laboratoryEditPrivilege } from '../../constants';
 import styles from './actions.scss';
 
 interface AmendLabResultsActionMenuProps {
@@ -21,7 +21,7 @@ const AmendLabResultsAction: React.FC<AmendLabResultsActionMenuProps> = ({ order
       ? orders.filter((order) => ['COMPLETED', 'ON_HOLD'].includes(order.fulfillerStatus))
       : [order].filter((order) => ['COMPLETED', 'ON_HOLD'].includes(order.fulfillerStatus));
 
-    const dispose = showModal('edit-lab-results-modal', {
+    const dispose = showModal(editLabResultsModalName, {
       closeModal: () => dispose(),
       orders: editableOrders,
     });

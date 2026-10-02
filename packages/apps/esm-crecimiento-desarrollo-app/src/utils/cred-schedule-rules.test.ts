@@ -8,7 +8,7 @@ describe('cred-schedule-rules', () => {
     expect(definitions[0]).toEqual(
       expect.objectContaining({
         controlNumber: 1,
-        label: 'RN - 3 a 6 días',
+        label: 'RN - antes de 7 días',
         phase: 'neonatal',
       }),
     );
@@ -28,7 +28,7 @@ describe('cred-schedule-rules', () => {
     expect(schedule[0]).toEqual(
       expect.objectContaining({
         controlNumber: 1,
-        targetDate: new Date('2024-01-04T00:00:00.000Z'),
+        targetDate: new Date('2024-01-01T00:00:00.000Z'),
       }),
     );
     expect(schedule[3]).toEqual(
@@ -50,7 +50,7 @@ describe('cred-schedule-rules', () => {
     const schedule = generateCREDSchedule('2024-01-01T00:00:00.000Z');
 
     expect(schedule[0].dueEndDate).toEqual(new Date('2024-01-07T00:00:00.000Z'));
-    expect(schedule[1].dueEndDate).toEqual(new Date('2024-01-14T00:00:00.000Z'));
+    expect(schedule[1].dueEndDate).toEqual(new Date('2024-01-15T00:00:00.000Z'));
     expect(schedule[2].dueEndDate).toEqual(new Date('2024-01-22T00:00:00.000Z'));
     expect(schedule[3].dueEndDate).toEqual(new Date('2024-02-29T00:00:00.000Z'));
   });

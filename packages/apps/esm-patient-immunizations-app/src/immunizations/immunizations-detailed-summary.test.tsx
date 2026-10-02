@@ -12,6 +12,7 @@ import { usePatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patie
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit, mockPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
+import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
@@ -28,7 +29,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 }));
 
 const mockUseImmunizations = vi.mocked(useImmunizations);
-const mockLaunchWorkspace = launchWorkspace2 as vi.Mock;
+const mockLaunchWorkspace = launchWorkspace2 as Mock;
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUsePatientChartStore = vi.mocked(usePatientChartStore);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);

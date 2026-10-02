@@ -21,6 +21,8 @@
   "laboratoryDescription": "Orders and results",
   "pageNotFound": "Page not found",
   "peruHomeActions": "Care shortcuts",
+  "recentPatients": "Recent patients",
+  "recentPatientsDescription": "Reopen recently viewed charts",
   "registerPatient": "Register patient",
   "registerPatientDescription": "Prefer DNI; CE/CNV when applicable",
   "returnToHome": "Volver al inicio",

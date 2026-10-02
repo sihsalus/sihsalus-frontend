@@ -4,6 +4,7 @@ import { basename, resolve } from 'node:path';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import watch from 'node-watch';
 import { createSpaStaticOptions, isSpaIndexRequestPath } from '../../spa-static-options';
 import {
   type ImportmapDeclaration,
@@ -124,7 +125,7 @@ export async function runDevelop(args: DevelopArgs) {
 
       logInfo(`Watching routes.json for ${Object.keys(watchedRoutesPaths).join(', ')}`);
       // setup watchers for all the discovered routes.json files which update the in-memory map
-      (await import('node-watch')).default(Object.keys(watchedRoutesByPath), { delay: 0 }, async (event, name) => {
+      watch(Object.keys(watchedRoutesByPath), { delay: 0 }, async (event, name) => {
         if (event === 'update') {
           const updatedApp = watchedRoutesByPath[name];
           if (updatedApp) {

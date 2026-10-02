@@ -1,7 +1,6 @@
 /** @module @category API */
 import { reportError } from '@openmrs/esm-error-handling';
 import { createGlobalStore } from '@openmrs/esm-state';
-import { isUndefined } from 'lodash-es';
 import { Observable } from 'rxjs';
 import { privilegesAreEquivalent } from './legacy-privilege-aliases';
 import { openmrsFetch, restBaseUrl, sessionEndpoint } from './openmrs-fetch';
@@ -26,6 +25,7 @@ export const sessionStore = createGlobalStore<SessionStore>('session', {
   session: null,
 });
 let lastFetchTimeMillis = 0;
+let sessionRequestVersion = 0;
 
 /**
  * The getCurrentUser function returns an observable that produces
@@ -180,13 +180,8 @@ function userHasPrivilege(requiredPrivilege: string | string[] | undefined, user
 
   if (typeof requiredPrivilege === 'string') {
     return hasPrivilege(requiredPrivilege);
-  } else if (Array.isArray(requiredPrivilege)) {
-    return requiredPrivilege.every(hasPrivilege);
-  } else if (!isUndefined(requiredPrivilege)) {
-    console.error(`Could not understand privileges "${requiredPrivilege}"`);
   }
-
-  return true;
+  return Array.isArray(requiredPrivilege) && requiredPrivilege.every(hasPrivilege);
 }
 
 const superUserRoles = new Set(['System Developer', 'Application: Has Super User Privileges']);
@@ -218,6 +213,7 @@ export function refetchCurrentUser(username?: string, password?: string) {
   return handleSessionResponse(
     openmrsFetch(sessionEndpoint, {
       headers,
+      cache: 'no-store',
     }),
   );
 }
@@ -235,6 +231,8 @@ export function refetchCurrentUser(username?: string, password?: string) {
  * ```
  */
 export function clearCurrentUser() {
+  // Responses started before logout must not restore the previous actor.
+  sessionRequestVersion++;
   sessionStore.setState({
     loaded: true,
     session: { authenticated: false, sessionId: '' },
@@ -263,6 +261,14 @@ export function userHasAccess(
   requiredPrivilege: string | Array<string>,
   user: { privileges: Array<Privilege>; roles: Array<Role> },
 ) {
+  if (
+    requiredPrivilege !== undefined &&
+    typeof requiredPrivilege !== 'string' &&
+    (!Array.isArray(requiredPrivilege) || requiredPrivilege.some((privilege) => typeof privilege !== 'string'))
+  ) {
+    return false;
+  }
+
   if (user === undefined) {
     // if the user hasn't been loaded, then return false iff there is a required privilege
     return !requiredPrivilege;
@@ -414,27 +420,30 @@ export async function setUserProperties(
 }
 
 function handleSessionResponse(result: Promise<FetchResponse<Session>>) {
-  return new Promise<SessionStore>((resolve, reject) => {
-    result
-      .then((res) => {
-        let nextState: SessionStore;
-        if (typeof res?.data === 'object') {
-          nextState = { loaded: true, session: res.data };
-          sessionStore.setState(nextState);
-          resolve(nextState);
-        } else {
-          nextState = { loaded: false, session: null };
-          sessionStore.setState(nextState);
-          reject(nextState);
-        }
-      })
-      .catch((err) => {
-        reportError(getSessionFetchErrorMessage(err));
-        const nextState: SessionStore = { loaded: false, session: null, error: err };
+  const requestVersion = ++sessionRequestVersion;
+  return result.then(
+    (res): SessionStore => {
+      if (requestVersion !== sessionRequestVersion) return sessionStore.getState();
+
+      if (!res?.data || Array.isArray(res.data) || typeof res.data.authenticated !== 'boolean') {
+        const nextState: SessionStore = { loaded: false, session: null };
         sessionStore.setState(nextState);
-        reject(nextState);
-      });
-  });
+        throw nextState;
+      }
+
+      const nextState: SessionStore = { loaded: true, session: res.data };
+      sessionStore.setState(nextState);
+      return nextState;
+    },
+    (err): SessionStore => {
+      if (requestVersion !== sessionRequestVersion) return sessionStore.getState();
+
+      reportError(getSessionFetchErrorMessage(err));
+      const nextState: SessionStore = { loaded: false, session: null, error: err };
+      sessionStore.setState(nextState);
+      throw nextState;
+    },
+  );
 }
 
 function getSessionFetchErrorMessage(err: unknown) {

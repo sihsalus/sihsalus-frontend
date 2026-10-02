@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload, IndicadorVersion } from '../api/types';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
-import { useIndicador, useIndicadores } from '../features/indicadores/hooks';
+import { useAllIndicadores, useIndicador } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 interface MetaFormModalProps {
@@ -29,8 +29,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
   onSubmit,
 }) => {
   const { t } = useTranslation();
-  const { data: indicadoresData } = useIndicadores(1, 100);
-  const indicators = indicadoresData?.items ?? [];
+  const { data: indicators = [] } = useAllIndicadores();
 
   const initialIndicator = useMemo(
     () => indicators.find((indicator) => indicator.id === initialIndicatorId),
@@ -119,10 +118,10 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
 
   const validate = (): string | null => {
     if (!selectedIndicator) {
-      return t('metaValidationIndicator', 'Seleccioná un indicador.');
+      return t('metaValidationIndicator', 'Seleccione un indicador.');
     }
     if (!selectedVersionId) {
-      return t('metaValidationVersion', 'Seleccioná una versión.');
+      return t('metaValidationVersion', 'Seleccione una versión.');
     }
     if (anio === '' || !Number.isInteger(anio) || anio < MIN_YEAR || anio > MAX_YEAR) {
       return t('metaValidationYear', 'El año debe estar entre {{minYear}} y {{maxYear}}.', {
@@ -172,7 +171,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
       open={isOpen}
       modalHeading={initialMeta ? t('editMeta', 'Editar meta') : t('newMeta', 'Nueva meta')}
       primaryButtonText={primaryButton}
-      primaryButtonDisabled={isSubmitting || versionsLoading || Boolean(versionsError)}
+      primaryButtonDisabled={isSubmitting || versionsLoading || Boolean(versionsError) || versionOptions.length === 0}
       secondaryButtonText={t('cancel', 'Cancelar')}
       onRequestClose={onClose}
       onRequestSubmit={handleSubmit}
@@ -189,8 +188,8 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
             title={t('versionsLoadFailed', 'No se pudieron cargar las versiones')}
             subtitle={getUserFacingErrorMessage(
               versionsError,
-              t('retryLater', 'Intentá nuevamente.'),
-              indicatorsErrorMessageOptions,
+              t('retryLater', 'Intente nuevamente.'),
+              indicatorsErrorMessageOptions(t),
             )}
             lowContrast
             hideCloseButton
@@ -207,11 +206,23 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
             setSelectedIndicator(data.selectedItem ?? null);
             setSelectedVersionId('');
           }}
-          placeholder={t('selectIndicator', 'Seleccioná un indicador')}
+          placeholder={t('selectIndicator', 'Seleccione un indicador')}
           disabled={Boolean(initialMeta) || isSubmitting}
         />
 
         {versionsLoading ? <InlineLoading description={t('loadingVersions', 'Cargando versiones...')} /> : null}
+
+        {selectedIndicator && !versionsLoading && !versionsError && versionOptions.length === 0 ? (
+          <InlineNotification
+            kind="info"
+            title={t(
+              'metaNoVersions',
+              'Este indicador no tiene versiones. Cree una versión antes de definir una meta.',
+            )}
+            lowContrast
+            hideCloseButton
+          />
+        ) : null}
 
         <Select
           id="meta-version"
@@ -220,7 +231,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
           onChange={(event) => setSelectedVersionId(event.target.value)}
           disabled
         >
-          <SelectItem value="" text={t('selectVersion', 'Seleccioná una versión')} />
+          <SelectItem value="" text={t('selectVersion', 'Seleccione una versión')} />
           {versionOptions.map((version) => (
             <SelectItem key={version.id} value={version.id} text={String(version.version)} />
           ))}
@@ -241,7 +252,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
 
         <NumberInput
           id="meta-valor"
-          label={t('targetValue', 'Valor de la meta')}
+          label={t('targetValueLabel', 'Valor de la meta')}
           min={0}
           value={valorMeta}
           onChange={(_event, { value }) => {

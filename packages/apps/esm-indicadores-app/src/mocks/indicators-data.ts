@@ -1,10 +1,12 @@
 import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
+  EncounterTypeOption,
   GetResultadosParams,
   GetSeriesParams,
   Indicador,
   IndicadorDetail,
+  IndicadorMeta,
   IndicadorResultado,
   IndicadorSQLPreview,
   LocationOption,
@@ -32,6 +34,13 @@ const mockOrdenes: Array<OrdenOption> = [
   { uuid: 'ord-hemograma', display: 'Hemograma' },
   { uuid: 'ord-ferritina', display: 'Ferritina sérica' },
   { uuid: 'ord-fluor', display: 'Aplicación de flúor' },
+];
+
+const mockEncounterTypes: Array<EncounterTypeOption> = [
+  { uuid: 'enc-cred-neonato', display: 'CRED Neonato' },
+  { uuid: 'enc-cred-1-4', display: 'CRED 1-4 años' },
+  { uuid: 'enc-control-nino-sano', display: 'Control de niño sano' },
+  { uuid: 'enc-control-prenatal', display: 'Control prenatal' },
 ];
 
 const definicionPrenatal: DefinicionIndicadorForm = {
@@ -129,6 +138,18 @@ const resultados: Array<IndicadorResultado> = [
   },
   {
     id: uid('res'),
+    indicador_version_id: 'ver-001-1',
+    indicador_nombre: 'Atenciones de control prenatal',
+    indicador_version_num: 1,
+    periodo_inicio: '2026-04-01',
+    periodo_fin: '2026-04-30',
+    valor: 298,
+    calculado_en: '2026-05-03T02:00:00.000Z',
+    mes_referencia: '2026-04-01',
+    es_canonico: false,
+  },
+  {
+    id: uid('res'),
     indicador_version_id: 'ver-002-1',
     indicador_nombre: 'Pacientes con diagnóstico de anemia',
     indicador_version_num: 1,
@@ -188,10 +209,8 @@ function definitionToSql(definicion: DefinicionIndicadorForm) {
 }
 
 export function listIndicadores(page: number, size: number): PaginatedResponse<Indicador> {
-  const activeIndicators = indicadores
-    .filter((indicator) => indicator.activo)
-    .map(({ versiones: _versiones, ...indicator }) => indicator);
-  return toPaginatedResponse(activeIndicators, page, size);
+  const list = indicadores.map(({ versiones: _versiones, ...indicator }) => indicator);
+  return toPaginatedResponse(list, page, size);
 }
 
 export function getIndicadorById(id: string): IndicadorDetail {
@@ -200,6 +219,28 @@ export function getIndicadorById(id: string): IndicadorDetail {
     throw new Error('Indicador no encontrado');
   }
   return indicador;
+}
+
+export function getMetaByIndicatorMock(indicadorId: string, anio: number): IndicadorMeta {
+  if (indicadorId !== 'ind-001' || anio !== 2026) {
+    throw Object.assign(new Error('Meta no encontrada'), {
+      status: 404,
+      responseBody: { detail: { field: 'indicador_version_id', message: 'Meta no encontrada' } },
+    });
+  }
+
+  const indicador = getIndicadorById(indicadorId);
+  const version = latestVersion(indicador);
+
+  return {
+    id: 'meta-001-2026',
+    indicador_version_id: version.id,
+    anio,
+    valor_meta: 350,
+    creado_en: '2026-01-20T10:00:00.000Z',
+    indicador_nombre: indicador.nombre,
+    version_numero: version.version,
+  };
 }
 
 export function getSqlPreviewMock(id: string, versionId?: string): IndicadorSQLPreview {
@@ -233,11 +274,51 @@ export function getSeriesMock(params: GetSeriesParams): SeriesResponse {
   const granularity = params.granularity ?? 'mensual';
 
   const monthlyRows: Array<SerieRow> = [
-    { periodo_label: `${year}-01`, valor: 98, meses_disponibles: 1, anio: year, mes_referencia: `${year}-01-01` },
-    { periodo_label: `${year}-02`, valor: 87, meses_disponibles: 1, anio: year, mes_referencia: `${year}-02-01` },
-    { periodo_label: `${year}-03`, valor: 105, meses_disponibles: 1, anio: year, mes_referencia: `${year}-03-01` },
-    { periodo_label: `${year}-04`, valor: 112, meses_disponibles: 1, anio: year, mes_referencia: `${year}-04-01` },
-    { periodo_label: `${year}-05`, valor: 95, meses_disponibles: 1, anio: year, mes_referencia: `${year}-05-01` },
+    {
+      periodo_label: `${year}-01`,
+      valor: 98,
+      meses_disponibles: 1,
+      anio: year,
+      mes_referencia: `${year}-01-01`,
+      version_id: 'ver-001-1',
+      version_num: 1,
+    },
+    {
+      periodo_label: `${year}-02`,
+      valor: 87,
+      meses_disponibles: 1,
+      anio: year,
+      mes_referencia: `${year}-02-01`,
+      version_id: 'ver-001-1',
+      version_num: 1,
+    },
+    {
+      periodo_label: `${year}-03`,
+      valor: 105,
+      meses_disponibles: 1,
+      anio: year,
+      mes_referencia: `${year}-03-01`,
+      version_id: 'ver-001-1',
+      version_num: 1,
+    },
+    {
+      periodo_label: `${year}-04`,
+      valor: 112,
+      meses_disponibles: 1,
+      anio: year,
+      mes_referencia: `${year}-04-01`,
+      version_id: 'ver-001-1',
+      version_num: 1,
+    },
+    {
+      periodo_label: `${year}-05`,
+      valor: 95,
+      meses_disponibles: 1,
+      anio: year,
+      mes_referencia: `${year}-05-01`,
+      version_id: 'ver-001-1',
+      version_num: 1,
+    },
   ];
 
   if (granularity === 'mensual') {
@@ -247,8 +328,22 @@ export function getSeriesMock(params: GetSeriesParams): SeriesResponse {
   if (granularity === 'trimestral') {
     return {
       items: [
-        { periodo_label: 'Q1', valor: 290, meses_disponibles: 3, anio: year, trimestre: 1 },
-        { periodo_label: 'Q2', valor: 207, meses_disponibles: 2, anio: year, trimestre: 2 },
+        {
+          periodo_label: 'Q1',
+          valor: 290,
+          meses_disponibles: 3,
+          anio: year,
+          trimestre: 1,
+          versiones: [1],
+        },
+        {
+          periodo_label: 'Q2',
+          valor: 207,
+          meses_disponibles: 2,
+          anio: year,
+          trimestre: 2,
+          versiones: [1],
+        },
       ],
       indicador_id: params.indicador_id,
       anio: year,
@@ -259,8 +354,22 @@ export function getSeriesMock(params: GetSeriesParams): SeriesResponse {
   if (granularity === 'semestral') {
     return {
       items: [
-        { periodo_label: 'H1', valor: 290, meses_disponibles: 3, anio: year, semestre: 1 },
-        { periodo_label: 'H2', valor: 207, meses_disponibles: 2, anio: year, semestre: 2 },
+        {
+          periodo_label: 'H1',
+          valor: 290,
+          meses_disponibles: 3,
+          anio: year,
+          semestre: 1,
+          versiones: [1],
+        },
+        {
+          periodo_label: 'H2',
+          valor: 207,
+          meses_disponibles: 2,
+          anio: year,
+          semestre: 2,
+          versiones: [1],
+        },
       ],
       indicador_id: params.indicador_id,
       anio: year,
@@ -269,7 +378,15 @@ export function getSeriesMock(params: GetSeriesParams): SeriesResponse {
   }
 
   return {
-    items: [{ periodo_label: String(year), valor: 497, meses_disponibles: 5, anio: year }],
+    items: [
+      {
+        periodo_label: String(year),
+        valor: 497,
+        meses_disponibles: 5,
+        anio: year,
+        versiones: [1],
+      },
+    ],
     indicador_id: params.indicador_id,
     anio: year,
     granularity,
@@ -297,6 +414,10 @@ export function listResultados(params: GetResultadosParams): PaginatedResponse<I
       return false;
     }
 
+    if (params.include_historicos !== true && item.es_canonico === false) {
+      return false;
+    }
+
     return true;
   });
 
@@ -316,6 +437,11 @@ export function searchDiagnosticosMock(query: string): Array<DiagnosticoOption> 
 export function searchOrdenesMock(query: string): Array<OrdenOption> {
   const normalized = query.trim().toLowerCase();
   return mockOrdenes.filter((item) => item.display.toLowerCase().includes(normalized));
+}
+
+export function searchEncounterTypesMock(query: string): Array<EncounterTypeOption> {
+  const normalized = query.trim().toLowerCase();
+  return mockEncounterTypes.filter((item) => item.display.toLowerCase().includes(normalized));
 }
 
 export function resolveLocationsMock(uuids: Array<string>) {

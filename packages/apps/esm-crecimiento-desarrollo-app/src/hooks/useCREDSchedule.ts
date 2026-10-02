@@ -7,6 +7,7 @@ import { getNextCREDControlRecommendation } from '../utils/cred-control-interval
 
 import useAppointmentsCRED from './useAppointmentsCRED';
 import useEncountersCRED, { type CREDEncounter } from './useEncountersCRED';
+import { useNeonatalDischarge } from './useNeonatalDischarge';
 
 export type ControlStatus = 'completed' | 'scheduled' | 'overdue' | 'pending' | 'future';
 
@@ -26,6 +27,7 @@ export interface UseCREDScheduleResult {
   totalCount: number;
   isLoading: boolean;
   error: Error | null;
+  missingNeonatalDischarge?: boolean;
 }
 
 type DatedCREDEncounter = CREDEncounter & { encounterDatetime: string };
@@ -162,18 +164,27 @@ export function matchAppointmentsToControls(
 
 export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
-  const { encounters, isLoading: isEncountersLoading, error: encountersError } = useEncountersCRED(patientUuid);
+  const {
+    encounters,
+    isLoading: isEncountersLoading,
+    error: encountersError,
+    controlNumberError,
+  } = useEncountersCRED(patientUuid);
   const { appointments, isLoading: isAppointmentsLoading, error: appointmentsError } = useAppointmentsCRED(patientUuid);
 
-  // Only block on patient loading; encounters/appointments errors are non-fatal
-  // (the schedule can render from birthDate alone)
-  const isLoading =
-    isPatientLoading || (isEncountersLoading && !encounters) || (isAppointmentsLoading && !appointments);
-  const error = (patientError ?? encountersError ?? appointmentsError ?? null) as Error | null;
   const realControls = useMemo(() => groupCREDControlEncounters(encounters ?? []), [encounters]);
+  const neonatal = useNeonatalDischarge(patientUuid, patient?.birthDate, realControls.length === 0);
+  const error = (patientError ??
+    encountersError ??
+    controlNumberError ??
+    appointmentsError ??
+    neonatal.error ??
+    null) as Error | null;
+  // Partial history must not determine completed controls or the next control number.
+  const isLoading = !error && (isPatientLoading || isEncountersLoading || isAppointmentsLoading || neonatal.isLoading);
 
   const controls = useMemo<CREDControlWithStatus[]>(() => {
-    if (!patient?.birthDate) return [];
+    if (!patient?.birthDate || isLoading || error) return [];
 
     const schedule = generateCREDSchedule(patient.birthDate);
     const today = dayjs();
@@ -222,10 +233,10 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
         appointmentDate: appointment?.date,
       };
     });
-  }, [patient?.birthDate, realControls, appointments]);
+  }, [patient?.birthDate, realControls, appointments, isLoading, error]);
 
   const nextDueControl = useMemo(() => {
-    if (!patient?.birthDate) return null;
+    if (!patient?.birthDate || isLoading || error || neonatal.missingDischarge) return null;
 
     const recommendation = getNextCREDControlRecommendation(
       patient.birthDate,
@@ -235,6 +246,8 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
         startDateTime: appointment.startDateTime,
         status: appointment.status,
       })),
+      new Date(),
+      neonatal.dischargeDate,
     );
     if (!recommendation) return null;
 
@@ -261,7 +274,15 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
       appointmentUuid: recommendation.appointmentUuid,
       appointmentDate: recommendation.appointmentDate,
     };
-  }, [appointments, patient?.birthDate, realControls]);
+  }, [
+    appointments,
+    patient?.birthDate,
+    realControls,
+    isLoading,
+    error,
+    neonatal.missingDischarge,
+    neonatal.dischargeDate,
+  ]);
 
   const overdueControls = useMemo(() => controls.filter((control) => control.status === 'overdue'), [controls]);
 
@@ -275,5 +296,6 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     totalCount: controls.length,
     isLoading,
     error,
+    missingNeonatalDischarge: neonatal.missingDischarge,
   };
 }

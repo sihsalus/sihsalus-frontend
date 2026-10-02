@@ -48,29 +48,30 @@ describe('operational queue location', () => {
     expect(matchesOperationalQueueLocation(triageEntry, 'hospital', triageQueueUuid)).toBe(false);
   });
 
-  it.each(['upss-hospitalizacion', 'upss-emergencia'])(
-    'keeps a transfer from %s visible in Centro Obstétrico',
-    (visitLocation) => {
-      const entry = makeQueueEntry({ visitLocation, queueLocation: 'upss-centro-obstetrico' });
+  it.each([
+    'upss-hospitalizacion',
+    'upss-emergencia',
+  ])('keeps a transfer from %s visible in Centro Obstétrico', (visitLocation) => {
+    const entry = makeQueueEntry({ visitLocation, queueLocation: 'upss-centro-obstetrico' });
 
-      expect(getOperationalQueueLocationUuid(entry, triageQueueUuid)).toBe('upss-centro-obstetrico');
-      expect(matchesOperationalQueueLocation(entry, 'upss-centro-obstetrico', triageQueueUuid)).toBe(true);
-      expect(matchesOperationalQueueLocation(entry, visitLocation, triageQueueUuid)).toBe(false);
-    },
-  );
+    expect(getOperationalQueueLocationUuid(entry, triageQueueUuid)).toBe('upss-centro-obstetrico');
+    expect(matchesOperationalQueueLocation(entry, 'upss-centro-obstetrico', triageQueueUuid)).toBe(true);
+    expect(matchesOperationalQueueLocation(entry, visitLocation, triageQueueUuid)).toBe(false);
+  });
 
-  it.each([undefined, '', 'another-triage-queue'])(
-    'does not infer shared triage when its configured UUID is %s',
-    (configuredTriageUuid) => {
-      const entry = makeQueueEntry({
-        queueUuid: triageQueueUuid,
-        visitLocation: 'upss-consulta-externa',
-        queueLocation: 'hospital',
-      });
+  it.each([
+    undefined,
+    '',
+    'another-triage-queue',
+  ])('does not infer shared triage when its configured UUID is %s', (configuredTriageUuid) => {
+    const entry = makeQueueEntry({
+      queueUuid: triageQueueUuid,
+      visitLocation: 'upss-consulta-externa',
+      queueLocation: 'hospital',
+    });
 
-      expect(getOperationalQueueLocationUuid(entry, configuredTriageUuid)).toBe('hospital');
-    },
-  );
+    expect(getOperationalQueueLocationUuid(entry, configuredTriageUuid)).toBe('hospital');
+  });
 
   it.each(['administrative-queue', triageQueueUuid])('uses the location of %s when there is no visit', (queueUuid) => {
     const entry = makeQueueEntry({ queueUuid, queueLocation: 'hospital' });

@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import DeleteStudyModal from './delete-study.modal';
 
@@ -24,7 +25,7 @@ describe('DeleteStudyModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
+    (api.useStudiesByPatient as Mock).mockReturnValue({
       mutate: mutateMock,
     });
   });
@@ -42,7 +43,7 @@ describe('DeleteStudyModal', () => {
   });
 
   it('Calls deleteStudy, mutate, close modal and shows success snackbar on delete', async () => {
-    (api.deleteStudy as vi.Mock).mockResolvedValue({ ok: true });
+    (api.deleteStudy as Mock).mockResolvedValue({ ok: true });
 
     render(<DeleteStudyModal closeDeleteModal={closeDeleteModal} studyId={studyId} patientUuid={patientUuid} />);
     fireEvent.click(screen.getByRole('button', { name: /Delete/i }));
@@ -63,7 +64,7 @@ describe('DeleteStudyModal', () => {
 
   it('shows error snackbar on delete failure', async () => {
     const errorMessage = 'Something went wrong';
-    (api.deleteStudy as vi.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    (api.deleteStudy as Mock).mockRejectedValueOnce(new Error(errorMessage));
 
     render(<DeleteStudyModal closeDeleteModal={closeDeleteModal} studyId={studyId} patientUuid={patientUuid} />);
     fireEvent.click(screen.getByRole('button', { name: /Delete/i }));
@@ -82,7 +83,7 @@ describe('DeleteStudyModal', () => {
   });
 
   it('updates selectedOption when radio button is changed', async () => {
-    (api.deleteStudy as vi.Mock).mockResolvedValue({ ok: true });
+    (api.deleteStudy as Mock).mockResolvedValue({ ok: true });
     render(<DeleteStudyModal closeDeleteModal={closeDeleteModal} studyId={studyId} patientUuid={patientUuid} />);
     const bothRadio = screen.getByLabelText(/From Orthanc & SIHSALUS/i) as HTMLInputElement;
     fireEvent.click(bothRadio);

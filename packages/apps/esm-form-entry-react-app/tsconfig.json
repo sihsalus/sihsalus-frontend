@@ -1,8 +1,7 @@
 {
-  "extends": "../../tooling/tsconfig.app.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "paths": {
       "@openmrs/esm-framework": ["./src/openmrs-esm-framework-shim.d.ts"],
       "@openmrs/esm-patient-common-lib": ["./src/openmrs-esm-patient-common-lib-shim.d.ts"],

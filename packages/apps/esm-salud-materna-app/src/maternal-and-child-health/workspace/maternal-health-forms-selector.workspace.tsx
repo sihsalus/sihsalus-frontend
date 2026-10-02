@@ -304,7 +304,10 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
   const canEdit = maternalHealthPrivileges.some(({ edit }) => canEditMaternalForm(session, edit));
 
   return canEdit ? (
-    <MaternalHealthFormsSelector key={String(props.patientUuid ?? props.workspaceProps?.patientUuid ?? '')} {...props} />
+    <MaternalHealthFormsSelector
+      key={String(props.patientUuid ?? props.workspaceProps?.patientUuid ?? '')}
+      {...props}
+    />
   ) : (
     <UnauthorizedState privilege={maternalPatientChartPrivilege} />
   );

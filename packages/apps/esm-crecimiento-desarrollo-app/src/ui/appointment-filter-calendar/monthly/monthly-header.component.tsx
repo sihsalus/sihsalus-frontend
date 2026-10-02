@@ -14,7 +14,7 @@ import styles from './monthly-header.scss';
 const DAYS_IN_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT'];
 
 const MonthlyHeader: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const { selectedDate, setSelectedDate } = useContext(SelectedDateContext);
 
   const handleSelectPrevMonth = useCallback(() => {

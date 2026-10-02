@@ -331,5 +331,9 @@
   "visitTypeRequired": "Care type is required",
   "warning": "Warning",
   "yes": "Yes",
-  "youCanAddAdditionalEncounters": "You can add additional encounters to this visit in the visit summary."
+  "youCanAddAdditionalEncounters": "You can add additional encounters to this visit in the visit summary.",
+  "visitClockUnavailable": "Date and time could not be verified",
+  "visitClockRetry": "Please try again before saving the consultation.",
+  "visitClockReopen": "Close and reopen this form to verify the date and time before saving.",
+  "checkingVisitClock": "Checking date and time"
 }

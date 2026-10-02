@@ -14,9 +14,9 @@
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:watch": "vitest watch",
-    "coverage": "vitest run --coverage --passWithNoTests",
+    "coverage": "vitest run --coverage",
     "typescript": "tsc",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
@@ -37,27 +37,28 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-management/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.71.0",
-    "@hookform/resolvers": "^3.9.1",
+    "@carbon/react": "^1.117.0",
+    "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
     "lodash-es": "^4.17.15",
-    "react-hook-form": "^7.54.0",
-    "zod": "^3.24.1"
+    "react-hook-form": "^7.89.0",
+    "zod": "^4.6.5"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
     "dayjs": "1.x",
     "react": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "swr": "2.x"
   },
   "devDependencies": {
-    "@rspack/cli": "1.7.11",
+    "@openmrs/esm-framework": "workspace:*",
+    "@rspack/cli": "2.2.8",
+    "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

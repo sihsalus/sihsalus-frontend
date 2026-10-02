@@ -7,7 +7,7 @@ import ResultadosPage from './ResultadosPage';
 
 vi.mock('../features/indicadores/hooks', async () => ({
   ...(await vi.importActual('../features/indicadores/hooks')),
-  useIndicadores: vi.fn(),
+  useAllIndicadores: vi.fn(),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
   getIndicatorsErrorMessage: vi.fn((_error, fallback) => fallback),
@@ -21,26 +21,20 @@ vi.mock('../features/resultados/hooks', async () => ({
   useRecalcularAnio: vi.fn(),
 }));
 
-import { useIndicadores, notifyError, notifySuccess } from '../features/indicadores/hooks';
+import { useAllIndicadores, notifyError, notifySuccess } from '../features/indicadores/hooks';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 
-const mockUseIndicadores = vi.mocked(useIndicadores);
+const mockUseAllIndicadores = vi.mocked(useAllIndicadores);
 const mockUseResultados = vi.mocked(useResultados);
 const mockUseResultadosSeries = vi.mocked(useResultadosSeries);
 const mockUseCalcularAhora = vi.mocked(useCalcularAhora);
 const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
 const mockLogError = vi.mocked(logError);
 
-const indicadores = {
-  items: [
-    { id: 'ind-001', nombre: 'Control prenatal', descripcion: null, activo: true, creado_en: '2026-01-01' },
-    { id: 'ind-002', nombre: 'Anemia', descripcion: null, activo: true, creado_en: '2026-02-01' },
-  ],
-  total: 2,
-  page: 1,
-  size: 100,
-  pages: 1,
-};
+const indicadores = [
+  { id: 'ind-001', nombre: 'Control prenatal', descripcion: null, activo: true, creado_en: '2026-01-01' },
+  { id: 'ind-002', nombre: 'Anemia', descripcion: null, activo: true, creado_en: '2026-02-01' },
+];
 
 const monthlySeries: SeriesResponse = {
   items: [
@@ -70,11 +64,16 @@ function renderPage() {
   );
 }
 
+function confirmCalculateNow() {
+  fireEvent.click(screen.getByRole('button', { name: /Calcular ahora/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Calcular' }));
+}
+
 describe('ResultadosPage series granularity', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockUseIndicadores.mockReturnValue({
+    mockUseAllIndicadores.mockReturnValue({
       data: indicadores,
       error: undefined,
       isLoading: false,
@@ -131,7 +130,7 @@ describe('ResultadosPage series granularity', () => {
     renderPage();
 
     // Initially in "series" (default) mode with no indicator selected
-    expect(screen.getByText(/Seleccioná un indicador/)).toBeInTheDocument();
+    expect(screen.getByText(/Seleccione un indicador/)).toBeInTheDocument();
   });
 
   it('renders monthly series rows with periodo_label and valor columns', () => {
@@ -225,13 +224,146 @@ describe('ResultadosPage series granularity', () => {
     const granularitySelect = screen.getByLabelText('Granularidad') as HTMLSelectElement;
     expect(granularitySelect.value).toBe('mensual');
   });
+
+  it('requests include_historicos=true when the historical view is active', () => {
+    mockUseResultadosSeries.mockImplementation(
+      () =>
+        ({
+          data: monthlySeries,
+          error: undefined,
+          isLoading: false,
+          isError: false,
+          refetch: vi.fn(),
+        }) as never,
+    );
+
+    renderPage();
+
+    // Switch to the historical view
+    fireEvent.click(screen.getByText('Histórico'));
+
+    const lastResultadosParams = mockUseResultados.mock.calls[mockUseResultados.mock.calls.length - 1][0];
+    expect(lastResultadosParams.include_historicos).toBe(true);
+  });
+});
+
+describe('ResultadosPage period filters', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockUseAllIndicadores.mockReturnValue({
+      data: indicadores,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    mockUseResultados.mockReturnValue({
+      data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    mockUseResultadosSeries.mockReturnValue({
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    mockUseCalcularAhora.mockReturnValue({
+      calcularAhora: vi.fn().mockResolvedValue({ calculados: 0, errores: [], total: 0 }),
+    });
+
+    mockUseRecalcularAnio.mockReturnValue({
+      recalcularAnio: vi.fn().mockResolvedValue({
+        anio: 2026,
+        indicador_id: null,
+        meses_procesados: 12,
+        indicadores_considerados: 0,
+        recalculados: 0,
+        errores: [],
+        total: 0,
+      }),
+    });
+  });
+
+  const setDate = (label: string, value: string) => {
+    const input = screen.getByLabelText(label) as HTMLInputElement;
+    fireEvent.change(input, { target: { value } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+  };
+
+  // The historical fetch only fires when `viewMode === 'historical'`. The
+  // series view (default) passes `null` to `useResultados` so the params
+  // object is never built. Switch to historical before asserting params.
+  const renderHistoricalPage = () => {
+    renderPage();
+    fireEvent.click(screen.getByText('Histórico'));
+  };
+
+  const lastResultadosParams = () => mockUseResultados.mock.calls[mockUseResultados.mock.calls.length - 1][0];
+
+  it('rejects an inverted period range: shows a message and does not fire the request with it', () => {
+    renderHistoricalPage();
+
+    setDate('Desde', '2026-05-01');
+    setDate('Hasta', '2026-03-01');
+
+    expect(screen.getByText(/La fecha de inicio debe ser anterior o igual a la fecha de fin/)).toBeInTheDocument();
+    expect(lastResultadosParams().periodo_inicio).toBeUndefined();
+    expect(lastResultadosParams().periodo_fin).toBeUndefined();
+  });
+
+  it('allows an open-ended range with only the start bound set', () => {
+    renderHistoricalPage();
+
+    setDate('Desde', '2026-05-01');
+
+    expect(
+      screen.queryByText(/La fecha de inicio debe ser anterior o igual a la fecha de fin/),
+    ).not.toBeInTheDocument();
+    expect(lastResultadosParams().periodo_inicio).toBe('2026-05-01');
+    expect(lastResultadosParams().periodo_fin).toBeUndefined();
+  });
+
+  it('allows an open-ended range with only the end bound set', () => {
+    renderHistoricalPage();
+
+    setDate('Hasta', '2026-03-01');
+
+    expect(
+      screen.queryByText(/La fecha de inicio debe ser anterior o igual a la fecha de fin/),
+    ).not.toBeInTheDocument();
+    expect(lastResultadosParams().periodo_inicio).toBeUndefined();
+    expect(lastResultadosParams().periodo_fin).toBe('2026-03-01');
+  });
+
+  it('clears the error and fires the request once the range becomes valid', () => {
+    renderHistoricalPage();
+
+    setDate('Desde', '2026-05-01');
+    setDate('Hasta', '2026-03-01');
+    expect(screen.getByText(/La fecha de inicio debe ser anterior o igual a la fecha de fin/)).toBeInTheDocument();
+
+    setDate('Hasta', '2026-06-01');
+    expect(
+      screen.queryByText(/La fecha de inicio debe ser anterior o igual a la fecha de fin/),
+    ).not.toBeInTheDocument();
+    expect(lastResultadosParams().periodo_inicio).toBe('2026-05-01');
+    expect(lastResultadosParams().periodo_fin).toBe('2026-06-01');
+  });
 });
 
 describe('ResultadosPage calculate / recalculate actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockUseIndicadores.mockReturnValue({
+    mockUseAllIndicadores.mockReturnValue({
       data: indicadores,
       error: undefined,
       isLoading: false,
@@ -278,9 +410,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     renderPage();
 
-    const button = screen.getByRole('button', { name: /Calcular ahora/ });
     await act(async () => {
-      fireEvent.click(button);
+      confirmCalculateNow();
     });
 
     expect(calcularMock).toHaveBeenCalledTimes(1);
@@ -297,11 +428,10 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     );
     mockUseCalcularAhora.mockReturnValue({ calcularAhora: calcularMock });
     renderPage();
-    const button = screen.getByRole('button', { name: /Calcular ahora/ });
-
     act(() => {
-      fireEvent.click(button);
-      fireEvent.click(button);
+      fireEvent.click(screen.getByRole('button', { name: /Calcular ahora/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Calcular' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Calcular' }));
     });
 
     expect(calcularMock).toHaveBeenCalledTimes(1);
@@ -319,9 +449,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     renderPage();
 
-    const button = screen.getByRole('button', { name: /Calcular ahora/ });
     await act(async () => {
-      fireEvent.click(button);
+      confirmCalculateNow();
     });
 
     expect(notifySuccess).toHaveBeenCalled();
@@ -346,9 +475,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     renderPage();
 
-    const button = screen.getByRole('button', { name: /Calcular ahora/ });
     await act(async () => {
-      fireEvent.click(button);
+      confirmCalculateNow();
     });
 
     expect(notifyError).toHaveBeenCalled();
@@ -368,9 +496,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     renderPage();
 
-    const button = screen.getByRole('button', { name: /Calcular ahora/ });
     await act(async () => {
-      fireEvent.click(button);
+      confirmCalculateNow();
     });
 
     expect(notifyError).toHaveBeenCalledWith('No se pudieron calcular los indicadores.');
@@ -385,8 +512,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     // The Carbon modal renders a heading matching the title
     expect(screen.getByRole('heading', { name: /Recalcular año/ })).toBeInTheDocument();
     // Confirm/Cancel buttons should be visible
-    expect(screen.getByRole('button', { name: /Confirmar/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cancelar/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
   });
 
   it('submits recalcularAnio with the selected year when confirming the modal', async () => {
@@ -631,9 +758,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     renderPage();
 
-    const button = screen.getByRole('button', { name: /Calcular ahora/ });
     await act(async () => {
-      fireEvent.click(button);
+      confirmCalculateNow();
     });
 
     expect(notifyError).toHaveBeenCalled();
@@ -641,6 +767,23 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(screen.getByText(/0 de 5 calculados, todos con error/)).toBeInTheDocument();
     expect(screen.getByText('(ind-001): No se pudo calcular este indicador.')).toBeInTheDocument();
     expect(screen.queryByText(/timeout/)).not.toBeInTheDocument();
+  });
+
+  it('opens the calculate-now confirmation and does not call the hook when cancelled', async () => {
+    const calcularMock = vi.fn();
+    mockUseCalcularAhora.mockReturnValue({ calcularAhora: calcularMock });
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /Calcular ahora/ }));
+    expect(screen.getByRole('heading', { name: /Calcular ahora/ })).toBeInTheDocument();
+    expect(screen.getByText(/Esta acción calculará los indicadores activos/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar cálculo' }));
+    });
+
+    expect(calcularMock).not.toHaveBeenCalled();
   });
 
   it('closes the recalculate-year modal via Cancel without calling the hook', async () => {
@@ -655,7 +798,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     // Click Cancel
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Cancelar/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     });
 
     // The hook must NOT have been called

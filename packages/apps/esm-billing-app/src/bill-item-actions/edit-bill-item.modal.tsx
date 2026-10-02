@@ -49,17 +49,21 @@ const EditBillLineItemModal: React.FC<EditBillLineItemModalProps> = ({ bill, clo
         // Backend (BillServiceImpl.java:100) has empty validate() method.
         // TODO: Add server-side validation to enforce data integrity
         quantity: z.coerce
-          .number({
-            required_error: t('quantityRequired', 'Quantity is required'),
-            invalid_type_error: t('quantityMustBeNumber', 'Quantity must be a valid number'),
+          .number<number | string>({
+            error: (issue) =>
+              issue.input === undefined
+                ? t('quantityRequired', 'Quantity is required')
+                : t('quantityMustBeNumber', 'Quantity must be a valid number'),
           })
           .int(t('quantityMustBeInteger', 'Quantity must be a whole number'))
           .min(1, t('quantityMustBeAtLeastOne', 'Quantity must be at least 1'))
           .max(100, t('quantityCannotExceed100', 'Quantity cannot exceed 100')),
         price: z.coerce
-          .number({
-            required_error: t('priceIsRequired', 'Price is required'),
-            invalid_type_error: t('priceMustBeNumber', 'Price must be a valid number'),
+          .number<number | string>({
+            error: (issue) =>
+              issue.input === undefined
+                ? t('priceIsRequired', 'Price is required')
+                : t('priceMustBeNumber', 'Price must be a valid number'),
           })
           .min(0, t('priceMustBeNonNegative', 'Price must be 0 or greater')),
       }),
@@ -73,7 +77,7 @@ const EditBillLineItemModal: React.FC<EditBillLineItemModalProps> = ({ bill, clo
     handleSubmit,
     formState: { isSubmitting, errors },
     watch,
-  } = useForm<BillLineItemForm>({
+  } = useForm<z.input<typeof schema>, unknown, BillLineItemForm>({
     defaultValues: {
       quantity: item.quantity,
       price: item.price,

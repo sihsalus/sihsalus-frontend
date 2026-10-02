@@ -1,5 +1,6 @@
 import { Button, Select, SelectItem, TextArea, TextInput, Tile } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type {
   DefinicionIndicadorForm,
@@ -10,6 +11,7 @@ import type {
 } from '../api/types';
 import styles from '../indicators-dashboard.module.scss';
 import DiagnosticoSearchSelector from './DiagnosticoSearchSelector';
+import EncounterTypeSearchSelector from './EncounterTypeSearchSelector';
 import LocationSearchSelector from './LocationSearchSelector';
 import OrdenSearchSelector from './OrdenSearchSelector';
 
@@ -37,6 +39,7 @@ const defaultValues: IndicadorFormValues = {
   selectedDiagnosticos: [],
   diagnosticoTipo: '',
   selectedOrdenes: [],
+  selectedEncounterTypes: [],
   sexo: '',
   minAnios: '',
   minMeses: '',
@@ -55,10 +58,35 @@ function parseNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+// Normalizes an age bound (expressed in a single unit — validated upstream)
+// to days so min and max can be compared even when they use different units.
+// Approximations (365 days/year, 30 days/month) are intentional: this is a UX
+// guard, not a calendar-precision calculation — the backend owns the real
+// boundary semantics.
+const DAYS_PER_YEAR = 365;
+const DAYS_PER_MONTH = 30;
+
+function ageToDays(anios: string, meses: string, dias: string): number | undefined {
+  const years = parseNumber(anios);
+  const months = parseNumber(meses);
+  const days = parseNumber(dias);
+  if (years !== undefined) {
+    return years * DAYS_PER_YEAR;
+  }
+  if (months !== undefined) {
+    return months * DAYS_PER_MONTH;
+  }
+  if (days !== undefined) {
+    return days;
+  }
+  return undefined;
+}
+
 function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
   const locationUuids = values.selectedLocations.map((item) => item.uuid);
   const diagnosticoUuids = values.selectedDiagnosticos.map((item) => item.uuid);
   const ordenUuids = values.selectedOrdenes.map((item) => item.uuid);
+  const encounterTypeUuids = values.selectedEncounterTypes.map((item) => item.uuid);
   const minimoOcurrencias = parseNumber(values.minimoOcurrencias);
   const diagnosticos =
     values.filtroClinico === 'diagnosticos' && diagnosticoUuids.length
@@ -75,6 +103,7 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
       : undefined;
   const hasEvento =
     locationUuids.length > 0 ||
+    encounterTypeUuids.length > 0 ||
     Boolean(diagnosticos?.length) ||
     Boolean(ordenes?.length) ||
     (minimoOcurrencias !== undefined && minimoOcurrencias !== 1);
@@ -83,6 +112,7 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
     ? {
         location_uuids: locationUuids.length ? locationUuids : undefined,
         minimo_ocurrencias: minimoOcurrencias !== 1 ? minimoOcurrencias : undefined,
+        encounter_type_uuids: encounterTypeUuids.length ? encounterTypeUuids : undefined,
         diagnosticos,
         ordenes,
       }
@@ -115,6 +145,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
   serverError,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   const [values, setValues] = useState<IndicadorFormValues>({
     ...defaultValues,
     ...initialValues,
@@ -128,11 +159,17 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
 
   const helperText = useMemo(() => {
     if (isEditMode) {
-      return 'En edición solo se modifica nombre y descripción. Para cambiar la definición, crea una nueva versión.';
+      return t(
+        'editModeHelperText',
+        'En edición solo se modifica nombre y descripción. Para cambiar la definición, crea una nueva versión.',
+      );
     }
 
-    return 'Usá los buscadores para agregar servicios, diagnósticos y órdenes sin escribir UUIDs manualmente.';
-  }, [isEditMode]);
+    return t(
+      'createModeHelperText',
+      'Use los buscadores para agregar servicios, diagnósticos y órdenes sin escribir UUIDs manualmente.',
+    );
+  }, [isEditMode, t]);
 
   const updateField = <K extends keyof IndicadorFormValues>(field: K, nextValue: IndicadorFormValues[K]) => {
     setValues((current) => ({ ...current, [field]: nextValue }));
@@ -143,17 +180,24 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
     setValidationError(null);
 
     if (!values.nombre.trim() && !isVersionMode) {
-      setValidationError('El nombre es obligatorio.');
+      setValidationError(t('nameRequired', 'El nombre es obligatorio.'));
       return;
     }
 
     if (values.filtroClinico === 'diagnosticos' && !values.selectedDiagnosticos.length) {
-      setValidationError('Ingresá al menos un diagnóstico para ese filtro clínico.');
+      setValidationError(t('diagnosisFilterRequired', 'Ingrese al menos un diagnóstico para ese filtro clínico.'));
       return;
     }
 
     if (values.filtroClinico === 'ordenes' && !values.selectedOrdenes.length) {
-      setValidationError('Ingresá al menos una orden para ese filtro clínico.');
+      setValidationError(t('orderFilterRequired', 'Ingrese al menos una orden para ese filtro clínico.'));
+      return;
+    }
+
+    if (values.tipo === 'conteo_pacientes_ventana' && !values.selectedEncounterTypes.length) {
+      setValidationError(
+        t('encounterTypesRequired', 'Ingrese al menos un tipo de encuentro para el conteo en ventana.'),
+      );
       return;
     }
 
@@ -162,25 +206,34 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
       values.minimoOcurrencias.trim() &&
       (minimoOcurrencias === undefined || !Number.isInteger(minimoOcurrencias) || minimoOcurrencias < 1)
     ) {
-      setValidationError('El mínimo de ocurrencias debe ser un número entero mayor o igual a 1.');
+      setValidationError(
+        t('minOccurrencesInvalid', 'El mínimo de ocurrencias debe ser un número entero mayor o igual a 1.'),
+      );
       return;
     }
 
     const minimumAgeValues = [values.minDias, values.minMeses, values.minAnios].filter((value) => value.trim());
     if (minimumAgeValues.length > 1) {
-      setValidationError('Ingresá la edad mínima en una sola unidad: días, meses o años.');
+      setValidationError(t('minAgeSingleUnit', 'Ingrese la edad mínima en una sola unidad: días, meses o años.'));
       return;
     }
 
     const maximumAgeValues = [values.maxDias, values.maxMeses, values.maxAnios].filter((value) => value.trim());
     if (maximumAgeValues.length > 1) {
-      setValidationError('Ingresá la edad máxima en una sola unidad: días, meses o años.');
+      setValidationError(t('maxAgeSingleUnit', 'Ingrese la edad máxima en una sola unidad: días, meses o años.'));
       return;
     }
 
     const ageValues = [...minimumAgeValues, ...maximumAgeValues].map(parseNumber);
     if (ageValues.some((value) => value === undefined || !Number.isInteger(value) || value < 0)) {
-      setValidationError('Las edades deben ser números enteros mayores o iguales a 0.');
+      setValidationError(t('agesInvalid', 'Las edades deben ser números enteros mayores o iguales a 0.'));
+      return;
+    }
+
+    const minDays = ageToDays(values.minAnios, values.minMeses, values.minDias);
+    const maxDays = ageToDays(values.maxAnios, values.maxMeses, values.maxDias);
+    if (minDays !== undefined && maxDays !== undefined && minDays > maxDays) {
+      setValidationError(t('minAgeExceedsMax', 'La edad mínima no puede ser mayor que la edad máxima.'));
       return;
     }
 
@@ -204,20 +257,22 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
       {!isVersionMode ? (
         <section className={styles.formSectionCard}>
           <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>Información general</h3>
-            <p className={styles.sectionHint}>Nombre visible y descripción operativa del indicador.</p>
+            <h3 className={styles.sectionTitle}>{t('generalInfo', 'Información general')}</h3>
+            <p className={styles.sectionHint}>
+              {t('generalInfoHint', 'Nombre visible y descripción operativa del indicador.')}
+            </p>
           </div>
           <div className={styles.formGrid}>
             <TextInput
               id="nombre"
-              labelText="Nombre"
+              labelText={t('name', 'Nombre')}
               value={values.nombre}
               onChange={(event) => updateField('nombre', event.target.value)}
               disabled={isSubmitting}
             />
             <TextArea
               id="descripcion"
-              labelText="Descripción"
+              labelText={t('description', 'Descripción')}
               value={values.descripcion}
               onChange={(event) => updateField('descripcion', event.target.value)}
               disabled={isSubmitting}
@@ -230,27 +285,36 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
         <>
           <section className={styles.formSectionCard}>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Tipo</h3>
-              <p className={styles.sectionHint}>Define qué se cuenta. Las mediciones son siempre mensuales.</p>
+              <h3 className={styles.sectionTitle}>{t('type', 'Tipo')}</h3>
+              <p className={styles.sectionHint}>
+                {t('typeHint', 'Define qué se cuenta. Las mediciones son siempre mensuales.')}
+              </p>
             </div>
             <div className={styles.formColumns}>
               <Select
                 id="tipo"
-                labelText="Tipo"
+                labelText={t('type', 'Tipo')}
                 value={values.tipo}
                 onChange={(event) => updateField('tipo', event.target.value as IndicadorFormValues['tipo'])}
               >
-                <SelectItem value="conteo_atenciones" text="Conteo de atenciones" />
-                <SelectItem value="conteo_pacientes" text="Conteo de pacientes" />
+                <SelectItem value="conteo_atenciones" text={t('countEncounters', 'Conteo de atenciones')} />
+                <SelectItem value="conteo_pacientes" text={t('countPatients', 'Conteo de pacientes')} />
+                <SelectItem
+                  value="conteo_pacientes_ventana"
+                  text={t('countPatientsWindow', 'Conteo de pacientes en ventana etaria')}
+                />
               </Select>
             </div>
           </section>
 
           <section className={styles.formSectionCard}>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Atención</h3>
+              <h3 className={styles.sectionTitle}>{t('attentionSection', 'Atención')}</h3>
               <p className={styles.sectionHint}>
-                Acotá el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.
+                {t(
+                  'attentionHint',
+                  'Acote el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.',
+                )}
               </p>
             </div>
             <div className={styles.formGrid}>
@@ -260,7 +324,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
               />
               <TextInput
                 id="minimo-ocurrencias"
-                labelText="Mínimo de ocurrencias"
+                labelText={t('minimumOccurrences', 'Mínimo de ocurrencias')}
                 type="number"
                 value={values.minimoOcurrencias}
                 onChange={(event) => updateField('minimoOcurrencias', event.target.value)}
@@ -273,7 +337,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 type="button"
                 onClick={() => updateField('filtroClinico', 'ninguno')}
               >
-                Sin filtro clínico
+                {t('noClinicalFilter', 'Sin filtro clínico')}
               </Button>
               <Button
                 kind={values.filtroClinico === 'diagnosticos' ? 'primary' : 'secondary'}
@@ -281,7 +345,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 type="button"
                 onClick={() => updateField('filtroClinico', 'diagnosticos')}
               >
-                Diagnósticos
+                {t('diagnostics', 'Diagnósticos')}
               </Button>
               <Button
                 kind={values.filtroClinico === 'ordenes' ? 'primary' : 'secondary'}
@@ -289,7 +353,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 type="button"
                 onClick={() => updateField('filtroClinico', 'ordenes')}
               >
-                Órdenes
+                {t('orders', 'Órdenes')}
               </Button>
             </div>
             {values.filtroClinico === 'diagnosticos' ? (
@@ -300,15 +364,15 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 />
                 <Select
                   id="tipo-diagnostico"
-                  labelText="Tipo de diagnóstico"
+                  labelText={t('diagnosisType', 'Tipo de diagnóstico')}
                   value={values.diagnosticoTipo}
                   onChange={(event) =>
                     updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])
                   }
                 >
-                  <SelectItem value="" text="Sin especificar" />
-                  <SelectItem value="definitivo" text="Definitivo" />
-                  <SelectItem value="presuntivo" text="Presuntivo" />
+                  <SelectItem value="" text={t('unspecified', 'Sin especificar')} />
+                  <SelectItem value="definitivo" text={t('definitive', 'Definitivo')} />
+                  <SelectItem value="presuntivo" text={t('presumptive', 'Presuntivo')} />
                 </Select>
               </div>
             ) : null}
@@ -318,47 +382,55 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 onChange={(items) => updateField('selectedOrdenes', items)}
               />
             ) : null}
+            {values.tipo === 'conteo_pacientes_ventana' ? (
+              <EncounterTypeSearchSelector
+                selectedItems={values.selectedEncounterTypes}
+                onChange={(items) => updateField('selectedEncounterTypes', items)}
+              />
+            ) : null}
           </section>
 
           <section className={styles.formSectionCard}>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Población</h3>
-              <p className={styles.sectionHint}>Filtrá por sexo y rango etario si el indicador lo requiere.</p>
+              <h3 className={styles.sectionTitle}>{t('populationSection', 'Población')}</h3>
+              <p className={styles.sectionHint}>
+                {t('populationHint', 'Filtre por sexo y rango etario si el indicador lo requiere.')}
+              </p>
             </div>
             <div className={styles.populationLayout}>
               <Select
                 id="sexo"
-                labelText="Sexo"
+                labelText={t('sex', 'Sexo')}
                 value={values.sexo}
                 onChange={(event) => updateField('sexo', event.target.value as IndicadorFormValues['sexo'])}
               >
-                <SelectItem value="" text="Sin filtro" />
-                <SelectItem value="F" text="Femenino" />
-                <SelectItem value="M" text="Masculino" />
+                <SelectItem value="" text={t('noFilter', 'Sin filtro')} />
+                <SelectItem value="F" text={t('female', 'Femenino')} />
+                <SelectItem value="M" text={t('male', 'Masculino')} />
               </Select>
               <div className={styles.ageBlock}>
                 <div className={styles.ageBlockHeader}>
-                  <span className={styles.sectionMiniTitle}>Edad mínima</span>
-                  <span className={styles.mutedText}>Completá solo lo necesario.</span>
+                  <span className={styles.sectionMiniTitle}>{t('minAge', 'Edad mínima')}</span>
+                  <span className={styles.mutedText}>{t('minAgeHint', 'Complete solo lo necesario.')}</span>
                 </div>
                 <div className={styles.ageGrid}>
                   <TextInput
                     id="min-anios"
-                    labelText="Edad mínima años"
+                    labelText={t('minAgeYears', 'Edad mínima años')}
                     type="number"
                     value={values.minAnios}
                     onChange={(event) => updateField('minAnios', event.target.value)}
                   />
                   <TextInput
                     id="min-meses"
-                    labelText="Edad mínima meses"
+                    labelText={t('minAgeMonths', 'Edad mínima meses')}
                     type="number"
                     value={values.minMeses}
                     onChange={(event) => updateField('minMeses', event.target.value)}
                   />
                   <TextInput
                     id="min-dias"
-                    labelText="Edad mínima días"
+                    labelText={t('minAgeDays', 'Edad mínima días')}
                     type="number"
                     value={values.minDias}
                     onChange={(event) => updateField('minDias', event.target.value)}
@@ -367,27 +439,29 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
               </div>
               <div className={styles.ageBlock}>
                 <div className={styles.ageBlockHeader}>
-                  <span className={styles.sectionMiniTitle}>Edad máxima</span>
-                  <span className={styles.mutedText}>Se interpreta como límite superior del rango.</span>
+                  <span className={styles.sectionMiniTitle}>{t('maxAge', 'Edad máxima')}</span>
+                  <span className={styles.mutedText}>
+                    {t('maxAgeHint', 'Se interpreta como límite superior del rango.')}
+                  </span>
                 </div>
                 <div className={styles.ageGrid}>
                   <TextInput
                     id="max-anios"
-                    labelText="Edad máxima años"
+                    labelText={t('maxAgeYears', 'Edad máxima años')}
                     type="number"
                     value={values.maxAnios}
                     onChange={(event) => updateField('maxAnios', event.target.value)}
                   />
                   <TextInput
                     id="max-meses"
-                    labelText="Edad máxima meses"
+                    labelText={t('maxAgeMonths', 'Edad máxima meses')}
                     type="number"
                     value={values.maxMeses}
                     onChange={(event) => updateField('maxMeses', event.target.value)}
                   />
                   <TextInput
                     id="max-dias"
-                    labelText="Edad máxima días"
+                    labelText={t('maxAgeDays', 'Edad máxima días')}
                     type="number"
                     value={values.maxDias}
                     onChange={(event) => updateField('maxDias', event.target.value)}
@@ -401,7 +475,11 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
 
       <div className={styles.formFooter}>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Guardando...' : mode === 'version' ? 'Crear versión' : 'Guardar'}
+          {isSubmitting
+            ? t('saving', 'Guardando...')
+            : mode === 'version'
+              ? t('createVersionBtn', 'Crear versión')
+              : t('save', 'Guardar')}
         </Button>
       </div>
     </form>

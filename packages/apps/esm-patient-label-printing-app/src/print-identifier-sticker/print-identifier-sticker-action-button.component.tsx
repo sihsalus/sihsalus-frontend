@@ -17,7 +17,7 @@ const PrintIdentifierStickerOverflowMenuItem: React.FC<PrintIdentifierStickerOve
 }) => {
   const { t } = useTranslation();
   const { showPrintIdentifierStickerButton } = useConfig<ConfigObject>();
-  const { printPdf, isPrinting } = useStickerPdfPrinter();
+  const { printPdf, isPrinting } = useStickerPdfPrinter(patient?.id);
 
   const isVisible = useMemo(() => {
     if (!patient?.id) return false;
@@ -36,15 +36,17 @@ const PrintIdentifierStickerOverflowMenuItem: React.FC<PrintIdentifierStickerOve
 
     try {
       await printPdf(getPdfUrl());
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+    } catch {
       showSnackbar({
         kind: 'error',
         title: getCoreTranslation('printError', 'Print Error'),
-        subtitle: getCoreTranslation('printErrorExplainer', '', { errorLocation: errorMessage }),
+        subtitle: t(
+          'patientIdentityPrintFailed',
+          'The identification document could not be printed. Retry or contact support if the problem continues.',
+        ),
       });
     }
-  }, [getPdfUrl, printPdf, isPrinting]);
+  }, [getPdfUrl, printPdf, isPrinting, t]);
 
   const buttonText = useMemo(() => {
     return isPrinting

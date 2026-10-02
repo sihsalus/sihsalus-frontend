@@ -8,6 +8,8 @@ import {
   chartAppointmentsEditPrivileges,
   chartAppointmentsFinalizeCarePrivilege,
   chartAppointmentsReadPrivilege,
+  patientIdentityPrintPrivilege,
+  patientIdentityPrintModal,
 } from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 import { type Appointment, AppointmentStatus } from '../types';
@@ -49,7 +51,9 @@ describe('PatientAppointmentsActionMenu', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseSession.mockReturnValue({ user: { uuid: 'user-uuid' } } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockReturnValue(true);
+    mockUserHasAccess.mockImplementation(
+      (required) => !(Array.isArray(required) ? required : [required]).includes(patientIdentityPrintPrivilege),
+    );
   });
 
   it('uses the home privilege and workspace in the appointments app', async () => {
@@ -127,7 +131,11 @@ describe('PatientAppointmentsActionMenu', () => {
     const grantedUiPrivileges = new Set([chartAppointmentsReadPrivilege, chartAppointmentsFinalizeCarePrivilege]);
     mockUserHasAccess.mockImplementation((requiredPrivileges) => {
       const privileges = Array.isArray(requiredPrivileges) ? requiredPrivileges : [requiredPrivileges];
-      return privileges.every((privilege) => !privilege.startsWith('app:') || grantedUiPrivileges.has(privilege));
+      return privileges.every(
+        (privilege) =>
+          privilege !== patientIdentityPrintPrivilege &&
+          (!privilege.startsWith('app:') || grantedUiPrivileges.has(privilege)),
+      );
     });
 
     renderMenu(PatientAppointmentContextTypes.PATIENT_CHART, AppointmentStatus.CHECKEDIN);
@@ -142,7 +150,9 @@ describe('PatientAppointmentsActionMenu', () => {
     mockUserHasAccess.mockImplementation((requiredPrivileges) => {
       const privileges = Array.isArray(requiredPrivileges) ? requiredPrivileges : [requiredPrivileges];
       return privileges.every(
-        (privilege) => !privilege.startsWith('app:') || privilege === chartAppointmentsFinalizeCarePrivilege,
+        (privilege) =>
+          privilege !== patientIdentityPrintPrivilege &&
+          (!privilege.startsWith('app:') || privilege === chartAppointmentsFinalizeCarePrivilege),
       );
     });
 
@@ -155,5 +165,54 @@ describe('PatientAppointmentsActionMenu', () => {
     renderMenu(PatientAppointmentContextTypes.APPOINTMENTS_APP, AppointmentStatus.CHECKEDIN);
 
     expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [PatientAppointmentContextTypes.APPOINTMENTS_APP, 'app:home.citas', 'appointments'],
+    [PatientAppointmentContextTypes.PATIENT_CHART, 'app:hoja.clinica.citas', 'patient-chart-appointments'],
+  ] as const)('prints from context %s with read and backend privileges without edit access', async (context, base, printContext) => {
+    const granted = new Set([base, patientIdentityPrintPrivilege, 'Get Patients']);
+    mockUserHasAccess.mockImplementation((required) =>
+      (Array.isArray(required) ? required : [required]).every((p) => granted.has(p)),
+    );
+    const dispose = vi.fn();
+    mockShowModal.mockReturnValue(dispose);
+    renderMenu(context, AppointmentStatus.COMPLETED);
+    await userEvent.click(screen.getByRole('button', { name: /actions/i }));
+    await userEvent.click(screen.getByText('Print patient identification'));
+    expect(mockShowModal).toHaveBeenCalledWith(patientIdentityPrintModal, {
+      patientUuid,
+      context: printContext,
+      closeModal: expect.any(Function),
+    });
+    expect(document.getElementById('editAppointment')).not.toBeInTheDocument();
+    const props = mockShowModal.mock.calls[0][1] as { closeModal: () => void };
+    props.closeModal();
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    'app:home.citas',
+    patientIdentityPrintPrivilege,
+    'Get Patients',
+  ])('denies printing without %s', async (missing) => {
+    mockUserHasAccess.mockImplementation(
+      (required) => !(Array.isArray(required) ? required : [required]).includes(missing),
+    );
+    renderMenu(PatientAppointmentContextTypes.APPOINTMENTS_APP, AppointmentStatus.COMPLETED);
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+    expect(mockShowModal).not.toHaveBeenCalled();
+  });
+
+  it('does not print when the patient prop disagrees with the selected appointment', () => {
+    mockUserHasAccess.mockReturnValue(true);
+    render(
+      <PatientAppointmentsActionMenu
+        appointment={{ ...appointment, status: AppointmentStatus.COMPLETED }}
+        patientUuid="another-patient"
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+    expect(mockShowModal).not.toHaveBeenCalled();
   });
 });

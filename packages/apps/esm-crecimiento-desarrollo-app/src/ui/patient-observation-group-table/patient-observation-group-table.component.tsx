@@ -80,7 +80,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   formWorkspace,
   editPrivilege,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const layout = useLayoutType();
   const desktopLayout = isDesktop(layout);
   const session = useSession();

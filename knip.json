@@ -6,17 +6,23 @@
       "project": ["packages/tooling/scripts/**"]
     },
     "packages/apps/*": {
-      "entry": ["src/index.ts", "src/index.tsx", "rspack.config.{js,cjs,ts}"],
+      "entry": ["src/index.ts", "src/index.tsx", "rspack.config.{js,cjs,ts}", "webpack.config.{js,cjs,ts}"],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": ["**/*.test.{ts,tsx}", "**/__mocks__/**", "src/setup-tests.ts"]
     },
     "packages/libs/*": {
-      "entry": ["src/index.ts", "src/index.tsx"],
+      "entry": ["src/index.ts", "src/index.tsx", "rspack.config.{js,cjs,ts}", "webpack.config.{js,cjs,ts}"],
       "project": ["src/**/*.{ts,tsx}"],
       "ignore": ["**/*.test.{ts,tsx}", "**/__mocks__/**", "src/setup-tests.ts"]
     }
   },
   "ignore": ["dist/**", "**/docs/**", "e2e/**", ".tmp/**", "artifacts/**"],
   "ignoreBinaries": ["openmrs"],
-  "ignoreDependencies": ["@openmrs/esm-framework"]
+  "ignoreDependencies": ["@openmrs/esm-framework"],
+  "rspack": {
+    "config": []
+  },
+  "webpack": {
+    "config": []
+  }
 }

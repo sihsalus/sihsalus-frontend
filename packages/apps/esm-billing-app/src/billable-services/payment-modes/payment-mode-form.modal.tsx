@@ -35,7 +35,7 @@ const PaymentModeFormModal: React.FC<PaymentModeFormModalProps> = ({ closeModal,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<PaymentModeFormValues>({
+  } = useForm<z.input<typeof paymentModeSchema>, unknown, z.output<typeof paymentModeSchema>>({
     resolver: zodResolver(paymentModeSchema),
     defaultValues: {
       name: editPaymentMode?.name ?? '',
@@ -43,7 +43,7 @@ const PaymentModeFormModal: React.FC<PaymentModeFormModalProps> = ({ closeModal,
     },
   });
 
-  const onSubmit = async (data: PaymentModeFormValues) => {
+  const onSubmit = async (data: z.output<typeof paymentModeSchema>) => {
     const url = `${apiBasePath}paymentMode`;
     try {
       const payload: PaymentModePayload = {

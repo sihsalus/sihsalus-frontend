@@ -1,7 +1,7 @@
 import {
   type FetchResponse,
-  getUserFacingErrorMessage,
   getDefaultsFromConfigSchema,
+  getUserFacingErrorMessage,
   showSnackbar,
   useConfig,
   usePatient,
@@ -13,9 +13,10 @@ import { BrowserRouter as Router, useParams } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
 import { type Resources, ResourcesContext } from '../offline.resources';
-
+import { usePersonAttributeType } from './field/person-attributes/person-attributes.resource';
 import { FormManager, SavePatientTransactionManager } from './form-manager';
 import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import {
@@ -28,7 +29,6 @@ import {
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
-import { usePersonAttributeType } from './field/person-attributes/person-attributes.resource';
 import {
   peruDniPatientIdentifierTypeUuid,
   peruInsuranceSelfFinancingConceptUuid,
@@ -41,12 +41,12 @@ import { getPatientRelationshipsUrl } from './section/patient-relationships/rela
 
 const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockGenerateIdentifier = vi.mocked(generateIdentifier);
-const mockSavePatient = savePatient as vi.Mock;
+const mockSavePatient = savePatient as Mock;
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUsePatient = vi.mocked(usePatient);
-const mockUseParams = useParams as vi.Mock;
+const mockUseParams = useParams as Mock;
 const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
 const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);

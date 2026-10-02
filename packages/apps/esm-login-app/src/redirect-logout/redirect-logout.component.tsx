@@ -1,6 +1,6 @@
 import { setUserLanguage, showSnackbar, useConfig, useConnectivity, useSession } from '@openmrs/esm-framework';
 import { clearHistory } from '@openmrs/esm-framework/src/internal';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigSchema } from '../config-schema';
@@ -20,8 +20,16 @@ const RedirectLogout: React.FC = () => {
   const config = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
   const session = useSession();
+  const logoutStarted = useRef(false);
 
   useEffect(() => {
+    // Clearing the session and changing language rerender this component before
+    // the document leaves. Only one operation may own the final navigation.
+    if (logoutStarted.current) {
+      return;
+    }
+    logoutStarted.current = true;
+
     if (!session.authenticated || !isLoginEnabled) {
       clearHistory();
       clearSensitiveBrowserState();
@@ -42,6 +50,7 @@ const RedirectLogout: React.FC = () => {
           redirectAfterLogout(config);
         })
         .catch((error) => {
+          logoutStarted.current = false;
           console.error('Logout failed:', error);
           // The session is still authenticated at this point: the user must know
           // the logout did NOT happen, especially on shared workstations.

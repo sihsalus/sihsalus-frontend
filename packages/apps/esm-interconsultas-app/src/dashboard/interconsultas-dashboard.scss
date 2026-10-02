@@ -3,6 +3,7 @@
 .dashboardContainer {
   background-color: var(--cds-background, #f4f4f4);
   min-height: 100vh;
+  min-width: 0;
 }
 
 .pageHeader {
@@ -11,4 +12,5 @@
 
 .tabPanel {
   padding: 0;
+  min-width: 0;
 }

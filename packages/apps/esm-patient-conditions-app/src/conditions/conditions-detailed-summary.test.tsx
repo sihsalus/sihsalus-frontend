@@ -62,16 +62,10 @@ it('renders an empty state view if antecedents data is unavailable', async () =>
   render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /past diagnoses/i })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
-  expect(screen.getAllByTitle(/Empty data illustration/i)).toHaveLength(3);
-  expect(screen.getByText(/There are no active problems to display for this patient/i)).toBeInTheDocument();
-  expect(screen.getByText(/There are no past diagnoses to display for this patient/i)).toBeInTheDocument();
-  expect(screen.getByText(/There are no antecedents to display for this patient/i)).toBeInTheDocument();
-  expect(screen.getByText(/Record active problems/i)).toBeInTheDocument();
-  expect(screen.getByText(/Record past diagnoses/i)).toBeInTheDocument();
-  expect(screen.getByText(/Record antecedents/i)).toBeInTheDocument();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  expect(screen.queryByTitle(/Empty data illustration/i)).not.toBeInTheDocument();
+  expect(screen.getByText('No antecedents to display')).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /^Record antecedent/ })).toHaveLength(1);
 });
 
 it('renders an error state view if there is a problem fetching antecedents data', async () => {
@@ -231,7 +225,7 @@ it("renders a detailed summary of the patient's antecedents when present", async
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
   expect(screen.getAllByRole('button', { name: /add/i }).length).toBeGreaterThan(0);
 
   expect(screen.getAllByRole('button', { name: /^antecedent$/i }).length).toBeGreaterThan(0);
@@ -243,10 +237,10 @@ it("renders a detailed summary of the patient's antecedents when present", async
   expectedTableRows.forEach((row) => {
     expect(screen.getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument();
   });
-  expect(screen.getAllByRole('row').length).toEqual(10);
+  expect(screen.getAllByRole('row').length).toEqual(8);
 });
 
-it('keeps three accessible filters independent while showing inactive history by default', async () => {
+it('shows every category and inactive history by default in one table, with an accessible status filter', async () => {
   const user = userEvent.setup();
   mockUseConditions.mockReturnValue({
     conditions: [
@@ -312,8 +306,8 @@ it('keeps three accessible filters independent while showing inactive history by
   expect(screen.getByRole('row', { name: /family history of diabetes/i })).toBeInTheDocument();
 
   const filters = screen.getAllByRole('combobox');
-  expect(filters).toHaveLength(3);
-  expect(new Set(filters.map((filter) => filter.id)).size).toBe(3);
+  expect(filters).toHaveLength(1);
+  expect(new Set(filters.map((filter) => filter.id)).size).toBe(1);
   for (const filter of filters) {
     expect(filter.id).not.toBe('');
     expect(filter).toHaveAccessibleName(/show/i);
@@ -324,11 +318,11 @@ it('keeps three accessible filters independent while showing inactive history by
     }
   }
 
-  await user.click(filters[2]);
+  await user.click(filters[0]);
   await user.click(screen.getByRole('option', { name: /^active$/i }));
   expect(screen.queryByRole('row', { name: /family history of diabetes/i })).not.toBeInTheDocument();
   expect(screen.getByRole('row', { name: /hypertension/i })).toBeInTheDocument();
-  expect(screen.getByRole('row', { name: /resolved pneumonia/i })).toBeInTheDocument();
+  expect(screen.queryByRole('row', { name: /resolved pneumonia/i })).not.toBeInTheDocument();
 });
 
 it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
@@ -344,7 +338,7 @@ it('clicking the Add button or Record Antecedents link launches the antecedents 
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  const recordConditionsLink = screen.getByText(/record antecedents/i);
+  const recordConditionsLink = screen.getByText(/record antecedent/i);
 
   await user.click(recordConditionsLink);
 
@@ -355,7 +349,7 @@ it('clicking the Add button or Record Antecedents link launches the antecedents 
   });
 });
 
-it('keeps family and social history out of active disease and shows surgical history with exact FHIR status', async () => {
+it('preserves antecedent types and precise statuses in the combined table', async () => {
   const user = userEvent.setup();
   const entries: Array<Pick<Condition, 'antecedentType' | 'clinicalStatus' | 'display'>> = [
     { antecedentType: 'pathological', clinicalStatus: 'Relapse', display: 'Synthetic personal relapse' },
@@ -391,28 +385,17 @@ it('keeps family and social history out of active disease and shows surgical his
   });
 
   render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
-  const activeProblems = screen.getByRole('table', { name: 'Active problems summary' });
   const antecedents = screen.getByRole('table', { name: 'Antecedents summary' });
-  expect(within(activeProblems).getAllByRole('row')).toHaveLength(3);
-  expect(within(activeProblems).getByRole('row', { name: /synthetic personal relapse.*relapse/i })).toBeInTheDocument();
+  expect(screen.getAllByRole('table')).toHaveLength(1);
+  expect(within(antecedents).getAllByRole('row')).toHaveLength(entries.length + 1);
+  expect(within(antecedents).getByRole('row', { name: /synthetic personal relapse.*relapse/i })).toBeInTheDocument();
   expect(
-    within(activeProblems).getByRole('row', { name: /synthetic personal recurrence.*recurrence/i }),
+    within(antecedents).getByRole('row', { name: /synthetic personal recurrence.*recurrence/i }),
   ).toBeInTheDocument();
-  for (const history of ['family', 'social', 'surgical', 'hospitalization', 'other']) {
-    expect(
-      within(antecedents).getByRole('row', { name: new RegExp(`synthetic ${history} history`, 'i') }),
-    ).toBeInTheDocument();
-    expect(
-      within(activeProblems).queryByRole('row', { name: new RegExp(`synthetic ${history} history`, 'i') }),
-    ).not.toBeInTheDocument();
-  }
-  expect(
-    within(screen.getByRole('table', { name: 'Past diagnoses summary' })).getByRole('row', {
-      name: /synthetic past diagnosis/i,
-    }),
-  ).toBeInTheDocument();
+  expect(within(antecedents).getByRole('row', { name: /synthetic family history.*famil/i })).toBeInTheDocument();
+  expect(within(antecedents).getByRole('row', { name: /synthetic past diagnosis/i })).toBeInTheDocument();
 
-  await user.click(screen.getAllByRole('combobox', { name: /show/i })[2]);
+  await user.click(screen.getAllByRole('combobox', { name: /show/i })[0]);
   await user.click(screen.getByRole('option', { name: /^inactive$/i }));
   expect(within(antecedents).getByRole('row', { name: /synthetic surgical history.*resolved/i })).toBeInTheDocument();
   expect(within(antecedents).queryByRole('row', { name: /synthetic family history/i })).not.toBeInTheDocument();

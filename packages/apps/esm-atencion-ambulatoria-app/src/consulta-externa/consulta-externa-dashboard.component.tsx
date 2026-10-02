@@ -43,7 +43,6 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
       <div>
         <SisFinancingWarning patientUuid={patientUuid} />
         <header className={styles.dashboardHeader}>
-          <h1 className={styles.dashboardHeading}>{t('consultaExterna', 'Consulta Externa')}</h1>
           <div className={styles.dashboardActions}>
             <RequirePrivilege privilege={patientVisitsPrivilege} hideUnauthorized>
               <Tooltip
@@ -104,7 +103,9 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
                 ) : null}
               </TabPanel>
               <TabPanel>
-                {selectedTab === getConsultaExternaTabIndex('soap') ? <ExamenFisico patientUuid={patientUuid} /> : null}
+                {selectedTab === getConsultaExternaTabIndex('physicalExam') ? (
+                  <ExamenFisico patientUuid={patientUuid} />
+                ) : null}
               </TabPanel>
               <TabPanel>
                 {selectedTab === getConsultaExternaTabIndex('complementaryTests') ? (

@@ -1,5 +1,8 @@
 # Pruebas end-to-end
 
+[Documentación del proyecto](../docs/README.md) ·
+[Pruebas y calidad](../docs/development/testing.md)
+
 Playwright contra un OpenMRS desplegado y regresiones locales con servidor sintético. **Nunca contra producción ni con datos
 reales**. Las suites `runnable` exigen datos sintéticos y cleanup verificado por
 su gate. La suite `offline-local` usa exclusivamente un servidor loopback y no requiere credenciales. Las suites históricas permanecen `quarantined` precisamente porque su
@@ -7,7 +10,10 @@ aislamiento, cleanup o aceptación aún no están verificados y no deben ejecuta
 
 ## Catálogo y runner
 
-[`suite-catalog.json`](suite-catalog.json) es la fuente única de organización.
+El runner usa [suite-catalog.json](suite-catalog.json) como fuente única de
+organización. Los cambios al catálogo deben conservar los contratos del runner,
+el typecheck y CI. Esta reorganización no promueve ninguna suite.
+
 Cada configuración Playwright y cada `*.spec.ts` deben pertenecer exactamente a
 una de sus 14 suites. El contrato local falla si aparece una configuración o un
 spec sin dueño, si hay solapamientos o si `typecheck`/`ci` dejan de coincidir con
@@ -17,6 +23,8 @@ la configuración real.
 pueda ejecutarse sin las credenciales, datos sintéticos y ambiente coordinado
 que exija su preflight. `quarantined` conserva el código como inventario, pero
 lo rechaza de forma explícita hasta resolver la razón registrada en el catálogo.
+La tabla refleja el catálogo; no sustituye el preflight ni acredita aceptación
+clínica de las suites.
 
 | ID                  | Configuración                                | Specs                         | Estado       | Gate | Typecheck | CI navegador |
 | ------------------- | -------------------------------------------- | ----------------------------- | ------------ | ---- | --------- | ------------ |
@@ -28,7 +36,7 @@ lo rechaza de forma explícita hasta resolver la razón registrada en el catálo
 | `dyaku`             | `e2e/dyaku/playwright.config.ts`             | `e2e/dyaku/specs`             | quarantined  | no   | sí        | no           |
 | `fast-data-entry`   | `e2e/fast-data-entry/playwright.config.ts`   | `e2e/fast-data-entry/specs`   | quarantined  | no   | no        | no           |
 | `form-builder`      | `e2e/form-builder/playwright.config.ts`      | `e2e/form-builder/specs`      | quarantined  | no   | no        | no           |
-| `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | sí           |
+| `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | no           |
 | `offline-laptop`    | `e2e/offline-laptop/playwright.config.ts`    | `e2e/offline-laptop/specs`    | **runnable** | sí   | sí        | no           |
 | `offline-local`     | `e2e/offline-local/playwright.config.ts`     | `e2e/offline-local/specs`     | **runnable** | sí   | sí        | no           |
 | `patient-imaging`   | `e2e/patient-imaging/playwright.config.ts`   | `e2e/patient-imaging/specs`   | quarantined  | no   | sí        | no           |
@@ -45,6 +53,9 @@ por variable de ambiente. Sus specs TypeScript tienen cobertura de tipos, pero
 el prototipo de notificaciones en JavaScript solo tiene comprobación sintáctica
 y pruebas del bloqueo, no validación clínica. No se promueve ninguna suite ni
 se agrega a CI de navegador.
+
+Usar los comandos del runner; no invocar Playwright directamente para eludir
+los controles de catálogo, cuarentena o preflight.
 
 ```sh
 # Suite clínica principal (compatible con el comando histórico)
@@ -77,16 +88,18 @@ configuración aprobada. No existe un `test:e2e:all`: promover una suite exige
 resolver su razón de cuarentena y actualizar catálogo, typecheck y CI de forma
 explícita.
 
-En CI (`.github/workflows/e2e.yml`) los contratos locales corren en cada PR. Las
-suites de navegador principal y laboratorio corren **solo** en PRs con la
-etiqueta `e2e` o por `workflow_dispatch`, y exigen 7 variables/secretos
-(preflight que falla si falta alguna). Un gate que solo corre cuando alguien se
-acuerda no protege de nada: si tocas flujos clínicos, pon la etiqueta.
+En CI (`.github/workflows/e2e.yml`) los contratos locales corren en cada PR. La
+suite clínica de navegador corre **solo** en PRs con la etiqueta `e2e` o por
+`workflow_dispatch`, y exige 7 variables/secretos (preflight que falla si falta
+alguna). Un gate que solo corre cuando alguien se acuerda no protege de nada:
+si tocas flujos clínicos, pon la etiqueta.
 
-Laboratorio añade ahora un bloqueo explícito de navegador en CI mientras no
-exista retención privada y duradera de sus journals de recuperación. Su adapter
-permite ejecución local supervisada con estado persistente; revisar
-[sus requisitos](laboratory/README.md) antes de etiquetar o lanzar esa matriz.
+Laboratorio permanece ejecutable localmente con supervisión y typecheck, pero
+se retira temporalmente de la matriz de navegador en CI: su preflight rechaza
+CI mientras no exista retención privada y recuperable de sus journals. Los
+contratos locales siguen corriendo en cada PR. Para reponerlo en la matriz,
+primero debe existir esa retención y una recuperación verificada; consultar
+[sus requisitos](laboratory/README.md).
 
 El preflight exige `E2E_GATE_TARGET=DEV|QLTY`, comprueba que el backend sea el
 origen HTTPS exacto del ambiente elegido y solo permite que el SPA sea ese mismo
@@ -177,9 +190,9 @@ aceptación requiere la matriz DEV/QLTY del runbook.
 `yarn typecheck:e2e` y el servidor de `offline-local` preparan sus dependencias
 mediante `yarn build:e2e:offline-local`. Este comando usa el grafo de Turborepo
 para compilar `@openmrs/esm-offline` y sus dependencias antes de consumir sus
-exports y declaraciones de tipos. Ambos funcionan después de una instalación
-limpia, sin depender de builds manuales anteriores; un fallo de preparación
-detiene el chequeo o el arranque del navegador.
+exports y declaraciones de tipos. Esta preparación evita depender de builds
+manuales anteriores; un fallo detiene el chequeo o el arranque del navegador.
+La instalación está documentada en [desarrollo](../docs/development/README.md).
 
 ## Cobertura de typecheck
 
@@ -195,7 +208,8 @@ fuentes. Están **fuera** las que aún acumulan errores de tipos:
 | `fast-data-entry` | 7       | igual                                                                                                                                                                                                                                  |
 | `screenshots`     | 4       | igual                                                                                                                                                                                                                                  |
 
-Medido con `tsc` sobre todo `e2e/**`. Al arreglar una suite, hay que agregarla al
+Estos recuentos provienen del inventario previo medido con `tsc` sobre todo
+`e2e/**`; no se recalcularon al reorganizar la documentación. Al arreglar una suite, hay que agregarla al
 `include` de `e2e/tsconfig.json` y cambiar su bandera `typecheck` en el catálogo;
 el contrato impide que ambas fuentes diverjan en silencio.
 
@@ -221,6 +235,10 @@ el contrato impide que ambas fuentes diverjan en silencio.
   quedó fósil por meses.
 
 ## Datos de prueba
+
+El [contrato de fixtures sintéticos](../docs/development/synthetic-fixtures.md)
+documenta el aprovisionamiento supervisado, el journal privado y la recuperación
+de cleanup parcial. Su nueva ubicación conserva los requisitos de autorización.
 
 Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
 (`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y los validan en `beforeAll`, después

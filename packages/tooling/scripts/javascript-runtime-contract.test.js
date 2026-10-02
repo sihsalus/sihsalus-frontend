@@ -59,10 +59,19 @@ test('detects wildcard framework ranges that reject prerelease versions', () => 
   assert.equal(references.length, 1);
 });
 
-test('accepts framework ranges that explicitly include prerelease versions', () => {
+test('rejects a broad prerelease range that does not accept the framework prerelease', () => {
   const references = findPrereleaseIncompatibleFrameworkRanges(
     'shareKey:"@openmrs/esm-framework",import:null,requiredVersion:">=0.0.0-0",singleton:true',
   );
 
-  assert.deepEqual(references, []);
+  assert.equal(references.length, 1);
+});
+
+test('accepts the exact framework prerelease used by the build', () => {
+  assert.deepEqual(
+    findPrereleaseIncompatibleFrameworkRanges(
+      'shareKey:"@openmrs/esm-framework",import:null,requiredVersion:"9.0.3-pre.4728",singleton:true',
+    ),
+    [],
+  );
 });

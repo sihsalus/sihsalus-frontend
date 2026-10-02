@@ -14,6 +14,48 @@ Lab technicians can enter test results by expanding an in-progress order and cli
 
 ![Adding lab results](assets/screenshots/labs_enter_results.png)
 
+## Editing and printing saved results
+
+The completed-orders menu opens registered `edit-lab-results-modal` and
+`print-lab-results-modal` destinations. Amendment from the order detail uses the
+same edit selector. Editing requires `app:home.laboratorio.editar`; printing
+requires `app:home.laboratorio`. Backend authorization remains authoritative.
+
+Editing selects one completed or pending-review order, rereads its persisted
+order, encounter and result, and opens the existing v2
+`lab-app-test-results-form-workspace` with that patient's encounter and visit.
+Missing, ambiguous or mismatched results block opening. The shared form retains
+its observation-revision and one-panel-result-per-save rules. A result pending
+order completion stays read-only until that completion succeeds.
+
+Printing rereads only the selected completed orders for one patient, independent
+of patient-chart context. Every selected order must have exactly one active root
+result with matching patient, encounter, order and concept. Nested active panel
+members preserve their recorded values and comments; zero is a result. Missing
+results, read failures and inconsistent associations block the entire report.
+The preview has no write operations and does not print supplemental PDFs or an
+unselected patient's history. It does not assert clinical approval or provide a
+new institutional report template.
+
+Reads use OpenMRS REST `order`, `encounter` and `obs` resources. The `full`
+observation representation supplies nested members and, on Core 2.7+, the saved
+observation reference range. Only saved ranges are printed; a missing range is
+shown as a dash, never replaced by a current catalog range. Units are explicitly
+identified as coming from the test catalog. No content migration is required.
+
+These verification reads request `cache: no-store`; the matching frontend
+worker requires a current server response. A downloaded offline snapshot cannot
+authorize an amendment or establish the current report. Network failures leave
+the existing blocking error state visible. Activate the matching worker and
+refresh existing tabs when releasing this change.
+
+Before rollout, validate in coordinated DEV/QLTY with synthetic patients and
+minimum laboratory roles: single tests, panels, zero/coded/text results,
+reopening after correction, failures/retries, denied access, patient isolation,
+and browser print preview on desktop/tablet. Local component tests do not replace
+that authenticated clinical smoke test. Follow the laboratory E2E README's
+recovery-journal restriction before enabling any remote browser CI.
+
 ## Supplemental PDF documents
 
 Every persisted laboratory order renders `lab-order-pdf-attachments-slot` directly, so existing PDFs remain readable
@@ -36,7 +78,7 @@ The module supports the following configuration options:
 | `labTableColumns`                         | `Array<string>` | `['name', 'age', 'sex', 'totalOrders', 'action']` | Columns to display in the lab table. Allowed values: `name`, `age`, `dob`, `sex`, `totalOrders`, `action`, `patientId` |
 | `patientIdIdentifierTypeUuid`             | `UUID`          | `05a29f94-c0ed-11e2-94be-8c13b969e334`            | Identifier type UUID for the patient ID column. Only needed if `patientId` is included in `labTableColumns`            |
 | `enableReviewingLabResultsBeforeApproval` | `boolean`       | `false`                                           | When enabled, lab results are submitted for review before being approved and finalized                                 |
-| `enableRealtimeLabResultNotifications`    | `boolean`       | `false`                                           | Refresh the dashboard for new laboratory orders and completed results after the compatible OMOD is validated          |
+| `enableRealtimeLabResultNotifications`    | `boolean`       | `false`                                           | Refresh the dashboard for new laboratory orders and completed results after the compatible OMOD is validated           |
 
 ## Realtime laboratory notifications
 
@@ -56,6 +98,26 @@ location resolve to the same nearest ancestor tagged `Facility Location`. Standa
 `Last-Event-ID` replay recovers short network interruptions. If the backend no longer recognizes
 the cursor, the dashboard silently refetches the authoritative worklist without showing a duplicate
 notice. The frontend does not persist order UUIDs or notification history in browser storage.
+
+On every SSE `open`, including the first connection and bounded reconnects, the dashboard
+silently refetches its authoritative worklist. This closes the initial subscription gap and
+reconciles the displayed state even when an individual refresh signal was missed. It does not
+turn ephemeral notifications into guaranteed delivery. Native `EventSource` retains ownership
+of reconnection and `Last-Event-ID`; the frontend adds no retry timers or persistent history.
+With the OMOD's default 25-second streams and 3-second retry interval, this adds roughly two
+worklist refreshes per minute per open dashboard. Event IDs remain deduplicated across these
+reconnects, and an empty ID or mismatched, null, or malformed envelope is ignored.
+
+A transport error is not presented as successful delivery. Terminal failures such as an expired
+session remain subject to normal OpenMRS authentication and worklist error handling; no custom
+retry loop bypasses them. Unmounting or disabling realtime removes all listeners and closes the
+connection. The feature flag remains disabled by default.
+
+Validation: run this package's notification-hook and dashboard tests, then verify authenticated
+initial delivery, reconnection, session expiry, and role/facility isolation with synthetic accounts
+in coordinated DEV/QLTY before enabling the flag. Mocked transport tests do not establish the
+state of a deployed backend. The quarantined `clinical-recovery` suite remains blocked until its
+fixture and cleanup requirements are met; this frontend change does not bypass that gate.
 
 ## Getting Started
 
@@ -80,3 +142,52 @@ Once it is running, a browser window should open with O3 running. Log in and the
 ```sh
 yarn test
 ```
+
+## Presentación de la bandeja
+
+Los filtros se distribuyen en filas según el ancho disponible del contenedor,
+incluido el espacio que dejan las barras laterales. La barra crece con su
+contenido; la búsqueda y la descarga del reporte quedan en una fila propia que
+puede envolverse. Solo la tabla tiene desplazamiento horizontal. El estado
+vacío conserva el patrón de texto centrado sobre un Tile.
+
+Validar filtros y búsqueda a anchos reducidos y con los estilos globales del
+framework cargados; no deben solaparse entre sí ni con las filas de resultados.
+
+### Realtime refresh behavior
+
+Realtime events are grouped over a one-second window. Only one worklist
+refresh runs at a time; events received during that request schedule a subsequent
+refresh. Resync signals refresh silently. A burst produces one generic notice
+without patient information after a successful refresh. Unmount clears pending
+refreshes.
+
+SWR revalidates existing laboratory queries without clearing their cached rows.
+The initial load still uses the loading state; background updates retain the
+current table. A failed refresh retains cached data and does not announce success.
+This does not replace backend persistence or guarantee delivery while disconnected.
+The dashboard regression covers bursts, slow requests, failures and unmount;
+the resource regression uses a real SWR cache and a deferred response.
+
+### Laboratory result inbox adapter
+
+`laboratory-result-notification` contributes the detail view for backend type
+`laboratory-result-ready` to `notification-inbox-detail-slot`. The common header
+provides the notification, authenticated session cache identity, acknowledgement
+callback and back action through the framework's `NotificationDetailState`.
+
+The adapter requires `app:hoja.clinica.ordenes`, `Get Orders`, `Get Patients` and
+`Get Observations`. It checks its type/context, fetches the exact order using
+no-store, verifies patient identity and completed/non-voided status, and reuses
+`completed-lab-order-results-slot`. Failed order loads, mismatched patients/status or a missing viewer registration
+block acknowledgement. The existing child viewer owns its result-loading states;
+notification acknowledgement does not certify that result values were reviewed. The backend rechecks the domain resource and current
+permissions when marking read. This marks only the notification as read; it never
+records clinical review, approval or signature.
+
+The generic inbox flag belongs to primary-navigation. It stays disabled until the
+matching OMOD and coordinated synthetic clinical smoke are validated. The adapter
+covers newly completed laboratory orders only, with no amendment or historical
+backfill. Domain tests cover failed reads/acknowledgements, mismatched patients,
+missing viewer and denied sessions; a deployed completion-to-inbox test remains
+pending.

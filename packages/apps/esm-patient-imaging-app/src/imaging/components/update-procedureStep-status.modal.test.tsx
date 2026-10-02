@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import { updateProcedureStepStatus } from '../../api';
 import UpdateProcedureStepStatusModal from './update-procedureStep-status.modal';
 
@@ -58,7 +59,7 @@ describe('UpdateProcedureStepStatusModal', () => {
   });
 
   test('submitting calls updateProcedureStepStatus and shows success snackbar', async () => {
-    (updateProcedureStepStatus as vi.Mock).mockResolvedValue({});
+    (updateProcedureStepStatus as Mock).mockResolvedValue({});
 
     render(
       <UpdateProcedureStepStatusModal
@@ -79,7 +80,7 @@ describe('UpdateProcedureStepStatusModal', () => {
   });
 
   test('shows error snackbar on failure', async () => {
-    (updateProcedureStepStatus as vi.Mock).mockRejectedValueOnce(new Error('Update failed'));
+    (updateProcedureStepStatus as Mock).mockRejectedValueOnce(new Error('Update failed'));
 
     render(
       <UpdateProcedureStepStatusModal

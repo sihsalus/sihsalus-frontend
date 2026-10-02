@@ -1,6 +1,6 @@
 import { Button, ButtonSet, DataTableSkeleton, Form, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLayoutType, usePatient, Workspace2 } from '@openmrs/esm-framework';
+import { usePatient, Workspace2 } from '@openmrs/esm-framework';
 import {
   type AntecedentTypeCode,
   antecedentTypeOptions,
@@ -12,7 +12,6 @@ import {
   type PatientWorkspace2DefinitionProps,
   useConditionFormLifecycle,
 } from '@openmrs/esm-patient-common-lib';
-import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -204,7 +203,6 @@ const ConditionsFormContent: React.FC<ConditionsWorkspaceProps> = (props) => {
   const { t } = useTranslation();
   const { patient: fetchedPatient, isLoading: patientLoading, error: patientError } = usePatient(patientUuid);
   const patient = patientFromGroup ?? fetchedPatient;
-  const isTablet = useLayoutType() === 'tablet';
   const { conditions, isLoading, error: loadingError } = useConditions(patientUuid);
   const [errorCreating, setErrorCreating] = useState(null);
   const [errorUpdating, setErrorUpdating] = useState(null);
@@ -312,20 +310,22 @@ const ConditionsFormContent: React.FC<ConditionsWorkspaceProps> = (props) => {
       <>
         <FormProvider {...methods}>
           <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
-            <ConditionsWidget
-              ref={widgetRef}
-              closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
-              conditionToEdit={originalCondition}
-              isEditing={isEditing}
-              isSubmittingForm={isSubmittingForm || isSaved || isUncertain}
-              patientUuid={patientUuid}
-              setErrorCreating={setErrorCreating}
-              setErrorUpdating={setErrorUpdating}
-              setIsSubmittingForm={setIsSubmittingForm}
-              lockedAntecedentType={lockedAntecedentType}
-              patientBirthDate={patient?.birthDate}
-            />
-            <div>
+            <div className={styles.formContent}>
+              <ConditionsWidget
+                ref={widgetRef}
+                closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+                conditionToEdit={originalCondition}
+                isEditing={isEditing}
+                isSubmittingForm={isSubmittingForm || isSaved || isUncertain}
+                patientUuid={patientUuid}
+                setErrorCreating={setErrorCreating}
+                setErrorUpdating={setErrorUpdating}
+                setIsSubmittingForm={setIsSubmittingForm}
+                lockedAntecedentType={lockedAntecedentType}
+                patientBirthDate={patient?.birthDate}
+              />
+            </div>
+            <div className={styles.formActions}>
               {errorCreating ? (
                 <div className={styles.errorContainer}>
                   <InlineNotification
@@ -350,12 +350,7 @@ const ConditionsFormContent: React.FC<ConditionsWorkspaceProps> = (props) => {
                   />
                 </div>
               ) : null}
-              <ButtonSet
-                className={classNames({
-                  [styles.tablet]: isTablet,
-                  [styles.desktop]: !isTablet,
-                })}
-              >
+              <ButtonSet>
                 <Button
                   className={styles.button}
                   kind="secondary"

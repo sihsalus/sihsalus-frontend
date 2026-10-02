@@ -53,6 +53,15 @@ describe('service queue administration action menus', () => {
     );
   });
 
+  it('opens the canonical room editor with the stored description', async () => {
+    const user = userEvent.setup();
+    const queueRoom = { ...mockQueueRooms.data.results[0], description: 'Synthetic room description' };
+    render(<QueueRoomActionMenu queueRoom={queueRoom} />);
+    await user.click(screen.getByRole('button', { name: 'Actions' }));
+    await user.click(screen.getByText('Edit'));
+    expect(mockLaunchWorkspace).toHaveBeenCalledExactlyOnceWith('service-queues-room-workspace', { queueRoom });
+  });
+
   it('does not expose queue administration actions without edit access', () => {
     mockUserHasAccess.mockReturnValue(false);
 

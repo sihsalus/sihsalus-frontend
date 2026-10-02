@@ -1,6 +1,7 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Mock } from 'vitest';
 import { useLocations } from '../../cohort-builder.resources';
 import SearchByEncounters from './search-by-encounters.component';
 import { useEncounterTypes, useForms } from './search-by-encounters.resources';
@@ -8,7 +9,7 @@ import { useEncounterTypes, useForms } from './search-by-encounters.resources';
 const mockUseEncounterTypes = vi.mocked(useEncounterTypes);
 const mockUseForms = vi.mocked(useForms);
 const mockUseLocations = vi.mocked(useLocations);
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 
 const mockLocations = [
   {

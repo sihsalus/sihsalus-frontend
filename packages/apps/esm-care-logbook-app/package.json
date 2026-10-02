@@ -43,7 +43,7 @@
   "dependencies": {
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "swr": "^2.3.6"
+    "swr": "^2.5.1"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
@@ -51,7 +51,7 @@
     "@openmrs/esm-patient-common-lib": "*",
     "dayjs": "1.x",
     "react": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "rxjs": "6.x"
   },
@@ -59,20 +59,20 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.8",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.16.2",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
-    "dayjs": "^1.11.13",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "dayjs": "^1.11.23",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.4",
     "rxjs": "^6.6.7",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

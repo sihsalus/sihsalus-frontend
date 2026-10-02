@@ -288,6 +288,8 @@ export interface DrugOrderBasketItem extends OrderBasketItem {
   asNeeded: boolean;
   asNeededCondition: string | null;
   startDate: Date | string;
+  /** False only for the unselected current-time default; older drafts retain their date. */
+  startDateIsExplicit?: boolean;
   durationUnit: DurationUnit | null;
   duration: number | null;
   pillsDispensed: number | null;

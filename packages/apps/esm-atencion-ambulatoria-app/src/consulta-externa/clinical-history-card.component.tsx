@@ -39,7 +39,7 @@ interface ClinicalHistoryCardProps {
   secondaryActionLabel?: string;
   secondaryActionPrivilege?: string | Array<string>;
   skeletonHeaders?: DataTableSkeletonProps['headers'];
-  /** Sources that failed while others succeeded; the history shown is partial. */
+  /** Sources that failed or hit the page cap; the history shown is partial. */
   sourceErrors?: Array<Error>;
 }
 
@@ -97,8 +97,9 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
     );
   }
 
-  if (error) {
-    return <ErrorState error={error} headerTitle={title} />;
+  // An empty successful source cannot prove absence when another is incomplete.
+  if (error || (empty && sourceErrors?.length)) {
+    return <ErrorState error={error ?? sourceErrors?.[0]} headerTitle={title} />;
   }
 
   // With a secondary action the full card renders even when empty, so the

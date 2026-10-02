@@ -23,7 +23,7 @@ interface FeedingCounselingProps {
 }
 
 const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { feedingType, lastAssessmentDate, isBreastfeeding, isLoading, error } = useFeedingAssessment(patientUuid);

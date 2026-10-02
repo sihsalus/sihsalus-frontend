@@ -86,7 +86,7 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
   config: _config,
   chartConfig,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const [chartView, setChartView] = useState(false);
   const isTablet = useLayoutType() === 'tablet';
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);

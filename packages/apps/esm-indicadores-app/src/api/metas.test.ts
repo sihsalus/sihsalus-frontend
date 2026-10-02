@@ -1,7 +1,7 @@
 import { getConfig, openmrsFetch } from '@openmrs/esm-framework';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { deleteMeta, getMetaByIndicator, getMetaByVersion, isMetaNotFoundError, upsertMeta } from './metas';
+import { deleteMeta, getMetaByIndicator, isMetaNotFoundError, upsertMeta } from './metas';
 
 const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockedGetConfig = vi.mocked(getConfig);
@@ -29,15 +29,6 @@ describe('metas API contract', () => {
     expect(mockedOpenmrsFetch.mock.calls[0][0]).toBe('/services/reportes-sql/metas?indicador_id=indicator-a&anio=2026');
   });
 
-  it('looks up a meta by exact version and year when explicitly requested', async () => {
-    mockedOpenmrsFetch.mockResolvedValue({ data: meta } as never);
-
-    await expect(getMetaByVersion('version-a', 2026)).resolves.toEqual(meta);
-    expect(mockedOpenmrsFetch.mock.calls[0][0]).toBe(
-      '/services/reportes-sql/metas?indicador_version_id=version-a&anio=2026',
-    );
-  });
-
   it('does not mistake a 500 response for an absent meta', async () => {
     const error = Object.assign(new Error('database failed'), { response: { status: 500 } });
     mockedOpenmrsFetch.mockRejectedValue(error);
@@ -46,12 +37,42 @@ describe('metas API contract', () => {
     expect(isMetaNotFoundError(error)).toBe(false);
   });
 
+  it('uses deterministic demo data for a qualifying backend failure when enabled', async () => {
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql', enableDemoData: true });
+    mockedOpenmrsFetch.mockRejectedValue(Object.assign(new Error('database failed'), { response: { status: 500 } }));
+
+    await expect(getMetaByIndicator('ind-001', 2026)).resolves.toMatchObject({
+      id: 'meta-001-2026',
+      indicador_version_id: 'ver-001-1',
+      anio: 2026,
+      valor_meta: 350,
+    });
+  });
+
+  it('keeps unknown demo meta lookups as contractual missing-meta errors', async () => {
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql', enableDemoData: true });
+    mockedOpenmrsFetch.mockRejectedValue(Object.assign(new Error('database failed'), { response: { status: 500 } }));
+
+    const error = await getMetaByIndicator('ind-002', 2026).catch((lookupError) => lookupError);
+
+    expect(isMetaNotFoundError(error)).toBe(true);
+  });
+
   it('recognizes only the contractual missing-meta 404 as an absent meta', () => {
     const detail = { field: 'indicador_version_id', message: 'Meta no encontrada' };
 
     expect(isMetaNotFoundError({ response: { status: 404 }, responseBody: { detail } })).toBe(true);
     expect(isMetaNotFoundError({ status: 404, responseBody: { detail } })).toBe(true);
     expect(isMetaNotFoundError({ response: { status: 404 } })).toBe(false);
+
+    expect(
+      isMetaNotFoundError({
+        response: { status: 404 },
+        responseBody: {
+          detail: { field: 'indicador_version_id', message: 'No encontrado' },
+        },
+      }),
+    ).toBe(true);
     expect(
       isMetaNotFoundError({
         response: { status: 404 },
@@ -81,7 +102,7 @@ describe('metas API contract', () => {
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
       '/services/reportes-sql/metas?indicador_version_id=version-a&anio=2026',
-      { method: 'DELETE' },
+      { method: 'DELETE', rejectOnAuthFailure: true },
     );
   });
 

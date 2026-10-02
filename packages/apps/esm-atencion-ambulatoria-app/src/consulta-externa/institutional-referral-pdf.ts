@@ -15,6 +15,8 @@ export interface InstitutionalReferralPdfData {
     encounterDatetime: string;
     destinationName: string;
     destinationRenaesCode: string | null;
+    originService: string | null;
+    destinationService: string | null;
     specialty: string | null;
     priority: string | null;
     patientCondition: string | null;
@@ -274,7 +276,7 @@ function getAnamnesis(summary: OutpatientVisitSummary): string | null {
       summary.anamnesis.chiefComplaint && `Motivo: ${summary.anamnesis.chiefComplaint}`,
       summary.anamnesis.illnessDuration && `Tiempo: ${summary.anamnesis.illnessDuration}`,
       summary.anamnesis.narrative,
-      summary.soap.subjective,
+      summary.legacyNotes.narrative,
     ],
     '\n',
   );
@@ -288,7 +290,7 @@ function getPhysicalExam(summary: OutpatientVisitSummary): string | null {
     summary.vitals.pulse && `FC ${summary.vitals.pulse}`,
     summary.vitals.oxygenSaturation && `SatO2 ${summary.vitals.oxygenSaturation}`,
   ]);
-  return compact([vitals, ...Object.values(summary.physicalExam), summary.soap.objective], '\n');
+  return compact([vitals, ...Object.values(summary.physicalExam), summary.legacyNotes.physicalExam], '\n');
 }
 
 function getAuxiliaryExams(summary: OutpatientVisitSummary): string | null {
@@ -379,13 +381,10 @@ export async function createInstitutionalReferralPdf(
     ['Historia clínica', data.summary.patient.identifiers[0]?.value],
   );
   drawField(state, 'Establecimiento de origen', data.summary.facilityName);
-  drawTwoFields(
-    state,
-    ['Código RENIPRESS destino', data.referral.destinationRenaesCode],
-    ['Servicio origen', 'Consulta Externa'],
-  );
+  drawField(state, 'Servicio origen', data.referral.originService);
+  drawField(state, 'Código RENIPRESS destino', data.referral.destinationRenaesCode);
   drawField(state, 'Establecimiento de destino', data.referral.destinationName);
-  drawField(state, 'Servicio destino (UPS)', null);
+  drawField(state, 'Servicio destino (UPS)', data.referral.destinationService);
 
   drawSectionHeader(state, '2. Identificación del paciente');
   drawField(state, 'Nombres y apellidos', data.summary.patient.name);

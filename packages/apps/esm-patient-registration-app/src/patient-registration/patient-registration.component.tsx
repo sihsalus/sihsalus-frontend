@@ -1,18 +1,14 @@
-import { Button, InlineLoading, InlineNotification, Link } from '@carbon/react';
-import { XAxis } from '@carbon/react/icons';
+import { Button, InlineLoading, InlineNotification } from '@carbon/react';
 import {
   getUserFacingErrorMessage,
   interpolateUrl,
-  isDesktop,
   logError,
   navigate,
   showSnackbar,
   useConfig,
-  useLayoutType,
   usePatient,
   usePatientPhoto,
 } from '@openmrs/esm-framework';
-import classNames from 'classnames';
 import { Form, Formik, type FormikErrors, type FormikHelpers, type FormikTouched } from 'formik';
 import set from 'lodash-es/set';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -49,6 +45,7 @@ import {
   registrationErrorCodes,
 } from './registration-errors';
 import { resolveRegistrationAfterUrl } from './registration-redirect';
+import { RegistrationLayout } from './registration-layout.component';
 import { getPatientRelationshipsUrl } from './section/patient-relationships/relationships.resource';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema } from './validation/patient-registration-validation';
@@ -239,8 +236,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const [patientUuidMap, , patientUuidMapState = { isLoading: false }] = usePatientUuidMap(patientUuidToEdit);
   const location = currentSession?.sessionLocation?.uuid;
   const isSessionLocationMissing = Boolean(currentSession && !isOffline && !location);
-  const layout = useLayoutType();
-  const isDesktopLayout = isDesktop(layout);
   const hasPatientRoute = !!uuidOfPatientToEdit;
   const isNewPatient = initialFormState.isNewPatient ?? !hasPatientRoute;
   const inEditMode = !isNewPatient;
@@ -775,7 +770,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         );
 
         return (
-          <Form className={styles.form} noValidate>
+          <Form className={styles.form} data-registration-form noValidate>
             <BeforeSavePrompt when={Object.keys(props.touched).length > 0} redirect={target} />
             {isSessionLocationMissing ? (
               <InlineNotification
@@ -790,53 +785,40 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                 )}
               />
             ) : null}
-            <div className={styles.formContainer}>
-              <div>
-                <div className={styles.stickyColumn}>
-                  <h4>
-                    {inEditMode ? t('updatePatient', 'Update patient') : t('createNewPatient', 'Create new patient')}
-                  </h4>
-                  {showDummyData && <DummyDataInput setValues={props.setValues} />}
-                  {isDesktopLayout && <div className={styles.actionPanel}>{renderActionButtons()}</div>}
-                  <div className={styles.sectionNav}>
-                    <p className={styles.label01}>{t('jumpTo', 'Jump to')}</p>
-                    {sections.map((section) => (
-                      <div className={classNames(styles.space05, styles.touchTarget)} key={section.id}>
-                        <Link className={styles.linkName} onClick={() => scrollIntoView(section.id)}>
-                          <XAxis size={16} /> {t(`${section.id}Section`, section.name ?? section.id)}
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className={styles.infoGrid}>
-                <PatientRegistrationContext.Provider
-                  value={{
-                    identifierTypes: identifierTypes,
-                    validationSchema,
-                    values: props.values,
-                    inEditMode,
-                    setFieldValue: props.setFieldValue,
-                    setFieldTouched: props.setFieldTouched,
-                    setCapturePhotoProps,
-                    currentPhoto: photo?.imageSrc ?? null,
-                    isOffline,
-                    initialFormValues: props.initialValues,
-                    setInitialFormValues,
-                  }}
-                >
-                  {sections.map((section, index) => (
-                    <SectionWrapper
-                      key={`registration-section-${section.id}`}
-                      sectionDefinition={section}
-                      index={index}
-                    />
-                  ))}
-                </PatientRegistrationContext.Provider>
-                {!isDesktopLayout && <div className={styles.bottomActionPanel}>{renderActionButtons()}</div>}
-              </div>
-            </div>
+            <RegistrationLayout
+              title={inEditMode ? t('updatePatient', 'Update patient') : t('createNewPatient', 'Create new patient')}
+              sections={sections.map((section) => ({
+                id: section.id,
+                label: t(`${section.id}Section`, section.name ?? section.id),
+              }))}
+              onSectionSelect={scrollIntoView}
+              actions={renderActionButtons()}
+              auxiliary={showDummyData && <DummyDataInput setValues={props.setValues} />}
+            >
+              <PatientRegistrationContext.Provider
+                value={{
+                  identifierTypes: identifierTypes,
+                  validationSchema,
+                  values: props.values,
+                  inEditMode,
+                  setFieldValue: props.setFieldValue,
+                  setFieldTouched: props.setFieldTouched,
+                  setCapturePhotoProps,
+                  currentPhoto: photo?.imageSrc ?? null,
+                  isOffline,
+                  initialFormValues: props.initialValues,
+                  setInitialFormValues,
+                }}
+              >
+                {sections.map((section, index) => (
+                  <SectionWrapper
+                    key={`registration-section-${section.id}`}
+                    sectionDefinition={section}
+                    index={index}
+                  />
+                ))}
+              </PatientRegistrationContext.Provider>
+            </RegistrationLayout>
           </Form>
         );
       }}

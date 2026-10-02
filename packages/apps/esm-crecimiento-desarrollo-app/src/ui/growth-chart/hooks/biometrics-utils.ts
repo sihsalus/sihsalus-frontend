@@ -1,5 +1,6 @@
 export interface MeasurementData {
   eventDate: Date;
+  encounterReference?: string;
   dataValues: {
     weight: string;
     height: string;
@@ -68,6 +69,7 @@ export function buildBiometricMeasurements(
     if (!measurementsMap.has(groupKey)) {
       measurementsMap.set(groupKey, {
         eventDate: parsedDate,
+        encounterReference: resource.encounter?.reference,
         dataValues: {
           weight: '',
           height: '',

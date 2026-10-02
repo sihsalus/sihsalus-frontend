@@ -1,5 +1,7 @@
 ![Node.js CI](https://github.com/sihsalus/openmrs-esm-sihsalus-modules/workflows/Node.js%20CI/badge.svg)
 
+El formulario de antecedentes por catálogo es `ConditionConceptSetForm` de `esm-patient-common-lib`. Este módulo conserva únicamente el adaptador de permiso, traducción y conjunto de conceptos; no mantiene copias del formulario, sus campos o estilos. Los campos tienen desplazamiento propio y las acciones permanecen visibles. Se conservan los filtros clínicos, permisos y contratos de guardado de cada módulo. Validar panel estrecho y tablet, creación/edición y cambio de paciente con datos sintéticos en QLTY.
+
 # SIH SALUS ESM Modules
 
 Colección de módulos microfrontend para SIH SALUS, una distribución especializada de OpenMRS 3.x adaptada al ecosistema de salud peruano y las directrices del MINSA.
@@ -48,6 +50,14 @@ Vacíos conocidos:
 - Completar `legendConceptSetUuid` cuando exista el set real en OCL/content.
 - Conectar los componentes placeholder de prevención de cáncer y planificación familiar a hooks SWR reales cuando estén definidos los conceptos clínicos.
 - Probar formularios de salud materna contra backend actualizado: prenatal, postnatal, partograma, planificación familiar y prevención de cáncer.
+
+## Validación local
+
+`yarn workspace @sihsalus/esm-salud-materna-app typescript` comprueba tanto el
+código del módulo como sus tests `.test.ts` y `.test.tsx`. Los mocks deben respetar
+los contratos de los hooks y componentes; no se excluyen del compilador.
+Ejecutar también `yarn workspace @sihsalus/esm-salud-materna-app test`
+para validar las aserciones de comportamiento.
 
 ## TODO QA/QLTY
 

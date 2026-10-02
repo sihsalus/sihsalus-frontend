@@ -5,6 +5,8 @@ const { createRequire } = require('node:module');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+const vm = require('node:vm');
+const ts = require('typescript');
 
 const repositoryRoot = path.resolve(__dirname, '../../..');
 const appsRoot = path.join(repositoryRoot, 'packages/apps');
@@ -13,6 +15,85 @@ const i18next = createRequire(path.join(repositoryRoot, 'packages/libs/esm-trans
 
 function readCatalog(app, locale) {
   return JSON.parse(readFileSync(path.join(appsRoot, app, 'translations', `${locale}.json`), 'utf8'));
+}
+
+for (const locale of ['en', 'es']) {
+  test(`indicator validation errors remain visible in ${locale} with the unknown encounter types`, async () => {
+    const source = path.join(appsRoot, 'esm-indicadores-app/src/features/indicadores/error-handling.ts');
+    const javascript = ts.transpileModule(readFileSync(source, 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS },
+    }).outputText;
+    const exports = {};
+    vm.runInNewContext(javascript, {
+      exports,
+      require(name) {
+        assert.equal(name, '@openmrs/esm-framework');
+        return { getUserFacingErrorMessage: (_error, fallback) => fallback };
+      },
+    });
+    const instance = i18next.createInstance();
+    await instance.init({
+      lng: locale,
+      fallbackLng: false,
+      resources: { [locale]: { translation: readCatalog('esm-indicadores-app', locale) } },
+    });
+    const error = {
+      responseBody: {
+        detail: { field: 'encounter_type_uuids', unknown_uuids: ['synthetic-encounter-a', 'synthetic-encounter-b'] },
+      },
+    };
+    const message = exports.getIndicadorSaveErrorMessage(error, instance.t.bind(instance), 'fallback');
+    assert.match(message, locale === 'en' ? /^Unknown encounter types:/ : /^Hay tipos de encuentro que no existen:/);
+    assert.ok(message.includes('synthetic-encounter-a, synthetic-encounter-b'));
+    assert.ok(!message.includes('{{'));
+  });
+
+  test(`new indicator and form-preview labels resolve in ${locale} without language fallback`, async () => {
+    const indicatorLabels = {
+      countPatientsWindow: ['Patient count within age window', 'Conteo de pacientes en ventana etaria'],
+      definitionEncounterTypes: ['Encounter types:', 'Tipos de encuentro:'],
+      encounterTypes: ['Encounter types', 'Tipos de encuentro'],
+      encounterTypesHelperText: [
+        'Filter by the encounter type, for example CRED.',
+        'Filtra por el tipo de atención del evento, por ejemplo CRED.',
+      ],
+      encounterTypesRequired: [
+        'Enter at least one encounter type for the count within the age window.',
+        'Ingrese al menos un tipo de encuentro para el conteo en ventana.',
+      ],
+      noEncounterTypesFound: [
+        'No encounter types found matching these criteria.',
+        'No se encontraron tipos de encuentro con ese criterio.',
+      ],
+      noEncounterTypesSelected: ['No encounter types selected.', 'Sin tipos de encuentro seleccionados.'],
+      searchEncounterTypes: ['Search encounter types', 'Buscar tipos de encuentro'],
+    };
+    const previewLabels = {
+      errorRenderingFieldDescription: [
+        'This field could not be displayed. Check the form configuration or contact support.',
+        'No se pudo mostrar este campo. Revise la configuración del formulario o contacte con soporte.',
+      ],
+      previewActionUnavailable: [
+        'This action or custom control is not available in the schema preview.',
+        'Esta acción o control personalizado no está disponible en la vista previa del esquema.',
+      ],
+    };
+    for (const [directory, labels] of [
+      ['packages/apps/esm-indicadores-app', indicatorLabels],
+      ['packages/libs/esm-form-engine-lib', previewLabels],
+    ]) {
+      const catalog = JSON.parse(
+        readFileSync(path.join(repositoryRoot, directory, 'translations', `${locale}.json`), 'utf8'),
+      );
+      const instance = i18next.createInstance();
+      await instance.init({ lng: locale, fallbackLng: false, resources: { [locale]: { translation: catalog } } });
+      for (const [key, values] of Object.entries(labels)) {
+        const result = instance.t(key, { returnDetails: true });
+        assert.equal(result.usedLng, locale);
+        assert.equal(result.res, values[locale === 'en' ? 0 : 1], `${directory}:${key}`);
+      }
+    }
+  });
 }
 
 test('medication catalog extraction uses the catalogs loaded by the app and preserves reviewed Spanish', () => {

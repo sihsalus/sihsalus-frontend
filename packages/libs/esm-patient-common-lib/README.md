@@ -5,10 +5,27 @@ This is a library of components and utilities shared across widgets in the patie
 - Custom components for card headers, error and empty states and pagination.
 - Custom hooks for managing workspaces, concept metadata and pagination.
 
+## Shared module loading
+
+Internal files must import other library files by relative path, never through
+`@openmrs/esm-patient-common-lib`. Its public entry is a Module Federation
+singleton: an internal self-import can make its provider recursively load itself
+on a cold first login. The tooling regression checks this boundary; validate the
+assembled SPA with a fresh browser context when changing shared imports.
+
 ## Antecedents
 
+`ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.
+
+`src/antecedents/_condition-form.scss` supplies the shared workspace layout for
+Conditions and the concept-set form. The form body scrolls while
+actions remain visible, with compact field spacing and width-aware option grids.
+The app forms retain their fields, clinical filters, lifecycle and permissions.
+The local browser regression in `styles.browser.spec.js` checks both shared layouts
+at 320, 420 and 768 pixels; authenticated clinical acceptance remains in QLTY.
+
 `src/antecedents` owns the Condition data model, complete-history reader and write
-payloads used by Conditions, Consulta Externa, CRED and Salud Materna. Each view
+payloads used by Conditions and the concept-set form. Each view
 retains its clinical filters and permissions. Keep transformations and persistence
 rules here instead of copying a resource implementation into another app.
 
@@ -140,6 +157,15 @@ un botón que volvería a fallar. Emergencia conserva su política no bloqueante
 
 ## Offline visit queue contract
 
+Operational queue reads used by appointment checkout, visit closure and patient
+workflow cleanup explicitly request `cache: no-store`, including every search
+page, each pre-write read and post-write reconciliation. The deployed offline
+profile worker honors this as network-only: a cached empty queue or a cached
+entry cannot confirm a close or authorize a retry. A network failure propagates
+to the existing recovery flow; it never counts as successful cleanup. The
+worker and frontend must be deployed together. Validate partial failures,
+response loss, concurrent operators and more than one page in DEV/QLTY.
+
 `useOfflineVisit` keys its data, error and loading state by patient UUID. Changing the requested patient immediately
 returns an empty loading state, including the first committed render before effects run; late reads for the previous
 patient cannot overwrite the new context. Consumers must not receive a previous patient's visit under a new UUID.
@@ -156,3 +182,11 @@ unique, network-only REST request so a service-worker patient cache cannot
 authorize a clinical write. Both accept an optional `AbortSignal`; offline
 synchronization handlers must pass their item-scoped signal so an owner/session
 change or cancellation cannot leave an untracked guard request running.
+
+### Medication basket date intent
+
+`DrugOrderBasketItem.startDateIsExplicit` is optional for persisted-draft
+compatibility. Only `false` identifies an untouched current-time default;
+`true` identifies a selected or retained historical date. Consumers must preserve
+this marker when editing or persisting a draft. Missing markers conservatively
+retain legacy date behavior. This client-only field is not sent to OpenMRS.

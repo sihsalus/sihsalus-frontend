@@ -20,7 +20,7 @@ interface LegendTileProps {
 }
 
 const LegendTile: React.FC<LegendTileProps> = ({ conceptSetUUID: _conceptSetUUID }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const { schemasConceptSet, isLoading, error } = useSchemasConceptSet(config.legend);
 

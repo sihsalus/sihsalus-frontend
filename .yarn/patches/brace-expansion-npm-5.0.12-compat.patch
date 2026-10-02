@@ -1,0 +1,44 @@
+diff --git a/dist/commonjs/index.d.ts b/dist/commonjs/index.d.ts
+--- a/dist/commonjs/index.d.ts
++++ b/dist/commonjs/index.d.ts
+@@ -9,4 +9,5 @@
+     maxRewrites?: number;
+ };
+ export declare function expand(str: string, options?: BraceExpansionOptions): string[];
++export default expand;
+ //# sourceMappingURL=index.d.ts.map
+diff --git a/dist/commonjs/index.js b/dist/commonjs/index.js
+--- a/dist/commonjs/index.js
++++ b/dist/commonjs/index.js
+@@ -330,4 +330,11 @@
+     }
+     return acc;
+ }
++// Older minimatch releases call the CommonJS export directly, while current
++// releases use the named `expand` export. Keep both shapes available so all
++// transitive consumers can share the patched implementation.
++const legacyExpand = (str, options) => expand(str, options);
++Object.assign(legacyExpand, exports, { default: legacyExpand });
++Object.defineProperty(legacyExpand, "__esModule", { value: true });
++module.exports = legacyExpand;
+ //# sourceMappingURL=index.js.map
+diff --git a/dist/esm/index.d.ts b/dist/esm/index.d.ts
+--- a/dist/esm/index.d.ts
++++ b/dist/esm/index.d.ts
+@@ -9,4 +9,5 @@
+     maxRewrites?: number;
+ };
+ export declare function expand(str: string, options?: BraceExpansionOptions): string[];
++export default expand;
+ //# sourceMappingURL=index.d.ts.map
+diff --git a/dist/esm/index.js b/dist/esm/index.js
+--- a/dist/esm/index.js
++++ b/dist/esm/index.js
+@@ -326,4 +326,7 @@
+     }
+     return acc;
+ }
++// minimatch versions prior to v10 import brace-expansion as a default export.
++// Preserve that API while retaining the current named export.
++export default expand;
+ //# sourceMappingURL=index.js.map

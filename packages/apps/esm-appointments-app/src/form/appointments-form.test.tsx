@@ -14,11 +14,11 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import {
+  mockProviders as baseProviders,
+  mockUseAppointmentServiceData as baseServices,
   mockLocations,
   mockPatient,
-  mockProviders as baseProviders,
   mockSession,
-  mockUseAppointmentServiceData as baseServices,
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
@@ -29,6 +29,7 @@ import {
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
 } from '../constants';
+import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
@@ -200,6 +201,8 @@ vi.mock('../workload/workload.resource', async () => ({
 }));
 
 describe('AppointmentForm', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   const dateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3}Z|[+-]\d{2}:\d{2})$/;
 
   beforeEach(() => {
@@ -1038,6 +1041,36 @@ describe('AppointmentForm', () => {
     expect(payload.endDateTime).toMatch(/T23:59:59/);
   });
 
+  it.each([false, true])('saves the local calendar-selected day in the payload (all day: %s)', async (allDay) => {
+    const user = userEvent.setup();
+    vi.stubEnv('TZ', 'America/Lima');
+    expect(new Date('2031-01-01T00:00:00Z').getTimezoneOffset()).toBe(300);
+    const selectedDate = '2031-01-01';
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      allowAllDayAppointments: true,
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    renderWithSwr(
+      <SelectedDateContext.Provider value={{ selectedDate, setSelectedDate: vi.fn() }}>
+        <AppointmentForm {...defaultProps} />
+      </SelectedDateContext.Provider>,
+    );
+    await waitForLoadingToFinish();
+    if (!allDay) await user.clear(screen.getByRole('textbox', { name: /time/i }));
+    await fillRequiredAppointmentFields(user, allDay);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledOnce());
+    const payload = mockSaveAppointment.mock.calls[0][0];
+    expect(dayjs(payload.startDateTime).format('YYYY-MM-DD')).toBe(selectedDate);
+    expect(dayjs(payload.endDateTime).format('YYYY-MM-DD')).toBe(selectedDate);
+    expect(dayjs(payload.startDateTime).format('HH:mm')).toBe(allDay ? '00:00' : '09:30');
+    expect(dayjs(payload.endDateTime).format('HH:mm')).toBe(allDay ? '23:59' : '09:45');
+  });
+
   it('shows an error and does not save if conflict validation fails', async () => {
     const user = userEvent.setup();
 
@@ -1620,5 +1653,25 @@ describe('AppointmentForm', () => {
     expect(new Date(mockSaveAppointment.mock.calls[0][0].dateAppointmentScheduled).toISOString()).toBe(
       new Date(appointment.dateAppointmentScheduled).toISOString(),
     );
+  });
+
+  it('preserves the local date and instant when editing a stored appointment across the UTC year boundary', async () => {
+    vi.stubEnv('TZ', 'America/Lima');
+    const user = userEvent.setup();
+    const appointment = {
+      ...makeEditableAppointment(),
+      startDateTime: '2031-01-01T04:30:00.000Z',
+      endDateTime: '2031-01-01T04:50:00.000Z',
+    };
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledOnce());
+    const payload = mockSaveAppointment.mock.calls[0][0];
+    expect(dayjs(payload.startDateTime).format('YYYY-MM-DD')).toBe('2030-12-31');
+    expect(new Date(payload.startDateTime).toISOString()).toBe(appointment.startDateTime);
+    expect(new Date(payload.endDateTime).toISOString()).toBe(appointment.endDateTime);
   });
 });

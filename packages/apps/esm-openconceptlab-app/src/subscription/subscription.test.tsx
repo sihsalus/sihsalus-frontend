@@ -2,12 +2,13 @@ import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-fra
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithSwr } from 'test-utils';
+import type { Mock } from 'vitest';
 import { mockSubscription } from '../../test-utils/mocks/openconceptlab.mock';
 
 import Subscription from './subscription.component';
 import { deleteSubscription, updateSubscription } from './subscription.resource';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockUpdateSubscription = vi.mocked(updateSubscription);
 const mockDeleteSubscription = vi.mocked(deleteSubscription);
 const mockShowSnackbar = vi.mocked(showSnackbar);
@@ -30,7 +31,7 @@ describe('Subscription component', () => {
 
     expect(screen.getByText('Setup Subscription')).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Unsubscribe' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'danger Unsubscribe' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Unsubscribe' })).toBeDisabled();
   });
 
   it('renders the subscription if a subscription exists', async () => {
@@ -45,7 +46,7 @@ describe('Subscription component', () => {
     expect(
       screen.getByLabelText('Disable validation (should be used with care for well curated collections or sources)'),
     ).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'danger Unsubscribe' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Unsubscribe' })).toBeEnabled();
   });
 
   it('allows adding a new subscription', async () => {
@@ -158,7 +159,7 @@ describe('Subscription component', () => {
     await waitForLoadingToFinish();
     await waitForLoadingSubscription();
 
-    const unsubscribeButton = screen.getByRole('button', { name: 'danger Unsubscribe' });
+    const unsubscribeButton = screen.getByRole('button', { name: 'Unsubscribe' });
 
     mockDeleteSubscription.mockResolvedValueOnce({ status: 204 } as unknown as FetchResponse);
 

@@ -1,7 +1,6 @@
 {
-  "extends": "../../tooling/tsconfig.app.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "skipLibCheck": true,
     "paths": {
       "@openmrs/esm-globals": ["../../../node_modules/@openmrs/esm-globals/dist/index.d.ts"],

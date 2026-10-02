@@ -1,4 +1,5 @@
-import { launchPatientWorkspace, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
+import { launchStartVisitPrompt } from './launchStartVisitPrompt';
+import { launchPatientWorkspace } from './workspaces';
 
 export const clinicalFormsWorkspace = 'clinical-forms-workspace';
 export const formEntryWorkspace = 'patient-form-entry-workspace';

@@ -1,8 +1,7 @@
 {
-  "extends": "../../tooling/tsconfig.app.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "paths": {
       "@openmrs/esm-globals/src/public": ["../../../node_modules/@openmrs/esm-globals/dist/public"],
       "@openmrs/*": ["../../../node_modules/@openmrs/*"],

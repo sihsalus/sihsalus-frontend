@@ -158,7 +158,9 @@ it('loads all ten most recent charts without scrolling and never reads the disca
   );
   expect(openmrsFetch).toHaveBeenCalledTimes(10);
   expect(
-    vi.mocked(openmrsFetch).mock.calls.map(([url]) => new URL(String(url), 'http://localhost').pathname.split('/').at(-1)),
+    vi
+      .mocked(openmrsFetch)
+      .mock.calls.map(([url]) => new URL(String(url), 'http://localhost').pathname.split('/').at(-1)),
   ).toEqual(expectedPatientUuids);
 });
 

@@ -97,17 +97,9 @@ export interface PatientSearchResponse {
   totalResults: number;
 }
 
-export interface AdvancedPatientSearchState {
-  query: string;
-  gender: 'any' | 'male' | 'female' | 'other' | 'unknown';
-  postcode: string;
-  age: number | null;
-  ageUnit: PatientAgeUnit;
-  activeVisitStatus: 'any' | 'active' | 'inactive';
-  attributes: {
-    [key: string]: string;
-  };
-}
+export type AdvancedPatientSearchState = import('zod').infer<
+  ReturnType<typeof import('../patient-search-page/refine-search/refine-search.validation').createRefineSearchSchema>
+>;
 
 export type PatientAgeUnit = 'days' | 'months' | 'years';
 

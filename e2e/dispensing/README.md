@@ -1,121 +1,60 @@
-# Dispensing E2E Tests
+# Dispensing E2E tests
 
-This directory contains the Playwright E2E suite for `@sihsalus/esm-dispensing-app`.
-It is part of the root monorepo Playwright runner and lives under `e2e/dispensing/`.
+This directory preserves the Playwright scenarios for
+`@sihsalus/esm-dispensing-app`. Read the [E2E guide](../README.md),
+[development setup](../../docs/development/README.md), and
+[contribution requirements](../../CONTRIBUTING.md) before changing it.
 
-## Getting Started
+## Execution status
 
-Please ensure that you have followed the basic installation guide in the [root README](../README.md). Once everything is set up, make sure the dev server is running by using:
+**Quarantined.** Dispensing is not in the central runner's allowlist and is not
+part of the browser CI matrix. Its [catalog entry](../suite-catalog.json) records
+unresolved type errors and unvalidated order/visit mutations.
+Neither a documentation change nor a passing root typecheck promotes this suite.
 
-```sh
-yarn start 
-```
+Do not invoke its Playwright config directly to bypass the runner, point it at
+a public demo backend, or use real patients. The root `yarn test:e2e` command
+selects the clinical suite; it does not run Dispensing. The root E2E TypeScript
+configuration also excludes this suite, so its success does not validate these
+files.
 
-Then, in a separate terminal, run either the full root E2E suite or only the dispensing suite:
+## Scenarios and ownership
 
-```sh
-yarn test:e2e --headed
-# or only dispensing
-yarn playwright test -c e2e/dispensing/playwright.config.ts --headed
-```
+| Scenario             | Spec                                                               |
+| -------------------- | ------------------------------------------------------------------ |
+| Active prescriptions | [active-prescriptions.spec.ts](specs/active-prescriptions.spec.ts) |
+| Dispense medication  | [dispense-medication.spec.ts](specs/dispense-medication.spec.ts)   |
+| Close a prescription | [close-prescription.spec.ts](specs/close-prescription.spec.ts)     |
+| Pause a prescription | [pause-prescription.spec.ts](specs/pause-prescription.spec.ts)     |
 
-By default, the test suite will run against the http://localhost:8080. You can override this by exporting `E2E_BASE_URL` environment variables beforehand:
+- `commands/` contains the patient, provider, visit, encounter and drug-order operations.
+- `core/` contains the runner fixtures and global setup.
+- `fixtures/` contains shared setup helpers and the API fixture.
+- `pages/` contains UI locators and actions.
+- `specs/` contains the scenarios listed above.
+- `types/` contains suite-local types.
 
-```sh
-# Ex: Set the server URL to dev3:
-export E2E_BASE_URL=https://dev3.openmrs.org/openmrs
+## Requirements before promotion
 
-# Run all root e2e tests:
+Resolve the type errors and validate each mutating contract, including partial
+setup and cleanup failure. Coordinate an explicit non-production target,
+authorized test account, synthetic fixtures and required privileges. Follow the
+[fixture recovery contract](../../docs/development/synthetic-fixtures.md) and
+retain recoverable state until cleanup is verified.
 
-```sh
-yarn test:e2e --headed
-```
+Then review the catalog, runner allowlist, typecheck and CI changes together.
+Passing discovery or local mocks is not evidence of clinical acceptance against
+an OpenMRS backend. Credentials belong in the existing local secret mechanism
+or CI secrets, never in a committed `.env` file.
 
-To run a specific test by title:
+## Dependencies and evidence
 
-```sh
-yarn playwright test -c e2e/dispensing/playwright.config.ts --headed -g "title of the test"
-```
+Playwright is managed through the root [package manifest](../../package.json)
+and [lockfile](../../yarn.lock). There is no Bamboo Dockerfile at the location
+referenced by the previous guide. Follow the repository's immutable installation
+and validation procedure when changing the runner version.
 
-Read the [e2e testing guide](https://o3-docs.openmrs.org/docs/frontend-modules/end-to-end-testing) to learn more about End-to-End tests in this project.
-
-### Updating Playwright
-
-The Playwright version in the [Bamboo e2e Dockerfile](e2e/support/bamboo/playwright.Dockerfile#L2) and the `package.json` file must match. If you update the Playwright version in one place, you must update it in the other.
-
-## Troubleshooting
-
-If you notice that your local version of the application is not working or that there's a mismatch between what you see locally versus what's in [dev3](https://dev3.openmrs.org/openmrs/spa), you likely have outdated versions of core libraries. To update core libraries, run the following commands:
-
-Check [this documentation](https://playwright.dev/docs/running-tests#command-line) for more running options.  
-
-It is also highly recommended to install the companion VS Code extension:
-https://playwright.dev/docs/getting-started-vscode
-
-## Writing New Tests
-
-In general, it is recommended to read through the official [Playwright docs](https://playwright.dev/docs/intro)
-before writing new test cases. The project uses the official Playwright test runner and,
-generally, follows a very simple project structure:
-
-```
-e2e/dispensing
-|__ commands
-|   ^ Contains "commands" (simple reusable functions) that can be used in test cases/specs,
-|     e.g. generate a random patient.
-|__ core
-|   ^ Contains code related to the test runner itself, e.g. setting up the custom fixtures.
-|     You probably need to touch this infrequently.
-|__ fixtures
-|   ^ Contains fixtures (https://playwright.dev/docs/test-fixtures) which are used
-|     to run reusable setup/teardown tasks
-|__ pages
-|   ^ Contains page object model classes for interacting with the frontend.
-|     See https://playwright.dev/docs/test-pom for details.
-|__ specs
-|   ^ Contains the actual test cases/specs. New tests should be placed in this folder.
-|__ support
-    ^ Contains support files that requires to run e2e tests, e.g. docker compose files.
-```
-
-When you want to write a new dispensing test case, start by creating a new spec in `./specs`.
-Depending on what you want to achieve, you might want to create new fixtures and/or
-page object models. To see examples, have a look at the existing code to see how these different concepts play together.
-
-## Open reports from GitHub Actions / Bamboo
-To download the report from the GitHub action/Bamboo plan, follow these steps:
-1. Go to the artifact section of the action/plan and locate the report file.
-2. Download the report file and unzip it using a tool of your choice.
-3. Open the index.html file in a web browser to view the report. 
-The report will show you a full summary of your tests, including information on which 
-tests passed, failed, were skipped, or were flaky. You can filter the report by browser 
-and explore the details of individual tests, including any errors or failures, video 
-recordings, and the steps involved in each test. Simply click on a test to view its details.
-
-## Debugging Tests
-Refer to [this documentation](https://playwright.dev/docs/debug) on how to debug a test.
-
-## Configuration
-This is very much underdeveloped/WIP. At the moment, there exists a (git-shared) `.env`
-file which can be used for configuring certain test attributes. This is most likely
-about to change in the future. Stay tuned for updates!
-
-## Github Actions integration
-The e2e.yml workflow is made up of two jobs: one for running on pull requests (PRs) and
-one for running on commits.
-1. When running on PRs, the workflow will start the dev server, use dev3.openmrs.org as the backend, 
-and run tests only on chromium. This is done in order to quickly provide feedback to the developer. 
-The tests are designed to generate their own data and clean up after themselves once they are finished. 
-This ensures that the tests will have minimum effect from changes made to dev3 by other developers. 
-In the future, we plan to use a docker container to run the tests in an isolated environment once we 
-figure out a way to spin up the container within a small amount of time.
-
-2. When running on commits, the workflow will spin up a docker container and run the dev server against
-it in order to provide a known and isolated environment. In addition, tests will be run on multiple 
-browsers (chromium, firefox, and WebKit) to ensure compatibility.
-
-## Troubleshooting tips
-On MacOS, you might run into the following error:
-```browserType.launch: Executable doesn't exist at /Users/<user>/Library/Caches/ms-playwright/chromium-1015/chrome-mac/Chromium.app/Contents/MacOS/Chromium```
-In order to fix this, you can attempt to force the browser reinstallation by running:
-```PLAYWRIGHT_BROWSERS_PATH=/Users/$USER/Library/Caches/ms-playwright npx playwright install```
+The [Playwright configuration](playwright.config.ts) retains traces and videos
+on failure and uses authentication state. Those artifacts can contain sensitive
+data; review and sanitize evidence before sharing. No browser execution or
+successful clinical cleanup is claimed by this documentation.

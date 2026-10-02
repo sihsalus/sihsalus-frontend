@@ -2,9 +2,10 @@ import { openmrsFetch } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import type { Mock } from 'vitest';
 import PatientListDetailsWorkspace, { type PatientListDetailsWorkspaceProps } from './patient-list-details.workspace';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 
 void React;
 

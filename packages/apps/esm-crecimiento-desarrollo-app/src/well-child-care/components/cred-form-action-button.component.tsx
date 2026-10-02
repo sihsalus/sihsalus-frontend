@@ -9,7 +9,7 @@ interface CREDFormActionButtonProps {
 }
 
 const CREDFormActionButton: React.FC<CREDFormActionButtonProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const { nextDueControl } = useCREDSchedule(patientUuid);
   const launchCREDFormsWorkspace = useLaunchWorkspaceRequiringVisit<{
     control: typeof nextDueControl;

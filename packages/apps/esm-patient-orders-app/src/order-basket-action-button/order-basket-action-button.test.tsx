@@ -9,13 +9,14 @@ import { render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import OrderBasketActionButton from './order-basket-action-button.extension';
 
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUsePatient = vi.mocked(usePatient);
-const mockUseWorkspaces = useWorkspaces as vi.Mock;
+const mockUseWorkspaces = useWorkspaces as Mock;
 const MockActionMenuButton = vi.mocked(ActionMenuButton);
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as Mock;
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
 MockActionMenuButton.mockImplementation(({ handler, label, tagContent }) => (

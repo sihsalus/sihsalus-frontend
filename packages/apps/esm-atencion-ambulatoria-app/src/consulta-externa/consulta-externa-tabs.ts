@@ -9,7 +9,7 @@ export const consultaExternaTabIds = [
   'triage',
   'antecedents',
   'anamnesis',
-  'soap',
+  'physicalExam',
   'complementaryTests',
   'diagnosis',
   'treatment',

@@ -2,6 +2,7 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import AddNewRequestWorkspace from './add-request-form.workspace';
 
@@ -60,11 +61,11 @@ describe('AddNewProcedureStepWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetAllMocks();
-    (api.useOrthancConfigurations as vi.Mock).mockReturnValue({
+    (api.useOrthancConfigurations as Mock).mockReturnValue({
       data: [{ id: 1, orthancBaseUrl: 'http://orthanc.local', orthancProxyUrl: '' }],
     });
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({ mutate: vi.fn() });
-    (api.saveRequestProcedure as vi.Mock).mockResolvedValue({});
+    (api.useRequestsByPatient as Mock).mockReturnValue({ mutate: vi.fn() });
+    (api.saveRequestProcedure as Mock).mockResolvedValue({});
   });
 
   it('renders form fields correctly', () => {
@@ -96,6 +97,7 @@ describe('AddNewProcedureStepWorkspace', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Save and Close/i }));
     expect(await screen.findAllByText(/required/i)).not.toHaveLength(0);
+    expect(await screen.findByText('Please select a valid Orthanc server')).toBeInTheDocument();
   });
 
   it('generates accession number when clicking button', async () => {
@@ -160,7 +162,7 @@ describe('AddNewProcedureStepWorkspace', () => {
 
   it('shows error snackbar on save failure', async () => {
     const user = userEvent.setup();
-    (api.saveRequestProcedure as vi.Mock).mockRejectedValue(new Error('Save failed'));
+    (api.saveRequestProcedure as Mock).mockRejectedValue(new Error('Save failed'));
 
     render(<AddNewRequestWorkspace {...defaultProps} />);
 

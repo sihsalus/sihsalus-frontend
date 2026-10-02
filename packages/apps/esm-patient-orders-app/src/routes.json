@@ -42,8 +42,7 @@
       "privileges": "app:hoja.clinica.ordenes",
       "meta": {
         "slot": "patient-chart-orders-dashboard-slot",
-        "path": "Orders",
-        "hideDashboardTitle": true
+        "path": "Orders"
       },
       "order": 4
     },

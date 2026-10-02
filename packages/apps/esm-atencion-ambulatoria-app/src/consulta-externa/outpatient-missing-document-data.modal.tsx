@@ -62,8 +62,8 @@ function getTabLabel(t: TFunction, tabId: ConsultaExternaTabId): string {
       return t('triageAndChiefComplaint', 'Triajes previos');
     case 'anamnesis':
       return t('anamnesis', 'Anamnesis');
-    case 'soap':
-      return t('soapNotes', 'Examen físico / SOAP');
+    case 'physicalExam':
+      return t('physicalExam', 'Examen físico');
     case 'complementaryTests':
       return t('complementaryTests', 'Pruebas complementarias');
     case 'diagnosis':

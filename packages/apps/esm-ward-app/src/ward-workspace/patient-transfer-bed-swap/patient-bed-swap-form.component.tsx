@@ -34,7 +34,7 @@ export default function PatientBedSwapForm({
     () =>
       z.object({
         bedId: z.number({
-          required_error: t('pleaseSelectBed', 'Please select a bed'),
+          error: (issue) => (issue.input === undefined ? t('pleaseSelectBed', 'Please select a bed') : undefined),
         }),
       }),
     [t],

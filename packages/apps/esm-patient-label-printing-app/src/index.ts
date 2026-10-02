@@ -9,6 +9,11 @@ export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 }
 
+export const printPatientIdentityModal = getAsyncLifecycle(
+  () => import('./print-identifier-sticker/print-patient-identity.modal'),
+  { featureName: 'print-patient-identity', moduleName },
+);
+
 export const printIdentifierStickerActionButton = getAsyncLifecycle(
   () => import('./print-identifier-sticker/print-identifier-sticker-action-button.component'),
   {

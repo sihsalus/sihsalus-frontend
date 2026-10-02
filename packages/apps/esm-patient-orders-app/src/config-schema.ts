@@ -22,7 +22,8 @@ export const configSchema = {
     _default: [
       {
         orderTypeUuid: 'f9c5d0b8-8b5a-11e5-8e9b-12345678a01a',
-        label: 'Órdenes de radiología',
+        // t('Medical imaging orders', 'Medical imaging orders')
+        label: 'Medical imaging orders',
         icon: 'omrs-icon-image-medical',
         orderableConceptSets: [],
       },

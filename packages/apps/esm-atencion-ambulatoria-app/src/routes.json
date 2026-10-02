@@ -6,6 +6,17 @@
   },
   "extensions": [
     {
+      "name": "historical-outpatient-documents",
+      "slot": "visit-summary-panels",
+      "component": "historicalOutpatientDocuments",
+      "privileges": ["app:hoja.clinica.visitas", "app:hoja.clinica.consultaExterna"],
+      "online": true,
+      "offline": false,
+      "meta": {
+        "title": "outpatientHistoricalDocuments"
+      }
+    },
+    {
       "name": "clinical-encounter",
       "slot": "patient-chart-clinical-encounter-slot",
       "component": "inPatientClinicalEncounter",
@@ -27,7 +38,6 @@
         "title": "consultaExterna",
         "path": "consulta-externa",
         "icon": "omrs-icon-document",
-        "hideDashboardTitle": true,
         "layoutMode": "anchored"
       }
     },
@@ -37,6 +47,14 @@
       "component": "consultaExternaDashboard",
       "privileges": "app:hoja.clinica.consultaExterna",
       "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "antecedents-dashboard",
+      "slot": "patient-chart-antecedents-slot",
+      "component": "antecedentsDashboard",
+      "privileges": "app:hoja.clinica.condiciones",
       "online": true,
       "offline": false
     },
@@ -59,7 +77,7 @@
         "columns": 1,
         "columnSpan": 1,
         "slot": "patient-chart-social-history-dashboard-slot",
-        "title": "socialHistory",
+        "title": "antecedents",
         "path": "social-history-dashboard",
         "icon": "omrs-icon-sticky-note-add",
         "layoutMode": "anchored"
@@ -68,24 +86,12 @@
   ],
   "modals": [
     {
-      "name": "ambulatoria-condition-delete-confirmation-dialog",
-      "component": "conditionFilterDeleteConfirmationDialog",
-      "privileges": "app:hoja.clinica.historiaSocial.editar"
-    },
-    {
       "name": "outpatient-missing-document-data-dialog",
       "component": "outpatientMissingDocumentDataModal",
       "privileges": "app:hoja.clinica.consultaExterna"
     }
   ],
   "workspaces": [
-    {
-      "name": "conditions-filter-form-workspace",
-      "component": "conditionsFilterWorkspace",
-      "title": "Antecedentes",
-      "type": "form",
-      "privileges": "app:hoja.clinica.historiaSocial.editar"
-    },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",

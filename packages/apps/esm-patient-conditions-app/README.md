@@ -1,5 +1,7 @@
 # esm-patient-conditions-app
 
+Los formularios de antecedentes comparten el layout de `esm-patient-common-lib`: campos con desplazamiento propio, espaciado compacto y acciones siempre visibles. Se conservan los filtros clínicos, permisos y contratos de guardado de cada módulo. Validar panel estrecho y tablet, creación/edición y cambio de paciente con datos sintéticos en QLTY.
+
 The conditions widget. It provides a tabular overview of the conditions recorded for a patient as well as a form for recording new conditions.
 
 The history reader accepts optional REST descriptions and dates without inventing a
@@ -41,10 +43,20 @@ write protection in the backend; those remain acceptance requirements in DEV/QLT
 ## Consulta Externa consumer
 
 `conditions-details-widget` also supplies `consulta-externa-antecedents-slot`, owned by
-`@sihsalus/esm-atencion-ambulatoria-app`. It reuses the same tables, REST Condition
-reader and Workspace2 forms as **Antecedentes y problemas** at `/chart/Antecedentes`.
+`@sihsalus/esm-atencion-ambulatoria-app`. It reuses the same compact table, REST Condition
+reader and Workspace2 form as **Antecedentes** at `/chart/Antecedentes`.
+The table includes all antecedent types and clinical statuses by default, including
+past diagnoses, with one status filter and one registration action. Types and
+precise statuses remain visible; no records are reclassified or migrated.
 The independent dashboard keeps its original `patient-chart-conditions-dashboard-slot`;
 separate slot names preserve each module's registration and configuration ownership.
+Its dashboard wrapper mounts the optional `patient-chart-antecedents-slot` composition
+from Consulta Externa, which supplies the same Conditions / Social history tabs as
+Consulta Externa itself. Without that extension (including offline), it still renders
+the conditions table. The composition keeps each section's original read/edit guards.
+The old social-history URL remains registered but its sidebar link is suppressed
+when the conditions entry is assigned; social-only users retain one **Antecedents**
+link to their original route. Navigation ordering still belongs to `config/frontend.json`.
 
 The consumer passes the current FHIR `patient` and matching `patientUuid` in slot
 state. The extension requires `app:hoja.clinica.condiciones`; registering, editing or

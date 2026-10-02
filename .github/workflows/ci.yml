@@ -198,6 +198,9 @@ jobs:
       - name: Verify compiled styles in Chromium
         run: yarn test:styles
 
+      - name: Verify bundled form editor in Chromium
+        run: yarn test:form-builder-browser
+
   security-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 20

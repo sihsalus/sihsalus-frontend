@@ -5,10 +5,10 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 import {
   ConfigMock,
   diagnosisSearchResponse,
@@ -22,6 +22,7 @@ import { type ConfigObject, configSchema } from '../config-schema';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   assertCanonicalVisitNoteCanBeCreated,
+  fetchDiagnosisConceptByUuid,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   saveCanonicalVisitNote,
@@ -91,6 +92,7 @@ function renderVisitNotesForm(
 }
 
 const mockFetchDiagnosisConceptsByName = vi.mocked(fetchDiagnosisConceptsByName);
+const mockFetchDiagnosisConceptByUuid = vi.mocked(fetchDiagnosisConceptByUuid);
 const mockFetchPrestacionalConceptsByName = vi.mocked(fetchPrestacionalConceptsByName);
 const mockAssertCanonicalVisitNoteCanBeCreated = vi.mocked(assertCanonicalVisitNoteCanBeCreated);
 const mockSaveCanonicalVisitNote = vi.mocked(saveCanonicalVisitNote);
@@ -124,6 +126,7 @@ vi.mock('./visit-notes.resource', async () => ({
   // Pure P/D/R mapping helpers carry no side effects — use the real ones.
   ...(await vi.importActual<typeof import('./visit-notes.resource')>('./visit-notes.resource')),
   fetchDiagnosisConceptsByName: vi.fn(),
+  fetchDiagnosisConceptByUuid: vi.fn(),
   fetchPrestacionalConceptsByName: vi.fn(),
   assertCanonicalVisitNoteCanBeCreated: vi.fn(),
   updateVisitNote: vi.fn(),
@@ -158,6 +161,11 @@ beforeEach(() => {
   mockUseSession.mockReturnValue(mockSessionDataResponse.data);
   mockUseConfig.mockReturnValue(getMockConfig());
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
+  mockFetchDiagnosisConceptByUuid.mockResolvedValue({
+    uuid: '789',
+    display: 'Diabetes Mellitus',
+    names: [{ display: 'E149', conceptNameType: 'SHORT' }],
+  });
   mockFetchPrestacionalConceptsByName.mockResolvedValue([]);
   mockAssertCanonicalVisitNoteCanBeCreated.mockResolvedValue();
   mockUseCanonicalVisitNoteEncounter.mockReturnValue({
@@ -245,8 +253,8 @@ test('renders outpatient clinical context as a non-editable visit summary', () =
   expect(screen.getByText(/Test Provider/i)).toBeInTheDocument();
   expect(screen.getByText(/CMP-12345/i)).toBeInTheDocument();
   expect(screen.getByText(/clinical summary/i)).toBeInTheDocument();
-  expect(screen.getByText(/chief complaint/i)).toBeInTheDocument();
-  expect(screen.getByText(/objective \/ physical exam/i)).toBeInTheDocument();
+  expect(screen.queryByText(/chief complaint/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/objective \/ physical exam/i)).not.toBeInTheDocument();
   expect(screen.getByText(/read-only/i)).toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /chief complaint/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /objective \/ physical exam/i })).not.toBeInTheDocument();
@@ -318,11 +326,11 @@ test('keeps the resolved form mounted while revalidating and blocks saving until
 });
 
 test('shows saved outpatient context as values that cannot be edited', async () => {
+  const user = userEvent.setup();
   mockUseVisitNoteClinicalContext.mockReturnValue({
     clinicalContext: {
       chiefComplaint: 'Fever and cough',
       biologicalFunctions: 'Appetite: decreased',
-      plan: 'Hydration and follow-up',
     },
     error: undefined,
     isLoading: false,
@@ -331,9 +339,11 @@ test('shows saved outpatient context as values that cannot be edited', async () 
 
   renderVisitNotesForm();
 
-  await waitFor(() => expect(screen.getByText('Fever and cough')).toBeInTheDocument());
+  await user.click(screen.getByRole('button', { name: /clinical summary/i }));
+  expect(screen.getByText('Fever and cough')).toBeInTheDocument();
   expect(screen.getByText('Appetite: decreased')).toBeInTheDocument();
-  expect(screen.getByText('Hydration and follow-up')).toBeInTheDocument();
+  expect(screen.queryByText('Hydration and follow-up')).not.toBeInTheDocument();
+  expect(screen.queryByText('SOAP assessment')).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /chief complaint/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /biological functions/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /treatment plan/i })).not.toBeInTheDocument();
@@ -1010,6 +1020,62 @@ test('updates existing visit note when in edit mode', async () => {
     expect.objectContaining(updatePayload),
   );
   expect(mockUpdateVisitNote.mock.calls[0][2]).not.toHaveProperty('visit');
+});
+
+test('keeps saved outpatient diagnoses valid when editing only the note', async () => {
+  const user = userEvent.setup();
+  const config = getMockConfig();
+  mockUseConfig.mockReturnValue(config);
+  mockUpdateVisitNote.mockResolvedValue({ status: 200 } as Awaited<ReturnType<typeof updateVisitNote>>);
+  const encounter = {
+    id: 'synthetic-encounter',
+    uuid: 'synthetic-encounter',
+    rawDatetime: '2026-09-23T10:00:00.000Z',
+    obs: [
+      { concept: { uuid: config.visitNoteConfig.encounterNoteTextConceptUuid }, value: 'Original note' },
+      {
+        concept: { uuid: config.visitNoteConfig.codigoPrestacionalConceptUuid },
+        formFieldPath: 'codigo-prestacional',
+        value: { uuid: 'synthetic-service-code', display: 'Synthetic service' },
+      },
+    ],
+    diagnoses: [
+      {
+        uuid: 'synthetic-encounter-diagnosis',
+        diagnosis: { coded: { uuid: '789', display: 'Diabetes Mellitus' } },
+        certainty: 'CONFIRMED',
+        rank: 1,
+        display: 'Diabetes Mellitus',
+      },
+    ],
+  };
+
+  renderVisitNotesForm(
+    { formContext: 'editing', encounter: encounter as unknown as EditableVisitNoteEncounter },
+    {
+      visitContext: {
+        ...defaultProps.groupProps.visitContext,
+        visitType: { uuid: config.visitNoteConfig.outpatientVisitTypeUuid },
+      } as never,
+    },
+  );
+
+  await waitFor(() => expect(mockFetchDiagnosisConceptByUuid).toHaveBeenCalledWith('789'));
+  expect(screen.queryByLabelText('Next appointment')).not.toBeInTheDocument();
+  const note = screen.getByRole('textbox', { name: /Additional notes/i });
+  await user.clear(note);
+  await user.type(note, 'Updated note');
+  const save = screen.getByRole('button', { name: /Save and close/i });
+  await selectCodigoPrestacional(user);
+  await waitFor(() => expect(save).toBeEnabled());
+  await user.click(save);
+
+  await waitFor(() => expect(mockUpdateVisitNote).toHaveBeenCalledOnce());
+  expect(mockUpdateVisitNote.mock.calls[0][2].obs).not.toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ concept: { uuid: config.visitNoteConfig.nextAppointmentConceptUuid } }),
+    ]),
+  );
 });
 
 test('handles existing diagnoses correctly when in edit mode', async () => {

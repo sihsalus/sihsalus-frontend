@@ -16,93 +16,43 @@ import {
 import { AddIcon, formatPartialDate, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   CardHeader,
-  EmptyState,
   ErrorState,
   getAntecedentTypeLabel,
   launchPatientWorkspace,
   matchesConditionStatusFilter,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import type { TFunction } from 'i18next';
 import { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConditionTableHeader, useConditions, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
-import {
-  type ConditionSection,
-  type ConditionStatusFilter,
-  defaultAntecedentTypeBySection,
-  defaultClinicalStatusBySection,
-  defaultStatusFilterBySection,
-  filterConditionsBySection,
-  workspaceNamesBySection,
-} from './conditions-categories';
+import { type ConditionStatusFilter, workspaceNamesBySection } from './conditions-categories';
 import styles from './conditions-detailed-summary.scss';
 
 interface ConditionsDetailedSummaryProps {
   patient: fhir.Patient;
-  section?: ConditionSection;
 }
 
-const getSectionCopy = (section: ConditionSection, t: TFunction) => {
-  switch (section) {
-    case 'active-problems':
-      return {
-        addIconDescription: t('addActiveProblem', 'Add active problem'),
-        ariaLabel: t('activeProblemsSummary', 'Active problems summary'),
-        displayText: t('activeProblems_lower', 'active problems'),
-        emptyText: t('noActiveProblemsToDisplay', 'No active problems to display'),
-        headerTitle: t('activeProblems', 'Active problems'),
-        recordText: t('recordActiveProblem', 'Record active problem'),
-      };
-    case 'past-diagnoses':
-      return {
-        addIconDescription: t('addPastDiagnosis', 'Add past diagnosis'),
-        ariaLabel: t('pastDiagnosesSummary', 'Past diagnoses summary'),
-        displayText: t('pastDiagnoses_lower', 'past diagnoses'),
-        emptyText: t('noPastDiagnosesToDisplay', 'No past diagnoses to display'),
-        headerTitle: t('pastDiagnoses', 'Past diagnoses'),
-        recordText: t('recordPastDiagnosis', 'Record past diagnosis'),
-      };
-    case 'other-antecedents':
-    case 'antecedents':
-    default:
-      return {
-        addIconDescription: t('addAntecedent', 'Add antecedent'),
-        ariaLabel: t('antecedentsSummary', 'Antecedents summary'),
-        displayText: t('antecedents_lower', 'antecedents'),
-        emptyText: t('noAntecedentsToDisplay', 'No antecedents to display'),
-        headerTitle: t('antecedents', 'Antecedents'),
-        recordText: t('recordAntecedent', 'Record antecedent'),
-      };
-  }
-};
-
-function ConditionsDetailedTable({ patient, section = 'antecedents' }: ConditionsDetailedSummaryProps) {
-  const { t } = useTranslation();
+function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
+  const { t } = useTranslation('@sihsalus/esm-patient-conditions-app');
   const statusFilterId = useId();
   const session = useSession();
   const canEdit = userHasAccess('app:hoja.clinica.condiciones.editar', session?.user);
-  const sectionCopy = getSectionCopy(section, t);
-  const displayText = sectionCopy.displayText;
-  const headerTitle = sectionCopy.headerTitle;
-  const defaultFilter = defaultStatusFilterBySection[section];
-  const [filter, setFilter] = useState<ConditionStatusFilter>(defaultFilter);
+  const headerTitle = t('antecedents', 'Antecedents');
+  const [filter, setFilter] = useState<ConditionStatusFilter>('All');
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
 
   const { conditions, error, isLoading, isValidating } = useConditions(patient.id);
 
-  const sectionConditions = useMemo(() => filterConditionsBySection(conditions ?? [], section), [conditions, section]);
-
-  const filteredConditions = useMemo(() => {
-    if (filter === 'All') {
-      return sectionConditions;
-    }
-
-    return sectionConditions.filter((condition) => matchesConditionStatusFilter(condition.clinicalStatus, filter));
-  }, [filter, sectionConditions]);
+  const filteredConditions = useMemo(
+    () =>
+      (conditions ?? []).filter(
+        (condition) => filter === 'All' || matchesConditionStatusFilter(condition.clinicalStatus, filter),
+      ),
+    [filter, conditions],
+  );
 
   const headers: Array<ConditionTableHeader> = useMemo(
     () => [
@@ -158,16 +108,11 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
   const { sortedRows, sortRow, onHeaderClick } = useConditionsSorting(headers, tableRows);
 
   const launchConditionsForm = useCallback(() => {
-    const defaultAntecedentType = defaultAntecedentTypeBySection[section];
-    const defaultClinicalStatus = defaultClinicalStatusBySection[section];
-
-    launchPatientWorkspace(workspaceNamesBySection[section], {
-      ...(defaultAntecedentType ? { defaultAntecedentType, lockedAntecedentType: true } : {}),
-      ...(defaultClinicalStatus ? { defaultClinicalStatus } : {}),
+    launchPatientWorkspace(workspaceNamesBySection.antecedents, {
       formContext: 'creating',
-      workspaceTitle: sectionCopy.recordText,
+      workspaceTitle: t('recordAntecedent', 'Record antecedent'),
     });
-  }, [section, sectionCopy.recordText]);
+  }, [t]);
 
   const handleConditionStatusChange = ({ selectedItem }) => setFilter(selectedItem.id);
 
@@ -189,8 +134,8 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
               <Dropdown
                 id={statusFilterId}
                 initialSelectedItem={{
-                  id: defaultFilter,
-                  label: t(defaultFilter.toLowerCase(), defaultFilter),
+                  id: 'All',
+                  label: t('all', 'All'),
                 }}
                 label=""
                 titleText={t('show', 'Show') + ':'}
@@ -210,7 +155,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
               <Button
                 kind="ghost"
                 renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-                iconDescription={sectionCopy.addIconDescription}
+                iconDescription={t('addAntecedent', 'Add antecedent')}
                 onClick={launchConditionsForm}
               >
                 {t('add', 'Add')}
@@ -230,7 +175,11 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <>
               <TableContainer>
-                <Table {...getTableProps()} aria-label={sectionCopy.ariaLabel} className={styles.table}>
+                <Table
+                  {...getTableProps()}
+                  aria-label={t('antecedentsSummary', 'Antecedents summary')}
+                  className={styles.table}
+                >
                   <TableHead>
                     <TableRow>
                       {headers.map((header) => {
@@ -279,7 +228,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
                 <div className={styles.tileContainer}>
                   <Tile className={styles.tile}>
                     <div className={styles.tileContent}>
-                      <p className={styles.content}>{sectionCopy.emptyText}</p>
+                      <p className={styles.content}>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
                       <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
                     </div>
                   </Tile>
@@ -292,22 +241,19 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
     );
   }
   return (
-    <EmptyState
-      displayText={displayText}
-      headerTitle={headerTitle}
-      launchForm={canEdit ? launchConditionsForm : undefined}
-    />
+    <div className={styles.emptyState}>
+      <p>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
+      {canEdit ? (
+        <Button kind="ghost" size="sm" renderIcon={AddIcon} onClick={launchConditionsForm}>
+          {t('recordAntecedent', 'Record antecedent')}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
 function ConditionsDetailedSummary({ patient }: ConditionsDetailedSummaryProps) {
-  return (
-    <>
-      <ConditionsDetailedTable patient={patient} section="active-problems" />
-      <ConditionsDetailedTable patient={patient} section="past-diagnoses" />
-      <ConditionsDetailedTable patient={patient} section="other-antecedents" />
-    </>
-  );
+  return <ConditionsDetailedTable key={patient.id} patient={patient} />;
 }
 
 export default ConditionsDetailedSummary;

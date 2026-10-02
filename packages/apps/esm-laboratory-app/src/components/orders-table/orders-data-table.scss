@@ -1,15 +1,15 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .tableContainer {
   border: 1px solid colors.$gray-20;
   background-color: colors.$gray-10;
   padding: 0;
+  min-width: 0;
 
   :global(.cds--data-table-content) {
-    overflow-x: unset;
+    overflow-x: auto;
   }
 
   a {
@@ -26,6 +26,9 @@
 
   :global(.cds--table-toolbar) {
     position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
     z-index: 10;
   }
 
@@ -36,35 +39,6 @@
 
   :global(.cds--pagination) {
     border-top: none;
-  }
-
-  .toolbarContent {
-    height: layout.$spacing-07;
-    margin-bottom: layout.$spacing-02;
-  }
-}
-
-.toolbarItem {
-  margin-left: layout.$spacing-05;
-  display: flex;
-  align-items: center;
-
-  & p {
-    padding-right: layout.$spacing-03;
-    @include type.type-style('body-01');
-    color: colors.$gray-70;
-  }
-
-  :global(.cds--date-picker__input) {
-    height: layout.$spacing-09;
-  }
-
-  :global(.cds--dropdown) {
-    height: layout.$spacing-09;
-  }
-
-  :global(.cds--list-box__menu:focus) {
-    outline: none;
   }
 }
 
@@ -77,12 +51,14 @@
 .tileContainer {
   background-color: colors.$white;
   border-top: 1px solid colors.$gray-20;
-  padding: 3rem 0;
+  padding: layout.$spacing-09 layout.$spacing-05;
+  text-align: center;
 }
 
 .tile {
   margin: auto;
   width: fit-content;
+  max-width: 100%;
 }
 
 .tileContent {
@@ -92,7 +68,7 @@
 }
 
 .content {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   color: colors.$gray-70;
   margin-bottom: layout.$spacing-03;
 }
@@ -102,7 +78,7 @@
 }
 
 .emptyStateHelperText {
-  @include type.type-style('helper-text-02');
+  @include type.type-style("helper-text-02");
 }
 
 .hiddenRow {
@@ -110,77 +86,50 @@
 }
 
 .tableToolBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+  display: flex;
+  flex-direction: column;
   gap: layout.$spacing-05;
   height: auto;
-  align-items: flex-end;
+  min-width: 0;
+  align-items: stretch;
   padding: layout.$spacing-05;
+}
 
-  .filterGroup {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(10rem, 1fr)) minmax(18rem, 1.25fr);
-    gap: layout.$spacing-05;
-    align-items: end;
-    margin-left: 0;
+.filterGroup,
+.searchGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: layout.$spacing-05;
+  min-width: 0;
+  background: transparent;
+}
 
-    > * {
-      min-width: 0;
-    }
-
-    :global(.cds--dropdown__wrapper),
-    :global(.cds--dropdown),
-    :global(.cds--list-box) {
-      width: 100%;
-    }
+.filterGroup {
+  > * {
+    flex: 1 1 13rem;
+    min-width: 0;
   }
 
-  .searchGroup {
+  > :last-child {
+    flex-basis: 20rem;
+  }
+
+  :global(.cds--dropdown__wrapper),
+  :global(.cds--dropdown),
+  :global(.cds--list-box) {
     width: 100%;
-    margin-left: 0;
-    gap: layout.$spacing-03;
-
-    :global(.cds--search) {
-      flex: 1 1 auto;
-      width: 100%;
-    }
-
-    :global(.cds--btn) {
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
   }
 }
 
-@media (max-width: $breakpoint-small-desktop-max) {
-  .tableContainer {
-    :global(.cds--data-table-content) {
-      overflow-x: auto;
-    }
+.searchGroup {
+  :global(.cds--search) {
+    flex: 1 1 18rem;
+    min-width: 0;
   }
 
-  .tableToolBar {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-  }
-
-  .tableToolBar .searchGroup {
-    flex-wrap: wrap;
-
-    :global(.cds--btn) {
-      width: 100%;
-      max-width: none;
-    }
-  }
-
-  .tableToolBar .filterGroup {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: $breakpoint-tablet-max) {
-  .tableToolBar .filterGroup {
-    grid-template-columns: minmax(0, 1fr);
+  :global(.cds--btn) {
+    max-width: 100%;
   }
 }
 

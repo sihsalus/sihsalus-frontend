@@ -81,7 +81,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   conditionFilter,
 }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const statusFilterId = useId();
   const displayText = title;
   const headerTitle = title;

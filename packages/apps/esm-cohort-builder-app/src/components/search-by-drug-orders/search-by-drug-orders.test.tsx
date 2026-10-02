@@ -1,6 +1,7 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Mock } from 'vitest';
 import SearchByDrugOrder from './search-by-drug-orders.component';
 import { useCareSettings, useDrugs } from './search-by-drug-orders.resources';
 
@@ -93,7 +94,7 @@ vi.mock('./search-by-drug-orders.resources', async () => {
   };
 });
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockUseCareSettings = vi.mocked(useCareSettings);
 const mockUseDrugs = vi.mocked(useDrugs);
 

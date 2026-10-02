@@ -89,7 +89,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
           </Row>
         ) : null}
         {(() => {
-          const displayText = t('studiesNoFoundMessage', 'No studies found');
+          const displayText = t('Studies', 'Studies');
           const headerTitle = t('Studies', 'Studies');
 
           if (isLoadingStudies) return <DataTableSkeleton role="progressbar" zebra />;

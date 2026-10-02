@@ -50,34 +50,35 @@
     "react-i18next": "^17.0.11"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.0.1",
+    "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
-    "dotenv": "^16.3.1",
+    "dotenv": "^18.0.4",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.56.1",
-    "zod": "^3.24.3"
+    "react-hook-form": "^7.89.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.117.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "^1.63.0",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.16.2",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
-    "dayjs": "^1.11.7",
-    "i18next": "^26.3.6",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "dayjs": "^1.11.23",
+    "i18next": "^26.4.2",
     "i18next-parser": "^9.0.2",
     "lodash": "^4.18.1",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "turbo": "^2.9.14",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "turbo": "^2.11.4",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

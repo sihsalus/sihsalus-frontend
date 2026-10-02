@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.24.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "blood-bank",
+      "privileges": "app:home.bancoSangre",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "extensions": [
+    {
+      "component": "bloodBankHomeDashboardLink",
+      "name": "blood-bank-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "blood-bank",
+        "slot": "blood-bank-home-redirect-slot",
+        "title": "Banco de Sangre"
+      },
+      "privileges": "app:home.bancoSangre",
+      "order": 10,
+      "online": true,
+      "offline": false
+    },
+    {
+      "component": "bloodBankHomeRedirect",
+      "name": "blood-bank-home-redirect",
+      "slot": "blood-bank-home-redirect-slot",
+      "privileges": "app:home.bancoSangre",
+      "online": true,
+      "offline": false
+    },
+    {
+      "component": "bloodBankNav",
+      "name": "blood-bank-nav",
+      "slot": "blood-bank-nav-slot",
+      "privileges": "app:home.bancoSangre",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "component": "bloodBankAppMenuLink",
+      "name": "blood-bank-app-menu-link",
+      "slot": "app-menu-slot",
+      "privileges": "app:home.bancoSangre",
+      "order": 35,
+      "online": true,
+      "offline": false
+    }
+  ]
+}

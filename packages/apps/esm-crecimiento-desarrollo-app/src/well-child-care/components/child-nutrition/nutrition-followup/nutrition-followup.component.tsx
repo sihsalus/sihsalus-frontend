@@ -23,7 +23,7 @@ interface NutritionFollowupProps {
 }
 
 const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { mmnStatus, ironStatus, nutritionCounseling, lastFollowupDate, isLoading, error } =

@@ -1,0 +1,2 @@
+# Preserve upstream Yarn bundles, including whitespace inside embedded strings.
+.yarn/releases/*.cjs -whitespace linguist-generated=true

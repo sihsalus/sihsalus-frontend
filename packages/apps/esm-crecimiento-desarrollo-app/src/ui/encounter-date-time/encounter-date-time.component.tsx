@@ -4,13 +4,14 @@ import { type amPm } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
-import { type Control, Controller, type FieldPath, type FieldValues, useFormContext } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import type { CREDControlsFormType } from '../../well-child-care/workspace/well-child-control/well-child-controls-form.workspace';
 
 import styles from './encounter-date-time.scss';
 
 interface EncounterDateTimeSectionProps {
-  control: Control<FieldValues>;
+  control: Control<CREDControlsFormType>;
   minDate?: dayjs.ConfigType;
   patientUuid?: string;
   encounterTypeUuid?: string;
@@ -18,18 +19,18 @@ interface EncounterDateTimeSectionProps {
 }
 
 interface EncounterDateTimeFieldProps {
-  dateField: Field;
-  timeField?: Field;
-  timeFormatField?: Field;
+  dateField: Field<'visitStartDate'>;
+  timeField?: Field<'visitStartTime'>;
+  timeFormatField?: Field<'visitStartTimeFormat'>;
   minDate?: dayjs.ConfigType;
   maxDate?: dayjs.ConfigType;
   disabled?: boolean;
-  control?: Control<FieldValues>;
+  control?: Control<CREDControlsFormType>;
   showTimeFields?: boolean;
 }
 
-interface Field {
-  name: FieldPath<FieldValues>;
+interface Field<T extends FieldPath<CREDControlsFormType>> {
+  name: T;
   label: string;
 }
 
@@ -38,7 +39,7 @@ interface Field {
  * date / time fields based on the visit status (new / ongoing / past)
  */
 const EncounterDateTimeSection: React.FC<EncounterDateTimeSectionProps> = ({ control, minDate, sectionTitle }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   return (
     <section>
@@ -76,7 +77,7 @@ const EncounterDateTimeField: React.FC<EncounterDateTimeFieldProps> = ({
   const {
     control: contextControl,
     formState: { errors },
-  } = useFormContext() || { control: undefined, formState: { errors: {} } };
+  } = useFormContext<CREDControlsFormType>() || { control: undefined, formState: { errors: {} } };
 
   const control = externalControl || contextControl;
   const { t } = useTranslation();
@@ -138,7 +139,7 @@ const EncounterDateTimeField: React.FC<EncounterDateTimeFieldProps> = ({
                   onBlur={onBlur}
                   onChange={(event) => onChange(event.target.value as amPm)}
                   pattern="^(0[1-9]|1[0-2]):([0-5][0-9])$"
-                  value={value || currentTime12Hour}
+                  value={value ?? currentTime12Hour}
                   disabled={disabled}
                 >
                   <Controller

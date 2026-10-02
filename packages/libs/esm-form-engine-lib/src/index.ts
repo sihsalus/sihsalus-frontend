@@ -2,6 +2,7 @@ export * from './components/previous-value-review/previous-value-review.componen
 export * from './components/value/view/field-value-view.component';
 export * from './constants';
 export { default as FormEngine } from './form-engine.component';
+export { FormPreview } from './form-preview.component';
 export * from './hooks/useFormJson';
 export * from './registry/registry';
 export * from './types';

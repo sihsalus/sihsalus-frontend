@@ -9,6 +9,7 @@ import {
   useConfig,
   useSession,
 } from '@openmrs/esm-framework';
+import type { MockedFunction } from 'vitest';
 import FormWorkflowContext from '../../context/FormWorkflowContext';
 import { useHsuIdIdentifier } from '../../hooks/location-tag.resource';
 import PatientSearchHeader from './PatientSearchHeader';
@@ -46,12 +47,12 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children }) => <div>{children}</div>,
 }));
 
-const mockShowSnackbar = showSnackbar as vi.MockedFunction<typeof showSnackbar>;
+const mockShowSnackbar = showSnackbar as MockedFunction<typeof showSnackbar>;
 const mockInterpolateUrl = vi.mocked(interpolateUrl);
 const mockNavigate = vi.mocked(navigate);
-const mockUseConfig = useConfig as vi.MockedFunction<typeof useConfig>;
-const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
-const mockUseHsuIdIdentifier = useHsuIdIdentifier as vi.MockedFunction<typeof useHsuIdIdentifier>;
+const mockUseConfig = useConfig as MockedFunction<typeof useConfig>;
+const mockUseSession = useSession as MockedFunction<typeof useSession>;
+const mockUseHsuIdIdentifier = useHsuIdIdentifier as MockedFunction<typeof useHsuIdIdentifier>;
 
 describe('PatientSearchHeader - Enforcement Feature', () => {
   const mockContext = {

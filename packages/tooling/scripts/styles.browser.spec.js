@@ -25,42 +25,532 @@ const styleOwners = [
 
 let browser;
 
-test("workspace rail reserves desktop chart space without changing overlay or tablet layout", async (t) => {
-  const fixture = await mkdtemp(path.join(tmpdir(), "workspace-rail-"));
+test('antecedent workspaces keep fields scrollable and actions visible at narrow and tablet widths', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'antecedent-workspaces-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));
-  const workspace = path.join(repositoryRoot, "packages/libs/esm-styleguide");
-  const config = loadConfig(workspace, "rspack.config.cjs");
-  const outputPath = path.join(fixture, "dist");
-  const source = (file) => JSON.stringify(path.join(workspace, "src", file));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-conditions-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  const owners = [
+    'apps/esm-patient-conditions-app/src/conditions/conditions-form.scss',
+    'libs/esm-patient-common-lib/src/antecedents/condition-concept-set-form.scss',
+  ];
   await writeFile(
-    path.join(fixture, "entry.js"),
-    [
-      `import ${source("components/_general.scss")};`,
-      `import menu from ${source("workspaces2/workspace-windows-and-menu.module.scss")};`,
-      `import rail from ${source("workspaces2/action-menu2/action-menu2.module.scss")};`,
-      `import windows from ${source("workspaces2/workspace2.module.scss")};`,
-      "window.layoutStyles = { menu, rail, windows };",
-    ].join("\n"),
+    path.join(fixture, 'entry.js'),
+    owners
+      .map(
+        (owner, index) => `import styles${index} from ${JSON.stringify(path.join(repositoryRoot, 'packages', owner))};`,
+      )
+      .join('\n') + '\nwindow.conditionStyles = [styles0, styles1];',
   );
-  await compile({
-    context: workspace,
-    mode: config.mode,
-    entry: path.join(fixture, "entry.js"),
-    output: {
-      ...config.output,
-      path: outputPath,
-      filename: "styles.js",
-      publicPath: "",
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
     },
-    module: config.module,
-    resolve: config.resolve,
-    optimization: config.optimization,
-    plugins: config.plugins.filter(
-      (plugin) => plugin instanceof rspack.CssExtractRspackPlugin,
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<main id="workspace"><form id="form"><div id="content">' +
+      '<fieldset id="fields"><div id="types"><div class="cds--radio-button-group">' +
+      ['Patológico', 'Familiar', 'Quirúrgico', 'Hospitalización previa', 'Social', 'Otro']
+        .map((label) => `<label class="cds--radio-button-wrapper"><input type="radio" name="type">${label}</label>`)
+        .join('') +
+      '</div></div><div style="height:1200px">Campos del antecedente</div>' +
+      '</fieldset></div><footer id="actions"><div id="buttons"><button type="button">Cancelar</button>' +
+      '<button type="submit">Guardar y cerrar</button></div></footer></form></main>',
+  );
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({
+    content: '*{box-sizing:border-box}body{margin:0}#workspace{height:500px}#buttons{display:flex}',
+  });
+  for (const [index, app] of owners.entries()) {
+    await page.evaluate((owner) => {
+      const styles = window.conditionStyles[owner];
+      for (const [id, key] of Object.entries({
+        form: 'form',
+        content: 'formContent',
+        fields: 'formContainer',
+        actions: 'formActions',
+      })) {
+        document.getElementById(id).className = styles[key];
+      }
+      document.getElementById('types').className = styles.typeOptions ?? styles.categoryGrid ?? '';
+      document.querySelectorAll('button').forEach((button) => {
+        button.className = styles.button;
+      });
+    }, index);
+    for (const width of [320, 420, 768]) {
+      await page.setViewportSize({ width, height: 500 });
+      const before = await page.locator('#actions').boundingBox();
+      assert.ok(before.y + before.height <= 500, `${app}: actions fit at ${width}px`);
+      await page.locator('#content').evaluate((content) => {
+        content.scrollTop = content.scrollHeight;
+      });
+      assert.ok(await page.locator('#content').evaluate((content) => content.scrollTop > 0), `${app}: fields scroll`);
+      assert.deepEqual(await page.locator('#actions').boundingBox(), before, `${app}: actions stay in place`);
+      assert.ok(
+        await page.locator('#form').evaluate((form) => form.scrollWidth <= form.clientWidth),
+        `${app}: no horizontal overflow`,
+      );
+      await expect(page.getByRole('button', { name: 'Guardar y cerrar' })).toBeInViewport();
+    }
+  }
+});
+
+test('imaging actions remain visible and clinical tray filters do not overlap the table', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'clinical-layout-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-imaging-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import imaging from ${JSON.stringify(path.join(workspace, 'src/imaging/studies/study-form.scss'))};
+import tray from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-interconsultas-app/src/dashboard/interconsultas-table.scss'))};
+import laboratory from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-laboratory-app/src/components/orders-table/orders-data-table.scss'))};
+window.clinicalStyles = { imaging, tray, laboratory };`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<main id="workspace"><form id="form"><div id="content" class="cds--stack-vertical cds--stack-scale-6">' +
+      '<section id="server" style="height:64px">Servidor de imágenes</section>' +
+      '<section id="files"><p>Selecciona archivos DICOM</p></section></div>' +
+      '<div id="buttons" class="cds--btn-set"><button class="cds--btn cds--btn--secondary">Cancelar</button>' +
+      '<button class="cds--btn cds--btn--primary">Subir</button></div></form></main>' +
+      '<section id="tray" class="cds--data-table-container"><section class="cds--table-toolbar"><div id="toolbar" class="cds--toolbar-content">' +
+      '<div id="filters"><div><label>Servicio destino</label><select><option>Todos</option></select></div>' +
+      '<div><label>UPSS de origen</label><select><option>Todos</option></select></div></div>' +
+      '<div id="search"><input aria-label="Buscar"><button>Limpiar filtros</button></div></div></section>' +
+      '<p id="results">Resultados: 0 de 0</p><div id="scroll"><table id="table"><thead>' +
+      '<tr><th>Fecha solicitud</th><th>Paciente</th></tr></thead></table></div></section>',
+  );
+  await page.addStyleTag({ path: require.resolve('@carbon/styles/css/styles.css') });
+  const sharedStyles = await configRequire('sass-embedded').compileAsync(
+    path.join(repositoryRoot, 'packages/libs/esm-styleguide/src/_overrides.scss'),
+    { loadPaths: [path.join(repositoryRoot, 'node_modules')] },
+  );
+  await page.addStyleTag({ content: sharedStyles.css });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({
+    content:
+      'body{margin:0}#workspace{height:500px}#filters label{display:block}#filters select{height:48px;width:100%}#search input{height:48px}',
+  });
+  await page.evaluate(() => {
+    const { imaging, tray } = window.clinicalStyles;
+    for (const [id, key] of Object.entries({ form: 'form', content: 'formContent', buttons: 'buttonSet' })) {
+      document.getElementById(id).classList.add(imaging[key]);
+    }
+    document.querySelectorAll('#buttons button').forEach((button) => {
+      button.classList.add(imaging.button);
+    });
+    for (const [id, key] of Object.entries({
+      tray: 'tableContainer',
+      toolbar: 'tableToolbar',
+      filters: 'filterGroup',
+      search: 'searchGroup',
+      results: 'resultCount',
+      scroll: 'tableScroll',
+      table: 'table',
+    })) {
+      document.getElementById(id).classList.add(tray[key]);
+    }
+  });
+  for (const width of [320, 420, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.locator('#files').evaluate((files) => {
+      files.style.height = '';
+    });
+    const server = await page.locator('#server').boundingBox();
+    const files = await page.locator('#files').boundingBox();
+    assert.ok(files.y - (server.y + server.height) <= 24, `form fields stay together at ${width}px`);
+    const actions = await page.locator('#buttons').boundingBox();
+    assert.ok(actions.y + actions.height <= 500, `actions fit at ${width}px`);
+    await page.locator('#files').evaluate((files) => {
+      files.style.height = '1200px';
+    });
+    await page.locator('#content').evaluate((content) => {
+      content.scrollTop = content.scrollHeight;
+    });
+    assert.ok(await page.locator('#content').evaluate((content) => content.scrollTop > 0));
+    assert.deepEqual(await page.locator('#buttons').boundingBox(), actions, 'scrolling does not move actions');
+    const toolbar = await page.locator('#toolbar').boundingBox();
+    const results = await page.locator('#results').boundingBox();
+    const table = await page.locator('#table').boundingBox();
+    assert.ok(toolbar.y + toolbar.height <= results.y, `filters do not overlap results at ${width}px`);
+    assert.ok(results.y + results.height <= table.y, `results do not overlap table at ${width}px`);
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      'only the table scrolls horizontally',
+    );
+  }
+
+  // Use Carbon's actual markup: its toolbar sizing and dropdown minimums are
+  // part of the regression, including when a sidebar leaves a narrow container.
+  const { createElement: h } = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const {
+    Button,
+    Dropdown,
+    Layer,
+    Search,
+    TableContainer,
+    TableToolbar,
+    TableToolbarContent,
+  } = require('@carbon/react');
+  const markup = renderToStaticMarkup(
+    h(
+      TableContainer,
+      { id: 'laboratory' },
+      h(
+        TableToolbar,
+        null,
+        h(
+          TableToolbarContent,
+          { id: 'lab-toolbar' },
+          h(
+            Layer,
+            { id: 'lab-filters' },
+            ...['Estado', 'Prioridad', 'Grupo de laboratorio', 'Indicaciones'].map((label, index) =>
+              h(Dropdown, {
+                key: label,
+                id: `lab-filter-${index}`,
+                titleText: label,
+                label: 'Todos',
+                items: ['Todos'],
+              }),
+            ),
+            h(
+              'div',
+              null,
+              h('label', { htmlFor: 'lab-dates' }, 'Rango de fechas'),
+              h('input', {
+                id: 'lab-dates',
+                value: '29/09/2026 – 30/09/2026',
+                readOnly: true,
+                style: { width: '100%' },
+              }),
+            ),
+          ),
+          h(
+            Layer,
+            { id: 'lab-search' },
+            h(Search, { id: 'lab-search-input', labelText: 'Buscar en esta lista', size: 'sm' }),
+            h(Button, { kind: 'tertiary', size: 'sm' }, 'Descargar reporte de exámenes completados'),
+          ),
+        ),
+      ),
+      h(
+        'div',
+        { className: 'cds--data-table-content', id: 'lab-results' },
+        h(
+          'table',
+          { className: 'cds--data-table', style: { minWidth: '68rem' } },
+          h('thead', null, h('tr', null, h('th', null, 'Paciente sintético'))),
+        ),
+      ),
     ),
-    devtool: false,
-    performance: false,
-  }, rspack);
+  );
+  await page.evaluate((html) => {
+    document.getElementById('workspace').remove();
+    document.getElementById('tray').remove();
+    document.body.insertAdjacentHTML('beforeend', html);
+    const styles = window.clinicalStyles.laboratory;
+    for (const [id, key] of Object.entries({
+      laboratory: 'tableContainer',
+      'lab-toolbar': 'tableToolBar',
+      'lab-filters': 'filterGroup',
+      'lab-search': 'searchGroup',
+    })) {
+      document.getElementById(id).classList.add(styles[key]);
+    }
+  }, markup);
+  for (const viewport of [320, 768, 1440]) {
+    await page.setViewportSize({ width: viewport, height: 900 });
+    for (const width of [Math.min(320, viewport), viewport]) {
+      await page.locator('#laboratory').evaluate((element, width) => {
+        element.style.width = `${width}px`;
+      }, width);
+      const toolbar = await page.locator('#lab-toolbar').boundingBox();
+      const results = await page.locator('#lab-results').boundingBox();
+      assert.ok(
+        toolbar.y + toolbar.height <= results.y,
+        `laboratory filters stay above table at ${width}/${viewport}px`,
+      );
+      const controls = await page.locator('#lab-filters > *, #lab-search > *').evaluateAll((elements) =>
+        elements.map((element) => {
+          const { x, y, width, height } = element.getBoundingClientRect();
+          return { x, y, width, height };
+        }),
+      );
+      for (const [index, control] of controls.entries()) {
+        assert.ok(control.width >= 150, `laboratory control ${index} does not collapse at ${width}/${viewport}px`);
+        assert.ok(control.x >= 0 && control.x + control.width <= width, 'controls fit inside the tray');
+        assert.ok(control.y + control.height <= results.y, 'controls fit above the table');
+        for (const other of controls.slice(index + 1)) {
+          assert.ok(
+            control.x + control.width <= other.x ||
+              other.x + other.width <= control.x ||
+              control.y + control.height <= other.y ||
+              other.y + other.height <= control.y,
+            'controls do not overlap',
+          );
+        }
+      }
+      assert.ok(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        'only the lab table scrolls horizontally',
+      );
+    }
+  }
+});
+
+test('visit date and time fit the workspace and keep validation readable', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'visit-date-time-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-chart-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import styles from ${JSON.stringify(path.join(workspace, 'src/visit/visit-form/visit-form.scss'))};
+window.visitStyles = styles;`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'styles.js',
+        publicPath: '',
+      },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent('<main id="fixture"></main>');
+  await page.addStyleTag({
+    path: require.resolve('@carbon/styles/css/styles.css'),
+  });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  const styles = await page.evaluate(() => window.visitStyles);
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const { DatePicker, DatePickerInput, TimePicker, TimePickerSelect, SelectItem } = require('@carbon/react');
+  const element = React.createElement;
+  const error = 'Enter a valid time in hh:mm format (01:00 to 12:59)';
+  const markup = renderToStaticMarkup(
+    element(
+      'div',
+      { className: styles.container },
+      element(
+        'section',
+        { className: styles.dateTimeField },
+        element('h1', { className: styles.sectionTitle }, 'Fecha y hora de inicio de consulta'),
+        element(
+          'div',
+          { className: styles.dateTimeSection + ' ' + styles.sectionField },
+          element(
+            DatePicker,
+            { className: styles.datePicker, datePickerType: 'single' },
+            element(DatePickerInput, {
+              id: 'date',
+              labelText: 'Fecha *',
+              placeholder: 'dd/mm/yyyy',
+              style: { inlineSize: '100%' },
+            }),
+          ),
+          element(
+            'div',
+            { className: styles.timePickerContainer },
+            element(
+              TimePicker,
+              {
+                className: styles.timePicker,
+                id: 'time',
+                labelText: 'Hora *',
+                invalid: true,
+                invalidText: error,
+              },
+              element(
+                TimePickerSelect,
+                { id: 'period', 'aria-label': 'AM/PM' },
+                element(SelectItem, { value: 'AM', text: 'AM' }),
+                element(SelectItem, { value: 'PM', text: 'PM' }),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await page.locator('#fixture').evaluate((node, html) => {
+    node.innerHTML = html;
+  }, markup);
+  for (const [viewport, width, tablet] of [
+    [1280, 280, false],
+    [1280, 460, false],
+    [768, 620, true],
+  ]) {
+    await page.setViewportSize({ width: viewport, height: 800 });
+    await page.locator('#fixture').evaluate(
+      (node, state) => {
+        node.style.width = state.width + 'px';
+        node.className = state.tablet ? 'omrs-breakpoint-lt-desktop' : '';
+      },
+      { width, tablet },
+    );
+    const date = await page.locator('#date').boundingBox();
+    const time = await page.locator('#time').boundingBox();
+    const period = await page.locator('#period').boundingBox();
+    if (width === 280) assert.ok(time.y >= date.y + date.height + 16, 'narrow workspace stacks fields');
+    else {
+      assert.ok(Math.abs(date.y - time.y) < 1, 'date and time inputs align');
+      assert.ok(time.x >= date.x + date.width + 16, 'fields have a clear gap');
+    }
+    assert.ok(Math.abs(time.y - period.y) < 1, 'AM/PM aligns with the time input');
+    assert.ok(
+      await page.locator('#fixture').evaluate((node) => node.scrollWidth <= node.clientWidth),
+      'no horizontal overflow',
+    );
+    const message = page.getByText(error, { exact: true });
+    await expect(message).toBeVisible();
+    const box = await message.boundingBox();
+    assert.ok(box.height > 0 && box.width > 100, 'time validation is not clipped or squeezed');
+  }
+});
+
+test('results dashboard keeps its top gap when shared dashboard styles load later', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'results-dashboard-spacing-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-chart-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import chart from ${JSON.stringify(path.join(workspace, 'src/patient-chart/chart-review/dashboard-view.scss'))};
+import ${JSON.stringify(path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/tabbed-dashboard/tabbed-dashboard.scss'))};
+window.chartStyles = chart;`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: { ...config.output, path: outputPath, filename: 'styles.js', publicPath: '' },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent(
+    '<div data-extension-slot-name="patient-chart-test-results-dashboard-slot" id="results"></div>' +
+      '<div data-extension-slot-name="patient-chart-encounters-dashboard-slot" id="encounters"></div>',
+  );
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.evaluate(() => {
+    document.getElementById('results').className = window.chartStyles.dashboard;
+    document.getElementById('encounters').className = window.chartStyles.dashboard;
+  });
+  await expect(page.locator('#results')).toHaveCSS('margin-top', '16px');
+  await expect(page.locator('#encounters')).toHaveCSS('margin-top', '0px');
+});
+
+test('workspace rail reserves desktop chart space without changing overlay or tablet layout', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'workspace-rail-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/libs/esm-styleguide');
+  const config = loadConfig(workspace, 'rspack.config.cjs');
+  const outputPath = path.join(fixture, 'dist');
+  const source = (file) => JSON.stringify(path.join(workspace, 'src', file));
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    [
+      `import ${source('components/_general.scss')};`,
+      `import menu from ${source('workspaces2/workspace-windows-and-menu.module.scss')};`,
+      `import rail from ${source('workspaces2/action-menu2/action-menu2.module.scss')};`,
+      `import windows from ${source('workspaces2/workspace2.module.scss')};`,
+      'window.layoutStyles = { menu, rail, windows };',
+    ].join('\n'),
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'styles.js',
+        publicPath: '',
+      },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
   const context = await browser.newContext({ offline: true });
   t.after(() => context.close());
   const page = await context.newPage();
@@ -70,97 +560,66 @@ test("workspace rail reserves desktop chart space without changing overlay or ta
       '<aside id="rail"><div id="sideRail"><div id="actions"><button>Forms</button></div></div></aside></div></div>' +
       '<div id="omrs-apps-container"><main><header>Test chart</header><section>Chart content</section></main></div>',
   );
-  for (const asset of (await readdir(outputPath)).filter((file) =>
-    file.endsWith(".css"),
-  )) {
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
     await page.addStyleTag({ path: path.join(outputPath, asset) });
   }
-  await page.addScriptTag({ path: path.join(outputPath, "styles.js") });
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
   await page.addStyleTag({
-    content:
-      "body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}main{min-height:1200px}",
+    content: 'body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}main{min-height:1200px}',
   });
   await page.evaluate(() => {
     const { menu, rail } = window.layoutStyles;
-    document.querySelector("#menu").className =
-      menu.workspaceWindowsAndMenuContainer;
-    document.querySelector("#windows").className =
-      menu.workspaceWindowsContainer;
-    document.querySelector("#rail").className = rail.sideRailVisible;
-    document.querySelector("#sideRail").className = rail.sideRail;
-    document.querySelector("#actions").className = rail.container;
+    document.querySelector('#menu').className = menu.workspaceWindowsAndMenuContainer;
+    document.querySelector('#windows').className = menu.workspaceWindowsContainer;
+    document.querySelector('#rail').className = rail.sideRailVisible;
+    document.querySelector('#sideRail').className = rail.sideRail;
+    document.querySelector('#actions').className = rail.container;
   });
   for (const [width, height] of [
     [1920, 1080],
     [1366, 768],
   ]) {
     await page.setViewportSize({ width, height });
-    for (const direction of ["ltr", "rtl"]) {
+    for (const direction of ['ltr', 'rtl']) {
       await page.evaluate((dir) => {
         document.documentElement.dir = dir;
-        document.body.className = "omrs-breakpoint-gt-tablet";
+        document.body.className = 'omrs-breakpoint-gt-tablet';
       }, direction);
-      const app = await page.locator("#omrs-apps-container").boundingBox();
-      const rail = await page.locator("#rail").boundingBox();
+      const app = await page.locator('#omrs-apps-container').boundingBox();
+      const rail = await page.locator('#rail').boundingBox();
       assert.equal(rail.width, 48);
-      assert.equal(
-        app.width,
-        width - rail.width,
-        `${width} ${direction}: chart must reserve the rail`,
-      );
-      assert.ok(
-        direction === "ltr"
-          ? app.x + app.width <= rail.x
-          : rail.x + rail.width <= app.x,
-      );
+      assert.equal(app.width, width - rail.width, `${width} ${direction}: chart must reserve the rail`);
+      assert.ok(direction === 'ltr' ? app.x + app.width <= rail.x : rail.x + rail.width <= app.x);
       await page.evaluate(() => {
         const { windows } = window.layoutStyles;
-        document.querySelector("#windows").innerHTML =
+        document.querySelector('#windows').innerHTML =
           `<div class="${windows.workspaceOuterContainer} ${windows.narrowWorkspace}"><div class="${windows.workspaceSpacer}"></div></div>`;
       });
-      assert.equal(
-        (await page.locator("#omrs-apps-container").boundingBox()).width,
-        width - 48 - 420,
-      );
+      assert.equal((await page.locator('#omrs-apps-container').boundingBox()).width, width - 48 - 420);
       await page.evaluate(() => {
-        document.querySelector("#windows").replaceChildren();
+        document.querySelector('#windows').replaceChildren();
       });
     }
     await page.evaluate(() => {
-      document.querySelector("#rail").className =
-        window.layoutStyles.rail.sideRailHidden;
+      document.querySelector('#rail').className = window.layoutStyles.rail.sideRailHidden;
     });
-    assert.equal(
-      (await page.locator("#omrs-apps-container").boundingBox()).width,
-      width,
-    );
+    assert.equal((await page.locator('#omrs-apps-container').boundingBox()).width, width);
     await page.evaluate(() => {
-      document.querySelector("#rail").className =
-        window.layoutStyles.rail.sideRailVisible;
-      document
-        .querySelector("#menu")
-        .classList.add(window.layoutStyles.menu.overlay);
+      document.querySelector('#rail').className = window.layoutStyles.rail.sideRailVisible;
+      document.querySelector('#menu').classList.add(window.layoutStyles.menu.overlay);
     });
-    assert.equal(
-      (await page.locator("#omrs-apps-container").boundingBox()).width,
-      width,
-    );
+    assert.equal((await page.locator('#omrs-apps-container').boundingBox()).width, width);
     await page.evaluate(() => {
-      document
-        .querySelector("#menu")
-        .classList.remove(window.layoutStyles.menu.overlay);
+      document.querySelector('#menu').classList.remove(window.layoutStyles.menu.overlay);
     });
   }
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.evaluate(() => {
-    document.body.className = "omrs-breakpoint-lt-desktop";
+    document.body.className = 'omrs-breakpoint-lt-desktop';
   });
-  assert.equal(
-    (await page.locator("#omrs-apps-container").boundingBox()).width,
-    768,
-  );
-  await expect(page.locator("#sideRail")).toHaveCSS("position", "fixed");
-  const bottomRail = await page.locator("#sideRail").boundingBox();
+  assert.equal((await page.locator('#omrs-apps-container').boundingBox()).width, 768);
+  await expect(page.locator('#sideRail')).toHaveCSS('position', 'fixed');
+  const bottomRail = await page.locator('#sideRail').boundingBox();
   assert.equal(bottomRail.y + bottomRail.height, 1024);
 });
 

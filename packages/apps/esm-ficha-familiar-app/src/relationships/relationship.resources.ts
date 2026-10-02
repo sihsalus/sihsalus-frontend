@@ -75,8 +75,8 @@ const t = (key: string, defaultValue: string) => {
 
 export const relationshipUpdateFormSchema = z
   .object({
-    startDate: z.date({ coerce: true }).max(new Date(), 'Can not be a future date'),
-    endDate: z.date({ coerce: true }).optional(),
+    startDate: z.coerce.date<Date>().max(new Date(), 'Can not be a future date'),
+    endDate: z.coerce.date<Date>().optional(),
     relationshipType: z.string().uuid(),
   })
   .refine(
@@ -176,8 +176,8 @@ export const relationshipFormSchema = z.object({
   personB: z.string().uuid('Invalid person').optional(),
   relationshipType: z.string().uuid(),
   relationshipDirection: z.enum(['aIsToB', 'bIsToA']).optional(),
-  startDate: z.date({ coerce: true }).optional().default(new Date()),
-  endDate: z.date({ coerce: true }).optional(),
+  startDate: z.coerce.date<Date>().optional().default(new Date()),
+  endDate: z.coerce.date<Date>().optional(),
   mode: z.enum(['create', 'search']).default('search'),
   personBInfo: z
     .object({
@@ -186,7 +186,7 @@ export const relationshipFormSchema = z.object({
       familyName: z.string().min(1, 'Family name required'),
       familyName2: z.string().min(1, 'Family name required'),
       gender: z.enum(['M', 'F']),
-      birthdate: z.date({ coerce: true }).max(new Date(), 'Must not be a future date'),
+      birthdate: z.coerce.date<Date>().max(new Date(), 'Must not be a future date'),
       birthdateEstimated: z.boolean().optional(),
       maritalStatus: z.string().optional(),
       address: z.string().optional(),
@@ -196,7 +196,7 @@ export const relationshipFormSchema = z.object({
 });
 
 export const saveRelationship = async (
-  data: z.infer<typeof relationshipFormSchema>,
+  data: z.input<typeof relationshipFormSchema>,
   config: ConfigObject,
   extraAttributes: Array<{ attributeType: string; value: string }> = [],
 ) => {

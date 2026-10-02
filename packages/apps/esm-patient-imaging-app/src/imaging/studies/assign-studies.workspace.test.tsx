@@ -1,6 +1,7 @@
 import { type CloseWorkspaceOptions, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import { type DicomStudy } from '../../types';
 import AssignStudiesWorkspace from './assign-studies.workspace';
@@ -80,12 +81,12 @@ describe('AssignStudiesWorkspace', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useLayoutType as vi.Mock).mockReturnValue('small-desktop');
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
+    (useLayoutType as Mock).mockReturnValue('small-desktop');
+    (api.useStudiesByPatient as Mock).mockReturnValue({
       mutate: vi.fn(),
     });
 
-    (api.useStudiesByConfig as vi.Mock).mockReturnValue({
+    (api.useStudiesByConfig as Mock).mockReturnValue({
       data: { studies: [mockStudyData] },
       error: null,
       isLoading: false,
@@ -95,7 +96,7 @@ describe('AssignStudiesWorkspace', () => {
   });
 
   it('renders loading state when studies are loading', () => {
-    (api.useStudiesByConfig as vi.Mock).mockReturnValue({
+    (api.useStudiesByConfig as Mock).mockReturnValue({
       data: null,
       error: null,
       isLoading: true,
@@ -124,7 +125,7 @@ describe('AssignStudiesWorkspace', () => {
   });
 
   it('renders error state when API returns error', () => {
-    (api.useStudiesByConfig as vi.Mock).mockReturnValue({
+    (api.useStudiesByConfig as Mock).mockReturnValue({
       data: null,
       error: new Error('API error'),
       isLoading: false,
@@ -186,8 +187,8 @@ describe('AssignStudiesWorkspace', () => {
 
   it('calls showSnackbar when assignStudyFunction succeeds', async () => {
     const mockMutate = vi.fn();
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({ mutate: mockMutate });
-    (api.assignStudy as vi.Mock).mockResolvedValue({});
+    (api.useStudiesByPatient as Mock).mockReturnValue({ mutate: mockMutate });
+    (api.assignStudy as Mock).mockResolvedValue({});
 
     render(
       <AssignStudiesWorkspace

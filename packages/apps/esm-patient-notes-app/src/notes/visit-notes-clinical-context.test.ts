@@ -50,6 +50,30 @@ describe('useVisitNoteClinicalContext procedures fallback', () => {
     mockUseConfig.mockReturnValue({} as ConfigObject);
   });
 
+  it('excludes historical SOAP observations from the outpatient context', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        results: [
+          buildEncounter('patient-with-historical-soap', [
+            { conceptUuid: 'f0000202-0000-4000-8000-000000000202', value: 'Historical subjective' },
+            { conceptUuid: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Historical objective' },
+            { conceptUuid: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Historical assessment' },
+            { conceptUuid: 'f0000201-0000-4000-8000-000000000201', value: 'Historical plan' },
+            { conceptUuid: defaultVisitNoteClinicalConceptUuids.chiefComplaintConceptUuid, value: 'Current complaint' },
+          ]),
+        ],
+      },
+    } as never);
+
+    const { result } = renderHook(() => useVisitNoteClinicalContext('patient-with-historical-soap'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.clinicalContext.chiefComplaint).toBe('Current complaint');
+    for (const field of ['subjective', 'objective', 'assessment', 'plan']) {
+      expect(result.current.clinicalContext).not.toHaveProperty(field);
+    }
+  });
+
   it('reads procedures stored under the legacy dedicated concept without form field path', async () => {
     mockOpenmrsFetch.mockResolvedValue({
       data: {
@@ -96,7 +120,7 @@ describe('useVisitNoteClinicalContext procedures fallback', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.clinicalContext.procedures).toBe('Sutura simple');
-    expect(result.current.clinicalContext.plan).toBe('Plan: reposo');
+    expect(result.current.clinicalContext).not.toHaveProperty('plan');
   });
 
   it('prefers the current procedures concept over legacy fallbacks', async () => {

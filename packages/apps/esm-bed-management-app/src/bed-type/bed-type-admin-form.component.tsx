@@ -30,7 +30,7 @@ const BedTypeAdministrationSchema = z.object({
 interface BedAdministrationFormProps {
   allLocations: Location[];
   availableBedTypes: Array<BedType>;
-  handleSubmission?: (formData: BedTypeData) => void;
+  handleSubmission?: (formData: z.output<typeof BedTypeAdministrationSchema>) => void;
   headerTitle: string;
   initialData: BedTypeData;
   onModalChange: (showModal: boolean) => void;
@@ -57,7 +57,7 @@ const BedTypeAdministrationForm: React.FC<BedAdministrationFormProps> = ({
     handleSubmit,
     control,
     formState: { isDirty },
-  } = useForm<BedTypeData>({
+  } = useForm<z.input<typeof BedTypeAdministrationSchema>, unknown, z.output<typeof BedTypeAdministrationSchema>>({
     mode: 'all',
     resolver: zodResolver(BedTypeAdministrationSchema),
     defaultValues: {
@@ -67,7 +67,7 @@ const BedTypeAdministrationForm: React.FC<BedAdministrationFormProps> = ({
     },
   });
 
-  const onSubmit = (formData: BedTypeData) => {
+  const onSubmit = (formData: z.output<typeof BedTypeAdministrationSchema>) => {
     const result = BedTypeAdministrationSchema.safeParse(formData);
     if (result.success) {
       setShowErrorNotification(false);

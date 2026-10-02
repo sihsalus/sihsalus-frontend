@@ -1,32 +1,17 @@
-import {
-  Button,
-  DataTable,
-  DataTableSkeleton,
-  InlineLoading,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@carbon/react';
-import { Add } from '@carbon/react/icons';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
-import {
-  CardHeader,
-  EmptyState,
-  ErrorState,
-  getObsFromEncounter,
-  launchPatientWorkspace,
-} from '@openmrs/esm-patient-common-lib';
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow } from '@carbon/react';
+import { Edit } from '@carbon/react/icons';
+import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { getObsFromEncounter } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
-import type { ConfigObject } from '../../../config-schema';
+import { configSchema, type ConfigObject } from '../../../config-schema';
+import ClinicalHistoryCard from '../../../consulta-externa/clinical-history-card.component';
+import { useSocialHistory, type SocialHistoryEncounter } from '../../../hooks/useSocialHistory';
+import { useSocialHistoryFormLauncher } from '../../../hooks/useSocialHistoryFormLauncher';
 import type { OpenmrsEncounter } from '../../../types';
-import { patientFormEntryWorkspace, socialHistoryEditPrivilege } from '../../../utils/constants';
+import { socialHistoryEditPrivilege } from '../../../utils/constants';
 import styles from './patient-history.scss';
 
 interface OutPatientSocialHistoryProps {
@@ -38,163 +23,174 @@ interface OutPatientSocialHistoryProps {
   mutate: KeyedMutator<{ data: { results: OpenmrsEncounter[] } }>;
 }
 
-const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
-  patientUuid,
-  encounters,
-  isLoading,
-  error,
-  isValidating,
-  mutate,
-}) => {
-  const { t } = useTranslation();
-  const {
-    concepts,
-    formsList: { clinicalEncounterFormUuid },
-  } = useConfig<ConfigObject>();
+interface HistoryRow {
+  id: string;
+  cells: React.ReactNode[];
+}
 
-  const headerTitle = t('socialHistory', 'Social History');
-  const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      workspaceTitle: t('socialHistory', 'Social History'),
-      mutateForm: () => mutate(),
-      formInfo: {
-        encounterUuid: encounterUUID,
-        formUuid: clinicalEncounterFormUuid,
-        patientUuid,
-        visitTypeUuid: '',
-        visitUuid: '',
-      },
-    });
-  };
-  const tableHeader = [
-    {
-      key: 'encounterDate',
-      header: t('encounterDate', 'Date'),
-    },
-    {
-      key: 'alcoholUse',
-      header: t('alcoholUse', 'Alcohol Use'),
-    },
-    {
-      key: 'alcoholUseDuration',
-      header: t('alcoholUseDuration', 'Alcohol Use Duration'),
-    },
-    {
-      key: 'smoking',
-      header: t('smoking', 'Smoking'),
-    },
-    {
-      key: 'smokingDuration',
-      header: t('smokingDuration', 'Smoking Duration'),
-    },
-    {
-      key: 'otherSubstanceAbuse',
-      header: t('otherSubstanceAbuse', 'Other Substance Abuse'),
-    },
-  ];
-  const tableRows = (encounters ?? [])
-    .map((encounter) => {
-      const allFieldsNull = () => {
-        return (
-          getObsFromEncounter(encounter, concepts.alcoholUseUuid) === '--' &&
-          getObsFromEncounter(encounter, concepts.alcoholUseDurationUuid) === '--' &&
-          getObsFromEncounter(encounter, concepts.smokingUuid) === '--' &&
-          getObsFromEncounter(encounter, concepts.smokingDurationUuid) === '--' &&
-          getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid) === '--' &&
-          encounter.encounterDatetime !== null
-        );
-      };
-      if (allFieldsNull()) {
-        return null;
-      }
-      return {
-        id: `${encounter.uuid}`,
-        encounterDate: formatDate(new Date(encounter.encounterDatetime)),
-        alcoholUse: getObsFromEncounter(encounter, concepts.alcoholUseUuid),
-        alcoholUseDuration: getObsFromEncounter(encounter, concepts.alcoholUseDurationUuid),
-        smoking: getObsFromEncounter(encounter, concepts.smokingUuid),
-        smokingDuration: getObsFromEncounter(encounter, concepts.smokingDurationUuid),
-        otherSubstanceAbuse: getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid),
-      };
-    })
-    .filter((row) => row !== null);
-  if (isLoading) {
-    return <DataTableSkeleton role="progressbar" size="sm" zebra />;
-  }
-  if (error) {
-    return <ErrorState error={error} headerTitle={headerTitle} />;
-  }
-  if (tableRows.length === 0) {
-    return (
-      <RequirePrivilege
-        privilege={socialHistoryEditPrivilege}
-        fallback={<EmptyState displayText={t('socialHistory', 'Social History')} headerTitle={headerTitle} />}
-      >
-        <EmptyState
-          displayText={t('socialHistory', 'Social History')}
-          headerTitle={headerTitle}
-          launchForm={handleOpenOrEditClinicalEncounterForm}
-        />
-      </RequirePrivilege>
-    );
-  }
+/** Carbon table shared by current and historical records, with the same responsive sizing as other modules. */
+function HistoryTable({
+  title,
+  headers,
+  rows,
+  onEdit,
+}: {
+  title: string;
+  headers: string[];
+  rows: HistoryRow[];
+  onEdit?: (uuid: string) => void;
+}) {
+  const { t } = useTranslation();
+  const size = useLayoutType() === 'tablet' ? 'lg' : 'sm';
   return (
-    <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
-      <CardHeader title={headerTitle}>
-        <div className={styles.backgroundDataFetchingIndicator}>
-          <span>{isValidating ? <InlineLoading /> : null}</span>
-        </div>
-        <RequirePrivilege privilege={socialHistoryEditPrivilege} hideUnauthorized>
-          <Button
-            kind="ghost"
-            onClick={() => handleOpenOrEditClinicalEncounterForm()}
-            renderIcon={Add}
-            iconDescription={t('add', 'Add')}
-          >
-            {t('add', 'Add')}
-          </Button>
-        </RequirePrivilege>
-      </CardHeader>
-      <DataTable
-        size="sm"
-        rows={tableRows}
-        headers={tableHeader}
-        useZebraStyles
-        render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
-          <TableContainer {...getTableContainerProps()}>
-            <Table size="sm" {...getTableProps()} aria-label={t('socialHistory', 'Social History')}>
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader
-                      key={header.key}
-                      {...getHeaderProps({
-                        header,
-                      })}
-                    >
-                      {header.header}
-                    </TableHeader>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    {...getRowProps({
-                      row,
-                    })}
-                  >
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value}</TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      />
+    <TableContainer className={styles.historyTable}>
+      <Table aria-label={title} size={size} useZebraStyles>
+        <TableHead>
+          <TableRow>
+            {headers.map((header) => (
+              <TableHeader key={header}>{header}</TableHeader>
+            ))}
+            {onEdit ? (
+              <RequirePrivilege privilege={socialHistoryEditPrivilege} hideUnauthorized>
+                <TableHeader>{t('actions', 'Actions')}</TableHeader>
+              </RequirePrivilege>
+            ) : null}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.cells.map((value, index) => (
+                <TableCell key={headers[index]}>{value}</TableCell>
+              ))}
+              {onEdit ? (
+                <RequirePrivilege privilege={socialHistoryEditPrivilege} hideUnauthorized>
+                  <TableCell>
+                    <Button kind="ghost" size={size} renderIcon={Edit} onClick={() => onEdit(row.id)}>
+                      {t('edit', 'Edit')}
+                    </Button>
+                  </TableCell>
+                </RequirePrivilege>
+              ) : null}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+function formatEncounterDate(value: string) {
+  return Number.isFinite(new Date(value).getTime()) ? formatDate(new Date(value), { time: true }) : '--';
+}
+
+function socialValue(
+  encounter: SocialHistoryEncounter,
+  concept: string,
+  yes: string,
+  no: string,
+  t: (key: string, fallback: string) => string,
+) {
+  const value = encounter.obs?.find((obs) => obs.concept.uuid === concept)?.value;
+  if (value == null || value === '') return '--';
+  if (typeof value !== 'object') return value;
+  if (value.uuid === yes) return t('yes', 'Yes');
+  if (value.uuid === no) return t('no', 'No');
+  return value.display || '--';
+}
+
+const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = (legacy) => {
+  const { t } = useTranslation();
+  const { concepts, socialHistory } = useConfig<ConfigObject>();
+  const history = useSocialHistory(legacy.patientUuid);
+  const openForm = useSocialHistoryFormLauncher(legacy.patientUuid, () =>
+    Promise.all([history.mutate(), legacy.mutate()]),
+  );
+  const title = t('socialHistory', 'Social History');
+  const previousTitle = t('previousSocialHistory', 'Previous social history records');
+  const loadError = t('socialHistoryLoadError', 'Social history could not be loaded. Reload and try again.');
+  const headers = [
+    t('encounterDate', 'Date'),
+    t('alcoholUse', 'Alcohol Use'),
+    t('tobaccoUse', 'Tobacco use'),
+    t('dailyCigaretteUse', 'Cigarettes per day'),
+    t('smokingDurationYears', 'Smoking duration (years)'),
+  ];
+  const fields = socialHistory.concepts;
+  const rows = history.data.map((encounter) => ({
+    id: encounter.uuid,
+    cells: [
+      formatEncounterDate(encounter.encounterDatetime),
+      ...[fields.alcohol, fields.tobacco, fields.cigarettesPerDay, fields.smokingDurationYears].map((concept) =>
+        socialValue(encounter, concept, fields.yes, fields.no, t),
+      ),
+    ],
+  }));
+  const legacyHeaders = [
+    t('encounterDate', 'Date'),
+    t('alcoholUse', 'Alcohol Use'),
+    concepts.alcoholUseDurationUuid === configSchema.concepts.alcoholUseDurationUuid._default
+      ? t('dailyCigaretteUse', 'Cigarettes per day')
+      : t('alcoholUseDuration', 'Alcohol Use Duration'),
+    t('smoking', 'Smoking'),
+    concepts.smokingDurationUuid === configSchema.concepts.smokingDurationUuid._default
+      ? t('smokingDurationYears', 'Smoking duration (years)')
+      : t('smokingDuration', 'Smoking Duration'),
+    concepts.otherSubstanceAbuseUuid === configSchema.concepts.otherSubstanceAbuseUuid._default
+      ? t('tobaccoUseStatus', 'Tobacco use status')
+      : t('otherSubstanceAbuse', 'Other Substance Abuse'),
+  ];
+  const legacyRows = (legacy.encounters ?? []).flatMap((encounter) => {
+    const values = [
+      concepts.alcoholUseUuid,
+      concepts.alcoholUseDurationUuid,
+      concepts.smokingUuid,
+      concepts.smokingDurationUuid,
+      concepts.otherSubstanceAbuseUuid,
+    ].map((concept) => getObsFromEncounter(encounter, concept));
+    return values.every((value) => value === '--')
+      ? []
+      : [{ id: encounter.uuid, cells: [formatEncounterDate(encounter.encounterDatetime), ...values] }];
+  });
+
+  return (
+    <div className={styles.historyCards}>
+      <ClinicalHistoryCard
+        title={title}
+        emptyDisplayText={title}
+        empty={rows.length === 0}
+        actionLabel={t('recordSocialHistory', 'Record social history')}
+        editPrivilege={socialHistoryEditPrivilege}
+        onAction={() => {
+          void openForm();
+        }}
+        isLoading={history.isLoading}
+        isValidating={history.isValidating}
+        error={history.error || history.truncated ? new Error(loadError) : undefined}
+        skeletonHeaders={headers.map((header) => ({ header }))}
+        pagination={history.pagination}
+      >
+        <HistoryTable
+          title={title}
+          headers={headers}
+          rows={rows}
+          onEdit={(uuid) => {
+            void openForm(uuid);
+          }}
+        />
+      </ClinicalHistoryCard>
+      {legacyRows.length || legacy.isLoading || legacy.error ? (
+        <ClinicalHistoryCard
+          title={previousTitle}
+          emptyDisplayText={previousTitle}
+          isLoading={legacy.isLoading}
+          isValidating={legacy.isValidating}
+          error={legacy.error ? new Error(loadError) : undefined}
+          skeletonHeaders={legacyHeaders.map((header) => ({ header }))}
+        >
+          <HistoryTable title={previousTitle} headers={legacyHeaders} rows={legacyRows} />
+        </ClinicalHistoryCard>
+      ) : null}
     </div>
   );
 };

@@ -24,6 +24,87 @@ describe('CRED form launcher resources', () => {
     mockOpenmrsFetch.mockReset();
   });
 
+  it.each([
+    ['a different form', [{ uuid: 'other', name: 'Other form', published: true, retired: false }]],
+    [
+      'a retired form',
+      [
+        {
+          uuid: 'retired',
+          name: 'Synthetic CRED form',
+          published: true,
+          retired: true,
+        },
+      ],
+    ],
+    [
+      'an unpublished form',
+      [
+        {
+          uuid: 'draft',
+          name: 'Synthetic CRED form',
+          published: false,
+          retired: false,
+        },
+      ],
+    ],
+    ['unverified publication flags', [{ uuid: 'unknown', name: 'Synthetic CRED form' }]],
+    [
+      'ambiguous published forms',
+      [
+        {
+          uuid: 'first',
+          name: 'Synthetic CRED form',
+          published: true,
+          retired: false,
+        },
+        {
+          uuid: 'second',
+          name: 'Synthetic CRED form',
+          published: true,
+          retired: false,
+        },
+      ],
+    ],
+  ])('rejects %s instead of opening the first search result', async (_description, results) => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results } } as Awaited<ReturnType<typeof openmrsFetch>>);
+    await expect(resolveCREDForm('Synthetic CRED form', 'Synthetic form')).rejects.toThrow();
+  });
+
+  it('does not select from an incomplete search response', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'first',
+            name: 'Synthetic CRED form',
+            published: true,
+            retired: false,
+          },
+        ],
+        links: [{ rel: 'next' }],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    await expect(resolveCREDForm('Synthetic CRED form', 'Synthetic form')).rejects.toThrow();
+  });
+
+  it.each([
+    { uuid: 'other', published: true, retired: false },
+    {
+      uuid: '21f010ce-4876-32ec-8844-27dfedc6705a',
+      published: false,
+      retired: false,
+    },
+    {
+      uuid: '21f010ce-4876-32ec-8844-27dfedc6705a',
+      published: true,
+      retired: true,
+    },
+  ])('verifies identity and publication for a configured UUID: %o', async (form) => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: form } as Awaited<ReturnType<typeof openmrsFetch>>);
+    await expect(resolveCREDForm('21f010ce-4876-32ec-8844-27dfedc6705a', 'Synthetic form')).rejects.toThrow();
+  });
+
   it('uses the child nutrition fallback when config does not provide the form key', () => {
     expect(
       getCREDFormIdentifier(
@@ -99,6 +180,7 @@ describe('CRED form launcher resources', () => {
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       expect.stringContaining('/ws/rest/v1/form/21f010ce-4876-32ec-8844-27dfedc6705a?v=custom:'),
+      { cache: 'no-store' },
     );
     expect(form).toMatchObject({
       uuid: '21f010ce-4876-32ec-8844-27dfedc6705a',

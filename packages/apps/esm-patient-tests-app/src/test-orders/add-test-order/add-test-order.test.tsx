@@ -13,13 +13,14 @@ import userEvent from '@testing-library/user-event';
 import { type ComponentProps } from 'react';
 import { mockFhirPatient, mockSessionDataResponse } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { type PostDataPrepLabOrderFunction } from '../api';
 
 import AddLabOrderWorkspace from './add-test-order.workspace';
 import { createEmptyLabOrder } from './test-order';
 
-const mockCloseWorkspace = closeWorkspace as vi.Mock;
+const mockCloseWorkspace = closeWorkspace as Mock;
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseSession = vi.mocked(useSession);

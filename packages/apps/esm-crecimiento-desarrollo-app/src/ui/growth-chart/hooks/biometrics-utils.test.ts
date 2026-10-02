@@ -1,4 +1,5 @@
 import { buildBiometricMeasurements, getBiometricConceptUuids } from './biometrics-utils';
+import { getMeasurementValue } from '../growth-chart-utils';
 
 const concepts = {
   heightUuid: 'height-concept',
@@ -7,6 +8,27 @@ const concepts = {
 };
 
 describe('biometrics-utils', () => {
+  it('does not combine weight and height from different encounters into a school BMI', () => {
+    const measurements = buildBiometricMeasurements(
+      [
+        {
+          effectiveDateTime: '2026-01-01T10:00:00Z',
+          encounter: { reference: 'Encounter/one' },
+          code: { coding: [{ code: 'weight-concept' }] },
+          valueQuantity: { value: 24 },
+        },
+        {
+          effectiveDateTime: '2026-01-01T10:00:00Z',
+          encounter: { reference: 'Encounter/two' },
+          code: { coding: [{ code: 'height-concept' }] },
+          valueQuantity: { value: 120 },
+        },
+      ],
+      concepts,
+    );
+    expect(measurements).toHaveLength(2);
+    expect(measurements.map((entry) => getMeasurementValue(entry, 'bfa_b'))).toEqual([null, null]);
+  });
   it('returns only the biometric concept UUIDs used by the growth chart', () => {
     expect(
       getBiometricConceptUuids({

@@ -1,5 +1,5 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .widgetCard {
   background-color: $ui-02;
@@ -13,4 +13,14 @@
   flex: 1 1 0%;
   justify-content: end;
   margin-right: layout.$spacing-05;
+}
+
+.historyCards {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.historyTable {
+  overflow-x: auto;
 }

@@ -40,3 +40,5 @@ export const patientAttachmentsPrivilege = 'app:hoja.clinica.adjuntos';
 export const orderBasketEditPrivilege = 'app:hoja.clinica.ordenes.editar';
 /** Both privileges are required by the Order Basket window and workspace. */
 export const orderBasketPrivileges = ['app:hoja.clinica.canastaOrdenes', orderBasketEditPrivilege];
+/** Medication entry and subsequent review/signing in the existing order basket. */
+export const prescribingPrivileges = [...orderBasketPrivileges, 'app:hoja.clinica.medicamentos.editar'];

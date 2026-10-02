@@ -19,13 +19,14 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { getUserFacingErrorMessage, logError } from '@openmrs/esm-framework';
+import { formatDate, getUserFacingErrorMessage, logError, parseDate } from '@openmrs/esm-framework';
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
+import type { BatchCalcularNowResponse, GetResultadosParams, Granularity, RecalcularAnioResponse } from '../api/types';
 import MetaProgressCard from '../components/MetaProgressCard';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
-import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
+import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
+import { isBatchTotalFailure } from '../features/resultados/batch-results';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
@@ -36,35 +37,54 @@ type SummaryState =
 
 const currentYear = () => new Date().getFullYear();
 
+const toDateString = (date: Date | null): string | undefined => (date ? date.toISOString().slice(0, 10) : undefined);
+
 const ResultadosPage: React.FC = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ indicador_id: '', periodo_inicio: '', periodo_fin: '' });
+  const [filters, setFilters] = useState({ indicador_id: '' });
+  const [periodoInicio, setPeriodoInicio] = useState<Date | null>(null);
+  const [periodoFin, setPeriodoFin] = useState<Date | null>(null);
   const [granularity, setGranularity] = useState<Granularity>('mensual');
   const [viewMode, setViewMode] = useState<'historical' | 'series'>('series');
   const [isCalcularRunning, setCalcularRunning] = useState(false);
   const [isRecalcularRunning, setRecalcularRunning] = useState(false);
   const [summary, setSummary] = useState<SummaryState>(null);
+  const [isCalculateModalOpen, setCalculateModalOpen] = useState(false);
   const [isRecalcModalOpen, setRecalcModalOpen] = useState(false);
   const [recalcAnio, setRecalcAnio] = useState<number>(currentYear());
   const [recalcAnioError, setRecalcAnioError] = useState<string | null>(null);
   const actionLockRef = useRef(false);
   const pageSize = 10;
 
-  const { data: indicadoresData } = useIndicadores(1, 100);
+  const currentYearValue = currentYear();
+  const periodRangeInvalid = Boolean(periodoInicio && periodoFin && periodoInicio > periodoFin);
 
-  // Historical paginated results
+  const { data: indicadores } = useAllIndicadores();
+
+  // Historical paginated results. Only fetch when the historical view is
+  // active — passing `null` uses SWR's null-key pattern so the fetcher is
+  // never invoked in the series view (avoids wasted backend bandwidth/rows).
+  const historicalParams = useMemo<GetResultadosParams | null>(
+    () =>
+      viewMode === 'historical'
+        ? {
+            page,
+            size: pageSize,
+            indicador_id: filters.indicador_id || undefined,
+            periodo_inicio: periodRangeInvalid ? undefined : toDateString(periodoInicio),
+            periodo_fin: periodRangeInvalid ? undefined : toDateString(periodoFin),
+            include_historicos: true,
+          }
+        : null,
+    [viewMode, page, filters.indicador_id, periodRangeInvalid, periodoInicio, periodoFin],
+  );
+
   const {
     data: historicalData,
     isLoading: historicalLoading,
     error: historicalError,
-  } = useResultados({
-    page,
-    size: pageSize,
-    indicador_id: filters.indicador_id || undefined,
-    periodo_inicio: filters.periodo_inicio || undefined,
-    periodo_fin: filters.periodo_fin || undefined,
-  });
+  } = useResultados(historicalParams);
 
   // Time-series rollup data
   const seriesParams = useMemo(
@@ -72,12 +92,12 @@ const ResultadosPage: React.FC = () => {
       filters.indicador_id
         ? {
             indicador_id: filters.indicador_id,
-            anio: currentYear(),
+            anio: currentYearValue,
             granularity,
             include_meta: true,
           }
         : null,
-    [filters.indicador_id, granularity],
+    [filters.indicador_id, granularity, currentYearValue],
   );
 
   const { data: seriesData, isLoading: seriesLoading, error: seriesError } = useResultadosSeries(seriesParams);
@@ -86,6 +106,12 @@ const ResultadosPage: React.FC = () => {
   const { recalcularAnio } = useRecalcularAnio();
 
   const anyActionRunning = isCalcularRunning || isRecalcularRunning;
+
+  const openCalculateModal = () => {
+    if (!anyActionRunning) {
+      setCalculateModalOpen(true);
+    }
+  };
 
   const handleCalcular = async () => {
     if (actionLockRef.current) {
@@ -106,7 +132,11 @@ const ResultadosPage: React.FC = () => {
       // item. This is safer than requiring `failed >= total` because the
       // backend's `total` may exceed the number of reported errors (e.g.
       // it represents attempted recalculations/months).
-      const isTotalFailure = result.calculados === 0 && failed > 0 && result.total > 0;
+      const isTotalFailure = isBatchTotalFailure({
+        successes: result.calculados,
+        errorCount: failed,
+        total: result.total,
+      });
       const baseMessage = t('indicatorsCalculated', '{{count}} indicadores calculados', {
         count: result.calculados,
       });
@@ -122,12 +152,13 @@ const ResultadosPage: React.FC = () => {
         getUserFacingErrorMessage(
           calculationError,
           'No se pudieron calcular los indicadores.',
-          indicatorsErrorMessageOptions,
+          indicatorsErrorMessageOptions(t),
         ),
       );
     } finally {
       setCalcularRunning(false);
       actionLockRef.current = false;
+      setCalculateModalOpen(false);
     }
   };
 
@@ -179,7 +210,11 @@ const ResultadosPage: React.FC = () => {
       // Safer than `failed >= total` because the backend's `total` may be
       // greater than the reported `errores.length` for the annual batch
       // (e.g. total = attempted months/indicators combinations).
-      const isTotalFailure = result.recalculados === 0 && failed > 0 && result.total > 0;
+      const isTotalFailure = isBatchTotalFailure({
+        successes: result.recalculados,
+        errorCount: failed,
+        total: result.total,
+      });
       const baseMessage = t('recalcDone', '{{count}} resultados recalculados para el año {{anio}}', {
         count: result.recalculados,
         anio: recalcAnio,
@@ -196,7 +231,7 @@ const ResultadosPage: React.FC = () => {
         getUserFacingErrorMessage(
           recalcError,
           t('recalcFailed', 'No se pudo recalcular el año'),
-          indicatorsErrorMessageOptions,
+          indicatorsErrorMessageOptions(t),
         ),
       );
     } finally {
@@ -212,11 +247,11 @@ const ResultadosPage: React.FC = () => {
     if (summary.kind === 'calcular') {
       const { result } = summary;
       const hasErrors = result.errores.length > 0;
-      // Mirrors handleCalcular: total failure means 0 successes with at
-      // least one error on a non-empty batch. Do NOT require
-      // `errores.length >= total` since `total` may exceed the reported
-      // error count.
-      const isTotalFailure = result.calculados === 0 && hasErrors && result.total > 0;
+      const isTotalFailure = isBatchTotalFailure({
+        successes: result.calculados,
+        errorCount: result.errores.length,
+        total: result.total,
+      });
       const kind: 'success' | 'warning' | 'error' = isTotalFailure ? 'error' : hasErrors ? 'warning' : 'success';
       const subtitle = isTotalFailure
         ? t('recalcSummaryTotalError', '{{calculados}} de {{total}} calculados, todos con error', {
@@ -265,11 +300,11 @@ const ResultadosPage: React.FC = () => {
     }
     const { result, anio } = summary;
     const hasErrors = result.errores.length > 0;
-    // Mirrors handleRecalcularConfirm: total failure means 0 recalculated
-    // with at least one error on a non-empty batch. Do NOT require
-    // `errores.length >= total` since the backend may report fewer
-    // errors than the total attempted (months × indicators).
-    const isTotalFailure = result.recalculados === 0 && hasErrors && result.total > 0;
+    const isTotalFailure = isBatchTotalFailure({
+      successes: result.recalculados,
+      errorCount: result.errores.length,
+      total: result.total,
+    });
     const kind: 'success' | 'warning' | 'error' = isTotalFailure ? 'error' : hasErrors ? 'warning' : 'success';
     const subtitle = isTotalFailure
       ? t('recalcSummaryRecalcTotalError', '{{anio}}: {{recalculados}} recalculados, todos con error', {
@@ -321,20 +356,27 @@ const ResultadosPage: React.FC = () => {
   const isLoading = viewMode === 'historical' ? historicalLoading : seriesLoading;
   const error = viewMode === 'historical' ? historicalError : seriesError;
 
+  const granularityLabels: Record<Granularity, string> = {
+    mensual: t('monthly', 'Mensual'),
+    trimestral: t('quarterly', 'Trimestral'),
+    semestral: t('semiannual', 'Semestral'),
+    anual: t('annual', 'Anual'),
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
           <h2>{t('results', 'Resultados')}</h2>
           <p className={styles.subtitle}>
-            {t('resultsSubtitle', 'Consulta resultados calculados y ejecutá el cálculo manual del lote.')}
+            {t('resultsSubtitle', 'Consulte resultados calculados y ejecute el cálculo manual del lote.')}
           </p>
         </div>
         <div className={styles.headerActions}>
           <Button kind="tertiary" onClick={openRecalcularModal} disabled={anyActionRunning}>
             {t('recalculateYear', 'Recalcular año')}
           </Button>
-          <Button onClick={handleCalcular} disabled={anyActionRunning}>
+          <Button onClick={openCalculateModal} disabled={anyActionRunning}>
             {isCalcularRunning ? (
               <InlineLoading description={t('calculating', 'Calculando...')} />
             ) : (
@@ -357,18 +399,17 @@ const ResultadosPage: React.FC = () => {
           }}
         >
           <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
-          {(indicadoresData?.items ?? []).map((indicador) => (
+          {(indicadores ?? []).map((indicador) => (
             <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
           ))}
         </Select>
         <DatePicker
           datePickerType="single"
           dateFormat="Y-m-d"
-          value={filters.periodo_inicio}
+          value={periodoInicio ?? undefined}
           onChange={(dates: Date[]) => {
             setPage(1);
-            const d = dates[0];
-            setFilters((current) => ({ ...current, periodo_inicio: d ? d.toISOString().slice(0, 10) : '' }));
+            setPeriodoInicio(dates[0] ?? null);
           }}
         >
           <DatePickerInput id="resultado-desde" labelText={t('from', 'Desde')} />
@@ -376,16 +417,24 @@ const ResultadosPage: React.FC = () => {
         <DatePicker
           datePickerType="single"
           dateFormat="Y-m-d"
-          value={filters.periodo_fin}
+          value={periodoFin ?? undefined}
           onChange={(dates: Date[]) => {
             setPage(1);
-            const d = dates[0];
-            setFilters((current) => ({ ...current, periodo_fin: d ? d.toISOString().slice(0, 10) : '' }));
+            setPeriodoFin(dates[0] ?? null);
           }}
         >
           <DatePickerInput id="resultado-hasta" labelText={t('to', 'Hasta')} />
         </DatePicker>
       </div>
+
+      {periodRangeInvalid ? (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          hideCloseButton
+          title={t('periodRangeInvalid', 'La fecha de inicio debe ser anterior o igual a la fecha de fin.')}
+        />
+      ) : null}
 
       {/* View mode switcher + granularity */}
       <div className={`${styles.headerActions} ${styles.contentSwitcherRow}`}>
@@ -419,7 +468,7 @@ const ResultadosPage: React.FC = () => {
           {getUserFacingErrorMessage(
             error,
             t('resultsLoadFailed', 'No se pudieron cargar los resultados.'),
-            indicatorsErrorMessageOptions,
+            indicatorsErrorMessageOptions(t),
           )}
         </div>
       ) : null}
@@ -443,7 +492,11 @@ const ResultadosPage: React.FC = () => {
         filters.indicador_id ? (
           seriesData?.items.length ? (
             <div className={styles.tableSurface}>
-              <Table aria-label={`Serie temporal — ${granularity}`}>
+              <Table
+                aria-label={t('seriesTableAria', 'Serie temporal — {{granularity}}', {
+                  granularity: granularityLabels[granularity],
+                })}
+              >
                 <TableHead>
                   <TableRow>
                     <TableHeader>{t('period', 'Periodo')}</TableHeader>
@@ -452,8 +505,8 @@ const ResultadosPage: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {seriesData.items.map((item, idx) => (
-                    <TableRow key={`${item.periodo_label}-${idx}`}>
+                  {seriesData.items.map((item) => (
+                    <TableRow key={`${item.periodo_label}-${item.anio}`}>
                       <TableCell>{item.periodo_label}</TableCell>
                       <TableCell>{item.valor}</TableCell>
                       <TableCell>{item.meses_disponibles}</TableCell>
@@ -469,7 +522,7 @@ const ResultadosPage: React.FC = () => {
           )
         ) : (
           <Tile className={styles.empty}>
-            {t('selectIndicatorForSeries', 'Seleccioná un indicador para ver su serie temporal.')}
+            {t('selectIndicatorForSeries', 'Seleccione un indicador para ver su serie temporal.')}
           </Tile>
         )
       ) : null}
@@ -479,7 +532,7 @@ const ResultadosPage: React.FC = () => {
         historicalData?.items.length ? (
           <>
             <div className={styles.tableSurface}>
-              <Table aria-label="Resultados de indicadores">
+              <Table aria-label={t('historicalTableAria', 'Resultados de indicadores')}>
                 <TableHead>
                   <TableRow>
                     <TableHeader>{t('indicator', 'Indicador')}</TableHeader>
@@ -500,7 +553,7 @@ const ResultadosPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{item.valor}</TableCell>
                       <TableCell>{item.es_canonico ? t('yes', 'Sí') : t('no', 'No')}</TableCell>
-                      <TableCell>{new Date(item.calculado_en).toLocaleString('es-PE')}</TableCell>
+                      <TableCell>{formatDate(parseDate(item.calculado_en))}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -519,6 +572,33 @@ const ResultadosPage: React.FC = () => {
           <Tile className={styles.empty}>{t('noResults', 'No hay resultados para los filtros seleccionados.')}</Tile>
         )
       ) : null}
+
+      <Modal
+        open={isCalculateModalOpen}
+        modalHeading={t('calculateNow', 'Calcular ahora')}
+        primaryButtonText={
+          isCalcularRunning ? (
+            <InlineLoading description={t('calculating', 'Calculando...')} />
+          ) : (
+            t('calculate', 'Calcular')
+          )
+        }
+        primaryButtonDisabled={isCalcularRunning}
+        secondaryButtonText={t('cancelCalculation', 'Cancelar cálculo')}
+        onRequestClose={() => {
+          if (!isCalcularRunning) {
+            setCalculateModalOpen(false);
+          }
+        }}
+        onRequestSubmit={() => void handleCalcular()}
+      >
+        <p className={styles.modalBodyText}>
+          {t(
+            'calculateNowConfirmation',
+            'Esta acción calculará los indicadores activos y actualizará sus resultados. ¿Desea continuar?',
+          )}
+        </p>
+      </Modal>
 
       <Modal
         open={isRecalcModalOpen}
@@ -548,7 +628,7 @@ const ResultadosPage: React.FC = () => {
         <NumberInput
           id="recalc-anio"
           label={t('year', 'Año')}
-          min={1900}
+          min={2000}
           max={currentYear()}
           value={recalcAnio}
           onChange={(_event, { value }) => {
@@ -565,7 +645,7 @@ const ResultadosPage: React.FC = () => {
         {filters.indicador_id ? (
           <p className={styles.scopeHint}>
             {t('recalcModalScopeHint', 'Se recalculará solo el indicador seleccionado: {{nombre}}.', {
-              nombre: indicadoresData?.items.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id,
+              nombre: indicadores?.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id,
             })}
           </p>
         ) : null}

@@ -1,3 +1,5 @@
+import type { LMSReference } from '../who-lms';
+
 export interface ChartData {
   [key: string]: {
     categoryMetadata?: {
@@ -6,6 +8,7 @@ export interface ChartData {
     };
     datasets: {
       [key: string]: {
+        lmsReferences?: LMSReference[];
         zScoreDatasetValues: { [key: string]: number }[];
         percentileDatasetValues: { [key: string]: number }[];
         metadata: {
@@ -26,6 +29,7 @@ export const TimeUnitCodes = Object.freeze({
 });
 
 export const MeasurementTypeCodesLabel = Object.freeze({
+  bmi: 'BMI',
   headCircumference: 'Head circumference',
   length: 'Length',
   height: 'Height',
@@ -33,6 +37,8 @@ export const MeasurementTypeCodesLabel = Object.freeze({
 });
 
 export const MeasurementTypeCodes = Object.freeze({
+  bfa_b: 'bmi',
+  bfa_g: 'bmi',
   hcfa_b: 'headCircumference',
   hcfa_g: 'headCircumference',
   lhfa_b: 'height',
@@ -51,6 +57,8 @@ export const CategoryLabels = Object.freeze({
 });
 
 export const CategoryCodes = Object.freeze({
+  bfa_b: 'bfa_b',
+  bfa_g: 'bfa_g',
   hcfa_b: 'hcfa_b',
   hcfa_g: 'hcfa_g',
   lhfa_b: 'lhfa_b',
@@ -62,6 +70,7 @@ export const CategoryCodes = Object.freeze({
 });
 
 export enum DataSetLabels {
+  y_5_19 = 'y_5_19',
   w_0_13 = 'w_0_13',
   y_0_2 = 'y_0_2',
   y_0_5 = 'y_0_5',

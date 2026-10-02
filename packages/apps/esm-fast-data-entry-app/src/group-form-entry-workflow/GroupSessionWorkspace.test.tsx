@@ -7,6 +7,7 @@ import {
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useCallback, useReducer } from 'react';
+import type { Mock } from 'vitest';
 import GroupFormWorkflowContext from '../context/GroupFormWorkflowContext';
 import groupFormWorkflowReducer from '../context/GroupFormWorkflowReducer';
 import FormBootstrap from '../FormBootstrap';
@@ -59,7 +60,7 @@ const mockUseConfig = vi.mocked(useConfig);
 const mockUseSession = vi.mocked(useSession);
 const mockUseStore = vi.mocked(useStore);
 const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
-const mockFormBootstrap = FormBootstrap as vi.Mock;
+const mockFormBootstrap = FormBootstrap as Mock;
 
 const renderWorkspace = (contextOverrides = {}) => {
   const defaultContext = {

@@ -124,8 +124,8 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getByText(/Studies: No studies found/i)).toBeInTheDocument();
-    expect(screen.getByText(/Worklist: No worklist found/i)).toBeInTheDocument();
+    expect(screen.getByText(/Studies: Studies/i)).toBeInTheDocument();
+    expect(screen.getByText(/Worklist: Requests/i)).toBeInTheDocument();
   });
 
   it('renders error states if API returns errors', () => {

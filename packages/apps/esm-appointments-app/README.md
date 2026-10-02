@@ -62,6 +62,27 @@ El frontend reconoce los identificadores heredados equivalentes `app:appointment
 
 Los guards de UI controlan visibilidad y acceso a rutas, modales y workspaces. No sustituyen la autorización del backend: los roles OpenMRS todavía deben incluir los permisos REST necesarios para leer o modificar citas, consultas, colas y personas.
 
+## Impresión desde una cita
+
+La tabla de agenda y el menú de citas de la hoja clínica ofrecen **Imprimir datos
+de identificación** para el paciente de la fila seleccionada. La acción requiere
+lectura de citas en su contexto, `Get Patients` y el privilegio existente
+`App: Can generate a Patient Identity Sticker`; no requiere editar la cita ni
+cambia su estado. También está disponible en citas finalizadas o canceladas.
+Si el paciente del menú no coincide con el de la cita, no se habilita impresión.
+
+El modal `print-patient-identity-modal` pertenece al módulo existente
+`esm-patient-label-printing-app` y usa el PDF de `patientdocuments` ya incluido
+en la distribución. No añade otra plantilla ni otro OMOD. La opción de mostrar
+el botón del banner del paciente sigue siendo independiente. El modal vuelve a
+comprobar privilegios y paciente antes de solicitar el PDF; los errores de
+acceso, carga o impresión permiten reintentar sin modificar datos.
+
+La aceptación requiere comprobar ambos menús con un perfil de prueba autorizado
+y uno sin acceso, el documento del paciente sintético correcto, su formato y el
+diálogo de impresión en el navegador del hospital. Las pruebas locales no
+certifican el OMOD instalado ni la salida física de la impresora.
+
 ## Configuración operativa
 
 - La llegada con un financiador no SIS exige que Admisión confirme manualmente haber revisado el comprobante de Caja. La confirmación no acredita SIS ni ejecuta un cobro. El atributo `arrivalPaymentVisitAttributeTypeUuid` guarda JSON versión 1 con `confirmed`, `financingUuid`, `appointmentUuid`, `confirmedBy` y `confirmedAt`. En visitas nuevas se incluye en el mismo payload; en consultas activas se guarda y relee antes de autorizar el ingreso a cola o la llegada directa. Si cambia el financiador o falla el guardado, se bloquea la continuación. SIS conserva la verificación de cobertura existente.
@@ -74,6 +95,33 @@ Los guards de UI controlan visibilidad y acceso a rutas, modales y workspaces. N
 - La UPSS limita los servicios disponibles y el selector de personal exige una categoría de agenda del servicio coincidente con un atributo activo del prestador (`providerSchedulingCategoryValidation.providerAttributeTypeUuid`). Los modos `off` y `warn` no amplían el selector a personal sin esa habilitación. Si faltan asociaciones, se muestra la advertencia de personal no habilitado; no se infiere compatibilidad por el nombre, la profesión o el rol. Cambiar la UPSS o el servicio elimina una selección incompatible, y el guardado vuelve a comprobarla.
 - Borrar o completar parcialmente la fecha mantiene abierto el formulario y conserva el mes visible del calendario. La fecha debe ser válida antes de guardar.
 - La tabla muestra el documento civil como tipo + número (`DNI - …`, `CE - …`, `Pasaporte - …`). El número de HCE y los identificadores internos no se presentan como documentos civiles. La consulta complementaria del paciente distingue carga, ausencia y error; este último ofrece reintento sobre el mismo registro.
+
+## Fechas del calendario
+
+Una fecha civil sin hora (`YYYY-MM-DD`) se interpreta en la zona local del
+navegador, de forma consistente en el calendario, el formulario y su payload.
+No se convierte primero a medianoche UTC: en Lima eso cambia la fecha al día
+anterior. Un timestamp almacenado con offset conserva su instante al editarlo;
+la fecha civil y el timestamp tienen contratos distintos. El fin de una serie
+recurrente sigue la misma regla de fecha local cuando no incluye hora.
+
+La cuadrícula conserva el año del mes consultado también en sus celdas vecinas.
+Empieza en domingo, como sus encabezados, independientemente del idioma, y
+contiene semanas completas. El título del mes y el vínculo a la lista diaria
+usan la misma fecha local seleccionada.
+
+[Appointments 2.2.0 devuelve claves `yyyy-MM-dd` en su resumen diario](https://github.com/Bahmni/openmrs-module-appointments/blob/2.2.0/omod/src/main/java/org/openmrs/module/appointments/web/controller/AppointmentController.java#L98).
+El frontend conserva esas claves; no las desplaza para compensar diferencias de
+zona horaria del servidor. La distribución y el entorno deben tener una zona
+horaria coherente con la operación del hospital.
+
+Las regresiones ejecutan explícitamente UTC y `America/Lima`, incluso cuando
+el proceso de CI comienza en UTC. Cubren límites de mes/año, año bisiesto,
+creación con hora o de día completo, edición de un instante UTC y navegación
+del resumen hacia el mismo día. Para cerrar el reporte hospitalario falta
+comprobar creación, edición/reprogramación, recarga de calendario/lista y visitas
+vinculadas con datos sintéticos en DEV/QLTY y las versiones desplegadas. Las
+pruebas locales no acreditan la agrupación de fechas del servidor ni su zona.
 
 ## Desarrollo
 

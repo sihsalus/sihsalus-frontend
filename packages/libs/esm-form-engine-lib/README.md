@@ -35,6 +35,32 @@ Key features of the Form Engine include:
   - **View Mode** - This mode allows the user to view data that has already been entered into the form. The form is rendered in a read-only mode.
   - **Embedded View** - This mode is a condensed version of the `view mode` without the section headers and form actions. It can be used to display entered form data within a widget.
 
+### Literal dropdown answers
+
+The local O3 fork supports `answers[].value` on `select` fields backed by Text
+observations. The dropdown and observation display adapter use the same literal
+value and translated label. An existing text value absent from the current list
+remains visible and selectable; rendering does not replace it or infer an answer.
+Coded answers still use `answers[].concept`. Content owns the option lists and
+concept datatypes. The regression tests cover selection, payload/reload/display,
+previous text and coded-answer compatibility. These tests do not replace a
+clinical save/reload check against the deployed backend.
+
+### Initial section expansion
+
+The renderer honors each section's declarative `isExpanded` value on first
+render. Manual section toggles retain entered values; subsequent expand/collapse
+all actions still override the initial state. This fixes the local fork's prior
+behavior of always opening all sections, including optional outpatient history.
+
+### Numeric precision
+
+A number field rejects decimals when its schema sets `disallowDecimals` or its
+loaded concept explicitly sets `allowDecimal: false`. A concept permitting
+decimals does not override a stricter schema. Missing concept metadata does not
+invent an integer restriction; required-field and numeric bounds checks still
+apply. Regression cases are in `src/validators/form-validator.test.ts`.
+
 ### Fail-closed encounter editing
 
 An edit session must load the encounter selected by `encounterUUID` before rendering editable values or accepting a
@@ -50,6 +76,32 @@ keep the mounted session while loading, then the hook returns the newly loaded
 schema; a failed load discards the previous schema and reports only a fixed generic
 error. This does not establish live renderer/dirty-field reconciliation for schema
 edits, or the cause of an error observed in a deployed environment.
+
+### Text area limits
+
+When a schema declares a positive `questionOptions.maxLength`, a text area shows
+Carbon's character counter and the shared validator rejects values above that
+limit. Schemas without a limit retain their previous behavior.
+
+### Schema-only preview
+
+`FormPreview` renders an in-memory schema through the existing schema loader,
+processor factory and field components. It mounts a separate provider context
+without the clinical submission lifecycle or patient loader. The preview
+processor reuses schema preparation and default-value logic, has no clinical
+history/dependency hooks, and rejects direct submission. Ordinary `FormEngine`
+patient and encounter checks remain required.
+
+Preview sessions reset when schema content changes. Their translations and page
+observer state are isolated from clinical sessions. Empty forms complete their
+initial-value load through the common hook; nonempty forms wait for fields,
+adapters and context dependencies before initializing values once.
+
+Built-in controls and metadata datasources are available; custom controls,
+custom datasources, workspace launchers and file actions render a descriptive
+placeholder. Concept and referenced-form reads use the existing authorized
+endpoints. This is a schema preview, not a simulation of clinical submission or
+patient-dependent calculations.
 
 ## Documentation
 

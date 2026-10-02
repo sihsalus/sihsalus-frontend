@@ -67,7 +67,7 @@ interface ConditionsOverviewProps {
 const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
   const { conditionPageSize } = config;
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const statusFilterId = useId();
   const displayText = t('antecedentesPatologicos', 'Antecedentes Patológicos del Menor');
   const headerTitle = t('antecedentesPatologicos', 'Antecedentes Patológicos del Menor');

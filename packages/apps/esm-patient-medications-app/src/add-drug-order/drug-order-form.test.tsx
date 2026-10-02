@@ -1,10 +1,10 @@
 import { getDefaultsFromConfigSchema, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse } from 'test-utils';
-import { useRequireOutpatientQuantity } from '../api/api';
-import { prepMedicationOrderPostData } from '../api/api';
+import type { Mock } from 'vitest';
+import { prepMedicationOrderPostData, useRequireOutpatientQuantity } from '../api/api';
 import { type ConfigObject, configSchema } from '../config-schema';
 import DrugOrderForm from './drug-order-form.component';
 import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
@@ -17,8 +17,20 @@ vi.mock('@openmrs/esm-framework', async () => {
     ...actual,
     useLayoutType: vi.fn(() => 'small-desktop'),
     OpenmrsDatePicker: React.forwardRef(
-      (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLSpanElement>) =>
-        React.createElement('span', { ref }, props.labelText as import('react').ReactNode),
+      (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLInputElement>) =>
+        React.createElement(
+          'label',
+          { htmlFor: props.id },
+          props.labelText as import('react').ReactNode,
+          React.createElement('input', {
+            ref,
+            id: props.id,
+            type: 'date',
+            disabled: props.isDisabled,
+            onChange: (event: import('react').ChangeEvent<HTMLInputElement>) =>
+              (props.onChange as (date: Date) => void)(new Date(`${event.target.value}T00:00:00`)),
+          }),
+        ),
     ),
   };
 });
@@ -35,7 +47,10 @@ vi.mock('../api/order-config', async () => ({
   useOrderConfig: vi.fn().mockReturnValue({
     orderConfigObject: {
       drugRoutes: [{ valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' }],
-      drugDosingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
+      drugDosingUnits: [
+        { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
+        { valueCoded: 'synthetic-mg', value: 'mg' },
+      ],
       drugDispensingUnits: [
         { valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' },
         { valueCoded: '162376AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Application' },
@@ -84,7 +99,7 @@ vi.mock('../api/api', async () => ({
 afterEach(() => {
   mockUseConfig.mockReturnValue(defaultConfig);
   mockUseLayoutType.mockReturnValue('small-desktop');
-  (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+  (useRequireOutpatientQuantity as Mock).mockReturnValue({
     requireOutpatientQuantity: true,
     error: null,
     isLoading: false,
@@ -123,6 +138,66 @@ function getRequiredFieldLabels() {
       .trim(),
   );
 }
+
+it.each([
+  'small-desktop',
+  'tablet',
+] as const)('keeps one medication summary and the entered dose across visibility changes on %s', async (layout) => {
+  mockUseLayoutType.mockReturnValue(layout);
+  const notifyVisibility: Array<(ratio: number) => void> = [];
+  const OriginalIntersectionObserver = globalThis.IntersectionObserver;
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class extends OriginalIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        super(callback, options);
+        notifyVisibility.push((intersectionRatio) => {
+          const target = document.getElementById('medicationInfo');
+          const bounds = target.getBoundingClientRect();
+          callback(
+            [
+              {
+                target,
+                intersectionRatio,
+                isIntersecting: intersectionRatio > 0,
+                boundingClientRect: bounds,
+                intersectionRect: bounds,
+                rootBounds: null,
+                time: performance.now(),
+              },
+            ],
+            this,
+          );
+        });
+      }
+    },
+  );
+
+  try {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const { container } = renderDrugOrderForm(createNewOrderBasketItem(), onSave);
+    const summary = container.querySelector('#medicationInfo');
+    const dose = screen.getByRole('spinbutton', { name: /^Dose/ });
+    await user.clear(dose);
+    await user.type(dose, '3');
+
+    for (const ratio of [0.5, 1, 0, 1]) {
+      act(() => {
+        for (const notify of notifyVisibility) {
+          notify(ratio);
+        }
+      });
+      expect(container.querySelectorAll('#medicationInfo')).toHaveLength(1);
+      expect(container.querySelector('#medicationInfo')).toBe(summary);
+      expect(dose).toHaveValue(3);
+      expect(dose).toHaveFocus();
+    }
+    expect(onSave).not.toHaveBeenCalled();
+  } finally {
+    vi.stubGlobal('IntersectionObserver', OriginalIntersectionObserver);
+  }
+});
 
 describe('STAT single-dose prescriptions', () => {
   const onceUuid = '11111111-1111-4111-8111-111111111111';
@@ -182,6 +257,7 @@ describe('STAT single-dose prescriptions', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
     expect(onSave.mock.calls[0][0]).toMatchObject({
       urgency: 'STAT',
+      startDateIsExplicit: false,
       frequency: { valueCoded: onceUuid },
       dosage: 2,
       unit: tablet,
@@ -367,7 +443,7 @@ describe('STAT single-dose prescriptions', () => {
     const onSave = vi.fn();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    renderDrugOrderForm(completeOrder({ startDate: yesterday }), onSave);
+    renderDrugOrderForm(completeOrder({ startDate: yesterday, startDateIsExplicit: true }), onSave);
     const selectFrequency = async () => {
       const frequency = screen.getByRole('combobox', { name: /frequency/i });
       await user.clear(frequency);
@@ -386,9 +462,50 @@ describe('STAT single-dose prescriptions', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
     const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
     expect((draft.startDate as Date).toDateString()).toBe(new Date().toDateString());
+    expect(draft.startDateIsExplicit).toBe(false);
     expect(
       prepMedicationOrderPostData(draft, 'synthetic-patient', 'synthetic-encounter').dateActivated,
     ).toBeUndefined();
+  });
+
+  it.each([
+    false,
+    true,
+    undefined,
+  ])('preserves date intent when reopening and saving (explicit=%s)', async (explicit) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const onSave = vi.fn();
+    renderDrugOrderForm(completeOrder({ startDate: yesterday, startDateIsExplicit: explicit }), onSave);
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect(draft.startDateIsExplicit).toBe(explicit !== false);
+    expect((draft.startDate as Date).toDateString()).toBe((explicit === false ? new Date() : yesterday).toDateString());
+  });
+
+  it('keeps a clinician-selected date explicit through saving and reopening the draft', async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const selected = [
+      yesterday.getFullYear(),
+      String(yesterday.getMonth() + 1).padStart(2, '0'),
+      String(yesterday.getDate()).padStart(2, '0'),
+    ].join('-');
+    const onSave = vi.fn();
+    const view = renderDrugOrderForm(completeOrder(), onSave);
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: selected } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    const draft = onSave.mock.calls[0][0] as DrugOrderBasketItem;
+    expect(draft).toMatchObject({ startDate: yesterday, startDateIsExplicit: true });
+    view.unmount();
+    const onResave = vi.fn();
+    renderDrugOrderForm(draft, onResave);
+    fireEvent.submit(screen.getByRole('button', { name: 'Save order' }).closest('form'));
+    await waitFor(() => expect(onResave).toHaveBeenCalledOnce());
+    expect(onResave.mock.calls[0][0]).toMatchObject({ startDate: yesterday, startDateIsExplicit: true });
   });
 
   it('blocks submission of an existing once draft when its configured frequency is no longer available', () => {
@@ -473,7 +590,7 @@ describe('DrugOrderForm - required field indicators', () => {
 
   it('does not mark indication or dispensing fields when they are optional', () => {
     mockUseConfig.mockReturnValue({ ...defaultConfig, requireIndication: false });
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -1080,7 +1197,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
 
   it('does not auto-calculate when requireOutpatientQuantity is false', async () => {
     const user = userEvent.setup();
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -1111,7 +1228,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(screen.queryByText(/auto-calculated/i)).not.toBeInTheDocument();
 
     // Restore default mock
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: true,
       error: null,
       isLoading: false,
@@ -1150,7 +1267,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
 
   it('keeps the complete backend duration catalog outside the outpatient workflow', async () => {
     const user = userEvent.setup();
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -1163,7 +1280,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(screen.getByText('Hours')).toBeInTheDocument();
     expect(screen.getByText('Years')).toBeInTheDocument();
 
-    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as Mock).mockReturnValue({
       requireOutpatientQuantity: true,
       error: null,
       isLoading: false,

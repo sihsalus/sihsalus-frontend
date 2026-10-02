@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
+import { getOdontogramConfig } from '../odontogram/config/dentition';
 import { createEmptyOdontogramData, type OdontogramData } from '../odontogram/types/odontogram';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 import type { OdontogramRecordType } from '../types/odontogram-record';
@@ -48,7 +49,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   const resetData = useOdontogramDataStore((s) => s.resetData);
   const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
   const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
-  const data = useOdontogramDataStore((s) => s.data);
+  const editData = useOdontogramDataStore((s) => s.data);
+  const data = readOnly ? (initialData ?? createEmptyOdontogramData(adultConfig)) : editData;
   const setData = useOdontogramDataStore((s) => s.setData);
   const formSelection = useOdontogramDataStore((s) => s.formSelection);
   const setFormSelection = useOdontogramDataStore((s) => s.setFormSelection);
@@ -57,6 +59,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   // record currently previewed in the dashboard (which shares this store).
   // All dependencies are stable for the lifetime of a single launch.
   useEffect(() => {
+    // A historical preview must not replace the shared, possibly parked, editing buffer.
+    if (readOnly) return;
     setPatient(patientUuid);
     setWorkspaceMode(workspaceMode);
     setData(initialData ?? createEmptyOdontogramData(adultConfig));
@@ -64,6 +68,7 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
       setActiveBaseEncounterUuid(baseEncounterUuid);
     }
   }, [
+    readOnly,
     patientUuid,
     workspaceMode,
     baseEncounterUuid,
@@ -114,7 +119,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
           </Tag>
         </div>
         <OdontogramCanvas
-          config={adultConfig}
+          config={getOdontogramConfig(data)}
+          allowDentitionChange={!encounterUuid && workspaceMode === 'base' && !isSaving}
           data={data}
           onChange={setData}
           readOnly={readOnly}

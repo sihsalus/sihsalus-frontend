@@ -17,7 +17,7 @@ interface DevelopmentOverviewProps {
  * Resumen de evaluaciones de desarrollo disponibles para uso clínico.
  */
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { patient } = usePatient(patientUuid);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { LocationOption } from '../api/types';
 import { useLocationSearch } from '../features/indicadores/hooks';
@@ -10,16 +11,17 @@ interface LocationSearchSelectorProps {
 }
 
 const LocationSearchSelector: React.FC<LocationSearchSelectorProps> = ({ selectedItems, onChange }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const { data, isLoading, error } = useLocationSearch(query);
 
   return (
     <SearchMultiSelector
-      label="Servicios"
-      placeholder="Buscar servicios"
-      helperText="Este buscador consulta locations nativas de OpenMRS y las usa como servicios del indicador."
-      emptyText="Sin servicios seleccionados."
-      noResultsText="No se encontraron servicios con ese criterio."
+      label={t('locations', 'Servicios')}
+      placeholder={t('searchLocations', 'Buscar servicios')}
+      helperText={t('locationsHelperText', 'Seleccione los servicios de atención que se incluirán en el cálculo.')}
+      emptyText={t('noLocationsSelected', 'Sin servicios seleccionados.')}
+      noResultsText={t('noLocationsFound', 'No se encontraron servicios con ese criterio.')}
       selectedItems={selectedItems}
       data={data}
       isLoading={isLoading}

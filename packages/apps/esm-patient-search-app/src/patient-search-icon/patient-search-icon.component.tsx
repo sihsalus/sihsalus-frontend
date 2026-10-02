@@ -25,7 +25,7 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   const isSearchPage = useMemo(() => page === 'search', [page]);
   const isRecentPatientsPage = page === recentPatientsRoute;
   const [searchParams] = useSearchParams();
-  const initialSearchTerm = isSearchPage ? searchParams.get('query') : '';
+  const initialSearchTerm = isSearchPage ? (searchParams.get('query') ?? '') : '';
 
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [canClickOutside, setCanClickOutside] = useState(false);

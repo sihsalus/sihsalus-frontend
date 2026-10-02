@@ -87,7 +87,7 @@ const PatientSummaryTable = <T,>({
   onFormLaunch,
   pageSize = 10,
 }: PatientSummaryTableProps<T>): JSX.Element => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const isTablet = useLayoutType() === 'tablet';
   const { data, isLoading, error, mutate } = dataHook(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);

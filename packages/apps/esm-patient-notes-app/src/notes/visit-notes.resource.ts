@@ -57,10 +57,6 @@ export interface VisitNoteClinicalContext {
   chiefComplaint?: string;
   illnessDuration?: string;
   biologicalFunctions?: string;
-  subjective?: string;
-  objective?: string;
-  assessment?: string;
-  plan?: string;
   therapeuticIndications?: string;
   auxiliaryExams?: string;
   procedures?: string;
@@ -192,7 +188,10 @@ function buildEncounterSearchUrl(
 }
 
 /** Fetches every REST search page; it never relies on an unsupported `form` filter. */
-export async function fetchAllEncounterPages<T>(baseUrl: string): Promise<Array<T>> {
+export async function fetchAllEncounterPages<T>(
+  baseUrl: string,
+  options: { requireServer?: boolean } = {},
+): Promise<Array<T>> {
   const allResults: Array<T> = [];
   const seenUuids = new Set<string>();
   let startIndex = 0;
@@ -203,7 +202,10 @@ export async function fetchAllEncounterPages<T>(baseUrl: string): Promise<Array<
     pageUrl.searchParams.set('startIndex', String(startIndex));
     pageUrl.searchParams.set('totalCount', 'true');
     const requestUrl = `${pageUrl.pathname}${pageUrl.search}`;
-    const { data } = await openmrsFetch<EncounterPage<T>>(requestUrl);
+    const { data } = await openmrsFetch<EncounterPage<T>>(
+      requestUrl,
+      options.requireServer ? { cache: 'no-store' } : undefined,
+    );
     if (!Array.isArray(data?.results)) {
       throw new Error('The encounter search response is invalid.');
     }
@@ -256,7 +258,9 @@ async function fetchExactVisitNoteEncounters(
     visitUuid,
     encounterTypeUuid,
   });
-  const results = await fetchAllEncounterPages<Encounter>(baseUrl);
+  // Visit-scoped results authorize creating/editing the canonical note. A
+  // downloaded history cannot establish its current identity or diagnoses.
+  const results = await fetchAllEncounterPages<Encounter>(baseUrl, { requireServer: Boolean(visitUuid) });
   return results.filter((encounter) =>
     hasExactEncounterIdentity(encounter, patientUuid, encounterTypeUuid, formUuid, visitUuid),
   );
@@ -514,6 +518,19 @@ export async function fetchDiagnosisConceptsByName(searchTerm: string, diagnosis
     .map(({ concept }) => concept);
 }
 
+/** Encounter diagnoses do not consistently include catalog mappings or SHORT names in their nested concept. */
+export async function fetchDiagnosisConceptByUuid(conceptUuid: string): Promise<Concept> {
+  const representation = `custom:(uuid,display,${catalogConceptMappingsRepresentation},${catalogConceptNamesRepresentation})`;
+  const { data } = await openmrsFetch<Concept>(
+    `${restBaseUrl}/concept/${encodeURIComponent(conceptUuid)}?v=${representation}`,
+    { cache: 'no-store', rejectOnAuthFailure: true },
+  );
+  if (!data || data.uuid !== conceptUuid) {
+    throw new Error('The diagnosis catalog entry could not be verified.');
+  }
+  return data;
+}
+
 export function fetchPrestacionalConceptsByName(searchTerm: string, conceptSourceName = 'Codigos Prestacionales') {
   const configuredConceptSetNames = getConfiguredConceptSourceNames(conceptSourceName);
   const conceptSetQuery = encodeURIComponent(configuredConceptSetNames[0] ?? conceptSourceName);
@@ -583,6 +600,7 @@ async function reconcileAmbiguousCanonicalCreate(payload: VisitNotePayload): Pro
   try {
     const { data } = await openmrsFetch<Encounter>(
       `${restBaseUrl}/encounter/${payload.uuid}?v=${encodeURIComponent(canonicalVisitNoteRepresentation)}`,
+      { cache: 'no-store' },
     );
     if (
       data?.uuid === payload.uuid &&
@@ -724,7 +742,9 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
     { data: { results: Array<RestClinicalContextEncounter> } },
     Error
   >(encountersApiUrl, async () => {
-    const encounters = await fetchAllEncounterPages<RestClinicalContextEncounter>(encountersApiUrl as string);
+    const encounters = await fetchAllEncounterPages<RestClinicalContextEncounter>(encountersApiUrl as string, {
+      requireServer: Boolean(visitUuid),
+    });
     return {
       data: {
         results: encounters.filter(
@@ -751,10 +771,6 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
   );
   const getLatest = (conceptUuid: string, formFieldPath?: string) =>
     getLatestObsValue(encounters, conceptUuid, formFieldPath);
-  const getLatestStructuredText = (conceptUuid: string, formFieldPath: string, legacyConceptUuid?: string) =>
-    getLatest(conceptUuid, formFieldPath) ??
-    (legacyConceptUuid ? getLatest(legacyConceptUuid, formFieldPath) : undefined) ??
-    (conceptUuid !== visitNoteConfig.encounterNoteTextConceptUuid ? getLatest(conceptUuid) : undefined);
   const getLatestProceduresText = () =>
     getLatest(visitNoteConfig.proceduresConceptUuid, 'procedures') ??
     getLatest(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ??
@@ -772,14 +788,6 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
       getLatest(visitNoteConfig.biologicalFunctionsConceptUuid, 'biological-functions') ??
       getLatest(legacyStructuredVisitNoteConceptUuids.anamnesisText, 'biological-functions') ??
       buildBiologicalFunctionsSummary(encounters, visitNoteConfig),
-    subjective: getLatest(visitNoteConfig.soapSubjectiveConceptUuid) ?? getLatest(visitNoteConfig.anamnesisConceptUuid),
-    objective: getLatest(visitNoteConfig.soapObjectiveConceptUuid),
-    assessment: getLatest(visitNoteConfig.soapAssessmentConceptUuid),
-    plan: getLatestStructuredText(
-      visitNoteConfig.soapPlanConceptUuid,
-      'soap-plan',
-      legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
-    ),
     therapeuticIndications: getLatest(visitNoteConfig.therapeuticIndicationsConceptUuid),
     auxiliaryExams: getLatest(visitNoteConfig.labOrdersConceptUuid),
     procedures: getLatestProceduresText(),

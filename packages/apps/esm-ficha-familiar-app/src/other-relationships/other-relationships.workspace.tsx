@@ -55,7 +55,7 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
     text: relationship.display,
   }));
 
-  const form = useForm<FormData>({
+  const form = useForm<z.input<typeof relationshipFormSchema>, unknown, FormData>({
     mode: 'all',
     defaultValues: {
       personA: resolvedPatientUuid,
@@ -97,7 +97,6 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
                   {...field}
                   ref={undefined}
                   invalid={!!form.formState.errors[field.name]?.message}
-                  invalidText={form.formState.errors[field.name]?.message}
                 >
                   <DatePickerInput
                     id="startDate"
@@ -124,7 +123,6 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
                   {...field}
                   ref={undefined}
                   invalid={!!form.formState.errors[field.name]?.message}
-                  invalidText={form.formState.errors[field.name]?.message}
                 >
                   <DatePickerInput
                     id="endDate"

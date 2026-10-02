@@ -1,12 +1,13 @@
 import { formatDatetime, openmrsFetch, usePagination } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithSwr } from 'test-utils';
+import type { Mock } from 'vitest';
 import { mockPreviousImports } from '../../test-utils/mocks/openconceptlab.mock';
 
 import PreviousImports from './previous-imports.component';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
-const mockUsePagination = usePagination as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
+const mockUsePagination = usePagination as Mock;
 
 describe('Previous imports', () => {
   it('renders the table', async () => {

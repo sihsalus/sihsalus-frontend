@@ -1,5 +1,6 @@
 import {
   type AssignedExtension,
+  Extension,
   ExtensionSlot,
   type ExtensionSlotState,
   useExtensionSlotMeta,
@@ -15,6 +16,7 @@ import ChartReview from './chart-review.component';
 const mockUseExtensionStore = vi.mocked(useExtensionStore);
 const mockUseExtensionSlotMeta = vi.mocked(useExtensionSlotMeta);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockExtension = vi.mocked(Extension);
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
@@ -64,7 +66,8 @@ describe('ChartReview', () => {
     });
   });
 
-  test('renders a grid-based layout', () => {
+  test('renders the widget heading without adding an outer dashboard heading', () => {
+    mockExtension.mockImplementation(() => <h2>Seguimiento clínico del caso</h2>);
     const mockStore = {
       slots: {
         'patient-chart-dashboard-slot': {
@@ -74,7 +77,7 @@ describe('ChartReview', () => {
               meta: {
                 slot: 'patient-chart-summary-dashboard-slot',
                 path: 'Patient Summary',
-                title: 'Patient Summary',
+                title: 'caseMonitoringEncounters',
               },
             },
             {
@@ -102,6 +105,8 @@ describe('ChartReview', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading')).toHaveTextContent(/Patient summary/i);
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.queryByText('caseMonitoringEncounters')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Seguimiento clínico del caso' })).toBeInTheDocument();
   });
 });

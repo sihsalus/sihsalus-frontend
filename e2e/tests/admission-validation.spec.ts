@@ -117,18 +117,18 @@ test.describe('Peru admission accreditation checks', () => {
     );
   });
 
-  test('admission report by UPS exposes the required columns', async ({ page }) => {
+  test('admission report by UPSS exposes the operational columns and expandable details', async ({ page }) => {
     await page.goto('home/care-logbook', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { name: /Libro de Atenciones|Admissions report by UPS/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Libro de Atenciones|Care logbook/i })).toBeVisible();
 
     for (const column of [
       /Fecha|Date/i,
-      /HCE|MRN|código temporal/i,
-      /Documento|Document/i,
-      /Estado identificación|Identification status/i,
-      /Responsable|Responsible/i,
+      /Detalles de atención|Visit details/i,
+      /Estado de atención|Visit status/i,
+      /Tipo de visita|Visit type/i,
+      /Tiene SIS|Has SIS/i,
       /Paciente|Patient|Nombres y apellidos/i,
       /Servicio|Service|UPSS/i,
     ]) {

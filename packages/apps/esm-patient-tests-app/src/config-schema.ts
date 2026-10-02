@@ -36,7 +36,7 @@ export const configSchema = {
         defaultOpen: false,
       },
       {
-        conceptUuid: 'b83483dc-b3c6-48ef-a95c-b094a882dda1', // Uroanálisis
+        conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen completo de orina (laboratorio:4148).
         defaultOpen: false,
       },
       {

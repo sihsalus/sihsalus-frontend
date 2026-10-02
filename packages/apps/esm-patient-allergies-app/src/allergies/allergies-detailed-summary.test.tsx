@@ -8,9 +8,10 @@ import {
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
+import type { Mock } from 'vitest';
 import AllergiesDetailedSummary from './allergies-detailed-summary.component';
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockUserHasAccess = vi.mocked(userHasAccess);
 mockOpenmrsFetch.mockImplementation(vi.fn());
 mockUserHasAccess.mockReturnValue(true);

@@ -41,6 +41,17 @@ describe('form validators', () => {
     );
   });
 
+  it('rejects textarea content that exceeds its configured character limit', () => {
+    const field = {
+      questionOptions: { rendering: 'textarea', maxLength: '5' },
+    } as FormField;
+
+    expect(FieldValidator.validate(field, '12345')).toEqual([]);
+    expect(FieldValidator.validate(field, '123456')).toEqual([
+      expect.objectContaining({ errCode: 'field.outOfBound' }),
+    ]);
+  });
+
   it('translates inclusive numeric upper-bound validation messages', () => {
     const result = numberInputRangeValidator(Number.NaN, 10, 1000);
 
@@ -57,6 +68,28 @@ describe('form validators', () => {
       'Value must be less than or equal to {{max}}',
       { max: 10 },
     );
+  });
+
+  it.each([
+    [undefined, undefined, false],
+    [false, undefined, false],
+    [false, true, false],
+    [false, false, true],
+    [true, true, true],
+    [true, false, true],
+    [true, undefined, true],
+  ])('validates decimals with form restriction %s and concept allowance %s', (disallowDecimals, allowDecimal, rejects) => {
+    const field = {
+      id: 'hemoglobin',
+      type: 'obs',
+      questionOptions: { rendering: 'number', min: '3', max: '25', disallowDecimals },
+      meta: { concept: allowDecimal === undefined ? undefined : { uuid: 'synthetic-numeric-concept', allowDecimal } },
+    } as FormField;
+
+    expect(FieldValidator.validate(field, 11.5)).toHaveLength(rejects ? 1 : 0);
+    expect(FieldValidator.validate(field, 11)).toEqual([]);
+    expect(FieldValidator.validate(field, undefined)).toEqual([]);
+    expect(FieldValidator.validate(field, 30)).toHaveLength(1);
   });
 
   it('translates future date validation messages', () => {

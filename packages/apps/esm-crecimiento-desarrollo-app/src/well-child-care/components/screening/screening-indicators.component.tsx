@@ -27,7 +27,7 @@ interface ScreeningIndicatorsProps {
 }
 
 const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { nextDueControl } = useCREDSchedule(patientUuid);

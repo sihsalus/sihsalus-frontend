@@ -4,4 +4,9 @@
 
 .grid {
   grid-template-columns: repeat(1, minmax(0, 1fr));
+
+  &:has(> [data-registration-form]) {
+    height: calc(100dvh - var(--omrs-topnav-height, 3rem));
+    grid-template-rows: auto minmax(0, 1fr);
+  }
 }

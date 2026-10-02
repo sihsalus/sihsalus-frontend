@@ -14,6 +14,7 @@ import {
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
+import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import ImmunizationsOverview from './immunizations-overview.component';
@@ -24,8 +25,8 @@ const testProps = {
   patientUuid: mockPatient.id,
 };
 
-const mockUseFhirFetchAll = useFhirFetchAll as vi.Mock;
-const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as vi.Mock;
+const mockUseFhirFetchAll = useFhirFetchAll as Mock;
+const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as Mock;
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);

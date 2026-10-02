@@ -4,6 +4,7 @@ import {
   useCreateVersion,
   useIndicador,
   useResolvedDiagnosticos,
+  useResolvedEncounterTypes,
   useResolvedLocations,
   useResolvedOrdenes,
 } from '../features/indicadores/hooks';
@@ -19,6 +20,7 @@ vi.mock('../features/indicadores/hooks', () => ({
   useResolvedLocations: vi.fn(),
   useResolvedDiagnosticos: vi.fn(),
   useResolvedOrdenes: vi.fn(),
+  useResolvedEncounterTypes: vi.fn(),
   useSQLPreview: vi.fn(() => ({
     data: undefined,
     error: undefined,
@@ -29,6 +31,7 @@ vi.mock('../features/indicadores/hooks', () => ({
   useLocationSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   useDiagnosticoSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   useOrdenSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
+  useEncounterTypeSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
 }));
@@ -38,6 +41,7 @@ const mockUseCreateVersion = vi.mocked(useCreateVersion);
 const mockUseResolvedLocations = vi.mocked(useResolvedLocations);
 const mockUseResolvedDiagnosticos = vi.mocked(useResolvedDiagnosticos);
 const mockUseResolvedOrdenes = vi.mocked(useResolvedOrdenes);
+const mockUseResolvedEncounterTypes = vi.mocked(useResolvedEncounterTypes);
 
 const sampleIndicator = {
   id: 'ind-001',
@@ -97,6 +101,12 @@ describe('IndicadorDetailPage', () => {
     mockUseResolvedDiagnosticos.mockReturnValue({
       data: [],
       resolveMap: new Map(),
+      error: undefined,
+      isLoading: false,
+    } as never);
+    mockUseResolvedEncounterTypes.mockReturnValue({
+      data: [],
+      displayMap: new Map(),
       error: undefined,
       isLoading: false,
     } as never);
@@ -228,6 +238,160 @@ describe('IndicadorDetailPage', () => {
 
     expect(screen.getByText('Versión #1')).toBeInTheDocument();
     expect(screen.getByText('Versión #2')).toBeInTheDocument();
+  });
+
+  it('hydrates all new-version resource selectors with resolved names', () => {
+    mockUseIndicador.mockReturnValue({
+      data: {
+        ...sampleIndicator,
+        versiones: [
+          {
+            ...sampleIndicator.versiones[1],
+            definicion: {
+              tipo: 'conteo_atenciones',
+              evento: {
+                location_uuids: ['loc-001'],
+                diagnosticos: [{ concepto_uuids: ['dx-001'], tipo_diagnostico: 'presuntivo' }],
+                ordenes: [{ concepto_uuid: 'ord-001' }],
+              },
+            },
+          },
+        ],
+      },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+    mockUseResolvedLocations.mockReturnValue({
+      data: [{ uuid: 'loc-001', display: 'Centro Obstétrico' }],
+      displayMap: new Map([['loc-001', 'Centro Obstétrico']]),
+      error: undefined,
+      isLoading: false,
+    } as never);
+    mockUseResolvedDiagnosticos.mockReturnValue({
+      data: [{ uuid: 'dx-001', nombre: 'Anemia ferropénica' }],
+      resolveMap: new Map([['dx-001', { uuid: 'dx-001', nombre: 'Anemia ferropénica' }]]),
+      error: undefined,
+      isLoading: false,
+    } as never);
+    mockUseResolvedOrdenes.mockImplementation(
+      (uuids) =>
+        ({
+          data: uuids.length ? { 'ord-001': 'Hemograma' } : {},
+          displayMap: uuids.length ? new Map([['ord-001', 'Hemograma']]) : new Map(),
+          error: undefined,
+          isLoading: false,
+        }) as never,
+    );
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva versión' }));
+
+    const selectedPills = Array.from(document.querySelectorAll('.selectedItemPill'));
+    expect(selectedPills.some((pill) => pill.textContent?.includes('Centro Obstétrico'))).toBe(true);
+    expect(selectedPills.some((pill) => pill.textContent?.includes('Anemia ferropénica'))).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Órdenes' }));
+    expect(
+      Array.from(document.querySelectorAll('.selectedItemPill')).some((pill) =>
+        pill.textContent?.includes('Hemograma'),
+      ),
+    ).toBe(true);
+  });
+
+  it('hydrates the new-version form with a window definition and its encounter types', () => {
+    mockUseIndicador.mockReturnValue({
+      data: {
+        ...sampleIndicator,
+        versiones: [
+          {
+            id: 'ver-001-1',
+            indicador_id: 'ind-001',
+            version: 1,
+            creado_en: '2026-01-15T10:00:00.000Z',
+            definicion: {
+              tipo: 'conteo_pacientes_ventana',
+              evento: { encounter_type_uuids: ['enc-cred-neonato'], minimo_ocurrencias: 4 },
+              poblacion: { max_dias: 28 },
+            },
+          },
+        ],
+      },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+    mockUseResolvedEncounterTypes.mockReturnValue({
+      data: [{ uuid: 'enc-cred-neonato', display: 'CRED Neonato' }],
+      displayMap: new Map([['enc-cred-neonato', 'CRED Neonato']]),
+      error: undefined,
+      isLoading: false,
+    } as never);
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva versión' }));
+
+    const selectedPills = Array.from(document.querySelectorAll('.selectedItemPill'));
+    expect(selectedPills.some((pill) => pill.textContent?.includes('CRED Neonato'))).toBe(true);
+    expect(screen.getByLabelText('Mínimo de ocurrencias')).toHaveValue(4);
+    expect(screen.getByLabelText('Edad máxima días')).toHaveValue(28);
+  });
+
+  it('keeps the new-version form unmounted while selected definition names are loading', () => {
+    mockUseIndicador.mockReturnValue({
+      data: {
+        ...sampleIndicator,
+        versiones: [
+          {
+            ...sampleIndicator.versiones[1],
+            definicion: {
+              tipo: 'conteo_atenciones',
+              evento: { location_uuids: ['loc-001'] },
+            },
+          },
+        ],
+      },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+    mockUseResolvedLocations.mockReturnValue({
+      data: [],
+      displayMap: new Map(),
+      error: undefined,
+      isLoading: true,
+    } as never);
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva versión' }));
+
+    expect(screen.queryByRole('button', { name: 'Crear versión' })).not.toBeInTheDocument();
+    expect(screen.getByText('Cargando nombres clínicos...')).toBeInTheDocument();
+  });
+
+  it('renders without throwing when the indicator has an empty versiones array', () => {
+    mockUseIndicador.mockReturnValue({
+      data: { ...sampleIndicator, versiones: [] },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    // Regression: previously `latestVersion` called `.reduce()` without an
+    // initial value on an empty array, throwing
+    // `TypeError: Reduce of empty array with no initial value`.
+    expect(() => renderPage()).not.toThrow();
+
+    // The page should still render the indicator header and the (empty)
+    // version history list, without a "current definition" section.
+    expect(screen.getByText('Atenciones de control prenatal')).toBeInTheDocument();
+    expect(screen.getByText('Historial de versiones')).toBeInTheDocument();
+    expect(screen.queryByText('Definición actual')).not.toBeInTheDocument();
+    // No version summary items should be present
+    expect(screen.queryByText('Versión #1')).not.toBeInTheDocument();
   });
 
   it('calls createVersion on form submit and shows success notification', async () => {

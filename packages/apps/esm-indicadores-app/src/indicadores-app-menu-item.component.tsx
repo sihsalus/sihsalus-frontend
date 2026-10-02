@@ -7,10 +7,10 @@ import styles from './app-menu-item.scss';
 
 const IndicadoresAppMenuItem: React.FC = () => {
   const { t } = useTranslation();
-  const openmrsSpaBase = window['getOpenmrsSpaBase']();
+  const spaBase = (window.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa').replace(/\/+$/, '');
 
   return (
-    <ClickableTile className={styles.tile} href={`${openmrsSpaBase}indicators`}>
+    <ClickableTile className={styles.tile} href={`${spaBase}/indicators`}>
       <ChartLineData size={32} className={styles.icon} />
       <span className={styles.label}>{t('indicatorsAppMenuLink', 'Indicadores')}</span>
     </ClickableTile>

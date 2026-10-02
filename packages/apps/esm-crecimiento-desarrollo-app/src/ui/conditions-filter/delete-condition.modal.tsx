@@ -23,7 +23,7 @@ interface DeleteConditionModalProps {
 }
 
 const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDeleteModal, conditionId, patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const reasonId = useId();
   const [reason, setReason] = useState('');
   const [reasonTouched, setReasonTouched] = useState(false);

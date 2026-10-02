@@ -1,6 +1,7 @@
 import { showModal, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ConfigObject } from '../config-schema';
 import { useAmbulatoryVisitGuard } from '../hooks';
 import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
@@ -142,9 +143,11 @@ describe('OutpatientVisitSummaryDownload', () => {
       },
       concepts: {},
     });
-    mockUsePatient.mockReturnValue({ patient, isLoading: false, error: null });
+    mockUsePatient.mockReturnValue({ patient, patientUuid: patient.id, isLoading: false, error: null });
     mockUseSession.mockReturnValue({
-      sessionLocation: { uuid: 'hsc-location-uuid', display: 'IPRESS Sintética' },
+      authenticated: true,
+      sessionId: 'synthetic-session',
+      sessionLocation: { uuid: 'hsc-location-uuid', display: 'IPRESS Sintética', links: [] },
     });
     mockUseOutpatientFacilityIdentity.mockReturnValue({
       facilityAddress: 'Dirección vigente desde Location',
@@ -185,6 +188,146 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockPrintPdf.mockResolvedValue('print-requested');
     mockIsUpcomingScheduledAppointment.mockImplementation((appointment) => Boolean(appointment));
     mockFetchNextScheduledAppointment.mockResolvedValue(scheduledAppointment);
+  });
+
+  describe('explicit historical visit', () => {
+    const historicalSource = {
+      uuid: 'historical-visit',
+      patient: { uuid: 'patient-uuid' },
+      visitType: { uuid: 'ambulatory-type' },
+      startDatetime: '2025-01-01T10:00:00Z',
+      stopDatetime: '2025-01-01T11:00:00Z',
+      location: { uuid: 'historical-location', display: 'IPRESS de la visita histórica' },
+    };
+
+    beforeEach(() => {
+      mockFetchSource.mockResolvedValue(historicalSource);
+    });
+
+    it('uses the selected visit without requiring or changing the active visit or borrowing its institution', async () => {
+      const requireVisit = vi.fn();
+      mockUseAmbulatoryVisitGuard.mockReturnValue({
+        verifiedAmbulatoryVisitUuid: null,
+        requireAmbulatoryVisit: requireVisit,
+      });
+      render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />);
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      await waitFor(() => expect(mockDownloadPdf).toHaveBeenCalledOnce());
+      expect(mockFetchSource).toHaveBeenCalledWith('historical-visit');
+      expect(requireVisit).not.toHaveBeenCalled();
+      expect(mockBuildSummary).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expectedVisitUuid: 'historical-visit',
+          facilityName: 'IPRESS de la visita histórica',
+          facilityAddress: null,
+          facilityPhone: null,
+          facilityIpressCode: null,
+        }),
+      );
+      expect(mockCreateVisitPdf.mock.calls[0][1].disclaimer).toContain('consulta finalizada');
+    });
+
+    it('prints recorded instructions without a current appointment or a new prescription number', async () => {
+      mockUseConfig.mockReturnValue({
+        ...useConfig<ConfigObject>(),
+        recetaUnica: { identifierSourceUuid: 'idgen-source', validityDays: 3 },
+      });
+      render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />);
+      expect(screen.queryByRole('button', { name: 'Emitir Receta Única' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
+      await waitFor(() => expect(mockPrintPdf).toHaveBeenCalledOnce());
+      expect(mockFetchNextScheduledAppointment).not.toHaveBeenCalled();
+      expect(mockGenerateRecetaUnicaNumber).not.toHaveBeenCalled();
+      expect(mockCreateInstructionsPdf).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ followUpDateDisclaimer: expect.stringContaining('consulta finalizada') }),
+        expect.any(String),
+        null,
+        'historical',
+      );
+    });
+
+    it('rejects a visit that was reopened after selection', async () => {
+      mockFetchSource.mockResolvedValue({ ...historicalSource, stopDatetime: null });
+      render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />);
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      await waitFor(() => expect(mockShowModal).toHaveBeenCalled());
+      expect(mockCreateVisitPdf).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      { patient: { uuid: 'another-patient' } },
+      { visitType: { uuid: 'inpatient-type' } },
+      { uuid: 'another-visit' },
+    ])('rejects historical data with a mismatched identity or visit type', async (mismatch) => {
+      const actual = await vi.importActual<typeof import('./outpatient-visit-summary.resource')>(
+        './outpatient-visit-summary.resource',
+      );
+      mockBuildSummary.mockImplementationOnce(actual.buildOutpatientVisitSummary);
+      mockFetchSource.mockResolvedValue({ ...historicalSource, ...mismatch });
+      render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />);
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      await waitFor(() => expect(mockShowModal).toHaveBeenCalled());
+      expect(mockCreateVisitPdf).not.toHaveBeenCalled();
+    });
+
+    it('keeps the clinical content of two synthetic historical visits separate using the real reader', async () => {
+      const actual = await vi.importActual<typeof import('./outpatient-visit-summary.resource')>(
+        './outpatient-visit-summary.resource',
+      );
+      mockBuildSummary.mockImplementation(actual.buildOutpatientVisitSummary);
+      mockUseConfig.mockReturnValue({
+        ...useConfig<ConfigObject>(),
+        concepts: { therapeuticIndicationsUuid: 'instructions-concept' },
+      });
+      mockFetchSource.mockImplementation(async (uuid) => ({
+        ...historicalSource,
+        uuid,
+        encounters: [
+          {
+            uuid: 'encounter-' + uuid,
+            encounterDatetime: historicalSource.startDatetime,
+            obs: [
+              {
+                uuid: 'obs-' + uuid,
+                concept: { uuid: 'instructions-concept' },
+                value: uuid === 'historical-visit' ? 'Indicación sintética A' : 'Indicación sintética B',
+              },
+            ],
+          },
+        ],
+      }));
+      const { rerender } = render(
+        <OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      await waitFor(() => expect(mockCreateVisitPdf).toHaveBeenCalledOnce());
+      rerender(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="second-visit" />);
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      await waitFor(() => expect(mockCreateVisitPdf).toHaveBeenCalledTimes(2));
+      expect(
+        mockCreateVisitPdf.mock.calls.map(([summary]) => [summary.visitUuid, summary.treatment.therapeuticIndications]),
+      ).toEqual([
+        ['historical-visit', 'Indicación sintética A'],
+        ['second-visit', 'Indicación sintética B'],
+      ]);
+    });
+
+    it('discards the pending document when another historical visit is selected', async () => {
+      const first = createDeferred<Awaited<ReturnType<typeof fetchOutpatientVisitSummarySource>>>();
+      mockFetchSource.mockReturnValueOnce(first.promise);
+      const { rerender } = render(
+        <OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="historical-visit" />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      rerender(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" historicalVisitUuid="second-visit" />);
+      mockFetchSource.mockResolvedValue({ ...historicalSource, uuid: 'second-visit' });
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+      await waitFor(() => expect(mockDownloadPdf).toHaveBeenCalledOnce());
+      await act(async () => first.resolve(historicalSource));
+      expect(mockDownloadPdf).toHaveBeenCalledOnce();
+      expect(mockFetchSource.mock.calls.map(([uuid]) => uuid)).toEqual(['historical-visit', 'second-visit']);
+    });
   });
 
   it('downloads one locally generated full PDF for the verified active visit', async () => {
@@ -285,6 +428,7 @@ describe('OutpatientVisitSummaryDownload', () => {
     expect(mockHasInstructions).toHaveBeenCalledWith(
       expect.objectContaining({ visitUuid: 'visit-uuid' }),
       scheduledAppointment,
+      'current',
     );
     expect(mockGetLinkedAppointmentUuids).toHaveBeenCalledWith(
       expect.objectContaining({ uuid: 'visit-uuid' }),
@@ -309,6 +453,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       }),
       expect.any(String),
       scheduledAppointment,
+      'current',
     );
     expect(mockCreateInstructionsFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-24T00:10:00.000-05:00');
     expect(mockDownloadPdf).not.toHaveBeenCalled();
@@ -378,6 +523,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(Object),
       expect.any(String),
       null,
+      'current',
     );
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -565,6 +711,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(Object),
       expect.any(String),
       scheduledAppointment,
+      'current',
     );
     expect(mockCreateInstructionsPdf).toHaveBeenNthCalledWith(
       2,
@@ -572,6 +719,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(Object),
       expect.any(String),
       null,
+      'current',
     );
     expect(mockPrintPdf).toHaveBeenCalledOnce();
     expect(mockPrintPdf.mock.calls[0][0]).toEqual(regeneratedBytes);
@@ -595,6 +743,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(Object),
       expect.any(String),
       scheduledAppointment,
+      'current',
     );
     expect(mockCreateInstructionsPdf).toHaveBeenNthCalledWith(
       2,
@@ -602,6 +751,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(Object),
       expect.any(String),
       null,
+      'current',
     );
     expect(mockPrintPdf).toHaveBeenNthCalledWith(
       1,
@@ -628,6 +778,7 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     mockUsePatient.mockReturnValue({
       patient: { ...patient, id: 'other-patient-uuid' },
+      patientUuid: 'other-patient-uuid',
       isLoading: false,
       error: null,
     });
@@ -694,9 +845,12 @@ describe('OutpatientVisitSummaryDownload', () => {
     await waitFor(() => expect(mockFetchNextScheduledAppointment).toHaveBeenCalledOnce());
 
     mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'synthetic-session',
       sessionLocation: {
         uuid: 'other-location-uuid',
         display: 'Otra IPRESS sintética',
+        links: [],
       },
     });
     mockUseOutpatientFacilityIdentity.mockReturnValue({
@@ -900,7 +1054,7 @@ describe('receta única desde el dashboard', () => {
           title: 'No se pudo emitir la Receta Única',
           requirements: [
             { id: 'primaryDiagnosisCie10', tab: 'diagnosis' },
-            { id: 'responsibleProfessional', tab: 'soap' },
+            { id: 'responsibleProfessional', tab: 'physicalExam' },
           ],
         }),
       ),

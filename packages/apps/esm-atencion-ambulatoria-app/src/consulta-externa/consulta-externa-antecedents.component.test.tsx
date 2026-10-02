@@ -66,19 +66,24 @@ describe('ConsultaExternaAntecedents', () => {
     });
   });
 
-  it('mounts canonical antecedents with the current patient and keeps previous records read-only', () => {
+  it('mounts canonical antecedents with the current patient and expands previous records read-only', async () => {
+    const user = userEvent.setup();
     render(<ConsultaExternaAntecedents patientUuid={patient.id} />);
 
     expect(ExtensionSlot).toHaveBeenCalledWith(
       expect.objectContaining({ name: slotName, state: { patient, patientUuid: patient.id } }),
       expect.anything(),
     );
-    expect(screen.getByText('Previous medical records')).toHaveAttribute('data-read-only', 'true');
-    expect(screen.getByText('Previous medical records')).toHaveAttribute('data-patient-uuid', patient.id);
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
-      'Antecedents and problems',
-      'Social History',
-    ]);
+    await user.click(screen.getByRole('button', { name: 'Previous medical records' }));
+    expect(screen.getByText('Previous medical records', { selector: 'div[data-read-only]' })).toHaveAttribute(
+      'data-read-only',
+      'true',
+    );
+    expect(screen.getByText('Previous medical records', { selector: 'div[data-read-only]' })).toHaveAttribute(
+      'data-patient-uuid',
+      patient.id,
+    );
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Conditions', 'Social History']);
   });
 
   it('opens canonical antecedents without requiring the unrelated social-history privilege', () => {
@@ -97,7 +102,8 @@ describe('ConsultaExternaAntecedents', () => {
 
     expect(usePatient).not.toHaveBeenCalled();
     expect(ExtensionSlot).not.toHaveBeenCalled();
-    expect(screen.getByText('Previous medical records')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous medical records' })).toBeInTheDocument();
+    expect(useClinicalEncounter).not.toHaveBeenCalled();
     await user.click(screen.getByRole('tab', { name: 'Social History' }));
     expect(screen.getByText('Social history')).toHaveAttribute('data-patient-uuid', patient.id);
   });

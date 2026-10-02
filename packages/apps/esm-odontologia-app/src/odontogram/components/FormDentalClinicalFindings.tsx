@@ -1,6 +1,6 @@
 import { Button, Modal, Search } from '@carbon/react';
 import { Checkmark, ChevronDown, Close, Information } from '@carbon/react/icons';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOdontogramContext } from '../providers/OdontogramProvider';
 import type { FindingColor, FindingOptionConfig, FindingSuboption } from '../types/odontogram';
@@ -184,6 +184,7 @@ const FormDentalClinicalFindings = () => {
   const [showInfo, setShowInfo] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const findingTriggerRef = useRef<HTMLButtonElement>(null);
 
   const norm = useCallback((s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), []);
 
@@ -221,39 +222,35 @@ const FormDentalClinicalFindings = () => {
         {/* Hallazgo */}
         <div className={`${styles.field} ${styles.fieldFinding}`}>
           <span className={styles.fieldLabel}>{t('finding', 'Hallazgo')}</span>
-          <button
-            type="button"
-            className={`${styles.findingTrigger} ${selectedItem ? styles.findingTriggerFilled : ''}`}
-            onClick={() => setPickerOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={pickerOpen}
-          >
-            <span className={styles.findingTriggerText}>
-              {selectedItem ? selectedItem.nombre : t('selectFindingEllipsis', 'Seleccionar hallazgo...')}
-            </span>
-            {selectedItem && (
-              <span
-                className={styles.findingTriggerClear}
-                role="button"
-                tabIndex={0}
-                aria-label={t('clearFinding', 'Limpiar hallazgo')}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSelectFinding(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelectFinding(null);
-                  }
-                }}
-              >
-                <Close size={16} />
+          <div className={styles.findingControl}>
+            <button
+              ref={findingTriggerRef}
+              type="button"
+              className={`${styles.findingTrigger} ${selectedItem ? styles.findingTriggerFilled : ''}`}
+              onClick={() => setPickerOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={pickerOpen}
+            >
+              <span className={styles.findingTriggerText}>
+                {selectedItem ? selectedItem.nombre : t('selectFindingEllipsis', 'Seleccionar hallazgo...')}
               </span>
+              <ChevronDown size={16} className={styles.findingTriggerChevron} />
+            </button>
+            {selectedItem && (
+              <Button
+                type="button"
+                kind="ghost"
+                size="md"
+                hasIconOnly
+                renderIcon={Close}
+                iconDescription={t('clearFinding', 'Limpiar hallazgo')}
+                onClick={() => {
+                  handleSelectFinding(null);
+                  findingTriggerRef.current?.focus();
+                }}
+              />
             )}
-            <ChevronDown size={16} className={styles.findingTriggerChevron} />
-          </button>
+          </div>
         </div>
 
         {/* Tipo */}
@@ -261,7 +258,7 @@ const FormDentalClinicalFindings = () => {
           <div className={styles.field}>
             <span className={styles.fieldLabel}>{t('type', 'Tipo')}</span>
             <div className={styles.subOptionRow} role="group" aria-label={t('type', 'Tipo')}>
-              {selectedItem.subopciones!.map((sub: FindingSuboption) => {
+              {selectedItem.subopciones?.map((sub: FindingSuboption) => {
                 const isActive = selectedSuboption?.id === sub.id;
                 return (
                   <button
@@ -287,7 +284,7 @@ const FormDentalClinicalFindings = () => {
             <div className={styles.colorRow}>
               {selectedItem.colores.map((color: FindingColor) => {
                 const isActive = selectedColor?.name === color.name;
-                const label = COLOR_LABEL[color.name] ?? color.name;
+                const label = t(color.name, COLOR_LABEL[color.name] ?? color.name);
                 return (
                   <button
                     key={color.id}
@@ -325,6 +322,7 @@ const FormDentalClinicalFindings = () => {
       <Modal
         open={pickerOpen}
         passiveModal
+        closeButtonLabel={t('close', 'Cerrar')}
         modalHeading={t('selectFinding', 'Seleccionar hallazgo')}
         onRequestClose={closePicker}
         size="lg"
@@ -339,6 +337,7 @@ const FormDentalClinicalFindings = () => {
             value={pickerQuery}
             onChange={(e) => setPickerQuery(e.target.value)}
             onClear={() => setPickerQuery('')}
+            closeButtonLabelText={t('clearFindingSearch', 'Limpiar búsqueda de hallazgos')}
           />
         </div>
         <div className={styles.pickerGrid}>
@@ -366,7 +365,14 @@ const FormDentalClinicalFindings = () => {
       </Modal>
 
       {showInfo && docsGroup && (
-        <Modal open passiveModal modalHeading={docsGroup.hallazgo} onRequestClose={() => setShowInfo(false)} size="sm">
+        <Modal
+          open
+          passiveModal
+          closeButtonLabel={t('close', 'Cerrar')}
+          modalHeading={docsGroup.hallazgo}
+          onRequestClose={() => setShowInfo(false)}
+          size="sm"
+        >
           {docsGroup.nota && <p className={styles.docsNote}>{docsGroup.nota}</p>}
           {docsGroup.siglas.length > 0 && (
             <table className={styles.docsTable}>

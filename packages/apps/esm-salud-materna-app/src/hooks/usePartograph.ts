@@ -56,7 +56,7 @@ export function usePartograph(patientUuid: string) {
       return dateB - dateA;
     });
   return {
-    encounters: flattedObs as Array<OpenmrsEncounter>,
+    encounters: flattedObs,
     isLoading: isPregnancyLoading || isLoading,
     isValidating,
     error: pregnancyError ?? error ?? null,

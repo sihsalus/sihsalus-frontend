@@ -1,10 +1,15 @@
 import dayjs from 'dayjs';
-import { type Appointment } from '../types';
+import { type Appointment, type RecurringPattern } from '../types';
 import { resolveAppointmentFormDefaults } from './appointments-form.workspace';
 
-describe('resolveAppointmentFormDefaults', () => {
+describe.each(['UTC', 'America/Lima'])('resolveAppointmentFormDefaults in %s', (timeZone) => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', timeZone);
+    expect(new Date('2026-09-01T00:00:00Z').getTimezoneOffset()).toBe(timeZone === 'America/Lima' ? 300 : 0);
+  });
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   function atSystemTime(isoLocal: string) {
@@ -66,6 +71,35 @@ describe('resolveAppointmentFormDefaults', () => {
 
     expect(dayjs(defaults.defaultStartDate).format('YYYY-MM-DD')).toBe('2026-08-20');
     expect(defaults.defaultAppointmentStartTime).toBe('10:30');
+  });
+
+  it.each([
+    '2026-09-01',
+    '2026-12-31',
+    '2027-01-01',
+    '2028-02-29',
+  ])('keeps a calendar date without an offset on the same local day: %s', (selectedDate) => {
+    atSystemTime('2026-08-11T10:20:00');
+    const defaults = resolveAppointmentFormDefaults(undefined, undefined, selectedDate);
+    expect(dayjs(defaults.defaultStartDate).format('YYYY-MM-DD')).toBe(selectedDate);
+    expect(defaults.defaultStartDateText).toBe(dayjs(defaults.defaultStartDate).format('DD/MM/YYYY'));
+  });
+
+  it('preserves an explicit instant while using the local day for a recurring end date', () => {
+    atSystemTime('2026-08-11T10:20:00');
+    const appointment = {
+      startDateTime: '2027-01-01T04:30:00Z',
+      endDateTime: '2027-01-01T04:50:00Z',
+    } as Appointment;
+    const defaults = resolveAppointmentFormDefaults(
+      appointment,
+      { endDate: '2027-01-15' } as RecurringPattern,
+      undefined,
+    );
+    expect(defaults.defaultStartDate.toISOString()).toBe('2027-01-01T04:30:00.000Z');
+    expect(defaults.defaultStartDateText).toBe(dayjs(appointment.startDateTime).format('DD/MM/YYYY'));
+    expect(dayjs(defaults.defaultEndDate).format('YYYY-MM-DD')).toBe('2027-01-15');
+    expect(defaults.defaultEndDateText).toBe('15/01/2027');
   });
 
   it('preserves the stored time when editing an existing appointment', () => {

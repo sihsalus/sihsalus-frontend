@@ -16,5 +16,15 @@
   "userMenu": "User menu",
   "userMenuFor": "My account: {{user}}",
   "userMenuOptions": "User menu options",
-  "userMenuTooltip": "My Account"
+  "userMenuTooltip": "My Account",
+  "pendingNotificationCount": "{{count}} unread notifications",
+  "backToNotifications": "Back to notifications",
+  "notificationDetailUnavailable": "This notification is unavailable. It remains unread.",
+  "refreshNotifications": "Refresh",
+  "notificationInboxError": "Could not load notifications. Retry to confirm the current list.",
+  "loadingNotifications": "Loading notifications",
+  "noUnreadNotifications": "No unread notifications",
+  "openNotification": "Open notification",
+  "previousNotifications": "Previous",
+  "nextNotifications": "Next"
 }

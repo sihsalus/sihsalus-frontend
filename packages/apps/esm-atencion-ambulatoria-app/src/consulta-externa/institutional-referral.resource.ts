@@ -1,6 +1,41 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import type { VisitSummarySource } from './outpatient-visit-summary.resource';
 
 const DESTINATION_SEPARATOR = ' | ';
+
+export class ReferralServicesError extends Error {}
+
+export function getRecordedDestinationService(
+  observations: Array<{ voided?: boolean; concept?: { uuid: string }; value?: unknown }> | undefined,
+  conceptUuid: string | undefined,
+): string | null {
+  if (!conceptUuid) return null;
+  const matches = observations?.filter((obs) => !obs.voided && obs.concept?.uuid === conceptUuid);
+  if (matches?.length !== 1) return null;
+  const value = matches[0].value;
+  return value && typeof value === 'object' && 'display' in value && typeof value.display === 'string'
+    ? value.display.trim() || null
+    : null;
+}
+
+export function getRecordedReferralServices(
+  source: VisitSummarySource,
+  referralUuid: string,
+  encounterTypeUuid: string,
+  destinationServiceConceptUuid: string,
+): { originService: string; destinationService: string } {
+  const matches = source.encounters?.filter(
+    (encounter) =>
+      encounter.uuid === referralUuid && !encounter.voided && encounter.encounterType?.uuid === encounterTypeUuid,
+  );
+  if (matches?.length !== 1) throw new ReferralServicesError('The selected referral could not be verified.');
+  const encounter = matches[0];
+  const originService = encounter.location?.display?.trim();
+  const destinationService = getRecordedDestinationService(encounter.obs, destinationServiceConceptUuid);
+  if (!originService || !destinationService)
+    throw new ReferralServicesError('The referral services are incomplete or ambiguous.');
+  return { originService, destinationService };
+}
 
 export interface ReferralDestination {
   renaesCode: string;
@@ -11,6 +46,7 @@ export interface ReferralEncounterConcepts {
   referralTypeUuid: string;
   referralReasonUuid: string;
   referralDestinationUuid: string;
+  referralDestinationServiceUuid: string;
   referralDestinationSpecialtyUuid: string;
   referralDestinationSpecialtyOtherUuid: string;
   referralPatientConditionUuid: string;
@@ -25,6 +61,7 @@ export interface CreateInstitutionalReferralPayload {
   encounterTypeUuid: string;
   encounterRoleUuid: string;
   destination: ReferralDestination;
+  destinationServiceUuid: string;
   referralTypeUuid: string;
   specialtyUuid: string;
   otherSpecialty?: string;
@@ -58,10 +95,14 @@ export function parseReferralDestination(value: string | null | undefined): Pars
 }
 
 export function buildInstitutionalReferralEncounter(payload: CreateInstitutionalReferralPayload) {
+  if (!payload.destinationServiceUuid?.trim() || !payload.concepts.referralDestinationServiceUuid?.trim()) {
+    throw new Error('The referral destination service is required.');
+  }
   const otherSpecialty = payload.otherSpecialty?.trim();
   const obs: Array<{ concept: string; value: string }> = [
     { concept: payload.concepts.referralTypeUuid, value: payload.referralTypeUuid },
     { concept: payload.concepts.referralDestinationUuid, value: encodeReferralDestination(payload.destination) },
+    { concept: payload.concepts.referralDestinationServiceUuid, value: payload.destinationServiceUuid },
     { concept: payload.concepts.referralDestinationSpecialtyUuid, value: payload.specialtyUuid },
     { concept: payload.concepts.referralPatientConditionUuid, value: payload.patientConditionUuid },
     { concept: payload.concepts.referralTransportModeUuid, value: payload.transportModeUuid },

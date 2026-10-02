@@ -108,13 +108,13 @@
   background: colors.$white;
 
   > * {
-    min-width: 117rem;
+    min-width: 56rem;
   }
 }
 
 .table {
   width: 100%;
-  min-width: 117rem;
+  min-width: 56rem;
   table-layout: fixed;
 }
 
@@ -135,63 +135,64 @@
   width: 9rem;
 }
 
-.identifierColumn {
-  width: 8rem;
-}
-
-.documentTypeColumn {
-  width: 6rem;
+.expandColumn {
+  width: 3rem;
 }
 
 .statusColumn {
-  width: 9rem;
-}
-
-.responsibleColumn {
-  width: 14rem;
-}
-
-.shortColumn {
-  width: 6rem;
+  width: 8rem;
 }
 
 .personColumn {
-  width: 13rem;
+  width: 26%;
 }
 
-.addressColumn {
-  width: 12rem;
-}
-
-.sexColumn {
+.sisColumn {
   width: 5rem;
 }
 
-.ageColumn {
-  width: 7rem;
+.patientIdentifier {
+  @include type.type-style("label-01");
+  display: block;
+  margin-top: layout.$spacing-02;
+  color: $text-02;
 }
 
-.serviceColumn {
-  width: 12rem;
+.admissionDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: layout.$spacing-05 layout.$spacing-07;
+  padding: layout.$spacing-05;
+  margin: 0;
+
+  dt {
+    @include type.type-style("label-01");
+    color: $text-02;
+    margin-bottom: layout.$spacing-02;
+  }
+
+  dd {
+    @include type.type-style("body-compact-01");
+    margin: 0;
+  }
 }
 
-.orderColumn {
-  width: 6rem;
+.searchControl {
+  grid-column: span 2;
 }
 
-.communicationColumn {
-  width: 12rem;
-}
-
-.table td:nth-child(11),
-.table td:nth-child(12),
-.table td:nth-child(14) {
-  text-align: center;
+.reportActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: layout.$spacing-03;
+  grid-column: span 2;
 }
 
 .patientLink {
   color: #0f62fe;
   text-decoration: none;
+  font-weight: 600;
 
   &:hover {
     text-decoration: underline;
@@ -245,6 +246,11 @@
 
   .summary {
     display: grid;
+  }
+
+  .searchControl,
+  .reportActions {
+    grid-column: auto;
   }
 
   .headerContent {

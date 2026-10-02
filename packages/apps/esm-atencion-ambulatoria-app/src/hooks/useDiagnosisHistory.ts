@@ -173,9 +173,11 @@ export function useDiagnosisHistory(
     ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
         url:
           `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
-          `&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),` +
+          `&v=custom:(uuid,patient:(uuid),encounterType:(uuid),encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),` +
           `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display,conceptReferenceTerm:(code,display,conceptSource:(name,display))),names:(display,name,conceptNameType))),certainty,rank),` +
           `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&order=desc`,
+        expectedPatientUuid: patientUuid,
+        expectedEncounterTypeUuid: encounterTypeUuid,
         expectedFormUuid: formUuid,
         expectedVisitTypeUuid: visitTypeUuid,
       }))

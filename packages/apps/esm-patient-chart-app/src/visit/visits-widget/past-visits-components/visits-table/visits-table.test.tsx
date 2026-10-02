@@ -3,6 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockEncounters, mockPatient, renderWithSwr } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import VisitsTable from './visits-table.component';
 
 const defaultProps = {
@@ -12,8 +13,8 @@ const defaultProps = {
 };
 
 const mockShowModal = vi.mocked(showModal);
-const mockGetConfig = getConfig as vi.Mock;
-const mockUserHasAccess = userHasAccess as vi.Mock;
+const mockGetConfig = getConfig as Mock;
+const mockUserHasAccess = userHasAccess as Mock;
 const getProviderName = (provider: unknown) =>
   typeof provider === 'string'
     ? provider
@@ -103,7 +104,7 @@ describe('Delete Encounter', () => {
     });
 
     await user.click(within(row).getByRole('button', { name: /expand current row/i }));
-    await user.click(screen.getByRole('button', { name: /danger Delete this encounter/i }));
+    await user.click(screen.getByRole('button', { name: /Delete this encounter/i }));
 
     expect(mockShowModal).toHaveBeenCalledTimes(1);
     expect(mockShowModal).toHaveBeenCalledWith(

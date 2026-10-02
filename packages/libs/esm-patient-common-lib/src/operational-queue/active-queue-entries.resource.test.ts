@@ -28,6 +28,58 @@ describe('active queue entry reconciliation', () => {
     vi.clearAllMocks();
   });
 
+  it('drains server entries even when an older cached search says the visit queue is empty', async () => {
+    let entry = {
+      uuid: 'synthetic-entry',
+      startedAt: '2026-09-21T10:00:00Z',
+      endedAt: null as string | null,
+    };
+    mockOpenmrsFetch.mockImplementation(async (url, init) => {
+      if (init?.method === 'POST') {
+        entry = { ...entry, endedAt: '2026-09-21T10:30:00Z' };
+        return response(entry);
+      }
+      const fresh = init?.cache === 'no-store';
+      if (String(url).includes('/queue-entry?')) {
+        return response({ results: fresh && !entry.endedAt ? [entry] : [] });
+      }
+      return response(entry, 'Mon, 21 Sep 2026 10:30:00 GMT');
+    });
+
+    await expect(drainActiveQueueEntriesForVisit('synthetic-visit')).resolves.toBe(1);
+    expect(entry.endedAt).not.toBeNull();
+  });
+
+  it('does not replace another operator’s end time with an older cached active entry', async () => {
+    const active = {
+      uuid: 'synthetic-entry',
+      startedAt: '2026-09-21T10:00:00Z',
+      endedAt: null,
+    };
+    const ended = { ...active, endedAt: '2026-09-21T10:12:00Z' };
+    mockOpenmrsFetch.mockImplementation(async (_url, init) => {
+      if (init?.method === 'POST') throw new Error('Unexpected write to a closed entry');
+      const fresh = init?.cache === 'no-store';
+      return response(fresh ? ended : active);
+    });
+
+    await expect(endActiveQueueEntries([active])).resolves.toEqual([ended]);
+    expect(mockOpenmrsFetch.mock.calls.every(([, init]) => init?.method !== 'POST')).toBe(true);
+  });
+
+  it('rejects a failed server search instead of accepting a cached empty queue as successful cleanup', async () => {
+    const offlineError = new Error('Synthetic network failure');
+    mockOpenmrsFetch.mockImplementation(async (_url, init) => {
+      if (init?.cache === 'no-store') {
+        throw offlineError;
+      }
+      return response({ results: [] });
+    });
+
+    await expect(drainActiveQueueEntriesForVisit('synthetic-visit')).rejects.toBe(offlineError);
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
   it('fresh-reads an active entry, ends it using server time, and verifies persistence', async () => {
     const activeEntry = {
       uuid: 'queue-entry-uuid',

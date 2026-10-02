@@ -128,6 +128,10 @@ const config = {
     referralTypeUuid: 'referral-type-question',
     referralReasonUuid: 'referral-reason-question',
     referralDestinationUuid: 'destination-question',
+    referralDestinationServiceUuid: 'destination-service-question',
+    referralDestinationEmergencyServiceUuid: 'emergency-service',
+    referralDestinationOutpatientServiceUuid: 'outpatient-service',
+    referralDestinationDiagnosticServiceUuid: 'diagnostic-service',
     referralDestinationSpecialtyUuid: 'specialty-question',
     referralDestinationSpecialtyOtherUuid: 'specialty-other-question',
     referralOtherSpecialtyUuid: 'other-specialty',
@@ -195,6 +199,9 @@ describe('InstitutionalReferralWorkspace', () => {
     await user.click(screen.getByLabelText('Estable'));
     await user.click(screen.getByLabelText('Fluvial'));
     await user.type(screen.getByLabelText('Motivo de referencia'), 'Manejo quirúrgico especializado');
+    expect(screen.getByRole('button', { name: 'Registrar referencia' })).toBeDisabled();
+    expect(mockCreateInstitutionalReferral).not.toHaveBeenCalled();
+    await user.selectOptions(screen.getByLabelText('Servicio destino (UPS)'), 'emergency-service');
     await user.click(screen.getByRole('button', { name: 'Registrar referencia' }));
 
     await waitFor(() =>
@@ -206,6 +213,7 @@ describe('InstitutionalReferralWorkspace', () => {
           providerUuid: 'provider-uuid',
           destination: { renaesCode: '00000003', name: 'Hospital Regional de Loreto' },
           referralTypeUuid: 'urgent-referral',
+          destinationServiceUuid: 'emergency-service',
           specialtyUuid: 'fba05733-88f9-459c-acd4-b4e844c24bb7',
           patientConditionUuid: 'stable-condition',
           transportModeUuid: 'river-transport',

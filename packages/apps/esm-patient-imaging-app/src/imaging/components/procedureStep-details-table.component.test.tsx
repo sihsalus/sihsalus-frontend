@@ -1,5 +1,6 @@
 import { showModal } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import ProcedureStepTable, { type ProcedureStepTableProps } from './procedureStep-details-table.component';
 
@@ -76,7 +77,7 @@ describe('ProcedureStepTable', () => {
   });
 
   it('renders loading state', async () => {
-    (api.useProcedureStep as vi.Mock).mockReturnValue({
+    (api.useProcedureStep as Mock).mockReturnValue({
       data: [],
       error: null,
       isLoading: true,
@@ -90,7 +91,7 @@ describe('ProcedureStepTable', () => {
   });
 
   it('renders empty state', async () => {
-    (api.useProcedureStep as vi.Mock).mockReturnValue({
+    (api.useProcedureStep as Mock).mockReturnValue({
       data: [],
       error: null,
       isLoading: false,
@@ -104,7 +105,7 @@ describe('ProcedureStepTable', () => {
   });
 
   it('renders table rows with pagination', async () => {
-    (api.useProcedureStep as vi.Mock).mockReturnValue({
+    (api.useProcedureStep as Mock).mockReturnValue({
       data: [
         {
           id: 1,
@@ -156,7 +157,7 @@ describe('ProcedureStepTable', () => {
 
   it('triggers delete modal when TrashCanIcon clicked', async () => {
     const mockShowModal = vi.mocked(showModal);
-    (api.useProcedureStep as vi.Mock).mockReturnValue({
+    (api.useProcedureStep as Mock).mockReturnValue({
       data: [
         {
           id: 1,

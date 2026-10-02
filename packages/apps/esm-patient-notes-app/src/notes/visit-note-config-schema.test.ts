@@ -8,8 +8,6 @@ describe('visit note clinical concept defaults', () => {
       codigoPrestacionalConceptUuid: '34630b86-5106-4aea-8382-f55c02e4ba2c',
       anamnesisConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
       biologicalFunctionsConceptUuid: '9011adf4-2b9f-4ecb-a44c-cb5642e4e015',
-      soapSubjectiveConceptUuid: 'f0000202-0000-4000-8000-000000000202',
-      soapPlanConceptUuid: 'f0000201-0000-4000-8000-000000000201',
       therapeuticIndicationsConceptUuid: 'b762afd0-dfc6-430d-8963-0be05f77a12a',
       // These defaults intentionally match the datatypes provisioned by SIHSALUS content.
       labOrdersConceptUuid: 'f0000204-0000-4000-8000-000000000204',
@@ -22,8 +20,6 @@ describe('visit note clinical concept defaults', () => {
       defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
       defaultVisitNoteClinicalConceptUuids.anamnesisConceptUuid,
       defaultVisitNoteClinicalConceptUuids.biologicalFunctionsConceptUuid,
-      defaultVisitNoteClinicalConceptUuids.soapSubjectiveConceptUuid,
-      defaultVisitNoteClinicalConceptUuids.soapPlanConceptUuid,
       defaultVisitNoteClinicalConceptUuids.therapeuticIndicationsConceptUuid,
     ];
 

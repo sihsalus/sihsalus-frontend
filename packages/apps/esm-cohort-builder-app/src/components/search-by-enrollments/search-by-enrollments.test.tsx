@@ -1,6 +1,7 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Mock } from 'vitest';
 import { useLocations } from '../../cohort-builder.resources';
 import SearchByEnrollments from './search-by-enrollments.component';
 import { usePrograms } from './search-by-enrollments.resources';
@@ -80,7 +81,7 @@ const expectedQuery = {
   },
 };
 
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockUseLocations = vi.mocked(useLocations);
 const mockUsePrograms = vi.mocked(usePrograms);
 

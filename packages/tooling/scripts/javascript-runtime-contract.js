@@ -49,7 +49,7 @@ function findInvalidWebpackShareScopeReferences(source) {
 
 function findPrereleaseIncompatibleFrameworkRanges(source) {
   const frameworkSharePattern =
-    /shareKey\s*:\s*["']@openmrs\/esm-framework(?:\/src\/internal)?["'][^{}]{0,300}?requiredVersion\s*:\s*["']\*["']/g;
+    /shareKey\s*:\s*["']@openmrs\/esm-framework(?:\/src\/internal)?["'][^{}]{0,300}?requiredVersion\s*:\s*["'](?:\*|>=0\.0\.0-0)["']/g;
 
   return [...source.matchAll(frameworkSharePattern)].map((match) => ({
     index: match.index,

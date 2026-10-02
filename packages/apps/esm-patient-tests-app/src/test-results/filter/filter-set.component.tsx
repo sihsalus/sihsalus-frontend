@@ -48,9 +48,7 @@ const FilterSet: React.FC<FilterSetProps> = () => {
   const [treeDataFiltered, setTreeDataFiltered] = useState(roots);
 
   useEffect(() => {
-    const filteredData = roots
-      .filter((node) => node.hasData)
-      .filter((node) => filterTreeNode(searchTerm, node));
+    const filteredData = roots.filter((node) => node.hasData).filter((node) => filterTreeNode(searchTerm, node));
     setTreeDataFiltered(filteredData);
   }, [searchTerm, roots]);
 
@@ -99,7 +97,9 @@ const FilterNodeParent = ({ root, itemNumber }: filterNodeParentProps): React.JS
           <FilterNode
             root={node}
             level={0}
-            open={expandAll === undefined ? (config.resultsViewerConcepts[itemNumber]?.defaultOpen ?? false) : expandAll}
+            open={
+              expandAll === undefined ? (config.resultsViewerConcepts[itemNumber]?.defaultOpen ?? false) : expandAll
+            }
           />
         </div>
       );
@@ -163,9 +163,7 @@ const FilterNode = ({ root, level, open }: FilterNodeProps) => {
               ?.filter((node) => node.hasData)
               ?.map((node, index) => <FilterNode root={node} level={level + 1} key={index} />)}
           {root?.subSets?.[0]?.obs &&
-            root.subSets
-              ?.filter((obs) => obs.hasData)
-              ?.map((obs, index) => <FilterLeaf leaf={obs} key={index} />)}
+            root.subSets?.filter((obs) => obs.hasData)?.map((obs, index) => <FilterLeaf leaf={obs} key={index} />)}
         </div>
       </AccordionItem>
     </Accordion>

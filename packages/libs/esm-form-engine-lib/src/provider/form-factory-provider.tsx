@@ -18,6 +18,7 @@ import { processPostSubmissionActions, validateForm } from './form-factory-helpe
 import { type FormContextProps } from './form-provider';
 
 interface FormFactoryProviderContextProps {
+  isPreview?: boolean;
   patient: fhir.Patient;
   sessionMode: SessionMode;
   sessionDate: Date;
@@ -64,7 +65,8 @@ interface FormFactoryProviderProps {
   onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
 }
 
-const FormFactoryProviderContext = createContext<FormFactoryProviderContextProps | undefined>(undefined);
+/** Internal context shared by the clinical provider and the non-persistent schema preview. */
+export const FormFactoryProviderContext = createContext<FormFactoryProviderContextProps | undefined>(undefined);
 
 export const FormFactoryProvider: React.FC<FormFactoryProviderProps> = ({
   patient,

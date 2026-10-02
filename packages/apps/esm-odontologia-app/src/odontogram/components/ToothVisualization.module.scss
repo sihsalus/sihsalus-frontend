@@ -1,0 +1,19 @@
+.toothButton {
+  display: block;
+  flex-shrink: 0;
+  width: 60px;
+  height: 120px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-focus, #0f62fe);
+    outline-offset: -2px;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}

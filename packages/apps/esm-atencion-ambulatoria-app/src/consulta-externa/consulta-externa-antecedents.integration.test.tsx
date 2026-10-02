@@ -38,7 +38,7 @@ const conditionsReadPrivilege = 'app:hoja.clinica.condiciones';
 const conditionsEditPrivilege = 'app:hoja.clinica.condiciones.editar';
 const grantedPrivileges = new Set<string>();
 
-describe('Consulta Externa integration with Antecedents and problems', () => {
+describe('Consulta Externa integration with Antecedents', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     grantedPrivileges.clear();
@@ -63,7 +63,7 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
       }: PropsWithChildren<{
         privilege: string | string[];
         fallback?: ReactNode;
-      }>) => (userHasAccess(privilege) ? children : fallback),
+      }>) => (userHasAccess(privilege, { privileges: [], roles: [] }) ? children : fallback),
     );
     vi.mocked(useConfig).mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     vi.mocked(useLayoutType).mockReturnValue('small-desktop');
@@ -95,6 +95,13 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
       conditions: [
         {
           id: 'synthetic-active-problem',
+          source: {
+            uuid: 'synthetic-active-problem',
+            patient: { uuid: syntheticPatient.id },
+            condition: { coded: { uuid: 'synthetic-active-concept', display: 'Synthetic active problem' } },
+            clinicalStatus: 'ACTIVE',
+            voided: false,
+          },
           conceptId: 'synthetic-active-concept',
           display: 'Synthetic active problem',
           clinicalStatus: 'Active',
@@ -103,6 +110,13 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
         },
         {
           id: 'synthetic-past-diagnosis',
+          source: {
+            uuid: 'synthetic-past-diagnosis',
+            patient: { uuid: syntheticPatient.id },
+            condition: { coded: { uuid: 'synthetic-past-concept', display: 'Synthetic past diagnosis' } },
+            clinicalStatus: 'INACTIVE',
+            voided: false,
+          },
           conceptId: 'synthetic-past-concept',
           display: 'Synthetic past diagnosis',
           clinicalStatus: 'Inactive',
@@ -111,6 +125,13 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
         },
         {
           id: 'synthetic-antecedent',
+          source: {
+            uuid: 'synthetic-antecedent',
+            patient: { uuid: syntheticPatient.id },
+            condition: { coded: { uuid: 'synthetic-antecedent-concept', display: 'Synthetic family antecedent' } },
+            clinicalStatus: 'INACTIVE',
+            voided: false,
+          },
           conceptId: 'synthetic-antecedent-concept',
           display: 'Synthetic family antecedent',
           clinicalStatus: 'Inactive',
@@ -152,17 +173,17 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
     expect(screen.getByRole('row', { name: /Synthetic active problem/ })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Synthetic past diagnosis/ })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Synthetic family antecedent/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Previous medical records' }));
     expect(
       screen.getByRole('row', {
         name: /Synthetic historical encounter diagnosis/,
       }),
     ).toBeInTheDocument();
     expect(vi.mocked(useConditions)).toHaveBeenCalledWith(syntheticPatient.id);
-    expect(screen.getAllByRole('button', { name: /^Add\b/ })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: /^Add\b/ })).toHaveLength(1);
 
     const antecedentsHeader = screen.getByRole('heading', {
       name: 'Antecedents',
-      exact: true,
     }).parentElement;
     await user.click(within(antecedentsHeader).getByRole('button', { name: /^Add\b/ }));
 
@@ -172,11 +193,13 @@ describe('Consulta Externa integration with Antecedents and problems', () => {
     });
   });
 
-  it('keeps both histories readable without offering edits when conditions editing is denied', () => {
+  it('keeps both histories readable without offering edits when conditions editing is denied', async () => {
+    const user = userEvent.setup();
     grantedPrivileges.delete(conditionsEditPrivilege);
     render(<ConsultaExternaAntecedents patientUuid={syntheticPatient.id} />);
 
     expect(screen.getByRole('row', { name: /Synthetic family antecedent/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Previous medical records' }));
     expect(
       screen.getByRole('row', {
         name: /Synthetic historical encounter diagnosis/,

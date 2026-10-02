@@ -44,7 +44,7 @@ export interface AppointmentTriageConfig {
 
 interface ServiceQueuesRoutingConfig {
   concepts: {
-    finishedServiceStatusConceptUuid: string;
+    defaultStatusConceptUuid: string;
   };
 }
 
@@ -423,6 +423,6 @@ export async function transitionTriagedPatient(queueEntry: QueueEntry): Promise<
     queueEntryToTransition: queueEntry.uuid,
     newQueue: destinationQueueUuid,
     newPriority: queueEntry.priority?.uuid,
-    newStatus: serviceQueuesConfig.concepts.finishedServiceStatusConceptUuid,
+    newStatus: serviceQueuesConfig.concepts.defaultStatusConceptUuid,
   });
 }

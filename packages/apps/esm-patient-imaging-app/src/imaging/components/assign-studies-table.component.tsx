@@ -40,7 +40,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
 }) => {
   const { t } = useTranslation();
   const { canWrite, isOnline } = useImagingAccess();
-  const displayText = t('studiesNoFoundMessage', 'No studies found');
+  const displayText = t('Studies', 'Studies');
   const headerTitle = t('Studies', 'Studies');
   const { results, goTo, currentPage, totalPages } = usePagination(data?.studies ?? [], studiesCount);
   usePaginationBounds({ currentPage, totalPages, goTo });

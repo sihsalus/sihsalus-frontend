@@ -39,7 +39,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
+    "@carbon/icons-react": "^11.89.0",
+    "@carbon/react": "^1.117.0",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21"
@@ -49,21 +50,23 @@
     "@openmrs/esm-framework": "*",
     "react": "18.x",
     "react-dom": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "rxjs": "6.x",
-    "single-spa": "6.x"
+    "single-spa": "6.x",
+    "swr": "2.x"
   },
   "devDependencies": {
-    "@rspack/cli": "1.7.11",
+    "@openmrs/esm-framework": "workspace:*",
+    "@rspack/cli": "2.2.8",
+    "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.4",
     "rxjs": "^6.5.3",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

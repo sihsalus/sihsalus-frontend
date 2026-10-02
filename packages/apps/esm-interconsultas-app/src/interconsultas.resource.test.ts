@@ -1,14 +1,17 @@
+import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
 import { describe, expect, it } from 'vitest';
 import {
   buildResponseObsPayload,
   deriveStatus,
+  fetchInterconsultaOrders,
   getAvailableProvidersFromResults,
   getDestinationServicesFromConceptResults,
   interconsultaOrdersUrl,
   matchesTrayFilter,
 } from './interconsultas.resource';
-import { expectKnownGap } from './test-utils/expect-known-gap';
 import type { InterconsultaOrder } from './types';
+
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 function makeOrder(overrides: Partial<InterconsultaOrder> = {}): InterconsultaOrder {
   return {
@@ -167,11 +170,49 @@ describe('interconsultaOrdersUrl', () => {
   it('agrega el filtro de paciente cuando se pide', () => {
     expect(interconsultaOrdersUrl('order-type-uuid', 'patient-uuid')).toContain('&patient=patient-uuid');
   });
+});
 
-  it('[AC-06][brecha] no limita silenciosamente la bandeja global a 100 órdenes', async () => {
-    await expectKnownGap(() => {
-      expect(interconsultaOrdersUrl('order-type-uuid')).not.toContain('&limit=100');
-    });
+describe('fetchInterconsultaOrders', () => {
+  const url = interconsultaOrdersUrl('order-type-uuid');
+  const page = Array.from({ length: 100 }, (_, index) => makeOrder({ uuid: `order-${index}` }));
+  const response = (results: Array<InterconsultaOrder>, hasNext = false) =>
+    ({ data: { results, links: hasNext ? [{ rel: 'next' }] : [] }, ok: true, status: 200 }) as FetchResponse<{
+      results: Array<InterconsultaOrder>;
+      links: Array<{ rel: string }>;
+    }>;
+
+  beforeEach(() => {
+    mockOpenmrsFetch.mockReset();
+  });
+
+  it('includes orders beyond the first 100 for tray filtering', async () => {
+    const lastOrder = makeOrder({ uuid: 'order-100', fulfillerStatus: 'RECEIVED' });
+    mockOpenmrsFetch.mockResolvedValueOnce(response(page, true)).mockResolvedValueOnce(response([lastOrder]));
+
+    const orders = await fetchInterconsultaOrders(url);
+
+    expect(orders).toHaveLength(101);
+    expect(orders.at(-1)).toEqual(lastOrder);
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(1, url);
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, `${url}&startIndex=100`);
+  });
+
+  it('does not silently accept a repeated page when pagination stops advancing', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(page, true)).mockResolvedValueOnce(response(page, true));
+
+    await expect(fetchInterconsultaOrders(url)).rejects.toThrow('pagination did not advance');
+  });
+
+  it('does not accept a repeated short final page as a complete result', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(page, true)).mockResolvedValueOnce(response(page.slice(0, 5)));
+
+    await expect(fetchInterconsultaOrders(url)).rejects.toThrow('pagination did not advance');
+  });
+
+  it('rejects the entire result when a later page fails', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(page, true)).mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(fetchInterconsultaOrders(url)).rejects.toThrow('Network error');
   });
 });
 

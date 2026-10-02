@@ -1,30 +1,42 @@
-# Dockerfile
+# syntax=docker/dockerfile:1.20
 
-# Stage 1: Build local @sihsalus/* modules — deterministic, no network required
-FROM node:24-alpine AS builder
+# Install dependencies independently of application source changes.
+FROM node:24-alpine AS dependencies
 WORKDIR /app
 RUN apk upgrade --no-cache
-RUN corepack enable && corepack prepare yarn@4.13.0 --activate
+RUN corepack enable && corepack prepare yarn@4.18.1 --activate
 
 # Copy root manifests first
-COPY package.json yarn.lock .yarnrc.yml turbo.json tsconfig.base.json ./
+COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/ ./.yarn/
 
-# Copy workspaces (required so Yarn can resolve workspace:* deps)
-COPY packages/ ./packages/
-
-# Some apps import shared illustrations and other static assets at build time.
-COPY assets/ ./assets/
+# Preserve workspace paths so source edits can reuse the dependency layer.
+COPY --parents packages/apps/*/package.json packages/libs/*/package.json packages/tooling/*/package.json ./
 
 ENV CI=true \
+    YARN_NM_MODE=hardlinks-local \
     IBM_TELEMETRY_DISABLED=true \
     TURBO_TELEMETRY_DISABLED=1 \
     DO_NOT_TRACK=1
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn install --immutable
 
+# Stage 1: Build local @sihsalus/* modules
+FROM dependencies AS builder
+COPY turbo.json tsconfig.base.json ./
+COPY packages/ ./packages/
+# Some apps import shared illustrations and other static assets at build time.
+COPY assets/ ./assets/
+
 RUN --mount=type=cache,target=/app/node_modules/.cache \
     yarn turbo run build --filter='./packages/apps/*' --filter='./packages/libs/*'
+
+# TypeScript's native compiler is needed for development checks only. Prune it
+# before COPY so neither init image retains its binaries in a lower layer.
+# Keep the JavaScript compiler API and bundlers used by runtime SPA assembly.
+FROM builder AS init-dependencies
+RUN rm -rf node_modules/@typescript/native node_modules/@typescript/typescript-* \
+    && rm -f node_modules/.bin/tsc
 
 # Stage 2: Init container image
 # Runs at deployment time: assembles built modules into SPA_OUTPUT_DIR,
@@ -53,7 +65,7 @@ ENV APP_VERSION=${APP_VERSION}
 ENV GIT_SHA=${GIT_SHA}
 ENV BUILD_TIME=${BUILD_TIME}
 
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=init-dependencies /app/node_modules ./node_modules
 COPY --from=builder /app/packages/apps ./packages/apps
 COPY --from=builder /app/packages/libs ./packages/libs
 COPY --from=builder /app/packages/tooling/app-shell/ ./packages/tooling/app-shell/
@@ -87,7 +99,7 @@ ENV APP_VERSION=${APP_VERSION}
 ENV GIT_SHA=${GIT_SHA}
 ENV BUILD_TIME=${BUILD_TIME}
 
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=init-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/packages/apps ./packages/apps
 COPY --from=builder --chown=node:node /app/packages/libs ./packages/libs
 COPY --from=builder --chown=node:node /app/packages/tooling/app-shell/ ./packages/tooling/app-shell/
@@ -130,5 +142,5 @@ FROM nginx:1.31-alpine AS spa-nginx
 
 RUN apk upgrade --no-cache
 
-COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
+COPY config/nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

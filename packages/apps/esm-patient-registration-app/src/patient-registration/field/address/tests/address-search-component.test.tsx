@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Form, Formik, useFormikContext } from 'formik';
 import { mockedAddressOptions, mockedAddressTemplate, mockedOrderedFields } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../../offline.resources';
 import {
@@ -23,7 +24,7 @@ type AddressSearchProps = React.ComponentProps<typeof AddressSearchComponent>;
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUseAddressHierarchy = vi.mocked(useAddressHierarchy);
 const mockUseOrderedAddressHierarchyLevels = vi.mocked(useOrderedAddressHierarchyLevels);
-const mockUseFormikContext = useFormikContext as vi.Mock;
+const mockUseFormikContext = useFormikContext as Mock;
 
 vi.mock('../address-hierarchy.resource', async () => ({
   ...(await vi.importActual<typeof import('../address-hierarchy.resource')>('../address-hierarchy.resource')),

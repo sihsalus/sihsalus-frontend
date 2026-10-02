@@ -42,8 +42,9 @@ carga el microfrontend ni exige el permiso `app:home.citas`. Mientras este contr
 `Verificando` y no ofrece una acción genérica que pueda confundirse con el triaje.
 
 Después de guardar el triaje y recibir la confirmación del encounter, la entrada se mueve a la cola clínica configurada
-para la cita, conserva su prioridad y adopta el estado definido por `finishedServiceStatusConceptUuid` (por defecto,
-`Servicio Finalizado`). Ya no se reutiliza `defaultStatusConceptUuid` (`Esperando`) para esta transición.
+para la cita, conserva su prioridad y adopta el estado definido por `defaultStatusConceptUuid` (por defecto,
+`Esperando`). El triaje completado no finaliza la atención clínica; `finishedServiceStatusConceptUuid` queda
+reservado para cuando el servicio realmente termine.
 
 ## Contrato RBAC actual
 
@@ -74,6 +75,15 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 
 ## Contratos de UI
 
+- Las lecturas que verifican una transición, cierre o edición de una entrada
+  exigen red con `cache: no-store`, incluida cada página de reconciliación. El
+  worker de perfil offline instalado respeta esta opción y no sustituye un fallo
+  de red por una descarga anterior. Así una lista vacía almacenada no confirma
+  que otro operador haya finalizado o trasladado al paciente. El error conserva
+  el flujo existente de recuperación; no se repite una escritura confirmada por
+  una lectura fresca. Validar actualización coordinada de worker y frontend,
+  pérdida de respuesta, reconexión y operadores simultáneos en DEV/QLTY.
+
 - La tabla de pacientes en cola consulta cambios cada 15 segundos mientras la pestaña está visible y hay conexión, y vuelve a consultar al recuperar el foco o la conexión. Conserva los filtros y la última lista completa durante la actualización; solo reemplaza las filas cuando terminaron de cargar todas las páginas. Si falla una página, mantiene la lista anterior y muestra el error mediante el manejo existente. Es actualización periódica, no una suscripción push del backend.
 - El resumen de consulta se identifica por la combinación exacta de Encounter Type y Form configurados. Colas muestra primero los diagnósticos nativos activos y usa las observaciones históricas solo como fallback sin duplicarlas.
 - El guardado de triaje que queda pendiente en el equipo no mueve al paciente. La transición automática solo se ejecuta después de una respuesta confirmada del encounter; después de sincronizar un triaje offline, refrescar la cola y usar `Enviar a atención`. No borrar la acción offline para forzar el cambio de cola.
@@ -83,6 +93,26 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 - Si no hay camas, rooms o servicios configurados, el mensaje debe decir que falta configuracion de ubicacion/servicio, no lanzar error generico.
 - Las acciones de cambiar estado/prioridad deben fallar de forma visible si no hay conceptos configurados.
 - Los nombres de menu deben usar lenguaje final para usuarios clinicos, no nombres internos del paquete.
+
+### Descripción de ambientes
+
+El acceso `Agregar nueva sala de servicio` desde las métricas de Colas abre el
+mismo formulario de Administración para crear ambientes. La edición desde
+Administración reutiliza ese formulario y carga la descripción existente.
+Ambos envían `name`, `description` y `queue.uuid` al recurso REST `queue-room`
+del módulo Queue ya instalado; la edición conserva el UUID del ambiente.
+Después de guardar, se actualizan las consultas de ambientes. Si falla la
+escritura, el formulario conserva los valores para corregir o reintentar.
+
+Se mantiene un único registro Workspace2 y una única implementación del
+formulario y del recurso. Los permisos acumulativos de ambientes no cambian;
+el acceso de métricas conserva además `Emr: View Legacy Interface`.
+
+Validar en DEV/QLTY con un ambiente sintético: crear desde Colas con descripción,
+recargar Administración, editar la descripción y volver a consultar; comprobar
+el rechazo con un rol sin `Manage Queue Rooms` y retirar el ambiente de prueba.
+Las pruebas locales cubren el payload de creación/edición, la carga del valor
+existente, los errores y la navegación; no demuestran persistencia en el backend.
 
 ## Flujo obstétrico
 

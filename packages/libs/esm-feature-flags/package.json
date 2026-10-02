@@ -19,7 +19,7 @@
   "scripts": {
     "build": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
     "build:development": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
-    "typescript": "tsc --project tsconfig.build.json",
+    "typescript": "tsc --project tsconfig.build.json --noEmit",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "test": "cross-env TZ=UTC vitest run --passWithNoTests"
   },
@@ -54,13 +54,13 @@
     "@openmrs/esm-globals": "workspace:*",
     "@openmrs/esm-state": "workspace:*",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.16.2",
     "@types/fhir": "0.0.31",
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.6.3",
+    "@typescript/native": "npm:typescript@7.0.2",
     "concurrently": "^9.2.1",
     "rimraf": "^6.1.3",
-    "single-spa": "^6.0.3",
-    "typescript": "6.0.3"
+    "single-spa": "^6.0.3"
   },
   "stableVersion": "9.0.2"
 }

@@ -294,10 +294,10 @@ export function resolveAppointmentFormDefaults(
     defaultStartDate: appointment?.startDateTime
       ? new Date(appointment.startDateTime)
       : selectedDate
-        ? new Date(selectedDate)
+        ? dayjs(selectedDate).toDate()
         : suggestedStart.toDate(),
-    defaultEndDate: recurringPattern?.endDate ? new Date(recurringPattern.endDate) : null,
-    defaultEndDateText: recurringPattern?.endDate ? dayjs(new Date(recurringPattern.endDate)).format(dateFormat) : '',
+    defaultEndDate: recurringPattern?.endDate ? dayjs(recurringPattern.endDate).toDate() : null,
+    defaultEndDateText: recurringPattern?.endDate ? dayjs(recurringPattern.endDate).format(dateFormat) : '',
     defaultStartDateText: appointment?.startDateTime
       ? dayjs(new Date(appointment.startDateTime)).format(dateFormat)
       : selectedDate
@@ -440,7 +440,7 @@ const AppointmentsForm: React.FC<
       timeFormat: z.enum(['AM', 'PM']),
       appointmentDateTime: z.object({
         startDate: z.date({
-          errorMap: () => ({ message: t('appointmentDateRequired', 'Enter a valid appointment date') }),
+          error: () => t('appointmentDateRequired', 'Enter a valid appointment date'),
         }),
         startDateText: z.string(),
         recurringPatternEndDate: z.date().nullable(),

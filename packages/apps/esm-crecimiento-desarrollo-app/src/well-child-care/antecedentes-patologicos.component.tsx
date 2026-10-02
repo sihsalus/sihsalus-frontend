@@ -14,7 +14,7 @@ const isPatientPathology = (condition: Condition) => isPathologicalAntecedentTyp
 
 const AntecedentesPatologicos: React.FC<AntecedentesPatologicosProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
 
   // Get configuration for Antecedentes Patológicos
   const conceptSetConfig = config?.conditionConceptSets?.antecedentesPatologicos;

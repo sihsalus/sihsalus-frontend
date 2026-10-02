@@ -1,11 +1,12 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import { type DefinitionDataRow } from '../../types';
 import SavedQueries from './saved-queries.component';
 import { getQueries } from './saved-queries.resources';
 
 const mockGetQueries = vi.mocked(getQueries);
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 
 const mockQueries: DefinitionDataRow[] = [
   {

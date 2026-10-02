@@ -39,33 +39,35 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
-    "@hookform/resolvers": "^3.6.0",
+    "@carbon/react": "^1.117.0",
+    "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.52.2",
-    "zod": "^3.23.8"
+    "react-hook-form": "^7.89.0",
+    "zod": "^4.6.5"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
     "@openmrs/esm-framework": "*",
     "react": "18.x",
     "react-dom": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "rxjs": "6.x",
     "swr": "2.x"
   },
   "devDependencies": {
+    "@openmrs/esm-api": "workspace:*",
+    "@openmrs/esm-framework": "workspace:*",
+    "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.4",
     "rxjs": "^6.5.3",
-    "swr": "2.2.5",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "swr": "2.5.1",
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

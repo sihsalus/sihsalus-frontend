@@ -197,6 +197,17 @@ describe('userHasAccess', () => {
     expect(userHasAccess([], mockUser)).toBe(true);
   });
 
+  it.each([{}, { any: ['Manage Users'] }, 1, true, ['View Patients', {}]])(
+    'denies malformed privilege requirements: %j',
+    (requirement) => {
+      // Configurations are JSON at runtime, even when TypeScript callers are typed.
+      // @ts-expect-error Exercise invalid runtime configuration.
+      expect(userHasAccess(requirement, mockUser)).toBe(false);
+      // @ts-expect-error Invalid configuration must not grant a superuser bypass.
+      expect(userHasAccess(requirement, mockSuperUser)).toBe(false);
+    },
+  );
+
   it('should return true when single privilege in array matches', () => {
     expect(userHasAccess(['View Patients'], mockUser)).toBe(true);
   });
@@ -603,6 +614,7 @@ describe('refetchCurrentUser', () => {
       expect.stringContaining('/session'),
       expect.objectContaining({
         headers: {},
+        cache: 'no-store',
       }),
     );
   });
@@ -668,6 +680,70 @@ describe('refetchCurrentUser', () => {
     });
 
     expect(mockReportError).toHaveBeenCalled();
+  });
+});
+
+describe('session response ordering', () => {
+  function deferredResponse() {
+    let resolve!: (value: ReturnType<typeof createMockFetchResponse>) => void;
+    let reject!: (reason: Error) => void;
+    const promise = new Promise<ReturnType<typeof createMockFetchResponse>>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  }
+
+  const priorSession: Session = { authenticated: true, sessionId: 'synthetic-prior-session', locale: 'es' };
+  const newSession: Session = { authenticated: true, sessionId: 'synthetic-new-session', locale: 'en' };
+
+  beforeEach(() => {
+    clearCurrentUser();
+    mockReportError.mockClear();
+  });
+
+  it.each(['refresh', 'location'])('does not restore a session after logout from a pending %s', async (kind) => {
+    const pending = deferredResponse();
+    mockOpenmrsFetch.mockReturnValueOnce(pending.promise);
+    const operation =
+      kind === 'refresh' ? refetchCurrentUser() : setSessionLocation('synthetic-location', new AbortController());
+    clearCurrentUser();
+    const loggedOut = sessionStore.getState();
+
+    pending.resolve(createMockFetchResponse(priorSession));
+
+    await expect(operation).resolves.toEqual(loggedOut);
+    expect(sessionStore.getState()).toEqual(loggedOut);
+  });
+
+  it('keeps the newer session when an older refresh finishes last', async () => {
+    const pending = deferredResponse();
+    mockOpenmrsFetch.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(createMockFetchResponse(newSession));
+    const oldOperation = refetchCurrentUser();
+    await refetchCurrentUser();
+    pending.resolve(createMockFetchResponse(priorSession));
+
+    await expect(oldOperation).resolves.toMatchObject({ session: newSession });
+    expect(sessionStore.getState()).toMatchObject({ session: newSession });
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('does not clear a newer session or report an obsolete refresh failure', async () => {
+    const pending = deferredResponse();
+    mockOpenmrsFetch.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(createMockFetchResponse(newSession));
+    const oldOperation = refetchCurrentUser();
+    await refetchCurrentUser();
+    pending.reject(new Error('Synthetic delayed network failure'));
+
+    await expect(oldOperation).resolves.toMatchObject({ session: newSession });
+    expect(sessionStore.getState()).toMatchObject({ session: newSession });
+    expect(mockReportError).not.toHaveBeenCalled();
+  });
+
+  it.each([null, [], {}, { authenticated: 'true' }])('rejects an invalid session body: %j', async (body) => {
+    mockOpenmrsFetch.mockResolvedValueOnce(createMockFetchResponse(body));
+    await expect(refetchCurrentUser()).rejects.toMatchObject({ loaded: false, session: null });
+    expect(sessionStore.getState()).toMatchObject({ loaded: false, session: null });
   });
 });
 

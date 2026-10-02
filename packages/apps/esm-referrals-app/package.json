@@ -49,17 +49,18 @@
     "@openmrs/esm-framework": "*",
     "@openmrs/esm-patient-common-lib": "*",
     "react": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "single-spa": "6.x",
     "swr": "2.x"
   },
   "devDependencies": {
-    "@rspack/cli": "1.7.11",
-    "@rspack/core": "1.7.11",
+    "@openmrs/esm-framework": "workspace:*",
+    "@rspack/cli": "2.2.8",
+    "@rspack/core": "2.2.8",
+    "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

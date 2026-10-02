@@ -13,7 +13,7 @@ interface VaccinationScheduleProps {
 }
 
 const VaccinationSchedule: React.FC<VaccinationScheduleProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
 

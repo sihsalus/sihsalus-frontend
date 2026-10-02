@@ -24,7 +24,11 @@ const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue 
     return null;
   }
 
-  const percentage = calculateProgress(meta, currentValue);
+  // A target of zero is not a meaningful progress goal. Show the values but
+  // label progress as "no target" instead of fabricating a 0% that is
+  // indistinguishable from a target never reached.
+  const hasTarget = meta > 0;
+  const percentage = hasTarget ? calculateProgress(meta, currentValue) : 0;
 
   return (
     <Tile className={styles.metaProgressCard}>
@@ -39,19 +43,23 @@ const MetaProgressCard: React.FC<MetaProgressCardProps> = ({ meta, currentValue 
         </div>
         <div>
           <span className={styles.metaProgressLabel}>{t('progress', 'Progreso')}</span>
-          <strong className={styles.metaProgressValue}>{percentage}%</strong>
+          <strong className={styles.metaProgressValue}>
+            {hasTarget ? `${percentage}%` : t('noTarget', 'Sin meta')}
+          </strong>
         </div>
       </div>
-      <div className={styles.metaProgressBarTrack}>
-        <div
-          className={styles.metaProgressBar}
-          role="progressbar"
-          aria-valuenow={percentage}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
+      {hasTarget ? (
+        <div className={styles.metaProgressBarTrack}>
+          <div
+            className={styles.metaProgressBar}
+            role="progressbar"
+            aria-valuenow={percentage}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+      ) : null}
     </Tile>
   );
 };

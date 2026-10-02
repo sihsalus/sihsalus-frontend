@@ -20,10 +20,15 @@ function isResultadosSeriesKey(key: unknown): boolean {
   return Array.isArray(key) && key[0] === 'resultados-series';
 }
 
-export function useResultados(params: GetResultadosParams) {
+export function useResultados(params: GetResultadosParams | null) {
   const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<IndicadorResultado>, Error>(
-    ['resultados', params],
-    () => getResultados(params),
+    params ? ['resultados', params] : null,
+    () => {
+      if (!params) {
+        throw new Error('No resultados parameters provided');
+      }
+      return getResultados(params);
+    },
   );
 
   return {
@@ -38,7 +43,12 @@ export function useResultados(params: GetResultadosParams) {
 export function useResultadosSeries(params: GetSeriesParams | null) {
   const { data, error, isLoading, mutate } = useSWR<SeriesResponse, Error>(
     params ? ['resultados-series', params] : null,
-    () => getResultadosSeries(params!),
+    () => {
+      if (!params) {
+        throw new Error('No series parameters provided');
+      }
+      return getResultadosSeries(params);
+    },
   );
 
   return {

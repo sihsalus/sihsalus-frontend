@@ -18,10 +18,12 @@ describe('MetaProgressCard', () => {
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
-  it('renders 0% when the meta is zero', () => {
+  it('renders a no-target state when the meta is zero instead of a misleading 0%', () => {
     render(<MetaProgressCard meta={0} currentValue={50} />);
 
-    expect(screen.getByText('0%')).toBeInTheDocument();
+    expect(screen.getByText('Sin meta')).toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
   it('returns null when no meta is provided', () => {

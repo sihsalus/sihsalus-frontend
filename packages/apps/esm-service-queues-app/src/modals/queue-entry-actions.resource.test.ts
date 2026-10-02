@@ -137,6 +137,36 @@ describe('transitionQueueEntry', () => {
     vi.clearAllMocks();
   });
 
+  it('reconciles a transition from the server when an old cache still shows the source active', async () => {
+    const ended = { ...sourceEntry, endedAt: transitionedEntry.startedAt };
+    mockOpenmrsFetch.mockImplementation(async (url, init) => {
+      if (init?.method === 'POST') throw new Error('Unexpected repeated transition');
+      const fresh = init?.cache === 'no-store';
+      return response(
+        String(url).includes('/queue-entry?')
+          ? { results: fresh ? [transitionedEntry] : [] }
+          : fresh
+            ? ended
+            : sourceEntry,
+      );
+    });
+
+    await expect(transitionQueueEntry(transitionParams)).resolves.toMatchObject({ data: transitionedEntry });
+    expect(mockOpenmrsFetch.mock.calls.every(([, init]) => init?.method !== 'POST')).toBe(true);
+  });
+
+  it('blocks closing a source already moved by another operator even if its successor is absent from cache', async () => {
+    const ended = { ...sourceEntry, endedAt: transitionedEntry.startedAt };
+    mockOpenmrsFetch.mockImplementation(async (url, init) => {
+      if (String(url).includes(`/queue-entry/${sourceEntry.uuid}?`)) return response(ended);
+      const fresh = init?.cache === 'no-store';
+      return response({ results: fresh ? [transitionedEntry] : [] });
+    });
+
+    await expect(endQueueEntry(sourceEntry.uuid)).rejects.toBeInstanceOf(QueueEntryTransitionConflictError);
+    expect(mockOpenmrsFetch.mock.calls.every(([, init]) => init?.method !== 'POST')).toBe(true);
+  });
+
   it('fresh-reads the entry and lets Queue 3 assign the authoritative transition time', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce(response(sourceEntry)).mockResolvedValueOnce(response(transitionedEntry));
 

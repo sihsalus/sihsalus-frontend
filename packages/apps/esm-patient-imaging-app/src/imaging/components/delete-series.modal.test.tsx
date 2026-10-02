@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import DeleteSeriesModal from './delete-series.modal';
 
@@ -23,7 +24,7 @@ describe('DeleteSeriesModal', () => {
   const patientUuid = 'patient-uuid-123';
 
   const setup = () => {
-    (api.useStudySeries as vi.Mock).mockReturnValue({
+    (api.useStudySeries as Mock).mockReturnValue({
       mutate: mutateMock,
     });
     render(
@@ -55,8 +56,8 @@ describe('DeleteSeriesModal', () => {
   });
 
   it('calls deleteSeries and shows success snackbar on success', async () => {
-    (api.deleteSeries as vi.Mock).mockResolvedValueOnce({ ok: true });
-    (api.useStudySeries as vi.Mock).mockReturnValue({ mutate: mutateMock });
+    (api.deleteSeries as Mock).mockResolvedValueOnce({ ok: true });
+    (api.useStudySeries as Mock).mockReturnValue({ mutate: mutateMock });
 
     setup();
     fireEvent.click(screen.getByText('Delete'));
@@ -70,7 +71,7 @@ describe('DeleteSeriesModal', () => {
   });
 
   it('shows error snackbar when delete fails', async () => {
-    (api.deleteSeries as vi.Mock).mockRejectedValueOnce(new Error('An error occurred while deleting the study series'));
+    (api.deleteSeries as Mock).mockRejectedValueOnce(new Error('An error occurred while deleting the study series'));
 
     setup();
     fireEvent.click(screen.getByText('Delete'));
@@ -87,7 +88,7 @@ describe('DeleteSeriesModal', () => {
 
   it('disables delete button and shows loading while deleting', async () => {
     let resolveFn: (val: { ok: boolean }) => void;
-    (api.deleteSeries as vi.Mock).mockImplementationOnce(() => new Promise((resolve) => (resolveFn = resolve)));
+    (api.deleteSeries as Mock).mockImplementationOnce(() => new Promise((resolve) => (resolveFn = resolve)));
 
     setup();
     fireEvent.click(screen.getByText('Delete'));

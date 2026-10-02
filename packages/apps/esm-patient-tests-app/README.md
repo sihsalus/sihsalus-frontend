@@ -20,9 +20,53 @@ The local content bundle `laboratorio/2026-07-10-02` also contains these names a
 
 OCL is the terminology source, not a runtime browser dependency: this change adds no OCL token, direct OCL calls, catalog writes or new synonyms. Newly published synonyms must be imported into OpenMRS and included in an orderable set before the picker can use them. Validate search by name/synonym, selected UUID, method/panel distinction and loading/error states locally; confirm actual orderability and save/reload with a synthetic patient and an authorized clinical Provider in coordinated DEV/QLTY before release.
 
+## Deferred results views
+
+The recent-results overview and full Results viewer use the framework's existing
+`getAsyncLifecycle`. Registering the module and its dashboard link no longer imports
+both views and their chart renderer. The view loads when its extension is requested;
+its props, routes, privileges, data loader, interpretation and save behavior are unchanged.
+No custom loader, prefetch policy or additional runtime dependency is introduced.
+
+A local Chromium comparison on 2026-09-30 used production builds from base
+`e0d53a1c1` and this change, fresh contexts,
+UTF-8 responses, blocked external requests and simulated shared host services.
+The probe requested the Module Federation container and `./start`, then resolved
+the overview and viewer loaders in sequence. React was supplied by the host.
+
+| Requested stage                           | Before JS bytes | After JS bytes |
+| ----------------------------------------- | --------------: | -------------: |
+| Module registration                       |       1,098,748 |         20,656 |
+| Registration plus recent-results overview |       1,098,748 |         59,353 |
+| Registration plus both views              |       1,098,748 |      1,116,871 |
+
+Registration decreases by 98.1%; loading the overview decreases by 94.6%.
+Loading both views increases total bytes by 1.6% because of the split boundaries.
+These are uncompressed requested asset bytes, not compressed network transfer,
+complete-SPA downloads or measured clinical screen latency. Chart code is deferred,
+not eliminated; the large chart vendor asset remains when the full viewer is opened.
+All nine module exports remain available. Both view loaders resolve a default
+component. Aborting an overview chunk produces `ChunkLoadError`; a subsequent loader
+call successfully downloads the missing chunk. This checks artifact loading and retry,
+not a rendered error screen or patient workflow.
+
+Before rollout, validate both slots in the deployed SPA with synthetic data, including
+loading feedback, results/empty/error states and navigation to the full viewer.
+Component tests and the isolated artifact probe do not replace that acceptance check.
+
 ## Test Results
 
 It provides tabular and chart-based overviews of the test results available for a patient.
+
+The default urine-results filter uses the published **Examen completo de orina**
+concept (`laboratorio:4148`, `7e750f3a-8d5c-45b1-8e94-ebf850208e35`) from the
+SIHSALUS laboratory catalog distributed by content 1.25.28. The former local
+`Uroanalisis Grupo` UUID was not distributed in content; requesting it on a
+fresh or production installation returned 404 and blocked the entire viewer.
+The published group reuses its existing panel hierarchy. This selection does
+not create concepts, substitute test identities, change datatypes or convert
+historical values. Local catalog additions require a reviewed content release
+before becoming shared defaults.
 
 The reusable recent-results card is registered in `consulta-externa-pruebas-complementarias-slot` for the **Pruebas complementarias** tab in Consulta Externa. The host passes the active `patientUuid`; the extension keeps its FHIR loading, empty state, and navigation to the complete Results dashboard. This Consulta Externa registration requires `app:hoja.clinica.resultados` and remains read-only.
 
@@ -152,3 +196,12 @@ Review your concepts to see that the hierarchy all looks right in the Dictionary
 
 Go here to add the UUIDs for each of your ConvSet concepts which you want to show up in the Lab Results filters:
 <https://github.com/openmrs/openmrs-esm-patient-chart/blob/master/packages/esm-patient-tests-app/src/config-schema.ts#L3>
+
+## Chart dependency ownership
+
+The results trendline imports `@carbon/charts-react` directly, so this workspace
+explicitly declares that existing renderer. It must not rely on another workspace
+or hoisting to supply it. Direct D3 imports are not used by Patient Tests, Vitals
+or Generic Patient Widgets; their redundant D3 declarations are removed while the
+actual Carbon chart consumers remain. Carbon can still require D3 transitively;
+this cleanup does not claim a corresponding reduction in downloaded chart code.

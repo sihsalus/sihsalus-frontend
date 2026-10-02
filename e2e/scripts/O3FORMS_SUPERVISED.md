@@ -21,7 +21,7 @@ rejected. The broader `E2E_IGNORE_HTTPS_ERRORS` flag is not used here. Record th
 exception in that environment's evidence. Do not use a local SPA as evidence
 that a release is deployed.
 
-Read [the fixture foundation contract](../SYNTHETIC_FIXTURES.md) before use.
+Read [the fixture foundation contract](../../docs/development/synthetic-fixtures.md) before use.
 Configure all five `E2E_FIXTURE_*` settings documented there, with a reviewed
 complete create/read/void privilege list. The adapter also requires:
 

@@ -46,7 +46,7 @@ import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
 import { debounce } from 'lodash-es';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Control, Controller, useForm } from 'react-hook-form';
+import { type Control, Controller, type Resolver, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
@@ -59,6 +59,7 @@ import {
   getCie10MappedCode,
   getPrestacionalDisplayParts,
 } from './catalog-concept.utils';
+import ReadOnlyClinicalSummary from './read-only-clinical-summary.component';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   type ExistingEncounterDiagnosis,
@@ -73,6 +74,7 @@ import {
 import {
   AmbiguousVisitNoteSaveError,
   assertCanonicalVisitNoteCanBeCreated,
+  fetchDiagnosisConceptByUuid,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   getCanonicalVisitNoteEncounterUuid,
@@ -83,7 +85,6 @@ import {
   updateVisitNote,
   useCanonicalVisitNoteEncounter,
   useProviderSignatureDetails,
-  type VisitNoteClinicalContext,
   useVisitNoteClinicalContext,
   useVisitNotes,
 } from './visit-notes.resource';
@@ -215,7 +216,7 @@ const createSchema = (_t: TFunction) => {
     nextAppointment: z.date().nullable().optional(),
     therapeuticIndications: z.string().optional(),
     clinicalNote: z.string().optional(),
-    images: z.array(z.any()).optional(),
+    images: z.array(z.custom<UploadedFile>()).optional(),
   });
 };
 
@@ -316,6 +317,10 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<Array<Diagnosis>>([]);
+  const [isLoadingSavedDiagnoses, setIsLoadingSavedDiagnoses] = useState(
+    Boolean(isEditing && isOutpatientVisit && encounter?.diagnoses?.length),
+  );
+  const [savedDiagnosisError, setSavedDiagnosisError] = useState(false);
   const [searchPrimaryResults, setSearchPrimaryResults] = useState<Array<Concept>>(null);
   const [searchSecondaryResults, setSearchSecondaryResults] = useState<Array<Concept>>(null);
   const [searchPrestacionalResults, setSearchPrestacionalResults] = useState<Array<Concept>>([]);
@@ -380,7 +385,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     [getEncounterObsValue, nextAppointmentConceptUuid],
   );
 
-  const customResolver = useCallback(
+  const customResolver = useCallback<Resolver<VisitNotesFormData>>(
     async (data, context, options) => {
       const zodResult = await zodResolver(visitNoteFormSchema)(data, context, options);
 
@@ -423,7 +428,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
       if (Object.keys(requiredErrors).length > 0) {
         return {
-          ...zodResult,
+          values: {},
           errors: {
             ...zodResult.errors,
             ...requiredErrors,
@@ -517,12 +522,19 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   useEffect(() => {
     const nextAppointment = parseOpenmrsDateValue(clinicalContext?.nextAppointment);
-    if (!isEditing && nextAppointment && !dirtyFields.nextAppointment && !watch('nextAppointment')) {
+    if (
+      !isOutpatientVisit &&
+      !isEditing &&
+      nextAppointment &&
+      !dirtyFields.nextAppointment &&
+      !watch('nextAppointment')
+    ) {
       setValue('nextAppointment', nextAppointment, { shouldDirty: true });
     }
-  }, [clinicalContext?.nextAppointment, dirtyFields.nextAppointment, isEditing, setValue, watch]);
+  }, [clinicalContext?.nextAppointment, dirtyFields.nextAppointment, isEditing, isOutpatientVisit, setValue, watch]);
 
   useEffect(() => {
+    let cancelled = false;
     if (encounter?.diagnoses?.length) {
       try {
         const transformedDiagnoses = encounter.diagnoses
@@ -537,6 +549,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               display: codedConcept?.display ? formatDiagnosisDisplay(codedConcept) : d.display,
               conceptMappings: codedConcept?.conceptMappings,
               mappings: codedConcept?.mappings,
+              names: codedConcept?.names,
             };
           });
 
@@ -547,6 +560,43 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         setSelectedSecondaryDiagnoses(secondaryDiagnoses);
         setCombinedDiagnoses([...primaryDiagnoses, ...secondaryDiagnoses]);
 
+        const missingMetadata = isOutpatientVisit
+          ? transformedDiagnoses.filter((diagnosis) => !getCie10MappedCode(diagnosis))
+          : [];
+        if (missingMetadata.length) {
+          setIsLoadingSavedDiagnoses(true);
+          setSavedDiagnosisError(false);
+          void Promise.all(missingMetadata.map((diagnosis) => fetchDiagnosisConceptByUuid(diagnosis.diagnosis.coded)))
+            .then((concepts) => {
+              if (cancelled) return;
+              const metadata = new Map(concepts.map((concept) => [concept.uuid, concept]));
+              const enrich = (diagnoses: Array<Diagnosis>) =>
+                diagnoses.map((diagnosis) => {
+                  const concept = metadata.get(diagnosis.diagnosis.coded);
+                  return concept
+                    ? {
+                        ...diagnosis,
+                        conceptMappings: concept.conceptMappings,
+                        mappings: concept.mappings,
+                        names: concept.names,
+                      }
+                    : diagnosis;
+                });
+              setSelectedPrimaryDiagnoses(enrich);
+              setSelectedSecondaryDiagnoses(enrich);
+              setCombinedDiagnoses(enrich);
+            })
+            .catch(() => {
+              if (!cancelled) setSavedDiagnosisError(true);
+            })
+            .finally(() => {
+              if (!cancelled) setIsLoadingSavedDiagnoses(false);
+            });
+        } else {
+          setIsLoadingSavedDiagnoses(false);
+          setSavedDiagnosisError(false);
+        }
+
         // Restore the exact MINSA diagnosis type (P/D/R) saved alongside the
         // encounter, keyed back to its coded diagnosis via the formFieldPath.
         const restored = parseTipoDxObs((encounter.obs ?? []) as Array<EncounterFormObs>);
@@ -554,14 +604,22 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
           setDiagnosisTipos(restored);
         }
       } catch (caughtError) {
+        setIsLoadingSavedDiagnoses(false);
+        setSavedDiagnosisError(true);
         const transformedError = new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses'), {
           cause: caughtError,
         });
         setError(transformedError);
         createErrorHandler()(transformedError);
       }
+    } else {
+      setIsLoadingSavedDiagnoses(false);
+      setSavedDiagnosisError(false);
     }
-  }, [encounter, patientUuid, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [encounter, isOutpatientVisit, patientUuid, t]);
 
   const currentImages = watch('images');
 
@@ -834,6 +892,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
           });
           return;
         }
+        if (isLoadingSavedDiagnoses || savedDiagnosisError) return;
         if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) return;
         if (isOutpatientVisit && selectedPrimaryDiagnoses.length !== 1) {
           showSnackbar({
@@ -910,13 +969,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               },
             ],
           ),
-          ...reconcileObservation(
-            encounterObs,
-            nextAppointmentConceptUuid,
-            toOpenmrsDateValue(nextAppointment),
-            undefined,
-            [{ conceptUuid: legacyNextAppointmentConceptUuid }],
-          ),
+          ...(!isOutpatientVisit
+            ? reconcileObservation(
+                encounterObs,
+                nextAppointmentConceptUuid,
+                toOpenmrsDateValue(nextAppointment),
+                undefined,
+                [{ conceptUuid: legacyNextAppointmentConceptUuid }],
+              )
+            : []),
           ...(isOutpatientVisit
             ? reconcileObservation(
                 encounterObs,
@@ -1055,6 +1116,8 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       formConceptUuid,
       globalMutate,
       isCanonicalVerificationBlocked,
+      isLoadingSavedDiagnoses,
+      savedDiagnosisError,
       isEditing,
       isPrimaryDiagnosisRequired,
       isOutpatientVisit,
@@ -1360,12 +1423,16 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                 ) : null}
               </Column>
             </Row>
-            <ReadOnlyClinicalSummary
-              clinicalContext={clinicalContext}
-              error={clinicalContextError}
-              isLoading={isClinicalContextLoading}
-              isValidating={isClinicalContextValidating}
-            />
+            <Row className={styles.clinicalSummaryRow}>
+              <Column sm={4}>
+                <ReadOnlyClinicalSummary
+                  clinicalContext={clinicalContext}
+                  error={clinicalContextError}
+                  isLoading={isClinicalContextLoading}
+                  isValidating={isClinicalContextValidating}
+                />
+              </Column>
+            </Row>
             {isOutpatientVisit ? (
               <Row className={styles.row}>
                 <Column sm={1}>
@@ -1396,29 +1463,31 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                 </Column>
               </Row>
             ) : null}
-            <Row className={styles.row}>
-              <Column sm={1}>
-                <span className={styles.columnLabel}>{t('nextAppointment', 'Next appointment')}</span>
-              </Column>
-              <Column sm={3}>
-                <Controller
-                  name="nextAppointment"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <ResponsiveWrapper>
-                      <OpenmrsDatePicker
-                        {...field}
-                        id="nextAppointment"
-                        labelText={t('nextAppointment', 'Next appointment')}
-                        minDate={new Date()}
-                        invalid={Boolean(fieldState.error?.message)}
-                        invalidText={fieldState.error?.message}
-                      />
-                    </ResponsiveWrapper>
-                  )}
-                />
-              </Column>
-            </Row>
+            {!isOutpatientVisit ? (
+              <Row className={styles.row}>
+                <Column sm={1}>
+                  <span className={styles.columnLabel}>{t('nextAppointment', 'Next appointment')}</span>
+                </Column>
+                <Column sm={3}>
+                  <Controller
+                    name="nextAppointment"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <ResponsiveWrapper>
+                        <OpenmrsDatePicker
+                          {...field}
+                          id="nextAppointment"
+                          labelText={t('nextAppointment', 'Next appointment')}
+                          minDate={new Date()}
+                          invalid={Boolean(fieldState.error?.message)}
+                          invalidText={fieldState.error?.message}
+                        />
+                      </ResponsiveWrapper>
+                    )}
+                  />
+                </Column>
+              </Row>
+            ) : null}
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>{t('note', 'Note')}</span>
@@ -1498,6 +1567,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             )}
           />
         )}
+        {savedDiagnosisError ? (
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            title={t('diagnosisCatalogUnavailable', 'The saved diagnoses could not be verified in the catalog')}
+            subtitle={t('diagnosisCatalogReload', 'Close and reopen this summary before editing it.')}
+          />
+        ) : null}
         {canonicalVerificationStatus === 'validating' && (
           <InlineNotification
             hideCloseButton
@@ -1520,7 +1598,13 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             className={styles.button}
             kind="primary"
             onClick={() => handleSubmit}
-            disabled={!hasUserUnsavedChanges || isSubmitting || isCanonicalVerificationBlocked}
+            disabled={
+              !hasUserUnsavedChanges ||
+              isSubmitting ||
+              isCanonicalVerificationBlocked ||
+              isLoadingSavedDiagnoses ||
+              savedDiagnosisError
+            }
             type="submit"
           >
             {isSubmitting ? (
@@ -1534,186 +1618,6 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     </Workspace2>
   );
 };
-
-function ReadOnlyClinicalSummary({
-  clinicalContext,
-  error,
-  isLoading,
-  isValidating,
-}: {
-  clinicalContext: VisitNoteClinicalContext;
-  error?: Error;
-  isLoading: boolean;
-  isValidating: boolean;
-}) {
-  const { t } = useTranslation();
-  const sections = [
-    {
-      id: 'clinical-summary',
-      title: t('clinicalSummary', 'Clinical summary'),
-      fields: [
-        {
-          id: 'chief-complaint',
-          label: t('chiefComplaint', 'Chief complaint'),
-          value: clinicalContext.chiefComplaint,
-        },
-        {
-          id: 'illness-duration',
-          label: t('illnessDuration', 'Illness duration'),
-          value: clinicalContext.illnessDuration,
-        },
-        {
-          id: 'biological-functions',
-          label: t('biologicalFunctions', 'Biological functions'),
-          value: clinicalContext.biologicalFunctions,
-        },
-      ],
-    },
-    {
-      id: 'soap-assessment',
-      title: t('soapSection', 'SOAP assessment'),
-      fields: [
-        {
-          id: 'subjective',
-          label: t('subjective', 'Subjective'),
-          value: clinicalContext.subjective,
-        },
-        {
-          id: 'objective',
-          label: t('objective', 'Objective / physical exam'),
-          value: clinicalContext.objective,
-        },
-        {
-          id: 'assessment',
-          label: t('assessment', 'Assessment'),
-          value: clinicalContext.assessment,
-        },
-        {
-          id: 'plan',
-          label: t('plan', 'Treatment plan'),
-          value: clinicalContext.plan,
-        },
-      ],
-    },
-    {
-      id: 'orders-and-continuity',
-      title: t('workPlan', 'Orders and continuity of care'),
-      fields: [
-        {
-          id: 'auxiliary-exams',
-          label: t('auxiliaryExams', 'Auxiliary exams'),
-          value: clinicalContext.auxiliaryExams,
-        },
-        {
-          id: 'procedures',
-          label: t('procedures', 'Procedures'),
-          value: clinicalContext.procedures,
-        },
-        {
-          id: 'prescriptions',
-          label: t('prescriptions', 'Prescriptions'),
-          value: clinicalContext.prescriptions,
-        },
-        {
-          id: 'referral',
-          label: t('referral', 'Referral / counter-referral'),
-          value: clinicalContext.referral,
-        },
-      ],
-    },
-  ];
-
-  return (
-    <>
-      <Row className={styles.summaryIntroduction}>
-        <Column sm={4}>
-          <div className={styles.summaryHeading}>
-            <h3>{sections[0].title}</h3>
-            <span className={styles.readOnlyBadge}>{t('readOnly', 'Read-only')}</span>
-          </div>
-          <p className={styles.summaryDescription}>
-            {t(
-              'clinicalSummaryReadOnlyDescription',
-              'This section summarizes records from outpatient care and cannot be edited here.',
-            )}
-          </p>
-          {isLoading || isValidating ? (
-            <InlineLoading
-              description={t('clinicalSummaryLoading', 'Loading the outpatient clinical summary...')}
-              status="active"
-            />
-          ) : null}
-          {error ? (
-            <InlineNotification
-              hideCloseButton
-              kind="error"
-              lowContrast
-              title={t('clinicalSummaryLoadErrorTitle', 'The clinical summary could not be loaded')}
-              subtitle={t('clinicalSummaryLoadErrorDescription', 'Reload before relying on this outpatient summary.')}
-            />
-          ) : null}
-        </Column>
-      </Row>
-      {sections.map((section, sectionIndex) => (
-        <React.Fragment key={section.id}>
-          {sectionIndex > 0 ? (
-            <Row className={styles.summarySectionHeading}>
-              <Column sm={4}>
-                <h3>{section.title}</h3>
-              </Column>
-            </Row>
-          ) : null}
-          {section.fields.map((field) => (
-            <ReadOnlyClinicalField
-              id={field.id}
-              isLoading={isLoading}
-              key={field.id}
-              label={field.label}
-              value={field.value}
-            />
-          ))}
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
-
-function ReadOnlyClinicalField({
-  id,
-  isLoading,
-  label,
-  value,
-}: {
-  id: string;
-  isLoading: boolean;
-  label: string;
-  value?: string;
-}) {
-  const { t } = useTranslation();
-  const labelId = `${id}-summary-label`;
-  const normalizedValue = value?.trim();
-
-  return (
-    <Row className={styles.row}>
-      <Column sm={1}>
-        <span className={styles.columnLabel} id={labelId}>
-          {label}
-        </span>
-      </Column>
-      <Column sm={3}>
-        <div aria-labelledby={labelId} className={styles.readOnlyValue} role="group">
-          {isLoading ? (
-            <SkeletonText />
-          ) : normalizedValue ? (
-            normalizedValue
-          ) : (
-            <span className={styles.emptySummaryValue}>{t('notRecorded', 'Not recorded')}</span>
-          )}
-        </div>
-      </Column>
-    </Row>
-  );
-}
 
 function SelectedDiagnosis({ diagnosis, kind, onRemove, t }: SelectedDiagnosisProps) {
   const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);

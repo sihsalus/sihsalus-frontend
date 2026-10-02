@@ -3,11 +3,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, visitOverviewDetailMockData, visitOverviewDetailMockDataNotEmpty } from 'test-utils';
 
+import type { Mock } from 'vitest';
 import { type ChartConfig, esmPatientChartSchema } from '../../../config-schema';
 
 import VisitSummary from './visit-summary.component';
 
-const mockExtensionSlot = ExtensionSlot as vi.Mock;
+const mockExtensionSlot = ExtensionSlot as Mock;
 const mockGetConfig = vi.mocked(getConfig);
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
 const mockVisit = visitOverviewDetailMockData.data.results[0];

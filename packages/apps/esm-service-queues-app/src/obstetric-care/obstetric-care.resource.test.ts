@@ -97,9 +97,7 @@ beforeEach(() => {
     location: { uuid: 'outpatient-location' },
     stopDatetime: null,
     voided: false,
-    attributes: [
-      { uuid: 'visit-attribute', attributeType: { uuid: 'appointment-attribute' }, value: 'appointment' },
-    ],
+    attributes: [{ uuid: 'visit-attribute', attributeType: { uuid: 'appointment-attribute' }, value: 'appointment' }],
     encounters: [{ uuid: 'triage', encounterType: { uuid: 'triage-encounter-type' }, voided: false }],
   } as unknown as Visit;
   activeVisits = { results: [visit] };
@@ -287,7 +285,11 @@ describe('startObstetricCare', () => {
     expect(transitionQueueEntry).not.toHaveBeenCalled();
   });
 
-  it.each(['pending', 'voided', 'wrong-type'] as const)('requires confirmed triage and rejects %s encounters', async (state) => {
+  it.each([
+    'pending',
+    'voided',
+    'wrong-type',
+  ] as const)('requires confirmed triage and rejects %s encounters', async (state) => {
     visit.encounters =
       state === 'pending'
         ? []
@@ -309,11 +311,7 @@ describe('startObstetricCare', () => {
   it.each(['missing', 'ambiguous', 'wrong-queue'] as const)('rejects a %s outpatient arrival route', async (state) => {
     const route = config.appointmentTriage.appointmentArrivalRules[0];
     config.appointmentTriage.appointmentArrivalRules =
-      state === 'missing'
-        ? []
-        : state === 'ambiguous'
-          ? [route, route]
-          : [{ ...route, queueUuid: 'other-queue' }];
+      state === 'missing' ? [] : state === 'ambiguous' ? [route, route] : [{ ...route, queueUuid: 'other-queue' }];
 
     await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toThrow(
       'The obstetric appointment route or saved triage could not be verified.',

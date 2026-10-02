@@ -81,14 +81,14 @@
   "workspaces": [
     {
       "name": "upload-studies-form-workspace",
-      "title": "Upload study",
+      "title": "uploadStudy",
       "component": "uploadStudiesFormWorkspace",
       "type": "form",
       "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "link-studies-form-workspace",
-      "title": "Link studies",
+      "title": "linkStudiesTitle",
       "component": "linkStudiesFormWorkspace",
       "type": "form",
       "privileges": "app:hoja.clinica.imagenes.editar"

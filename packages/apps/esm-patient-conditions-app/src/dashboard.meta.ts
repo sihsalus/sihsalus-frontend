@@ -4,6 +4,6 @@ export const dashboardMeta: DashboardLinkConfig & { slot: string } = {
   moduleName: '@sihsalus/esm-patient-conditions-app',
   slot: 'patient-chart-conditions-dashboard-slot',
   path: 'Antecedentes',
-  title: 'Antecedentes y problemas',
+  title: 'antecedents',
   icon: 'omrs-icon-list-checked',
 };

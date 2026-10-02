@@ -5,8 +5,8 @@ import {
   openmrsFetch,
   showSnackbar,
   useConfig,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   getDrugOrderByUuid,
@@ -22,24 +22,25 @@ import userEvent from '@testing-library/user-event';
 import { useReactToPrint } from 'react-to-print';
 import { mockOrders, mockSessionDataResponse } from 'test-utils';
 
-import { configSchema } from '../config-schema';
+import type { Mock } from 'vitest';
 import spanishTranslations from '../../translations/es.json';
+import { configSchema } from '../config-schema';
 
 import OrderDetailsTable from './orders-details-table.component';
 
-const mockUsePatientOrders = usePatientOrders as vi.Mock;
-const mockUseOrderTypes = useOrderTypes as vi.Mock;
-const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUsePatientOrders = usePatientOrders as Mock;
+const mockUseOrderTypes = useOrderTypes as Mock;
+const mockOpenmrsFetch = openmrsFetch as Mock;
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockGetLocale = vi.mocked(getLocale);
 const mockSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseReactToPrint = vi.mocked(useReactToPrint);
-const mockGetDrugOrderByUuid = getDrugOrderByUuid as vi.Mock;
-const mockGetPatientUuidFromStore = getPatientUuidFromStore as vi.Mock;
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
-const mockUseOrderBasket = useOrderBasket as vi.Mock;
+const mockGetDrugOrderByUuid = getDrugOrderByUuid as Mock;
+const mockGetPatientUuidFromStore = getPatientUuidFromStore as Mock;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as Mock;
+const mockUseOrderBasket = useOrderBasket as Mock;
 const mockSetOrders = vi.fn();
 const mockLaunchOrderBasket = vi.fn();
 const mockLaunchAddDrugOrder = vi.fn();
@@ -49,7 +50,8 @@ const mockLaunchCancelOrder = vi.fn();
 let mockBasketOrders: Array<unknown> = [];
 const translationMock = vi.hoisted(() => {
   const values: Record<string, string> = {};
-  const t = (key: string, defaultValue?: string) => values[key] ?? defaultValue ?? key;
+  const t = (key: string, defaultValue?: string | { defaultValue?: string }) =>
+    values[key] ?? (typeof defaultValue === 'string' ? defaultValue : defaultValue?.defaultValue) ?? key;
   return { t, values };
 });
 
@@ -136,6 +138,9 @@ describe('OrderDetailsTable', () => {
   } as unknown as Order;
 
   beforeEach(() => {
+    Object.keys(translationMock.values).forEach((key) => {
+      delete translationMock.values[key];
+    });
     mockBasketOrders = [];
     mockSetOrders.mockReset();
     mockLaunchOrderBasket.mockReset();
@@ -405,6 +410,26 @@ describe('OrderDetailsTable', () => {
         name: /drug order/i,
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows the configured imaging label for historical orders and filters by the existing order type UUID', async () => {
+    const imagingOrderTypeUuid = 'f9c5d0b8-8b5a-11e5-8e9b-12345678a01a';
+    translationMock.values['Medical imaging orders'] = spanishTranslations['Medical imaging orders'];
+    const imagingOrder = {
+      ...generalOrder,
+      orderType: { ...generalOrder.orderType, uuid: imagingOrderTypeUuid, display: 'Radiology Order' },
+    };
+
+    renderSingleOrder(imagingOrder, []);
+
+    expect(await screen.findByRole('cell', { name: 'Órdenes de imágenes médicas' })).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: /select order type/i }));
+    await user.click(screen.getByRole('option', { name: 'Órdenes de imágenes médicas' }));
+
+    expect(mockUsePatientOrders.mock.calls.at(-1)?.[2]).toBe(imagingOrderTypeUuid);
+    expect(screen.queryByText(/radiology order/i)).not.toBeInTheDocument();
+    expect(imagingOrder.orderType.display).toBe('Radiology Order');
+    expectNoPreSaveMutation();
   });
 
   it('prints the orders in the list when the print button is clicked', async () => {

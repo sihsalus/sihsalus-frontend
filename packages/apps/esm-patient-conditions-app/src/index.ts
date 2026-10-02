@@ -1,6 +1,7 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
+import ConditionsDashboard from './conditions/conditions-dashboard.component';
 import conditionsDetailedSummaryComponent from './conditions/conditions-detailed-summary.component';
 import conditionsOverviewComponent from './conditions/conditions-overview.component';
 import { configSchema } from './config-schema';
@@ -40,7 +41,7 @@ export const conditionsDetailedSummary = getSyncLifecycle(conditionsDetailedSumm
 export const conditionsWidget = getAsyncLifecycle(() => import('./conditions/conditions-widget.component'), options);
 
 export const conditionsDashboardLink =
-  // t('Antecedentes y problemas', 'Antecedentes y problemas')
+  // t('antecedents', 'Antecedents')
   getSyncLifecycle(
     createDashboardLink({
       ...dashboardMeta,
@@ -59,3 +60,5 @@ export const conditionsFormWorkspace = getAsyncLifecycle(
   () => import('./conditions/conditions-form.workspace'),
   options,
 );
+
+export const conditionsDashboard = getSyncLifecycle(ConditionsDashboard, options);

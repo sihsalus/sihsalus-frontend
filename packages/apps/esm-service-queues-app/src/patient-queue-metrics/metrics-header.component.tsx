@@ -2,6 +2,7 @@ import { ComboButton, MenuItem } from '@carbon/react';
 import {
   isDesktop,
   launchWorkspace,
+  launchWorkspace2,
   navigate,
   showModal,
   UserHasAccess,
@@ -65,7 +66,7 @@ const MetricsHeader = () => {
             {canAddServiceRoom ? (
               <MenuItem
                 label={t('addNewServiceRoom', 'Add new service room')}
-                onClick={() => launchWorkspace('service-queues-room-workspace')}
+                onClick={() => launchWorkspace2('service-queues-room-workspace')}
               />
             ) : null}
           </UserHasAccess>

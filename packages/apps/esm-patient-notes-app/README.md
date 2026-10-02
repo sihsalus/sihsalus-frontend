@@ -59,9 +59,13 @@ Un despliegue que use una versión posterior debe actualizar la URL junto con el
 
 ## Configuración clínica
 
-Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, SOAP, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes.
+Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes. Se eliminan las cuatro opciones `soap*ConceptUuid` y su proyección del resumen; los overrides anteriores deben retirarse.
 
-Motivo de consulta, tiempo de enfermedad, funciones biológicas, SOAP, exámenes auxiliares, procedimientos, prescripciones y referencia/contrarreferencia son una proyección de solo lectura de lo registrado por Consulta Externa durante la atención. Notas de visita no vuelve a persistir esos valores ni usa su propio encounter como fuente del resumen. Las interconsultas no forman parte del concepto de referencia: permanecen como órdenes en `esm-interconsultas-app`.
+Motivo de consulta, tiempo de enfermedad, funciones biológicas, exámenes auxiliares, procedimientos, prescripciones y referencia/contrarreferencia son una proyección de solo lectura de lo registrado por Consulta Externa durante la atención. Notas de visita no vuelve a persistir esos valores ni usa su propio encounter como fuente del resumen. Las interconsultas no forman parte del concepto de referencia: permanecen como órdenes en `esm-interconsultas-app`.
+
+SOAP (subjetivo, examen físico, evaluación y plan) no se repite en este resumen. Este cambio de presentación conserva las observaciones históricas.
+
+El resumen de solo lectura se presenta en un único acordeón Carbon, cerrado al abrir el workspace. Al desplegarlo, muestra únicamente los campos con información en filas compactas; una atención sin datos tiene un único mensaje de vacío. Los avisos de carga, actualización y error permanecen fuera del acordeón para que sean visibles aunque esté cerrado.
 
 Los defaults con contrato de datatype son:
 
@@ -71,7 +75,9 @@ Los defaults con contrato de datatype son:
 | Prescripciones      | `f0000215-0000-4000-8000-000000000215` | `Text`                |
 | Próxima cita        | `f0000004-0000-4000-8000-000000000004` | `Date` (`YYYY-MM-DD`) |
 
-Se usa `f0000004` para próxima cita porque es la pregunta `Date` de CE-001. El UUID histórico `47ce3ee6-ee9f-4037-901b-2a6381c4b340` se lee y se limpia como alias de migración, pero no recibe observaciones nuevas. El formulario `c75f120a-04ec-11e3-8780-2b40bef9a44b` conserva su UUID y debe ser provisionado por el paquete de content coordinado.
+Se usa `f0000004` para próxima cita porque es la pregunta `Date` de CE-001. El UUID histórico `47ce3ee6-ee9f-4037-901b-2a6381c4b340` se lee como alias de migración y se limpia al guardar en los flujos que conservan este campo, pero no recibe observaciones nuevas. El formulario `c75f120a-04ec-11e3-8780-2b40bef9a44b` conserva su UUID y debe ser provisionado por el paquete de content coordinado.
+
+En Consulta Externa se oculta Próxima cita porque una fecha en esta nota no crea una cita en Agenda. El guardado ambulatorio conserva cualquier observación histórica de esa fecha, sin actualizarla. Los demás tipos de visita mantienen el campo. Al editar un resumen ambulatorio, los diagnósticos existentes se completan con sus mapeos CIE-10 desde el catálogo antes de validar; si no se puede verificar el catálogo, el guardado queda bloqueado para proteger los diagnósticos ya registrados.
 
 `visitNoteConfig.encounterTypeUuid`, `formConceptUuid`, `clinicianEncounterRole` y `visitDiagnosesConceptUuid` también deben corresponder al modelo de encounters y diagnósticos del backend desplegado.
 
@@ -82,6 +88,16 @@ La identidad canónica es paciente + atención + tipo de encounter + formulario.
 La creación asigna un UUID v5 determinista a esa identidad y el submit tiene un mutex síncrono. Un timeout o conflicto se consulta por UUID; aunque coincida la identidad, la UI exige recargar porque otro dispositivo pudo haber guardado contenido clínico distinto. Diagnósticos y observaciones se reconcilian dentro del mismo payload del encounter.
 
 Una revalidación en segundo plano mantiene el formulario montado para no perder cambios locales, pero bloquea el guardado mientras está en curso. Si la revalidación falla, muestra un aviso persistente y exige recargar antes de escribir sobre una versión que ya no pudo verificarse.
+
+Las lecturas canónicas asociadas a una visita, la comprobación previa de creación
+y la reconciliación después de una respuesta perdida exigen `cache: no-store`.
+Esto incluye todas las páginas de la búsqueda. El worker de perfil offline de
+la misma versión impide que una descarga antigua confirme la ausencia de una
+nota o entregue diagnósticos antiguos como base de edición. Un fallo de red
+activa la recuperación existente; no autoriza crear o editar desde esa copia.
+El historial de notas de solo lectura conserva su política offline previa.
+Validar guardar, recargar y cambiar el diagnóstico principal con roles mínimos
+en DEV/QLTY; esta lectura fresca no sustituye control de concurrencia en backend.
 
 ## Desarrollo
 

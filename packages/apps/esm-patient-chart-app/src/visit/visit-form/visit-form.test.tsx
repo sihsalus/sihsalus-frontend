@@ -52,6 +52,9 @@ import { useVisitAttributeType } from '../hooks/useVisitAttributeType';
 
 import {
   createVisitAttribute,
+  fetchVisitClock,
+  getVisitClockNow,
+  useVisitClock,
   deleteVisitAttribute,
   getVisitAttributes,
   reconcileVisitCreation,
@@ -323,6 +326,9 @@ const mockFetchFreshPatientIdentifiers = vi.mocked(fetchFreshPatientIdentifiers)
 const mockFetchFreshPersonInsurance = vi.mocked(fetchFreshPersonInsurance);
 const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
+const mockFetchVisitClock = vi.mocked(fetchVisitClock);
+const mockGetVisitClockNow = vi.mocked(getVisitClockNow);
+const mockUseVisitClock = vi.mocked(useVisitClock);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
 
@@ -449,6 +455,9 @@ vi.mock('./visit-form.resource', async () => {
   return {
     ...requireActual,
     useVisitFormCallbacks: vi.fn(),
+    fetchVisitClock: vi.fn(),
+    getVisitClockNow: vi.fn(),
+    useVisitClock: vi.fn(),
     usePersonAttributesForVisitDefaults: vi.fn(),
     createVisitAttribute: vi.fn(),
     updateVisitAttribute: vi.fn(),
@@ -572,6 +581,9 @@ describe('Visit form', () => {
       errorFetchingEmrConfiguration: null,
       mutateEmrConfiguration: null,
     });
+    mockUseVisitClock.mockReturnValue({ clock: { timestamp: 0, receivedAt: 0 }, error: undefined, isLoading: false });
+    mockGetVisitClockNow.mockImplementation(() => new Date());
+    mockFetchVisitClock.mockResolvedValue({ timestamp: 0, receivedAt: 0 });
     mockUsePersonAttributesForVisitDefaults.mockReturnValue({
       attributes: [],
       error: null,
@@ -671,9 +683,10 @@ describe('Visit form', () => {
     expect(screen.getByRole('combobox', { name: 'Financiador (optional)' })).toBeInTheDocument();
   });
 
-  it('registers the queue admission time internally when opened from service queues', async () => {
+  it('registers queue admission using server time rather than the client clock', async () => {
     const user = userEvent.setup();
-    const beforeSubmission = new Date();
+    const serverNow = new Date(2026, 8, 30, 15, 10, 16);
+    mockGetVisitClockNow.mockImplementation(() => new Date(serverNow));
     mockUseVisitFormCallbacks.mockReturnValue([
       new Map([
         [
@@ -700,8 +713,7 @@ describe('Visit form', () => {
 
     await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
     const payload = mockSaveVisit.mock.calls[0][0];
-    expect(payload.startDatetime.getTime()).toBeGreaterThanOrEqual(beforeSubmission.getTime());
-    expect(payload.startDatetime.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(payload.startDatetime.getTime()).toBe(serverNow.getTime());
     expect(showSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'Visit started' }));
   });
 
@@ -815,6 +827,100 @@ describe('Visit form', () => {
     expect(screen.getByText(/select a care type/i)).toBeInTheDocument();
 
     await selectVisitType(user);
+  });
+
+  it.each([[-24, 15, 10], [24, 15, 10], [24, 0, 0], [-24, 12, 0]])(
+    'preselects server date, time and AM/PM with a client clock offset of %i hours',
+    async (offset, hour, minute) => {
+      const serverNow = new Date(2026, 8, 30, hour, minute, 16);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date(serverNow.getTime() + offset * 3600000));
+      mockGetVisitClockNow.mockImplementation(() => new Date(serverNow));
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      try {
+        renderVisitForm();
+        expect(screen.getByRole('textbox', { name: /Fecha/i })).toHaveValue('30/09/2026');
+        expect(screen.getByRole('textbox', { name: /Hora/i })).toHaveValue(dayjs(serverNow).format('hh:mm'));
+        expect(screen.getByRole('combobox', { name: /time format/i })).toHaveValue(dayjs(serverNow).format('A'));
+        await selectVisitType(user);
+        await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), 'Inpatient Ward');
+        await user.click(screen.getByRole('button', { name: /start visit/i }));
+        await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+        expect(mockSaveVisit.mock.calls[0][0].startDatetime).toEqual(new Date(2026, 8, 30, hour, minute));
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('preserves manual date, time and AM/PM edits when the server clock refreshes', async () => {
+    const user = userEvent.setup();
+    mockGetVisitClockNow.mockReturnValue(new Date(2026, 8, 30, 15, 10, 16));
+    const view = render(React.createElement(StartVisitForm, testProps));
+    fireEvent.change(screen.getByRole('textbox', { name: /Fecha/i }), { target: { value: '29/09/2026' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /Hora/i }), { target: { value: '08:30' } });
+    await user.selectOptions(screen.getByRole('combobox', { name: /time format/i }), 'AM');
+    mockUseVisitClock.mockReturnValue({ clock: { timestamp: 1, receivedAt: 0 }, error: undefined, isLoading: false });
+    mockGetVisitClockNow.mockReturnValue(new Date(2026, 9, 1, 0, 10));
+    view.rerender(React.createElement(StartVisitForm, testProps));
+    expect(screen.getByRole('textbox', { name: /Fecha/i })).toHaveValue('29/09/2026');
+    expect(screen.getByRole('textbox', { name: /Hora/i })).toHaveValue('08:30');
+    expect(screen.getByRole('combobox', { name: /time format/i })).toHaveValue('AM');
+  });
+
+  it('rejects a start time that is future according to the fresh server response', async () => {
+    mockGetVisitClockNow.mockImplementation(clock => new Date(2026, 8, 30, 15, clock.timestamp === 1 ? 9 : 10, 16));
+    mockFetchVisitClock.mockResolvedValue({ timestamp: 1, receivedAt: 0 });
+    const user = userEvent.setup();
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
+    expect(await screen.findByText(/start time cannot be in the future/i)).toBeVisible();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it('keeps offline date/time preselection available without a server clock', () => {
+    mockUseConnectivity.mockReturnValue(false);
+    mockUseVisitClock.mockReturnValue({ clock: undefined, error: undefined, isLoading: false });
+    renderVisitForm();
+    expect(screen.getByRole('textbox', { name: /Hora/i })).toHaveValue(dayjs().format('hh:mm'));
+    expect(screen.getByRole('combobox', { name: /time format/i })).toHaveValue(dayjs().format('A'));
+    expect(screen.getByRole('button', { name: /start visit/i })).not.toBeDisabled();
+    expect(mockFetchVisitClock).not.toHaveBeenCalled();
+  });
+
+  it('disables date/time and saving while verifying the server clock', () => {
+    mockUseVisitClock.mockReturnValue({ clock: undefined, error: undefined, isLoading: true });
+    renderVisitForm();
+    expect(screen.getByRole('textbox', { name: /Fecha/i })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: /Hora/i })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /time format/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /start visit/i })).toBeDisabled();
+    expect(screen.getByText('Checking date and time')).toBeVisible();
+  });
+
+  it('blocks saving while the server time is unavailable', () => {
+    mockUseVisitClock.mockReturnValue({ clock: undefined, error: new Error('clock unavailable'), isLoading: false });
+    renderVisitForm();
+    expect(screen.getByRole('button', { name: /start visit/i })).toBeDisabled();
+    expect(screen.getByText(/Date and time could not be verified/i)).toBeVisible();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it('does not create a visit when the fresh server-time check fails', async () => {
+    mockFetchVisitClock.mockRejectedValue(new Error('clock unavailable'));
+    const user = userEvent.setup();
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Date and time could not be verified' }),
+      ),
+    );
+    expect(mockSaveVisit).not.toHaveBeenCalled();
   });
 
   it('accepts the current minute without carrying hidden seconds from when the form opened', async () => {

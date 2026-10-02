@@ -1,0 +1,61 @@
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+// Shared by Conditions, Consulta Externa, CRED and Salud Materna.
+@mixin workspace-layout {
+  .form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .formContent {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    padding: layout.$spacing-05;
+    display: flex;
+    flex-direction: column;
+    gap: layout.$spacing-05;
+  }
+
+  .formContainer {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .formActions {
+    flex-shrink: 0;
+    background-color: $ui-02;
+    border-top: 1px solid $ui-03;
+  }
+
+  .button {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    min-height: layout.$spacing-09;
+    align-items: center;
+  }
+}
+
+@mixin option-grid {
+  :global(.cds--radio-button-group) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: layout.$spacing-03;
+    width: 100%;
+  }
+
+  :global(.cds--radio-button-wrapper) {
+    margin: 0;
+    min-width: 0;
+    white-space: normal;
+  }
+}

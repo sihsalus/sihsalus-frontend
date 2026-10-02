@@ -4,7 +4,6 @@ export const consultaExternaDashboardMeta = {
   columns: 1,
   title: 'consultaExterna',
   path: 'consulta-externa',
-  hideDashboardTitle: true,
   config: {},
 } as const;
 
@@ -12,7 +11,7 @@ export const socialHistoryDashboardMeta = {
   icon: 'omrs-icon-sticky-note-add',
   slot: 'patient-chart-social-history-dashboard-slot',
   columns: 1,
-  title: 'socialHistory',
+  title: 'antecedents',
   path: 'social-history-dashboard',
   config: {},
 } as const;

@@ -41,24 +41,24 @@
     "@openmrs/esm-framework": "*",
     "@openmrs/esm-patient-common-lib": "*",
     "react": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "swr": "2.x"
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@rspack/cli": "1.7.11",
-    "@rspack/core": "1.7.11",
+    "@rspack/cli": "2.2.8",
+    "@rspack/core": "2.2.8",
+    "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-router-dom": "7.18.2",
-    "sass": "^1.98.0",
-    "swr": "^2.4.1",
-    "typescript": "6.0.3",
-    "vite": "8.0.16",
-    "vitest": "^5.0.0"
+    "react-router-dom": "7.18.4",
+    "sass": "^1.105.0",
+    "swr": "^2.5.1",
+    "vite": "8.3.1",
+    "vitest": "^5.0.2"
   }
 }

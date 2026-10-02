@@ -15,3 +15,5 @@ export * from '@openmrs/esm-state/src/public';
 export * from '@openmrs/esm-styleguide/src/public';
 export * from '@openmrs/esm-translations/src/public';
 export * from '@openmrs/esm-utils';
+
+export type { NotificationInboxItem, NotificationDetailState } from './notification-inbox';

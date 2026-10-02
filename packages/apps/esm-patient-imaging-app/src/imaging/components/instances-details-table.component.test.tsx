@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { act } from 'react';
+import type { Mock } from 'vitest';
 import * as api from '../../api';
 import InstancesDetailsTable, { type InstancesDetailsTableProps } from './instances-details-table.component';
 
@@ -74,7 +75,7 @@ describe('InstancesDetailsTable', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    (api.useStudyInstances as vi.Mock).mockReturnValue({
+    (api.useStudyInstances as Mock).mockReturnValue({
       data: [
         {
           sopInstanceUID: '1.2.3',
@@ -162,7 +163,7 @@ describe('InstancesDetailsTable', () => {
   });
 
   it('shows loading state when data is being fetched', async () => {
-    (api.useStudyInstances as vi.Mock).mockReturnValue({
+    (api.useStudyInstances as Mock).mockReturnValue({
       data: [],
       error: null,
       isLoading: true,

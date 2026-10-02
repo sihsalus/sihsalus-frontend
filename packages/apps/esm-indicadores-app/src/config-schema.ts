@@ -25,7 +25,7 @@ export const configSchema = {
   },
 };
 
-export type Config = {
+export type ConfigObject = {
   indicatorsApiPath: string;
   reportesSqlApiPath: string;
   enableDemoData: boolean;

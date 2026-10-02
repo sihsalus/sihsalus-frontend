@@ -1,4 +1,11 @@
-import { getDefaultsFromConfigSchema, type Order, type Patient, useConfig } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  type Order,
+  type Patient,
+  useConfig,
+  showModal,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import {
   fetchVisitInsurance,
   SELF_FINANCED_CONCEPT_UUID,
@@ -11,6 +18,7 @@ import { renderWithSwr } from 'test-utils';
 import { type Config, configSchema } from '../../config-schema';
 import { useLabOrders } from '../../laboratory.resource';
 import OrdersDataTable from './orders-data-table.component';
+import { resultOrder } from '../../laboratory-results.test-fixtures';
 
 vi.mock('../../laboratory.resource', () => ({
   useLabOrders: vi.fn(),
@@ -169,6 +177,40 @@ describe('OrdersDataTable', () => {
             accreditationCheckedAt: null,
           },
     );
+  });
+
+  it.each([
+    ['Edit results', 'edit-lab-results-modal'],
+    ['Print test results', 'print-lab-results-modal'],
+  ])('opens %s for completed orders of the selected patient only', async (label, modalName) => {
+    const layout = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 120, 40));
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    vi.mocked(userHasAccess).mockReturnValue(true);
+    const completed = {
+      ...resultOrder,
+      dateActivated: '2026-09-21',
+      patient: { ...resultOrder.patient, person: { display: 'Paciente sintético', gender: 'M', age: 20 } },
+    } as Order;
+    mockUseLabOrders.mockReturnValue({
+      labOrders: [completed, { ...completed, uuid: 'pending', fulfillerStatus: 'IN_PROGRESS' }],
+      isLoading: false,
+      isError: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    const dispose = vi.fn();
+    vi.mocked(showModal).mockReturnValue(dispose);
+    renderWithSwr(<OrdersDataTable />);
+    await userEvent.click(screen.getByRole('button', { name: 'Actions' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: label }));
+    expect(showModal).toHaveBeenCalledWith(modalName, {
+      ...(modalName === 'print-lab-results-modal' ? { size: 'lg' } : {}),
+      orders: [expect.objectContaining(completed)],
+      closeModal: expect.any(Function),
+    });
+    (vi.mocked(showModal).mock.lastCall[1] as { closeModal: () => void }).closeModal();
+    expect(dispose).toHaveBeenCalledOnce();
+    layout.mockRestore();
   });
 
   it('should render one row per patient and show lab details', async () => {

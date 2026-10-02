@@ -1,60 +1,18 @@
-import { InlineLoading, Tile } from '@carbon/react';
-import { FormEngine, type FormSchema } from '@sihsalus/esm-form-engine-lib';
-import React, { useEffect, useState } from 'react';
+import { InlineLoading, InlineNotification, Tile } from '@carbon/react';
+import { FormPreview, type FormSchema } from '@sihsalus/esm-form-engine-lib';
+import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import styles from './form-renderer.scss';
 
-interface ErrorFallbackProps {
-  error: Error;
-}
-
 interface FormRendererProps {
   isLoading: boolean;
   onSchemaChange?: (schema: FormSchema) => void;
-  schema: FormSchema;
+  schema: FormSchema | null;
 }
 
 const FormRenderer: React.FC<FormRendererProps> = ({ isLoading, schema }) => {
   const { t } = useTranslation();
-
-  const dummySchema: FormSchema = {
-    encounterType: '',
-    name: 'Test Form',
-    pages: [
-      {
-        label: 'Test Page',
-        sections: [
-          {
-            label: 'Test Section',
-            isExpanded: 'true',
-            questions: [
-              {
-                label: 'Test Question',
-                type: 'obs',
-                questionOptions: {
-                  rendering: 'text',
-                  concept: 'xxxx',
-                },
-                id: 'testQuestion',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    processor: 'EncounterFormProcessor',
-    referencedForms: [],
-    uuid: 'xxx',
-  };
-
-  const [schemaToRender, setSchemaToRender] = useState<FormSchema>(dummySchema);
-
-  useEffect(() => {
-    if (schema) {
-      setSchemaToRender(schema);
-    }
-  }, [schema]);
 
   if (isLoading) {
     return (
@@ -77,22 +35,34 @@ const FormRenderer: React.FC<FormRendererProps> = ({ isLoading, schema }) => {
           </p>
         </Tile>
       )}
-      {schema === schemaToRender && (
-        <ErrorBoundary FallbackComponent={ErrorFallback} resetKeys={[schemaToRender]}>
-          <FormEngine formJson={schemaToRender} mode={'enter'} patientUUID={''} />
-        </ErrorBoundary>
+      {schema && (
+        <>
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            title={t('schemaPreviewTitle', 'Form preview')}
+            subtitle={t(
+              'schemaPreviewDescription',
+              'Try sample values here. They are not saved; actions requiring a patient encounter are unavailable.',
+            )}
+          />
+          <ErrorBoundary FallbackComponent={ErrorFallback} resetKeys={[schema]}>
+            <FormPreview formJson={schema} />
+          </ErrorBoundary>
+        </>
       )}
     </div>
   );
 };
 
-function ErrorFallback({ error }: ErrorFallbackProps) {
+function ErrorFallback() {
   const { t } = useTranslation();
   return (
     <Tile className={styles.errorStateTile}>
       <h4 className={styles.heading}>{t('problemLoadingPreview', 'There was a problem loading the form preview')}</h4>
       <p className={styles.helperText}>
-        <pre>{error.message}</pre>
+        {t('schemaPreviewValidationHint', 'Check the questions and the Validation tab for schema errors.')}
       </p>
       <p className={styles.helperText}>
         {t('fixSchemaAndRender', 'Fix the error in the Schema Editor and click "Render changes" to retry.')}

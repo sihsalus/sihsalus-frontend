@@ -20,11 +20,12 @@ interface CredCheckupsProps {
 }
 
 const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
-  const { controls, nextDueControl, completedCount, totalCount, isLoading, error } = useCREDSchedule(patientUuid);
+  const { controls, nextDueControl, completedCount, totalCount, isLoading, error, missingNeonatalDischarge } =
+    useCREDSchedule(patientUuid);
   const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{
     workspaceTitle: string;
     patientUuid: string;
@@ -139,6 +140,9 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
       </div>
 
       <div className={styles.checkups}>
+        {missingNeonatalDischarge && (
+          <InlineNotification kind="warning" lowContrast hideCloseButton title={t('neonatalDischargeRequired')} />
+        )}
         {/* Next due control */}
         {nextDueControl && (
           <>

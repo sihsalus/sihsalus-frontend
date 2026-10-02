@@ -1,20 +1,20 @@
 import { RadioButton, RadioButtonGroup } from '@carbon/react';
 import { type RadioButtonGroupProps } from '@carbon/react/lib/components/RadioButtonGroup/RadioButtonGroup';
 import React from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
+import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { type RadioOption } from '../../../stock-items/add-stock-item/stock-item-details/stock-item-details.resource';
 
-interface ControlledRadioButtonGroupProps<T>
+interface ControlledRadioButtonGroupProps<T extends FieldValues, C, O>
   extends Omit<RadioButtonGroupProps, 'onChange' | 'id' | 'ref' | 'value' | 'defaultSelected'> {
-  controllerName: string;
+  controllerName: FieldPath<T>;
   name: string;
-  control: Control<FieldValues, T>;
+  control: Control<T, C, O>;
   options: RadioOption[];
   id?: string;
   onChange?: (selectedValue: string, name: string, event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const ControlledRadioButtonGroup = <T,>(props: ControlledRadioButtonGroupProps<T>) => {
+const ControlledRadioButtonGroup = <T extends FieldValues, C, O>(props: ControlledRadioButtonGroupProps<T, C, O>) => {
   const { controllerName, name, control, options, onChange: onChangeProp, id: propsId, ...radioGroupProps } = props;
 
   return (

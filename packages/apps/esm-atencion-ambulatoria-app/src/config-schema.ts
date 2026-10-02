@@ -19,35 +19,6 @@ const anamnesisConceptDefaults = {
 // ===============================
 
 export const configSchema = {
-  conditionPageSize: {
-    _type: Type.Number,
-    _description: 'The default page size for the conditions',
-    _default: 5,
-  },
-  conditionConceptClassUuid: {
-    _type: Type.ConceptUuid,
-    _description: 'Concept class UUID for condition concepts',
-    _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
-  },
-  // CONCEPT SETS FOR CONDITIONS
-  conditionConceptSets: {
-    _type: Type.Object,
-    _description: 'ConceptSets for different condition categories',
-    _default: {
-      antecedentesPatologicos: {
-        uuid: 'c33ef45d-aa69-4d9a-9214-1dbb52609601',
-        title: 'Antecedentes Patológicos del Menor',
-        description: 'ConceptSet para antecedentes patológicos en menores',
-      },
-    },
-  },
-  // Fallback concept for free-text antecedents
-  conditionFreeTextFallbackConceptUuid: {
-    _type: Type.ConceptUuid,
-    _description:
-      'Concept UUID used when saving free-text antecedents (Otros). This should be a generic "Antecedente" concept.',
-    _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  },
   // 1. ENCOUNTER TYPES
   encounterTypes: {
     _type: Type.Object,
@@ -89,7 +60,7 @@ export const configSchema = {
       clinicalFileUpload: '319dcd44-19c5-432c-9733-d1f3798fffd6', // Carga de Archivos Clínicos — RM 546-2011
       order: '39da3525-afe4-45ff-8977-c53b7b359158', // Órdenes Médicas
       // The manual visit-note workspace (esm-patient-notes-app) records the same
-      // clinical subdomains (diagnoses P/D/R, SOAP, plan, referral) under this
+      // clinical subdomains (diagnoses P/D/R, physical examination, plan, referral) under this
       // encounter type; the CE readers merge it with externalConsultation.
       visitNote: 'd7151f82-c1f3-4152-a605-2f9ea7414a79', // Visit Note (O3 core)
     },
@@ -244,7 +215,11 @@ export const configSchema = {
       // Use the stable published form names. Schema UUIDs belong to content artifacts and can change between environments.
       consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
       anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
-      soapNoteForm: 'CE-SOAP-001-NOTA SOAP',
+      anamnesisFormVersion: '1.1.1',
+      physicalExamForm: 'CE-EXF-001-EXAMEN FISICO',
+      physicalExamFormVersion: '1.0.1',
+      // Read-only identities used to prevent a second examination during migration.
+      physicalExamHistoricalFormNames: ['CE-SOAP-001-NOTA SOAP'],
       referralForm: 'CE-REF-001-REFERENCIA-CONTRARREFERENCIA',
       visitNoteFormUuid: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
 
@@ -469,29 +444,18 @@ export const configSchema = {
       _default: anamnesisConceptDefaults.bowelMovementsUuid,
     },
 
-    // Segmented physical examination and legacy SOAP notes (CE-5)
-    soapSubjectiveUuid: {
+    // Read-only compatibility with narrative and examination findings from historical notes.
+    legacyNarrativeUuid: {
       _type: Type.ConceptUuid,
-      _description: 'SOAP Subjective concept',
+      _description: 'Narrative concept used only when reading historical notes',
       _default: 'f0000202-0000-4000-8000-000000000202',
     },
-    soapObjectiveUuid: {
+    legacyPhysicalExamUuid: {
       _type: Type.ConceptUuid,
       _description:
-        'Physical examination findings (CIEL 160532). Segmented CE-SOAP fields share this concept and are distinguished by formFieldPath.',
+        'Historical examination findings (CIEL 160532). New physical-examination fields are read by formFieldPath.',
       _default: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
-    soapAssessmentUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Assessment concept (CIEL 160533)',
-      _default: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    soapPlanUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Plan concept',
-      _default: 'f0000201-0000-4000-8000-000000000201',
-    },
-
     // Insurance Provider (CE-6)
     insuranceProviderUuid: {
       _type: Type.ConceptUuid,
@@ -578,7 +542,8 @@ export const configSchema = {
     },
     alcoholUseDurationUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Alcohol use duration concept',
+      _description:
+        'Legacy configuration key: the default concept records cigarettes per day, not alcohol duration. Keep existing overrides; the social-history table labels the default by its actual meaning.',
       _default: '1546AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
     smokingUuid: {
@@ -593,7 +558,8 @@ export const configSchema = {
     },
     otherSubstanceAbuseUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Other substance abuse concept',
+      _description:
+        'Legacy configuration key: the default concept records tobacco use status, not other substances. Keep existing overrides; the social-history table labels the default by its actual meaning.',
       _default: '163731AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
 
@@ -661,6 +627,26 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Establecimiento destino de la referencia (proyecto: establecimiento-destino-referencia)',
       _default: '6a1e18c1-8874-45fe-92dd-26758d5d6ba7',
+    },
+    referralDestinationServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'UPS destination recorded on the institutional referral',
+      _default: 'fc4f1f22-7529-4606-9e6a-af818f9f8dba',
+    },
+    referralDestinationEmergencyServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Emergency answer for the destination UPS',
+      _default: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974',
+    },
+    referralDestinationOutpatientServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Outpatient answer for the destination UPS',
+      _default: '69ede7d1-a5e8-4db8-9397-5887c9c4dfb0',
+    },
+    referralDestinationDiagnosticServiceUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Diagnostic support answer for the destination UPS',
+      _default: '6f9fc7f1-ea68-4446-9cd4-a59e9cd8ba94',
     },
     referralDestinationSpecialtyUuid: {
       _type: Type.ConceptUuid,
@@ -762,6 +748,31 @@ export const configSchema = {
     _type: Type.String,
     _description: 'Encounter UUID for defaulter tracing',
     _default: '1495edf8-2df2-11e9-b210-d663bd873d93',
+  },
+
+  socialHistory: {
+    formUuid: {
+      _type: Type.UUID,
+      _default: '76067e7a-48e5-3f69-92a4-70cf53e3e994',
+      _description: 'Persisted Initializer Form UUID for CE-SOC-001-HISTORIA SOCIAL 1.0.0 (content 1.25.23).',
+    },
+    encounterTypeUuid: {
+      _type: Type.UUID,
+      _default: 'c7059f4b-385f-45e7-82ad-204e5b380196',
+      _description: 'Dedicated social-history encounter type; never use the legacy clinical encounter type.',
+    },
+    concepts: {
+      _type: Type.Object,
+      _description: 'Existing SIHSALUS concepts and coded answers for the social-history form.',
+      _default: {
+        alcohol: 'fcd7736e-39d4-4ecd-84e0-9129e9690809',
+        tobacco: 'a79047b1-aa5c-44ab-9410-02afb350c80a',
+        cigarettesPerDay: '1546AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        smokingDurationYears: '159931AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        yes: '372a262c-8d57-4b57-ad29-b24a2941b749',
+        no: '5b2a0f81-22df-4ee1-ae2e-3c547cd7ec9f',
+      },
+    },
   },
 
   clinicalEncounterUuid: {
@@ -890,16 +901,6 @@ export interface LegendConfigObject {
 }
 
 export interface ConfigObject {
-  conditionPageSize: number;
-  conditionConceptClassUuid: string;
-  conditionConceptSets: {
-    antecedentesPatologicos: {
-      uuid: string;
-      title: string;
-      description: string;
-    };
-  };
-  conditionFreeTextFallbackConceptUuid: string;
   encounterTypes: {
     externalConsultation: string;
     specializedConsultation: string;
@@ -983,7 +984,10 @@ export interface ConfigObject {
     // Consulta Externa Forms
     consultaExternaForm: string;
     anamnesisForm: string;
-    soapNoteForm: string;
+    anamnesisFormVersion?: string;
+    physicalExamForm: string;
+    physicalExamFormVersion?: string;
+    physicalExamHistoricalFormNames?: string[];
     referralForm: string;
     visitNoteFormUuid: string;
     // HIV/HTS Forms
@@ -998,6 +1002,18 @@ export interface ConfigObject {
     vitalSignsControl: string;
   };
   defaulterTracingEncounterUuid: string;
+  socialHistory: {
+    formUuid: string;
+    encounterTypeUuid: string;
+    concepts: {
+      alcohol: string;
+      tobacco: string;
+      cigarettesPerDay: string;
+      smokingDurationYears: string;
+      yes: string;
+      no: string;
+    };
+  };
   clinicalEncounterUuid: string;
   concepts: Record<string, string>;
   specialClinics: Array<{

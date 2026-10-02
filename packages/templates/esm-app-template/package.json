@@ -47,22 +47,22 @@
     "@carbon/react": "1.x",
     "@openmrs/esm-framework": "*",
     "react": "18.x",
-    "react-i18next": "16.x",
+    "react-i18next": "17.x",
     "react-router-dom": ">=6.30.4 <8",
     "rxjs": "6.x"
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@rspack/cli": "1.7.11",
+    "@rspack/cli": "2.2.8",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "openmrs": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.0.0",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.4",
     "rxjs": "^6.6.7",
-    "typescript": "6.0.3",
+    "@typescript/native": "npm:typescript@7.0.2",
     "vite": "8.0.16",
     "vitest": "^5.0.0"
   }

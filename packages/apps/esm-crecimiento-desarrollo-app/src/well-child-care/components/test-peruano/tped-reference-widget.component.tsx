@@ -30,7 +30,7 @@ function getLocalIsoDate(): string {
 }
 
 const TpedReferenceWidget: React.FC<TpedReferenceWidgetProps> = ({ evaluationDate, patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const { patient } = usePatient(patientUuid);
   const effectiveEvaluationDate = evaluationDate ?? getLocalIsoDate();
   const chronologicalMonth = useMemo(

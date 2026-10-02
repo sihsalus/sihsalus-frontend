@@ -12,7 +12,7 @@ interface BirthDataProps {
 }
 
 const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig() as ConfigObject;
@@ -47,6 +47,11 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   };
 
   const rowConfig = [
+    {
+      id: 'newbornDischargeDate',
+      label: t('newbornDischargeDate', 'Fecha y hora de alta del recién nacido'),
+      dataKey: neonatalConcepts.dischargeDateTimeUuid,
+    },
     // Datos antropométricos al nacer
     {
       id: 'gestationalAge',

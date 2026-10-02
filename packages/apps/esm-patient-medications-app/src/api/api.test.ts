@@ -217,6 +217,59 @@ describe('prepMedicationOrderPostData', () => {
 
     expect(result.dateActivated).toBe(toOmrsIsoString(startDate));
   });
+
+  it.each([
+    'NEW',
+    'RENEW',
+    'REVISE',
+  ] as const)('does not turn the default start date into a backdated %s order after midnight', (action) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(2026, 8, 20, 23, 59));
+      const startDate = new Date();
+      const order = { ...baseOrder, action, startDate, startDateIsExplicit: false };
+      vi.setSystemTime(new Date(2026, 8, 21, 0, 1));
+
+      const result = prepMedicationOrderPostData(order, 'synthetic-patient', 'synthetic-encounter');
+
+      expect(result.dateActivated).toBeUndefined();
+      expect(order.startDate).toBe(startDate);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['RENEW', 'REVISE', 'DISCONTINUE'] as const)('tracks start-date intent when building %s', (action) => {
+    const order = {
+      drug: baseOrder.drug,
+      dateActivated: '2026-09-20T10:00:00.000-05:00',
+      encounter: { uuid: 'synthetic-encounter', visit: { uuid: 'synthetic-visit' } },
+    } as unknown as Order;
+    const draft = buildMedicationOrder(order, action);
+    expect(draft.startDateIsExplicit).toBe(action === 'DISCONTINUE');
+    if (action === 'DISCONTINUE') {
+      expect(draft.startDate).toBe(order.dateActivated);
+    } else {
+      expect((draft.startDate as Date).toDateString()).toBe(new Date().toDateString());
+    }
+  });
+
+  it.each([true, undefined])('preserves a selected or legacy start date (explicit=%s)', (startDateIsExplicit) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const startDate = new Date(2026, 8, 20, 0, 0);
+      vi.setSystemTime(new Date(2026, 8, 21, 0, 1));
+      const result = prepMedicationOrderPostData(
+        { ...baseOrder, startDate, startDateIsExplicit },
+        'synthetic-patient',
+        'synthetic-encounter',
+      );
+
+      expect(result.dateActivated).toBe(toOmrsIsoString(startDate));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('useRequireOutpatientQuantity', () => {

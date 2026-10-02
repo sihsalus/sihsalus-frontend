@@ -96,10 +96,10 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
     default:
       return {
         addIconDescription: t('addAntecedent', 'Add antecedent'),
-        ariaLabel: t('antecedentsAndProblemsOverview', 'Antecedents and problems overview'),
-        displayText: t('antecedentsAndProblems_lower', 'antecedents and problems'),
+        ariaLabel: t('antecedentsSummary', 'Antecedents summary'),
+        displayText: t('antecedents_lower', 'antecedents'),
         emptyText: t('noAntecedentsToDisplay', 'No antecedents to display'),
-        headerTitle: t('antecedentsAndProblems', 'Antecedents and problems'),
+        headerTitle: t('antecedents', 'Antecedents'),
         pagePath: 'Antecedentes',
         recordText: t('recordAntecedent', 'Record antecedent'),
       };

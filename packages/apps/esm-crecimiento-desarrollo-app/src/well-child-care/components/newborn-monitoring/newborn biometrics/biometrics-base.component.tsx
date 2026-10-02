@@ -11,7 +11,7 @@ interface BiometricsBaseProps {
 }
 
 const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize = 10 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig();

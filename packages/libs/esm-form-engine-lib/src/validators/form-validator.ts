@@ -20,7 +20,7 @@ export const FieldValidator: FormFieldValidator = {
         return addError(fieldRequiredErrCode, translateValidationMessage('fieldMandatory', 'Field is mandatory'));
       }
     }
-    if (field.questionOptions.rendering === 'text') {
+    if (field.questionOptions.rendering === 'text' || field.questionOptions.rendering === 'textarea') {
       const minLength = field.questionOptions.minLength;
       const maxLength = field.questionOptions.maxLength;
       const inputLength = typeof value === 'string' ? value.length : undefined;
@@ -32,9 +32,7 @@ export const FieldValidator: FormFieldValidator = {
       const max = Number(field.questionOptions.max);
       const disallowDecimals =
         Boolean(field.questionOptions.disallowDecimals) ||
-        (isPlainObject(field.meta?.concept) && 'allowDecimal' in field.meta.concept
-          ? Boolean(field.meta.concept.allowDecimal)
-          : false);
+        (isPlainObject(field.meta?.concept) && field.meta.concept.allowDecimal === false);
       if (isEmpty(value)) return [];
       if (typeof value !== 'number') {
         return addError(

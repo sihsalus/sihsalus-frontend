@@ -53,7 +53,7 @@ ni del orden de carga de los microfrontends. Los números `order` de cada
 | Bloque de orden            | Accesos, en secuencia                                                                          |
 | -------------------------- | ---------------------------------------------------------------------------------------------- |
 | Atención y agenda          | Resumen, Signos vitales y biometría, Consulta externa, Citas, Consultas                        |
-| Contexto clínico           | Alergias, Antecedentes, Historia social, Ficha familiar                                        |
+| Contexto clínico           | Alergias, Antecedentes (condiciones e historia social), Ficha familiar                         |
 | Tratamiento y estudios     | Medicamentos, Órdenes, Resultados, Imágenes, Procedimientos, Adjuntos                          |
 | Prevención y continuidad   | Vacunación, Tamizajes, Programas, Seguimiento de casos, Pérdida de seguimiento, Interconsultas |
 | Atención especializada     | CRED, Salud materna, Odontología, Psicología, Terapia física                                   |
@@ -64,6 +64,12 @@ Citas queda junto a la atención actual y el historial de consultas, no al final
 de especialidades. Se conservan los grupos existentes de CRED y salud materna,
 sus hijos y los marcadores invisibles que registran sus rutas.
 
+Antecedentes reúne condiciones e historia social en un solo enlace visible. Las
+extensiones históricas conservan sus rutas y permisos: el enlace de historia social
+solo se muestra si el de condiciones no está asignado, por ejemplo para un perfil
+que solo tiene lectura social. Ambos conservan sus posiciones contiguas en la
+configuración canónica; no se añade un segundo ordenador de navegación.
+
 El orden no concede privilegios, no habilita módulos opcionales ni modifica
 visibilidad online/offline. Los elementos sin permiso o no instalados se omiten
 sin alterar el orden relativo de los demás. Extensiones nuevas no listadas se
@@ -71,6 +77,10 @@ conservan después de las configuradas con el orden de respaldo de OpenMRS;
 al agregar un acceso visible al producto, ubícalo explícitamente en esta lista.
 Un override del implementador puede reemplazar `order` y seguir usando `remove`
 sin que el chart vuelva a insertar elementos retirados.
+
+El contenedor de dashboards no añade un título exterior sobre las tarjetas.
+Cada sección conserva sus encabezados internos; los títulos de los metadatos
+siguen disponibles para los enlaces del menú.
 
 La regresión `esm-extensions/src/patient-chart-navigation.test.ts` contrasta la
 lista con todos los manifests y prueba el motor real de asignación, permisos,
@@ -84,6 +94,38 @@ Validar también en DEV/QLTY el rol clínico y uno restringido, español e
 inglés, navegación con teclado, menú de escritorio/tablet y conservación del
 paciente al abrir Citas y volver al Resumen. Las pruebas locales no sustituyen
 ese smoke autenticado ni requieren crear citas para comprobar el orden.
+
+### Fecha y hora de la consulta
+
+Fecha y Hora se presentan como campos separados: se alinean cuando el panel
+ofrece espacio y se apilan en paneles estrechos, independientemente del ancho
+de la pantalla. AM/PM permanece junto a la hora y los errores quedan visibles.
+
+Con conexión, la preselección y el límite de fecha/hora futura usan `Date` de
+una respuesta fresca de `GET /ws/rest/v1/session`, sin caché. La referencia
+avanza con `performance.now()` para que cambios del reloj del equipo no alteren
+la validación. Se mantiene la visualización en la zona horaria del navegador y
+el payload conserva el instante con zona mediante el serializador existente.
+Los despliegues deben conservar ese header HTTP y sincronizar los relojes del
+servidor y proxy; no es una garantía frente a un reloj del servidor incorrecto.
+
+Antes de guardar se vuelve a verificar la hora. Una respuesta fallida o un header
+ausente/inválido impide iniciar o actualizar una consulta; no se inventa una
+hora ni una tolerancia. La admisión de cola, que oculta estos campos, toma esa
+misma referencia fresca. El reintento de acciones de una consulta ya persistida
+conserva su identidad y no vuelve a crearla por un fallo del reloj.
+
+Al editar, se conservan las fechas persistidas. Una actualización de la referencia
+no reemplaza campos modificados manualmente. La hora sigue teniendo precisión de
+minutos en el formulario; no se arrastran segundos ocultos. Sin conexión se conserva
+la preselección con el reloj local y el comportamiento offline existente, sin
+atribuirle sincronización con el servidor.
+
+Regresiones: `visit-form.test.tsx` y `visit-form.resource.test.ts` cubren reloj del
+cliente adelantado/atrasado, medianoche/mediodía, errores de lectura, límite futuro,
+edición manual y modo offline. La regresión de estilos usa Carbon real en Chromium.
+La aceptación contra el backend de DEV/QLTY y la sincronización offline requieren
+su smoke coordinado con pacientes sintéticos antes de promover este comportamiento.
 
 ### Acompañante por consulta
 

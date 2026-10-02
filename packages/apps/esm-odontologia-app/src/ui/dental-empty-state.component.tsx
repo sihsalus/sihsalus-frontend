@@ -7,7 +7,7 @@ type DentalEmptyStateProps = {
   title: string;
   description: string;
   actionLabel: string;
-  onAction: () => void;
+  onAction?: () => void;
 };
 
 const DentalEmptyState: React.FC<DentalEmptyStateProps> = ({ title, description, actionLabel, onAction }) => {
@@ -16,9 +16,11 @@ const DentalEmptyState: React.FC<DentalEmptyStateProps> = ({ title, description,
       <Tile className={styles.tile}>
         <h4 className={styles.title}>{title}</h4>
         <p className={styles.description}>{description}</p>
-        <Button kind="ghost" size="sm" onClick={onAction}>
-          {actionLabel}
-        </Button>
+        {onAction && (
+          <Button kind="ghost" size="sm" onClick={onAction}>
+            {actionLabel}
+          </Button>
+        )}
       </Tile>
     </div>
   );

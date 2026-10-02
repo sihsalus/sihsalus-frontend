@@ -17,7 +17,7 @@ interface LabourHistoryOverviewProps {
 }
 
 const LabourHistoryOverview: React.FC<LabourHistoryOverviewProps> = ({ patientUuid, pageSize: _pageSize = 10 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   const headerTitle = t('labourHistorySummary', 'Labour history summary');
   const [chartView, setChartView] = useState(false);
   const isTablet = useLayoutType() === 'tablet';

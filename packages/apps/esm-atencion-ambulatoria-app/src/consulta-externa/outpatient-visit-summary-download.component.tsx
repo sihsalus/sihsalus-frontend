@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useAmbulatoryVisitGuard } from '../hooks';
+import { moduleName } from '../utils/constants';
 import { formatDeceasedName } from '../utils/utils';
 import styles from './consulta-externa-dashboard.scss';
 import type { ConsultaExternaTabId } from './consulta-externa-tabs';
@@ -41,6 +42,8 @@ import { generateRecetaUnicaNumber } from './receta-unica.resource';
 
 interface OutpatientVisitSummaryDownloadProps {
   patientUuid: string;
+  /** Explicitly selected, finalized visit; never falls back to the active visit. */
+  historicalVisitUuid?: string;
   /** Lets the blocked-document modal send the clinician to the tab that owns the missing datum. */
   onNavigateToTab?: (tabId: ConsultaExternaTabId) => void;
 }
@@ -306,11 +309,13 @@ function getRecetaUnicaLabels(t: TFunction): OutpatientRecetaUnicaPdfLabels {
 const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadProps> = ({
   patientUuid,
   onNavigateToTab,
+  historicalVisitUuid,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(moduleName);
   const config = useConfig<ConfigObject>();
   const session = useSession();
-  const sessionLocationUuid = session?.sessionLocation?.uuid ?? null;
+  const isHistorical = historicalVisitUuid !== undefined;
+  const sessionLocationUuid = isHistorical ? null : (session?.sessionLocation?.uuid ?? null);
   const facilityIdentity = useOutpatientFacilityIdentity({
     sessionLocationUuid,
     fallbackLocationUuid: config.outpatientDocumentFacilityLocationUuid,
@@ -320,25 +325,33 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     fallbackPhone: config.outpatientDocumentFacilityPhone,
     fallbackIpressCode: config.referralOriginRenaesCode,
   });
-  const isWaitingForFacilityMetadata = facilityIdentity.isLoading;
-  const facilityIdentityFingerprint = JSON.stringify([
-    session?.sessionLocation?.display ?? null,
-    facilityIdentity.facilityAddress,
-    facilityIdentity.facilityPhone,
-    facilityIdentity.facilityIpressCode,
-  ]);
+  const isWaitingForFacilityMetadata = !isHistorical && facilityIdentity.isLoading;
+  const facilityIdentityFingerprint = isHistorical
+    ? null
+    : JSON.stringify([
+        session?.sessionLocation?.display ?? null,
+        facilityIdentity.facilityAddress,
+        facilityIdentity.facilityPhone,
+        facilityIdentity.facilityIpressCode,
+      ]);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { requireAmbulatoryVisit, verifiedAmbulatoryVisitUuid } = useAmbulatoryVisitGuard({
     patientUuid,
     ambulatoryVisitTypeUuid: config.visitTypes.ambulatory,
   });
+  const documentVisitUuid = isHistorical ? historicalVisitUuid : verifiedAmbulatoryVisitUuid;
+  const documentMode = isHistorical ? 'historical' : 'current';
+  const historicalNotice = t(
+    'outpatientHistoricalDocumentNotice',
+    'Copia informativa de una consulta finalizada, generada con los datos disponibles en su registro. No acredita un tratamiento vigente ni reproduce un documento emitido previamente.',
+  );
   const [generationTarget, setGenerationTarget] = useState<GenerationTarget | null>(null);
   const generationInProgressRef = useRef(false);
   const generationEpochRef = useRef(0);
   const activeGenerationAbortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const activePatientUuidRef = useRef(patientUuid);
-  const activeVisitUuidRef = useRef(verifiedAmbulatoryVisitUuid);
+  const activeVisitUuidRef = useRef(documentVisitUuid);
   const activeSessionLocationUuidRef = useRef(sessionLocationUuid);
   const activeFacilityIdentityFingerprintRef = useRef(facilityIdentityFingerprint);
 
@@ -346,13 +359,13 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     activeGenerationAbortControllerRef.current?.abort();
     activeGenerationAbortControllerRef.current = null;
     activePatientUuidRef.current = patientUuid;
-    activeVisitUuidRef.current = verifiedAmbulatoryVisitUuid;
+    activeVisitUuidRef.current = documentVisitUuid;
     activeSessionLocationUuidRef.current = sessionLocationUuid;
     activeFacilityIdentityFingerprintRef.current = facilityIdentityFingerprint;
     generationEpochRef.current += 1;
     generationInProgressRef.current = false;
     setGenerationTarget(null);
-  }, [facilityIdentityFingerprint, patientUuid, sessionLocationUuid, verifiedAmbulatoryVisitUuid]);
+  }, [facilityIdentityFingerprint, patientUuid, sessionLocationUuid, documentVisitUuid]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -433,7 +446,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
 
   const loadVerifiedSummary = useCallback(
     async (target: GenerationTarget): Promise<VerifiedOutpatientSummary | null> => {
-      const visit = requireAmbulatoryVisit();
+      const visit = isHistorical ? { uuid: historicalVisitUuid } : requireAmbulatoryVisit();
       if (!visit) return null;
       const errorTitle = getErrorTitle(target);
       if (isPatientLoading) {
@@ -466,16 +479,27 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       summaryPatient.gender = genderLabels[summaryPatient.gender ?? ''] ?? summaryPatient.gender;
 
       const source = await fetchOutpatientVisitSummarySource(visit.uuid);
+      if (
+        isHistorical &&
+        (!source.stopDatetime ||
+          !Number.isFinite(Date.parse(source.startDatetime ?? '')) ||
+          !Number.isFinite(Date.parse(source.stopDatetime)) ||
+          Date.parse(source.stopDatetime) < Date.parse(source.startDatetime ?? ''))
+      ) {
+        throw new Error('The selected historical visit is not finalized.');
+      }
       const summary = buildOutpatientVisitSummary({
         source,
         expectedVisitUuid: visit.uuid,
         expectedPatientUuid: patientUuid,
         expectedVisitTypeUuid: config.visitTypes.ambulatory,
         patient: summaryPatient,
-        facilityName: session?.sessionLocation?.display ?? t('healthFacility', 'Establecimiento de salud'),
-        facilityAddress: facilityIdentity.facilityAddress,
-        facilityPhone: facilityIdentity.facilityPhone,
-        facilityIpressCode: facilityIdentity.facilityIpressCode,
+        facilityName:
+          (isHistorical ? source.location?.display : session?.sessionLocation?.display) ??
+          t('healthFacility', 'Establecimiento de salud'),
+        facilityAddress: isHistorical ? null : facilityIdentity.facilityAddress,
+        facilityPhone: isHistorical ? null : facilityIdentity.facilityPhone,
+        facilityIpressCode: isHistorical ? null : facilityIdentity.facilityIpressCode,
         professionalRegistrationProviderAttributeTypeUuid: config.professionalRegistrationProviderAttributeTypeUuid,
         clinicianEncounterRoleUuid: config.clinicianEncounterRoleUuid,
         responsibleEncounterTypeUuid: config.encounterTypes.visitNote,
@@ -500,6 +524,8 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       facilityIdentity.facilityPhone,
       getErrorTitle,
       isPatientLoading,
+      isHistorical,
+      historicalVisitUuid,
       patient,
       patientError,
       patientUuid,
@@ -523,7 +549,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (generationInProgressRef.current) return;
       activeGenerationAbortControllerRef.current?.abort();
       const operationPatientUuid = patientUuid;
-      const operationVisitUuid = verifiedAmbulatoryVisitUuid;
+      const operationVisitUuid = documentVisitUuid;
       const operationSessionLocationUuid = sessionLocationUuid;
       const operationFacilityIdentityFingerprint = facilityIdentityFingerprint;
       const operationAbortController = new AbortController();
@@ -588,7 +614,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       sessionLocationUuid,
       showBlockedDocument,
       t,
-      verifiedAmbulatoryVisitUuid,
+      documentVisitUuid,
     ],
   );
 
@@ -609,7 +635,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
 
       showClinicalRecordWarning(summary);
 
-      const bytes = await createOutpatientVisitSummaryPdf(summary, getVisitSummaryLabels(t), i18n.language || 'es-PE');
+      const labels = getVisitSummaryLabels(t);
+      if (isHistorical) labels.disclaimer = historicalNotice;
+      const bytes = await createOutpatientVisitSummaryPdf(summary, labels, i18n.language || 'es-PE');
       if (!isCurrent()) return;
       downloadOutpatientVisitSummaryPdf(
         bytes,
@@ -628,15 +656,26 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         ),
       });
     });
-  }, [getErrorTitle, i18n.language, runWithSummary, showBlockedDocument, showClinicalRecordWarning, t]);
+  }, [
+    getErrorTitle,
+    historicalNotice,
+    isHistorical,
+    i18n.language,
+    runWithSummary,
+    showBlockedDocument,
+    showClinicalRecordWarning,
+    t,
+  ]);
 
   const handlePrintPatientInstructions = useCallback(() => {
     return runWithSummary('patient-instructions', async (summary, linkedAppointmentUuids, isCurrent, signal) => {
       let scheduledAppointment = null;
       try {
-        scheduledAppointment = await fetchNextScheduledAppointment(patientUuid, {
-          excludedAppointmentUuids: linkedAppointmentUuids,
-        });
+        scheduledAppointment = isHistorical
+          ? null
+          : await fetchNextScheduledAppointment(patientUuid, {
+              excludedAppointmentUuids: linkedAppointmentUuids,
+            });
       } catch (error) {
         if (!isCurrent()) return;
         createErrorHandler()(error);
@@ -654,7 +693,11 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       scheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment) ? scheduledAppointment : null;
 
-      const missingInstructions = getMissingPatientInstructionsRequirements(summary, scheduledAppointment);
+      const missingInstructions = getMissingPatientInstructionsRequirements(
+        summary,
+        scheduledAppointment,
+        documentMode,
+      );
       if (missingInstructions.length) {
         showBlockedDocument(getErrorTitle('patient-instructions'), {
           requirements: missingInstructions,
@@ -668,11 +711,19 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         summary.visitUuid,
         summary.clinicalEncounterDatetime ?? summary.visitStart,
       );
+      const labels = getPatientInstructionsLabels(t, Boolean(summary.treatment?.nextAppointment?.trim()));
+      if (isHistorical) {
+        labels.title = t('outpatientHistoricalInstructions', 'Indicaciones registradas en esta consulta');
+        labels.followUpDateDisclaimer = historicalNotice;
+        labels.medications = t('outpatientHistoricalMedications', 'Medicamentos registrados');
+        labels.legacyPrescriptions = labels.medications;
+      }
       let bytes = await createOutpatientPatientInstructionsPdf(
         summary,
-        getPatientInstructionsLabels(t, Boolean(summary.treatment?.nextAppointment?.trim())),
+        labels,
         i18n.language || 'es-PE',
         scheduledAppointment,
+        documentMode,
       );
       if (!isCurrent()) return;
       if (scheduledAppointment && !isUpcomingScheduledAppointment(scheduledAppointment)) {
@@ -689,6 +740,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
           getPatientInstructionsLabels(t, Boolean(summary.treatment?.nextAppointment?.trim())),
           i18n.language || 'es-PE',
           null,
+          documentMode,
         );
         if (!isCurrent()) return;
       }
@@ -711,6 +763,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
           getPatientInstructionsLabels(t, Boolean(summary.treatment?.nextAppointment?.trim())),
           i18n.language || 'es-PE',
           null,
+          documentMode,
         );
         if (!isCurrent()) return;
         outcome = await printPdfBytes(bytes, fileName, { signal });
@@ -733,7 +786,18 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
               ),
       });
     });
-  }, [getErrorTitle, i18n.language, patientUuid, runWithSummary, showBlockedDocument, showClinicalRecordWarning, t]);
+  }, [
+    documentMode,
+    getErrorTitle,
+    historicalNotice,
+    isHistorical,
+    i18n.language,
+    patientUuid,
+    runWithSummary,
+    showBlockedDocument,
+    showClinicalRecordWarning,
+    t,
+  ]);
 
   // Un frontend nuevo puede convivir con una configuración desplegada que aún
   // no declara el bloque: sin fuente configurada la emisión queda apagada.
@@ -833,7 +897,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
           ? t('generatingOutpatientPatientInstructions', 'Generando indicaciones…')
           : printLabel}
       </Button>
-      {recetaUnicaConfig.identifierSourceUuid ? (
+      {!isHistorical && recetaUnicaConfig.identifierSourceUuid ? (
         <Button
           kind="tertiary"
           size="sm"

@@ -16,5 +16,15 @@
   "userMenu": "Menú de usuario",
   "userMenuFor": "Mi cuenta: {{user}}",
   "userMenuOptions": "Opciones del menú de usuario",
-  "userMenuTooltip": "Mi Cuenta"
+  "userMenuTooltip": "Mi Cuenta",
+  "pendingNotificationCount": "{{count}} notificaciones sin leer",
+  "backToNotifications": "Volver a notificaciones",
+  "notificationDetailUnavailable": "Esta notificación no está disponible. Sigue sin leer.",
+  "refreshNotifications": "Actualizar",
+  "notificationInboxError": "No se pudieron cargar las notificaciones. Reintenta para confirmar la lista actual.",
+  "loadingNotifications": "Cargando notificaciones",
+  "noUnreadNotifications": "No hay notificaciones sin leer",
+  "openNotification": "Abrir notificación",
+  "previousNotifications": "Anterior",
+  "nextNotifications": "Siguiente"
 }

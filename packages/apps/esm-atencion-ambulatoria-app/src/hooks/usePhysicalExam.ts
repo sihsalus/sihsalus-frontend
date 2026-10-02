@@ -50,7 +50,7 @@ export function mapPhysicalExamEntry(
   encounter: PhysicalExamEncounter,
   concepts: Record<string, string>,
 ): PhysicalExamEntry {
-  const objectiveUuid = concepts?.soapObjectiveUuid;
+  const objectiveUuid = concepts?.legacyPhysicalExamUuid;
   const physicalExam = physicalExamFields.reduce((values, field) => {
     values[field.key] = getObsValue(encounter.obs, undefined, getFormEngineFieldPath(field.questionId));
     return values;
@@ -76,7 +76,9 @@ export function usePhysicalExam(
   const encounterTypes = toEncounterTypeSources(encounterType);
   const sources = patientUuid
     ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
-        url: `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))`,
+        url: `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,patient:(uuid),encounterType:(uuid),encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))`,
+        expectedPatientUuid: patientUuid,
+        expectedEncounterTypeUuid: encounterTypeUuid,
         expectedFormUuid: formUuid,
         expectedVisitTypeUuid: visitTypeUuid,
       }))

@@ -41,10 +41,8 @@ const concepts = {
   moodUuid: 'mood',
   urineUuid: 'urine',
   bowelMovementsUuid: 'bowel',
-  soapSubjectiveUuid: 'soap-subjective',
-  soapObjectiveUuid: 'soap-objective',
-  soapAssessmentUuid: 'soap-assessment',
-  soapPlanUuid: 'soap-plan',
+  legacyNarrativeUuid: 'soap-subjective',
+  legacyPhysicalExamUuid: 'soap-objective',
   diagnosisTypeConceptUuid: 'diagnosis-type',
   definitiveDiagnosisTypeUuid: 'definitive',
   repeatDiagnosisTypeUuid: 'repeat',
@@ -205,6 +203,17 @@ function build(overrides: Partial<Parameters<typeof buildOutpatientVisitSummary>
 describe('outpatient visit summary contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('does not generate a current document from an old cached visit after network failure', async () => {
+    const error = new Error('Synthetic network failure');
+    mockOpenmrsFetch.mockImplementation(async (_url, init) => {
+      if (init?.cache === 'no-store') throw error;
+      return { data: { uuid: 'visit-uuid', encounters: [] } } as never;
+    });
+
+    await expect(fetchOutpatientVisitSummarySource('visit-uuid')).rejects.toBe(error);
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
   });
 
   it('propagates the server Date header from the verified visit read', async () => {
@@ -401,8 +410,8 @@ describe('outpatient visit summary contract', () => {
     });
     expect(summary.anamnesis.chiefComplaint).toBe('Dolor de cabeza');
     expect(summary.anamnesis.biologicalFunctions.summary).toBeNull();
-    expect(summary.soap.subjective).toBe('Cefalea de dos días');
-    expect(summary.soap.objective).toBeNull();
+    expect(summary.legacyNotes.narrative).toBe('Cefalea de dos días');
+    expect(summary.legacyNotes.physicalExam).toBeNull();
     expect(summary.physicalExam).toMatchObject({
       generalState: 'Paciente en buen estado general',
       headAndNeck: 'Sin hallazgos de alarma',

@@ -1,4 +1,4 @@
-import dayjs, { type Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
 
 import { type AppointmentCountMap, AppointmentKind, AppointmentStatus, type AppointmentSummary } from '../types';
 
@@ -46,28 +46,12 @@ export const isSameMonth = (cellDate: Dayjs, currentDate: Dayjs) => {
   return cellDate.isSame(currentDate, 'month');
 };
 
-export const monthDays = (currentDate: Dayjs) => {
-  const monthStart = dayjs(currentDate).startOf('month');
-  const monthEnd = dayjs(currentDate).endOf('month');
-  const monthDays = dayjs(currentDate).daysInMonth();
-  const lastMonth = dayjs(currentDate).subtract(1, 'month');
-  const nextMonth = dayjs(currentDate).add(1, 'month');
-  const days: Dayjs[] = [];
-
-  for (let i = lastMonth.daysInMonth() - monthStart.day() + 1; i <= lastMonth.daysInMonth(); i++) {
-    days.push(dayjs().month(lastMonth.month()).date(i));
-  }
-
-  for (let i = 1; i <= monthDays; i++) {
-    days.push(currentDate.date(i));
-  }
-
-  const dayLen = days.length > 30 ? 7 : 14;
-
-  for (let i = 1; i < dayLen - monthEnd.day(); i++) {
-    days.push(dayjs().month(nextMonth.month()).date(i));
-  }
-  return days;
+export const monthDays = (currentDate: Dayjs): Dayjs[] => {
+  const monthStart = currentDate.startOf('month');
+  // Match the Sunday-first header regardless of the locale's week start.
+  const gridStart = monthStart.subtract(monthStart.day(), 'day');
+  const cellCount = Math.max(35, Math.ceil((monthStart.day() + monthStart.daysInMonth()) / 7) * 7);
+  return Array.from({ length: cellCount }, (_, index) => gridStart.add(index, 'day'));
 };
 
 export const getGender = (gender: string, t: (key: string, defaultValue: string) => string) => {

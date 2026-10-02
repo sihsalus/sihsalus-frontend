@@ -10,6 +10,7 @@ interface EncounterFixture {
   uuid: string;
   encounterDatetime: string;
   encounterType: { uuid: string };
+  location?: { uuid: string; display: string };
   visit?: { uuid: string; visitType?: { uuid: string } };
   encounterProviders: Array<{ display: string }>;
   obs: Array<{
@@ -31,6 +32,7 @@ describe('useReferralCounterReferral', () => {
     const mutate = vi.fn();
     const referralEncounter: EncounterFixture = {
       uuid: 'referral-11',
+      location: { uuid: 'emergency-location', display: 'UPSS Emergencia' },
       encounterDatetime: '2026-07-09T15:30:00.000Z',
       encounterType: { uuid: 'referral-encounter' },
       visit: { uuid: 'visit-uuid' },
@@ -39,6 +41,7 @@ describe('useReferralCounterReferral', () => {
         { concept: { uuid: 'referral-reason' }, value: 'Evaluación especializada' },
         { concept: { uuid: 'referral-destination' }, value: '00000003 | Hospital Regional de Loreto' },
         { concept: { uuid: 'return-condition' }, value: { display: 'Mejorado' } },
+        { concept: { uuid: 'destination-service' }, value: { display: 'Consulta Externa' } },
       ],
     };
     const externalConsultationEncounter: EncounterFixture = {
@@ -63,6 +66,7 @@ describe('useReferralCounterReferral', () => {
       useReferralCounterReferral('patient-uuid', 'referral-encounter', {
         referralReasonUuid: 'referral-reason',
         referralDestinationUuid: 'referral-destination',
+        referralDestinationServiceUuid: 'destination-service',
         counterReferralConditionUuid: 'return-condition',
       }),
     );
@@ -74,6 +78,8 @@ describe('useReferralCounterReferral', () => {
         referralReason: 'Evaluación especializada',
         referralDestination: 'Hospital Regional de Loreto',
         referralDestinationCode: '00000003',
+        originService: 'UPSS Emergencia',
+        destinationService: 'Consulta Externa',
         counterReferralCondition: 'Mejorado',
       }),
     ]);

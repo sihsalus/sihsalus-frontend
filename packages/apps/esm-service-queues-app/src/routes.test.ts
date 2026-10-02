@@ -11,6 +11,17 @@ describe('service queue route privilege contract', () => {
     });
   });
 
+  it('registers only the canonical room form with all room management privileges', () => {
+    expect(routes.workspaces.some(({ name }) => name === 'service-queues-room-workspace')).toBe(false);
+    expect(routes.workspaces2.filter(({ name }) => name === 'service-queues-room-workspace')).toEqual([
+      expect.objectContaining({
+        component: 'addNewQueueServiceRoomWorkspace2',
+        window: 'add-queue-room',
+        privileges: ['app:home.colasAtencion.editar', 'Get Queue Rooms', 'Get Queues', 'Manage Queue Rooms'],
+      }),
+    ]);
+  });
+
   it('protects both active-visit queue workspaces with visit mutation privileges', () => {
     const legacyWorkspace = routes.workspaces.find(({ name }) => name === 'create-queue-entry-workspace');
     const workspace = routes.workspaces2.find(({ name }) => name === 'queue-patient-search-add-to-queue-workspace');

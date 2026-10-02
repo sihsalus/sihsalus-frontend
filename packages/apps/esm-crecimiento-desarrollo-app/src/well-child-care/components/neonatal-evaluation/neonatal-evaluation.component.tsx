@@ -29,11 +29,36 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
-    return encounter.obs.reduce((acc, obs) => {
+    const data = encounter.obs.reduce<Record<string, (typeof encounter.obs)[number]['value']>>((acc, obs) => {
       acc[obs.concept.uuid] = obs.value;
       return acc;
     }, {});
-  }, [encounter]);
+    // This published form uses one concept for two anatomical fields. The
+    // persisted field path distinguishes them; an untagged historical value
+    // cannot safely be assigned to either organ from its concept alone.
+    const permeabilityObs = encounter.obs.filter(
+      (obs) => obs.concept.uuid === neonatalConcepts.esophagusPermeabilityUuid,
+    );
+    const paths = ['rfe-forms-permeabilidadEsofago', 'rfe-forms-permeabilidadAnal'];
+    const hasUnidentifiedValue = permeabilityObs.some(
+      (obs) => obs.formFieldNamespace !== 'rfe-forms' || !obs.formFieldPath || !paths.includes(obs.formFieldPath),
+    );
+    paths.forEach((path, index) => {
+      const matches = permeabilityObs.filter(
+        (obs) => obs.formFieldNamespace === 'rfe-forms' && obs.formFieldPath === path,
+      );
+      const key = index === 0 ? 'esophagealPermeability' : 'analPermeability';
+      if (matches.length) {
+        data[key] = matches
+          .map(({ value }) => (value && typeof value === 'object' ? value.display : value))
+          .filter((value) => value != null)
+          .join(', ');
+      } else if (hasUnidentifiedValue) {
+        data[key] = t('neonatalPermeabilityReview', 'Review the original form');
+      }
+    });
+    return data;
+  }, [encounter, neonatalConcepts.esophagusPermeabilityUuid, t]);
 
   const handleLaunchForm = React.useCallback(() => {
     launchForm(encounter?.uuid || '', () => mutate());
@@ -61,7 +86,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     {
       id: 'esophagus',
       label: t('esophagus', 'Permeabilidad Esófago'),
-      dataKey: neonatalConcepts.esophagusPermeabilityUuid,
+      dataKey: 'esophagealPermeability',
     },
     {
       id: 'umbilicalCord',
@@ -82,7 +107,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     {
       id: 'analPermeability',
       label: t('analPermeability', 'Permeabilidad Anal'),
-      dataKey: neonatalConcepts.esophagusPermeabilityUuid,
+      dataKey: 'analPermeability',
     },
     {
       id: 'genitourinaryElimination',

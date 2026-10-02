@@ -4,7 +4,7 @@ import {
   useLatestValidEncounter,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { configSchema } from '../../config-schema';
 import { useCREDFormLauncher } from '../../hooks/useCREDFormLauncher';
@@ -193,4 +193,71 @@ it('shows declared birth measurement units, preserves zero scores and leaves mis
   expect(screen.getByText('3.25 kg')).toBeInTheDocument();
   expect(screen.getByText('0 puntos')).toBeInTheDocument();
   expect(screen.queryByText('-- cm')).not.toBeInTheDocument();
+});
+
+it('keeps esophageal and anal observations distinct when the published form uses the same concept', async () => {
+  vi.mocked(useLatestValidEncounter).mockReturnValue({
+    ...history,
+    encounter: {
+      ...existingEncounter,
+      obs: [
+        {
+          uuid: 'synthetic-esophageal-obs',
+          concept: {
+            uuid: configSchema.neonatalConcepts._default.esophagusPermeabilityUuid,
+          },
+          groupMembers: [],
+          value: {
+            uuid: 'synthetic-esophagus-answer',
+            display: 'Synthetic esophageal result',
+          },
+          formFieldNamespace: 'rfe-forms',
+          formFieldPath: 'rfe-forms-permeabilidadEsofago',
+        },
+        {
+          uuid: 'synthetic-anal-obs',
+          concept: {
+            uuid: configSchema.neonatalConcepts._default.esophagusPermeabilityUuid,
+          },
+          groupMembers: [],
+          value: {
+            uuid: 'synthetic-anal-answer',
+            display: 'Synthetic anal result',
+          },
+          formFieldNamespace: 'rfe-forms',
+          formFieldPath: 'rfe-forms-permeabilidadAnal',
+        },
+      ],
+    },
+  });
+  render(<NeonatalEvaluation patientUuid="synthetic-child" />);
+  await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  const esophagealRow = screen.getByText(/Permeabilidad Esófago/i).closest('tr');
+  const analRow = screen.getByText(/Permeabilidad Anal/i).closest('tr');
+  expect(within(esophagealRow).getByText('Synthetic esophageal result')).toBeInTheDocument();
+  expect(within(analRow).getByText('Synthetic anal result')).toBeInTheDocument();
+});
+
+it('does not assign an unidentifiable historical permeability value to either anatomical field', async () => {
+  vi.mocked(useLatestValidEncounter).mockReturnValue({
+    ...history,
+    encounter: {
+      ...existingEncounter,
+      obs: [
+        {
+          uuid: 'synthetic-legacy-permeability',
+          concept: {
+            uuid: configSchema.neonatalConcepts._default.esophagusPermeabilityUuid,
+          },
+          groupMembers: [],
+          value: 'Synthetic unidentified result',
+        },
+      ],
+    },
+  });
+  render(<NeonatalEvaluation patientUuid="synthetic-child" />);
+  await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  expect(screen.queryByText('Synthetic unidentified result')).not.toBeInTheDocument();
+  expect(screen.getAllByText('Review the original form')).toHaveLength(2);
+  expect(screen.getByRole('button', { name: /edit/i })).toBeEnabled();
 });

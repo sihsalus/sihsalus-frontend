@@ -80,6 +80,7 @@ describe('useLatestValidEncounter', () => {
       startIndex: '0',
     });
     expect(parsedUrl.searchParams.get('v')).toContain('form:(uuid,name,display)');
+    expect(parsedUrl.searchParams.get('v')).toContain('obs:(uuid,obsDatetime,formFieldNamespace,formFieldPath,');
     expect(parsedUrl.searchParams.has('form')).toBe(false);
   });
 

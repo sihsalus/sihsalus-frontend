@@ -21,6 +21,9 @@ versions, so this case uses `useOpenmrsFetchAll` and only selects a match after
 all pages have loaded. Partial or failed histories never authorize a new record.
 The two query shapes have separate cache keys; changing patient immediately hides
 the previous history. Refresh also follows any new pages introduced by a save.
+The observation representation includes `formFieldNamespace` and `formFieldPath`
+so consumers can distinguish fields that share a concept without assigning an
+unidentified historical value to a guessed clinical location.
 
 `ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.
 

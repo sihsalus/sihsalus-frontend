@@ -6,7 +6,7 @@ import type { OpenmrsEncounter } from '../encounter-list/types';
 
 const latestEncounterRepresentation =
   'custom:(uuid,encounterDatetime,encounterType:(uuid,display),location:(uuid,display),patient:(uuid,display),' +
-  'obs:(uuid,obsDatetime,concept:(uuid,display),value:(uuid,display,name:(uuid,name)),groupMembers:(uuid,concept:(uuid,display),value:(uuid,display))),form:(uuid,name,display))';
+  'obs:(uuid,obsDatetime,formFieldNamespace,formFieldPath,concept:(uuid,display),value:(uuid,display,name:(uuid,name)),groupMembers:(uuid,concept:(uuid,display),value:(uuid,display))),form:(uuid,name,display))';
 interface UseLatestEncounterResponse {
   encounter: OpenmrsEncounter | undefined;
   isLoading: boolean;

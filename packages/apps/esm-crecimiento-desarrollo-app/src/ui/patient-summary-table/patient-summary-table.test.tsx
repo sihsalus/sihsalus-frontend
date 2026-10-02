@@ -133,6 +133,29 @@ describe.each([
     expect(screen.getByRole('button', { name: /edit/i })).toBeDisabled();
   });
 
+  it('waits for the historical form metadata before enabling editing', () => {
+    vi.mocked(useLatestValidEncounter).mockReturnValue({ ...history, encounter: existingEncounter });
+    vi.mocked(useCREDFormLauncher).mockReturnValue({
+      launchForm,
+      error: undefined,
+      form: undefined,
+      formIdentifier: existingEncounter.form.uuid,
+      isLoading: true,
+    });
+    const { rerender } = render(<Component patientUuid="synthetic-child" />);
+    expect(screen.getByRole('button', { name: /edit/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^record/i })).not.toBeInTheDocument();
+    vi.mocked(useCREDFormLauncher).mockReturnValue({
+      launchForm,
+      error: undefined,
+      form: undefined,
+      formIdentifier: existingEncounter.form.uuid,
+      isLoading: false,
+    });
+    rerender(<Component patientUuid="synthetic-child" />);
+    expect(screen.getByRole('button', { name: /edit/i })).toBeEnabled();
+  });
+
   it('asks to start a visit before opening a form', async () => {
     vi.mocked(useVisitOrOfflineVisit).mockReturnValue({
       currentVisit: null,

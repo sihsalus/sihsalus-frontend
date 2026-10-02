@@ -23,7 +23,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
     config.encounterTypes.consejeriaMaterna,
     config.formsList.breastfeedingObservation,
   );
-  const { launchForm } = useCREDFormLauncher('breastfeedingObservation', undefined, encounter?.form?.uuid);
+  const { launchForm, isLoading: isLoadingForm } = useCREDFormLauncher('breastfeedingObservation', undefined, encounter?.form?.uuid);
 
   // Procesar observaciones, manejando múltiples valores para checkboxes
   const obsData = React.useMemo(() => {
@@ -50,7 +50,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
 
   const dataHook = () => ({
     data: encounter ? [obsData] : [],
-    isLoading,
+    isLoading: isLoading || (canEdit && isLoadingForm),
     error,
     mutate,
   });

@@ -183,6 +183,8 @@
   "credControlNewborn7To14Days": "Newborn - 7 to 14 days",
   "credControlNewbornBefore7Days": "Newborn - before 7 days",
   "credControls": "CRED controls",
+  "credSummaryRefreshFailed": "Could not refresh the CRED summary",
+  "credSummaryRefreshFailedSubtitle": "The encounter was saved. Reload the chart to see the changes; do not create it again.",
   "credFormNotAvailable": "CRED form unavailable",
   "credFormNotAvailableSubtitle": "The CRED form is unavailable. Ask the administrator to check that it is published and configured correctly.",
   "credFormNotConfigured": "CRED form not configured",

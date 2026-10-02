@@ -127,13 +127,6 @@
       "privileges": "app:hoja.clinica.cred.antecedentes"
     },
     {
-      "name": "labour-history-chart",
-      "component": "neonatalRegisterChart",
-      "slot": "neonatal-perinatal-slot",
-      "order": 3,
-      "privileges": "app:hoja.clinica.cred.neonatal"
-    },
-    {
       "name": "detalles-nacimiento-chart",
       "component": "neonatalRegisterBirth",
       "slot": "neonatal-perinatal-slot",

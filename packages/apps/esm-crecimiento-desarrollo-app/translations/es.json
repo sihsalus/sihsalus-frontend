@@ -188,6 +188,8 @@
   "credControlNewborn7To14Days": "Recién nacido - 7 a 14 días",
   "credControlNewbornBefore7Days": "Recién nacido - antes de 7 días",
   "credControls": "Controles CRED",
+  "credSummaryRefreshFailed": "No se pudo actualizar el resumen CRED",
+  "credSummaryRefreshFailedSubtitle": "La atención se guardó. Recargue la historia para ver los cambios; no vuelva a registrarla.",
   "credFormNotAvailable": "Formulario CRED no disponible",
   "credFormNotAvailableSubtitle": "El formulario CRED no está disponible. Solicite al administrador que revise su publicación y configuración.",
   "credFormNotConfigured": "Formulario CRED no configurado",

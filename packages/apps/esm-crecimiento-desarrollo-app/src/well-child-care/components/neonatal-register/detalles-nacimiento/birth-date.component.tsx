@@ -23,7 +23,7 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
     config.encounterTypes.antecedentesPerinatales,
     config.formsList.birthDetails,
   );
-  const { launchForm } = useCREDFormLauncher('birthDetails');
+  const { launchForm } = useCREDFormLauncher('birthDetails', undefined, encounter?.form?.uuid);
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -34,7 +34,7 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '', () => void mutate());
+    launchForm(encounter?.uuid || '', () => mutate());
   }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => {

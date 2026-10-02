@@ -39,10 +39,8 @@ Las dos entradas de antecedentes patológicos del menor muestran los registros p
 ## TODO content/backend
 
 - Usar siempre `external_id` de OCL como UUID de OpenMRS. El campo `uuid` de OCL es interno/versionado y no debe entrar en config frontend.
-- Crear/asignar privilegios OpenMRS para `app:hoja.clinica.cred.*`; en DEV no existen y solo el rol `System Developer` pasa los guards por bypass.
+- Content ya declara los privilegios `app:hoja.clinica.cred.*` y conserva el perfil `SIHSALUS CRED - Pruebas` en su contrato de accesos. Falta comprobar la sesión operativa contra el ambiente desplegado; no convertir ese perfil de pruebas en una política de producción por inferencia.
 - Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
-- Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
-- Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.
 
 Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), `Número de control CRED` = `ce8b07e8-712f-406a-b44d-2fa69167f5ea` está instalado en DEV como concepto numérico, y psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes. El TPED histórico tiene una definición frontend versionada de 88 hitos, pero su mapeo individual de conceptos sigue pendiente; ver `docs/clinical/test-peruano/CONCEPT-AUDIT.md`.
 
@@ -51,6 +49,27 @@ la pestana Desarrollo. Es solo de consulta: no persiste observaciones, puntajes 
 clasificaciones.
 
 ## TODO QA/QLTY
+
+Los seis resúmenes neonatales (nacimiento, embarazo y parto, atención inmediata,
+evaluación cefalocaudal, alojamiento conjunto y lactancia) esperan la lectura
+completa del historial antes de habilitar el registro. La consulta por nombre
+incluye todas las páginas y versiones del formulario; una página fallida muestra
+error y no habilita una creación como si no existiera historial. Un registro
+existente ofrece **Editar**, conserva su UUID de atención y resuelve su formulario
+original. Si ese formulario fue retirado o dejó de estar publicado, la edición
+se bloquea explícitamente; no se sustituye por un esquema nuevo.
+
+La actualización del resumen ocurre con la confirmación del form engine, sin
+temporizadores al abrirlo. Un fallo de actualización queda visible y no reenvía
+la escritura. Las pruebas de componentes cubren los seis consumidores, permisos,
+consulta activa, carga, error, identidad de atención/formulario y confirmación.
+No sustituyen guardar, recargar y editar contra el backend.
+
+La tarjeta obstétrica heredada `labour-history-chart` se retiró de la configuración
+neonatal por defecto: intentaba abrir `OBST-005` en la historia del niño.
+`pregnancy-details-chart` conserva la captura perinatal CRED. Para configuraciones
+externas, el lifecycle `neonatalRegisterChart` sigue disponible como alias de esa
+misma captura. No se eliminan atenciones ni formularios históricos.
 
 El selector de formularios espera la lectura de atenciones y de sus números de
 control antes de ofrecer acciones. Si falla cualquiera de las dos consultas,

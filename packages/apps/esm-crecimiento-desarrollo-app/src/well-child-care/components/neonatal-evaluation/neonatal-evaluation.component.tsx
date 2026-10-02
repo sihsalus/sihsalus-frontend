@@ -25,7 +25,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     config.encounterTypes.cefaloCaudal,
     config.formsList.newbornNeuroEval,
   );
-  const { launchForm } = useCREDFormLauncher('newbornNeuroEval');
+  const { launchForm } = useCREDFormLauncher('newbornNeuroEval', undefined, encounter?.form?.uuid);
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -36,7 +36,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '', () => void mutate());
+    launchForm(encounter?.uuid || '', () => mutate());
   }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => {

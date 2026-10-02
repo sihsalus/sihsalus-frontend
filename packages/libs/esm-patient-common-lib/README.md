@@ -15,6 +15,13 @@ assembled SPA with a fresh browser context when changing shared imports.
 
 ## Antecedents
 
+`useLatestValidEncounter` requests one descending encounter when no form filter
+is needed or when REST can filter by a canonical form UUID. A form name can span
+versions, so this case uses `useOpenmrsFetchAll` and only selects a match after
+all pages have loaded. Partial or failed histories never authorize a new record.
+The two query shapes have separate cache keys; changing patient immediately hides
+the previous history. Refresh also follows any new pages introduced by a save.
+
 `ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.
 
 `src/antecedents/_condition-form.scss` supplies the shared workspace layout for

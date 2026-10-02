@@ -1,10 +1,14 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { launchWorkspace2, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, type PropsWithChildren } from 'react';
+import { SWRConfig } from 'swr';
 
 import {
   childNutritionFormFallbacks,
   getCREDFormIdentifier,
   neonatalFormFallbacks,
   resolveCREDForm,
+  useCREDFormLauncher,
   wellChildControlFormFallbacks,
 } from './useCREDFormLauncher';
 
@@ -18,6 +22,75 @@ vi.mock('@openmrs/esm-framework', async () => ({
 }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+
+const swrWrapper = ({ children }: PropsWithChildren) =>
+  createElement(SWRConfig, { value: { provider: () => new Map(), shouldRetryOnError: false } }, children);
+
+describe('CRED form editing and refresh', () => {
+  const historicalFormUuid = '28c37ff6-0079-4fa7-b803-5d547ac454e0';
+  const currentFormUuid = '21f010ce-4876-32ec-8844-27dfedc6705a';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useConfig).mockReturnValue({
+      formsList: { birthDetails: currentFormUuid },
+    });
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        uuid: historicalFormUuid,
+        name: '(CRED) Detalles de Nacimiento',
+        published: true,
+        retired: false,
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+  });
+
+  it('opens the encounter with its original published schema instead of the replacement schema', async () => {
+    const { result } = renderHook(() => useCREDFormLauncher('birthDetails', undefined, historicalFormUuid), {
+      wrapper: swrWrapper,
+    });
+    await waitFor(() => expect(result.current.form?.uuid).toBe(historicalFormUuid));
+    act(() => result.current.launchForm('synthetic-encounter'));
+    expect(launchWorkspace2).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        encounterUuid: 'synthetic-encounter',
+        form: expect.objectContaining({ uuid: historicalFormUuid }),
+      }),
+    );
+    expect(mockOpenmrsFetch.mock.calls.every(([url]) => !String(url).includes(currentFormUuid))).toBe(true);
+  });
+
+  it('reports a refresh failure without retrying the write or rejecting the post-submit callback', async () => {
+    const refresh = vi.fn().mockRejectedValue(new Error('Synthetic refresh failure'));
+    const { result } = renderHook(() => useCREDFormLauncher('birthDetails', undefined, historicalFormUuid), {
+      wrapper: swrWrapper,
+    });
+    await waitFor(() => expect(result.current.form?.uuid).toBe(historicalFormUuid));
+    act(() => result.current.launchForm('synthetic-encounter', refresh));
+    expect(refresh).not.toHaveBeenCalled();
+    const props = vi.mocked(launchWorkspace2).mock.calls[0][1] as {
+      handlePostResponse: () => Promise<void>;
+    };
+    await expect(props.handlePostResponse()).resolves.toBeUndefined();
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' }));
+    expect(launchWorkspace2).toHaveBeenCalledOnce();
+  });
+
+  it('does not fall back to a new schema when the historical form is retired', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { uuid: historicalFormUuid, published: true, retired: true },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useCREDFormLauncher('birthDetails', undefined, historicalFormUuid), {
+      wrapper: swrWrapper,
+    });
+    await waitFor(() => expect(result.current.error).toBeDefined());
+    act(() => result.current.launchForm('synthetic-encounter'));
+    expect(launchWorkspace2).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' }));
+  });
+});
 
 describe('CRED form launcher resources', () => {
   beforeEach(() => {

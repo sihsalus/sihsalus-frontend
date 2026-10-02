@@ -1,6 +1,5 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWR, { type KeyedMutator } from 'swr';
 import { validate as isUuid } from 'uuid';
 
 import type { OpenmrsEncounter } from '../encounter-list/types';
@@ -12,7 +11,7 @@ interface UseLatestEncounterResponse {
   encounter: OpenmrsEncounter | undefined;
   isLoading: boolean;
   error: Error | null;
-  mutate: KeyedMutator<FetchResponse<{ results: OpenmrsEncounter[] }>>;
+  mutate: ReturnType<typeof useOpenmrsFetchAll<OpenmrsEncounter>>['mutate'];
 }
 
 export const useLatestValidEncounter = (
@@ -20,6 +19,8 @@ export const useLatestValidEncounter = (
   encounterTypeUuid: string,
   formIdentifier?: string,
 ): UseLatestEncounterResponse => {
+  const normalizedFormIdentifier = formIdentifier?.trim();
+  const filterByFormName = Boolean(normalizedFormIdentifier && !isUuid(normalizedFormIdentifier));
   const url = useMemo(() => {
     const normalizedPatientUuid = patientUuid?.trim();
     const normalizedEncounterTypeUuid = encounterTypeUuid?.trim();
@@ -36,7 +37,7 @@ export const useLatestValidEncounter = (
       encounterType: normalizedEncounterTypeUuid,
       v: latestEncounterRepresentation,
       order: 'desc',
-      limit: formUuid ? '1' : '100',
+      limit: filterByFormName ? '100' : '1',
       startIndex: '0',
     });
     if (formUuid) {
@@ -44,18 +45,31 @@ export const useLatestValidEncounter = (
     }
 
     return `${restBaseUrl}/encounter?${params.toString()}`;
-  }, [encounterTypeUuid, formIdentifier, patientUuid]);
+  }, [encounterTypeUuid, formIdentifier, patientUuid, filterByFormName]);
 
   const {
     data,
     isLoading,
     error: swrError,
     mutate,
-  } = useSWR<FetchResponse<{ results: OpenmrsEncounter[] }>, Error>(url, openmrsFetch, {
-    revalidateIfStale: true,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    dedupingInterval: 2000,
+  } = useOpenmrsFetchAll<OpenmrsEncounter>(url ?? '', {
+    fetcher: async (pageUrl) => {
+      const response = await openmrsFetch<{
+        results: OpenmrsEncounter[];
+        links: Array<{ rel: 'next' | 'prev'; uri: string }>;
+        totalCount: number;
+      }>(pageUrl);
+      // Names can span form versions and cannot be filtered by REST. Resolve
+      // them against complete history; UUID-filtered queries already put the
+      // latest match first and do not need the remaining pages.
+      return filterByFormName ? response : { ...response, data: { ...response.data, links: [] } };
+    },
+    swrInfiniteConfig: {
+      revalidateIfStale: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000,
+    },
   });
 
   const finalError = !url ? new Error('patientUuid and encounterTypeUuid are required') : swrError || null;
@@ -63,12 +77,12 @@ export const useLatestValidEncounter = (
   const encounter = useMemo(() => {
     const normalizedFormIdentifier = formIdentifier?.trim().toLowerCase();
     const encounters = normalizedFormIdentifier
-      ? (data?.data?.results ?? []).filter((candidate) =>
+      ? (data ?? []).filter((candidate) =>
           [candidate.form?.uuid, candidate.form?.name, candidate.form?.display]
             .filter((value): value is string => Boolean(value))
             .some((value) => value.trim().toLowerCase() === normalizedFormIdentifier),
         )
-      : (data?.data?.results ?? []);
+      : (data ?? []);
 
     return encounters.slice().sort((first, second) => {
       const firstTime = Date.parse(first.encounterDatetime);
@@ -78,11 +92,11 @@ export const useLatestValidEncounter = (
       if (!Number.isFinite(secondTime)) return -1;
       return secondTime - firstTime;
     })[0];
-  }, [data?.data?.results, formIdentifier]);
+  }, [data, formIdentifier]);
 
   return {
     encounter,
-    isLoading,
+    isLoading: isLoading && !finalError,
     error: finalError,
     mutate,
   };

@@ -9,6 +9,10 @@ import {
   references,
   safeError,
   searchPatients,
+  getPatient,
+  getSurveillanceCase,
+  updateSurveillanceCase,
+  updateEvent,
 } from "./api";
 vi.mock("@openmrs/esm-framework", () => ({
   openmrsFetch: vi.fn(),
@@ -16,6 +20,25 @@ vi.mock("@openmrs/esm-framework", () => ({
   fhirBaseUrl: "/ws/fhir2/R4",
 }));
 describe("surveillance API", () => {
+  it("updates all event attributes at the existing event URL", async () => {
+    const event = { conceptUuid: "concept", periodicity: "INMEDIATA" as const, referenceRegulation: "NTS", validFrom: "2026-01-01", validTo: null };
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: event } as never);
+    await updateEvent("synthetic/event", event);
+    expect(openmrsFetch).toHaveBeenLastCalledWith("/ws/rest/v1/sihsalusepidemiologicalsurveillance/events/synthetic%2Fevent", expect.objectContaining({ method: "PUT", body: event }));
+  });
+  it("loads the patient's preferred residence for case details", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { uuid: "synthetic-patient", person: { preferredAddress: { stateProvince: "Provincia", countyDistrict: "Distrito", cityVillage: "Centro" } } } } as never);
+    expect((await getPatient("synthetic-patient")).residence).toBe("Provincia → Distrito → Centro");
+    expect(openmrsFetch).toHaveBeenLastCalledWith(expect.stringContaining("preferredAddress:(stateProvince,countyDistrict,cityVillage)"), expect.any(Object));
+  });
+  it("reads and updates an existing case without creating a new case", async () => {
+    const draft = { patientUuid: "p", encounterUuid: "e", providerUuid: "provider", locationUuid: "location", diagnosisUuid: "diagnosis", diagnosisType: "PROBABLE" as const };
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { ...draft, uuid: "synthetic-case" } } as never);
+    await getSurveillanceCase("synthetic-case");
+    await updateSurveillanceCase("synthetic-case", draft);
+    expect(openmrsFetch).toHaveBeenLastCalledWith("/ws/rest/v1/sihsalusepidemiologicalsurveillance/cases/synthetic-case", expect.objectContaining({ method: "PUT", body: draft }));
+    expect(safeError({ status: 409, responseBody: { code: "CASE_CLOSED" } }).code).toBe("CASE_CLOSED");
+  });
   it("sends confirmed populated-center defaults and encodes explicit report filters", async () => {
     vi.mocked(openmrsFetch).mockResolvedValue({ data: {} } as never);
     await getReport("event", "2026-01-01", "2026-01-03", "semana");
@@ -91,8 +114,8 @@ describe("surveillance API", () => {
         uuid: "source",
         patient: { uuid: "patient" },
         diagnoses: [
-          { diagnosis: { coded: { uuid: "diagnosis" } } },
-          { voided: true, diagnosis: { coded: { uuid: "discarded" } } },
+          { uuid: "encounter-diagnosis", diagnosis: { coded: { uuid: "diagnosis" } } },
+          { uuid: "discarded-diagnosis", voided: true, diagnosis: { coded: { uuid: "discarded" } } },
           { diagnosis: { nonCoded: "Synthetic narrative" } },
         ],
       },

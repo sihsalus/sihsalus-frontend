@@ -44,6 +44,69 @@
 }
 .tableWrapper {
   overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.recordsTable {
+  width: 100%;
+  min-width: 60rem;
+  text-align: left;
+
+  th,
+  td {
+    padding: 1rem;
+    vertical-align: middle;
+  }
+
+  th {
+    white-space: nowrap;
+  }
+}
+
+.patientCell,
+.diagnosisCell {
+  min-width: 12rem;
+  overflow-wrap: anywhere;
+}
+
+.dateCell {
+  white-space: nowrap;
+}
+
+.cellActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.caseDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  dt {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.caseEditFields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  legend {
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
 }
 .table {
   width: 100%;
@@ -88,4 +151,19 @@
   .table td {
     padding: 0.5rem;
   }
+}
+
+:global(.cds--modal-container) {
+  max-height: 90vh;
+}
+
+:global(.cds--modal-content) {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 22rem;
+  padding-bottom: 2rem !important;
+}
+
+:global(.cds--list-box__menu) {
+  max-height: 12rem !important;
 }

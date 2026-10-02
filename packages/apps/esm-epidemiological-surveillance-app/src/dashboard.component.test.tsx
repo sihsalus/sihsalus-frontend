@@ -23,7 +23,7 @@ vi.mock("@sihsalus/esm-rbac", () => ({
     children: ReactNode;
   }) => (state.privileges.includes(privilege) ? children : null),
 }));
-vi.mock("./api", () => ({ getCatalogue: vi.fn() }));
+vi.mock("./api", () => ({ getCatalogue: vi.fn(), listSurveillanceCases: vi.fn().mockResolvedValue([]) }));
 vi.mock("./case-form.component", () => ({
   CaseForm: () => <div>Form: empty</div>,
 }));

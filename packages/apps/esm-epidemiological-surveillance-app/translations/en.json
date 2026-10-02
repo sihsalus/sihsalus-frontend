@@ -1,4 +1,76 @@
 {
+  "tablePagination": {
+    "previous": "Previous page",
+    "next": "Next page",
+    "size": "Rows per page:",
+    "page": "Page",
+    "select": "Select page",
+    "range": "{{min}}–{{max}} of {{total}} records",
+    "pages": "of {{total}} pages"
+  },
+  "eventActions": "Actions",
+  "caseDetails": {
+    "view": "Case details",
+    "edit": "Edit case",
+    "residence": "Residential address",
+    "editableFields": "Epidemiological data",
+    "locked": "This case has a recorded date of death and cannot be edited.",
+    "deathWarning": "After saving a date of death, this case can no longer be edited.",
+    "preserveLaboratory": "Keep the recorded laboratory order",
+    "fields": {
+      "uuid": "Case identifier",
+      "patientUuid": "Patient reference",
+      "encounterUuid": "Source encounter",
+      "providerUuid": "Recording provider",
+      "locationUuid": "Location",
+      "diagnosisUuid": "Encounter diagnosis",
+      "individualRecordUuid": "Individual record",
+      "diagnosisType": "Diagnosis classification",
+      "origin": "Origin",
+      "vaccinationStatus": "Vaccination status",
+      "surveillanceType": "Surveillance type",
+      "onsetDate": "Symptom onset date",
+      "investigationDate": "Investigation date",
+      "notificationDate": "Notification date",
+      "deathDate": "Date of death",
+      "infectionAddressUuid": "Probable place of infection",
+      "testOrderUuid": "Laboratory order",
+      "laboratoryObservationUuid": "Laboratory result"
+    },
+    "values": {
+      "sex": {
+        "M": "Male",
+        "F": "Female",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other",
+        "unknown": "Unknown"
+      },
+      "diagnosisType": {
+        "CONFIRMADO": "Confirmed",
+        "PROBABLE": "Probable",
+        "DESCARTADO": "Discarded"
+      },
+      "origin": {
+        "AUTOCTONO": "Autochthonous",
+        "IMPORTADO_NACIONAL": "Imported nationally",
+        "IMPORTADO_INTERNACIONAL": "Imported internationally",
+        "INDUCIDO": "Induced",
+        "INTRODUCIDO": "Introduced",
+        "RECAIDA": "Relapse",
+        "RECRUDESCENCIA": "Recrudescence"
+      },
+      "vaccinationStatus": {
+        "SI": "Yes",
+        "NO": "No",
+        "IGN": "Unknown"
+      },
+      "surveillanceType": {
+        "PASIVA": "Passive",
+        "BUSQUEDA_ACTIVA": "Active search"
+      }
+    }
+  },
   "patientAgeUnknown": "Age unavailable",
   "patientAgeYear": "year",
   "patientAgeYears": "years",
@@ -13,7 +85,10 @@
     "cityVillage": "Search populated center"
   },
   "vaccinationValues": { "SI": "Yes", "NO": "No", "IGN": "Unknown" },
-  "surveillanceValues": { "PASIVA": "Passive", "BUSQUEDA_ACTIVA": "Active search" },
+  "surveillanceValues": {
+    "PASIVA": "Passive",
+    "BUSQUEDA_ACTIVA": "Active search"
+  },
   "infectionChooseProvince": "Select a province",
   "infectionChooseDistrict": "Select a district",
   "infectionChooseCenter": "Select a populated center",
@@ -32,7 +107,6 @@
   "reportChooseDistrict": "Select a district to find a populated center",
   "reportAllDistricts": "All districts (all provinces)",
   "reportAllCenters": "All populated centers (all districts)",
-  "reportAddressHelp": "Province helps you find zones. Without a zone selected at the chosen level, all zones at that level are included.",
   "noSelectedCases": "No cases match the selected filters.",
   "epidemiologicalSurveillance": "Epidemiological Surveillance",
   "surveillanceDescription": "Register cases and review epidemiological indicators.",
@@ -175,6 +249,7 @@
     "PARTIAL_PERIOD": "The selected range includes partial periods; compare with caution."
   },
   "errors": {
+    "CASE_CLOSED": "The case has a recorded date of death and can no longer be edited.",
     "ADDRESS_SEARCH_TOO_BROAD": "Search is too broad. Enter a more specific name or populated-center code.",
     "ADDRESS_METADATA_INCOMPLETE": "Some places lack a code or complete hierarchy. Ask the administrator to review the address catalog.",
     "SERVICE_UNAVAILABLE": "Please try again. Pending records remain saved on this device.",
@@ -218,7 +293,28 @@
   "retireEvent": "Retire notifiable event?",
   "confirmRetireEvent": "Are you sure you want to retire notifiable event \"{{name}}\"? Retired events will not allow registering new cases.",
   "notifiableEvents": "Notifiable Events",
+  "casesTable": {
+    "title": "Registered cases",
+    "dni": "DNI",
+    "patient": "Patient name",
+    "age": "Age",
+    "sex": "Sex",
+    "diagnosis": "Diagnosis",
+    "onset": "Symptom onset",
+    "notification": "Notification",
+    "actions": "Actions",
+    "male": "Male",
+    "female": "Female",
+    "diagnosisUnavailable": "Diagnosis unavailable",
+    "view": "View case",
+    "empty": "No cases match the selected filters."
+  },
   "eventsTable": {
+    "periodicity": "Periodicity",
+    "reference": "Reference regulation",
+    "from": "Valid from",
+    "to": "Valid until",
+    "empty": "No notifiable events registered.",
     "name": "Event name",
     "namePlaceholder": "E.g. Dengue, Malaria...",
     "concept": "Disease (Concept)",

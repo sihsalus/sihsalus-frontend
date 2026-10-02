@@ -1,4 +1,76 @@
 {
+  "tablePagination": {
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "size": "Filas por página:",
+    "page": "Página",
+    "select": "Seleccionar página",
+    "range": "{{min}}–{{max}} de {{total}} registros",
+    "pages": "de {{total}} páginas"
+  },
+  "eventActions": "Acciones",
+  "caseDetails": {
+    "view": "Detalle del caso",
+    "edit": "Editar caso",
+    "residence": "Dirección de residencia",
+    "editableFields": "Datos epidemiológicos",
+    "locked": "Este caso tiene una fecha de defunción registrada y no puede editarse.",
+    "deathWarning": "Al guardar una fecha de defunción, el caso ya no podrá editarse.",
+    "preserveLaboratory": "Conservar la orden de laboratorio registrada",
+    "fields": {
+      "uuid": "Identificador del caso",
+      "patientUuid": "Referencia del paciente",
+      "encounterUuid": "Atención de origen",
+      "providerUuid": "Profesional que registra",
+      "locationUuid": "Localidad",
+      "diagnosisUuid": "Diagnóstico de la atención",
+      "individualRecordUuid": "Ficha individual",
+      "diagnosisType": "Clasificación del diagnóstico",
+      "origin": "Origen",
+      "vaccinationStatus": "Estado de vacunación",
+      "surveillanceType": "Tipo de vigilancia",
+      "onsetDate": "Fecha de inicio de síntomas",
+      "investigationDate": "Fecha de investigación",
+      "notificationDate": "Fecha de notificación",
+      "deathDate": "Fecha de defunción",
+      "infectionAddressUuid": "Lugar probable de infección",
+      "testOrderUuid": "Orden de laboratorio",
+      "laboratoryObservationUuid": "Resultado de laboratorio"
+    },
+    "values": {
+      "sex": {
+        "M": "Masculino",
+        "F": "Femenino",
+        "male": "Masculino",
+        "female": "Femenino",
+        "other": "Otro",
+        "unknown": "Sin información"
+      },
+      "diagnosisType": {
+        "CONFIRMADO": "Confirmado",
+        "PROBABLE": "Probable",
+        "DESCARTADO": "Descartado"
+      },
+      "origin": {
+        "AUTOCTONO": "Autóctono",
+        "IMPORTADO_NACIONAL": "Importado nacional",
+        "IMPORTADO_INTERNACIONAL": "Importado internacional",
+        "INDUCIDO": "Inducido",
+        "INTRODUCIDO": "Introducido",
+        "RECAIDA": "Recaída",
+        "RECRUDESCENCIA": "Recrudescencia"
+      },
+      "vaccinationStatus": {
+        "SI": "Sí",
+        "NO": "No",
+        "IGN": "Ignorado"
+      },
+      "surveillanceType": {
+        "PASIVA": "Pasiva",
+        "BUSQUEDA_ACTIVA": "Búsqueda activa"
+      }
+    }
+  },
   "patientAgeUnknown": "Edad no disponible",
   "patientAgeYear": "año",
   "patientAgeYears": "años",
@@ -13,7 +85,10 @@
     "cityVillage": "Buscar centro poblado"
   },
   "vaccinationValues": { "SI": "Sí", "NO": "No", "IGN": "Ignorado" },
-  "surveillanceValues": { "PASIVA": "Pasiva", "BUSQUEDA_ACTIVA": "Búsqueda activa" },
+  "surveillanceValues": {
+    "PASIVA": "Pasiva",
+    "BUSQUEDA_ACTIVA": "Búsqueda activa"
+  },
   "infectionChooseProvince": "Selecciona una provincia",
   "infectionChooseDistrict": "Selecciona un distrito",
   "infectionChooseCenter": "Selecciona un centro poblado",
@@ -32,7 +107,6 @@
   "reportChooseDistrict": "Selecciona un distrito para buscar un centro poblado",
   "reportAllDistricts": "Todos los distritos (todas las provincias)",
   "reportAllCenters": "Todos los centros poblados (todos los distritos)",
-  "reportAddressHelp": "La provincia permite buscar zonas. Sin seleccionar una zona del nivel elegido, se incluyen todas las zonas de ese nivel.",
   "noSelectedCases": "No hay casos que coincidan con los filtros seleccionados.",
   "epidemiologicalSurveillance": "Vigilancia epidemiológica",
   "surveillanceDescription": "Registra casos y consulta indicadores epidemiológicos.",
@@ -175,6 +249,7 @@
     "PARTIAL_PERIOD": "El rango seleccionado incluye periodos parciales; compara con precaución."
   },
   "errors": {
+    "CASE_CLOSED": "El caso tiene una fecha de defunción registrada y ya no puede editarse.",
     "ADDRESS_SEARCH_TOO_BROAD": "La búsqueda es demasiado amplia. Escribe un nombre más específico o el código del centro poblado.",
     "ADDRESS_METADATA_INCOMPLETE": "Hay lugares sin código o jerarquía completa. Solicita revisar el catálogo de direcciones.",
     "SERVICE_UNAVAILABLE": "Vuelve a intentarlo. Los registros pendientes se conservan en este equipo.",
@@ -218,7 +293,28 @@
   "retireEvent": "¿Retirar evento notificable?",
   "confirmRetireEvent": "¿Está seguro de que desea retirar el evento notificable \"{{name}}\"? Los eventos retirados no permitirán registrar nuevos casos.",
   "notifiableEvents": "Eventos Notificables",
+  "casesTable": {
+    "title": "Casos registrados",
+    "dni": "DNI",
+    "patient": "Apellidos y nombres",
+    "age": "Edad",
+    "sex": "Sexo",
+    "diagnosis": "Diagnóstico",
+    "onset": "Inicio de síntomas",
+    "notification": "Notificación",
+    "actions": "Acciones",
+    "male": "Masculino",
+    "female": "Femenino",
+    "diagnosisUnavailable": "Diagnóstico no disponible",
+    "view": "Ver caso",
+    "empty": "No hay casos para los filtros seleccionados."
+  },
   "eventsTable": {
+    "periodicity": "Periodicidad",
+    "reference": "Norma de referencia",
+    "from": "Vigente desde",
+    "to": "Vigente hasta",
+    "empty": "No hay eventos notificables registrados.",
     "name": "Nombre del evento",
     "namePlaceholder": "Ej. Dengue, Malaria...",
     "concept": "Enfermedad (Concepto)",

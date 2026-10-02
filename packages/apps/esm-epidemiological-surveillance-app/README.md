@@ -8,7 +8,49 @@ Terminología: visita = consulta; encounter = atención.
 
 Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación/defunción. No se incorpora React Form Engine en este cambio.
 
-Cubre RF-01 a RF-07, RF-11 a RF-13, RF-17 a RF-19, RF-22, RF-26 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye edición de casos guardados, padrón de febriles, NOTI/Excel, mapas o clasificación automática de focos. La aceptación con metadatos e instancia real sigue pendiente.
+Cubre RF-01 a RF-07, RF-11 a RF-13, RF-17 a RF-19, RF-22, RF-26 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye padrón de febriles, NOTI/Excel, mapas o clasificación automática de focos. La aceptación con metadatos e instancia real sigue pendiente.
+
+### Edición de eventos notificables
+
+Las tablas de Casos y Eventos muestran 10 filas por página, con opciones de 20 y
+50, selector de página y botones anterior/siguiente. La paginación es local sobre
+los resultados de la API; al filtrar o recargar los registros vuelve a la primera página.
+
+Cada fila de Eventos ofrece **Editar evento notificable**. El formulario precarga
+la enfermedad, periodicidad, norma de referencia y fechas de vigencia y permite
+modificar todos esos atributos, incluida la eliminación de la fecha final.
+Guarda mediante `PUT /events/{uuid}` con el privilegio de administración existente;
+requiere el OMOD con esa ruta. Conserva UUID y auditoría de creación. El nombre y
+plazo de notificación se derivan del concepto y periodicidad. Al guardar recarga
+la lista y el catálogo; al fallar conserva los datos para reintentar.
+
+### Consulta y edición de casos guardados
+
+La pestaña Casos abre modales Carbon desde los iconos Ver y Editar. El detalle
+consulta `GET /cases/{uuid}` y la ficha REST del paciente (incluida
+`person.preferredAddress.stateProvince/countyDistrict/cityVillage`); la residencia
+se muestra como provincia → distrito → centro poblado y no se copia al caso.
+No se muestran UUID: nombres ausentes se presentan como no disponibles.
+El OMOD aporta nombres de atención, profesional, localidad, orden y la ruta del lugar
+de infección; requiere la versión que incluye `liquibase-case-laboratory.xml`.
+
+La edición usa `PUT /cases/{uuid}`: origen, vacunación, vigilancia,
+fechas, centro poblado de infección y resultado de laboratorio de la atención.
+Conserva paciente, atención, diagnóstico, profesional y localidad; no permite
+editar datos demográficos ni metadatos de respuesta. Conserva la orden de laboratorio
+previa salvo selección o eliminación explícita. La clasificación se deriva del
+resultado mediante las mismas reglas compartidas con el registro; no es editable
+manualmente. Resultados históricos sin referencia persistida no se adivinan ni se
+asignan por coincidencia de orden.
+
+El resultado se presenta como orden · fecha · resultado; no se muestra un campo
+separado de orden en el detalle ni en los formularios. Cambiar de resultado permite
+elegir entre todas las órdenes elegibles de la atención, sin filtrar por la anterior.
+Un caso con fecha de defunción
+ya guardada es de solo lectura; introducir una fecha nueva muestra una advertencia.
+El servidor sigue validando privilegios, profesional de la sesión, referencias y fechas.
+Los errores conservan el formulario; al guardar se recarga la lista. No se encolan
+ediciones sin conexión. Smoke clínico integrado pendiente en entorno autorizado.
 
 ## Ruta, extensiones y permisos
 
@@ -35,7 +77,7 @@ Base `/ws/rest/v1/sihsalusepidemiologicalsurveillance`, mediante `openmrsFetch` 
 | GET `/cases/{uuid}`                                                | Evaluación y alertas de un registro.                                          |
 | GET `/reports?event=…&from=YYYY-MM-DD&to=YYYY-MM-DD&period=semana` | Totales, curva, canal, demografía, advertencias y fecha de generación.        |
 
-DTO en [src/types.ts](src/types.ts); contrato completo en `epidemiologysurveillance/docs/rest-contract.md`. Administración de eventos/reglas y recálculo solo en backend.
+DTO en [src/types.ts](src/types.ts); contrato completo en `epidemiologysurveillance/docs/api-contract.md`. Administración de reglas y recálculo solo en backend.
 
 Lecturas clínicas: FHIR R4 `Patient,Encounter,Observation`; REST `encounter` (diagnósticos nativos), `provider,location`. Los diagnósticos de la atención no se sustituyen por Conditions longitudinales. Paginación completa con límite defensivo, rechazo de ciclos/enlaces externos y errores seguros. Resultados de laboratorio locales codificados vinculados a TestOrder; adjuntos e informes externos no se convierten en resultados.
 
@@ -54,7 +96,9 @@ Periodos: `dia,semana,mes,trimestre,semestre`. Fechas iniciales respetan cobertu
 
 El OMOD fija los UUID clínicos en `SurveillanceCatalog.java` tras contrastarlos con `sihsalus-content`; no lee archivo JSON ni global property. Abrir el catálogo no exige validar todos los conceptos. Al guardar se comprueban las referencias utilizadas: `CLINICAL_CONCEPT_UNAVAILABLE` indica un concepto ausente o retirado y `CLINICAL_DATATYPE_MISMATCH` un tipo incompatible. Actualizar el OMOD y el ESM juntos porque el contrato usa `/catalog` y la propiedad `catalog`.
 
-El backend ofrece `GET /events`, `GET /events/{uuid}`, `PUT /events/{uuid}` y `DELETE /events/{uuid}`. La eliminación retira el evento conservando los casos históricos; la administración se realiza mediante API. `GET /healthcheck` devuelve `{"status":"UP"}` con una sesión autorizada.
+El backend ofrece `GET /events`, `GET /events/{uuid}`, `POST /events` y
+`PUT /events/{uuid}`. La pantalla permite crear y editar eventos.
+`GET /healthcheck` devuelve `{"status":"UP"}` con una sesión autorizada.
 
 ## Registro y trabajo sin conexión
 

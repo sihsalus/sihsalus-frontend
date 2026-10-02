@@ -64,7 +64,11 @@ vi.mock("./api", async (importOriginal) => ({
   addressChildren: vi.fn(async () => []),
   getEncounterDiagnoses: vi.fn(async () => ["diagnosis"]),
   getEncounterDiagnosesDetails: vi.fn(async () => [
-    { uuid: "diagnosis", display: "Synthetic disease" },
+    {
+      uuid: "encounter-diagnosis",
+      conceptUuid: "diagnosis",
+      display: "Synthetic disease",
+    },
   ]),
   searchPatients: vi.fn(async () => [
     {
@@ -130,7 +134,11 @@ describe("case registration screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Register case" }));
-    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(createSurveillanceCase).toHaveBeenCalledWith(
+        expect.objectContaining({ diagnosisUuid: "encounter-diagnosis" }),
+      ),
+    );
   });
   it("captures all case fields on step two and keeps step three read-only", async () => {
     render(<CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />);

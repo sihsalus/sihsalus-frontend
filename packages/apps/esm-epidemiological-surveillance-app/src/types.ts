@@ -44,6 +44,7 @@ export interface SurveillanceEvent {
 }
 export interface EncounterDiagnosis {
   uuid: string;
+  conceptUuid: string;
   display: string;
 }
 export interface Catalogue {
@@ -102,8 +103,20 @@ export interface SurveillanceCaseDraft {
 }
 
 export interface SurveillanceCase extends SurveillanceCaseDraft {
+  encounterDisplay?: string;
+  encounterDate?: string;
+  providerDisplay?: string;
+  locationDisplay?: string;
+  infectionAddressDisplay?: string;
+  testOrderDisplay?: string;
+  laboratoryObservationDisplay?: string;
   uuid: string;
   individualRecordUuid?: string;
+  patientIdentifier?: string;
+  patientDisplay?: string;
+  patientSex?: string;
+  patientBirthDate?: string;
+  diagnosisDisplay?: string;
 }
 export type ReportDiagnosis = "CONFIRMADO" | "PROBABLE" | "TODOS";
 export type ReportZoneLevel = "DISTRITO" | "CENTRO_POBLADO";
@@ -144,6 +157,9 @@ export interface Coding {
   display?: string;
 }
 export interface FhirResource {
+  orderUuid?: string;
+  orderDisplay?: string;
+  residence?: string;
   resourceType: string;
   id: string;
   name?: { text?: string; given?: string[]; family?: string }[];

@@ -108,7 +108,6 @@ export function ReportAddressFilter({
           ))}
         </Select>
       )}
-      <p>{t("reportAddressHelp")}</p>
       {loading && <InlineLoading description={t("loading")} />}
       {error ? <ErrorNotification error={error} /> : null}
     </>

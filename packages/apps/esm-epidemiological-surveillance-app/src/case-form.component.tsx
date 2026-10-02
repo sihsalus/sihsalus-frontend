@@ -26,14 +26,12 @@ import {
 import {
   dateInZone,
   findDiagnosisMapping,
-  hasConcept,
   patientDni,
   patientName,
   patientAge,
   prefill,
   referenceId,
   validateCase,
-  valueConcepts,
   toSurveillanceCaseDraft,
 } from "./case-form.utils";
 import { moduleName } from "./constants";
@@ -49,6 +47,7 @@ import type {
   NamedReference,
 } from "./types";
 import styles from "./dashboard.scss";
+import { classifyLaboratoryObservation, laboratoryLabel } from "./laboratory.utils";
 
 export function CaseForm({
   catalogue,
@@ -154,15 +153,18 @@ export function CaseForm({
         if (nextPatient) setPatients([nextPatient]);
         setEncounters(nextEncounters);
         setObservations(nextObservations);
-        setEncounterDiagnoses(nextDiagDetails);
-        const matched = nextDiagDetails.find((d) => {
-          const mapping = findDiagnosisMapping(d.uuid, catalogue);
+        const notifyingDiagnoses = nextDiagDetails.filter((d) =>
+          findDiagnosisMapping(d.conceptUuid, catalogue),
+        );
+        setEncounterDiagnoses(notifyingDiagnoses);
+        const matched = notifyingDiagnoses.find((d) => {
+          const mapping = findDiagnosisMapping(d.conceptUuid, catalogue);
           return mapping?.eventUuid === initial.eventUuid;
         });
         if (matched) {
           setSelectedDiagnosisUuid(matched.uuid);
-        } else if (nextDiagDetails.length > 0) {
-          setSelectedDiagnosisUuid(nextDiagDetails[0].uuid);
+        } else if (notifyingDiagnoses.length > 0) {
+          setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
         }
       })
       .catch((failure) => {
@@ -249,27 +251,33 @@ export function CaseForm({
       ]);
       if (current !== generation.current) return;
       setObservations(sourceObservations);
-      setEncounterDiagnoses(diagDetails);
-      const diagUuids = diagDetails.map((d) => d.uuid);
-      const prefilled = prefill(sourceObservations, diagUuids, catalogue);
+      const notifyingDiagnoses = diagDetails.filter((d) =>
+        findDiagnosisMapping(d.conceptUuid, catalogue),
+      );
+      setEncounterDiagnoses(notifyingDiagnoses);
+      const conceptUuids = notifyingDiagnoses.map((d) => d.conceptUuid);
+      const prefilled = prefill(sourceObservations, conceptUuids, catalogue);
       setRequest((value) => ({
         ...value,
         ...prefilled,
       }));
       if (prefilled.eventUuid) {
-        const matched = diagDetails.find((d) => {
-          const mapping = findDiagnosisMapping(d.uuid, catalogue);
+        const matched = notifyingDiagnoses.find((d) => {
+          const mapping = findDiagnosisMapping(d.conceptUuid, catalogue);
           return mapping?.eventUuid === prefilled.eventUuid;
         });
         if (matched) {
           setSelectedDiagnosisUuid(matched.uuid);
-        } else if (diagDetails.length > 0) {
-          setSelectedDiagnosisUuid(diagDetails[0].uuid);
+        } else if (notifyingDiagnoses.length > 0) {
+          setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
         }
-      } else if (diagDetails.length === 1) {
-        const mapping = findDiagnosisMapping(diagDetails[0].uuid, catalogue);
+      } else if (notifyingDiagnoses.length === 1) {
+        const mapping = findDiagnosisMapping(
+          notifyingDiagnoses[0].conceptUuid,
+          catalogue,
+        );
         if (mapping) {
-          setSelectedDiagnosisUuid(diagDetails[0].uuid);
+          setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
           setRequest((value) => ({
             ...value,
             eventUuid: mapping.eventUuid,
@@ -285,7 +293,7 @@ export function CaseForm({
     }
   }
   const diagnosisOptions = encounterDiagnoses.map((diag) => {
-    const mapping = findDiagnosisMapping(diag.uuid, catalogue);
+    const mapping = findDiagnosisMapping(diag.conceptUuid, catalogue);
     return {
       uuid: diag.uuid,
       display: diag.display,
@@ -414,53 +422,8 @@ export function CaseForm({
         )}
       />
     );
-  const classifyLabObservation = (obs: FhirResource): "CONFIRMED" | "DISCARDED" | null => {
-    const test = disease?.laboratoryTests.find((item) =>
-      hasConcept(obs, item.resultConceptUuid),
-    );
-    const codes = valueConcepts(obs);
-    if (test) {
-      if (test.positiveAnswerUuids.some((code) => codes.includes(code))) {
-        return "CONFIRMED";
-      }
-      if (test.negativeAnswerUuids.some((code) => codes.includes(code))) {
-        return "DISCARDED";
-      }
-    }
-    if (m.trueConceptUuid && codes.includes(m.trueConceptUuid)) return "CONFIRMED";
-    if (m.falseConceptUuid && codes.includes(m.falseConceptUuid)) return "DISCARDED";
-    const text = (
-      obs.valueCodeableConcept?.text ||
-      obs.valueCodeableConcept?.coding?.[0]?.display ||
-      obs.valueString ||
-      ""
-    ).toLowerCase();
-    if (
-      text.includes("no reactiv") ||
-      text.includes("non-reactive") ||
-      text.includes("negativ") ||
-      text.includes("no detectad") ||
-      text.includes("ausent")
-    ) {
-      return "DISCARDED";
-    }
-    if (
-      text.includes("reactiv") ||
-      text.includes("positiv") ||
-      text.includes("detectad") ||
-      text.includes("present")
-    ) {
-      return "CONFIRMED";
-    }
-    return null;
-  };
-
-  const labResults = observations.filter((obs) => {
-    if (obs.status && ["cancelled", "entered-in-error"].includes(obs.status))
-      return false;
-    const classification = classifyLabObservation(obs);
-    return classification === "CONFIRMED" || classification === "DISCARDED";
-  });
+  const classifyLabObservation = (obs: FhirResource) => classifyLaboratoryObservation(obs, m, disease);
+  const labResults = observations.filter((obs) => classifyLabObservation(obs) !== null);
   return (
     <section
       aria-label={t("registerCase", "Register case")}
@@ -570,7 +533,7 @@ export function CaseForm({
           </Select>
           <Select
             id="case-disease-diagnosis"
-            labelText={t("fields.eventUuid", "Enfermedad")}
+            labelText={t("fields.diagnosisUuid", "Diagnóstico del encuentro")}
             value={selectedDiagnosisUuid}
             disabled={busy || !encounterDiagnoses.length}
             invalid={invalid.includes("eventUuid")}
@@ -626,7 +589,7 @@ export function CaseForm({
             "laboratoryResultUuid",
             labResults.map((obs) => ({
               value: obs.id,
-              text: `${obs.code?.text ?? obs.code?.coding?.[0]?.display ?? t("laboratoryResult", "Laboratory result")} · ${obs.effectiveDateTime?.slice(0, 10) ?? ""} · ${obs.valueCodeableConcept?.text ?? obs.valueCodeableConcept?.coding?.[0]?.display ?? ""}`,
+              text: laboratoryLabel(obs) || t("laboratoryResult", "Laboratory result"),
             })),
             (value) => {
               const obs = labResults.find((item) => item.id === value);

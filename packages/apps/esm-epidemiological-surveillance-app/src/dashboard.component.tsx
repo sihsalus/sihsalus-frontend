@@ -1,6 +1,7 @@
 import {
   Button,
   InlineLoading,
+  Modal,
   Tab,
   TabList,
   TabPanel,
@@ -13,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getCatalogue } from "./api";
 import { CaseForm } from "./case-form.component";
+import { CasesPanel } from "./cases-panel.component";
 import {
   caseRegisterPrivilege,
   caseViewPrivilege,
@@ -44,6 +46,7 @@ function SessionDashboard() {
   const [retry, setRetry] = useState(0);
   const [revision, setRevision] = useState(0);
   const [formKey, setFormKey] = useState(0);
+  const [showCaseForm, setShowCaseForm] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and session identity must invalidate the catalogue even when authentication stays true.
   useEffect(() => {
     const abort = new AbortController();
@@ -98,21 +101,10 @@ function SessionDashboard() {
             <TabPanel>
               <RequirePrivilege privilege={caseViewPrivilege}>
                 <RequirePrivilege privilege={caseRegisterPrivilege}>
-                  <div className={styles.actions}>
-                    <Button
-                      kind="tertiary"
-                      onClick={() => {
-                        setFormKey((value) => value + 1);
-                      }}
-                    >
-                      {t("newCase", "New case")}
-                    </Button>
-                  </div>
-                  <CaseForm
-                    key={String(session?.user?.uuid) + ":" + formKey}
-                    catalogue={catalogue}
-                    onSaved={() => setRevision((value) => value + 1)}
-                  />
+                  <CasesPanel catalogue={catalogue} revision={revision} onNewCase={() => { setFormKey((value) => value + 1); setShowCaseForm(true); }} />
+                  <Modal open={showCaseForm} modalHeading={t("newCase", "New case")} passiveModal onRequestClose={() => setShowCaseForm(false)} size="lg">
+                    <CaseForm key={String(session?.user?.uuid) + ":" + formKey} catalogue={catalogue} onSaved={() => { setRevision((value) => value + 1); setShowCaseForm(false); }} />
+                  </Modal>
                 </RequirePrivilege>
               </RequirePrivilege>
             </TabPanel>

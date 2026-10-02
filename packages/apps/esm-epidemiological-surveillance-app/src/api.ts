@@ -50,6 +50,7 @@ const safeCodes = new Set([
   "AMBIGUOUS_SOURCE_DATA",
   "IDEMPOTENCY_CONFLICT",
   "CASE_NOT_FOUND",
+  "CASE_CLOSED",
   "INVALID_CASE_DATA",
   "INVALID_DATE_RANGE",
   "OUTSIDE_COVERAGE",
@@ -99,6 +100,7 @@ export async function getEncounterDiagnosesDetails(
     voided?: boolean;
     patient?: { uuid: string };
     diagnoses?: {
+      uuid?: string;
       voided?: boolean;
       diagnosis?: {
         coded?: {
@@ -109,7 +111,7 @@ export async function getEncounterDiagnosesDetails(
       };
     }[];
   }>(
-    `${restBaseUrl}/encounter/${encodeURIComponent(uuid)}?v=custom:(uuid,voided,patient:(uuid),diagnoses:(voided,diagnosis:(coded:(uuid,display,name:(name)))))`,
+    `${restBaseUrl}/encounter/${encodeURIComponent(uuid)}?v=custom:(uuid,voided,patient:(uuid),diagnoses:(uuid,voided,diagnosis:(coded:(uuid,display,name:(name)))))`,
     signal,
   );
   if (
@@ -119,10 +121,11 @@ export async function getEncounterDiagnosesDetails(
   )
     throw new SurveillanceApiError("INVALID_SOURCE_ENCOUNTER", 422);
   return (source.diagnoses ?? []).flatMap((d) =>
-    !d.voided && d.diagnosis?.coded?.uuid
+    !d.voided && d.uuid && d.diagnosis?.coded?.uuid
       ? [
           {
-            uuid: d.diagnosis.coded.uuid,
+            uuid: d.uuid,
+            conceptUuid: d.diagnosis.coded.uuid,
             display:
               d.diagnosis.coded.name?.name ??
               d.diagnosis.coded.display ??
@@ -138,13 +141,21 @@ export async function getEncounterDiagnoses(
   patientUuid: string,
 ): Promise<string[]> {
   const details = await getEncounterDiagnosesDetails(uuid, patientUuid);
-  return details.map((d) => d.uuid);
+  return details.map((d) => d.conceptUuid);
 }
 export async function createSurveillanceCase(draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
   try {
     return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: draft })).data;
   } catch (error) { throw safeError(error); }
 }
+
+export const listSurveillanceCases = (filters: Record<string, string> = {}) =>
+  read<{ results: SurveillanceCase[] }>(
+    `${apiBase}/cases?${new URLSearchParams(filters)}`,
+  ).then((response) => response.results);
+
+export const getSurveillanceCase = (uuid: string, signal?: AbortSignal) =>
+  read<SurveillanceCase>(`${apiBase}/cases/${encodeURIComponent(uuid)}`, signal);
 
 export async function updateSurveillanceCase(uuid: string, draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
   try {
@@ -201,13 +212,13 @@ export async function saveEvent(
 
 export async function updateEvent(
   uuid: string,
-  event: Pick<SurveillanceEvent, "validTo">,
+  event: Omit<SurveillanceEvent, "uuid" | "conceptDisplay">,
   signal?: AbortSignal,
 ): Promise<SurveillanceEvent> {
   try {
     return (
       await openmrsFetch<SurveillanceEvent>(
-        `${apiBase}/events/${encodeURIComponent(uuid)}/valid-to`,
+        `${apiBase}/events/${encodeURIComponent(uuid)}`,
         {
           method: "PUT",
           headers: {
@@ -259,6 +270,7 @@ interface RestPatient {
     display?: string;
     gender?: string;
     birthdate?: string;
+    preferredAddress?: { display?: string; stateProvince?: string; countyDistrict?: string; cityVillage?: string };
   };
 }
 interface RestEncounter {
@@ -270,6 +282,7 @@ interface RestEncounter {
   location?: { uuid?: string; display?: string };
 }
 interface RestObservation {
+  order?: { uuid: string; concept?: { display?: string } };
   uuid: string;
   voided?: boolean;
   obsDatetime?: string;
@@ -299,6 +312,7 @@ function patientResource(patient: RestPatient): FhirResource {
     ),
     gender: patient.person?.gender,
     birthDate: patient.person?.birthdate,
+    residence: patient.person?.preferredAddress ? [patient.person.preferredAddress.stateProvince || "—", patient.person.preferredAddress.countyDistrict || "—", patient.person.preferredAddress.cityVillage || "—"].join(" → ") : undefined,
   };
 }
 
@@ -325,13 +339,15 @@ function observationResource(observation: RestObservation): FhirResource {
   const codedValue = typeof observation.value === "object" ? observation.value : undefined;
   return {
     resourceType: "Observation",
+    orderUuid: observation.order?.uuid,
+    orderDisplay: observation.order?.concept?.display,
     id: observation.uuid,
     status: "final",
     effectiveDateTime: observation.obsDatetime,
     valueDateTime:
       observation.valueDatetime ??
       (typeof observation.value === "string" ? observation.value : undefined),
-    valueString: observation.valueText,
+    valueString: observation.valueText ?? (typeof observation.value === "string" ? observation.value : undefined),
     code: observation.concept?.uuid
       ? { coding: [{ code: observation.concept.uuid, display: observation.concept.display }], text: observation.concept.display }
       : undefined,
@@ -388,7 +404,7 @@ export async function getPatient(
 ): Promise<FhirResource> {
   return patientResource(
     await read<RestPatient>(
-      `${restBaseUrl}/patient/${encodeURIComponent(uuid)}?v=custom:(uuid,display,identifiers:(identifier,identifierType:(uuid,name)),person:(display,gender,birthdate))`,
+      `${restBaseUrl}/patient/${encodeURIComponent(uuid)}?v=custom:(uuid,display,identifiers:(identifier,identifierType:(uuid,name)),person:(display,gender,birthdate,preferredAddress:(stateProvince,countyDistrict,cityVillage)))`,
       signal,
     ),
   );
@@ -440,7 +456,7 @@ export async function getEncounterObservations(
   signal?: AbortSignal,
 ): Promise<FhirResource[]> {
   const source = await read<RestEncounter & { obs?: RestObservation[] }>(
-    `${restBaseUrl}/encounter/${encodeURIComponent(uuid)}?v=custom:(uuid,voided,patient:(uuid),obs:(uuid,voided,obsDatetime,value,valueDatetime,valueText,concept:(uuid,display),groupMembers:(uuid,voided,obsDatetime,value,valueDatetime,valueText,concept:(uuid,display),groupMembers:(uuid,voided,obsDatetime,value,valueDatetime,valueText,concept:(uuid,display)))))`,
+    `${restBaseUrl}/encounter/${encodeURIComponent(uuid)}?v=custom:(uuid,voided,patient:(uuid),obs:(uuid,voided,order:(uuid,concept:(display)),obsDatetime,value,valueDatetime,valueText,concept:(uuid,display),groupMembers:(uuid,voided,order:(uuid,concept:(display)),obsDatetime,value,valueDatetime,valueText,concept:(uuid,display),groupMembers:(uuid,voided,order:(uuid,concept:(display)),obsDatetime,value,valueDatetime,valueText,concept:(uuid,display)))))`,
     signal,
   );
   if (source.uuid !== uuid || source.voided || source.patient?.uuid !== patientUuid)

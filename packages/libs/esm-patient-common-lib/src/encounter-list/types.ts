@@ -110,4 +110,7 @@ export interface Observation {
     | null;
   /** ISO-8601 datetime string of when this obs was recorded. */
   obsDatetime?: string;
+  /** Original field identity supplied by the form engine; concepts can occur in more than one field. */
+  formFieldNamespace?: string | null;
+  formFieldPath?: string | null;
 }

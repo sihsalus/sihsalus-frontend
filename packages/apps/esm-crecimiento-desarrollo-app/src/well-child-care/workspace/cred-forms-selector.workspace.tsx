@@ -155,7 +155,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
             handleFormSubmitted,
             {
               controlNumber,
-              controlNumberConceptUuid: config.CRED?.controlNumber,
+              controlNumberConceptUuid: config.concepts?.controlNumber,
             },
           ),
         );
@@ -171,7 +171,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
       }
     },
     [
-      config.CRED?.controlNumber,
+      config.concepts?.controlNumber,
       consultationDatetime,
       controlNumber,
       encounters,

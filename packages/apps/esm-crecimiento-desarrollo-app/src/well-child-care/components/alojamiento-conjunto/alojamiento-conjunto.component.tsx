@@ -23,7 +23,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
     config.encounterTypes.alojamientoConjunto,
     config.formsList.roomingIn,
   );
-  const { launchForm } = useCREDFormLauncher('roomingIn');
+  const { launchForm, isLoading: isLoadingForm } = useCREDFormLauncher('roomingIn', undefined, encounter?.form?.uuid);
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -36,17 +36,17 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '', () => void mutate());
+    launchForm(encounter?.uuid || '', () => mutate());
   }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = React.useCallback(() => {
     return {
       data: encounter ? [obsData] : [],
-      isLoading,
+      isLoading: isLoading || (canEdit && isLoadingForm),
       error,
       mutate,
     };
-  }, [encounter, obsData, isLoading, error, mutate]);
+  }, [encounter, obsData, isLoading, isLoadingForm, canEdit, error, mutate]);
 
   if (!patientUuid || typeof patientUuid !== 'string') {
     return <div>{t('invalidPatientUuidError', 'Error: UUID de paciente inválido')}</div>;

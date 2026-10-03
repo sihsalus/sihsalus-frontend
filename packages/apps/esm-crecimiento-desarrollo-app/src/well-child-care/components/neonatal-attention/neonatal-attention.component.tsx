@@ -24,7 +24,7 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
     config.encounterTypes.atencionInmediata,
     config.formsList.atencionImmediataNewborn,
   );
-  const { launchForm } = useCREDFormLauncher('atencionImmediataNewborn');
+  const { launchForm, isLoading: isLoadingForm } = useCREDFormLauncher('atencionImmediataNewborn', undefined, encounter?.form?.uuid);
 
   // Procesar observaciones, manejando múltiples valores para checkboxes
   const obsData = React.useMemo(() => {
@@ -46,12 +46,12 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '', () => void mutate());
+    launchForm(encounter?.uuid || '', () => mutate());
   }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => ({
     data: encounter ? [obsData] : [],
-    isLoading,
+    isLoading: isLoading || (canEdit && isLoadingForm),
     error,
     mutate,
   });

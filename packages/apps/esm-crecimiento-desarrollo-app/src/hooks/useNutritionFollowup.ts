@@ -21,7 +21,7 @@ const fetcher = async (url: string) => {
 
 function buildObsUrl(patientUuid: string, conceptUuid: string | undefined): string | null {
   if (!patientUuid || !conceptUuid) return null;
-  return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&sort=desc`;
+  return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&s=default`;
 }
 
 function extractDisplayValue(data: Record<string, unknown> | undefined | null): string | null {

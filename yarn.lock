@@ -7640,6 +7640,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:2.2.8"

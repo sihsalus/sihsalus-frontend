@@ -15,3 +15,5 @@ export function startupApp() {
 export const root = getSyncLifecycle(RootComponent, options);
 
 export const indicadoresAppMenuItem = getAsyncLifecycle(() => import('./indicadores-app-menu-item.component'), options);
+
+export const indicadoresNav = getAsyncLifecycle(() => import('./navigation/indicadores-nav.extension'), options);

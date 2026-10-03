@@ -107,6 +107,19 @@ describe('SearchMultiSelector', () => {
     expect(screen.getByPlaceholderText('Buscar servicio...')).toHaveValue('');
   });
 
+  it('adds an item when the whole result row is clicked, not only the Agregar button', () => {
+    const onChange = vi.fn();
+    render(<SearchMultiSelector {...props({ onChange })} />);
+
+    fireEvent.change(screen.getByPlaceholderText('Buscar servicio...'), { target: { value: 'centro' } });
+
+    const listbox = screen.getByRole('listbox');
+    fireEvent.click(within(listbox).getByText('Centro Obstétrico'));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith([{ uuid: 'loc-001', display: 'Centro Obstétrico' }]);
+  });
+
   it('removes a selected item via the pill button and calls onChange with the remaining items', () => {
     const onChange = vi.fn();
     render(

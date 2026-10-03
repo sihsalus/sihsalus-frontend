@@ -16,6 +16,13 @@
       "component": "indicadoresAppMenuItem",
       "privileges": "app:indicadores",
       "order": 60
+    },
+    {
+      "name": "indicadores-nav",
+      "slot": "indicadores-nav-slot",
+      "component": "indicadoresNav",
+      "privileges": "app:indicadores",
+      "order": 0
     }
   ]
 }

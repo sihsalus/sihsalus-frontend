@@ -4,6 +4,42 @@
   padding: 1rem;
 }
 
+/*
+ * The shell renders the left rail as a fixed nav and publishes its width through
+ * `--sihsalus-left-nav-width` (16rem expanded, 0rem collapsed, unset when the
+ * rail is not active), so the module content must reserve that space itself.
+ * This wrapper spans every module route, so no screen (detail, create, edit)
+ * slides under the rail.
+ *
+ * Surfaces: the shell canvas is grey (`$ui-01`, the same value Carbon uses for
+ * `layer-01` and for the `field-01` inputs), so module cards must be white
+ * (`$background`) and inner blocks grey (`$layer-01`) to stay visible. These
+ * rules are nested under `.appShell` so they win over Carbon's own
+ * `.cds--tile` background regardless of stylesheet order.
+ */
+.appShell {
+  margin-inline-start: var(--sihsalus-left-nav-width, 0rem);
+  transition: margin-inline-start 300ms ease;
+
+  .formSectionCard,
+  .detailCard,
+  .section,
+  .infoTile,
+  .tableSurface,
+  .searchResultsPanel,
+  .historyItem,
+  .summaryCard,
+  .metaProgressCard,
+  .empty {
+    background-color: theme.$background;
+  }
+
+  .ageBlock,
+  .sqlBlock {
+    background-color: theme.$layer-01;
+  }
+}
+
 .moduleHeader,
 .header {
   display: flex;
@@ -59,15 +95,10 @@
 }
 
 .headerActions,
-.tableActions,
-.filterSwitches {
+.tableActions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.filterSwitches {
-  margin-top: 0.25rem;
 }
 
 .contentSwitcherRow {
@@ -100,7 +131,7 @@
   border: 1px dashed theme.$border-subtle-01;
 }
 
-.formStack {
+.form {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -125,7 +156,6 @@
 
 .formSectionCard {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
   padding: 1.25rem;
   display: grid;
   gap: 1rem;
@@ -148,47 +178,38 @@
   color: theme.$text-primary;
 }
 
-.formGrid,
-.formColumns,
 .filtersPanel {
   display: grid;
   gap: 1rem;
   align-items: start;
-}
-
-.formGrid,
-.filtersPanel {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.formColumns {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
-.formGrid > :first-child {
-  grid-column: 1 / -1;
-}
-
-.formGrid > .searchSelector,
-.formColumns > .searchSelector {
-  grid-column: 1 / -1;
-}
-
-.populationLayout {
+.formFieldGroup {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr);
   align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
 }
 
-.populationLayout > :first-child {
-  max-width: 20rem;
+.formFieldGroup > .searchSelector {
+  grid-column: 1 / -1;
+}
+
+.formFieldNarrow {
+  max-width: 28rem;
+}
+
+.ageBlocks {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 }
 
 .ageBlock {
   border: 1px solid theme.$border-subtle-00;
   padding: 1rem;
-  background: theme.$layer-02;
 }
 
 .ageBlockHeader {
@@ -215,7 +236,6 @@
 .tableSurface {
   overflow-x: auto;
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .definitionList {
@@ -263,7 +283,6 @@
 
 .searchResultsPanel {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .searchResultsList {
@@ -274,6 +293,7 @@
 
 .searchResultItem {
   padding: 0.75rem;
+  cursor: pointer;
 }
 
 .searchResultContent {
@@ -357,7 +377,6 @@
 
 .historyItem {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .historyDetails {
@@ -426,7 +445,6 @@
 
 .sqlBlock {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-02;
   padding: 0.75rem 1rem;
 }
 
@@ -472,12 +490,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .populationLayout {
+  .ageBlocks {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .ageBlockHeader {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -549,7 +567,6 @@
   gap: 0.75rem;
   padding: 1rem;
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .summaryCardTitle {

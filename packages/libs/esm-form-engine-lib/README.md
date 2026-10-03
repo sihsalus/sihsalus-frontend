@@ -112,6 +112,11 @@ prevents empty conditional fields from voiding another field's observation when
 their published schema shares a concept. Existing UUIDs and original schemas
 remain unchanged; this safeguard does not resolve clinical terminology debt.
 
+Checkboxes and searchable multi-selects derive their selection from the current
+form value. Loading an existing encounter or resetting a form must update the
+display without submitting a change; removing one answer preserves the others.
+The input must not maintain a second copy of the persisted selection.
+
 Encounter role suggestions read the complete active catalog and filter partial
 names locally. OpenMRS' `q` search can require an exact name. A failed or repeated
 page rejects the lookup rather than presenting an incomplete catalog.

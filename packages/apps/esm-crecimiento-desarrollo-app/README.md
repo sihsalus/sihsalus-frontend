@@ -50,7 +50,110 @@ clasificaciones.
 
 ## TODO QA/QLTY
 
-### Verificación de correcciones neonatales — 01/10/2026
+### Prueba de persistencia y correcciones — 02/10/2026
+
+Candidato local: `9857f27a1b72bf1564cf6afc914e010b88c7cd06`, en un worktree
+con instalación independiente. La SPA se ensambló con sus 67 módulos locales y
+se probó contra el backend de QLTY con un paciente sintético propio, visita activa
+y sesión administrativa autorizada. El frontend desplegado en QLTY seguía en
+`692265308df1de9e9e14bad841a62e6c414b45f8`; esta evidencia no acredita despliegue
+del candidato ni aceptación de un perfil clínico.
+
+Se corrigieron defectos encontrados durante el recorrido:
+
+- La búsqueda de roles de atención obtiene el catálogo activo completo y permite
+  coincidencias parciales; REST solo devolvía el rol con el nombre exacto.
+- Los seis resúmenes esperan la metadata del formulario histórico antes de
+  habilitar la edición; las medidas conservan el cero y muestran sus unidades.
+- El motor no asigna a un campo vacío una observación identificada como otro
+  campo. Esto evita anular detalles independientes cuando el formulario comparte
+  conceptos. El resumen distingue esófago y ano por la identidad persistida; un
+  dato histórico sin esa identidad pide revisar el formulario original.
+- Las casillas y multiselecciones reflejan el valor actual del formulario,
+  incluida la carga tardía, sin mantener un segundo estado de selección.
+- El chart declara su dependencia de desarrollo del workspace común, para que
+  Turborepo recompile el proveedor compartido cuando cambia la representación REST.
+  En navegador se comprobó que la versión anterior omitía la identidad de campo y
+  que el candidato la solicita y recibe.
+- El acceso de formularios CRED se registra en la barra vigente del chart,
+  conserva su permiso y comprueba la visita activa. Pasa la identidad del paciente
+  tanto al grupo como al workspace; antes el control abría sin paciente y quedaba
+  deshabilitado.
+- La lectura y escritura del número de control usan `concepts.controlNumber`,
+  la ruta declarada en el esquema. La observación se añade atómicamente al crear;
+  al editar se conserva la persistida, evitando añadir un segundo número.
+- Las consultas de observaciones seleccionan explícitamente el buscador REST
+  `s=default`. En el backend probado, el parámetro no admitido `sort=desc` hacía
+  caer en la búsqueda general del paciente: peso, talla, clasificación y Hb podían
+  mostrar otra observación. Se retiró ese parámetro de los consumidores CRED.
+  Los signos neonatales usan `concepts` para la lista de UUIDs y requieren paciente.
+
+Los seis registros persistidos se verificaron en `629572ec3`; su edición y
+reapertura se repitieron en `f4d9e6701`. Se verificaron la respuesta
+HTTP, UUID de atención, formulario original, paciente, visita, observaciones
+persistidas y ausencia de duplicados, además del valor mostrado tras F5.
+Dos guardados consecutivos de la evaluación cefalocaudal conservaron las casillas,
+ambos detalles «Otros» y los resúmenes anatómicos independientes. Las pruebas
+unitarias de estos defectos fallaron antes de la corrección y pasaron después.
+
+En `ef4895937` se creó el examen físico `CRED-014` desde el selector del control,
+se guardó, recargó y editó la misma atención. En el candidato final se repitió
+la edición y recarga: un solo número de control canónico con valor 1 y ninguna
+atención duplicada. También se comprobaron `CRED-006` (nutrición) y `CRED-003`
+(estimulación): paciente, visita, formulario, encounter type, identidad de campos,
+observaciones guardadas y resumen tras F5. Nutrición se creó en `ef4895937` y su
+resumen corregido se verificó en el candidato final; estimulación se creó y
+verificó con este último. Esta prueba no cubre todos los formularios de esas áreas.
+
+| Estado  | Comprobación                                                                                                  | Resultado y alcance                                                                                                                                                                                                                                                                                                                                                      |
+| ------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PASSED  | `VITEST_MAX_WORKERS=1 TURBO_ENV_MODE=loose yarn verify:changed --base origin/main --head HEAD` en `9857f27a1` | Lint/tipado y builds dependientes: 270 tareas, 267 de caché, 3,829 s. Pruebas: 115 tareas, 114 de caché, 34,841 s; CRED ejecutó 345 pruebas en 39 archivos. La caché corresponde a tareas sin cambios validadas en esta instalación.                                                                                                                                     |
+| PASSED  | `yarn workspace @sihsalus/esm-cred-app build` y `yarn assemble` en `9857f27a1`                                | Compilación y validación del artefacto SPA de 67 módulos locales. Persisten advertencias de tamaño de bundles.                                                                                                                                                                                                                                                           |
+| PASSED  | Navegación en Chromium con backend QLTY                                                                       | Cinco dashboards, 18 pestañas y cero excepciones no manejadas en el recorrido. No acredita guardar todos sus formularios.                                                                                                                                                                                                                                                |
+| FAILED  | Regresiones y recorridos anteriores a las correcciones                                                        | Se reprodujeron la pérdida de identidad de campo, selección desactualizada, paciente ausente, número omitido/duplicado y filtro REST perdido; las regresiones correspondientes pasaron tras sus fixes. El primer baseline en `f4d9e6701` también tuvo timeouts en registro de pacientes; la repetición limitada a un worker pasó sin cambiar timeouts ni omitir pruebas. |
+| PASSED  | Limpieza sintética en QLTY                                                                                    | El journal quedó cerrado como limpio tras verificar la anulación del paciente propio, persona, visita y dependencias. Se conservó durante los timeouts de REST mientras el backend estaba iniciando y se reintentó cuando volvió a responder.                                                                                                                            |
+| NOT RUN | CI de PR, release, despliegue y aceptación clínica con perfil restringido                                     | Cambios locales aislados; no se publicaron ni desplegaron. La sesión administrativa no acredita permisos operativos.                                                                                                                                                                                                                                                     |
+
+DEV autenticó y permitió lectura, pero IDGen respondió 500 al intentar obtener
+un identificador: `EntityManagerFactory is closed`. No se creó un paciente allí.
+La asociación temporal de proveedor de prueba fue retirada y su retiro se verificó;
+no se cambiaron roles. Este fallo externo no se ocultó ni se reinició DEV para
+resolverlo dentro de esta validación.
+
+La revisión de configuración encontró 97 referencias a 88 conceptos únicos:
+los 88 estaban activos en DEV y QLTY. Los seis formularios neonatales tenían una
+única versión publicada activa por nombre exacto. Esta comprobación acredita
+existencia y disponibilidad; no acredita equivalencia clínica ni cierra las
+colisiones terminológicas del contrato de content.
+
+La consulta autenticada de [OCL SIHSALUS](https://app.openconceptlab.org/#/orgs/SIHSALUS/)
+verificó los mismos 88 `external_id`: 83 activos en `sihsalus`, cuatro en
+`laboratorio` y uno en `diagnosis`. Se revisaron los 4.485 conceptos de HEAD de
+`sihsalus` y los 248 de `laboratorio`; las releases consultadas fueron
+`2026-09-15-1` y `2026-09-17-1`. No se publicaron conceptos ni se sustituyeron
+exports históricos. Los conjuntos EDI, Huanca y M-CHAT contienen conceptos de
+resultados agregados; sus mappings no equivalen a disponer de todos los ítems.
+No se encontraron conceptos específicos de z por indicador ni Hb ajustada en
+las dos fuentes revisadas. La Hb medida de laboratorio no representa Hb ajustada.
+
+Git contiene la NTS 238 y la Libreta CRED archivadas en
+[las fuentes normativas](../../../docs/clinical/test-peruano/SOURCES.md), y las
+auditorías de content enumeran los ítems pendientes. No se encontró aprobación
+clínica de la captura íntegra ni documentación que establezca el uso digital de
+M-CHAT-R/F para la distribución de este software. Las
+[condiciones de los autores](https://www.mchatscreen.com/mchat-rf/) distinguen el uso
+interno en el EHR de una práctica clínica de la distribución del instrumento
+dentro de software; esa aplicabilidad debe quedar documentada antes de publicarlo.
+
+Continúan pendientes los conceptos canónicos para resolver las 11 colisiones
+semánticas de content (42 campos en diez formularios), y la persistencia estructurada de
+z/clasificación por indicador y Hb ajustada, las versiones aprobadas de EDI y
+Huanca, y la documentación de las condiciones de uso y captura íntegra de M-CHAT-R/F. Tampoco se
+acredita aquí la aceptación por personal clínico, el perfil restringido desplegado
+ni el guardado de todos los formularios de nutrición y estimulación. El acceso
+administrativo no resuelve esas condiciones.
+
+### Verificación histórica de correcciones neonatales — 01/10/2026
 
 Código validado: `ff1451bdabcd6f01bd72d041c715386c2d2ba1a6`. La revisión conserva
 el esquema histórico al editar y corrige la lectura paginada descrita debajo.

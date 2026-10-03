@@ -1,9 +1,9 @@
-import { InlineLoading, Tab, TabList, Tabs } from '@carbon/react';
+import { InlineLoading } from '@carbon/react';
+import { useConfig, useLeftNav } from '@openmrs/esm-framework';
 import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
-import { useConfig } from '@openmrs/esm-framework';
-import React, { Suspense } from 'react';
+import React, { Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 
 import { type ConfigObject } from './config-schema';
 import styles from './indicators-dashboard.module.scss';
@@ -17,42 +17,8 @@ const IndicadorFormPage = React.lazy(() => import('./pages/IndicadorFormPage'));
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 
-const PANEL_TAB_INDEX = 0;
-const INDICADORES_TAB_INDEX = 1;
-const RESULTADOS_TAB_INDEX = 2;
-const METAS_TAB_INDEX = 3;
-
-const selectedIndexForPath = (pathname: string): number => {
-  const normalized = trimTrailingSlash(pathname);
-  if (normalized === '/indicadores') {
-    return INDICADORES_TAB_INDEX;
-  }
-  if (normalized === '/resultados') {
-    return RESULTADOS_TAB_INDEX;
-  }
-  if (normalized === '/metas') {
-    return METAS_TAB_INDEX;
-  }
-  return PANEL_TAB_INDEX;
-};
-
-const TabsLayout: React.FC = () => {
+const ModuleLayout: React.FC = () => {
   const { t } = useTranslation();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const selectedIndex = selectedIndexForPath(location.pathname);
-
-  const handleTabChange = ({ selectedIndex: nextIndex }: { selectedIndex: number }) => {
-    if (nextIndex === INDICADORES_TAB_INDEX) {
-      navigate('/indicadores');
-    } else if (nextIndex === RESULTADOS_TAB_INDEX) {
-      navigate('/resultados');
-    } else if (nextIndex === METAS_TAB_INDEX) {
-      navigate('/metas');
-    } else {
-      navigate('/');
-    }
-  };
 
   return (
     <div className={styles.container}>
@@ -64,14 +30,6 @@ const TabsLayout: React.FC = () => {
           </p>
         </div>
       </div>
-      <Tabs selectedIndex={selectedIndex} onChange={handleTabChange}>
-        <TabList aria-label={t('indicatorsTabs', 'Secciones de indicadores')}>
-          <Tab>{t('panel', 'Panel')}</Tab>
-          <Tab>{t('indicators', 'Indicadores')}</Tab>
-          <Tab>{t('results', 'Resultados')}</Tab>
-          <Tab>{t('metasTitle', 'Metas')}</Tab>
-        </TabList>
-      </Tabs>
       <Suspense fallback={<InlineLoading description={t('pageLoading', 'Cargando página...')} />}>
         <Outlet />
       </Suspense>
@@ -83,20 +41,29 @@ const IndicatorsContent: React.FC = () => {
   const spaBase = trimTrailingSlash(window.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
   const basePath = `${spaBase}/indicators`;
 
+  // Renders the module sections in the shell's left rail. The slot is filled by
+  // the `indicadores-nav` extension declared in routes.json.
+  const leftNav = useMemo(() => ({ name: 'indicadores-nav-slot', basePath }), [basePath]);
+  useLeftNav(leftNav);
+
   return (
     <AppErrorBoundary appName="esm-indicadores-app">
       <BrowserRouter basename={basePath}>
-        <Routes>
-          <Route element={<TabsLayout />}>
-            <Route path="/" element={<PanelPage />} />
-            <Route path="/indicadores" element={<IndicadoresPage />} />
-            <Route path="/resultados" element={<ResultadosPage />} />
-            <Route path="/metas" element={<MetasPage />} />
-          </Route>
-          <Route path="/new" element={<IndicadorFormPage mode="create" />} />
-          <Route path="/:id/edit" element={<IndicadorFormPage mode="edit" />} />
-          <Route path="/:id" element={<IndicadorDetailPage />} />
-        </Routes>
+        {/* Reserves the shell left-nav width for EVERY module route, including the
+            detail and form screens that render outside `ModuleLayout`. */}
+        <div className={styles.appShell}>
+          <Routes>
+            <Route element={<ModuleLayout />}>
+              <Route path="/" element={<PanelPage />} />
+              <Route path="/indicadores" element={<IndicadoresPage />} />
+              <Route path="/resultados" element={<ResultadosPage />} />
+              <Route path="/metas" element={<MetasPage />} />
+            </Route>
+            <Route path="/new" element={<IndicadorFormPage mode="create" />} />
+            <Route path="/:id/edit" element={<IndicadorFormPage mode="edit" />} />
+            <Route path="/:id" element={<IndicadorDetailPage />} />
+          </Routes>
+        </div>
       </BrowserRouter>
     </AppErrorBoundary>
   );

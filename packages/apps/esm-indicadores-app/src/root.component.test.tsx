@@ -1,12 +1,12 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { useConfig } from '@openmrs/esm-framework';
+import { render, screen } from '@testing-library/react';
+import { useConfig, useLeftNav } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
 import { type ConfigObject } from './config-schema';
 import RootComponent from './root.component';
 
 const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
-vi.mock('@openmrs/esm-framework', () => ({ useConfig: vi.fn() }));
+vi.mock('@openmrs/esm-framework', () => ({ useConfig: vi.fn(), useLeftNav: vi.fn() }));
 vi.mock('./pages/PanelPage', () => ({ default: () => <div>Panel page content</div> }));
 vi.mock('./pages/IndicadoresPage', () => ({ default: () => <div>Indicadores page content</div> }));
 vi.mock('./pages/IndicadorDetailPage', () => ({ default: () => <div>Detalle page content</div> }));
@@ -20,6 +20,7 @@ vi.mock('@sihsalus/esm-rbac', () => ({
 }));
 
 const mockUseConfig = vi.mocked(useConfig);
+const mockUseLeftNav = vi.mocked(useLeftNav);
 
 const defaultTestConfig: ConfigObject = {
   indicatorsApiPath: '/ws/module/indicators/api',
@@ -55,67 +56,55 @@ describe('RootComponent lazy routed pages', () => {
     mockUseConfig.mockReturnValue(defaultTestConfig);
   });
 
-  it('mounts the Panel page by default and keeps the module header and tabs visible', async () => {
+  it('mounts the Panel page by default and keeps the module header visible', async () => {
     renderAt('/');
 
     expect(screen.getByText('Indicadores Clínicos')).toBeInTheDocument();
     expect(await screen.findByText('Panel page content')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Panel' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Metas page content')).not.toBeInTheDocument();
   });
 
-  it('navigates to /indicadores and mounts the Indicadores page when the Indicadores tab is clicked', async () => {
-    renderAt('/');
-    await screen.findByText('Panel page content');
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Indicadores' }));
-
-    expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
-    await waitFor(() => expect(window.location.pathname).toBe(`${indicatorsBaseUrl}/indicadores`));
-    expect(screen.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
-  });
-
-  it('navigates to /resultados and mounts the Resultados page when the Resultados tab is clicked', async () => {
-    renderAt('/');
-    await screen.findByText('Panel page content');
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Resultados' }));
+  it('deep-links to /resultados and mounts only the Resultados page', async () => {
+    renderAt('/resultados');
 
     expect(await screen.findByText('Resultados page content')).toBeInTheDocument();
-    await waitFor(() => expect(window.location.pathname).toBe(`${indicatorsBaseUrl}/resultados`));
-    expect(screen.getByRole('tab', { name: 'Resultados' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
   });
 
-  it('navigates to /metas and mounts the Metas page when the Metas tab is clicked', async () => {
-    renderAt('/');
-    await screen.findByText('Panel page content');
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Metas' }));
-
-    expect(await screen.findByText('Metas page content')).toBeInTheDocument();
-    await waitFor(() => expect(window.location.pathname).toBe(`${indicatorsBaseUrl}/metas`));
-    expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
-  });
-
-  it('deep-links to /indicadores with the Indicadores tab selected and the Indicadores page mounted', async () => {
+  it('deep-links to /indicadores and mounts only the Indicadores page', async () => {
     renderAt('/indicadores');
 
     expect(await screen.findByText('Indicadores page content')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
   });
 
-  it('deep-links to /metas with the Metas tab selected and the Metas page mounted', async () => {
+  it('activates the module left navigation with the module-scoped base path', () => {
+    renderAt('/');
+
+    expect(mockUseLeftNav).toHaveBeenCalledWith({
+      name: 'indicadores-nav-slot',
+      basePath: '/openmrs/spa/indicators',
+    });
+  });
+
+  it('reserves the shell left-nav width for every route, including the indicator detail', async () => {
+    renderAt('/ind-001');
+
+    const detail = await screen.findByText('Detalle page content');
+    const shell = document.querySelector('.appShell');
+
+    expect(shell).not.toBeNull();
+    expect(shell?.contains(detail)).toBe(true);
+  });
+
+  it('deep-links to /metas and mounts only the Metas page', async () => {
     renderAt('/metas');
 
     expect(await screen.findByText('Metas page content')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
   });

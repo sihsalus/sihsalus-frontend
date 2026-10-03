@@ -1,5 +1,5 @@
 import { Checkbox, CheckboxGroup, FilterableMultiSelect, Layer, Tag } from '@carbon/react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormProviderContext } from '../../../provider/form-provider';
 import { type FormFieldInputProps, type FormFieldValue } from '../../../types';
@@ -22,9 +22,6 @@ interface SelectOption {
 const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, errors, warnings, setFieldValue }) => {
   const { t } = useTranslation();
   const { layoutType, sessionMode, workspaceLayout, formFieldAdapters } = useFormProviderContext();
-  const [counter, setCounter] = useState(0);
-  const [initiallyCheckedQuestionItems, setInitiallyCheckedQuestionItems] = useState<string[]>([]);
-  const isFirstRender = useRef(true);
 
   const selectOptions = field.questionOptions.answers
     .filter((answer) => !answer.isHidden)
@@ -37,13 +34,7 @@ const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, er
       readonly: isTrue(field.readonly),
     }));
 
-  const initiallySelectedQuestionItems = useMemo(() => {
-    if (value?.length && counter < 1) {
-      setCounter((currentCount) => currentCount + 1);
-      return selectOptions.filter((item) => value?.includes(item.concept));
-    }
-    return [];
-  }, [counter, selectOptions, value]);
+  const selectedQuestionItems = selectOptions.filter((item) => value?.includes(item.concept));
 
   const handleSelectItemsChange = ({ selectedItems }: { selectedItems: SelectOption[] }): void => {
     setFieldValue(selectedItems.map((selectedItem) => selectedItem.concept));
@@ -54,25 +45,12 @@ const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, er
     [field.questionOptions.isCheckboxSearchable],
   );
 
-  useEffect(() => {
-    if (isFirstRender.current && counter === 1) {
-      setInitiallyCheckedQuestionItems(initiallySelectedQuestionItems.map((item): string => item.concept));
-      isFirstRender.current = false;
-    }
-  }, [counter, initiallySelectedQuestionItems]);
-
   const handleSelectCheckbox = (option: SelectOption): void => {
     const selectedValue = option.concept;
-    const isChecked = initiallyCheckedQuestionItems.some((item) => item === selectedValue);
-    let updatedItems: string[];
-    if (isChecked) {
-      updatedItems = initiallyCheckedQuestionItems.filter((item) => item !== selectedValue);
-    } else {
-      updatedItems = initiallyCheckedQuestionItems.some((item) => item === selectedValue)
-        ? initiallyCheckedQuestionItems.filter((item) => item !== selectedValue)
-        : [...initiallyCheckedQuestionItems, selectedValue];
-    }
-    setInitiallyCheckedQuestionItems(updatedItems);
+    const selectedValues = value ?? [];
+    const updatedItems = selectedValues.includes(selectedValue)
+      ? selectedValues.filter((item) => item !== selectedValue)
+      : [...selectedValues, selectedValue];
     setFieldValue(updatedItems);
   };
 
@@ -105,7 +83,7 @@ const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, er
               <FilterableMultiSelect
                 disabled={field.isDisabled}
                 id={field.id}
-                initialSelectedItems={initiallySelectedQuestionItems}
+                selectedItems={selectedQuestionItems}
                 invalid={errors.length > 0}
                 invalidText={errors[0]?.message}
                 items={selectOptions}
@@ -120,17 +98,17 @@ const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, er
               />
             ) : (
               <CheckboxGroup legendText={<FieldLabel field={field} />} readOnly={isTrue(field.readonly)}>
-                {selectOptions?.map((value, index) => {
+                {selectOptions?.map((option, index) => {
                   return (
                     <Checkbox
                       className={styles.checkbox}
-                      checked={initiallyCheckedQuestionItems.some((item) => item === value.concept)}
-                      disabled={value.disabled}
-                      id={`${field.id}-${value.concept}`}
-                      key={`${field.id}-${value.concept}-${index}`}
-                      labelText={t(value.label)}
-                      name={value.concept}
-                      onChange={() => handleSelectCheckbox(value)}
+                      checked={value?.includes(option.concept) ?? false}
+                      disabled={option.disabled}
+                      id={`${field.id}-${option.concept}`}
+                      key={`${field.id}-${option.concept}-${index}`}
+                      labelText={t(option.label)}
+                      name={option.concept}
+                      onChange={() => handleSelectCheckbox(option)}
                       readOnly={isTrue(field.readonly)}
                     />
                   );

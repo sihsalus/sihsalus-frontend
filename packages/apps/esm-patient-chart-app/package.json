@@ -63,6 +63,7 @@
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-framework": "workspace:*",
+    "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@rspack/cli": "2.2.8",
     "@types/uuid": "^9.0.4",

@@ -231,6 +231,12 @@ El resumen tipo IPS prioriza una vista compacta para continuidad de atencion: pr
 
 ## Dependencias compartidas
 
+`@openmrs/esm-patient-common-lib` se declara también como dependencia de desarrollo
+del workspace. El chart puede proporcionar esta librería compartida en la SPA;
+su compilación debe invalidarse cuando cambian sus fuentes, incluidos los campos
+solicitados a REST. Una declaración únicamente como peer no registra esa relación
+en el grafo de compilación de Turborepo.
+
 La sincronización conserva `stopDatetime` cuando la visita offline ya tiene una fecha de cierre, tanto si está
 serializada como texto como si es un `Date`. Para una visita encolada sin cierre se mantiene el cierre al sincronizar.
 La consulta fresca de estado vital comparte el `AbortSignal` de la sincronización; cancelarla debe interrumpir esa

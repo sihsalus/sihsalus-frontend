@@ -305,7 +305,7 @@ describe('IndicadorDetailPage', () => {
     const selectedPills = Array.from(document.querySelectorAll('.selectedItemPill'));
     expect(selectedPills.some((pill) => pill.textContent?.includes('Centro Obstétrico'))).toBe(true);
     expect(selectedPills.some((pill) => pill.textContent?.includes('Anemia ferropénica'))).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Órdenes' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Órdenes' }));
     expect(
       Array.from(document.querySelectorAll('.selectedItemPill')).some((pill) =>
         pill.textContent?.includes('Hemograma'),

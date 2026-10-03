@@ -1,4 +1,16 @@
-import { Button, Select, SelectItem, TextArea, TextInput, Tile } from '@carbon/react';
+import {
+  Button,
+  Form,
+  RadioButton,
+  RadioButtonGroup,
+  Select,
+  SelectItem,
+  Stack,
+  TextArea,
+  TextInput,
+  Tile,
+} from '@carbon/react';
+import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -146,6 +158,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
   onSubmit,
 }) => {
   const { t } = useTranslation();
+  const layout = useLayoutType();
   const [values, setValues] = useState<IndicadorFormValues>({
     ...defaultValues,
     ...initialValues,
@@ -249,229 +262,250 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.formStack}>
-      <Tile className={styles.infoTile}>{helperText}</Tile>
-      {serverError ? <div className={styles.errorBanner}>{serverError}</div> : null}
-      {validationError ? <div className={styles.errorBanner}>{validationError}</div> : null}
-
-      {!isVersionMode ? (
-        <section className={styles.formSectionCard}>
-          <div className={styles.sectionHeader}>
-            <h3 className={styles.sectionTitle}>{t('generalInfo', 'Información general')}</h3>
-            <p className={styles.sectionHint}>
-              {t('generalInfoHint', 'Nombre visible y descripción operativa del indicador.')}
-            </p>
+    <Form className={styles.form} onSubmit={handleSubmit}>
+      <Stack gap={6}>
+        <Tile className={styles.infoTile}>{helperText}</Tile>
+        {serverError ? (
+          <div className={styles.errorBanner} role="alert">
+            {serverError}
           </div>
-          <div className={styles.formGrid}>
-            <TextInput
-              id="nombre"
-              labelText={t('name', 'Nombre')}
-              value={values.nombre}
-              onChange={(event) => updateField('nombre', event.target.value)}
-              disabled={isSubmitting}
-            />
-            <TextArea
-              id="descripcion"
-              labelText={t('description', 'Descripción')}
-              value={values.descripcion}
-              onChange={(event) => updateField('descripcion', event.target.value)}
-              disabled={isSubmitting}
-            />
+        ) : null}
+        {validationError ? (
+          <div className={styles.errorBanner} role="alert">
+            {validationError}
           </div>
-        </section>
-      ) : null}
+        ) : null}
 
-      {!isEditMode ? (
-        <>
-          <section className={styles.formSectionCard}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>{t('type', 'Tipo')}</h3>
+        {!isVersionMode ? (
+          <section className={styles.formSectionCard} aria-labelledby="indicador-general-heading">
+            <header className={styles.sectionHeader}>
+              <h3 id="indicador-general-heading" className={styles.sectionTitle}>
+                {t('generalInfo', 'Información general')}
+              </h3>
               <p className={styles.sectionHint}>
-                {t('typeHint', 'Define qué se cuenta. Las mediciones son siempre mensuales.')}
+                {t('generalInfoHint', 'Nombre visible y descripción operativa del indicador.')}
               </p>
-            </div>
-            <div className={styles.formColumns}>
-              <Select
-                id="tipo"
-                labelText={t('type', 'Tipo')}
-                value={values.tipo}
-                onChange={(event) => updateField('tipo', event.target.value as IndicadorFormValues['tipo'])}
-              >
-                <SelectItem value="conteo_atenciones" text={t('countEncounters', 'Conteo de atenciones')} />
-                <SelectItem value="conteo_pacientes" text={t('countPatients', 'Conteo de pacientes')} />
-                <SelectItem
-                  value="conteo_pacientes_ventana"
-                  text={t('countPatientsWindow', 'Conteo de pacientes en ventana etaria')}
-                />
-              </Select>
-            </div>
-          </section>
-
-          <section className={styles.formSectionCard}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>{t('attentionSection', 'Atención')}</h3>
-              <p className={styles.sectionHint}>
-                {t(
-                  'attentionHint',
-                  'Acote el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.',
-                )}
-              </p>
-            </div>
-            <div className={styles.formGrid}>
-              <LocationSearchSelector
-                selectedItems={values.selectedLocations}
-                onChange={(items) => updateField('selectedLocations', items)}
-              />
+            </header>
+            <Stack gap={5}>
               <TextInput
-                id="minimo-ocurrencias"
-                labelText={t('minimumOccurrences', 'Mínimo de ocurrencias')}
-                type="number"
-                value={values.minimoOcurrencias}
-                onChange={(event) => updateField('minimoOcurrencias', event.target.value)}
+                id="nombre"
+                labelText={t('name', 'Nombre')}
+                value={values.nombre}
+                onChange={(event) => updateField('nombre', event.target.value)}
+                disabled={isSubmitting}
               />
-            </div>
-            <div className={styles.filterSwitches}>
-              <Button
-                kind={values.filtroClinico === 'ninguno' ? 'primary' : 'secondary'}
-                size="sm"
-                type="button"
-                onClick={() => updateField('filtroClinico', 'ninguno')}
-              >
-                {t('noClinicalFilter', 'Sin filtro clínico')}
-              </Button>
-              <Button
-                kind={values.filtroClinico === 'diagnosticos' ? 'primary' : 'secondary'}
-                size="sm"
-                type="button"
-                onClick={() => updateField('filtroClinico', 'diagnosticos')}
-              >
-                {t('diagnostics', 'Diagnósticos')}
-              </Button>
-              <Button
-                kind={values.filtroClinico === 'ordenes' ? 'primary' : 'secondary'}
-                size="sm"
-                type="button"
-                onClick={() => updateField('filtroClinico', 'ordenes')}
-              >
-                {t('orders', 'Órdenes')}
-              </Button>
-            </div>
-            {values.filtroClinico === 'diagnosticos' ? (
-              <div className={styles.formColumns}>
-                <DiagnosticoSearchSelector
-                  selectedItems={values.selectedDiagnosticos}
-                  onChange={(items) => updateField('selectedDiagnosticos', items)}
-                />
+              <TextArea
+                id="descripcion"
+                labelText={t('description', 'Descripción')}
+                value={values.descripcion}
+                onChange={(event) => updateField('descripcion', event.target.value)}
+                disabled={isSubmitting}
+              />
+            </Stack>
+          </section>
+        ) : null}
+
+        {!isEditMode ? (
+          <>
+            <section className={styles.formSectionCard} aria-labelledby="indicador-type-heading">
+              <header className={styles.sectionHeader}>
+                <h3 id="indicador-type-heading" className={styles.sectionTitle}>
+                  {t('type', 'Tipo')}
+                </h3>
+                <p className={styles.sectionHint}>
+                  {t('typeHint', 'Define qué se cuenta. Las mediciones son siempre mensuales.')}
+                </p>
+              </header>
+              <div className={styles.formFieldNarrow}>
                 <Select
-                  id="tipo-diagnostico"
-                  labelText={t('diagnosisType', 'Tipo de diagnóstico')}
-                  value={values.diagnosticoTipo}
-                  onChange={(event) =>
-                    updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])
-                  }
+                  id="tipo"
+                  labelText={t('type', 'Tipo')}
+                  value={values.tipo}
+                  onChange={(event) => updateField('tipo', event.target.value as IndicadorFormValues['tipo'])}
                 >
-                  <SelectItem value="" text={t('unspecified', 'Sin especificar')} />
-                  <SelectItem value="definitivo" text={t('definitive', 'Definitivo')} />
-                  <SelectItem value="presuntivo" text={t('presumptive', 'Presuntivo')} />
+                  <SelectItem value="conteo_atenciones" text={t('countEncounters', 'Conteo de atenciones')} />
+                  <SelectItem value="conteo_pacientes" text={t('countPatients', 'Conteo de pacientes')} />
+                  <SelectItem
+                    value="conteo_pacientes_ventana"
+                    text={t('countPatientsWindow', 'Conteo de pacientes en ventana etaria')}
+                  />
                 </Select>
               </div>
-            ) : null}
-            {values.filtroClinico === 'ordenes' ? (
-              <OrdenSearchSelector
-                selectedItems={values.selectedOrdenes}
-                onChange={(items) => updateField('selectedOrdenes', items)}
-              />
-            ) : null}
-            {values.tipo === 'conteo_pacientes_ventana' ? (
-              <EncounterTypeSearchSelector
-                selectedItems={values.selectedEncounterTypes}
-                onChange={(items) => updateField('selectedEncounterTypes', items)}
-              />
-            ) : null}
-          </section>
+            </section>
 
-          <section className={styles.formSectionCard}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>{t('populationSection', 'Población')}</h3>
-              <p className={styles.sectionHint}>
-                {t('populationHint', 'Filtre por sexo y rango etario si el indicador lo requiere.')}
-              </p>
-            </div>
-            <div className={styles.populationLayout}>
-              <Select
-                id="sexo"
-                labelText={t('sex', 'Sexo')}
-                value={values.sexo}
-                onChange={(event) => updateField('sexo', event.target.value as IndicadorFormValues['sexo'])}
-              >
-                <SelectItem value="" text={t('noFilter', 'Sin filtro')} />
-                <SelectItem value="F" text={t('female', 'Femenino')} />
-                <SelectItem value="M" text={t('male', 'Masculino')} />
-              </Select>
-              <div className={styles.ageBlock}>
-                <div className={styles.ageBlockHeader}>
-                  <span className={styles.sectionMiniTitle}>{t('minAge', 'Edad mínima')}</span>
-                  <span className={styles.mutedText}>{t('minAgeHint', 'Complete solo lo necesario.')}</span>
+            <section className={styles.formSectionCard} aria-labelledby="indicador-attention-heading">
+              <header className={styles.sectionHeader}>
+                <h3 id="indicador-attention-heading" className={styles.sectionTitle}>
+                  {t('attentionSection', 'Atención')}
+                </h3>
+                <p className={styles.sectionHint}>
+                  {t(
+                    'attentionHint',
+                    'Acote el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.',
+                  )}
+                </p>
+              </header>
+              <Stack gap={5}>
+                <div className={styles.formFieldGroup}>
+                  <LocationSearchSelector
+                    selectedItems={values.selectedLocations}
+                    onChange={(items) => updateField('selectedLocations', items)}
+                  />
+                  <div className={styles.formFieldNarrow}>
+                    <TextInput
+                      id="minimo-ocurrencias"
+                      labelText={t('minimumOccurrences', 'Mínimo de ocurrencias')}
+                      type="number"
+                      value={values.minimoOcurrencias}
+                      onChange={(event) => updateField('minimoOcurrencias', event.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className={styles.ageGrid}>
-                  <TextInput
-                    id="min-anios"
-                    labelText={t('minAgeYears', 'Edad mínima años')}
-                    type="number"
-                    value={values.minAnios}
-                    onChange={(event) => updateField('minAnios', event.target.value)}
+                <RadioButtonGroup
+                  legendText={t('clinicalFilter', 'Filtro clínico')}
+                  name="indicador-filtro-clinico"
+                  orientation={isDesktop(layout) ? 'horizontal' : 'vertical'}
+                  valueSelected={values.filtroClinico}
+                  onChange={(value) => updateField('filtroClinico', value as IndicadorFormValues['filtroClinico'])}
+                >
+                  <RadioButton
+                    id="filtro-clinico-ninguno"
+                    labelText={t('noClinicalFilter', 'Sin filtro clínico')}
+                    value="ninguno"
                   />
-                  <TextInput
-                    id="min-meses"
-                    labelText={t('minAgeMonths', 'Edad mínima meses')}
-                    type="number"
-                    value={values.minMeses}
-                    onChange={(event) => updateField('minMeses', event.target.value)}
+                  <RadioButton
+                    id="filtro-clinico-diagnosticos"
+                    labelText={t('diagnostics', 'Diagnósticos')}
+                    value="diagnosticos"
                   />
-                  <TextInput
-                    id="min-dias"
-                    labelText={t('minAgeDays', 'Edad mínima días')}
-                    type="number"
-                    value={values.minDias}
-                    onChange={(event) => updateField('minDias', event.target.value)}
+                  <RadioButton id="filtro-clinico-ordenes" labelText={t('orders', 'Órdenes')} value="ordenes" />
+                </RadioButtonGroup>
+                {values.filtroClinico === 'diagnosticos' ? (
+                  <div className={styles.formFieldGroup}>
+                    <DiagnosticoSearchSelector
+                      selectedItems={values.selectedDiagnosticos}
+                      onChange={(items) => updateField('selectedDiagnosticos', items)}
+                    />
+                    <div className={styles.formFieldNarrow}>
+                      <Select
+                        id="tipo-diagnostico"
+                        labelText={t('diagnosisType', 'Tipo de diagnóstico')}
+                        value={values.diagnosticoTipo}
+                        onChange={(event) =>
+                          updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])
+                        }
+                      >
+                        <SelectItem value="" text={t('unspecified', 'Sin especificar')} />
+                        <SelectItem value="definitivo" text={t('definitive', 'Definitivo')} />
+                        <SelectItem value="presuntivo" text={t('presumptive', 'Presuntivo')} />
+                      </Select>
+                    </div>
+                  </div>
+                ) : null}
+                {values.filtroClinico === 'ordenes' ? (
+                  <OrdenSearchSelector
+                    selectedItems={values.selectedOrdenes}
+                    onChange={(items) => updateField('selectedOrdenes', items)}
                   />
+                ) : null}
+                {values.tipo === 'conteo_pacientes_ventana' ? (
+                  <EncounterTypeSearchSelector
+                    selectedItems={values.selectedEncounterTypes}
+                    onChange={(items) => updateField('selectedEncounterTypes', items)}
+                  />
+                ) : null}
+              </Stack>
+            </section>
+
+            <section className={styles.formSectionCard} aria-labelledby="indicador-population-heading">
+              <header className={styles.sectionHeader}>
+                <h3 id="indicador-population-heading" className={styles.sectionTitle}>
+                  {t('populationSection', 'Población')}
+                </h3>
+                <p className={styles.sectionHint}>
+                  {t('populationHint', 'Filtre por sexo y rango etario si el indicador lo requiere.')}
+                </p>
+              </header>
+              <Stack gap={5}>
+                <div className={styles.formFieldNarrow}>
+                  <Select
+                    id="sexo"
+                    labelText={t('sex', 'Sexo')}
+                    value={values.sexo}
+                    onChange={(event) => updateField('sexo', event.target.value as IndicadorFormValues['sexo'])}
+                  >
+                    <SelectItem value="" text={t('noFilter', 'Sin filtro')} />
+                    <SelectItem value="F" text={t('female', 'Femenino')} />
+                    <SelectItem value="M" text={t('male', 'Masculino')} />
+                  </Select>
                 </div>
-              </div>
-              <div className={styles.ageBlock}>
-                <div className={styles.ageBlockHeader}>
-                  <span className={styles.sectionMiniTitle}>{t('maxAge', 'Edad máxima')}</span>
-                  <span className={styles.mutedText}>
-                    {t('maxAgeHint', 'Se interpreta como límite superior del rango.')}
-                  </span>
+                <div className={styles.ageBlocks}>
+                  <div className={styles.ageBlock}>
+                    <div className={styles.ageBlockHeader}>
+                      <span className={styles.sectionMiniTitle}>{t('minAge', 'Edad mínima')}</span>
+                      <span className={styles.mutedText}>{t('minAgeHint', 'Complete solo lo necesario.')}</span>
+                    </div>
+                    <div className={styles.ageGrid}>
+                      <TextInput
+                        id="min-anios"
+                        labelText={t('minAgeYears', 'Edad mínima años')}
+                        type="number"
+                        value={values.minAnios}
+                        onChange={(event) => updateField('minAnios', event.target.value)}
+                      />
+                      <TextInput
+                        id="min-meses"
+                        labelText={t('minAgeMonths', 'Edad mínima meses')}
+                        type="number"
+                        value={values.minMeses}
+                        onChange={(event) => updateField('minMeses', event.target.value)}
+                      />
+                      <TextInput
+                        id="min-dias"
+                        labelText={t('minAgeDays', 'Edad mínima días')}
+                        type="number"
+                        value={values.minDias}
+                        onChange={(event) => updateField('minDias', event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.ageBlock}>
+                    <div className={styles.ageBlockHeader}>
+                      <span className={styles.sectionMiniTitle}>{t('maxAge', 'Edad máxima')}</span>
+                      <span className={styles.mutedText}>
+                        {t('maxAgeHint', 'Se interpreta como límite superior del rango.')}
+                      </span>
+                    </div>
+                    <div className={styles.ageGrid}>
+                      <TextInput
+                        id="max-anios"
+                        labelText={t('maxAgeYears', 'Edad máxima años')}
+                        type="number"
+                        value={values.maxAnios}
+                        onChange={(event) => updateField('maxAnios', event.target.value)}
+                      />
+                      <TextInput
+                        id="max-meses"
+                        labelText={t('maxAgeMonths', 'Edad máxima meses')}
+                        type="number"
+                        value={values.maxMeses}
+                        onChange={(event) => updateField('maxMeses', event.target.value)}
+                      />
+                      <TextInput
+                        id="max-dias"
+                        labelText={t('maxAgeDays', 'Edad máxima días')}
+                        type="number"
+                        value={values.maxDias}
+                        onChange={(event) => updateField('maxDias', event.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className={styles.ageGrid}>
-                  <TextInput
-                    id="max-anios"
-                    labelText={t('maxAgeYears', 'Edad máxima años')}
-                    type="number"
-                    value={values.maxAnios}
-                    onChange={(event) => updateField('maxAnios', event.target.value)}
-                  />
-                  <TextInput
-                    id="max-meses"
-                    labelText={t('maxAgeMonths', 'Edad máxima meses')}
-                    type="number"
-                    value={values.maxMeses}
-                    onChange={(event) => updateField('maxMeses', event.target.value)}
-                  />
-                  <TextInput
-                    id="max-dias"
-                    labelText={t('maxAgeDays', 'Edad máxima días')}
-                    type="number"
-                    value={values.maxDias}
-                    onChange={(event) => updateField('maxDias', event.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-        </>
-      ) : null}
+              </Stack>
+            </section>
+          </>
+        ) : null}
+      </Stack>
 
       <div className={styles.formFooter}>
         <Button type="submit" disabled={isSubmitting}>
@@ -482,7 +516,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
               : t('save', 'Guardar')}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 };
 

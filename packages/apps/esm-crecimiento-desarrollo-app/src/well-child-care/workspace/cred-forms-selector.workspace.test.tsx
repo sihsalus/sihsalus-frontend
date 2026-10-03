@@ -60,7 +60,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConfig).mockReturnValue({
     formsList: { stimulationFollowupForm: form.uuid },
-    CRED: { controlNumber: 'synthetic-control-number' },
+    concepts: { controlNumber: 'synthetic-control-number' },
   });
   vi.mocked(usePatient).mockReturnValue({ patient: undefined } as ReturnType<typeof usePatient>);
   vi.mocked(userHasAccess).mockReturnValue(true);

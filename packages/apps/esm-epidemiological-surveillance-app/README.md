@@ -1,6 +1,6 @@
 # @sihsalus/esm-epidemiological-surveillance-app
 
-Microfrontend OpenMRS 3 de vigilancia epidemiológica de SIH Salus, iteración 1 (RE 3.1). Registro de casos, alertas, curva epidémica, canal endémico y distribución demográfica.
+Microfrontend OpenMRS 3 de vigilancia epidemiológica de SIH Salus, iteración 1 (RE 3.1). Registro de casos, eventos notificables, alertas, curva epidémica y canal endémico.
 
 Terminología: visita = consulta; encounter = atención.
 
@@ -8,7 +8,7 @@ Terminología: visita = consulta; encounter = atención.
 
 Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación/defunción. No se incorpora React Form Engine en este cambio.
 
-Cubre RF-01 a RF-07, RF-11 a RF-13, RF-17 a RF-19, RF-22, RF-26 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye padrón de febriles, NOTI/Excel, mapas o clasificación automática de focos. La aceptación con metadatos e instancia real sigue pendiente.
+Cubre RF-01 a RF-09, RF-15 a RF-17 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye distribución demográfica, NOTI/Excel, mapas o clasificación automática de focos.
 
 ### Edición de eventos notificables
 
@@ -171,17 +171,47 @@ Se muestra fecha de generación del reporte y aviso sin conexión. La caché com
 
 ## Desarrollo y validación
 
-El `rspack.config.js` aplica una adaptación local, solo en desarrollo, para
-`@rspack/dev-server` 2 con `@rspack/core` 1: expone `log` y `emitter` también como
-exports nombrados, conservando las mismas instancias CommonJS para HMR. Evita
-que el cliente falle en `setLogLevel` antes de publicar el contenedor federado.
-Después de cambiar esta configuración hay que reiniciar el servidor de desarrollo.
-La compilación de producción no utiliza esta adaptación.
+El módulo usa `openmrs/default-rspack-config` y la versión de Rspack fijada en
+el monorepo (actualmente 2.2.8). Sus utilidades HMR `log` y `emitter` ya ofrecen
+exports nombrados ES. No necesitan la adaptación CommonJS utilizada con Rspack 1.
+
+### Error de carga del contenedor federado
+
+`The global variable _sihsalus_esm_epidemiological_surveillance_app does not refer
+to a federated module` indica que el script cargado no publicó el contenedor
+esperado, con métodos `get` e `init`. Revisar también el primer error de consola
+y la respuesta del script en Network; el mensaje de federación por sí solo no
+identifica la causa.
+
+Con Rspack 2, el antiguo `hmr-compat-loader.cjs` añadía `module.exports` a las
+utilidades ES de HMR. Esto provocaba `ReferenceError: module is not defined`
+durante el arranque e interrumpía la carga. Se retiró esa adaptación.
+`tooling/hmr-compat.check.cjs` compila las utilidades instaladas usando las reglas
+del módulo y ejecuta los bundles en un contexto de navegador simulado: comprueba
+el evento HMR y la publicación del contenedor. La prueba reproduce el error con
+el loader anterior; no sustituye un smoke del SPA con backend.
+
+Después de actualizar, detener y volver a iniciar el servidor de desarrollo,
+y recargar la página. Seguir la [preparación del SPA](../../../docs/development/README.md)
+para disponer de `dist/spa` y del backend configurado. Para incluir este módulo
+en el desarrollo con HMR, desde PowerShell en la raíz:
+
+```powershell
+$env:SIHSALUS_DEV_APPS = 'esm-login-app,esm-home-app,esm-epidemiological-surveillance-app'
+yarn start
+```
+
+Conservar en `SIHSALUS_DEV_APPS` otras apps que también se estén desarrollando.
+Si se sirven artefactos estáticos, reconstruir el paquete y ejecutar
+`yarn assemble` para actualizar los assets del SPA. Si el error persiste,
+comprobar que el import map o su override apunta al JavaScript de este paquete
+y que la respuesta no es HTML ni un bundle anterior.
+
+### Comprobaciones locales
 
 Desde la raíz del monorepo:
 
 ```sh
-yarn workspace @sihsalus/esm-epidemiological-surveillance-app start
 yarn workspace @sihsalus/esm-epidemiological-surveillance-app lint
 yarn workspace @sihsalus/esm-epidemiological-surveillance-app typescript
 yarn workspace @sihsalus/esm-epidemiological-surveillance-app test
@@ -189,6 +219,37 @@ yarn workspace @sihsalus/esm-epidemiological-surveillance-app build
 ```
 
 Usar Node/Yarn del monorepo. Pruebas sintéticas de tres pasos, campos/fechas, precarga, permisos concedidos/denegados, cambio de usuario, paginación, errores seguros, cola y reportes.
+
+Validación de la corrección HMR (2026-10-02), Windows, Node 24.20.0, Yarn 4.18.1,
+Rspack 2.2.8; cambios locales sobre `4234fb6d149d7562c31b35d11b7c284cba4f0413`.
+Los comandos del paquete usan el prefijo
+`yarn workspace @sihsalus/esm-epidemiological-surveillance-app`:
+
+- `yarn install --immutable`: **PASSED**. `corepack enable`: **BLOCKED** por
+  permisos sobre `C:\Program Files\nodejs\pnpx`; se usó Yarn ya disponible.
+- `test`: **PASSED**, 75 pruebas Vitest y una regresión de compilación/ejecución
+  HMR. Esta última falla con `module is not defined` al conservar el loader antiguo.
+  Avisos de configuración futura de Vite y feature flags de Carbon.
+- `lint` y `build`: **PASSED**, ejecutados para el paquete.
+- `typescript`: **BLOCKED**, el script no encuentra `tsc`; la resolución instalada
+  `@typescript/typescript6` expone `tsc6`. Como alternativa,
+  `node ../../../node_modules/typescript/bin/tsc6 --noEmit`, desde el paquete:
+  **PASSED**, con el `tsconfig.json` local que ya existía al iniciar la revisión.
+- `yarn build --concurrency=2`: **PASSED**, 91 tareas; 90 desde caché y el build
+  del módulo ejecutado. Los logs recuperados incluyen advertencias de tamaño.
+- `$env:SPA_OUTPUT_DIR = 'dist/spa-surveillance-validation'; yarn assemble`:
+  **PASSED**, shell compilado y artefacto validado con 68 módulos esperados.
+  Advertencias de tamaño, API obsoleta de Webpack, bibliotecas sin rutas y URL
+  relativa de vista previa social. El ensamble incorpora el CSS al precache
+  después del aviso de tamaño de Workbox. Salida separada en
+  `dist/spa-surveillance-validation`; no acredita un despliegue.
+- `yarn prettier --check packages/apps/esm-epidemiological-surveillance-app/README.md`
+  y `git diff --check -- packages/apps/esm-epidemiological-surveillance-app`:
+  **PASSED**.
+- `yarn verify:changed --base origin/main --head HEAD`: **NOT RUN**, la corrección
+  permanece sin commit y ese rango no incluye los cambios del directorio de trabajo.
+- Smoke en navegador con backend DEV/QLTY: **NOT RUN**, sin sesión de prueba
+  coordinada. La regresión HMR usa bundles sintéticos y un contexto simulado.
 
 Validación local de edad y búsqueda directa (2026-09-30): `test` PASSED (51 pruebas
 Vitest y 2 comprobaciones HMR), `typescript` PASSED, `lint` PASSED con una advertencia

@@ -56,16 +56,9 @@ describe('buildNewCREDFormWorkspaceProps', () => {
     );
 
     expect(props.encounterUuid).toBe('current-control-encounter');
-    expect(
-      props.handleEncounterCreate?.({
-        obs: [{ uuid: 'clinical-obs', concept: 'clinical-concept', value: 'clinical value' }],
-      }),
-    ).toEqual({
-      obs: [
-        { uuid: 'clinical-obs', concept: 'clinical-concept', value: 'clinical value' },
-        { concept: 'control-number-concept', value: 3 },
-      ],
-    });
+    // Editing submits changed fields; the persisted control observation is not
+    // included in that payload and must not be appended a second time.
+    expect(props.handleEncounterCreate).toBeUndefined();
   });
 
   it('replaces an existing control-number observation instead of duplicating it', () => {

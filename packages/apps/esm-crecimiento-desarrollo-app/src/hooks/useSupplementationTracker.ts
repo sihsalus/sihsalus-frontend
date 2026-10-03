@@ -28,7 +28,7 @@ export function useSupplementationTracker(patientUuid: string): SupplementationR
 
   const url = useMemo(() => {
     if (!patientUuid || !conceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&s=default&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)`;
   }, [patientUuid, conceptUuid]);
 
   const { data, isLoading, error, mutate } = useSWR(url, async (fetchUrl: string) => {

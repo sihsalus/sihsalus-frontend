@@ -31,7 +31,7 @@ export function useStimulationCounseling(patientUuid: string): StimulationCounse
 
   const url = useMemo(() => {
     if (!patientUuid || !counselingUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${counselingUuid}&v=custom:(uuid,value,obsDatetime,display)&sort=desc`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${counselingUuid}&v=custom:(uuid,value,obsDatetime,display)&s=default`;
   }, [patientUuid, counselingUuid]);
 
   const { data, isLoading, error } = useSWR(url, fetcher);

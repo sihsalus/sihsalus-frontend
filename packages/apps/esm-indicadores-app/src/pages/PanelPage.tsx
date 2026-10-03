@@ -6,24 +6,15 @@ import { useTranslation } from 'react-i18next';
 import IndicadorResumenCard from '../components/IndicadorResumenCard';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { useAllIndicadores } from '../features/indicadores/hooks';
+import { currentYear, indicatorYearOptions } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
-
-const MIN_YEAR = 2000;
-
-const currentYear = () => new Date().getFullYear();
 
 const PanelPage: React.FC = () => {
   const { t } = useTranslation();
   const [anio, setAnio] = useState(currentYear());
   const { data, isLoading, error } = useAllIndicadores();
 
-  const years = useMemo(() => {
-    const list: Array<number> = [];
-    for (let year = currentYear(); year >= MIN_YEAR; year -= 1) {
-      list.push(year);
-    }
-    return list;
-  }, []);
+  const years = useMemo(() => indicatorYearOptions(), []);
 
   const activos = useMemo(() => (data ?? []).filter((indicador) => indicador.activo), [data]);
 

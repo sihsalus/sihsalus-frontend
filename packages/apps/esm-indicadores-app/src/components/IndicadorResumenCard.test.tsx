@@ -77,7 +77,7 @@ describe('IndicadorResumenCard', () => {
 
     expect(screen.getByRole('link', { name: 'Control de recién nacido' })).toHaveAttribute(
       'href',
-      '/resultados?indicador=ind-001',
+      '/resultados?indicador=ind-001&anio=2020',
     );
   });
 

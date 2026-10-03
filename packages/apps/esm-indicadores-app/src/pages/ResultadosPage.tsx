@@ -29,14 +29,13 @@ import { indicatorsErrorMessageOptions } from '../features/indicadores/error-han
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { isBatchTotalFailure } from '../features/resultados/batch-results';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
+import { currentYear, indicatorYearOptions, isSelectableYear } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
 
 type SummaryState =
   | { kind: 'calcular'; result: BatchCalcularNowResponse }
   | { kind: 'recalcular'; result: RecalcularAnioResponse; anio: number }
   | null;
-
-const currentYear = () => new Date().getFullYear();
 
 const toDateString = (date: Date | null): string | undefined => (date ? date.toISOString().slice(0, 10) : undefined);
 
@@ -63,6 +62,9 @@ const ResultadosPage: React.FC = () => {
 
   const currentYearValue = currentYear();
   const periodRangeInvalid = Boolean(periodoInicio && periodoFin && periodoInicio > periodoFin);
+  const yearParam = Number(searchParams.get('anio'));
+  const selectedYear = isSelectableYear(yearParam) ? yearParam : currentYearValue;
+  const yearOptions = useMemo(() => indicatorYearOptions(), []);
 
   const selectIndicador = (value: string) => {
     setPage(1);
@@ -74,6 +76,17 @@ const ResultadosPage: React.FC = () => {
         } else {
           next.delete('indicador');
         }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const selectYear = (year: number) => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set('anio', String(year));
         return next;
       },
       { replace: true },
@@ -112,12 +125,12 @@ const ResultadosPage: React.FC = () => {
       indicadorId
         ? {
             indicador_id: indicadorId,
-            anio: currentYearValue,
+            anio: selectedYear,
             granularity,
             include_meta: true,
           }
         : null,
-    [indicadorId, granularity, currentYearValue],
+    [indicadorId, granularity, selectedYear],
   );
 
   const { data: seriesData, isLoading: seriesLoading, error: seriesError } = useResultadosSeries(seriesParams);
@@ -418,31 +431,46 @@ const ResultadosPage: React.FC = () => {
             <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
           ))}
         </Select>
-        <DatePicker
-          datePickerType="single"
-          dateFormat="Y-m-d"
-          value={periodoInicio ?? undefined}
-          onChange={(dates: Date[]) => {
-            setPage(1);
-            setPeriodoInicio(dates[0] ?? null);
-          }}
-        >
-          <DatePickerInput id="resultado-desde" labelText={t('from', 'Desde')} />
-        </DatePicker>
-        <DatePicker
-          datePickerType="single"
-          dateFormat="Y-m-d"
-          value={periodoFin ?? undefined}
-          onChange={(dates: Date[]) => {
-            setPage(1);
-            setPeriodoFin(dates[0] ?? null);
-          }}
-        >
-          <DatePickerInput id="resultado-hasta" labelText={t('to', 'Hasta')} />
-        </DatePicker>
+        {viewMode === 'series' ? (
+          <Select
+            id="resultado-anio"
+            labelText={t('seriesYear', 'Año de la serie')}
+            value={selectedYear}
+            onChange={(event) => selectYear(Number(event.target.value))}
+          >
+            {yearOptions.map((year) => (
+              <SelectItem key={year} value={year} text={String(year)} />
+            ))}
+          </Select>
+        ) : (
+          <>
+            <DatePicker
+              datePickerType="single"
+              dateFormat="Y-m-d"
+              value={periodoInicio ?? undefined}
+              onChange={(dates: Date[]) => {
+                setPage(1);
+                setPeriodoInicio(dates[0] ?? null);
+              }}
+            >
+              <DatePickerInput id="resultado-desde" labelText={t('from', 'Desde')} />
+            </DatePicker>
+            <DatePicker
+              datePickerType="single"
+              dateFormat="Y-m-d"
+              value={periodoFin ?? undefined}
+              onChange={(dates: Date[]) => {
+                setPage(1);
+                setPeriodoFin(dates[0] ?? null);
+              }}
+            >
+              <DatePickerInput id="resultado-hasta" labelText={t('to', 'Hasta')} />
+            </DatePicker>
+          </>
+        )}
       </div>
 
-      {periodRangeInvalid ? (
+      {periodRangeInvalid && viewMode === 'historical' ? (
         <InlineNotification
           kind="error"
           lowContrast

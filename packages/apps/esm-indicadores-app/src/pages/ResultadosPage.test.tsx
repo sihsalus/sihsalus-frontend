@@ -154,6 +154,69 @@ describe('ResultadosPage series granularity', () => {
     expect(screen.getByText('2026-01')).toBeInTheDocument();
   });
 
+  it('uses the ?anio query parameter as the series year', () => {
+    mockUseResultadosSeries.mockReturnValue({
+      data: monthlySeries,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    renderWithSwr(
+      <MemoryRouter initialEntries={['/results?indicador=ind-001&anio=2024']}>
+        <ResultadosPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Año de la serie')).toHaveValue('2024');
+    const lastSeriesParams = mockUseResultadosSeries.mock.calls[mockUseResultadosSeries.mock.calls.length - 1][0];
+    expect(lastSeriesParams).toMatchObject({ indicador_id: 'ind-001', anio: 2024 });
+  });
+
+  it('ignores an out-of-range ?anio value and falls back to the current year', () => {
+    mockUseResultadosSeries.mockReturnValue({
+      data: monthlySeries,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    renderWithSwr(
+      <MemoryRouter initialEntries={['/results?indicador=ind-001&anio=1990']}>
+        <ResultadosPage />
+      </MemoryRouter>,
+    );
+
+    const lastSeriesParams = mockUseResultadosSeries.mock.calls[mockUseResultadosSeries.mock.calls.length - 1][0];
+    expect(lastSeriesParams).toMatchObject({ anio: new Date().getFullYear() });
+  });
+
+  it('shows the year selector only in the series view and the date filters only in the historical view', () => {
+    mockUseResultadosSeries.mockReturnValue({
+      data: monthlySeries,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    renderPage();
+
+    // Series view (default): year selector, no date filters
+    expect(screen.getByLabelText('Año de la serie')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Desde')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Hasta')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Histórico'));
+
+    // Historical view: date filters, no year selector
+    expect(screen.getByLabelText('Desde')).toBeInTheDocument();
+    expect(screen.getByLabelText('Hasta')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Año de la serie')).not.toBeInTheDocument();
+  });
+
   it('renders monthly series rows with periodo_label and valor columns', () => {
     mockUseResultadosSeries.mockReturnValue({
       data: monthlySeries,

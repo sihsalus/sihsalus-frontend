@@ -249,6 +249,7 @@
   "selectVersion": "Select a version",
   "semiannual": "Semi-annual",
   "seriesTableAria": "Time series — {{granularity}}",
+  "seriesYear": "Series year",
   "sex": "Sex",
   "sqlPeriod": "Period: {{inicio}} - {{fin}}",
   "sqlPreviewFailed": "Could not generate the SQL preview.",

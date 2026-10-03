@@ -452,6 +452,8 @@
     {
       "name": "patient-chart-well-child-care-forms",
       "group": "patient-chart",
+      "icon": "credFormActionButton",
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar",
       "order": 8,
       "width": "extra-wide",
       "canMaximize": true

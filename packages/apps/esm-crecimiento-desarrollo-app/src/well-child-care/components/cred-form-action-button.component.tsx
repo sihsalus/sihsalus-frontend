@@ -1,34 +1,44 @@
-import { ActionMenuButton, DocumentIcon } from '@openmrs/esm-framework';
-import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { ActionMenuButton2, DocumentIcon, UserHasAccess } from '@openmrs/esm-framework';
+import {
+  type PatientChartWorkspaceActionButtonProps,
+  usePatientChartStore,
+  useStartVisitIfNeeded,
+} from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCREDSchedule } from '../../hooks/useCREDSchedule';
+import { credCourseLifeEditPrivilege } from '../../constants';
 
-interface CREDFormActionButtonProps {
-  patientUuid: string;
-}
-
-const CREDFormActionButton: React.FC<CREDFormActionButtonProps> = ({ patientUuid }) => {
+const CREDFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
-  const { nextDueControl } = useCREDSchedule(patientUuid);
-  const launchCREDFormsWorkspace = useLaunchWorkspaceRequiringVisit<{
-    control: typeof nextDueControl;
-    workspaceTitle: string;
-  }>(patientUuid, 'wellchild-control-form');
+  const chart = usePatientChartStore();
+  const patientUuid = groupProps?.patientUuid ?? chart.patientUuid;
+  const patientChartGroupProps =
+    groupProps ??
+    (patientUuid
+      ? {
+          patient: chart.patient,
+          patientUuid,
+          visitContext: chart.visitContext,
+          mutateVisitContext: chart.mutateVisitContext,
+        }
+      : null);
+  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
+
+  if (!patientUuid) return null;
 
   return (
-    <ActionMenuButton
-      getIcon={(props: ComponentProps<typeof DocumentIcon>) => <DocumentIcon {...props} />}
-      label={t('credForms', 'Formularios Crecimiento y Desarrollo')}
-      iconDescription={t('credForms', 'Formularios Crecimiento y Desarrollo')}
-      handler={() =>
-        launchCREDFormsWorkspace({
-          control: nextDueControl,
-          workspaceTitle: t('newCredEncounter', 'Nuevo Control Crecimiento y Desarrollo'),
-        })
-      }
-      type={'cred-form'}
-    />
+    <UserHasAccess privilege={credCourseLifeEditPrivilege}>
+      <ActionMenuButton2
+        icon={(props: ComponentProps<typeof DocumentIcon>) => <DocumentIcon {...props} />}
+        label={t('credForms', 'Formularios Crecimiento y Desarrollo')}
+        workspaceToLaunch={{
+          workspaceName: 'wellchild-control-form',
+          workspaceProps: { patientUuid },
+          groupProps: patientChartGroupProps,
+        }}
+        onBeforeWorkspaceLaunch={startVisitIfNeeded}
+      />
+    </UserHasAccess>
   );
 };
 

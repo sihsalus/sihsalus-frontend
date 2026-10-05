@@ -65,7 +65,7 @@
     "@openmrs/esm-styleguide": "workspace:*",
     "@rspack/cli": "2.2.8",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.2",
+    "@swc/core": "1.16.13",
     "@types/file-saver": "^2.0.5",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",

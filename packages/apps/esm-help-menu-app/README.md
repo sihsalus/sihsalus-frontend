@@ -14,6 +14,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - No administra datos clínicos ni flujos operativos del paciente.
 - No sustituye la navegación principal del producto.
 - Solo expone opciones de asistencia contextual y de usuario.
+- Reutiliza el acceso configurado a Notas de versión en el modal de Tutoriales.
 
 ## Integraciones
 

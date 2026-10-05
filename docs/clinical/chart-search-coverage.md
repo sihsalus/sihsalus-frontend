@@ -27,7 +27,7 @@ clínico quedan fuera de la búsqueda de contenido.
 
 | Accesos del chart                                                       | Datos por indexar                                                                  | Estado                                                         |
 | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Resumen, Antecedentes                                                   | Nombre, tipo, estado y fecha de inicio de problemas y antecedentes en OpenMRS REST | Proveedor implementado; destino exacto y aceptación pendientes |
+| Resumen, Antecedentes                                                   | Nombre, tipo, estado y fecha de inicio de problemas y antecedentes en OpenMRS REST | Proveedor y destino exacto implementados; aceptación pendiente |
 | Signos vitales y biometría                                              | Observaciones y series temporales                                                  | Pendiente                                                      |
 | Consulta externa, Consultas                                             | Visitas, encounters, diagnósticos, notas y formularios                             | Pendiente                                                      |
 | Alergias                                                                | Alergias e intolerancias                                                           | Pendiente                                                      |

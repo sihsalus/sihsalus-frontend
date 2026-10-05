@@ -50,6 +50,7 @@
   "antecedentVoidReasonTooLong": "The reason must contain at most 255 characters.",
   "cancel": "Cancel",
   "checkFilters": "Check the filters above",
+  "clinicalSearchTargetUnavailable": "This clinical record is no longer available.",
   "clinicalProviderRequiredForAntecedent": "Your session is not linked to a clinical provider. Sign in with a clinical account and try again.",
   "clinicalStatus": "Clinical status",
   "clinicalStatusRequired": "A clinical status is required",

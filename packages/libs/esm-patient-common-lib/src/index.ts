@@ -15,6 +15,7 @@ export * from './antecedents/use-condition-form-lifecycle';
 export * from './antecedents/use-condition-pagination';
 export * from './antecedents/use-condition-table-sorting';
 export * from './cards';
+export * from './clinical-search/clinical-search-target';
 export * from './clinical-view-group/clinical-view-group.resource';
 export { createClinicalDashboardGroup } from './clinical-view-group/createDashboardGroup';
 export { evaluateShowWhenExpression } from './clinical-view-group/evaluate-show-when-expression';

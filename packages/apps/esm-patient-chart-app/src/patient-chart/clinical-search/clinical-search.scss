@@ -9,6 +9,17 @@
   margin-top: layout.$spacing-03;
 }
 
+.resultLink {
+  background: none;
+  border: 0;
+  color: var(--cds-link-primary);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+}
+
 .results {
   display: grid;
   gap: layout.$spacing-03;

@@ -78,7 +78,7 @@
     "react-i18next": "^17.0.11",
     "react-is": "^19.3.0",
     "react-router-dom": "7.18.4",
-    "rxjs": "^6.6.7",
+    "rxjs": "^7.8.2",
     "sass": "^1.105.1",
     "single-spa": "^6.0.3",
     "swr": "^2.5.1",

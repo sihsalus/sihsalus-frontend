@@ -83,6 +83,14 @@ versiones corregidas compatibles y las pruebas confirmen su comportamiento.
 
 ## Cómo validar cambios a estos contratos
 
+`yarn validate:workspaces` también comprueba que los módulos que importan
+`fhirBaseUrl`, `useFhirFetchAll` o `useFhirPagination` del framework declaren
+FHIR2 en `routes.json`. La verificación inspecciona imports TypeScript para no
+confundir un servidor FHIR externo configurado por el módulo (como DYAKU) con
+FHIR2 de OpenMRS. La lista de tareas declara FHIR2 porque lee `PlanDefinition`
+para sus plantillas. Declarar la dependencia no valida por sí mismo los recursos
+ni los permisos del backend en DEV/QLTY.
+
 Ejecutar la instalación y los scripts según [desarrollo](README.md) y
 [pruebas](testing.md). No se requieren overrides de `YARN_NODE_LINKER`,
 `YARN_NM_MODE` ni `TURBO_ENV_MODE` para usar la configuración del repositorio.

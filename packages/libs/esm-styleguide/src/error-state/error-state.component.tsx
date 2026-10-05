@@ -1,8 +1,8 @@
 import { Layer, Tile } from '@carbon/react';
 import { getUserFacingErrorMessage, logError } from '@openmrs/esm-error-handling';
+import { useLayoutType } from '@openmrs/esm-react-utils';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import React, { useEffect, useRef } from 'react';
-import { CardHeader } from '../cards';
 import styles from './error-state.module.scss';
 
 export interface ErrorStateProps {
@@ -13,6 +13,7 @@ export interface ErrorStateProps {
 }
 
 export const ErrorState: React.FC<ErrorStateProps> = ({ error, headerTitle }) => {
+  const isTablet = useLayoutType() === 'tablet';
   const lastLoggedError = useRef<unknown>(undefined);
   const errorMessage = getUserFacingErrorMessage(error, getCoreTranslation('errorLoadingInformation'), {
     log: false,
@@ -28,7 +29,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ error, headerTitle }) =>
   return (
     <Layer>
       <Tile className={styles.tile}>
-        <CardHeader title={headerTitle} />
+        <div className={isTablet ? styles.tabletHeading : styles.desktopHeading}>
+          <h4>{headerTitle}</h4>
+        </div>
         <p className={styles.errorMessage}>{errorMessage}</p>
       </Tile>
     </Layer>

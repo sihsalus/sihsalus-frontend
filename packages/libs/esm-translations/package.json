@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-translations",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "description": "O3 Framework module for translation support",
   "type": "module",
@@ -70,5 +70,5 @@
     "i18next-parser": "^9.3.0",
     "rimraf": "^6.1.3"
   },
-  "stableVersion": "9.0.2"
+  "stableVersion": "10.0.0"
 }

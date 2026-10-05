@@ -58,9 +58,10 @@ versiones instaladas para esos singletons y para `react-router-dom`; las
 resoluciones del shell evitan compilar copias de las generaciones anteriores.
 
 Los consumidores con un peer comodín del framework usan la versión exacta
-instalada al generar Module Federation, incluida su etiqueta de prerelease.
-El evaluador de Webpack no acepta `9.0.3-pre.4728` con `>=0.0.0-0`. No sustituir
-el contrato por `requiredVersion: false` ni suprimir advertencias de consola.
+instalada al generar Module Federation. El app-shell 10.0.0 conserva un build
+Webpack controlado por el repositorio para generar el service worker clínico:
+su configuración Rspack de npm no emite ese artefacto. No sustituir el contrato
+por `requiredVersion: false` ni suprimir advertencias de consola.
 Las pruebas de build verifican los rangos con el evaluador del runtime y
 comprueban que los peers de los workspaces acepten las dependencias instaladas.
 

@@ -28,7 +28,7 @@ packages/tooling/scripts/
 e2e/                                    # Playwright E2E tests
 ```
 
-> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch`).
+> **Note:** OpenMRS core packages use version 10.0.0. `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-10.0.0-source-build.patch`).
 
 ## Architecture
 

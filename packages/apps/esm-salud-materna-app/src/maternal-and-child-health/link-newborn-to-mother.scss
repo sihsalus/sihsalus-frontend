@@ -1,0 +1,49 @@
+@use "@carbon/layout";
+
+.linkNewbornActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: layout.$spacing-04;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.linkedChildren {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.linkedChildren ul {
+  margin: 0;
+  padding-inline-start: layout.$spacing-05;
+}
+
+.patientSearchResults {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  max-height: 16rem;
+  overflow-y: auto;
+  border: 0;
+  padding: 0;
+}
+
+.patientSearchResults legend {
+  margin-bottom: layout.$spacing-03;
+}
+
+.patientSearchResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.selectedPatientSummary {
+  font-weight: 600;
+}

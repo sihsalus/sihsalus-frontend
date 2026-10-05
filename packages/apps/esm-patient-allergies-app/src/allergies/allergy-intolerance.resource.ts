@@ -23,12 +23,12 @@ import {
 
 export function useAllergies(patientUuid: string): UseAllergies {
   const { concepts } = useConfig<AllergiesConfigObject>();
-  const allergiesUrl = `${restBaseUrl}/patient/${patientUuid}/allergy?v=full`;
+  const allergiesUrl = `${restBaseUrl}/patient/${encodeURIComponent(patientUuid)}/allergy?v=full&limit=100&totalCount=true`;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<
     { data: RestAllergyResponse | RestAllergy[] | FHIRAllergyResponse },
     Error
-  >(patientUuid ? allergiesUrl : null, openmrsFetch);
+  >(patientUuid ? allergiesUrl : null, fetchAllergies);
 
   const formattedAllergies = data?.data
     ? getAllergyResources(data.data)
@@ -43,6 +43,77 @@ export function useAllergies(patientUuid: string): UseAllergies {
     isValidating,
     mutate,
   };
+}
+
+type AllergyPayload = RestAllergyResponse | RestAllergy[] | FHIRAllergyResponse;
+
+function nextAllergyPageUrl(uri: string, current: string, initial: string): string {
+  const page = new URL(uri, current);
+  const endpoint = new URL(initial, window.location.href);
+  if (
+    !['http:', 'https:'].includes(page.protocol) ||
+    page.username ||
+    page.password ||
+    page.pathname !== endpoint.pathname ||
+    page.searchParams.getAll('v').some((value) => value !== 'full')
+  ) {
+    throw new Error('Invalid allergy pagination link.');
+  }
+  // REST can advertise its internal host behind a frontend proxy.
+  page.host = endpoint.host;
+  page.protocol = endpoint.protocol;
+  page.hash = '';
+  page.searchParams.set('v', 'full');
+  page.searchParams.set('totalCount', 'true');
+  if (!page.searchParams.has('limit')) page.searchParams.set('limit', '100');
+  page.searchParams.sort();
+  return page.toString();
+}
+
+/** A single SWR value is complete only after every REST page has loaded. */
+export async function fetchAllergies(url: string): Promise<{ data: AllergyPayload }> {
+  const records = new Map<string, RestAllergy>();
+  const visited = new Set<string>();
+  let next: string | undefined = url;
+  let total: number | undefined;
+
+  while (next) {
+    const current = new URL(next, window.location.href).toString();
+    if (visited.has(current)) throw new Error('The allergy list contains a pagination cycle.');
+    visited.add(current);
+    const response = await openmrsFetch<AllergyPayload>(next, { rejectOnAuthFailure: true });
+    if (response.status === 204) throw new Error('The allergy status is unknown.');
+    const page = response.data;
+    if (Array.isArray(page) || (page && 'entry' in page)) {
+      if (visited.size !== 1) throw new Error('The allergy pagination response changed format.');
+      return { data: page };
+    }
+    if (!page || !('results' in page) || !Array.isArray(page.results)) {
+      throw new Error('Invalid allergy response.');
+    }
+    if (
+      page.totalCount !== undefined &&
+      (!Number.isInteger(page.totalCount) || page.totalCount < 0 || (total !== undefined && page.totalCount !== total))
+    ) {
+      throw new Error('The allergy list changed while loading.');
+    }
+    total ??= page.totalCount;
+    for (const allergy of page.results) {
+      if (!allergy || typeof allergy.uuid !== 'string' || !allergy.uuid || records.has(allergy.uuid)) {
+        throw new Error('Invalid or repeated allergy in paginated response.');
+      }
+      records.set(allergy.uuid, allergy);
+    }
+    if (page.links !== undefined && !Array.isArray(page.links)) throw new Error('Invalid allergy pagination links.');
+    const nextLinks = page.links?.filter((link) => link?.rel === 'next') ?? [];
+    if (nextLinks.length > 1 || (nextLinks.length === 1 && (!nextLinks[0].uri || page.results.length === 0))) {
+      throw new Error('Invalid allergy pagination link.');
+    }
+    next = nextLinks[0]?.uri ? nextAllergyPageUrl(nextLinks[0].uri, current, url) : undefined;
+  }
+
+  if (total !== undefined && total !== records.size) throw new Error('The allergy list is incomplete.');
+  return { data: { results: [...records.values()] } };
 }
 
 function getAllergyResources(

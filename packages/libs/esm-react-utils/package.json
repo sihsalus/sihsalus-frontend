@@ -83,7 +83,7 @@
   "devDependencies": {
     "@openmrs/esm-api": "workspace:*",
     "@openmrs/esm-config": "workspace:*",
-    "@openmrs/esm-context": "9.0.3-pre.4728",
+    "@openmrs/esm-context": "10.0.0",
     "@openmrs/esm-emr-api": "workspace:*",
     "@openmrs/esm-error-handling": "workspace:*",
     "@openmrs/esm-feature-flags": "workspace:*",

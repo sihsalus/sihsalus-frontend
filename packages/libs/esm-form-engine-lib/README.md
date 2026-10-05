@@ -103,6 +103,24 @@ placeholder. Concept and referenced-form reads use the existing authorized
 endpoints. This is a schema preview, not a simulation of clinical submission or
 patient-dependent calculations.
 
+### Observation field identity and encounter roles
+
+Observation initialization first matches the persisted field path and concept.
+The legacy concept fallback applies only to observations without a field path;
+it must never claim a value identified as belonging to a different field. This
+prevents empty conditional fields from voiding another field's observation when
+their published schema shares a concept. Existing UUIDs and original schemas
+remain unchanged; this safeguard does not resolve clinical terminology debt.
+
+Checkboxes and searchable multi-selects derive their selection from the current
+form value. Loading an existing encounter or resetting a form must update the
+display without submitting a change; removing one answer preserves the others.
+The input must not maintain a second copy of the persisted selection.
+
+Encounter role suggestions read the complete active catalog and filter partial
+names locally. OpenMRS' `q` search can require an exact name. A failed or repeated
+page rejects the lookup rather than presenting an incomplete catalog.
+
 ## Documentation
 
 Read the full docs in the OpenMRS Wiki [here](https://openmrs.atlassian.net/wiki/spaces/projects/pages/68747273/O3+Form+Docs).

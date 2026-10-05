@@ -53,10 +53,8 @@ export function buildCREDFormWorkspaceProps(
   onFormSubmitted: CREDFormPostResponse,
   controlIdentity: CREDControlIdentity = {},
 ) {
-  const shouldPersistControlNumber = isValidControlIdentity(
-    controlIdentity.controlNumber,
-    controlIdentity.controlNumberConceptUuid,
-  );
+  const shouldPersistControlNumber =
+    !encounterUuid && isValidControlIdentity(controlIdentity.controlNumber, controlIdentity.controlNumberConceptUuid);
 
   return {
     form,

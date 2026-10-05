@@ -40,7 +40,6 @@ import NeonatalCounseling from './well-child-care/components/neonatal-counseling
 import NeonatalEvaluation from './well-child-care/components/neonatal-evaluation/neonatal-evaluation.component';
 import PregnancyBirthTable from './well-child-care/components/neonatal-register/detalles-embarazo/pregnancy-table.component';
 import BirthDataTable from './well-child-care/components/neonatal-register/detalles-nacimiento/birth-date.component';
-import LabourHistory from './well-child-care/components/neonatal-register/labour-history/labour-history.component';
 import NewbornBalanceOverview from './well-child-care/components/newborn-monitoring/newborn balance/balance-overview.component';
 import NewbornBiometricsBase from './well-child-care/components/newborn-monitoring/newborn biometrics/biometrics-base.component';
 import ScreeningIndicators from './well-child-care/components/screening/screening-indicators.component';
@@ -112,7 +111,9 @@ export const neonatalAttentionChart = getSyncLifecycle(NeonatalAttention, option
 export const neonatalCounselingChart = getSyncLifecycle(NeonatalCounseling, options);
 export const neonatalEvaluationChart = getSyncLifecycle(NeonatalEvaluation, options);
 export const neonatalRegisterBirth = getSyncLifecycle(BirthDataTable, options);
-export const neonatalRegisterChart = getSyncLifecycle(LabourHistory, options);
+// Preserve the lifecycle name for custom slot configurations, using the child's
+// perinatal form rather than the mother's obstetric encounter.
+export const neonatalRegisterChart = getSyncLifecycle(PregnancyBirthTable, options);
 export const pregnancyDetails = getSyncLifecycle(PregnancyBirthTable, options);
 
 // Newborn Monitoring

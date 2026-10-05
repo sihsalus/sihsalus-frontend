@@ -318,7 +318,7 @@ export function findObsByFormField(obsList: OpenmrsObs[], claimedObsIds: string[
 
   if (!obs.length) {
     const obsByConcept = obsList.filter(
-      (candidate) => getResourceUuid(candidate.concept) === field.questionOptions.concept,
+      (candidate) => !candidate.formFieldPath && getResourceUuid(candidate.concept) === field.questionOptions.concept,
     );
     return claimedObsIds.length
       ? obsByConcept.filter((candidate) => !claimedObsIds.includes(candidate.uuid))

@@ -57,7 +57,7 @@ export function useFeedingAssessment(patientUuid: string): FeedingAssessmentResu
 
   const feedingUrl = useMemo(() => {
     if (!patientUuid || !cn?.feedingAssessmentConceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${cn.feedingAssessmentConceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&sort=desc`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${cn.feedingAssessmentConceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&s=default`;
   }, [patientUuid, cn?.feedingAssessmentConceptUuid]);
 
   const { data: feedingData, isLoading: feedingLoading, error: feedingError } = useSWR(feedingUrl, fetcher);

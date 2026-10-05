@@ -18,8 +18,6 @@ export { useCephaloCaudalNeurologicalEvaluation } from './useCephaloCaudalNeurol
 export { useCREDFormLauncher } from './useCREDFormLauncher';
 export { useCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
 export { useCREDSchedule } from './useCREDSchedule';
-// Prenatal context (used by neonatal register)
-export { useCurrentPregnancy } from './useCurrentPregnancy';
 export { default as useEncountersCRED } from './useEncountersCRED';
 // Child nutrition
 export { useFeedingAssessment } from './useFeedingAssessment';

@@ -31,7 +31,7 @@ export function useStimulationSessions(patientUuid: string): StimulationSessions
 
   const devEvalUrl = useMemo(() => {
     if (!patientUuid || !devEvalUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${devEvalUuid}&v=custom:(uuid,value,obsDatetime,display)&sort=desc`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${devEvalUuid}&v=custom:(uuid,value,obsDatetime,display)&s=default`;
   }, [patientUuid, devEvalUuid]);
 
   const { data: devData, isLoading, error } = useSWR(devEvalUrl, fetcher);

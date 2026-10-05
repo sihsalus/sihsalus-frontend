@@ -11849,12 +11849,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"braces@npm:^3.0.3, braces@npm:~3.0.2":
+"braces@npm:3.0.3":
   version: 3.0.3
   resolution: "braces@npm:3.0.3"
   dependencies:
     fill-range: "npm:^7.1.1"
   checksum: 10c0/7c6dfd30c338d2997ba77500539227b9d1f85e388a5f43220865201e407e076783d0881f2d297b9f80951b4c957fcf0b51c1d2d24227631643c3f7c284b0aa04
+  languageName: node
+  linkType: hard
+
+"braces@patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch":
+  version: 3.0.3
+  resolution: "braces@patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch::version=3.0.3&hash=232338"
+  dependencies:
+    fill-range: "npm:^7.1.1"
+  checksum: 10c0/a9a2390d1e7e897b2a06cd293ae7cf4c3a16310151ba6e2963c992c577bfcb9b84261c1431502b2eeb400d444071912d796535682848e42b70c6f65158254d00
   languageName: node
   linkType: hard
 
@@ -15776,10 +15785,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-cache-semantics@npm:^4.1.1, http-cache-semantics@npm:^4.2.0":
+"http-cache-semantics@npm:4.2.0":
   version: 4.2.0
   resolution: "http-cache-semantics@npm:4.2.0"
   checksum: 10c0/45b66a945cf13ec2d1f29432277201313babf4a01d9e52f44b31ca923434083afeca03f18417f599c9ab3d0e7b618ceb21257542338b57c54b710463b4a53e37
+  languageName: node
+  linkType: hard
+
+"http-cache-semantics@patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch":
+  version: 4.2.0
+  resolution: "http-cache-semantics@patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch::version=4.2.0&hash=e3f0fc"
+  checksum: 10c0/3fc1e7d605a9f2976df922bb757c5eed99978067f4d380a6ba46ebe103570d9a0263002957ef3a1bcd3bc6fe22a76ec66d0ed86c1df408fd4d6348b7fe0cc8c9
   languageName: node
   linkType: hard
 

@@ -1,10 +1,11 @@
-import { Extension, ExtensionSlot, useExtensionSlotMeta } from '@openmrs/esm-framework';
+import { Extension, ExtensionSlot, useConfig, useExtensionSlotMeta } from '@openmrs/esm-framework';
 import { launchPatientWorkspace, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { useMemo } from 'react';
 import { useMatch } from 'react-router-dom';
 
 import { dashboardPath } from '../../constants';
+import ClinicalSearch from '../clinical-search/clinical-search';
 
 import styles from './dashboard-view.scss';
 
@@ -32,6 +33,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ dashboard, patientUuid, patient }: DashboardViewProps) {
+  const { clinicalSearchEnabled } = useConfig<{ clinicalSearchEnabled: boolean }>();
   const widgetMetas = useExtensionSlotMeta(dashboard.slot);
   const match = useMatch(dashboardPath);
   const view = match?.params?.view;
@@ -51,6 +53,9 @@ export function DashboardView({ dashboard, patientUuid, patient }: DashboardView
     <>
       <ExtensionSlot state={state} name="top-of-all-patient-dashboards-slot" />
       <div className={styles.dashboardContainer}>
+        {clinicalSearchEnabled && (
+          <ClinicalSearch key={patientUuid} patientUuid={patientUuid} patientId={patient?.id} />
+        )}
         <ExtensionSlot key={dashboard.slot} name={dashboard.slot} className={styles.dashboard}>
           {(extension) => {
             const { fullWidth = false } = widgetMetas[extension.id] || {};

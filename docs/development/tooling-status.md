@@ -64,6 +64,23 @@ el contrato por `requiredVersion: false` ni suprimir advertencias de consola.
 Las pruebas de build verifican los rangos con el evaluador del runtime y
 comprueban que los peers de los workspaces acepten las dependencias instaladas.
 
+## Parches temporales de dependencias
+
+`braces` 3.0.3 y `http-cache-semantics` 4.2.0 tienen avisos de severidad alta
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) y
+[GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp),
+respectivamente. Mientras no haya versiones corregidas compatibles, Yarn aplica
+parches locales a todos los rangos transitivos presentes en `yarn.lock`. El
+primero limita la profundidad de patrones anidados; el segundo impide que
+`max-stale` reutilice respuestas que requieren revalidación por `Set-Cookie`,
+`proxy-revalidate`, `no-cache` o una entrada no almacenable.
+
+`yarn security:audit` ejecuta la auditoría completa de dependencias directas y
+transitivas de severidad alta. Solo acepta estos dos avisos exactos después de
+comprobar las resoluciones y el comportamiento instalado; cualquier otro aviso
+o error de auditoría falla. Retirar los parches y esta excepción cuando existan
+versiones corregidas compatibles y las pruebas confirmen su comportamiento.
+
 ## Cómo validar cambios a estos contratos
 
 Ejecutar la instalación y los scripts según [desarrollo](README.md) y

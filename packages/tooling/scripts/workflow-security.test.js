@@ -13,9 +13,12 @@ test('CI audits every workspace and transitive dependency', () => {
   assert.match(ciWorkflow, /run: yarn security:audit/);
   assert.equal(
     rootManifest.scripts['security:audit'],
-    'yarn validate:react-router && yarn npm audit --all --recursive --severity high',
+    'yarn validate:react-router && node packages/tooling/scripts/audit-patched-dependencies.js',
   );
   assert.doesNotMatch(rootManifest.scripts['security:audit'], /--ignore/);
+  const auditScript = readFileSync(path.join(__dirname, 'audit-patched-dependencies.js'), 'utf8');
+  assert.match(auditScript, /\["npm", "audit", "--all", "--recursive", "--severity", "high", "--json"\]/);
+  assert.doesNotMatch(auditScript, /--ignore|--exclude/);
 });
 
 test('release builds the exact commit that passed CI', () => {

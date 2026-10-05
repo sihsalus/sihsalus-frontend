@@ -40,7 +40,7 @@
     "test:error-exposure-guard": "node --test packages/tooling/scripts/validate-error-exposure.test.js",
     "test:tooling": "node --test \"packages/tooling/scripts/*.test.js\"",
     "test:styles": "yarn workspace @openmrs/rspack-config build && node --test packages/tooling/scripts/styles.browser.spec.js",
-    "security:audit": "yarn validate:react-router && yarn npm audit --all --recursive --severity high",
+    "security:audit": "yarn validate:react-router && node packages/tooling/scripts/audit-patched-dependencies.js",
     "validate:concepts": "node packages/tooling/scripts/validate-concept-existence.js",
     "validate:error-exposure": "node packages/tooling/scripts/validate-error-exposure.js",
     "validate:critical-route-privileges": "node packages/tooling/scripts/validate-critical-route-privileges.js",
@@ -193,6 +193,10 @@
     "@openmrs/esm-routes": "workspace:*",
     "@openmrs/esm-state": "workspace:*",
     "@openmrs/esm-translations": "workspace:*",
-    "@openmrs/esm-utils": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*",
+    "braces@npm:~3.0.2": "patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch",
+    "braces@npm:^3.0.3": "patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch",
+    "http-cache-semantics@npm:^4.1.1": "patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch",
+    "http-cache-semantics@npm:^4.2.0": "patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch"
   }
 }

@@ -5,6 +5,11 @@ import { Type } from '@openmrs/esm-framework';
 // ===============================
 
 export const configSchema = {
+  motherChildRelationshipTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Relationship type UUID used to link a mother to an existing newborn patient',
+    _default: 'e6be4def-dbc8-462a-8714-53da66903cb8',
+  },
   conditionPageSize: {
     _type: Type.Number,
     _description: 'The default page size for the conditions',
@@ -1380,6 +1385,7 @@ export interface AgeRange {
 }
 
 export interface ConfigObject {
+  motherChildRelationshipTypeUuid: string;
   conditionPageSize: number;
   conditionConceptClassUuid: string;
   conditionConceptSets: {

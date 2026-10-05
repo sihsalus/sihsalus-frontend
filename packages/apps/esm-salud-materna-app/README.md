@@ -22,6 +22,31 @@ Cobertura frontend actual:
 - Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
 - Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
 
+En la pantalla de parto, los usuarios con `app:hoja.clinica.partoPuerperio.editar`
+y `Add Relationships` pueden vincular a la madre con un recién nacido que ya
+esté registrado. El flujo busca pacientes existentes, pide confirmar nombre,
+fecha de nacimiento e identificador y crea la relación estándar con la madre en
+`personA` y el hijo en `personB`; no crea historias clínicas nuevas. El tipo de
+relación es configurable mediante `motherChildRelationshipTypeUuid` (por
+defecto `e6be4def-dbc8-462a-8714-53da66903cb8`). La validación previa consulta
+`GET /emrapi/maternal/mothersAndChildren?mother={uuid}` y bloquea el guardado si
+no puede comprobar relaciones existentes, si el vínculo ya existe para esa
+madre o si el recién nacido ya figura como hijo de otra madre.
+
+La búsqueda usa nombre o identificador y requiere tres caracteres; este texto
+solo se envía como consulta y no se persiste ni se recorta. Al cambiar de
+paciente se cierra el selector. Un guardado sin UUID confirmado bloquea nuevos
+intentos hasta cerrar el selector y volver a consultar los vínculos. Estas
+comprobaciones son previas a la escritura: no añaden una restricción transaccional
+contra creaciones simultáneas desde distintos clientes en backend.
+
+Backend/content requerido: EmrApi debe tener configurado el mapeo
+`emr.motherChildRelationshipType` (`org.openmrs.module.emrapi` →
+`org.openmrs.RelationshipType`) al mismo UUID que `motherChildRelationshipTypeUuid`.
+El usuario requiere también `Add Relationships` en backend. Sin este mapeo, el
+endpoint de comprobación que alimenta la sala materna no puede resolver la
+relación, y la UI falla de forma cerrada.
+
 El historial de condiciones comparte lectura, creación, corrección y anulación REST, con paginación completa y estados clínicos precisos. Crear o editar una condición exige un proveedor clínico asociado a la sesión. La creación deriva el registrador de la sesión autenticada; la corrección parcial usa REST y conserva la versión original mediante el versionado de core. Cada versión tiene su autor y fecha de registro; la fecha clínica no cambia si no se edita. El UUID del proveedor no identifica al usuario registrador. Este contrato se ha revisado contra core 2.8.9 y REST 3.5.0; la validación con el backend instalado sigue pendiente. Los límites de persistencia, contenido y auditoría se documentan en el [contrato de antecedentes](../../../docs/clinical/antecedents-data-contract.md).
 
 El grupo Madre Gestante requiere sesión autenticada, acceso a la historia y permiso de lectura de al menos uno de
@@ -50,6 +75,7 @@ Vacíos conocidos:
 - Completar `legendConceptSetUuid` cuando exista el set real en OCL/content.
 - Conectar los componentes placeholder de prevención de cáncer y planificación familiar a hooks SWR reales cuando estén definidos los conceptos clínicos.
 - Probar formularios de salud materna contra backend actualizado: prenatal, postnatal, partograma, planificación familiar y prevención de cáncer.
+- Validar en QLTY con pacientes sintéticos el registro previo del recién nacido, el vínculo madre-hijo, la prevención de duplicados y su lectura en la sala materna. Confirmar que la configuración frontend y el mapeo EmrApi usan el mismo UUID.
 
 ## Validación local
 

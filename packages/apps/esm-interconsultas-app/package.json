@@ -61,7 +61,7 @@
     "@rspack/core": "2.2.8",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "^5.0.2"
   }
 }

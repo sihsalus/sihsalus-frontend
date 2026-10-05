@@ -93,9 +93,9 @@
     "@swc/cli": "0.8.1",
     "@swc/core": "1.16.2",
     "@types/fhir": "0.0.31",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.3",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.23",
@@ -105,7 +105,7 @@
     "typedoc-plugin-markdown": "^4.13.1",
     "typedoc-plugin-no-inherit": "^1.6.1",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "^5.0.2"
   },
   "stableVersion": "9.0.2"

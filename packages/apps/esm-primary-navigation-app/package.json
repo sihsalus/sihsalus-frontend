@@ -66,7 +66,7 @@
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.4",
     "rxjs": "^6.5.3",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "^5.0.2"
   }
 }

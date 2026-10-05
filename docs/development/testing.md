@@ -13,7 +13,7 @@ que su validación esté aprobada en esta rama.
 ```bash
 yarn test                                   # Run all unit tests
 yarn turbo run test --filter='@sihsalus/*' # Test SIH Salus packages only
-yarn test:e2e                               # Run Playwright E2E tests
+yarn test:e2e:suite clinical                # Run the clinical Playwright E2E suite
 yarn test:styles                            # Check compiled CSS/SCSS in Chromium, without a backend
 ```
 

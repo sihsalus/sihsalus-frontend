@@ -13,7 +13,7 @@ unresolved type errors and unvalidated order/visit mutations.
 Neither a documentation change nor a passing root typecheck promotes this suite.
 
 Do not invoke its Playwright config directly to bypass the runner, point it at
-a public demo backend, or use real patients. The root `yarn test:e2e` command
+a public demo backend, or use real patients. The `yarn test:e2e:suite clinical` command
 selects the clinical suite; it does not run Dispensing. The root E2E TypeScript
 configuration also excludes this suite, so its success does not validate these
 files.

@@ -1,6 +1,11 @@
 import { InlineLoading, Search } from '@carbon/react';
-import { formatPartialDate, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { type Condition, getAntecedentTypeLabel, usePatientConditions } from '@openmrs/esm-patient-common-lib';
+import { formatPartialDate, navigate, userHasAccess, useSession } from '@openmrs/esm-framework';
+import {
+  type Condition,
+  getAntecedentTypeLabel,
+  selectClinicalSearchTarget,
+  usePatientConditions,
+} from '@openmrs/esm-patient-common-lib';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,7 +58,22 @@ function ConditionResults({ patientUuid, query }: { patientUuid: string; query: 
       <ul className={styles.results}>
         {matches.map((condition: Condition) => (
           <li key={condition.id}>
-            <strong>{condition.display || condition.nonCodedText}</strong>
+            <button
+              type="button"
+              className={styles.resultLink}
+              onClick={() => {
+                selectClinicalSearchTarget({
+                  kind: 'condition',
+                  patientUuid,
+                  resourceId: condition.id,
+                });
+                navigate({
+                  to: `${globalThis.spaBase}/patient/${encodeURIComponent(patientUuid)}/chart/Antecedentes`,
+                });
+              }}
+            >
+              {condition.display || condition.nonCodedText}
+            </button>
             {condition.antecedentType || condition.categoryText ? (
               <span>
                 {condition.antecedentType
@@ -67,7 +87,10 @@ function ConditionResults({ patientUuid, query }: { patientUuid: string; query: 
             {condition.onsetDateTime ? (
               <span>
                 {t('clinicalSearchOnsetDate', 'Onset: {{date}}', {
-                  date: formatPartialDate(condition.onsetDateTime, { mode: 'wide', time: 'for today' }),
+                  date: formatPartialDate(condition.onsetDateTime, {
+                    mode: 'wide',
+                    time: 'for today',
+                  }),
                 })}
               </span>
             ) : null}

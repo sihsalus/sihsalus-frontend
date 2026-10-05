@@ -16,13 +16,15 @@ import {
 import { AddIcon, formatPartialDate, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   CardHeader,
+  clearClinicalSearchTarget,
   ErrorState,
   getAntecedentTypeLabel,
   launchPatientWorkspace,
   matchesConditionStatusFilter,
+  useClinicalSearchTarget,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConditionTableHeader, useConditions, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
@@ -41,6 +43,9 @@ function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
   const headerTitle = t('antecedents', 'Antecedents');
   const [filter, setFilter] = useState<ConditionStatusFilter>('All');
   const layout = useLayoutType();
+  const searchTarget = useClinicalSearchTarget(patient.id, 'condition');
+  const targetRowRef = useRef<HTMLTableRowElement>(null);
+  const [targetUnavailable, setTargetUnavailable] = useState(false);
   const isTablet = layout === 'tablet';
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
 
@@ -98,7 +103,10 @@ function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
           ? getAntecedentTypeLabel(condition.antecedentType, t)
           : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
-          ? formatPartialDate(condition.onsetDateTime, { mode: 'wide', time: 'for today' })
+          ? formatPartialDate(condition.onsetDateTime, {
+              mode: 'wide',
+              time: 'for today',
+            })
           : '--',
         status: t(condition.clinicalStatus.toLowerCase(), condition.clinicalStatus),
       };
@@ -106,6 +114,30 @@ function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
   }, [filteredConditions, t]);
 
   const { sortedRows, sortRow, onHeaderClick } = useConditionsSorting(headers, tableRows);
+
+  useEffect(() => {
+    if (!searchTarget || isLoading || error || !conditions) {
+      return;
+    }
+
+    if (!conditions.some((condition) => condition.id === searchTarget.resourceId)) {
+      setTargetUnavailable(true);
+      clearClinicalSearchTarget(searchTarget);
+      return;
+    }
+
+    setTargetUnavailable(false);
+    if (!filteredConditions.some((condition) => condition.id === searchTarget.resourceId)) {
+      setFilter('All');
+      return;
+    }
+
+    if (targetRowRef.current) {
+      targetRowRef.current.focus();
+      targetRowRef.current.scrollIntoView?.({ block: 'center' });
+      clearClinicalSearchTarget(searchTarget);
+    }
+  }, [conditions, error, filteredConditions, isLoading, searchTarget]);
 
   const launchConditionsForm = useCallback(() => {
     launchPatientWorkspace(workspaceNamesBySection.antecedents, {
@@ -127,6 +159,9 @@ function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
   if (conditions?.length) {
     return (
       <div className={styles.widgetCard}>
+        {targetUnavailable ? (
+          <p role="status">{t('clinicalSearchTargetUnavailable', 'This clinical record is no longer available.')}</p>
+        ) : null}
         <CardHeader title={headerTitle}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
           <div className={styles.rightMostFlexContainer}>
@@ -206,7 +241,13 @@ function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
                       const matchingCondition = conditions.find((condition) => condition.id === row.id);
                       const { key, ...rowProps } = getRowProps({ row });
                       return (
-                        <TableRow key={key} {...rowProps}>
+                        <TableRow
+                          key={key}
+                          {...rowProps}
+                          ref={searchTarget?.resourceId === row.id ? targetRowRef : undefined}
+                          tabIndex={searchTarget?.resourceId === row.id ? -1 : undefined}
+                          className={searchTarget?.resourceId === row.id ? styles.searchTarget : undefined}
+                        >
                           {row.cells.map((cell) => (
                             <TableCell key={cell.id}>
                               {(cell.value?.content ?? cell.info.header === 'status')
@@ -242,6 +283,9 @@ function ConditionsDetailedTable({ patient }: ConditionsDetailedSummaryProps) {
   }
   return (
     <div className={styles.emptyState}>
+      {targetUnavailable ? (
+        <p role="status">{t('clinicalSearchTargetUnavailable', 'This clinical record is no longer available.')}</p>
+      ) : null}
       <p>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
       {canEdit ? (
         <Button kind="ghost" size="sm" renderIcon={AddIcon} onClick={launchConditionsForm}>

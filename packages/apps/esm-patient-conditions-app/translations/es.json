@@ -50,6 +50,7 @@
   "antecedentVoidReasonTooLong": "El motivo debe contener como máximo 255 caracteres.",
   "cancel": "Cancelar",
   "checkFilters": "Revisar los filtros anteriores",
+  "clinicalSearchTargetUnavailable": "Este registro clínico ya no está disponible.",
   "clinicalProviderRequiredForAntecedent": "Su sesión no está vinculada a un proveedor clínico. Ingrese con una cuenta clínica e inténtelo otra vez.",
   "clinicalStatus": "Estado clínico",
   "clinicalStatusRequired": "Se requiere un estado clínico",

@@ -30,6 +30,11 @@ módulo de condiciones; el chart no mantiene una segunda implementación de
 paginación. La consulta empieza cuando el usuario escribe y no se persiste ni
 se registra en logs. El componente se oculta sin el permiso
 `app:hoja.clinica.condiciones` o si el paciente cargado no coincide con la ruta.
+Cada coincidencia abre `/chart/Antecedentes` y enfoca la fila del registro
+correspondiente. La selección contiene solo el UUID del registro y el del
+paciente, vive en memoria durante la navegación y no añade la consulta a la URL.
+Si el registro desaparece antes de abrirlo, la tabla informa que ya no está
+disponible.
 Una lectura fallida muestra un error sin exponer datos técnicos y nunca se
 presenta como una búsqueda sin resultados. La búsqueda tolera tildes y palabras
 en distinto orden. Aún no incluye visitas, órdenes, medicamentos ni resultados;

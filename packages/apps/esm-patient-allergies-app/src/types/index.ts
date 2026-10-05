@@ -15,6 +15,8 @@ export interface FHIRAllergyResponse {
 
 export interface RestAllergyResponse {
   results?: Array<RestAllergy>;
+  links?: Array<{ rel: string; uri: string }>;
+  totalCount?: number;
 }
 
 export interface RestAllergy {

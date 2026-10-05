@@ -7,6 +7,18 @@ The one stop CLI for using the OpenMRS 3.0 Frontend app.
 This SIH Salus fork requires Node.js 24 or later; use the repository's supported
 Node 24 and Yarn versions for development and validation.
 
+## OpenMRS 10 shell packaging
+
+The framework workspaces and npm app shell use OpenMRS 10.0.0. This local CLI
+remains a 9.0.2 fork because its CommonJS entry point and repository-specific
+Rspack 2 integration differ from the upstream 10.0.0 CLI's ESM implementation.
+The app shell is patched with the repository's source-build configuration so the assembled SPA
+still includes the repository-owned service worker, branded manifest, and safe
+localized startup errors. Validate the patch with
+`node --test packages/tooling/scripts/build-app-shell.test.js`, then build and
+assemble the SPA. The upstream Rspack configuration alone does not emit this
+repository's required service worker.
+
 ## CLI startup contract
 
 The CommonJS entry point creates a parser with the

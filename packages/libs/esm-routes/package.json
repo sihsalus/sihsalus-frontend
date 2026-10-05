@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-routes",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "description": "Utilities for working with the routes registry",
   "type": "module",
@@ -46,12 +46,12 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@openmrs/esm-config": "9.x",
-    "@openmrs/esm-dynamic-loading": "9.x",
-    "@openmrs/esm-extensions": "9.x",
-    "@openmrs/esm-feature-flags": "9.x",
-    "@openmrs/esm-globals": "9.x",
-    "@openmrs/esm-utils": "9.x",
+    "@openmrs/esm-config": "10.x",
+    "@openmrs/esm-dynamic-loading": "10.x",
+    "@openmrs/esm-extensions": "10.x",
+    "@openmrs/esm-feature-flags": "10.x",
+    "@openmrs/esm-globals": "10.x",
+    "@openmrs/esm-utils": "10.x",
     "single-spa": "6.x"
   },
   "devDependencies": {
@@ -76,5 +76,5 @@
     "vitest": "^5.0.3",
     "vitest-fetch-mock": "^0.4.5"
   },
-  "stableVersion": "9.0.2"
+  "stableVersion": "10.0.0"
 }

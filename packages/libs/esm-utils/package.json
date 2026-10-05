@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-utils",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "description": "Helper utilities for OpenMRS",
   "type": "module",
@@ -57,7 +57,7 @@
     "semver": "^7.8.5"
   },
   "peerDependencies": {
-    "@openmrs/esm-globals": "9.x",
+    "@openmrs/esm-globals": "10.x",
     "dayjs": "1.x",
     "i18next": "26.x",
     "rxjs": "6.x"
@@ -82,5 +82,5 @@
     "vite": "8.3.2",
     "vitest": "^5.0.3"
   },
-  "stableVersion": "9.0.2"
+  "stableVersion": "10.0.0"
 }

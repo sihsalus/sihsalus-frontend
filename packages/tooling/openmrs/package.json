@@ -32,7 +32,7 @@
   ],
   "homepage": "https://github.com/openmrs/openmrs-esm-core#readme",
   "dependencies": {
-    "@openmrs/esm-app-shell": "9.0.2",
+    "@openmrs/esm-app-shell": "10.0.0",
     "@openmrs/rspack-config": "workspace:*",
     "@pnpm/npm-conf": "^3.0.3",
     "@rspack/cli": "2.2.8",

@@ -97,8 +97,10 @@
     "undici": "7.29.1",
     "vite": "8.3.2",
     "vitest": "5.0.3",
+    "webpack": "^5.99.9",
     "workbox-routing": "7.4.1",
-    "workbox-strategies": "7.4.1"
+    "workbox-strategies": "7.4.1",
+    "workbox-webpack-plugin": "^6.6.1"
   },
   "lint-staged": {
     "*.{css,js,json,tsx}": "biome check --write",
@@ -168,7 +170,6 @@
     "turbo@npm:^2.5.2": "npm:2.11.4",
     "turbo@npm:^2.9.1": "npm:2.11.4",
     "turbo@npm:^2.9.14": "npm:2.11.4",
-    "@openmrs/esm-app-shell@npm:9.0.2": "patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch",
     "@openmrs/esm-offline": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@openmrs/esm-api": "workspace:*",
@@ -190,6 +191,7 @@
     "braces@npm:~3.0.2": "patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch",
     "braces@npm:^3.0.3": "patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch",
     "http-cache-semantics@npm:^4.1.1": "patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch",
-    "http-cache-semantics@npm:^4.2.0": "patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch"
+    "http-cache-semantics@npm:^4.2.0": "patch:http-cache-semantics@npm%3A4.2.0#~/.yarn/patches/http-cache-semantics-npm-4.2.0-fadacfb3ad.patch",
+    "@openmrs/esm-app-shell@npm:10.0.0": "patch:@openmrs/esm-app-shell@npm%3A10.0.0#./.yarn/patches/openmrs-esm-app-shell-npm-10.0.0-source-build.patch"
   }
 }

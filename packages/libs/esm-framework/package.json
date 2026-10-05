@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-framework",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "type": "module",
   "module": "dist/index.js",
@@ -108,5 +108,5 @@
     "vite": "8.3.2",
     "vitest": "^5.0.3"
   },
-  "stableVersion": "9.0.2"
+  "stableVersion": "10.0.0"
 }

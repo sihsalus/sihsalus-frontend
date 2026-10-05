@@ -13,3 +13,6 @@ Callers that associate a document with a clinical record may also pass an `Attac
 persisted encounter UUID plus a deterministic form-field namespace and path. The patient UUID, encounter UUID, and
 form-field metadata must be validated by the owning workflow; omitting the context preserves the existing
 patient-level attachment behavior.
+
+Location and visit-type observables import operators from the public
+`rxjs/operators` entry point, compatible with the monorepo's RxJS 7 runtime.

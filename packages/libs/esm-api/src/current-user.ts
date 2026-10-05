@@ -91,7 +91,10 @@ function getCurrentUser(opts = { includeAuthStatus: true }): Observable<Session 
         if (opts.includeAuthStatus) {
           subscriber.next(state.session);
         } else {
-          subscriber.next(state.session?.user);
+          const user = state.session?.user;
+          if (user) {
+            subscriber.next(user);
+          }
         }
       }
     };

@@ -9,8 +9,10 @@ Node 24 and Yarn versions for development and validation.
 
 ## OpenMRS 10 shell packaging
 
-The local CLI and framework workspaces use OpenMRS 10.0.0. The npm app shell is
-patched with the repository's source-build configuration so the assembled SPA
+The framework workspaces and npm app shell use OpenMRS 10.0.0. This local CLI
+remains a 9.0.2 fork because its CommonJS entry point and repository-specific
+Rspack 2 integration differ from the upstream 10.0.0 CLI's ESM implementation.
+The app shell is patched with the repository's source-build configuration so the assembled SPA
 still includes the repository-owned service worker, branded manifest, and safe
 localized startup errors. Validate the patch with
 `node --test packages/tooling/scripts/build-app-shell.test.js`, then build and

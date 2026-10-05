@@ -56,6 +56,9 @@ Los peers de traducción siguen las versiones de runtime del monorepo:
 `i18next 26` y `react-i18next 17`. El parche existente del app-shell usa las
 versiones instaladas para esos singletons y para `react-router-dom`; las
 resoluciones del shell evitan compilar copias de las generaciones anteriores.
+Las bibliotecas `@openmrs/esm-*` y el app-shell usan 10.0.0. El CLI local
+`openmrs` y `@openmrs/rspack-config` conservan 9.0.2: sus forks CommonJS y
+Rspack 2 no incorporan la reescritura ESM del tooling upstream 10.0.0.
 
 Los consumidores con un peer comodín del framework usan la versión exacta
 instalada al generar Module Federation. El app-shell 10.0.0 conserva un build

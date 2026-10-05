@@ -74,6 +74,9 @@ Antes de sumar funcionalidad clinica nueva, revisar:
 
 ## Documentos por dominio
 
+El [contrato de cobertura del buscador clínico](chart-search-coverage.md)
+registra las fuentes necesarias antes de habilitar una búsqueda de todo el chart.
+
 | Área                 | Contratos y referencias                                                                                                                                                                                                                                                                                                                    |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Identidad y registro | [Demografía](patient-demographics-validation.md), [ubicación del identificador](patient-identifier-location-contract.md), [nacionalidad](patient-nationality-concepts.md)                                                                                                                                                                  |

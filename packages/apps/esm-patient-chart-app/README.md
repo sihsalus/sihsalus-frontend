@@ -18,6 +18,27 @@ Un cambio pequeno aqui puede romper multiples apps porque muchas extensiones dep
 
 ## Contratos funcionales
 
+### Búsqueda clínica en el chart
+
+La primera iteración prepara una búsqueda de solo lectura en los dashboards
+del chart, desactivada por defecto mediante `clinicalSearchEnabled` hasta que
+cubra todos los datos clínicos visibles. El proveedor inicial busca por nombre,
+tipo, estado y fecha de inicio en el historial completo de problemas y
+antecedentes del paciente, mediante `usePatientConditions`. Este recurso recorre
+las páginas REST, valida la identidad del paciente y reutiliza la caché del
+módulo de condiciones; el chart no mantiene una segunda implementación de
+paginación. La consulta empieza cuando el usuario escribe y no se persiste ni
+se registra en logs. El componente se oculta sin el permiso
+`app:hoja.clinica.condiciones` o si el paciente cargado no coincide con la ruta.
+Una lectura fallida muestra un error sin exponer datos técnicos y nunca se
+presenta como una búsqueda sin resultados. La búsqueda tolera tildes y palabras
+en distinto orden. Aún no incluye visitas, órdenes, medicamentos ni resultados;
+la cobertura futura requiere contratos de lectura y permisos verificados para
+cada fuente. No habilitar el flag en un ambiente compartido antes de completar
+esa cobertura y la validación clínica con datos sintéticos en DEV/QLTY. La
+[matriz de cobertura](../../../docs/clinical/chart-search-coverage.md) define
+los proveedores y criterios pendientes.
+
 - No registrar datos clinicos si no existe una visita/consulta activa, salvo flujo explicitamente documentado.
 - No cambiar nombres de workspaces, modales o extension slots sin actualizar consumidores.
 - No esconder errores de registro: si un workspace o modal no existe, el mensaje debe indicar el nombre faltante y la accion esperada.

@@ -1,0 +1,26 @@
+@use '@carbon/layout';
+
+.search {
+  margin: layout.$spacing-05;
+  min-width: 0;
+}
+
+.hint {
+  margin-top: layout.$spacing-03;
+}
+
+.results {
+  display: grid;
+  gap: layout.$spacing-03;
+  list-style: none;
+  margin-top: layout.$spacing-03;
+  padding: 0;
+
+  li {
+    border-bottom: 1px solid var(--cds-border-subtle);
+    display: flex;
+    flex-wrap: wrap;
+    gap: layout.$spacing-03;
+    padding: layout.$spacing-03 0;
+  }
+}

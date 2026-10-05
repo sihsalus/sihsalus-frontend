@@ -61,8 +61,9 @@ Las bibliotecas `@openmrs/esm-*`, el app-shell, el CLI local `openmrs` y
 CommonJS y Rspack 2 por los contratos del monorepo; upstream 10.0.0 usa ESM y
 Rspack 1. El fork porta la espera de compilación inicial, validación de
 import maps/rutas, SVG como fuente y compilación diferida del servidor local.
-El SVG sigue siendo texto para el registro de iconos y pictogramas, en lugar de
-una URL a un asset emitido. El servidor de desarrollo sirve los módulos desde
+El SVG sigue siendo texto para el registro de iconos y pictogramas; los imports
+con `?url` de Inicio y Herramientas offline emiten archivos para `<img src>`.
+El servidor de desarrollo sirve los módulos desde
 memoria como upstream 10.0.0; el build de producción sigue escribiendo en `dist`.
 
 Los consumidores con un peer comodín del framework usan la versión exacta

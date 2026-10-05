@@ -8,6 +8,11 @@ declare module '*.svg' {
   export default src;
 }
 
+declare module '*.svg?url' {
+  const src: string;
+  export default src;
+}
+
 declare namespace NodeJS {
   interface Require {
     context(directory: string, useSubdirectories?: boolean, regExp?: RegExp, mode?: string): any;

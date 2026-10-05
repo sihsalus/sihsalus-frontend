@@ -6,7 +6,8 @@ repository's app shell. Its CommonJS output is consumed through
 `openmrs/default-rspack-config` by the app workspaces.
 
 The OpenMRS 10 SVG rule imports markup as text for the shared icon and
-pictogram registries. PNG, JPEG and GIF files remain emitted assets. A local
+pictogram registries. Imports with `?url` emit a file URL for `<img>` consumers
+in the home and offline tools apps. PNG, JPEG and GIF files remain emitted assets. A local
 development build with a port enables Rspack lazy compilation, while a
 production build emits the complete module. The development server serves
 compiled assets from memory; production output is written to `dist`.

@@ -389,7 +389,7 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
         ),
         {
           test: /\.svg$/i,
-          type: 'asset/source',
+          oneOf: [{ resourceQuery: /^\?url$/, type: 'asset/resource' }, { type: 'asset/source' }],
         },
       ],
     },

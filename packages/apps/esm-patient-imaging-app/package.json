@@ -82,9 +82,9 @@
     "swc-loader": "^0.2.3",
     "swr": "^2.x",
     "ts-node": "^10.9.2",
-    "turbo": "^2.11.6",
+    "turbo": "^2.11.7",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "^5.0.3"
   },
   "author": "Wei Sadre (Uclouvain-ICTEAM)"

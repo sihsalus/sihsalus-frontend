@@ -65,7 +65,7 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "cross-env": "^7.0.3",
     "openmrs": "*",
-    "vite": "8.3.1",
+    "vite": "8.3.2",
     "vitest": "^5.0.3"
   }
 }

@@ -55,7 +55,7 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@carbon/react": "^1.117.0",

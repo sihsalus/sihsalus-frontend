@@ -103,7 +103,7 @@
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "undici": "7.29.1",
     "vite": "8.3.1",
-    "vitest": "5.0.2",
+    "vitest": "5.0.3",
     "workbox-routing": "7.4.1",
     "workbox-strategies": "7.4.1"
   },

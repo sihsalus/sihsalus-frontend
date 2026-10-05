@@ -58,18 +58,15 @@ Usar los comandos del runner; no invocar Playwright directamente para eludir
 los controles de catálogo, cuarentena o preflight.
 
 ```sh
-# Suite clínica principal (compatible con el comando histórico)
-yarn test:e2e
-
 # Suites ejecutables por ID; los argumentos restantes pasan a Playwright
 yarn test:e2e:suite clinical --project=desktop
 yarn test:e2e:suite laboratory --headed
 
 # Worker y cola reales en Chromium con servidor local sintético
-yarn test:e2e:offline-local
+yarn test:e2e:suite offline-local
 
 # Gate opt-in de navegador/laptop offline contra DEV/QLTY
-yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
+yarn test:e2e:suite offline-laptop --project="Microsoft Edge Stable" --headed
 
 # Contratos unitarios fail-closed del gate, sin tocar backend
 yarn test:e2e:offline-laptop:unit
@@ -170,7 +167,7 @@ una integración real.
 ## Gate de laptops offline
 
 `e2e/offline-laptop` es una suite modular separada y deliberadamente no forma
-parte de `yarn test:e2e`: crea y anula datos sintéticos y requiere un DEV o QLTY
+parte de `yarn test:e2e:suite clinical`: crea y anula datos sintéticos y requiere un DEV o QLTY
 coordinado, metadatos aprobados y Chrome/Edge instalados. Al invocarla, el
 preflight falla si falta configuración, si el target y el origen no coinciden
 exactamente con la allowlist HTTPS de DEV/QLTY o si el SHA desplegado no

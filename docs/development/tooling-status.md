@@ -76,20 +76,32 @@ comprueban que los peers de los workspaces acepten las dependencias instaladas.
 
 ## Parches temporales de dependencias
 
-`braces` 3.0.3 y `http-cache-semantics` 4.2.0 tienen avisos de severidad alta
-[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) y
-[GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp),
-respectivamente. Mientras no haya versiones corregidas compatibles, Yarn aplica
-parches locales a todos los rangos transitivos presentes en `yarn.lock`. El
-primero limita la profundidad de patrones anidados; el segundo impide que
+`braces` 3.0.3 conserva el parche local para
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm):
+limita a 100 la profundidad de patrones anidados. Al 5 de octubre de 2026,
+3.0.3 sigue siendo la última versión publicada y el aviso no identifica una
+versión corregida. Dependabot puede seguir mostrando la alerta porque el parche
+Yarn conserva esa versión base. La excepción de auditoría no cierra ni descarta
+la alerta en GitHub.
+
+`http-cache-semantics` usa 4.3.0 con el guard local de `max-stale` conservado.
+Los consumidores `make-fetch-happen` y `cacheable-request` aceptan esta versión
+mediante sus rangos `^4.1.1` y `^4.2.0`. Upstream 4.3.0 corrige el manejo de
+`Vary` y agrega el estado de la respuesta; el diff publicado no cambia
+`max-stale`. Aunque el rango actualmente afectado por
+[GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp) termina
+en 4.2.0, eso no demuestra que 4.3.0 corrija esa lógica. El parche local impide que
 `max-stale` reutilice respuestas que requieren revalidación por `Set-Cookie`,
 `proxy-revalidate`, `no-cache` o una entrada no almacenable.
 
 `yarn security:audit` ejecuta la auditoría completa de dependencias directas y
-transitivas de severidad alta. Solo acepta estos dos avisos exactos después de
-comprobar las resoluciones y el comportamiento instalado; cualquier otro aviso
-o error de auditoría falla. Retirar los parches y esta excepción cuando existan
-versiones corregidas compatibles y las pruebas confirmen su comportamiento.
+transitivas de severidad alta. Comprueba las resoluciones y el comportamiento
+instalado de ambos parches. Solo acepta el aviso exacto de `braces` 3.0.3;
+la excepción de `http-cache-semantics` 4.2.0 se retira. Cualquier otro aviso o
+error de auditoría falla, incluido un hallazgo de `http-cache-semantics`.
+Retirar los parches cuando existan versiones corregidas compatibles y las
+pruebas confirmen su comportamiento. Mantener las regresiones de profundidad,
+revalidación de caché y rechazo de hallazgos no revisados al actualizar.
 
 ## Cómo validar cambios a estos contratos
 

@@ -13,11 +13,9 @@ const patched = {
     patch: "braces-npm-3.0.3-582c14023c.patch",
   },
   "http-cache-semantics": {
-    version: "4.2.0",
-    advisory: 1240991,
-    url: "https://github.com/advisories/GHSA-ch52-4w7c-c8xp",
+    version: "4.3.0",
     ranges: ["npm:^4.1.1", "npm:^4.2.0"],
-    patch: "http-cache-semantics-npm-4.2.0-fadacfb3ad.patch",
+    patch: "http-cache-semantics-npm-4.3.0-max-stale.patch",
   },
 };
 
@@ -29,7 +27,7 @@ function validatePatchInstallation() {
   const found = new Map(Object.keys(patched).map((name) => [name, new Set()]));
 
   for (const match of lock.matchAll(
-    /^    (braces|http-cache-semantics): "([^"]+)"$/gm,
+    /^ {4}(braces|http-cache-semantics): "([^"]+)"$/gm,
   )) {
     found.get(match[1]).add(match[2]);
   }
@@ -111,7 +109,8 @@ function evaluateAuditReport(stdout, status, stderr = "") {
 
   for (const finding of findings) {
     assert.ok(
-      Object.hasOwn(patched, finding.value),
+      Object.hasOwn(patched, finding.value) &&
+        patched[finding.value].advisory !== undefined,
       `Unreviewed audit finding: ${finding.value}`,
     );
     const policy = patched[finding.value];

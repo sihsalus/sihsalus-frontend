@@ -34,10 +34,8 @@ test("installed local patches protect the known exploit paths", () => {
 });
 
 test("audit accepts only the exact advisories covered by tested patches", () => {
-  assert.deepEqual(evaluateAuditReport(`${braces}\n${cache}\n`, 1), [
-    "braces",
-    "http-cache-semantics",
-  ]);
+  assert.deepEqual(evaluateAuditReport(`${braces}\n`, 1), ["braces"]);
+  assert.throws(() => evaluateAuditReport(`${braces}\n${cache}\n`, 1));
   assert.deepEqual(evaluateAuditReport("", 0), []);
 });
 

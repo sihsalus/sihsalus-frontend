@@ -40,7 +40,7 @@
     "@carbon/styles": "^1.116.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "zustand": "^4.5.5"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",

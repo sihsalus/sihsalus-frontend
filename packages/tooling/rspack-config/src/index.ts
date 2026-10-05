@@ -158,7 +158,11 @@ function getInstalledVersion(depName: string): string | undefined {
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pkgUnknown: unknown = require(require.resolve(`${packageName}/package.json`, { paths: [process.cwd()] }));
+    const pkgUnknown: unknown = require(
+      require.resolve(`${packageName}/package.json`, {
+        paths: [process.cwd()],
+      }),
+    );
     const pkg = pkgUnknown as VersionedPackageJson;
     return typeof pkg.version === 'string' ? pkg.version : undefined;
   } catch {
@@ -275,6 +279,8 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
   const { name, version, peerDependencies, browser, main, types } = getPackageJson(root);
   // this typing is provably incorrect, but actually works
   const mode = (argv.mode || process.env.NODE_ENV || 'development') as OpenmrsRspackConfig['mode'];
+  const devServerPort = argv.port ? Number(argv.port) : undefined;
+  const devServerHost = argv.host || 'localhost';
   const filename = basename(browser || main);
   const outDir = dirname(browser || main);
   const srcFile = resolve(root, browser ? main : types);
@@ -364,7 +370,10 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
                 options: {
                   api: 'modern-compiler',
                   implementation: require.resolve('sass-embedded'),
-                  sassOptions: { quietDeps: true, loadPaths: [resolve(root, '..', '..', '..', 'node_modules')] },
+                  sassOptions: {
+                    quietDeps: true,
+                    loadPaths: [resolve(root, '..', '..', '..', 'node_modules')],
+                  },
                 },
               },
             ],
@@ -373,11 +382,15 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
         ),
         merge<RuleSetRule, Partial<RuleSetRule>>(
           {
-            test: /\.(png|jpe?g|gif|svg)$/i,
+            test: /\.(png|jpe?g|gif)$/i,
             type: 'asset/resource',
           },
           assetRuleConfig,
         ),
+        {
+          test: /\.svg$/i,
+          oneOf: [{ resourceQuery: /^\?url$/, type: 'asset/resource' }, { type: 'asset/source' }],
+        },
       ],
     },
     mode,
@@ -389,9 +402,6 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
     devServer: {
       headers: {
         'Access-Control-Allow-Origin': '*',
-      },
-      devMiddleware: {
-        writeToDisk: true,
       },
       static: [resolve(root, outDir)],
     },
@@ -559,6 +569,13 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
       },
       tsConfig: existsSync(resolve(root, 'tsconfig.json')) ? resolve(root, 'tsconfig.json') : undefined,
     },
+    ...(devServerPort !== undefined && {
+      lazyCompilation: {
+        imports: true,
+        entries: false,
+        serverUrl: `http://${devServerHost}:${devServerPort}`,
+      },
+    }),
     ...overrides,
   };
   return mergeWith(baseConfig, additionalConfig, mergeFunction);

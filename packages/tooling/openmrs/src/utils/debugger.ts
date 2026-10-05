@@ -36,10 +36,27 @@ function startDevServer(configPath: string, port: number) {
   };
 
   const compiler = rspack(config);
+  let compilationDone = false;
+  let serverListening = false;
+  const signalReady = () => {
+    if (compilationDone && serverListening) {
+      process.send?.({ type: 'compilation-complete' });
+    }
+  };
+  compiler.hooks.done.tap('OpenMRSDevServer', (stats) => {
+    if (stats.hasErrors()) {
+      process.send?.({ type: 'compilation-failed' });
+      return;
+    }
+    compilationDone = true;
+    signalReady();
+  });
   const server = new RspackDevServer(devServerOptions as RspackDevServerConfiguration, compiler);
 
   server.startCallback(() => {
     logInfo(`Listening at http://localhost:${port}`);
+    serverListening = true;
+    signalReady();
   });
 }
 

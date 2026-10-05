@@ -104,7 +104,14 @@ export interface ImportmapAndRoutesWithWatches extends ImportmapAndRoutes {
 export function checkImportmapJson(value: string) {
   try {
     const content = JSON.parse(value);
-    return typeof content === 'object' && typeof content.imports === 'object';
+    return (
+      typeof content === 'object' &&
+      content !== null &&
+      !Array.isArray(content) &&
+      typeof content.imports === 'object' &&
+      content.imports !== null &&
+      !Array.isArray(content.imports)
+    );
   } catch {
     return false;
   }
@@ -115,7 +122,12 @@ export function checkRoutesJson(value: string) {
     const content = JSON.parse(value);
     return (
       typeof content === 'object' &&
-      Object.entries(content).every(([key, value]) => typeof key === 'string' && typeof value === 'object')
+      content !== null &&
+      !Array.isArray(content) &&
+      Object.entries(content).every(
+        ([key, value]) =>
+          typeof key === 'string' && typeof value === 'object' && value !== null && !Array.isArray(value),
+      )
     );
   } catch {
     return false;
@@ -161,9 +173,10 @@ function runProjectDevServer(
   const bundle = getMainBundle(project);
   const host = `http://localhost:${port}`;
 
-  startDevServer(configPath, port, sourceDirectory);
+  const { ready } = startDevServer(configPath, port, sourceDirectory);
   importMap[project.name as string] = `${host}/${bundle.name}`;
   routes[project.name as string] = getAppRoutes(sourceDirectory, project);
+  return ready;
 }
 
 export async function runProject(
@@ -179,6 +192,7 @@ export async function runProject(
   const importMap = {};
   const routes = {};
   const watchedRoutesPaths = {};
+  const devServerReadyPromises: Array<Promise<void>> = [];
 
   // Track the starting port, which is one more than the last used port
   let nextPortToCheck = basePort + 1;
@@ -223,16 +237,21 @@ export async function runProject(
       const port = await getAvailablePort(nextPortToCheck);
       nextPortToCheck = port + 1;
 
-      runProjectDevServer(defaultConfigPath, port, project, sourceDirectory, importMap, routes);
+      devServerReadyPromises.push(
+        runProjectDevServer(defaultConfigPath, port, project, sourceDirectory, importMap, routes),
+      );
     } else {
       // Find next available port
       const port = await getAvailablePort(nextPortToCheck);
       nextPortToCheck = port + 1;
 
-      runProjectDevServer(rspackConfigPath, port, project, sourceDirectory, importMap, routes);
+      devServerReadyPromises.push(
+        runProjectDevServer(rspackConfigPath, port, project, sourceDirectory, importMap, routes),
+      );
     }
   }
 
+  await Promise.all(devServerReadyPromises);
   logInfo(`Assembled dynamic import map and routes for packages (${Object.keys(importMap).join(', ')}).`);
 
   return { importMap, routes, watchedRoutesPaths };

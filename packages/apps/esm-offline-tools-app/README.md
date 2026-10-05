@@ -2,6 +2,9 @@
 
 Microfrontend para preparar pacientes para uso sin conexión, revisar acciones pendientes de sincronización y controlar la entrada o salida del modo offline.
 
+La ilustración SVG del estado sin acciones usa `?url` para conservar su `src`
+de imagen con el Rspack compartido de OpenMRS 10.
+
 ## Contrato RBAC actual
 
 | Superficie                                          | Privilegio frontend                    |

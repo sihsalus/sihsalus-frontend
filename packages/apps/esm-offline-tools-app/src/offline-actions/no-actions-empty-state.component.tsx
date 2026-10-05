@@ -2,7 +2,7 @@ import { Layer, Tile } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import successNotification from '../assets/success-notification.svg';
+import successNotification from '../assets/success-notification.svg?url';
 
 import styles from './no-actions-empty-state.styles.scss';
 

@@ -12,6 +12,11 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 - Gestiona relaciones familiares, parentescos y listas de contactos asociados al paciente.
 - Expone vistas para historia familiar y relación entre miembros del núcleo familiar.
+- Los hijos vinculados se muestran en la tabla existente de Historia familiar / Familia,
+  junto con los demás familiares. La misma fila muestra nombre, parentesco, edad y fecha
+  de nacimiento; el nombre abre la historia clínica cuando el familiar es un paciente.
+  Las fechas estimadas se identifican como tales y las ausentes o inválidas indican
+  «No disponible». No se infieren fechas a partir de la edad.
 - Crea familiares nuevos como `Person`, sin HCE ni identificadores de paciente. Convertir posteriormente
   esa persona en paciente pertenece al flujo explícito de registro y debe conservar el mismo UUID.
 - No administra el registro clínico general ni procesos de facturación o farmacia.
@@ -21,6 +26,9 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 - REST OpenMRS `person`, `patient` y `relationship`; la búsqueda combina personas y pacientes, mientras
   que la creación de un familiar usa exclusivamente `person`.
+- La lectura existente de `relationship` solicita también `birthdate` y `birthdateEstimated`
+  de ambas personas. La fecha se presenta como día calendario, sin desplazarla por la
+  zona horaria del navegador ni sustituirla por «Hoy». No agrega consultas por familiar.
 - Person attributes para teléfono, estado civil y atributos protegidos del flujo PNS.
 - Autocomplete y componentes de selección compartidos.
 - Configuración de dashboard y rutas del módulo.
@@ -48,6 +56,9 @@ datos ya fueron persistidos.
   el mismo UUID sin duplicarla.
 - Probar edición y eliminación de relaciones, incluyendo confirmación visual y recarga de dashboard.
 - Probar lista de contactos PNS/VIH: agregar contacto, editar atributos sensibles, validar consentimiento y confirmar lectura posterior.
+- Comprobar en Historia familiar que la madre ve al hijo vinculado y el hijo ve a la madre,
+  con su fecha de nacimiento y el enlace a la historia clínica correcta. Incluir personas
+  sin HCE, fechas estimadas, ausentes o inválidas y navegadores con distintas zonas horarias.
 - Validar permisos de usuario para crear/editar relaciones, person attributes y pacientes relacionados en QLTY.
 - Mantener pacientes de prueba para hogar sin relaciones, hogar con familia nuclear, hogar extendido y contacto PNS sensible.
 

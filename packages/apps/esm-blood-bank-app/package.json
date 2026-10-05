@@ -65,7 +65,7 @@
     "react-i18next": "^16.0.0",
     "react-router-dom": "7.18.4",
     "rxjs": "^6.6.7",
-    "sass-embedded": "1.105.0",
+    "sass-embedded": "1.105.1",
     "sass-loader": "17.0.1",
     "style-loader": "4.0.0",
     "swc-loader": "0.2.7",

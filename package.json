@@ -47,7 +47,7 @@
     "validate:react-router": "node packages/tooling/scripts/validate-react-router-contract.js",
     "validate:lint-coverage": "node packages/tooling/scripts/validate-lint-coverage.js",
     "validate:test-governance": "node packages/tooling/scripts/validate-test-governance.js",
-    "validate:workspaces": "node packages/tooling/scripts/audit-workspaces.js",
+    "validate:workspaces": "node packages/tooling/scripts/audit-workspaces.js && node packages/tooling/scripts/validate-fhir-dependencies.js",
     "benchmark:typescript": "node packages/tooling/scripts/benchmark-typescript.js",
     "typecheck": "node node_modules/turbo/bin/turbo run typescript",
     "typecheck:e2e": "yarn build:e2e:offline-local && tsc -p e2e/tsconfig.json && tsc -p e2e/offline-local/tsconfig.browser.json",

@@ -7,6 +7,10 @@ This frontend module provides task management features for OpenMRS 3, allowing h
 ## Requirements
 
 This module requires the [Tasks backend module](https://github.com/openmrs/openmrs-module-tasks) to be installed in your OpenMRS distribution.
+It also reads FHIR2 `PlanDefinition` resources for system task templates, so the
+module declares `fhir2 >=1.2` in `src/routes.json`. Its FHIR read is separate
+from the Tasks REST API; a missing or failed FHIR response must not be mistaken
+for a complete list of available templates.
 
 ## Running this code
 

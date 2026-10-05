@@ -74,7 +74,7 @@
     "turbo": "^2.11.4",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",

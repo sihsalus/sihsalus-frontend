@@ -13,7 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import { isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { formatDate, isDesktop, parseDate, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +36,23 @@ const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
   typeof header === 'object' && header !== null && 'content' in header
     ? (header as { content: React.ReactNode }).content
     : header;
+
+function formatRelativeBirthdate(birthdate: string | null): string | null {
+  // Birth dates are calendar dates: retain the recorded day rather than applying
+  // the browser's timezone to the REST timestamp.
+  const dateOnly = birthdate?.split('T')[0];
+  if (!dateOnly || !/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+    return null;
+  }
+
+  const date = parseDate(dateOnly);
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+    return null;
+  }
+
+  return formatDate(date, { mode: 'wide', time: false, noToday: true });
+}
 
 const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
@@ -103,17 +120,24 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   const tableRows =
     results?.map((relation) => {
       const patientUuid = relation.patientUuid;
+      const birthdate = formatRelativeBirthdate(relation.birthdate);
 
       return {
         id: `${relation.uuid}`,
         name: (
-          <RelativeNameCell
-            name={relation.name}
-            isPatient={relation.isPatient}
-            patientUuid={relation.patientUuid}
-            relativeUuid={relation.relativeUuid}
-            dead={relation.dead}
-          />
+          <>
+            <RelativeNameCell
+              name={relation.name}
+              isPatient={relation.isPatient}
+              patientUuid={relation.patientUuid}
+              relativeUuid={relation.relativeUuid}
+              dead={relation.dead}
+            />
+            <div className={styles.relativeBirthdate}>
+              {t('dateOfBirth', 'Date of birth')}: {birthdate ?? t('dateOfBirthUnavailable', 'Not available')}
+              {birthdate && relation.birthdateEstimated ? <> ({t('dateOfBirthEstimated', 'estimated')})</> : null}
+            </div>
+          </>
         ),
         relation: relation?.relationshipType,
         consanguinityDegree:

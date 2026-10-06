@@ -1,7 +1,6 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import {
@@ -24,10 +23,6 @@ interface BirthPlanResult {
   mutate: () => void;
 }
 
-interface EncounterResponse {
-  results: MaternalEncounter[];
-}
-
 const representation =
   'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,display,concept:(uuid),value:(uuid,display),groupMembers:(uuid,display,concept:(uuid),value:(uuid,display),groupMembers:(uuid,display,concept:(uuid),value:(uuid,display)))))';
 
@@ -40,16 +35,13 @@ export function useBirthPlan(patientUuid: string): BirthPlanResult {
   const formIdentifier = config.formsList.birthPlanForm;
   const url =
     patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=${representation}&limit=100`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=${representation}`
       : null;
 
-  const { data, isLoading, error, mutate } = useSWR<EncounterResponse, Error>(url, async (fetchUrl) => {
-    const response = await openmrsFetch<EncounterResponse>(fetchUrl);
-    return response.data;
-  });
+  const { data, isLoading, error, mutate } = useOpenmrsFetchAll<MaternalEncounter>(url, { fetcher: openmrsFetch });
 
   const result = useMemo(() => {
-    const encounter = (data?.results ?? [])
+    const encounter = (data ?? [])
       .filter(
         (candidate) =>
           encounterMatchesForm(candidate, formIdentifier) &&
@@ -87,7 +79,7 @@ export function useBirthPlan(patientUuid: string): BirthPlanResult {
       referenceHospital,
       encounterUuid: encounter.uuid,
     };
-  }, [data?.results, formIdentifier, pregnancyStartDate, referenceHospitalConceptUuid, transportConceptUuid]);
+  }, [data, formIdentifier, pregnancyStartDate, referenceHospitalConceptUuid, transportConceptUuid]);
 
   return {
     ...result,

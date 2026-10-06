@@ -6,6 +6,11 @@ Este microfrontend vive en la carpeta `packages/apps/esm-crecimiento-desarrollo-
 
 App orientada al seguimiento de CRED y control preventivo infantil.
 
+Las tarjetas de seguimiento nutricional y estimulación histórica muestran la
+fecha más reciente entre sus campos independientes. La fecha de última medición
+nutricional se deriva de peso y talla; una clasificación posterior no se presenta
+como si fuese una nueva medición. Estos resúmenes no crean ni modifican obs.
+
 Terminología de dominio: visita = consulta, encounter = atención, appointment = cita.
 
 ## Marco normativo

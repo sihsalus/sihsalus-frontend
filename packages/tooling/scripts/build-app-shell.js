@@ -57,6 +57,11 @@ function getAppShellPackageRoot() {
 function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
   const config = configFactory({}, { mode: 'production' });
+  // OpenMRS 10 no longer loads the styleguide stylesheet from its HTML template.
+  // Include the built global CSS in the shell entry so Webpack emits and links it
+  // with the rest of the shell styles, including its font assets.
+  const styleguideCss = path.join(REPOSITORY_ROOT, 'packages/libs/esm-styleguide/dist/openmrs-esm-styleguide.css');
+  config.entry = [config.entry, styleguideCss];
   // Workspace SWC output uses explicit .js imports while this build consumes TypeScript sources.
   // Match the monorepo's existing Rspack resolution contract.
   config.resolve.extensionAlias = { '.js': ['.js', '.ts', '.tsx'] };

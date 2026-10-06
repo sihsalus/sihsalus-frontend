@@ -310,6 +310,10 @@ test('rejects an app-shell config that can emit an unresolved React global', () 
 test('source shell resolves explicit workspace imports to TypeScript', () => {
   const config = getAppShellWebpackConfig();
   assert.deepEqual(config.resolve.extensionAlias, { '.js': ['.js', '.ts', '.tsx'] });
+  assert.deepEqual(config.entry, [
+    path.join(getAppShellPackageRoot(), 'src/index.ts'),
+    path.join(repositoryRoot, 'packages/libs/esm-styleguide/dist/openmrs-esm-styleguide.css'),
+  ]);
 });
 
 test('workspace translation peers accept the installed runtime', () => {

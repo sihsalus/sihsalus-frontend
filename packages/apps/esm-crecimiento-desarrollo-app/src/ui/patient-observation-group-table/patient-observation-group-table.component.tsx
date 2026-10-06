@@ -31,8 +31,6 @@ import { formEntryWorkspace } from '../../types';
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
 
-// Importar tipos desde el componente separado
-
 interface PatientObservationGroupTableProps {
   patientUuid: string;
   headerTitle: string;
@@ -47,29 +45,22 @@ interface ObservationGroupTableRowData {
   id: string;
   title: JSX.Element;
   date: JSX.Element;
-  actions: JSX.Element;
 }
 
-// Componente para mostrar el título del grupo
-const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => (
-  <div>
-    <div style={{ fontWeight: 'bold' }}>{group.title}</div>
-    <div style={{ fontSize: '0.875rem', color: '#6f6f6f' }}>
-      {group.count} item{group.count !== 1 ? 's' : ''}
+const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => {
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
+
+  return (
+    <div>
+      <div style={{ fontWeight: 'bold' }}>{group.title}</div>
+      <div style={{ fontSize: '0.875rem', color: '#6f6f6f' }}>
+        {t('observationCount', { count: group.count })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
-// Componente para mostrar la fecha
 const GroupDateCell: React.FC<{ group: ObservationGroup }> = ({ group }) => <div>{group.date}</div>;
-
-// Componente para acciones (si necesitas agregar alguna)
-const GroupActionsCell: React.FC<{ group: ObservationGroup }> = () => (
-  <div>{/* Aquí puedes agregar acciones específicas por grupo si es necesario */}</div>
-);
-
-// Sub-tabla para mostrar los group members - ahora importada
-// const ObservationGroupDetails se importa desde archivo separado
 
 const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> = ({
   patientUuid,
@@ -126,7 +117,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
       .filter((obs) => Array.isArray(obs.groupMembers) && obs.groupMembers.length > 0)
       .map((obs, index) => {
         const { category: title } = parseDisplay(obs.display);
-        const rows = obs.groupMembers!.map((member, idx) => {
+        const rows = (obs.groupMembers ?? []).map((member, idx) => {
           const { category, value } = parseDisplay(member.display);
           return {
             id: `row-${member.uuid || idx}`,
@@ -146,27 +137,16 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
       });
   }, [data, parseDisplay]);
 
-  // Configuración de columnas para la tabla principal
   const columns = [
-    { key: 'title', header: t('observationGroup', 'Grupo de Observación'), CellComponent: GroupTitleCell },
-    { key: 'date', header: t('date', 'Date'), CellComponent: GroupDateCell },
-    { key: 'actions', header: '', CellComponent: GroupActionsCell },
+    { key: 'title', header: t('observationGroup', 'Observation group') },
+    { key: 'date', header: t('observationDate', 'Date of care') },
   ];
 
-  // Preparar datos para la tabla
-  const rowData: ObservationGroupTableRowData[] = observationGroups?.map((group) => {
-    const row: ObservationGroupTableRowData = {
-      id: group.id,
-      title: <></>,
-      date: <></>,
-      actions: <></>,
-    };
-
-    for (const { key, CellComponent } of columns) {
-      row[key as keyof Omit<ObservationGroupTableRowData, 'id'>] = <CellComponent key={key} group={group} />;
-    }
-    return row;
-  });
+  const rowData: ObservationGroupTableRowData[] = observationGroups.map((group) => ({
+    id: group.id,
+    title: <GroupTitleCell group={group} />,
+    date: <GroupDateCell group={group} />,
+  }));
 
   // Estados de carga y error
   if (isLoading && (!data?.obs || data.obs.length === 0)) {
@@ -210,25 +190,23 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
               <TableHead>
                 <TableRow>
                   <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                  {headers.map((header) => (
-                    <TableHeader
-                      key={header.key}
-                      {...getHeaderProps({
-                        header,
-                        className: header.key === 'actions' ? styles.actionsColumn : '',
-                      })}
-                    >
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row, i) => {
                   const group = observationGroups[i];
+                  const { key, ...rowProps } = getRowProps({ row });
                   return (
                     <React.Fragment key={row.id}>
-                      <TableExpandRow {...getRowProps({ row })}>
+                      <TableExpandRow key={key} {...rowProps}>
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>{cell?.value}</TableCell>
                         ))}

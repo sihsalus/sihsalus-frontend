@@ -177,6 +177,7 @@
   "loading": "Cargando...",
   "loadingData": "Cargando datos...",
   "loadingMaternalNtsGaps": "Cargando brechas NTS...",
+  "loadingMaternalForms": "Cargando historial de formularios maternos...",
   "loadingMotherChildLinks": "Comprobando vínculos existentes",
   "male": "Masculino",
   "maternaHistory": "Antecedentes maternos",

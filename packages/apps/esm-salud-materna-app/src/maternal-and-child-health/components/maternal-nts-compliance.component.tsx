@@ -1,10 +1,9 @@
 import { Button, InlineLoading, Tag, Tile } from '@carbon/react';
 import { Launch } from '@carbon/react/icons';
-import { launchWorkspace2, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
 import { prenatalCareEditPrivilege } from '../../constants';
 import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
@@ -22,10 +21,6 @@ type MaternalEncounter = {
     name?: string;
     display?: string;
   };
-};
-
-type EncounterResponse = {
-  results: Array<MaternalEncounter>;
 };
 
 type Requirement = {
@@ -242,12 +237,9 @@ const formatDate = (date?: string) => {
 
 function useMaternalEncounters(patientUuid: string) {
   const representation = 'custom:(uuid,encounterDatetime,form:(uuid,name,display))';
-  const url = patientUuid ? `${restBaseUrl}/encounter?patient=${patientUuid}&limit=100&v=${representation}` : null;
+  const url = patientUuid ? `${restBaseUrl}/encounter?patient=${patientUuid}&v=${representation}` : null;
 
-  return useSWR<EncounterResponse, Error>(url, async (url) => {
-    const response = await openmrsFetch<EncounterResponse>(url);
-    return response.data;
-  });
+  return useOpenmrsFetchAll<MaternalEncounter>(url, { fetcher: openmrsFetch });
 }
 
 const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
@@ -271,7 +263,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
   const completedForms = useMemo(() => {
     const forms = new Map<string, string>();
 
-    const currentPregnancyEncounters = (data?.results ?? [])
+    const currentPregnancyEncounters = (data ?? [])
       .filter((encounter) => isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate))
       .sort(
         (first, second) =>
@@ -289,7 +281,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
     }
 
     return forms;
-  }, [data?.results, pregnancyStartDate]);
+  }, [data, pregnancyStartDate]);
 
   const requirementViewModels = useMemo<Array<RequirementViewModel>>(() => {
     return translatedRequirements.map((requirement) => {

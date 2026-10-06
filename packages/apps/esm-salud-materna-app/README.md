@@ -62,6 +62,13 @@ de abrir el formulario. Solo abre una coincidencia publicada y no retirada; cons
 y la actualización posterior al guardado. Los errores muestran un mensaje genérico y permiten reintentar;
 las aperturas pendientes se descartan al cerrar el selector o perder el acceso, y se evitan clics duplicados.
 
+Los lectores de embarazo actual, plan de parto, biometría prenatal, riesgo obstétrico,
+brechas NTS y el selector de formularios recorren todas las páginas REST antes de
+calcular el episodio o mostrar el historial. Una página fallida no se interpreta
+como ausencia de datos; el selector espera la lectura completa y muestra un estado
+de error si falla. Las búsquedas de observaciones de riesgo usan `s=default` para
+conservar el filtro por concepto en el backend probado.
+
 Vacíos conocidos:
 
 - Falta convertir el placeholder de gestante adolescente en formulario real cuando content incorpore la ficha diferenciada.
@@ -70,8 +77,9 @@ Vacíos conocidos:
 
 ## TODO content/backend
 
-- Validar los UUIDs de controles CRED copiados en `config-schema.ts`; `consultationTime` y `controlNumber` no deben compartir el mismo concepto.
-- Completar `CRED.perinatalConceptSetUuid` con el concept set real del content package o desactivar las vistas que dependen de ese set.
+- Los defaults CRED compartidos usan los `external_id` validados en DEV/OCL para
+  hora de consulta, número de control y conjunto de riesgo perinatal. Validar
+  cualquier override del ambiente antes de usarlo en un flujo clínico.
 - Completar `legendConceptSetUuid` cuando exista el set real en OCL/content.
 - Conectar los componentes placeholder de prevención de cáncer y planificación familiar a hooks SWR reales cuando estén definidos los conceptos clínicos.
 - Probar formularios de salud materna contra backend actualizado: prenatal, postnatal, partograma, planificación familiar y prevención de cáncer.

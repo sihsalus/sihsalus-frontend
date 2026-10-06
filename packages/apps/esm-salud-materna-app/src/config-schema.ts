@@ -354,16 +354,17 @@ export const configSchema = {
     },
 
     // CRED Controls
-    // TODO: verify distinct concept UUIDs for each field; these defaults are copied from newborn vital signs.
+    // Use the same verified OCL external_id/OpenMRS UUIDs as the CRED module.
+    // The newborn vital signs UUID is a concept set, not a field concept.
     consultationTime: {
       _type: Type.ConceptUuid,
       _description: 'Hora de consulta CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
+      _default: '2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4',
     },
     controlNumber: {
       _type: Type.ConceptUuid,
       _description: 'Número de control CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
+      _default: 'ce8b07e8-712f-406a-b44d-2fa69167f5ea',
     },
   },
 
@@ -426,8 +427,8 @@ export const configSchema = {
     // Concept Sets
     perinatalConceptSetUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept set para el seguimiento del niño sano',
-      _default: '', // TODO: set real concept set UUID from OCL
+      _description: 'Concept set para antecedentes/riesgo perinatal en CRED',
+      _default: '9dce2946-9fda-4d62-b68e-d62711801189',
     },
 
     // Newborn Care Procedures

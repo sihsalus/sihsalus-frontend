@@ -6,15 +6,15 @@ import {
   showSnackbar,
   type Session,
   useConfig,
+  useOpenmrsFetchAll,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
-import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
+import { ErrorState, FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
 import {
   cancerPreventionEditPrivilege,
@@ -33,10 +33,6 @@ import {
   isWithinPregnancyEpisode,
   type MaternalEncounter,
 } from '../../utils/pregnancy-episode-utils';
-
-interface EncounterResponse {
-  results: MaternalEncounter[];
-}
 
 const maternalFormKeys = [
   'maternalHistory',
@@ -134,7 +130,7 @@ function canEditMaternalForm(session: Session | null | undefined, editPrivilege:
 }
 
 const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (props) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const workspaceProps = props.workspaceProps ?? {};
@@ -146,17 +142,16 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
     },
     [],
   );
-  const { pregnancyStartDate } = useCurrentPregnancy(patientUuid);
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
   const encounterUrl = patientUuid
-    ? `${restBaseUrl}/encounter?patient=${patientUuid}&limit=100&v=custom:(uuid,encounterDatetime,form:(uuid,name,display))`
+    ? `${restBaseUrl}/encounter?patient=${patientUuid}&v=custom:(uuid,encounterDatetime,form:(uuid,name,display))`
     : null;
-  const { data: encounterData, mutate: mutateMaternalEncounters } = useSWR<EncounterResponse, Error>(
-    encounterUrl,
-    async (url) => {
-      const response = await openmrsFetch<EncounterResponse>(url);
-      return response.data;
-    },
-  );
+  const {
+    data: encounterData,
+    error: encounterError,
+    isLoading: isEncounterLoading,
+    mutate: mutateMaternalEncounters,
+  } = useOpenmrsFetchAll<MaternalEncounter>(encounterUrl, { fetcher: openmrsFetch });
   const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
     void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
       options?.onWorkspaceClose?.();
@@ -199,7 +194,7 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
   const formsWithHistory = useMemo<Array<CompletedFormInfo>>(
     () =>
       availableForms.map((formInfo) => {
-        const matchingEncounters = (encounterData?.results ?? [])
+        const matchingEncounters = (encounterData ?? [])
           .filter(
             (encounter) =>
               encounterMatchesForm(encounter, formInfo.form.uuid) &&
@@ -222,7 +217,7 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
             : undefined,
         };
       }),
-    [availableForms, encounterData?.results, pregnancyStartDate],
+    [availableForms, encounterData, pregnancyStartDate],
   );
 
   const launchForm = useCallback(
@@ -277,6 +272,14 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
     },
     [config.formsList, mutateMaternalEncounters, session?.user?.uuid, t],
   );
+
+  if (pregnancyError || encounterError) {
+    return <ErrorState error={pregnancyError ?? encounterError} headerTitle={t('maternalHealthForms', 'Formularios de salud materna')} />;
+  }
+
+  if (isPregnancyLoading || isEncounterLoading) {
+    return <div role="status">{t('loadingMaternalForms', 'Cargando historial de formularios maternos...')}</div>;
+  }
 
   return (
     <FormsSelectorWorkspace

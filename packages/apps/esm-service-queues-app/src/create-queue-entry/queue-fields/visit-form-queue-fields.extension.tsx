@@ -61,10 +61,6 @@ class QueueFieldsErrorBoundary extends Component<QueueFieldsErrorBoundaryProps, 
   }
 }
 
-/**
- * This extension contains form fields for starting a patient's queue entry.
- * It is used slotted into the patient-chart's start visit form
- */
 const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
   const { t } = useTranslation();
   const {
@@ -105,9 +101,9 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
         />
       </QueueFieldsErrorBoundary>
     );
-  } else {
-    return <></>;
   }
+
+  return null;
 };
 
 export default VisitFormQueueFields;

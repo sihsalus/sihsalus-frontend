@@ -1,8 +1,6 @@
 # SIH Salus Frontend
 
-Turborepo-powered monorepo for the **SIH Salus Hospital Information System** — an offline-oriented, FHIR-aware and compliance-oriented frontend serving ~30,000 inhabitants across 112 native Amazonian communities along 500+ km of the Napo River (Peru).
-
-Built on [OpenMRS 3.x](https://openmrs.org/) with the single-spa microfrontend architecture.
+Frontend de **SIH Salus** para la atención de unas 30 000 personas en 112 comunidades nativas a lo largo de más de 500 km del río Napo (Perú). El monorepo reúne microfrontends de [OpenMRS 3.x](https://openmrs.org/) con single-spa y Turborepo.
 
 This repository was developed by the **Pontificia Universidad Catolica del Peru (PUCP)** through the **Grupo de Investigacion y Desarrollo de Ingenieria de Software (GIDIS)**.
 

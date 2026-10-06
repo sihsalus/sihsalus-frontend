@@ -227,6 +227,14 @@ const revisionManifestPath = path.join(outDir, 'assembled-precache-revisions.jso
 const serviceWorkerPath = path.join(outDir, 'service-worker.js');
 const indexHtmlPath = path.join(outDir, 'index.html');
 const indexHtml = invalidRequiredArtifacts.has('index.html') ? '' : fs.readFileSync(indexHtmlPath, 'utf8');
+const linkedStylesheetFiles = getLinkedLocalStylesheetFiles(indexHtml);
+const linkedStyles = linkedStylesheetFiles
+  .filter((file) => fs.existsSync(path.join(outDir, file)))
+  .map((file) => fs.readFileSync(path.join(outDir, file), 'utf8'))
+  .join('\n');
+if (!linkedStyles.includes('.cds--label') || !linkedStyles.includes('IBM Plex Sans')) {
+  fail('index.html does not load the global styleguide CSS required by Carbon controls and typography');
+}
 const revisionManifest = invalidRequiredArtifacts.has('assembled-precache-revisions.json')
   ? null
   : readJson(revisionManifestPath);
@@ -234,9 +242,7 @@ const serviceWorker = invalidRequiredArtifacts.has('service-worker.js')
   ? ''
   : fs.readFileSync(serviceWorkerPath, 'utf8');
 const workboxEntries = parseWorkboxPrecacheEntries(serviceWorker);
-const requiredRevisionFiles = [
-  ...new Set([...getSpaArtifactFiles('precacheRevision'), ...getLinkedLocalStylesheetFiles(indexHtml)]),
-];
+const requiredRevisionFiles = [...new Set([...getSpaArtifactFiles('precacheRevision'), ...linkedStylesheetFiles])];
 
 try {
   assertCompatibleServiceWorkerArtifact(serviceWorker);

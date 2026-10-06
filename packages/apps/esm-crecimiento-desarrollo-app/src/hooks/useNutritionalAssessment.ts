@@ -1,9 +1,9 @@
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { latestObservationDate } from '../utils/latest-observation-date';
 
 interface NutritionalAssessmentResult {
   nutritionClassification: string | null;
@@ -34,11 +34,6 @@ function extractObsValue(data: { results?: Array<{ value?: { display?: string } 
     return String(obs.value);
   }
   return null;
-}
-
-function extractObsDate(data: { results?: Array<{ obsDatetime?: string }> }): string | null {
-  const obs = data?.results?.[0];
-  return obs?.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null;
 }
 
 /**
@@ -78,10 +73,10 @@ export function useNutritionalAssessment(patientUuid: string): NutritionalAssess
     const weight = extractObsValue(weightData);
     const height = extractObsValue(heightData);
 
-    const dates = [extractObsDate(classificationData), extractObsDate(weightData), extractObsDate(heightData)].filter(
-      Boolean,
-    );
-    const lastMeasurementDate = dates.length > 0 ? dates[0] : null;
+    const lastMeasurementDate = latestObservationDate([
+      weightData?.results?.[0]?.obsDatetime,
+      heightData?.results?.[0]?.obsDatetime,
+    ]);
 
     return { nutritionClassification, weight, height, lastMeasurementDate };
   }, [classificationData, weightData, heightData]);

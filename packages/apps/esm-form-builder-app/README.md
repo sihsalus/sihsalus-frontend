@@ -1,6 +1,6 @@
 # OpenMRS ESM Form Builder App
 
-👋 New to O3? Be sure to review the ![OpenMRS 3 Frontend Developer Documentation.](https://openmrs.atlassian.net/wiki/x/IABBHg) 🧑‍🏫
+New to O3? Read the [OpenMRS 3 frontend developer documentation](https://openmrs.atlassian.net/wiki/x/IABBHg).
 
 ![OpenMRS CI](https://github.com/openmrs/openmrs-esm-form-builder/actions/workflows/node.js.yml/badge.svg)
 

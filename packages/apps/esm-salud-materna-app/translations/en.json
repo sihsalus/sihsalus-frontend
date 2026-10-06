@@ -177,6 +177,7 @@
   "loading": "Loading...",
   "loadingData": "Loading data",
   "loadingMaternalNtsGaps": "Loading NTS care gaps...",
+  "loadingMaternalForms": "Loading maternal form history...",
   "loadingMotherChildLinks": "Checking existing links",
   "male": "Male",
   "maternaHistory": "Maternal history",

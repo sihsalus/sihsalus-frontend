@@ -1,9 +1,9 @@
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { latestObservationDate } from '../utils/latest-observation-date';
 
 interface NutritionFollowupResult {
   mmnStatus: string | null;
@@ -71,12 +71,11 @@ export function useNutritionFollowup(patientUuid: string): NutritionFollowupResu
     const ironStatus = extractDisplayValue(ironData);
     const nutritionCounseling = extractDisplayValue(counselingData);
 
-    const dates = [
+    const lastFollowupDate = latestObservationDate([
       mmnData?.results?.[0]?.obsDatetime,
       ironData?.results?.[0]?.obsDatetime,
       counselingData?.results?.[0]?.obsDatetime,
-    ].filter(Boolean);
-    const lastFollowupDate = dates.length > 0 ? dayjs(dates[0]).format('DD/MM/YYYY') : null;
+    ]);
 
     return {
       mmnStatus,

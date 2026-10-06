@@ -10,14 +10,12 @@ interface DesignProps {
   height?: number;
 }
 
-// Función para renderizar una elipse
 export const EllipseDesign = ({ width = 60, height = 30, cx, cy, rx, ry, strokeColor }: DesignProps) => (
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke={strokeColor} strokeWidth="1.5" />
   </svg>
 );
 
-// Función para renderizar un círculo
 export const CircleDesign = ({ width = 60, height = 30, cx, cy, r, strokeColor }: DesignProps) => (
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     <circle cx={cx} cy={cy} r={r} fill="none" stroke={strokeColor} strokeWidth="1.5" />
@@ -35,9 +33,9 @@ export const EllipseDesignLeft = ({
 }: DesignProps) => (
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     <ellipse
-      cx={cx} // Centro movido a la derecha (antes 30, ahora 40)
+      cx={cx}
       cy={cy}
-      rx={rx} // Elipse más alargada (antes 30, ahora 40)
+      rx={rx}
       ry={ry}
       fill="none"
       stroke={strokeColor}
@@ -57,9 +55,9 @@ export const EllipseDesignRight = ({
 }: DesignProps) => (
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     <ellipse
-      cx={cx} // 🔥 Centro movido a la izquierda (antes 30, ahora 20)
+      cx={cx}
       cy={cy}
-      rx={rx} // 🔥 Elipse alargada igual que la otra
+      rx={rx}
       ry={ry}
       fill="none"
       stroke={strokeColor}
@@ -102,9 +100,9 @@ export const EllipseDesignCenter = ({ width = 20, height = 30, strokeColor }: De
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     {/* Elipse de la izquierda, alineada con EllipseDesignLeft */}
     <ellipse
-      cx={-20} // 🔥 Se alinea con la parte derecha de EllipseDesignLeft
-      cy={15} // 🔥 Centrada verticalmente
-      rx={40} // 🔥 Mismo tamaño de la elipse izquierda
+      cx={-20}
+      cy={15}
+      rx={40}
       ry={10}
       fill="none"
       stroke={strokeColor}
@@ -113,9 +111,9 @@ export const EllipseDesignCenter = ({ width = 20, height = 30, strokeColor }: De
 
     {/* Elipse de la derecha, alineada con EllipseDesignRight */}
     <ellipse
-      cx={40} // 🔥 Se alinea con la parte derecha de EllipseDesignLeft
-      cy={15} // 🔥 Centrada verticalmente
-      rx={40} // 🔥 Mismo tamaño de la elipse izquierda
+      cx={40}
+      cy={15}
+      rx={40}
       ry={10}
       fill="none"
       stroke={strokeColor}
@@ -128,9 +126,9 @@ export const EllipseDesignLeftCenter = ({ width = 20, height = 30, strokeColor }
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     {/* Elipse de la izquierda, alineada con EllipseDesignLeft */}
     <ellipse
-      cx={-20} // 🔥 Se alinea con la parte derecha de EllipseDesignLeft
-      cy={15} // 🔥 Centrada verticalmente
-      rx={40} // 🔥 Mismo tamaño de la elipse izquierda
+      cx={-20}
+      cy={15}
+      rx={40}
       ry={10}
       fill="none"
       stroke={strokeColor}
@@ -143,9 +141,9 @@ export const EllipseDesignRightCenter = ({ width = 20, height = 30, strokeColor 
   <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
     {/* Elipse de la derecha, alineada con EllipseDesignRight */}
     <ellipse
-      cx={40} // 🔥 Se alinea con la parte derecha de EllipseDesignLeft
-      cy={15} // 🔥 Centrada verticalmente
-      rx={40} // 🔥 Mismo tamaño de la elipse izquierda
+      cx={40}
+      cy={15}
+      rx={40}
       ry={10}
       fill="none"
       stroke={strokeColor}

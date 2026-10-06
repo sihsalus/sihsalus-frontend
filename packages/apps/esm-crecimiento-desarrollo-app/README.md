@@ -6,6 +6,8 @@ Este microfrontend vive en la carpeta `packages/apps/esm-crecimiento-desarrollo-
 
 App orientada al seguimiento de CRED y control preventivo infantil.
 
+En el dashboard neonatal, la pestaña de consejería usa la etiqueta corta
+«Lactancia»; el encabezado del contenido conserva su nombre completo.
 Las tarjetas de seguimiento nutricional y estimulación histórica muestran la
 fecha más reciente entre sus campos independientes. La fecha de última medición
 nutricional se deriva de peso y talla; una clasificación posterior no se presenta

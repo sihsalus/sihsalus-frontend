@@ -14,6 +14,7 @@ const dashboardTranslationKeys = [
   'nutritionFollowUp',
   'neonatalCare',
   'neonatalCareTabs',
+  'breastfeedingTab',
   'wellChildCare',
   'wellChildCareTabs',
 ] as const;

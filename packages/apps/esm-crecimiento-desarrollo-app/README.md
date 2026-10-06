@@ -6,6 +6,9 @@ Este microfrontend vive en la carpeta `packages/apps/esm-crecimiento-desarrollo-
 
 App orientada al seguimiento de CRED y control preventivo infantil.
 
+En el dashboard neonatal, la pestaña de consejería usa la etiqueta corta
+«Lactancia»; el encabezado del contenido conserva su nombre completo.
+
 Terminología de dominio: visita = consulta, encounter = atención, appointment = cita.
 
 ## Marco normativo

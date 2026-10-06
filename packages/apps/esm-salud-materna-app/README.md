@@ -22,6 +22,10 @@ Cobertura frontend actual:
 - Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
 - Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
 
+El panel de brechas NTS usa el catálogo propio del módulo para sus 21 requisitos
+en español e inglés, también cuando se monta en un slot compartido. La fecha de
+último registro se presenta en el idioma de la interfaz.
+
 En la pantalla de parto, los usuarios con `app:hoja.clinica.partoPuerperio.editar`
 y `Add Relationships` pueden vincular a la madre con un recién nacido que ya
 esté registrado. El flujo busca pacientes existentes, pide confirmar nombre,

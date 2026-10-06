@@ -223,12 +223,12 @@ const statusMeta: Record<RequirementStatus, { labelKey: string; label: string; t
 
 const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? '';
 
-const formatDate = (date?: string) => {
+const formatDate = (date: string | undefined, language: string) => {
   if (!date) {
     return null;
   }
 
-  return new Intl.DateTimeFormat('es-PE', {
+  return new Intl.DateTimeFormat(language.startsWith('es') ? 'es-PE' : 'en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -243,7 +243,7 @@ function useMaternalEncounters(patientUuid: string) {
 }
 
 const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation('@sihsalus/esm-salud-materna-app');
   const config = useConfig<ConfigObject>();
   const { data, error, isLoading } = useMaternalEncounters(patientUuid);
   const { pregnancyStartDate, error: pregnancyError, isLoading: isPregnancyLoading } = useCurrentPregnancy(patientUuid);
@@ -390,7 +390,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
                 <ul className={styles.requirementsList}>
                   {sectionRequirements.map((requirement) => {
                     const meta = statusMeta[requirement.status];
-                    const completedDate = formatDate(requirement.completedDate);
+                    const completedDate = formatDate(requirement.completedDate, i18n.resolvedLanguage ?? i18n.language);
 
                     return (
                       <li className={styles.requirementItem} key={requirement.id}>

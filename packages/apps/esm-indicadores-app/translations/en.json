@@ -272,6 +272,7 @@
   "versionHistory": "Version history",
   "versionHistoryAria": "Indicator versions",
   "versionLabel": "Version:",
+  "versionNumber": "Version #{{num}}",
   "versionsLoadFailed": "Could not load the versions",
   "view": "View",
   "year": "Year",

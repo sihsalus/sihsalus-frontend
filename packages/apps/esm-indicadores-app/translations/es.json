@@ -275,6 +275,7 @@
   "versionHistory": "Historial de versiones",
   "versionHistoryAria": "Versiones del indicador",
   "versionLabel": "Versión:",
+  "versionNumber": "Versión #{{num}}",
   "versionsLoadFailed": "No se pudieron cargar las versiones",
   "view": "Ver",
   "year": "Año",

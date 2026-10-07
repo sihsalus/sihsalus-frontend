@@ -253,7 +253,9 @@ const IndicadorDetailPage: React.FC = () => {
                   <li key={version.id} className={styles.historyItem}>
                     <details className={styles.historyDetails}>
                       <summary className={styles.historySummary}>
-                        <span className={styles.historyItemTitle}>Versión #{version.version}</span>
+                        <span className={styles.historyItemTitle}>
+                          {t('versionNumber', 'Versión #{{num}}', { num: version.version })}
+                        </span>
                         <span className={styles.historyItemDate}>
                           <time dateTime={version.creado_en}>{formatVersionDate(version.creado_en)}</time>
                         </span>

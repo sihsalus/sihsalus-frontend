@@ -52,7 +52,7 @@ describe('LocationSearchSelector', () => {
     typeQuery('Buscar servicios', 'materno');
 
     const listbox = screen.getByRole('listbox', { name: 'Servicios' });
-    fireEvent.click(within(listbox).getByRole('button', { name: 'Agregar' }));
+    fireEvent.click(within(listbox).getAllByRole('button', { name: 'Agregar' })[0]);
     expect(onChange).toHaveBeenCalledWith([locations[0]]);
 
     const selected = [locations[0], locations[1]];

@@ -2,6 +2,7 @@ export interface ProgramNavigationTarget {
   label?: string;
   programUuid: string;
   chartPath: string;
+  historicalChartPath?: string;
 }
 
 function encodeChartPath(chartPath: string): string {
@@ -12,13 +13,14 @@ export function getProgramNavigationHref(
   patientUuid: string,
   programUuid: string | null | undefined,
   targets: Array<ProgramNavigationTarget> = [],
+  dateCompleted?: string | null,
 ): string | null {
   if (!patientUuid || !programUuid) {
     return null;
   }
 
   const target = targets.find((candidate) => candidate.programUuid === programUuid);
-  const chartPath = target?.chartPath?.trim();
+  const chartPath = (dateCompleted ? target?.historicalChartPath?.trim() : undefined) || target?.chartPath?.trim();
 
   if (!chartPath) {
     return null;

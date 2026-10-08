@@ -6,6 +6,41 @@ Este microfrontend vive en la carpeta `packages/apps/esm-crecimiento-desarrollo-
 
 App orientada al seguimiento de CRED y control preventivo infantil.
 
+## Atención CRED integrada
+
+La entrada **CRED** (`cred-dashboard`) reúne Resumen, Antecedentes y nacimiento,
+Control y examen, Crecimiento y nutrición, Desarrollo, Vacunación y Seguimiento.
+El resumen ofrece accesos a las secciones permitidas y fechas de atenciones
+registradas. No calcula cumplimiento clínico ni declara un control completo por
+contar formularios. Las curvas reutilizan el lector y las referencias OMS del
+componente de crecimiento existente; sus límites y procedencia siguen vigentes.
+
+La entrada exige sesión autenticada, acceso a la historia,
+`app:hoja.clinica.cred.cursoVida` y lectura de al menos una familia CRED.
+Cada sección conserva su permiso de lectura
+y los lectores/formularios mantienen sus permisos de edición. Las pestañas sin
+permiso no se muestran ni montan sus lectores. Solo se monta la pestaña activa y
+al cambiar de paciente se reinicia en Resumen. La inscripción activa al programa
+«Control de Niño Sano» sigue condicionando el enlace lateral mediante el helper
+clínico compartido. La ruta directa comprueba también esa inscripción antes de
+montar los lectores clínicos; carga incompleta o error no habilitan el panel.
+No se crea otro evaluador de programas.
+
+**Abrir formularios del control** reutiliza el workspace y la comprobación de
+consulta activa existentes. **Consultas anteriores** conserva el permiso de
+visitas y abre el historial del mismo paciente sin cambiar la consulta activa.
+El orden del enlace lateral pertenece a `config/frontend.json`. Las rutas,
+componentes y privilegios de los cinco dashboards anteriores se conservan para
+enlaces directos. La atención inmediata y hospitalaria neonatal permanece en su
+pantalla original, accesible desde **Ver atención neonatal** con su permiso
+propio; no es un paso obligatorio del control ambulatorio.
+
+QA pendiente en QLTY: recorrido de las siete pestañas con datos sintéticos,
+perfiles de lectura/edición restringidos, revocación, cambio de paciente, creación
+y reapertura del mismo control, curvas y citas. La reorganización no modifica
+conceptos, formularios ni reglas clínicas y no cierra las brechas de content
+documentadas debajo.
+
 En el dashboard neonatal, la pestaña de consejería usa la etiqueta corta
 «Lactancia»; el encabezado del contenido conserva su nombre completo.
 Las tarjetas de seguimiento nutricional y estimulación histórica muestran la

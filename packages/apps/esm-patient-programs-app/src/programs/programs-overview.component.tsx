@@ -14,7 +14,6 @@ import {
 } from '@carbon/react';
 import {
   AddIcon,
-  type ConfigObject,
   isDesktop as desktopLayout,
   formatDate,
   formatDatetime,
@@ -32,6 +31,7 @@ import {
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../config-schema';
 import { type ConfigurableProgram } from '../types';
 import { getProgramNavigationHref } from './program-navigation';
 import { findLastState, usePrograms } from './programs.resource';
@@ -77,8 +77,8 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
   const launchProgramsForm = useCallback(() => launchPatientWorkspace('programs-form-workspace'), []);
 
   const renderProgramNavigationLink = useCallback(
-    (programUuid: string | null | undefined) => {
-      const href = getProgramNavigationHref(patientUuid, programUuid, programNavigationTargets);
+    (programUuid: string | null | undefined, dateCompleted?: string | null) => {
+      const href = getProgramNavigationHref(patientUuid, programUuid, programNavigationTargets, dateCompleted);
 
       return href ? <a href={href}>{t('goTo', 'Go to')}</a> : '--';
     },
@@ -192,7 +192,7 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>
                             {cell.info.header === 'goTo'
-                              ? renderProgramNavigationLink(enrollment?.program?.uuid)
+                              ? renderProgramNavigationLink(enrollment?.program?.uuid, enrollment?.dateCompleted)
                               : (cell.value?.content ?? cell.value)}
                           </TableCell>
                         ))}

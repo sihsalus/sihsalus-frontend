@@ -1,66 +1,14 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
-
-.label01 {
-  @include type.type-style('label-01');
-}
-
-.bodyShort01 {
-  @include type.type-style('body-compact-01');
-}
+@use "@carbon/layout";
 
 .chartContainer {
   display: flex;
+  min-width: 0;
   margin: 0 layout.$spacing-05;
-  flex-direction: row;
-  justify-content: space-between;
 }
 
 .chartArea {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
   margin: layout.$spacing-03 0;
-  padding-right: layout.$spacing-05;
-
-  // This is a hack to override the max-width of the overflow menu button
-  :global(
-    .cds--chart-holder
-      .cds--cc--toolbar
-      .cds--overflow-menu-options
-      .cds--overflow-menu-options__option
-      .cds--overflow-menu-options__btn
-  ) {
-    max-width: none !important;
-  }
-}
-
-.growthLabel {
-  @extend .label01;
-  margin-bottom: layout.$spacing-05;
-  display: inline-block;
-}
-
-.tab {
-  outline: 0;
-  outline-offset: 0;
-  min-height: layout.$spacing-07 !important;
-  block-size: layout.$spacing-05 !important;
-
-  &:active,
-  &:focus {
-    outline: layout.$spacing-01 solid var(--brand-03) !important;
-  }
-
-  &[aria-selected='true'] {
-    box-shadow: inset 4px 0 0 0 var(--brand-03) !important;
-    border-bottom: none;
-    font-weight: 600;
-    margin-left: 0 !important;
-  }
-
-  &[aria-selected='false'] {
-    border-bottom: none;
-    border-left: layout.$spacing-01 solid $ui-03;
-    margin-left: 0 !important;
-  }
+  padding-inline-end: layout.$spacing-05;
 }

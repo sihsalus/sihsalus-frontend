@@ -200,3 +200,23 @@ compatibility. Only `false` identifies an untouched current-time default;
 `true` identifies a selected or retained historical date. Consumers must preserve
 this marker when editing or persisting a draft. Missing markers conservatively
 retain legacy date behavior. This client-only field is not sent to OpenMRS.
+
+## Integrated clinical dashboards
+
+`TabbedDashboard` accepts stable tab IDs, controlled selection, header actions
+and React content in place of an extension slot. `mountActiveTabOnly` is opt-in;
+existing consumers keep their extension slots mounted. Opt-in dashboards use
+manual keyboard activation and reset local selection when the patient changes.
+Removing a permitted tab falls back to the first available section. Clinical
+apps own their permission checks and program policy before mounting readers.
+
+`createClinicalDashboardLink` uses the existing enrollment reader and expression
+evaluator to give a program one direct sidebar entry with its established
+visibility policy. Loading or failed enrollment reads do not expose that entry.
+The standard extension-slot `remove` configuration hides replaced folders while
+their registered routes and lifecycles remain available.
+
+The explicit-patient workspace launcher does not inherit another patient's group
+or accept conflicting patient UUIDs. A pending visit prompt cannot open its form
+after the owning view unmounts or changes patient. It resolves the patient's
+workspace group again after the visit prompt so the new visit context is retained.

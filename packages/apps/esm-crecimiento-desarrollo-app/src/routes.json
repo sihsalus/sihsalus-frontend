@@ -6,6 +6,25 @@
   },
   "extensions": [
     {
+      "name": "cred-dashboard-link",
+      "component": "integratedCredLink",
+      "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:hoja.clinica",
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-cred-dashboard-slot",
+        "path": "cred-dashboard",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "cred-dashboard",
+      "component": "integratedCredDashboard",
+      "slot": "patient-chart-cred-dashboard-slot",
+      "privileges": "app:hoja.clinica"
+    },
+    {
       "name": "growth-chart-overview-widget",
       "component": "growthChart",
       "slot": "patient-chart-summary-dashboard-slot",

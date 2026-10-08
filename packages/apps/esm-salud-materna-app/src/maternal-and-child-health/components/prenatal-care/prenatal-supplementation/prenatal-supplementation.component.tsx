@@ -1,4 +1,5 @@
 import { ProgressBar, Tag, Tile } from '@carbon/react';
+import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,8 +16,10 @@ interface PrenatalSupplementationProps {
  * Ácido fólico, sulfato ferroso y calcio.
  */
 const PrenatalSupplementation: React.FC<PrenatalSupplementationProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const { supplements, overallPercentage, isLoading, error } = usePrenatalSupplementation(patientUuid);
+
+  if (error) return <ErrorState error={error} headerTitle={t('prenatalSupplementation')} />;
 
   if (isLoading) return <Tile className={styles.card}>{t('loading', 'Loading...')}</Tile>;
 

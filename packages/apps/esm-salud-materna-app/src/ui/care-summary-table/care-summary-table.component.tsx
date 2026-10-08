@@ -1,6 +1,7 @@
 import {
   Button,
   DataTable,
+  DataTableSkeleton,
   InlineLoading,
   Table,
   TableBody,
@@ -11,19 +12,14 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import {
-  CardHeader,
-  EmptyState,
-  launchPatientWorkspace,
-  launchStartVisitPrompt,
-  useVisitOrOfflineVisit,
-} from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 
 import styles from './care-summary-table.scss';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 
 function collectPrefixesFromMember(
   member: { display: string },
@@ -121,6 +117,7 @@ interface CareSummaryTableProps {
     prenatalEncounters: Encounter[];
     isValidating: boolean;
     mutate: () => void;
+    error?: Error | null;
   };
   rowDefinitions: RowDefinition[];
   headerPrefix?: string;
@@ -137,27 +134,12 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
   rowDefinitions,
   customHeaderTransform,
 }) => {
-  const { t } = useTranslation();
-  const { prenatalEncounters, isValidating, mutate } = useEncountersHook(patientUuid);
-  const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
-
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
+  const { prenatalEncounters, isValidating, mutate, error } = useEncountersHook(patientUuid);
+  const { launchForm: launchConfiguredForm } = useMaternalFormIdentifierLauncher(formUuid, title, patientUuid);
   const launchForm = useCallback(() => {
-    try {
-      if (!currentVisit) {
-        launchStartVisitPrompt();
-      } else {
-        if (formUuid) {
-          launchPatientWorkspace('patient-form-entry-workspace', {
-            workspaceTitle: title,
-            mutateForm: mutate,
-            formInfo: { formUuid, patientUuid, additionalProps: {} },
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
-    }
-  }, [patientUuid, currentVisit, formUuid, title, mutate]);
+    launchConfiguredForm('', mutate);
+  }, [launchConfiguredForm, mutate]);
 
   const activeRows = useMemo(() => {
     if (!prenatalEncounters || prenatalEncounters.length === 0) {
@@ -232,6 +214,10 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
 
     return base;
   }, [prenatalEncounters, activeRows, maxEncounters]);
+
+  if (error) return <ErrorState error={error} headerTitle={title} />;
+  if (isValidating && !prenatalEncounters.length)
+    return <DataTableSkeleton role="progressbar" aria-label={t('loadingData', 'Loading records')} />;
 
   return (
     <div className={styles.widgetCard}>

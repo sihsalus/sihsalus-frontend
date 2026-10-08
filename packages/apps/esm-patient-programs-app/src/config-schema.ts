@@ -1,4 +1,5 @@
 import { Type } from '@openmrs/esm-framework';
+import type { ProgramNavigationTarget } from './programs/program-navigation';
 
 export const configSchema = {
   hideAddProgramButton: {
@@ -83,12 +84,13 @@ export const configSchema = {
   programNavigationTargets: {
     _type: Type.Array,
     _description:
-      'Patient chart destinations shown as "Go to" links in the program enrollment tables. The chartPath value is appended to /patient/:patientUuid/chart/.',
+      'Patient chart destinations shown as "Go to" links in the program enrollment tables. Completed enrollments use historicalChartPath when configured, otherwise chartPath. Paths are appended to /patient/:patientUuid/chart/.',
     _default: [
       {
         label: 'Control de Niño Sano',
         programUuid: 'b9db5c39-2855-4c61-9f25-9a7ec2d564bc',
-        chartPath: 'well-child-care-dashboard',
+        chartPath: 'cred-dashboard',
+        historicalChartPath: 'well-child-care-dashboard',
       },
       {
         label: 'Programa de Vacunación Infantil',
@@ -98,7 +100,8 @@ export const configSchema = {
       {
         label: 'Madre Gestante',
         programUuid: '3cb4ffd6-1b67-4c52-8398-4bf9844a415e',
-        chartPath: 'prenatal-care-dashboard',
+        chartPath: 'maternal-care-dashboard',
+        historicalChartPath: 'prenatal-care-dashboard',
       },
       {
         label: 'Planificación Familiar',
@@ -118,6 +121,10 @@ export const configSchema = {
       chartPath: {
         _type: Type.String,
       },
+      historicalChartPath: {
+        _type: Type.String,
+        _optional: true,
+      },
     },
   },
 };
@@ -132,9 +139,5 @@ export interface ConfigObject {
     maxAgeYears?: number;
     genders?: Array<string>;
   }>;
-  programNavigationTargets: Array<{
-    label?: string;
-    programUuid: string;
-    chartPath: string;
-  }>;
+  programNavigationTargets: Array<ProgramNavigationTarget>;
 }

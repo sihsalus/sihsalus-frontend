@@ -11,7 +11,7 @@ import {
   launchWorkspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-styleguide';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { launchStartVisitPrompt } from './launchStartVisitPrompt';
 import { useVisitOrOfflineVisit } from './offline/visit';
@@ -105,15 +105,18 @@ function launchWorkspace2FromAppShell<
   return launcher(workspaceName, workspaceProps, windowProps, groupProps);
 }
 
-function getPatientWorkspaceGroupProps(): PatientWorkspaceGroupProps | null {
+function getPatientWorkspaceGroupProps(requestedPatientUuid?: string): PatientWorkspaceGroupProps | null {
   const workspace2State = workspace2Store.getState();
   if (workspace2State.openedGroup?.groupName === 'patient-chart') {
-    return workspace2State.openedGroup.props as PatientWorkspaceGroupProps | null;
+    const props = workspace2State.openedGroup.props as PatientWorkspaceGroupProps | null;
+    if (props && (!requestedPatientUuid || props.patientUuid === requestedPatientUuid)) {
+      return props;
+    }
   }
 
   const { patientUuid, patient, visitContext, mutateVisitContext } = getPatientChartStore().getState();
 
-  if (!patientUuid) {
+  if (!patientUuid || (requestedPatientUuid && patientUuid !== requestedPatientUuid)) {
     return null;
   }
 
@@ -290,27 +293,47 @@ export function useLaunchWorkspaceRequiringVisit<T extends object>(
   const activePatientUuid = patientUuid ?? storedPatientUuid ?? '';
   const { currentVisit } = useVisitOrOfflineVisit(activePatientUuid);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
+  const launchScope = useMemo(
+    () => ({ active: true, patientUuid: activePatientUuid, workspaceName }),
+    [activePatientUuid, workspaceName],
+  );
+  useEffect(() => {
+    launchScope.active = true;
+    return () => {
+      launchScope.active = false;
+    };
+  }, [launchScope]);
 
   return useCallback(
     (workspaceProps?: T, windowProps?: object, groupProps?: object): void => {
+      if (!launchScope.active) return;
       if (patientUuid) {
+        const requestedPatientUuid = getPatientUuidFromAdditionalProps(workspaceProps);
+        if (requestedPatientUuid && requestedPatientUuid !== activePatientUuid) return;
         const patientChartWorkspace2 = isPatientChartWorkspace2(workspaceName);
-        const patientChartGroupProps = groupProps ??
-          getPatientWorkspaceGroupProps() ?? {
-            patient: null,
-            patientUuid: activePatientUuid,
-            visitContext: currentVisit ?? null,
-            mutateVisitContext: null,
-          };
+        if (
+          patientChartWorkspace2 &&
+          groupProps &&
+          (groupProps as Partial<PatientWorkspaceGroupProps>).patientUuid !== activePatientUuid
+        ) {
+          return;
+        }
         const resolvedWorkspaceProps = patientChartWorkspace2
           ? (workspaceProps ?? null)
           : ({
-              patientUuid: activePatientUuid,
               ...(workspaceProps ?? {}),
+              patientUuid: activePatientUuid,
             } as T & { patientUuid: string });
 
         void startVisitIfNeeded().then((didStartVisit) => {
-          if (didStartVisit) {
+          if (didStartVisit && launchScope.active) {
+            const patientChartGroupProps = groupProps ??
+              getPatientWorkspaceGroupProps(activePatientUuid) ?? {
+                patient: null,
+                patientUuid: activePatientUuid,
+                visitContext: currentVisit ?? null,
+                mutateVisitContext: null,
+              };
             void launchWorkspace2FromAppShell(
               workspaceName,
               resolvedWorkspaceProps,
@@ -328,7 +351,7 @@ export function useLaunchWorkspaceRequiringVisit<T extends object>(
         launchStartVisitPrompt();
       }
     },
-    [activePatientUuid, currentVisit, patientUuid, startVisitIfNeeded, systemVisitEnabled, workspaceName],
+    [activePatientUuid, currentVisit, patientUuid, startVisitIfNeeded, systemVisitEnabled, workspaceName, launchScope],
   );
 }
 

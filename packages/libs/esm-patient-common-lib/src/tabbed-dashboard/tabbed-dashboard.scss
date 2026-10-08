@@ -82,6 +82,27 @@
   grid-column: 1 / -1;
 }
 
+.headerWithActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.description {
+  @include type.type-style("body-compact-01");
+  margin-top: layout.$spacing-03;
+  color: $text-02;
+  max-width: 60rem;
+}
+
 :global(.omrs-breakpoint-lt-desktop) .dashboard {
   grid-template-columns: 1fr;
 }
@@ -132,4 +153,9 @@ html[dir="rtl"] {
   &[aria-selected="true"] {
     border-bottom: 3px solid var(--brand-03) !important;
   }
+}
+
+.activeOnly .tab:focus-visible {
+  outline: 2px solid $interactive-01 !important;
+  outline-offset: -2px;
 }

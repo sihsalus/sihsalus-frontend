@@ -1,4 +1,5 @@
 import { Tag, Tile } from '@carbon/react';
+import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -28,8 +29,10 @@ const RISK_LABELS: Record<string, string> = {
  * Widget de clasificación de riesgo obstétrico según NTS 105-MINSA.
  */
 const RiskClassification: React.FC<RiskClassificationProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const { riskLevel, riskFactors, lastEvaluationDate, isLoading, error } = useObstetricRisk(patientUuid);
+
+  if (error) return <ErrorState error={error} headerTitle={t('obstetricRisk')} />;
 
   if (isLoading) return <Tile className={styles.card}>{t('loading', 'Loading...')}</Tile>;
 

@@ -1,6 +1,7 @@
 import { Button, Tag, Tile } from '@carbon/react';
 import { Add, CheckmarkFilled, Edit, WarningFilled } from '@carbon/react/icons';
 import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
@@ -21,7 +22,7 @@ interface BirthPlanProps {
  * Permite crear/editar usando Ampath Form: OBST-004-FICHA PLAN DE PARTO
  */
 const BirthPlan: React.FC<BirthPlanProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const config = useConfig<ConfigObject>();
   const { hasBirthPlan, planDate, referenceHospital, encounterUuid, isLoading, error, mutate } =
     useBirthPlan(patientUuid);
@@ -39,6 +40,8 @@ const BirthPlan: React.FC<BirthPlanProps> = ({ patientUuid }) => {
       handlePostResponse: mutate,
     });
   }, [config, encounterUuid, mutate]);
+
+  if (error) return <ErrorState error={error} headerTitle={t('birthPlan')} />;
 
   if (isLoading) return <Tile className={styles.card}>{t('loading', 'Loading...')}</Tile>;
 

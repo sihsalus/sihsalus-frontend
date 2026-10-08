@@ -1,266 +1,116 @@
-// obstetric-history-chart.component.tsx
-import { LineChart, ScaleTypes } from '@carbon/charts-react';
-import { Tab, TabListVertical, TabPanel, TabPanels, TabsVertical, Tile } from '@carbon/react';
-import { formatDate, parseDate } from '@openmrs/esm-framework';
-import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import { formatDate } from '@openmrs/esm-framework';
+import React, { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { ConfigObject } from '../../config-schema';
 import type { PatientPrenatalAntecedents } from '../../types';
-import type { ObstetricDisplayDataType } from './obstetric-history.schema';
+import { obstetricHistoryFields } from '../../maternal-and-child-health/obstetric-history-fields';
 import styles from './obstetric-history-chart.scss';
 
-interface ObstetricHistoryChartProps {
-  obstetricData: ObstetricDisplayDataType;
-  historicalData: PatientPrenatalAntecedents[];
-  conceptUnits: Map<string, string>;
-  config: ConfigObject;
+interface Props {
+  record: PatientPrenatalAntecedents;
 }
 
-type ObstetricMetric = 'pregnancies' | 'births' | 'abortions' | 'liveBirths';
+const nodes = [
+  { key: 'gravidez', x: 20, y: 20 },
+  { key: 'partoAborto', x: 225, y: 20 },
+  { key: 'partos', x: 225, y: 214 },
+  { key: 'partosVaginales', x: 445, y: 80 },
+  { key: 'cesareas', x: 445, y: 270 },
+  { key: 'partoNacidoVivo', x: 665, y: 80 },
+  { key: 'partoNacidoMuerto', x: 665, y: 270 },
+  { key: 'nacidosVivosViven', x: 885, y: 20 },
+  { key: 'muertePrimeraSemana', x: 885, y: 145 },
+  { key: 'muerteDespuesPrimeraSemana', x: 885, y: 270 },
+] as const;
 
-interface ObstetricChartData {
-  groupName: ObstetricMetric;
-  title: string;
-  value: ObstetricMetric;
-}
+const referenceFlags = [
+  'obstetricZeroOrMoreThanThree',
+  'obstetricLowBirthWeight',
+  'obstetricMultipleBirth',
+  'obstetricPretermBirth',
+] as const;
 
-const ObstetricHistoryChart: React.FC<ObstetricHistoryChartProps> = ({
-  obstetricData,
-  historicalData,
-  conceptUnits: _conceptUnits,
-  config: _config,
-}) => {
-  const { t } = useTranslation();
-
-  const [selectedMetric, setSelectedMetric] = useState<ObstetricChartData>({
-    title: t('pregnancies', 'Embarazos'),
-    value: 'pregnancies',
-    groupName: 'pregnancies',
-  });
-
-  // Calcular totales
-  const totalBirths = obstetricData.termBirths + obstetricData.prematureBirths;
-
-  // Configuración de métricas disponibles
-  const obstetricMetrics: { id: ObstetricMetric; title: string; value: ObstetricMetric }[] = [
-    {
-      id: 'pregnancies',
-      title: t('pregnancies', 'Embarazos'),
-      value: 'pregnancies',
-    },
-    {
-      id: 'births',
-      title: t('births', 'Partos'),
-      value: 'births',
-    },
-    {
-      id: 'abortions',
-      title: t('abortions', 'Abortos'),
-      value: 'abortions',
-    },
-    {
-      id: 'liveBirths',
-      title: t('liveBirths', 'Live births'),
-      value: 'liveBirths',
-    },
-  ];
-
-  // Datos para el gráfico de tendencias
-  const chartData = useMemo(() => {
-    if (!historicalData?.length) return [];
-
-    return historicalData
-      .filter((data) => data[selectedMetric.value])
-      .slice(0, 10)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((data) => ({
-        group: selectedMetric.title,
-        key: formatDate(parseDate(data.date), { year: true }),
-        value: parseInt(data[selectedMetric.value], 10) || 0,
-        date: data.date,
-      }));
-  }, [historicalData, selectedMetric]);
-
-  // Configuración del gráfico
-  const chartOptions = useMemo(
-    () => ({
-      title: `${t('evolutionOf', 'Evolución de')} ${selectedMetric.title}`,
-      axes: {
-        bottom: {
-          title: t('date', 'Date'),
-          mapsTo: 'date',
-          scaleType: ScaleTypes.TIME,
-        },
-        left: {
-          mapsTo: 'value',
-          title: selectedMetric.title,
-          scaleType: ScaleTypes.LINEAR,
-          includeZero: true,
-        },
-      },
-      legend: {
-        enabled: false,
-      },
-      color: {
-        scale: {
-          [selectedMetric.title]: '#0f62fe',
-        },
-      },
-      tooltip: {
-        customHTML: ([{ value, date }]) =>
-          `<div class="cds--tooltip cds--tooltip--shown" style="min-width: max-content; font-weight:600">
-          ${formatDate(parseDate(date), { year: true })} -
-          <span style="color: #c6c6c6; font-size: 1rem; font-weight:400">${value}</span>
-        </div>`,
-      },
-      height: '300px',
-    }),
-    [selectedMetric, t],
-  );
+/** Read-only HCMP layout, showing the values of one recorded history. */
+const ObstetricHistoryChart: React.FC<Props> = ({ record }) => {
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
+  const titleId = useId();
+  const descriptionId = useId();
+  const valueText = (value?: number) => (value === undefined ? t('obstetricNotRecorded') : String(value));
 
   return (
-    <div className={styles.obstetricChartContainer}>
-      {/* Tarjetas de resumen */}
-      <div className={styles.summaryCards}>
-        <div className={styles.formulaObstetrica}>
-          <h4 className={styles.formulaTitle}>{t('obstetricFormula', 'Fórmula Obstétrica')}</h4>
-          <div className={styles.formulaDisplay}>
-            <span className={styles.formulaItem}>
-              <span className={styles.formulaLetter}>G</span>
-              <span className={styles.formulaValue}>{obstetricData.pregnancies}</span>
-            </span>
-            <span className={styles.formulaSeparator}>-</span>
-            <span className={styles.formulaItem}>
-              <span className={styles.formulaLetter}>P</span>
-              <span className={styles.formulaValue}>{totalBirths}</span>
-            </span>
-            <span className={styles.formulaSeparator}>-</span>
-            <span className={styles.formulaItem}>
-              <span className={styles.formulaLetter}>A</span>
-              <span className={styles.formulaValue}>{obstetricData.abortions}</span>
-            </span>
-            <span className={styles.formulaSeparator}>-</span>
-            <span className={styles.formulaItem}>
-              <span className={styles.formulaLetter}>V</span>
-              <span className={styles.formulaValue}>{obstetricData.liveBirths}</span>
-            </span>
-          </div>
-        </div>
-
-        <div className={styles.cardsGrid}>
-          <Tile className={styles.summaryCard}>
-            <div className={styles.cardContent}>
-              <div className={styles.cardValue}>{obstetricData.pregnancies}</div>
-              <div className={styles.cardLabel}>{t('pregnancies', 'Embarazos')}</div>
-            </div>
-          </Tile>
-
-          <Tile className={styles.summaryCard}>
-            <div className={styles.cardContent}>
-              <div className={styles.cardValue}>{totalBirths}</div>
-              <div className={styles.cardLabel}>{t('births', 'Partos')}</div>
-            </div>
-          </Tile>
-
-          <Tile className={styles.summaryCard}>
-            <div className={styles.cardContent}>
-              <div className={styles.cardValue}>{obstetricData.abortions}</div>
-              <div className={styles.cardLabel}>{t('abortions', 'Abortos')}</div>
-            </div>
-          </Tile>
-
-          <Tile className={styles.summaryCard}>
-            <div className={styles.cardContent}>
-              <div className={styles.cardValue}>{obstetricData.liveBirths}</div>
-              <div className={styles.cardLabel}>{t('liveBirths', 'Live births')}</div>
-            </div>
-          </Tile>
-        </div>
+    <figure className={styles.figure}>
+      <figcaption>
+        <h5 id={titleId}>{t('obstetricDiagramTitle')}</h5>
+        <p id={descriptionId}>{t('obstetricDiagramHelp')}</p>
+        <p>{t('obstetricRecordedOn', { date: formatDate(new Date(record.date)) })}</p>
+      </figcaption>
+      <div className={styles.scrollArea} role="region" aria-label={t('obstetricDiagramTitle')}>
+        <svg
+          className={styles.diagram}
+          viewBox="0 0 1080 465"
+          role="img"
+          aria-labelledby={`${titleId} ${descriptionId}`}
+        >
+          <g className={styles.connections}>
+            <path d="M195 62H225 M108 104L225 254 M400 254L445 122 M400 254L445 312 M620 122L642 217L665 122 M620 312L642 217L665 312 M840 122L885 62 M840 122L885 187 M840 122L885 312" />
+          </g>
+          {nodes.map(({ key, x, y }) => {
+            const field = obstetricHistoryFields.find((field) => field.key === key);
+            return (
+              <g
+                key={key}
+                transform={`translate(${x},${y})`}
+                aria-label={`${t(field.labelKey)}: ${valueText(record[key])}`}
+              >
+                <rect width="175" height="84" rx="4" className={styles.node} />
+                <text x="87.5" y="28" textAnchor="middle" className={styles.value}>
+                  {valueText(record[key])}
+                </text>
+                <text x="87.5" y="58" textAnchor="middle" className={styles.label}>
+                  {t(field.labelKey)}
+                </text>
+              </g>
+            );
+          })}
+          <g transform="translate(20,140)">
+            {referenceFlags.map((key, index) => (
+              <g
+                key={key}
+                transform={`translate(0,${index * 35})`}
+                aria-label={`${t(key)}: ${t('obstetricNotRecorded')}`}
+              >
+                <rect x="0" y="0" width="16" height="16" className={styles.flag} />
+                <path d="M4 8H12" className={styles.connections} />
+                <text x="25" y="13" className={styles.label}>
+                  {t(key)}
+                </text>
+              </g>
+            ))}
+          </g>
+          <g
+            transform="translate(225,385)"
+            aria-label={`${t('obstetricHighestBirthWeight')}: ${valueText(record.mayorPesoRn)}`}
+          >
+            <rect width="615" height="55" rx="4" className={styles.node} />
+            <text x="18" y="34" className={styles.label}>
+              {t('obstetricHighestBirthWeight')}
+            </text>
+            <text x="595" y="34" textAnchor="end" className={styles.weightValue}>
+              {record.mayorPesoRn === undefined ? t('obstetricNotRecorded') : `${record.mayorPesoRn} g`}
+            </text>
+          </g>
+        </svg>
       </div>
-
-      {/* Área de gráficos con tabs */}
-      <div className={styles.chartArea}>
-        <div className={styles.chartSection}>
-          <label className={styles.metricLabel} htmlFor="obstetric-chart-tabs">
-            {t('metricDisplayed', 'Métrica mostrada')}
-          </label>
-
-          <TabsVertical>
-            <TabListVertical aria-label="Obstetric metrics tabs">
-              {obstetricMetrics.map(({ id, title, value }) => (
-                <Tab
-                  className={classNames(styles.tab, styles.bodyLong01, {
-                    [styles.selectedTab]: selectedMetric.title === title,
-                  })}
-                  id={`${id}-tab`}
-                  key={id}
-                  onClick={() =>
-                    setSelectedMetric({
-                      title: title,
-                      value: value,
-                      groupName: id,
-                    })
-                  }
-                >
-                  {title}
-                </Tab>
-              ))}
-            </TabListVertical>
-
-            <TabPanels>
-              {obstetricMetrics.map(({ id }) => (
-                <TabPanel key={id}>
-                  {chartData.length > 0 ? (
-                    <LineChart data={chartData} options={chartOptions} />
-                  ) : (
-                    <div className={styles.noDataMessage}>
-                      <p>{t('noHistoricalData', 'No hay datos históricos disponibles para esta métrica')}</p>
-                    </div>
-                  )}
-                </TabPanel>
-              ))}
-            </TabPanels>
-          </TabsVertical>
-        </div>
-      </div>
-
-      {/* Breakdown detallado */}
-      <div className={styles.breakdownSection}>
-        <h5 className={styles.sectionTitle}>{t('detailedBreakdown', 'Desglose Detallado')}</h5>
-
-        <div className={styles.breakdownGrid}>
-          <div className={styles.breakdownCategory}>
-            <h6>{t('birthTypes', 'Tipos de Parto')}</h6>
-            <div className={styles.breakdownItems}>
-              <div className={styles.breakdownItem}>
-                <span className={styles.itemLabel}>{t('termBirths', 'A término')}</span>
-                <span className={styles.itemValue}>{obstetricData.termBirths}</span>
-              </div>
-              <div className={styles.breakdownItem}>
-                <span className={styles.itemLabel}>{t('prematureBirths', 'Prematuros')}</span>
-                <span className={styles.itemValue}>{obstetricData.prematureBirths}</span>
-              </div>
-            </div>
+      <dl className={styles.compactDiagram}>
+        {obstetricHistoryFields.map(({ key, labelKey }) => (
+          <div className={styles.compactNode} key={key}>
+            <dt>{t(labelKey)}</dt>
+            <dd>{key === 'mayorPesoRn' && record[key] !== undefined ? `${record[key]} g` : valueText(record[key])}</dd>
           </div>
-
-          <div className={styles.breakdownCategory}>
-            <h6>{t('outcomes', 'Resultados')}</h6>
-            <div className={styles.breakdownItems}>
-              <div className={styles.breakdownItem}>
-                <span className={styles.itemLabel}>{t('liveBirths', 'Live births')}</span>
-                <span className={styles.itemValue}>{obstetricData.liveBirths}</span>
-              </div>
-              <div className={styles.breakdownItem}>
-                <span className={styles.itemLabel}>{t('stillBirths', 'Nacidos muertos')}</span>
-                <span className={styles.itemValue}>{obstetricData.stillBirths}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        ))}
+      </dl>
+      <p className={styles.legend}>{t('obstetricReferenceFlagsHelp')}</p>
+    </figure>
   );
 };
 

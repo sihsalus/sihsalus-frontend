@@ -1,0 +1,60 @@
+@use "@carbon/styles/scss/theme";
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+
+.sectionCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: layout.$spacing-04;
+}
+
+.sectionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: layout.$spacing-04;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+
+  h5 {
+    @include type.type-style("heading-compact-01");
+  }
+}
+
+.description {
+  @include type.type-style("body-01");
+  color: theme.$text-secondary;
+}
+
+.recordList {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  margin-block-start: layout.$spacing-04;
+  padding-inline-start: layout.$spacing-05;
+}
+
+.record {
+  @include type.type-style("body-01");
+}
+
+.formAction {
+  align-self: flex-start;
+}

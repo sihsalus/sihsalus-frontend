@@ -19,6 +19,7 @@ export * from './clinical-search/clinical-search-target';
 export * from './clinical-view-group/clinical-view-group.resource';
 export { createClinicalDashboardGroup } from './clinical-view-group/createDashboardGroup';
 export { evaluateShowWhenExpression } from './clinical-view-group/evaluate-show-when-expression';
+export { createClinicalDashboardLink } from './clinical-view-group/createClinicalDashboardLink';
 export * from './compare';
 export {
   default as PatientAppointmentContext,

@@ -1,5 +1,6 @@
 // obstetric-history-base.component.tsx
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineLoading } from '@carbon/react';
+import { Analytics, Table } from '@carbon/react/icons';
 import { AddIcon, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -72,8 +73,12 @@ const ObstetricHistoryBase: React.FC<ObstetricHistoryBaseProps> = ({ patientUuid
               onChange={(evt) => setChartView(evt.name === 'chartView')}
               size={isTablet ? 'md' : 'sm'}
             >
-              <IconSwitch name="tableView" text={t('tableView', 'Table view')} />
-              <IconSwitch name="chartView" text={t('chartView', 'Chart view')} />
+              <IconSwitch name="tableView" text={t('tableView', 'Table view')}>
+                <Table size={16} />
+              </IconSwitch>
+              <IconSwitch name="chartView" text={t('chartView', 'Chart view')}>
+                <Analytics size={16} />
+              </IconSwitch>
             </ContentSwitcher>
             <RequirePrivilege privilege={prenatalCareEditPrivilege} hideUnauthorized>
               <>

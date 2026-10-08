@@ -27,7 +27,11 @@ const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, pa
 
   // Hook para obtener datos de mediciones prenatales
   const { data, isLoading, error, mutate } = usePrenatalMeasurements(patientUuid);
-  const { launchForm: launchPrenatalForm } = useMaternalFormLauncher('atencionPrenatal', t('prenatalAttention'));
+  const { launchForm: launchPrenatalForm } = useMaternalFormLauncher(
+    'atencionPrenatal',
+    t('prenatalAttention'),
+    patientUuid,
+  );
   const launchForm = useCallback(() => launchPrenatalForm('', () => void mutate()), [launchPrenatalForm, mutate]);
 
   // Transformar datos para el componente de gráfico

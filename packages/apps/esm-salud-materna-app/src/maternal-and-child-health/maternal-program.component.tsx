@@ -17,8 +17,8 @@ import {
   evaluateShowWhenExpression,
   TabbedDashboard,
   type TabConfig,
-  usePatientEnrollment,
   useLaunchWorkspaceRequiringVisit,
+  usePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
 import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import React, { useState } from 'react';
@@ -212,8 +212,16 @@ const MaternalProgram: React.FC<Props> = ({ patient, patientUuid }) => {
   ];
 
   const related = [
-    { privilege: 'app:hoja.clinica.planificacionFamiliar', path: 'family-planning-dashboard', label: 'familyPlanning' },
-    { privilege: 'app:hoja.clinica.prevencionCancer', path: 'cancer-prevention-dashboard', label: 'cancerPrevention' },
+    {
+      privilege: 'app:hoja.clinica.planificacionFamiliar',
+      path: 'family-planning-dashboard',
+      label: 'family-planningLabel',
+    },
+    {
+      privilege: 'app:hoja.clinica.prevencionCancer',
+      path: 'cancer-prevention-dashboard',
+      label: 'cancer-preventionLabel',
+    },
   ].filter(({ privilege }) => canRead(privilege));
 
   tabs[0] = {

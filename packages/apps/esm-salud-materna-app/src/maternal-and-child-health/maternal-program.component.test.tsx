@@ -1,9 +1,11 @@
-import { usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { navigate, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { usePatientEnrollment } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession } from 'test-utils';
 
+import en from '../../translations/en.json';
+import es from '../../translations/es.json';
 import { IntegratedMaternalDashboard } from './maternal-program.component';
 
 const readers = vi.hoisted(() => ({
@@ -143,4 +145,30 @@ it('groups the visible care tasks into the four HCMP sections without bypassing 
   }
   await userEvent.click(screen.getByRole('button', { name: 'maternalDischargeTab' }));
   expect(screen.getByRole('tab', { name: 'maternalDischargeTab' })).toHaveAttribute('aria-selected', 'true');
+});
+
+it('uses translated related-care labels and preserves their patient routes and permissions', async () => {
+  const { rerender } = render(<IntegratedMaternalDashboard />);
+  expect(screen.queryByRole('button', { name: 'family-planningLabel' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'cancer-preventionLabel' })).not.toBeInTheDocument();
+
+  privileges.push('app:hoja.clinica.planificacionFamiliar', 'app:hoja.clinica.prevencionCancer');
+  rerender(<IntegratedMaternalDashboard />);
+
+  for (const [label, path] of [
+    ['family-planningLabel', 'family-planning-dashboard'],
+    ['cancer-preventionLabel', 'cancer-prevention-dashboard'],
+  ] as const) {
+    expect(en[label]).toBeTruthy();
+    expect(es[label]).toBeTruthy();
+    expect(en[label]).not.toBe(label);
+    expect(es[label]).not.toBe(label);
+    await userEvent.click(screen.getByRole('button', { name: label }));
+    expect(navigate).toHaveBeenLastCalledWith({ to: `\${openmrsSpaBase}/patient/${patient.id}/chart/${path}` });
+  }
+
+  privileges = privileges.filter((privilege) => privilege !== 'app:hoja.clinica.planificacionFamiliar');
+  rerender(<IntegratedMaternalDashboard />);
+  expect(screen.queryByRole('button', { name: 'family-planningLabel' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'cancer-preventionLabel' })).toBeInTheDocument();
 });

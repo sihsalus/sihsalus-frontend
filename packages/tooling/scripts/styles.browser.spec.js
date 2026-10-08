@@ -468,7 +468,7 @@ window.visitStyles = styles;`,
   }
 });
 
-test('results dashboard keeps its top gap when shared dashboard styles load later', async (t) => {
+test('chart dashboards preserve results spacing and contain wide tables at mobile widths', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'results-dashboard-spacing-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));
   const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-chart-app');
@@ -500,18 +500,62 @@ window.chartStyles = chart;`,
   const page = await context.newPage();
   await page.setContent(
     '<div data-extension-slot-name="patient-chart-test-results-dashboard-slot" id="results"></div>' +
-      '<div data-extension-slot-name="patient-chart-encounters-dashboard-slot" id="encounters"></div>',
+      '<div data-extension-slot-name="patient-chart-encounters-dashboard-slot" id="encounters"></div>' +
+      '<main id="host"><div id="dashboard"><div id="extension"><div id="wrapper"><div>' +
+      '<section class="cds--data-table-container"><div id="table-scroll" class="cds--data-table-content">' +
+      '<table class="cds--data-table"><thead><tr>' +
+      Array.from({ length: 9 }, (_, index) => `<th>Control prenatal ${index + 1}: fecha de atención</th>`).join('') +
+      '</tr></thead><tbody><tr>' +
+      Array.from({ length: 9 }, () => '<td>01/10/2026</td>').join('') +
+      '</tr></tbody></table></div></section></div></div></div></div></main>',
   );
+  await page.addStyleTag({ path: require.resolve('@carbon/styles/css/styles.css') });
   for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
     await page.addStyleTag({ path: path.join(outputPath, asset) });
   }
   await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({ content: 'body{margin:0}#host{overflow-x:auto}' });
   await page.evaluate(() => {
     document.getElementById('results').className = window.chartStyles.dashboard;
     document.getElementById('encounters').className = window.chartStyles.dashboard;
+    for (const [id, name] of Object.entries({
+      host: 'dashboardContainer',
+      dashboard: 'dashboard',
+      extension: 'extension',
+      wrapper: 'extensionWrapper',
+    })) {
+      document.getElementById(id).className = window.chartStyles[name];
+    }
   });
   await expect(page.locator('#results')).toHaveCSS('margin-top', '16px');
   await expect(page.locator('#encounters')).toHaveCSS('margin-top', '0px');
+
+  for (const width of [1280, 768, 420, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate((mobile) => {
+      document.body.classList.toggle('omrs-breakpoint-lt-tablet', mobile);
+    }, width < 672);
+    assert.ok(
+      await page.locator('#host').evaluate((host) => host.scrollWidth <= host.clientWidth),
+      `the chart host stays within its own width at ${width}px`,
+    );
+    assert.ok(
+      await page.locator('#extension').evaluate((extension) => {
+        const parent = extension.parentElement.getBoundingClientRect();
+        return extension.getBoundingClientRect().right <= parent.right + 1;
+      }),
+      `the extension stays within its dashboard at ${width}px`,
+    );
+    if (width < 672) {
+      assert.ok(
+        await page.locator('#table-scroll').evaluate((content) => {
+          content.scrollLeft = content.scrollWidth;
+          return content.scrollWidth > content.clientWidth && content.scrollLeft > 0;
+        }),
+        'all table columns remain accessible through the table’s own horizontal scroll',
+      );
+    }
+  }
 });
 
 test('workspace rail reserves desktop chart space without changing overlay or tablet layout', async (t) => {

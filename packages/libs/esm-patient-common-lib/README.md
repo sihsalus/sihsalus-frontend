@@ -205,8 +205,9 @@ retain legacy date behavior. This client-only field is not sent to OpenMRS.
 
 `TabbedDashboard` accepts stable tab IDs, controlled selection, header actions
 and React content in place of an extension slot. `mountActiveTabOnly` is opt-in;
-existing consumers keep their extension slots mounted. Opt-in dashboards use
-manual keyboard activation and reset local selection when the patient changes.
+existing consumers keep their extension slots mounted. Native Carbon keyboard
+activation selects a section with the arrow keys; opt-in dashboards mount only
+that section and reset local selection when the patient changes.
 Removing a permitted tab falls back to the first available section. Clinical
 apps own their permission checks and program policy before mounting readers.
 

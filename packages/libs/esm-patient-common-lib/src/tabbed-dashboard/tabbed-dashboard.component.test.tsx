@@ -16,17 +16,33 @@ const tabs: TabConfig[] = [
 ];
 const props = { patient, patientUuid: patient.id ?? '', titleKey: 'CRED', ariaLabelKey: 'Care sections' };
 
-it('mounts only the active reader when requested and switches from the keyboard', async () => {
+it('mounts only the selected reader when requested and selects sections from the keyboard', async () => {
   const user = userEvent.setup();
   render(<TabbedDashboard {...props} tabs={tabs} mountActiveTabOnly />);
   expect(screen.getByText('Overview reader')).toBeVisible();
   expect(screen.queryByText('Growth reader')).not.toBeInTheDocument();
   screen.getByRole('tab', { name: 'Overview' }).focus();
   await user.keyboard('{ArrowRight}');
-  expect(screen.queryByText('Growth reader')).not.toBeInTheDocument();
-  await user.keyboard('{Enter}');
+  expect(screen.getByRole('tab', { name: 'Growth' })).toHaveAttribute('aria-selected', 'true');
   expect(screen.getByText('Growth reader')).toBeVisible();
   expect(screen.queryByText('Overview reader')).not.toBeInTheDocument();
+});
+
+it('keeps mouse and keyboard selection in sync without skipping sections', async () => {
+  const user = userEvent.setup();
+  const history: TabConfig = { id: 'history', labelKey: 'History', icon, content: <div>History reader</div> };
+  render(<TabbedDashboard {...props} tabs={[...tabs, history]} mountActiveTabOnly />);
+  await user.click(screen.getByRole('tab', { name: 'Growth' }));
+  await user.keyboard('{ArrowRight}');
+  expect(screen.getByRole('tab', { name: 'History' })).toHaveFocus();
+  expect(screen.getByRole('tab', { name: 'History' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByText('History reader')).toBeVisible();
+  expect(screen.queryByText('Growth reader')).not.toBeInTheDocument();
+
+  await user.keyboard('{ArrowLeft}');
+  expect(screen.getByRole('tab', { name: 'Growth' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByText('Growth reader')).toBeVisible();
+  expect(screen.queryByText('History reader')).not.toBeInTheDocument();
 });
 
 it('keeps selection by stable ID after permitted tabs change, then resets for another patient', async () => {

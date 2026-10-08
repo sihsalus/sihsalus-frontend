@@ -87,11 +87,7 @@ const TabbedDashboard: React.FC<TabbedDashboardProps> = ({
             }
           }}
         >
-          <TabList
-            className={styles.tabList}
-            activation={mountActiveTabOnly ? 'manual' : 'automatic'}
-            aria-label={t(ariaLabelKey)}
-          >
+          <TabList className={styles.tabList} aria-label={t(ariaLabelKey)}>
             {translatedTabs.map((tab) => (
               <Tab className={styles.tab} key={tab.id} renderIcon={tab.icon}>
                 {tab.label}

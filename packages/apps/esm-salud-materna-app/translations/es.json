@@ -187,7 +187,7 @@
   "maternalFormLoadingSubtitle": "Espere un momento e intente nuevamente.",
   "maternalFormNotAvailable": "Formulario materno no disponible",
   "maternalFormNotAvailableSubtitle": "Revise que el formulario esté publicado y que el UUID o nombre configurado sea exacto.",
-  "maternalFormNotConfigured": "Formulario materno no configurado",
+  "maternalFormNotConfigured": "Formulario no configurado",
   "maternalFormNotConfiguredSubtitle": "No se encontró una asociación de formulario para este flujo.",
   "maternalHealthForms": "Formularios de salud materna",
   "maternalHealthFormsInstructions": "Seleccione el formulario de salud materna que desea completar para esta paciente.",
@@ -483,5 +483,15 @@
   "hcmpDischarge": "4. Egreso, indicaciones y epicrisis",
   "maternalDeliveryTab": "Parto y recién nacido",
   "maternalDischargeTab": "Egreso y epicrisis",
-  "maternalForm_maternalEpicrisisForm": "Epicrisis obstétrica y postparto"
+  "maternalForm_maternalEpicrisisForm": "Epicrisis obstétrica y postparto",
+  "maternalRecordTracking": "Seguimiento de registros",
+  "maternalCareRecords": "Registros de atención materna",
+  "maternalRecordsHelp": "La presencia de un formulario no confirma resultados, controles completos ni cumplimiento de la norma. Revise el contenido y las fechas de cada atención.",
+  "maternalRecordsLoadError": "No se pudieron cargar los registros de atención materna.",
+  "loadingMaternalRecords": "Cargando registros maternos...",
+  "maternalRecordAvailable": "Registro disponible",
+  "maternalRecordMissing": "Sin registro",
+  "maternalRecordsAvailable": "con registro",
+  "maternalRecordsMissing": "sin registro",
+  "maternalFormsNotConfigured": "formularios no configurados"
 }

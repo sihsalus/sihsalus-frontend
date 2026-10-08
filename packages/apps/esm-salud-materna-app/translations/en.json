@@ -187,7 +187,7 @@
   "maternalFormLoadingSubtitle": "Wait a moment and try again.",
   "maternalFormNotAvailable": "Maternal form unavailable",
   "maternalFormNotAvailableSubtitle": "Verify that the form is published and that the configured UUID or name is exact.",
-  "maternalFormNotConfigured": "Maternal form not configured",
+  "maternalFormNotConfigured": "Form not configured",
   "maternalFormNotConfiguredSubtitle": "No form association was found for this workflow.",
   "maternalHealthForms": "Maternal health forms",
   "maternalHealthFormsInstructions": "Select the maternal health form you want to complete for this patient.",
@@ -482,5 +482,15 @@
   "hcmpDischarge": "4. Discharge, instructions and epicrisis",
   "maternalDeliveryTab": "Delivery and newborn",
   "maternalDischargeTab": "Discharge and epicrisis",
-  "maternalForm_maternalEpicrisisForm": "Obstetric and postpartum epicrisis"
+  "maternalForm_maternalEpicrisisForm": "Obstetric and postpartum epicrisis",
+  "maternalRecordTracking": "Record tracking",
+  "maternalCareRecords": "Maternal care records",
+  "maternalRecordsHelp": "A form record does not confirm results, completed controls, or compliance with the standard. Review the content and dates of each encounter.",
+  "maternalRecordsLoadError": "Could not load maternal care records.",
+  "loadingMaternalRecords": "Loading maternal care records...",
+  "maternalRecordAvailable": "Record available",
+  "maternalRecordMissing": "No record",
+  "maternalRecordsAvailable": "with a record",
+  "maternalRecordsMissing": "without a record",
+  "maternalFormsNotConfigured": "forms not configured"
 }

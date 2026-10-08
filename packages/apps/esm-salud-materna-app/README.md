@@ -75,11 +75,13 @@ Cobertura frontend actual:
 - Parto institucional y calificado: parto/aborto, partograma y resumen de parto-postparto.
 - Puerperio: puerperio inmediato, control de puerperio, egreso materno y reingreso materno cuando el content package provee esos formularios.
 - Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
-- Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
+- Gestante adolescente, referencia obstétrica y pertinencia cultural: el catálogo configura los formularios OBST-016, OBST-017 y OBST-018. Su publicación y contenido deben verificarse en el entorno de atención.
 
-El panel de brechas NTS usa el catálogo propio del módulo para sus 21 requisitos
-en español e inglés, también cuando se monta en un slot compartido. La fecha de
-último registro se presenta en el idioma de la interfaz.
+El panel histórico muestra la disponibilidad de registros para los 21 elementos
+del catálogo, en español e inglés. Sólo comprueba formulario y fecha dentro de
+la gestación; no verifica resultados, periodicidad ni contenido clínico. Por eso
+no muestra porcentaje de cumplimiento ni marca prestaciones como completas.
+La fecha de último registro se presenta en el idioma de la interfaz.
 
 En la pantalla de parto, los usuarios con `app:hoja.clinica.partoPuerperio.editar`
 y `Add Relationships` pueden vincular a la madre con un recién nacido que ya

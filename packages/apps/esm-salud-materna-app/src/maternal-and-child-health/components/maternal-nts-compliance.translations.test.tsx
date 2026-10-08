@@ -1,5 +1,5 @@
 import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { createInstance } from 'i18next';
 import React from 'react';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
@@ -53,23 +53,54 @@ async function renderWithLanguage(language: 'en' | 'es') {
     resources: { en: { [namespace]: en }, es: { [namespace]: es } },
     interpolation: { escapeValue: false },
   });
-  render(
-    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
-      <I18nextProvider i18n={i18n} defaultNS="other-module">
-        <MaternalNtsCompliance patientUuid="synthetic-mother" />
-      </I18nextProvider>
-    </SWRConfig>,
-  );
+  await act(async () => {
+    render(
+      <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+        <I18nextProvider i18n={i18n} defaultNS="other-module">
+          <MaternalNtsCompliance patientUuid="synthetic-mother" />
+        </I18nextProvider>
+      </SWRConfig>,
+    );
+  });
 }
 
 it.each([
   ['en', en, /Feb/],
   ['es', es, /feb/],
-] as const)('shows the NTS panel in %s inside a shared slot', async (language, messages, dateMonth) => {
+] as const)('shows maternal record availability in %s inside a shared slot', async (language, messages, dateMonth) => {
   await renderWithLanguage(language);
   expect(await screen.findByText(messages['maternal-historyLabel'])).toBeVisible();
   expect(screen.getByText(messages['maternal-historyDescription'])).toBeVisible();
   expect(screen.getByText(messages['maternal-historySection'])).toBeVisible();
   expect(screen.getByText(dateMonth)).toBeVisible();
   expect(screen.queryByText('maternal-historyLabel')).not.toBeInTheDocument();
+  const history = screen.getByText(messages['maternal-historyLabel']).closest('li');
+  expect(within(history!).getByText(messages.maternalRecordAvailable)).toBeVisible();
+  expect(screen.getByText(messages.maternalRecordsHelp)).toBeVisible();
+  expect(screen.queryByText(messages.completed, { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByText(/\d+%/)).not.toBeInTheDocument();
+  expect(screen.getAllByText(messages.maternalFormNotConfigured)).toHaveLength(20);
+});
+
+it('does not treat a record from before the current pregnancy as available', async () => {
+  vi.mocked(useCurrentPregnancy).mockReturnValue({
+    pregnancyStartDate: '2026-03-01',
+    isLoading: false,
+    error: null,
+  } as ReturnType<typeof useCurrentPregnancy>);
+  await renderWithLanguage('es');
+  const history = (await screen.findByText(es['maternal-historyLabel'])).closest('li');
+  expect(within(history!).getByText(es.maternalRecordMissing)).toBeVisible();
+  expect(screen.queryByText(es.maternalRecordAvailable)).not.toBeInTheDocument();
+});
+
+it('does not report missing records when the pregnancy cannot be loaded', async () => {
+  vi.mocked(useCurrentPregnancy).mockReturnValue({
+    isLoading: false,
+    error: new Error('synthetic failure'),
+  } as ReturnType<typeof useCurrentPregnancy>);
+  await renderWithLanguage('es');
+  expect(screen.getByText(es.maternalRecordsLoadError)).toBeVisible();
+  expect(screen.queryByText(es.maternalRecordsMissing)).not.toBeInTheDocument();
+  expect(screen.queryByText(/\d+%/)).not.toBeInTheDocument();
 });

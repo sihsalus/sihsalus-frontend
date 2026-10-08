@@ -12,3 +12,8 @@
   margin: layout.$spacing-03 0;
   padding-inline-end: layout.$spacing-05;
 }
+
+.measurementTable {
+  max-width: 100%;
+  overflow-x: auto;
+}

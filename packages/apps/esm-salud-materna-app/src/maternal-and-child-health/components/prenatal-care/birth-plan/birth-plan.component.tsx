@@ -1,6 +1,6 @@
 import { Button, Tag, Tile } from '@carbon/react';
 import { Add, CheckmarkFilled, Edit, WarningFilled } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../../../config-schema';
 import { prenatalCareEditPrivilege } from '../../../../constants';
 import { useBirthPlan } from '../../../../hooks/useBirthPlan';
-import { formEntryWorkspace } from '../../../../types';
+import { useMaternalFormIdentifierLauncher } from '../../../../hooks/useMaternalFormLauncher';
 
 import styles from './birth-plan.scss';
 
@@ -27,19 +27,15 @@ const BirthPlan: React.FC<BirthPlanProps> = ({ patientUuid }) => {
   const { hasBirthPlan, planDate, referenceHospital, encounterUuid, isLoading, error, mutate } =
     useBirthPlan(patientUuid);
 
-  const handleLaunchBirthPlanForm = useCallback(() => {
-    const formUuid = config.birthPlan?.formUuid || config.formsList?.birthPlanForm;
-    if (!formUuid) {
-      console.warn('Birth plan form UUID not configured');
-      return;
-    }
-
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: encounterUuid ?? '',
-      handlePostResponse: mutate,
-    });
-  }, [config, encounterUuid, mutate]);
+  const { launchForm } = useMaternalFormIdentifierLauncher(
+    config.birthPlan?.formUuid || config.formsList?.birthPlanForm,
+    t('birthPlan', 'Plan de Parto'),
+    patientUuid,
+  );
+  const handleLaunchBirthPlanForm = useCallback(
+    () => launchForm(encounterUuid ?? '', mutate),
+    [encounterUuid, launchForm, mutate],
+  );
 
   if (error) return <ErrorState error={error} headerTitle={t('birthPlan')} />;
 

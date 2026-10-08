@@ -1,5 +1,5 @@
 import { LineChart, ScaleTypes } from '@carbon/charts-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, Tag } from '@carbon/react';
 import { formatDate } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -49,8 +49,16 @@ const AlturaCuelloChart: React.FC<AlturaCuelloChartProps> = ({ measurementData, 
     () => ({
       title: t('uterineHeightChart'),
       axes: {
-        bottom: { title: t('gestationalWeeks'), mapsTo: 'week', scaleType: ScaleTypes.LINEAR },
-        left: { title: t('uterineHeightCm'), mapsTo: 'value', scaleType: ScaleTypes.LINEAR },
+        bottom: {
+          title: t('gestationalWeeks'),
+          mapsTo: 'week',
+          scaleType: ScaleTypes.LINEAR,
+        },
+        left: {
+          title: t('uterineHeightCm'),
+          mapsTo: 'value',
+          scaleType: ScaleTypes.LINEAR,
+        },
       },
       points: { enabled: true },
       legend: { enabled: false },
@@ -67,24 +75,26 @@ const AlturaCuelloChart: React.FC<AlturaCuelloChartProps> = ({ measurementData, 
         {chartData.length ? (
           <>
             <LineChart data={chartData} options={options} />
-            <Table size="sm" aria-label={t('maternalRecordedMeasurements')}>
-              <TableHead>
-                <TableRow>
-                  <TableHeader>{t('maternalMeasurementDate')}</TableHeader>
-                  <TableHeader>{t('gestationalWeeks')}</TableHeader>
-                  <TableHeader>{t('uterineHeightCm')}</TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {measurements.map((point) => (
-                  <TableRow key={point.uuid}>
-                    <TableCell>{formatDate(new Date(point.fecha))}</TableCell>
-                    <TableCell>{point.semana}</TableCell>
-                    <TableCell>{point.altura}</TableCell>
+            <TableContainer className={styles.measurementTable}>
+              <Table size="sm" aria-label={t('maternalRecordedMeasurements')}>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>{t('maternalMeasurementDate')}</TableHeader>
+                    <TableHeader>{t('gestationalWeeks')}</TableHeader>
+                    <TableHeader>{t('uterineHeightCm')}</TableHeader>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {measurements.map((point) => (
+                    <TableRow key={point.uuid}>
+                      <TableCell>{formatDate(new Date(point.fecha))}</TableCell>
+                      <TableCell>{point.semana}</TableCell>
+                      <TableCell>{point.altura}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
         ) : (
           <p>{t('noMeasurementDataAvailable')}</p>

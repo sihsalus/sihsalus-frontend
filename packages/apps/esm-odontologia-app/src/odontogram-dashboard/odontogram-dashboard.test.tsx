@@ -80,16 +80,30 @@ describe('OdontogramDashboard', () => {
     });
   });
 
+  it('shows the native loading state until history resolves, then the shared empty state', () => {
+    const history = mockUseOdontogramHistory();
+    mockUseOdontogramHistory.mockReturnValue({ ...history, isLoading: true });
+    const { rerender } = render(<OdontogramDashboard patientUuid="synthetic-child" />);
+    expect(screen.getByRole('progressbar', { name: 'Cargando odontograma' })).toBeVisible();
+    expect(screen.queryByTestId('odontogram-canvas')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    mockUseOdontogramHistory.mockReturnValue(history);
+    rerender(<OdontogramDashboard patientUuid="synthetic-child" />);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Empty data illustration')).toBeInTheDocument();
+    expect(mockUseOdontogramEncounter().save).not.toHaveBeenCalled();
+  });
+
   it('opens the editable canvas when registering the first odontogram', async () => {
     const user = userEvent.setup();
     render(<OdontogramDashboard patientUuid="patient-uuid" />);
 
-    await user.click(screen.getByRole('button', { name: /registrar odontograma inicial/i }));
+    await user.click(screen.getByRole('button', { name: /(?:registrar|record) odontograma inicial/i }));
 
     expect(screen.getByTestId('odontogram-canvas')).toHaveAttribute('data-read-only', 'false');
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeEnabled();
-    expect(screen.queryByText(/no hay odontograma inicial registrado/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/(?:there are no|no hay) odontograma inicial/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /editar en pantalla completa/i }));
 
@@ -109,8 +123,8 @@ describe('OdontogramDashboard', () => {
       mutate: vi.fn(),
     });
     render(<OdontogramDashboard patientUuid="synthetic-child" />);
-    expect(screen.queryByRole('button', { name: /registrar odontograma inicial/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/no hay odontograma inicial registrado/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /(?:registrar|record) odontograma inicial/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/(?:there are no|no hay) odontograma inicial/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Synthetic internal history failure')).not.toBeInTheDocument();
     expect(mockUseOdontogramEncounter().save).not.toHaveBeenCalled();
   });
@@ -118,14 +132,14 @@ describe('OdontogramDashboard', () => {
   it('preserves the dental draft through a failed history refresh', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<OdontogramDashboard patientUuid="synthetic-child" />);
-    await user.click(screen.getByRole('button', { name: /registrar odontograma inicial/i }));
+    await user.click(screen.getByRole('button', { name: /(?:registrar|record) odontograma inicial/i }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Dentition' }), 'child');
     const draft = useOdontogramDataStore.getState().data;
     const history = mockUseOdontogramHistory();
     mockUseOdontogramHistory.mockReturnValue({ ...history, error: new Error('Synthetic refresh failure') });
     rerender(<OdontogramDashboard patientUuid="synthetic-child" />);
     expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /registrar odontograma inicial/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /(?:registrar|record) odontograma inicial/i })).not.toBeInTheDocument();
     mockUseOdontogramHistory.mockReturnValue(history);
     rerender(<OdontogramDashboard patientUuid="synthetic-child" />);
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled();
@@ -135,7 +149,7 @@ describe('OdontogramDashboard', () => {
   it('saves and expands the chosen primary dentition from the first initial record', async () => {
     const user = userEvent.setup();
     render(<OdontogramDashboard patientUuid="patient-uuid" />);
-    await user.click(screen.getByRole('button', { name: /registrar odontograma inicial/i }));
+    await user.click(screen.getByRole('button', { name: /(?:registrar|record) odontograma inicial/i }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Dentition' }), 'child');
     await user.click(screen.getByTestId('expand-odontogram-btn'));
     expect(mockLaunchWorkspace).toHaveBeenCalledWith(
@@ -204,8 +218,9 @@ describe('OdontogramDashboard', () => {
   it('does not offer initial-record creation without the existing edit privilege', () => {
     mockUserHasAccess.mockReturnValue(false);
     render(<OdontogramDashboard patientUuid="patient-uuid" />);
-    expect(screen.queryByRole('button', { name: /registrar odontograma inicial/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /(?:registrar|record) odontograma inicial/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('odontogram-canvas')).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Dentition' })).not.toBeInTheDocument();
+    expect(screen.getByTitle('Empty data illustration')).toBeInTheDocument();
   });
 });

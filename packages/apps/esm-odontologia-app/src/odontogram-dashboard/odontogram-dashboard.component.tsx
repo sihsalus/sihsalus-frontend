@@ -1,14 +1,5 @@
 import { Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
-import {
-  Button,
-  ButtonSet,
-  IconButton,
-  InlineLoading,
-  SkeletonPlaceholder,
-  SkeletonText,
-  Tag,
-  Tooltip,
-} from '@carbon/react';
+import { Button, ButtonSet, IconButton, InlineLoading, DataTableSkeleton, Tag, Tooltip } from '@carbon/react';
 import {
   formatDate,
   getUserFacingErrorMessage,
@@ -18,7 +9,7 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { ErrorState } from '@openmrs/esm-patient-common-lib';
+import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { countSolutions } from './count-solutions';
@@ -32,7 +23,6 @@ import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
 import { deleteEncounter } from '../odontogram.resource';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 import type { OdontogramRecord, OdontogramRecordType } from '../types/odontogram-record';
-import DentalEmptyState from '../ui/dental-empty-state.component';
 import styles from './odontogram-dashboard.scss';
 
 interface OdontogramDashboardProps {
@@ -49,27 +39,18 @@ interface EditContext {
   baseEncounterUuid?: string;
 }
 
-const OdontogramSkeleton: React.FC = () => (
-  <div className={styles.skeletonWrapper}>
-    <div className={styles.skeletonHeader}>
-      <SkeletonText width="160px" />
-      <SkeletonText width="220px" />
-    </div>
-    <SkeletonPlaceholder className={styles.skeletonCanvas} />
-  </div>
-);
+const OdontogramSkeleton: React.FC = () => {
+  const { t } = useTranslation('@sihsalus/esm-odontologia-app');
+  return <DataTableSkeleton role="progressbar" aria-label={t('loadingOdontogram', 'Cargando odontograma')} />;
+};
 
 const OdontogramEmpty: React.FC<{ onGenerate?: () => void }> = ({ onGenerate }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-odontologia-app');
   return (
-    <DentalEmptyState
-      title={t('odontogram', 'Odontograma')}
-      description={t(
-        'odontogramEmptyDescription',
-        'No hay odontograma inicial registrado para mostrar para este paciente.',
-      )}
-      actionLabel={t('registerBaseOdontogram', 'Registrar odontograma inicial')}
-      onAction={onGenerate}
+    <EmptyState
+      headerTitle={t('odontogram', 'Odontograma')}
+      displayText={t('initialOdontogram', 'Odontograma inicial')}
+      launchForm={onGenerate}
     />
   );
 };

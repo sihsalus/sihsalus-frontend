@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
 import MetaFormModal from '../components/MetaFormModal';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetaByIndicator, useUpsertMeta } from '../features/metas/hooks';
@@ -148,12 +149,10 @@ const MetasPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h1>{t('metasTitle', 'Metas')}</h1>
-          <p className={styles.subtitle}>
-            {t('metasSubtitle', 'Consulte y administre la meta anual de un indicador.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('metasTitle', 'Metas')}
+          subtitle={t('metasSubtitle', 'Consulte y administre la meta anual de un indicador.')}
+        />
         <div className={styles.headerActions}>
           <Button onClick={handleOpenCreate}>{t('newMeta', 'Nueva meta')}</Button>
         </div>

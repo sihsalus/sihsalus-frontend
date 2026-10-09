@@ -240,6 +240,8 @@ describe('ResultadosPage series granularity', () => {
     // Monthly rows
     expect(screen.getByText('2026-01')).toBeInTheDocument();
     expect(screen.getByText('2026-02')).toBeInTheDocument();
+    // Months available render as "available/total" for the granularity (1/1 monthly)
+    expect(screen.getAllByText('1/1')).toHaveLength(2);
   });
 
   it('switches granularity and shows quarterly rollup rows', async () => {
@@ -275,6 +277,9 @@ describe('ResultadosPage series granularity', () => {
     // Quarterly rows should now be displayed
     expect(screen.getByText('Q1')).toBeInTheDocument();
     expect(screen.getByText('Q2')).toBeInTheDocument();
+    // Months available reflect the quarter size (3/3 complete, 2/3 partial)
+    expect(screen.getByText('3/3')).toBeInTheDocument();
+    expect(screen.getByText('2/3')).toBeInTheDocument();
     // Monthly rows should be gone
     expect(screen.queryByText('2026-01')).not.toBeInTheDocument();
   });

@@ -45,6 +45,16 @@
   border-bottom: 1px solid theme.$border-subtle-00;
 }
 
+.pageHeading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pagePictogram {
+  flex: none;
+}
+
 .header h1,
 .header h2,
 .sectionTitle {
@@ -80,11 +90,24 @@
   text-decoration: underline;
 }
 
-.headerActions,
-.tableActions {
+.headerActions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.tableActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+/* Ghost buttons inside table rows carry extra padding; trim it so the three
+ * row actions stay on one line instead of wrapping into a ragged block. */
+.tableActions :global(.cds--btn--ghost) {
+  padding-inline: 0.5rem;
 }
 
 .contentSwitcherRow {
@@ -264,10 +287,22 @@
   font-size: 0.875rem;
 }
 
+.selectedItemsBlock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .selectedItemsList {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.clearSelectedButton {
+  flex: none;
 }
 
 .selectedItemPill {

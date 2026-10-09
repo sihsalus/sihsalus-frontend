@@ -10,7 +10,7 @@ import { FixtureAuthorizationError } from '../utils/e2e-synthetic-fixtures';
  *    solicitud + order del order type Interconsulta).
  * 2. Doctor B entra a Home > Interconsultas y ve la solicitud en la bandeja
  *    "Solicitadas" (ruteada por servicio destino / location origen).
- * 3. Doctor B la recoge (Atender) → estado "En atención".
+ * 3. Doctor B la recibe → "Recibida / Pendiente", luego la recoge → "En atención".
  * 4. Doctor B la responde → estado "Respondida", con obs ligada a la orden.
  * 5. El chart del paciente (dashboard Interconsultas) muestra la solicitud y
  *    su respuesta.
@@ -96,16 +96,45 @@ test('interconsulta: solicitud, bandeja, pickup, respuesta y chart', async ({ pa
   // Bandeja "Solicitadas" activa por defecto: buscar al paciente.
   // getByRole solo matchea el tabpanel visible (los demás están ocultos).
   const activePanel = () => page.getByRole('tabpanel');
-  const searchBox = activePanel().getByPlaceholder(/Buscar en esta lista|Search this list/i);
+  const traySearch = () =>
+    activePanel().getByRole('searchbox', {
+      name: /^(Paciente, orden, solicitante o motivo|Patient, order, requester or reason)$/i,
+    });
+  const searchBox = traySearch();
   await expect(searchBox).toBeVisible({ timeout: 30_000 });
   await searchBox.fill(familyName);
 
   const requestedRow = activePanel().getByRole('row', { name: new RegExp(familyName, 'i') });
   await expect(requestedRow).toBeVisible({ timeout: 15_000 });
 
+  // ---------- Doctor B recibe la solicitud ----------
+  // Acciones es la última columna de la tabla desplazable; click() la lleva a la vista.
+  await requestedRow.getByRole('button', { name: /^(Acciones para|Actions for) /i }).click({ timeout: 15_000 });
+  await page.getByRole('menuitem', { name: /^(Recibir|Receive)$/i }).click({ timeout: 15_000 });
+  const receiveDialog = page.getByRole('dialog');
+  await receiveDialog.getByRole('button', { name: /^(Recibir|Receive)$/i }).click({ timeout: 15_000 });
+
+  await expect
+    .poll(
+      async () => {
+        const orderResponse = await api.get(`order/${order.uuid}?v=custom:(fulfillerStatus)`);
+        const payload = (await readResponse(orderResponse)) as { fulfillerStatus?: string };
+        return payload?.fulfillerStatus;
+      },
+      { timeout: 15_000 },
+    )
+    .toBe('RECEIVED');
+  await expect(receiveDialog).not.toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('tab', { name: /^(Recibidas \/ Pendientes|Received \/ Pending)$/i }).click({ timeout: 15_000 });
+  await expect(traySearch()).toBeVisible({ timeout: 15_000 });
+  await traySearch().fill(familyName);
+  const receivedRow = activePanel().getByRole('row', { name: new RegExp(familyName, 'i') });
+  await expect(receivedRow).toBeVisible({ timeout: 15_000 });
+
   // ---------- Doctor B la recoge (Atender) ----------
-  await requestedRow.getByRole('button', { name: /Acciones|Actions|Options/i }).click({ timeout: 15_000 });
-  await page.getByRole('menuitem', { name: /Atender|Attend/i }).click({ timeout: 15_000 });
+  await receivedRow.getByRole('button', { name: /^(Acciones para|Actions for) /i }).click({ timeout: 15_000 });
+  await page.getByRole('menuitem', { name: /^(Atender \(recoger\)|Attend \(pick up\))$/i }).click({ timeout: 15_000 });
   await page
     .getByRole('dialog')
     .getByRole('button', { name: /Atender \(recoger\)|Attend \(pick up\)/i })
@@ -124,14 +153,14 @@ test('interconsulta: solicitud, bandeja, pickup, respuesta y chart', async ({ pa
     .toBe('IN_PROGRESS');
 
   await page.getByRole('tab', { name: /En atención|In progress/i }).click({ timeout: 15_000 });
-  const inProgressSearch = activePanel().getByPlaceholder(/Buscar en esta lista|Search this list/i);
+  const inProgressSearch = traySearch();
   await expect(inProgressSearch).toBeVisible({ timeout: 15_000 });
   await inProgressSearch.fill(familyName);
   const inProgressRow = activePanel().getByRole('row', { name: new RegExp(familyName, 'i') });
   await expect(inProgressRow).toBeVisible({ timeout: 15_000 });
 
   // ---------- Doctor B responde / completa ----------
-  await inProgressRow.getByRole('button', { name: /Acciones|Actions|Options/i }).click({ timeout: 15_000 });
+  await inProgressRow.getByRole('button', { name: /^(Acciones para|Actions for) /i }).click({ timeout: 15_000 });
   await page.getByRole('menuitem', { name: /Responder|Respond/i }).click({ timeout: 15_000 });
   const respondDialog = page.getByRole('dialog');
   await respondDialog

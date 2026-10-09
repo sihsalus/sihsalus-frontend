@@ -22,10 +22,16 @@ beforeEach(() => {
   vi.mocked(userHasAccess).mockReturnValue(false);
 });
 
-async function renderTracker(language: 'en' | 'es', delivered: number) {
-  vi.mocked(openmrsFetch).mockResolvedValue({
-    data: { results: [{ uuid: 'synthetic-delivery', value: delivered, obsDatetime: '2026-10-01T09:00:00Z' }] },
-  } as Awaited<ReturnType<typeof openmrsFetch>>);
+async function renderTracker(language: 'en' | 'es', delivered: number, failNextPage = false) {
+  vi.mocked(openmrsFetch).mockImplementation(async (url) => {
+    if (failNextPage && String(url).includes('startIndex=1')) throw new Error('Synthetic delivery page failure');
+    return {
+      data: {
+        results: [{ uuid: 'synthetic-delivery', value: delivered, obsDatetime: '2026-10-01T09:00:00Z' }],
+        links: failNextPage ? [{ rel: 'next', uri: 'https://example.test/openmrs/ws/rest/v1/obs?startIndex=1' }] : [],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>;
+  });
   const i18n = createInstance();
   await i18n.use(initReactI18next).init({
     lng: language,
@@ -68,5 +74,14 @@ describe.each(['en', 'es'] as const)('MMN delivery summary (%s)', (language) => 
       screen.getByText(messages.mmnDeliveryProgress.replace('{{delivered}}', '180').replace('{{total}}', '360')),
     ).toBeVisible();
     expect(screen.getByText('50%')).toBeVisible();
+  });
+
+  it('shows an error without zero or partial progress when a later delivery page fails', async () => {
+    await renderTracker(language, 180, true);
+    expect(await screen.findByRole('heading', { name: messages.mmnSupplementation })).toBeVisible();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(screen.queryByText('50%')).not.toBeInTheDocument();
+    expect(screen.queryByText(messages.mmnDeliveriesInProgress)).not.toBeInTheDocument();
   });
 });

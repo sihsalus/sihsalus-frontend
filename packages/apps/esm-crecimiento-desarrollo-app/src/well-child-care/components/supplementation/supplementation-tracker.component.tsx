@@ -22,12 +22,12 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
   const headerTitle = t('mmnSupplementation', 'Suplementación MMN');
 
-  if (isLoading) {
-    return <DataTableSkeleton size="sm" rowCount={2} columnCount={2} />;
-  }
-
   if (error) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
+  }
+
+  if (isLoading) {
+    return <DataTableSkeleton size="sm" rowCount={2} columnCount={2} />;
   }
 
   return (

@@ -34,7 +34,9 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         <Tag type={isComplete ? 'green' : 'blue'} size="sm">
-          {isComplete ? t('complete', 'Completo') : t('inProgress', 'En curso')}
+          {isComplete
+            ? t('mmnDeliveryTargetReached', 'Meta de entregas alcanzada')
+            : t('mmnDeliveriesInProgress', 'Entregas en curso')}
         </Tag>
         {canEdit && (
           <Button
@@ -53,7 +55,10 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
         <div className={styles.progressRow}>
           <div className={styles.progressBarWrapper}>
             <ProgressBar
-              label={`${delivered}/${total} ${t('sachets', 'sobres')}`}
+              label={t('mmnDeliveryProgress', '{{delivered}} sobres entregados / meta configurada: {{total}}', {
+                delivered,
+                total,
+              })}
               value={percentage}
               size="small"
               status={isComplete ? 'finished' : 'active'}
@@ -61,7 +66,12 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
           </div>
           <span className={styles.percentageLabel}>{Math.round(percentage)}%</span>
         </div>
-        <p className={styles.helperText}>{t('mmnDescription', 'Directiva 068: 1 sobre diario desde los 6 meses')}</p>
+        <p className={styles.helperText}>
+          {t(
+            'mmnDescription',
+            'Las entregas no confirman el consumo. Confirme dosis y duración según edad y prescripción.',
+          )}
+        </p>
       </div>
     </div>
   );

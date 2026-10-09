@@ -15,9 +15,8 @@ interface SupplementationResult {
 }
 
 /**
- * Hook para tracking de suplementación con MMN según Directiva 068-MINSA:
- * - 360 sobres de multimicronutrientes (MMN) en polvo
- * - 1 sobre diario desde los 6 meses hasta completar 360
+ * Acumula sobres MMN entregados frente a una meta configurable de entregas.
+ * No determina dosis, duración, consumo ni finalización de la suplementación.
  *
  * Usa: config.supplementation.mmnConceptUuid, config.supplementation.mmnTotalTarget
  */

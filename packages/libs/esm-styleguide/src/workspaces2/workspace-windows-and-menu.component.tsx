@@ -2,7 +2,7 @@ import { subscribeOpenmrsEvent } from '@openmrs/esm-emr-api';
 import { userHasAccess } from '@openmrs/esm-api';
 import { useSession } from '@openmrs/esm-react-utils';
 import classNames from 'classnames';
-import { useEffect, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ActionMenu } from './action-menu2/action-menu2.component';
 import ActiveWorkspaceWindow from './active-workspace-window.component';
@@ -33,10 +33,27 @@ export function renderWorkspaceWindowsAndMenu(target: HTMLElement | null) {
 function WorkspaceWindowsAndMenu() {
   const { openedGroup, openedWindows, registeredGroupsByName, registeredWindowsByName } = useWorkspace2Store();
   const { user } = useSession();
-  const [hasRenderedActionMenu, setHasRenderedActionMenu] = useState(false);
   const openedGroupName = openedGroup?.groupName;
-
-  useEffect(() => setHasRenderedActionMenu(false), [openedGroupName]);
+  const [actionMenuVisibility, setActionMenuVisibility] = useState({ groupName: openedGroupName, visible: false });
+  const onActionMenuVisibilityChange = useCallback(
+    (visible: boolean) =>
+      setActionMenuVisibility((current) =>
+        current.groupName === openedGroupName && current.visible === visible
+          ? current
+          : { groupName: openedGroupName, visible },
+      ),
+    [openedGroupName],
+  );
+  const [actionMenuHeight, setActionMenuHeight] = useState({ groupName: openedGroupName, height: 0 });
+  const onActionMenuHeightChange = useCallback(
+    (height: number) =>
+      setActionMenuHeight((current) =>
+        current.groupName === openedGroupName && current.height === height
+          ? current
+          : { groupName: openedGroupName, height },
+      ),
+    [openedGroupName],
+  );
 
   useEffect(() => {
     const unsubscribe = subscribeOpenmrsEvent('before-page-changed', (pageChangedEvent) => {
@@ -102,7 +119,8 @@ function WorkspaceWindowsAndMenu() {
     : undefined;
   const focusedWindowAllowsActionMenu = focusedWindowDefinition?.showActionMenu !== false;
   const actionMenuCanRender = hasActionMenuCandidates && focusedWindowAllowsActionMenu;
-  const showActionMenu = actionMenuCanRender && hasRenderedActionMenu;
+  const showActionMenu =
+    actionMenuCanRender && actionMenuVisibility.groupName === openedGroupName && actionMenuVisibility.visible;
 
   return (
     <div
@@ -110,6 +128,11 @@ function WorkspaceWindowsAndMenu() {
         [styles.overlay]: group.overlay,
         [styles.hasMaximizedWindow]: hasMaximizedWindow,
       })}
+      style={
+        {
+          '--bottom-nav-height': `${actionMenuHeight.groupName === openedGroupName ? actionMenuHeight.height : 0}px`,
+        } as CSSProperties
+      }
     >
       <div className={styles.workspaceWindowsContainer}>
         {openedWindows.map((openedWindow) => {
@@ -126,7 +149,8 @@ function WorkspaceWindowsAndMenu() {
         <ActionMenu
           workspaceGroup={group}
           groupProps={openedGroup.props}
-          onVisibilityChange={setHasRenderedActionMenu}
+          onVisibilityChange={onActionMenuVisibilityChange}
+          onHeightChange={onActionMenuHeightChange}
         />
       )}
     </div>

@@ -8,6 +8,8 @@ The enrollment selector supports `programEligibilityRules` in module config. Eac
 
 Programs without a rule remain visible. Current SIH Salus defaults keep Tuberculosis and VIH/SIDA visible for all patients, show Adulto Mayor for patients who are at least 60 years old, show Control de Niño Sano and Programa de Vacunación Infantil for children, and show pregnancy-related programs only for female patients in the configured age range.
 
+Age rules use completed years, so a maximum age of 11 includes the day before the twelfth birthday. A valid birth date after the reference day is unavailable for age-based eligibility, even when an age fallback exists. Missing or invalid birth dates retain the finite, non-negative age fallback; a birth on the reference day remains eligible. Programs without age rules keep their existing behavior.
+
 This is a frontend guard for UX. The backend/content package should eventually expose eligibility metadata per program so all clients share the same rules.
 
 ## Program navigation

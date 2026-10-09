@@ -82,13 +82,14 @@ ni del orden de carga de los microfrontends. Los números `order` de cada
 | Contexto clínico           | Alergias, Antecedentes (condiciones e historia social), Ficha familiar                         |
 | Tratamiento y estudios     | Medicamentos, Órdenes, Resultados, Imágenes, Procedimientos, Adjuntos                          |
 | Prevención y continuidad   | Vacunación, Tamizajes, Programas, Seguimiento de casos, Pérdida de seguimiento, Interconsultas |
-| Atención especializada     | CRED, Salud materna, Odontología, Psicología, Terapia física                                   |
+| Atención especializada     | CRED, Gestantes, Odontología, Psicología, Terapia física                                       |
 | Administración y operación | Facturación, Acciones sin conexión                                                             |
 
 Estos bloques describen la secuencia; no añaden carpetas ni ocultan opciones.
 Citas queda junto a la atención actual y el historial de consultas, no al final
-de especialidades. Se conservan los grupos existentes de CRED y salud materna,
-sus hijos y los marcadores invisibles que registran sus rutas.
+de especialidades. CRED y Gestantes ofrecen cada uno un acceso principal con
+pestañas internas. La configuración retira sus enlaces de grupo anteriores;
+las rutas históricas y los marcadores invisibles que las registran se conservan.
 
 Antecedentes reúne condiciones e historia social en un solo enlace visible. Las
 extensiones históricas conservan sus rutas y permisos: el enlace de historia social
@@ -107,6 +108,13 @@ sin que el chart vuelva a insertar elementos retirados.
 El contenedor de dashboards no añade un título exterior sobre las tarjetas.
 Cada sección conserva sus encabezados internos; los títulos de los metadatos
 siguen disponibles para los enlaces del menú.
+
+En móvil, cada extensión queda limitada al ancho de su dashboard, incluso
+cuando contiene una tabla ancha. Las columnas permanecen accesibles mediante
+el desplazamiento horizontal del contenedor de la tabla; no ensanchan el chart
+ni se ocultan. La regresión compila los estilos reales y verifica el contenedor
+del chart, la extensión y el desplazamiento de la tabla a 1280, 768, 420 y 320 px:
+`node --test --test-name-pattern="chart dashboards" packages/tooling/scripts/styles.browser.spec.js`.
 
 La regresión `esm-extensions/src/patient-chart-navigation.test.ts` contrasta la
 lista con todos los manifests y prueba el motor real de asignación, permisos,

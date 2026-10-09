@@ -43,6 +43,7 @@ export interface DefaultPatientWorkspaceProps {
 export const formEntryWorkspace = 'patient-form-entry-workspace-v2';
 export const formEntryWorkspaceLegacy = 'patient-form-entry-workspace';
 export const htmlFormEntryWorkspace = 'patient-html-form-entry-workspace';
+export const maternalHealthFormsWorkspace = 'maternal-health-forms-selector-workspace';
 
 /**
  * My interfaces
@@ -795,6 +796,13 @@ export interface PatientPrenatalAntecedents {
   id: string;
   date: string;
   gravidez?: number;
+  partos?: number;
+  partosVaginales?: number;
+  cesareas?: number;
+  nacidosVivosViven?: number;
+  muertePrimeraSemana?: number;
+  muerteDespuesPrimeraSemana?: number;
+  mayorPesoRn?: number;
   partoAlTermino?: number;
   partoPrematuro?: number;
   partoAborto?: number;

@@ -30,7 +30,10 @@ y persistencia del módulo odontológico. Conserva el privilegio de consulta
 `app:hoja.clinica.odontologia` y el de edición; no concede permisos por acceder a
 CRED. Es una extensión en línea y no sustituye el formulario CRED-016 de inspección
 de cavidad bucal. La dentición sigue siendo una elección explícita del profesional.
-En modo de solo lectura, el estado vacío oculta la acción de registro.
+El estado vacío reutiliza `EmptyState` de patient-common-lib, con su ilustración
+y acción de registro estándar. En modo de solo lectura oculta esa acción.
+La carga del historial usa `DataTableSkeleton` de Carbon con nombre accesible;
+no muestra el editor ni ofrece registrar mientras la lectura está pendiente.
 
 Un error al leer el historial muestra el estado de error compartido, sin ofrecer
 un odontograma inicial como si la lectura hubiera devuelto cero registros. Si la

@@ -11,7 +11,7 @@ const appsDirectory = path.join(repoRoot, 'packages/apps');
 
 // Run in the uncached tooling CI gate, even when incremental workspace
 // verification selects only the app adding or removing a navigation entry.
-test('the patient chart order covers visible extensions without changing their registration or visibility', () => {
+test('the patient chart order covers visible extensions after native slot removals', () => {
   const visibleNames = fs.readdirSync(appsDirectory).flatMap((directory) => {
     const manifestPath = path.join(appsDirectory, directory, 'src/routes.json');
     if (!fs.existsSync(manifestPath)) return [];
@@ -21,9 +21,22 @@ test('the patient chart order covers visible extensions without changing their r
       .map(({ name }) => name);
   });
 
-  assert.deepEqual(Object.keys(slotConfig ?? {}), ['order']);
+  assert.deepEqual(Object.keys(slotConfig ?? {}).sort(), ['order', 'remove']);
+  assert.deepEqual([...slotConfig.remove].sort(), [
+    'maternal-and-child-health-dashboard-group-link',
+    'well-child-care-dashboard-group-link',
+  ]);
+  assert.equal(new Set(slotConfig.remove).size, slotConfig.remove.length, 'Duplicate removal IDs');
+  for (const name of slotConfig.remove) {
+    assert.ok(visibleNames.includes(name), 'Removed navigation ID must remain registered');
+    assert.ok(!slotConfig.order.includes(name), 'Removed navigation ID must not remain ordered');
+  }
   assert.equal(new Set(slotConfig.order).size, slotConfig.order.length, 'Duplicate navigation IDs');
-  assert.deepEqual([...slotConfig.order].sort(), visibleNames.sort(), 'Unknown or unpositioned navigation IDs');
+  assert.deepEqual(
+    [...slotConfig.order].sort(),
+    visibleNames.filter((name) => !slotConfig.remove.includes(name)).sort(),
+    'Unknown or unpositioned navigation IDs',
+  );
 });
 
 test('navigation integration-test cache tracks the root configuration and all source manifests', () => {

@@ -69,6 +69,15 @@ function isWorkspace2Props(props: ProgramsWorkspaceProps): props is ProgramsWork
 }
 
 const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
+  const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
+  const programEnrollmentId = isWorkspace2Props(props)
+    ? props.workspaceProps.programEnrollmentId
+    : props.programEnrollmentId;
+
+  return <ProgramsEnrollmentForm key={`${patientUuid}:${programEnrollmentId ?? ''}`} {...props} />;
+};
+
+const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const closeWorkspace = props.closeWorkspace;
   const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
   const workspacePatient = isWorkspace2Props(props)
@@ -84,7 +93,7 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const session = useSession();
   const { patient: fetchedPatient } = usePatient(patientUuid);
   const patient = workspacePatient ?? fetchedPatient;
-  const { data: enrollments } = useEnrollments(patientUuid);
+  const { data: enrollments, isLoading: isLoadingEnrollments } = useEnrollments(patientUuid);
   const config = useConfig<ConfigObject>();
   const { data: availablePrograms, eligiblePrograms: eligibleAvailablePrograms } = useAvailablePrograms(
     enrollments ?? [],
@@ -116,6 +125,15 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
     t('currentLocationUnavailable', 'Current location unavailable');
 
   const currentState = currentEnrollment ? findLastState(currentEnrollment.states) : null;
+  const formValues = useMemo<ProgramsFormData>(
+    () => ({
+      selectedProgram: currentEnrollment?.program.uuid ?? '',
+      enrollmentDate: currentEnrollment?.dateEnrolled ? parseDate(currentEnrollment.dateEnrolled) : new Date(),
+      completionDate: currentEnrollment?.dateCompleted ? parseDate(currentEnrollment.dateCompleted) : null,
+      selectedProgramStatus: currentState?.state.uuid ?? '',
+    }),
+    [currentEnrollment, currentState],
+  );
 
   const {
     control,
@@ -125,12 +143,8 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   } = useForm<ProgramsFormData>({
     mode: 'all',
     resolver: zodResolver(programsFormSchema),
-    defaultValues: {
-      selectedProgram: currentEnrollment?.program.uuid ?? '',
-      enrollmentDate: currentEnrollment?.dateEnrolled ? parseDate(currentEnrollment.dateEnrolled) : new Date(),
-      completionDate: currentEnrollment?.dateCompleted ? parseDate(currentEnrollment.dateCompleted) : null,
-      selectedProgramStatus: currentState?.state.uuid ?? '',
-    },
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const selectedProgram = useWatch({ control, name: 'selectedProgram' });
@@ -138,6 +152,10 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const onSubmit = useCallback(
     async (data: ProgramsFormData) => {
       const { selectedProgram, enrollmentDate, completionDate, selectedProgramStatus } = data;
+
+      if (inEditMode && !currentEnrollment) {
+        return;
+      }
 
       if (!enrollmentLocationUuid) {
         showSnackbar({
@@ -192,7 +210,7 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
         });
       }
     },
-    [closeWorkspace, currentEnrollment, currentState, enrollmentLocationUuid, patientUuid, t],
+    [closeWorkspace, currentEnrollment, currentState, enrollmentLocationUuid, inEditMode, patientUuid, t],
   );
 
   const programName = (
@@ -375,11 +393,28 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
               title={t('noEligiblePrograms', 'No eligible programs available')}
             />
           )}
-          {formGroups.map((group) => (
-            <FormGroup style={group.style} legendText={group.legendText} key={group.id}>
-              <div className={styles.selectContainer}>{isTablet ? <Layer>{group.value}</Layer> : group.value}</div>
-            </FormGroup>
-          ))}
+          {inEditMode && !currentEnrollment ? (
+            isLoadingEnrollments ? (
+              <InlineLoading description={t('loadingEnrollment', 'Loading program enrollment')} />
+            ) : (
+              <InlineNotification
+                className={styles.notification}
+                kind="error"
+                lowContrast
+                title={t('programEnrollmentUnavailable', 'Program enrollment unavailable')}
+                subtitle={t(
+                  'programEnrollmentUnavailableExplanation',
+                  'Reload the patient chart to check this enrollment.',
+                )}
+              />
+            )
+          ) : (
+            formGroups.map((group) => (
+              <FormGroup style={group.style} legendText={group.legendText} key={group.id}>
+                <div className={styles.selectContainer}>{isTablet ? <Layer>{group.value}</Layer> : group.value}</div>
+              </FormGroup>
+            ))
+          )}
         </Stack>
         <ButtonSet className={classNames(isTablet ? styles.tablet : styles.desktop)}>
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
@@ -387,7 +422,7 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || (!inEditMode && !hasEligiblePrograms)}
+            disabled={isSubmitting || (inEditMode && !currentEnrollment) || (!inEditMode && !hasEligiblePrograms)}
             kind="primary"
             type="submit"
           >

@@ -19,6 +19,7 @@ export * from './clinical-search/clinical-search-target';
 export * from './clinical-view-group/clinical-view-group.resource';
 export { createClinicalDashboardGroup } from './clinical-view-group/createDashboardGroup';
 export { evaluateShowWhenExpression } from './clinical-view-group/evaluate-show-when-expression';
+export { createClinicalDashboardLink } from './clinical-view-group/createClinicalDashboardLink';
 export * from './compare';
 export {
   default as PatientAppointmentContext,
@@ -73,6 +74,8 @@ export { default as FormsTable } from './forms-selector/forms-table.component';
 export type { CompletedFormInfo, Form } from './forms-selector/types';
 export * from './get-patient-uuid-from-url';
 export * from './launchStartVisitPrompt';
+export * from './mother-child-relationships/mother-child-relationships.component';
+export * from './mother-child-relationships/mother-child-relationships.resource';
 export * from './nav-group/createDashboardGroup';
 export * from './nav-group/DashboardGroupExtension';
 export * from './nav-group/nav-group';

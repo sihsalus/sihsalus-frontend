@@ -1,225 +1,92 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
-.obstetricChartContainer {
+.figure {
+  margin: 0;
   padding: layout.$spacing-05;
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-06;
-}
+  color: $ui-05;
 
-// Tarjetas de resumen
-.summaryCards {
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-05;
-}
-
-.formulaObstetrica {
-  background-color: colors.$blue-10;
-  border: 1px solid colors.$blue-30;
-  border-radius: 4px;
-  padding: layout.$spacing-04;
-  text-align: center;
-}
-
-.formulaTitle {
-  @include type.type-style('productive-heading-02');
-  color: colors.$gray-100;
-  margin-bottom: layout.$spacing-03;
-}
-
-.formulaDisplay {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: layout.$spacing-03;
-}
-
-.formulaItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: layout.$spacing-02;
-}
-
-.formulaLetter {
-  @include type.type-style('productive-heading-03');
-  color: colors.$blue-60;
-  font-weight: 600;
-}
-
-.formulaValue {
-  @include type.type-style('productive-heading-04');
-  color: colors.$gray-100;
-  font-weight: 700;
-  background-color: colors.$white-0;
-  border: 1px solid colors.$blue-30;
-  border-radius: 4px;
-  padding: layout.$spacing-02 layout.$spacing-03;
-  min-width: 2.5rem;
-  text-align: center;
-}
-
-.formulaSeparator {
-  @include type.type-style('productive-heading-03');
-  color: colors.$gray-60;
-  font-weight: 300;
-}
-
-.cardsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: layout.$spacing-04;
-  margin-top: layout.$spacing-04;
-}
-
-.summaryCard {
-  padding: layout.$spacing-04;
-  border: 1px solid $ui-03;
-
-  &:hover {
-    background-color: colors.$gray-10;
+  figcaption {
+    margin-bottom: layout.$spacing-04;
+    h5 {
+      @include type.type-style("heading-compact-02");
+    }
+    p {
+      @include type.type-style("body-compact-01");
+      color: $text-02;
+      margin-top: layout.$spacing-03;
+    }
   }
 }
 
-.cardContent {
-  text-align: center;
+.scrollArea {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
-.cardValue {
-  @include type.type-style('productive-heading-05');
-  color: colors.$blue-60;
-  font-weight: 700;
-  margin-bottom: layout.$spacing-02;
-}
-
-.cardLabel {
-  @include type.type-style('label-01');
-  color: colors.$gray-70;
-}
-
-// Área de gráficos
-.chartArea {
-  border-top: 1px solid $ui-03;
-  padding-top: layout.$spacing-05;
-}
-
-.chartSection {
+.diagram {
   width: 100%;
-}
-
-.metricLabel {
-  @include type.type-style('label-01');
-  color: colors.$gray-70;
-  margin-bottom: layout.$spacing-04;
   display: block;
 }
 
-.tab {
-  @include type.type-style('body-short-01');
-
-  &.selectedTab {
-    background-color: colors.$blue-10;
-    color: colors.$blue-60;
-    border-left: 3px solid colors.$blue-60;
-  }
+.connections {
+  fill: none;
+  stroke: $text-02;
+  stroke-width: 1.5;
 }
 
-.bodyLong01 {
-  @include type.type-style('body-long-01');
+.node,
+.flag {
+  fill: $ui-01;
+  stroke: $ui-03;
+  stroke-width: 1.5;
 }
 
-.noDataMessage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  background-color: colors.$gray-10;
-  border-radius: 4px;
-
-  p {
-    @include type.type-style('body-short-02');
-    color: colors.$gray-60;
-    text-align: center;
-  }
+.label {
+  font-size: 14px;
+  fill: $ui-05;
 }
-
-// Desglose detallado
-.breakdownSection {
-  border-top: 1px solid $ui-03;
-  padding-top: layout.$spacing-05;
-}
-
-.sectionTitle {
-  @include type.type-style('productive-heading-03');
-  color: colors.$gray-100;
-  margin-bottom: layout.$spacing-04;
-}
-
-.breakdownGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: layout.$spacing-05;
-}
-
-.breakdownCategory {
-  background-color: colors.$gray-10;
-  border-radius: 4px;
-  padding: layout.$spacing-04;
-
-  h6 {
-    @include type.type-style('productive-heading-02');
-    color: colors.$gray-100;
-    margin-bottom: layout.$spacing-03;
-    border-bottom: 1px solid colors.$gray-20;
-    padding-bottom: layout.$spacing-02;
-  }
-}
-
-.breakdownItems {
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-02;
-}
-
-.breakdownItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: layout.$spacing-02 0;
-}
-
-.itemLabel {
-  @include type.type-style('body-short-01');
-  color: colors.$gray-70;
-}
-
-.itemValue {
-  @include type.type-style('heading-compact-01');
-  color: colors.$gray-100;
+.value {
+  font-size: 22px;
   font-weight: 600;
-  background-color: colors.$white-0;
-  border-radius: 4px;
-  padding: layout.$spacing-01 layout.$spacing-02;
-  min-width: 2rem;
-  text-align: center;
+  fill: $ui-05;
+}
+.weightValue {
+  font-size: 18px;
+  font-weight: 600;
+  fill: $ui-05;
+}
+.legend {
+  @include type.type-style("label-01");
+  color: $text-02;
+  margin-top: layout.$spacing-04;
 }
 
-// Responsive
-@media (max-width: 768px) {
-  .cardsGrid {
-    grid-template-columns: 1fr;
+.compactDiagram {
+  display: none;
+}
+.compactNode {
+  border: 1px solid $ui-03;
+  background: $ui-01;
+  padding: layout.$spacing-04;
+  dt {
+    @include type.type-style("label-01");
+    color: $text-02;
   }
-
-  .formulaDisplay {
-    flex-direction: column;
-    gap: layout.$spacing-02;
+  dd {
+    @include type.type-style("heading-compact-02");
+    margin: layout.$spacing-03 0 0;
   }
+}
 
-  .breakdownGrid {
-    grid-template-columns: 1fr;
+@media (max-width: 1056px) {
+  .scrollArea {
+    display: none;
+  }
+  .compactDiagram {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: layout.$spacing-04;
   }
 }

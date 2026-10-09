@@ -34,6 +34,10 @@ import {
 import { FamilyPlanning } from './maternal-and-child-health/family-planning.component';
 import { LabourDelivery } from './maternal-and-child-health/labour-delivery.component';
 import MaternalHealthNavGroup from './maternal-and-child-health/maternal-health-nav-group.component';
+import {
+  IntegratedMaternalDashboard,
+  IntegratedMaternalLink,
+} from './maternal-and-child-health/maternal-program.component';
 import { PostnatalCare } from './maternal-and-child-health/postnatal-care.component';
 import { PrenatalCare } from './maternal-and-child-health/prenatal-care.component';
 import MaternalHealthFormsSelectorWorkspace from './maternal-and-child-health/workspace/maternal-health-forms-selector.workspace';
@@ -56,6 +60,8 @@ export function startupApp(): void {
 // MATERNAL AND CHILD HEALTH EXPORTS
 // ================================================================================
 export const maternalAndChildHealthSideNavGroup = getSyncLifecycle(MaternalHealthNavGroup, options);
+export const integratedMaternalDashboard = getSyncLifecycle(IntegratedMaternalDashboard, options);
+export const integratedMaternalLink = getSyncLifecycle(IntegratedMaternalLink, options);
 
 // Navigation Links
 export const labourAndDeliveryLink = getSyncLifecycle(

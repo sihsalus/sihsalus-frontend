@@ -6,6 +6,50 @@ Este microfrontend vive en la carpeta `packages/apps/esm-crecimiento-desarrollo-
 
 App orientada al seguimiento de CRED y control preventivo infantil.
 
+## Atención CRED integrada
+
+La entrada **CRED** (`cred-dashboard`) reúne Resumen, Antecedentes y nacimiento,
+Control y examen, Crecimiento y nutrición, Desarrollo, Vacunación y Seguimiento.
+El resumen ofrece accesos a las secciones permitidas y fechas de atenciones
+registradas. No calcula cumplimiento clínico ni declara un control completo por
+contar formularios. Las curvas reutilizan el lector y las referencias OMS del
+componente de crecimiento existente; sus límites y procedencia siguen vigentes.
+
+La entrada exige sesión autenticada, acceso a la historia,
+`app:hoja.clinica.cred.cursoVida` y lectura de al menos una familia CRED.
+Cada sección conserva su permiso de lectura
+y los lectores/formularios mantienen sus permisos de edición. Las pestañas sin
+permiso no se muestran ni montan sus lectores. Solo se monta la pestaña activa y
+al cambiar de paciente se reinicia en Resumen. La inscripción activa al programa
+«Control de Niño Sano» sigue condicionando el enlace lateral mediante el helper
+clínico compartido. La ruta directa comprueba también esa inscripción antes de
+montar los lectores clínicos; carga incompleta o error no habilitan el panel.
+No se crea otro evaluador de programas.
+
+El resumen muestra **Madre vinculada** con acceso a la historia y lectura
+neonatal (`app:hoja.clinica.cred.neonatal`), sin exigir edición de relaciones.
+El lector compartido consulta el vínculo explícito de EmrApi por el UUID del
+niño y abre la historia nativa de la madre. Carga todas las páginas; un error de
+consulta o configuración no se presenta como ausencia de madre. No deriva
+parentesco de conceptos compartidos ni copia datos maternos al niño. La
+aceptación en QLTY requiere comprobar el mapeo canónico, los perfiles backend y
+el recorrido bilateral con pacientes sintéticos.
+
+**Abrir formularios del control** reutiliza el workspace y la comprobación de
+consulta activa existentes. **Consultas anteriores** conserva el permiso de
+visitas y abre el historial del mismo paciente sin cambiar la consulta activa.
+El orden del enlace lateral pertenece a `config/frontend.json`. Las rutas,
+componentes y privilegios de los cinco dashboards anteriores se conservan para
+enlaces directos. La atención inmediata y hospitalaria neonatal permanece en su
+pantalla original, accesible desde **Ver atención neonatal** con su permiso
+propio; no es un paso obligatorio del control ambulatorio.
+
+QA pendiente en QLTY: recorrido de las siete pestañas con datos sintéticos,
+perfiles de lectura/edición restringidos, revocación, cambio de paciente, creación
+y reapertura del mismo control, curvas y citas. La reorganización no modifica
+conceptos, formularios ni reglas clínicas y no cierra las brechas de content
+documentadas debajo.
+
 En el dashboard neonatal, la pestaña de consejería usa la etiqueta corta
 «Lactancia»; el encabezado del contenido conserva su nombre completo.
 Las tarjetas de seguimiento nutricional y estimulación histórica muestran la
@@ -314,3 +358,9 @@ y no aplica otra espera desde el alta. Partos domiciliarios documentados pueden
 atenderse al conocerse el nacimiento; falta persistir esa notificación y validar los
 registros retrospectivos y la captación tardía en QLTY. Estos límites mantienen
 abierto el [issue #98](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/98).
+
+La fecha de próximo tamizaje de anemia del widget es **orientativa**: se estima
+con la última Hb y una banda de edad. No determina el calendario completo de
+NTS 213 ni incorpora inicio/fin de suplementación, tratamiento o prematuridad.
+La interfaz pide confirmar la fecha con el profesional; no añade reglas
+clínicas ni cambia la Hb registrada para suplir ese contexto.

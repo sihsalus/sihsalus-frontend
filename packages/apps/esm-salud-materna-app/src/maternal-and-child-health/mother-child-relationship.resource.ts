@@ -1,15 +1,8 @@
-import { makeUrl, openmrsFetch, restBaseUrl, useOpenmrsFetchAll, type FetchResponse } from '@openmrs/esm-framework';
+import { makeUrl, openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
-export interface MotherAndChildLink {
-  mother: { uuid: string };
-  child: { uuid: string; display?: string };
-}
-
-export interface MotherAndChildLinkQuery {
-  motherUuid?: string;
-  childUuid?: string;
-}
+export { useMotherAndChildLinks } from '@openmrs/esm-patient-common-lib';
+export type { MotherAndChildLink, MotherAndChildLinkQuery } from '@openmrs/esm-patient-common-lib';
 
 export interface NewbornPatient {
   uuid: string;
@@ -33,25 +26,8 @@ interface PatientSearchResponse {
   results?: Array<NewbornPatient>;
 }
 
-const motherAndChildRepresentation = 'custom:(mother:(uuid),child:(uuid,display))';
 const newbornPatientRepresentation =
   'custom:(uuid,display,voided,person:(uuid,display,birthdate,birthdateEstimated,voided),identifiers:(identifier,preferred,voided))';
-
-export function useMotherAndChildLinks(query: MotherAndChildLinkQuery, enabled: boolean) {
-  const url = new URL(makeUrl(`${restBaseUrl}/emrapi/maternal/mothersAndChildren`), window.location.toString());
-  if (query.motherUuid) {
-    url.searchParams.set('mother', query.motherUuid);
-  }
-  if (query.childUuid) {
-    url.searchParams.set('child', query.childUuid);
-  }
-  url.searchParams.set('requireMotherHasActiveVisit', 'false');
-  url.searchParams.set('requireChildHasActiveVisit', 'false');
-  url.searchParams.set('requireChildBornDuringMothersActiveVisit', 'false');
-  url.searchParams.set('v', motherAndChildRepresentation);
-
-  return useOpenmrsFetchAll<MotherAndChildLink>(enabled && (query.motherUuid || query.childUuid) ? url : null);
-}
 
 export function useNewbornPatientSearch(query: string, enabled: boolean) {
   const normalizedQuery = query.trim();

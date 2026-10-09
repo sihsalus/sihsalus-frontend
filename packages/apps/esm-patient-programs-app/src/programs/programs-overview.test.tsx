@@ -72,6 +72,33 @@ describe('ProgramsOverview', () => {
     });
   });
 
+  it.each([
+    [null, 'cred-dashboard'],
+    ['2026-10-01', 'well-child-care-dashboard'],
+  ])('routes the enrollment row according to its completion date (%s)', async (dateCompleted, chartPath) => {
+    const enrollment = { ...mockEnrolledProgramsResponse[0], dateCompleted };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      programNavigationTargets: [
+        {
+          programUuid: enrollment.program.uuid,
+          chartPath: 'cred-dashboard',
+          historicalChartPath: 'well-child-care-dashboard',
+        },
+      ],
+    });
+    mockProgramsState({ enrollments: [enrollment] });
+
+    renderWithSwr(<ProgramsOverview {...testProps} />);
+    await waitForLoadingToFinish();
+
+    const row = screen.getByRole('row', { name: /HIV Care and Treatment/i });
+    expect(within(row).getByRole('link', { name: /go to/i })).toHaveAttribute(
+      'href',
+      `/openmrs/spa/patient/${mockPatient.id}/chart/${chartPath}`,
+    );
+  });
+
   it('renders an empty state view when the patient is not enrolled into any programs', async () => {
     mockProgramsState({ enrollments: [] });
 

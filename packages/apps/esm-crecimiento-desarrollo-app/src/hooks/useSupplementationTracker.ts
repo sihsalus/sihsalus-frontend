@@ -1,6 +1,5 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 
@@ -14,10 +13,15 @@ interface SupplementationResult {
   mutate: () => void;
 }
 
+interface SupplementationObservation {
+  uuid: string;
+  value?: number | string;
+  obsDatetime?: string;
+}
+
 /**
- * Hook para tracking de suplementación con MMN según Directiva 068-MINSA:
- * - 360 sobres de multimicronutrientes (MMN) en polvo
- * - 1 sobre diario desde los 6 meses hasta completar 360
+ * Acumula sobres MMN entregados frente a una meta configurable de entregas.
+ * No determina dosis, duración, consumo ni finalización de la suplementación.
  *
  * Usa: config.supplementation.mmnConceptUuid, config.supplementation.mmnTotalTarget
  */
@@ -31,14 +35,14 @@ export function useSupplementationTracker(patientUuid: string): SupplementationR
     return `${restBaseUrl}/obs?patient=${patientUuid}&s=default&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)`;
   }, [patientUuid, conceptUuid]);
 
-  const { data, isLoading, error, mutate } = useSWR(url, async (fetchUrl: string) => {
-    const response = await openmrsFetch(fetchUrl);
-    return response?.data;
+  const { data, isLoading, error, mutate } = useOpenmrsFetchAll<SupplementationObservation>(url, {
+    fetcher: openmrsFetch,
+    swrInfiniteConfig: { keepPreviousData: false },
   });
 
   const result = useMemo(() => {
-    const observations = data?.results ?? [];
-    const delivered = observations.reduce((sum: number, obs: { value?: number | string }) => {
+    const observations = data ?? [];
+    const delivered = observations.reduce((sum, obs) => {
       const val = typeof obs.value === 'number' ? obs.value : parseFloat(obs.value);
       return sum + (Number.isNaN(val) ? 0 : val);
     }, 0);

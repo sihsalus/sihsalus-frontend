@@ -237,7 +237,13 @@ El [contrato de fixtures sintéticos](../docs/development/synthetic-fixtures.md)
 documenta el aprovisionamiento supervisado, el journal privado y la recuperación
 de cleanup parcial. Su nueva ubicación conserva los requisitos de autorización.
 
-Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
+Los dos specs mutantes de interconsultas usan el [fixture nativo supervisado](NATIVE_SYNTHETIC_FIXTURES.md):
+un paciente/visita y journal privado por intento, con cleanup por pertenencia.
+Exigen `E2E_NATIVE_SUPERVISED_TARGET` y rechazan CI antes de sus escrituras mientras
+no exista retención privada duradera. Los otros doce specs siguen seleccionables
+en CI; el gate completo de navegador queda bloqueado por esos dos casos.
+
+Los demás specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
 (`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y los validan en `beforeAll`, después
 del preflight, antes de usar un paciente. Así se pueden listar los specs sin
 credenciales ni pacientes; listar no ejecuta ni valida el flujo. Ambos UUID
@@ -249,9 +255,10 @@ prueba nada o que toque por accidente una historia no sintética.
 
 La aceptación del ácido ursodesoxicólico se mantiene: no se sustituye por otro
 medicamento disponible para hacer pasar el gate. La firma de nuevas órdenes y
-el aprovisionamiento/cleanup recuperable se revisan por separado; no se activan
-en esta recuperación de regresiones. Los recursos parciales de fixtures deben
-tener un journal privado, validación de pertenencia y recuperación antes de
+el aprovisionamiento/cleanup recuperable se revisan por separado. Solo los dos
+specs de interconsultas activan el fixture supervisado descrito arriba. Los recursos
+parciales de fixtures deben tener un journal privado, validación de pertenencia y
+recuperación antes de
 promover un nuevo harness mutante.
 
 El preparador recuperable `SyntheticFixtures` exige los privilegios configurados

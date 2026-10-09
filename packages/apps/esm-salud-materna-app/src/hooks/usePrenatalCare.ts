@@ -1,6 +1,5 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import { encounterMatchesForm, isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
@@ -21,10 +20,6 @@ type ObsEncounter = {
     display: string;
   };
   obs: Obs[];
-};
-
-type EncounterResponse = {
-  results: ObsEncounter[];
 };
 
 const richRepresentation =
@@ -48,15 +43,14 @@ export const usePrenatalCare = (
     return `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterType}&v=${richRepresentation}`;
   }, [patientUuid, encounterType]);
 
-  const { data, error, isValidating, mutate } = useSWR<EncounterResponse>(url, async (fetchUrl) => {
-    const response = await openmrsFetch<EncounterResponse>(fetchUrl);
-    return response?.data;
+  const { data, error, isLoading, isValidating, mutate } = useOpenmrsFetchAll<ObsEncounter>(url, {
+    fetcher: openmrsFetch,
   });
 
   const prenatalEncounters = useMemo(() => {
-    if (!data?.results) return [];
+    if (!data) return [];
     if (!pregnancyStartDate) return [];
-    return data.results
+    return data
       .filter(
         (encounter) =>
           encounterMatchesForm(encounter, formName) &&
@@ -68,7 +62,7 @@ export const usePrenatalCare = (
   return {
     prenatalEncounters,
     error: pregnancyError ?? error ?? null,
-    isValidating: isPregnancyLoading || isValidating,
+    isValidating: isPregnancyLoading || isLoading || isValidating,
     mutate,
   };
 };

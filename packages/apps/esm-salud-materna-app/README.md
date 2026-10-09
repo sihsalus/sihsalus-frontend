@@ -6,6 +6,61 @@ El formulario de antecedentes por catálogo es `ConditionConceptSetForm` de `esm
 
 Colección de módulos microfrontend para SIH SALUS, una distribución especializada de OpenMRS 3.x adaptada al ecosistema de salud peruano y las directrices del MINSA.
 
+## Atención integrada de gestantes
+
+La entrada **Gestantes** reúne resumen, antecedentes, embarazo actual, control
+prenatal, tamizajes, plan y seguimiento, parto y recién nacido, puerperio, y egreso/epicrisis. Las pestañas aparecen según
+los permisos de lectura de cada familia; el selector de formularios exige además
+edición de esa misma familia. La entrada conserva las condiciones de sexo e
+inscripción activa de Madre Gestante/Otras Estrategias Obstétricas. Las rutas
+anteriores siguen disponibles para historial y enlaces directos. Parto conserva sus componentes y permisos propios dentro de la nueva pestaña;
+planificación familiar y prevención de cáncer se abren como atenciones
+relacionadas desde el resumen, con sus permisos propios.
+
+Solo se monta el lector de la pestaña seleccionada. El resumen permite abrir cada
+sección y muestra fechas de registros confirmados; guardar un formulario no se
+interpreta como haber completado una evaluación clínica. Los tamizajes y el
+puerperio muestran fechas de los formularios configurados en todo el historial;
+la revisión del contenido se hace desde las consultas previas y los formularios
+existentes. Estas fechas no sustituyen los resultados de los tamizajes.
+
+La gráfica de altura uterina usa únicamente mediciones fechadas del episodio
+identificado por el lector de embarazo actual, con semana gestacional registrada
+y tabla accesible. Se retiraron percentiles sin procedencia y Z-scores de ejemplo.
+No se añadieron umbrales o clasificaciones clínicas. Los controles prenatales y
+las mediciones recorren todas las páginas REST; un error se presenta como error,
+sin convertirse en ausencia de registros. El catálogo de formularios se comparte
+entre el selector y los lectores de fechas.
+
+El resumen agrupa los accesos en los cuatro bloques de la HCMP aportada como
+referencia. No declara cumplimiento integral de la norma ni inventa resultados
+clínicos. La epicrisis utiliza el formulario publicado `HOSP-010`; el selector y
+el historial comparten su configuración y permiso de puerperio.
+
+El diagrama de antecedentes obstétricos reutiliza los conceptos numéricos de
+`OBST-001`, lee todas las páginas REST y sus observaciones agrupadas, y muestra
+una sola historia fechada, sin mezclar encuentros. Cada cero registrado se
+conserva; un dato ausente se muestra como «Sin registro». Existe una vista de
+tabla y una presentación compacta con los mismos valores para pantallas estrechas. Los
+indicadores del papel no tienen captura estructurada equivalente verificada;
+se muestran sin registro y no se calculan colores ni alertas de riesgo.
+
+**Brecha terminológica previa:** `8795c05b-f286-4d70-a1e6-69172e676f05` se rotula
+como «Partos» en formularios pero en el catálogo desplegado se define como partos
+a término; la discrepancia ya está registrada en la auditoría clínica de content
+del 23 de septiembre de 2026. No se interpreta como el total ni se obtiene este
+sumando campos. `madreGestante.partosUuid` queda vacío hasta que el dueño de OCL y
+el contrato obstétrico publiquen un concepto inequívoco; los registros antiguos
+no se reinterpretan. Los restantes UUIDs proceden de los formularios existentes
+y se mantienen configurables. También debe confirmarse la definición histórica
+de «Gestas» antes de usarla en cálculos; el visor solo muestra el dato registrado.
+
+Antes del despliegue, validar en DEV/QLTY con datos sintéticos: rol prenatal,
+puerperio, parto y acceso denegado; inscripción/sexo; cambio de paciente y
+pestañas por teclado; apertura de formularios con visita; guardado, recarga y
+correspondencia de datos; escritorio y tablet. La cobertura automática no
+sustituye la aceptación clínica.
+
 ## Cobertura normativa de madre gestante
 
 Base normativa revisada:
@@ -20,11 +75,13 @@ Cobertura frontend actual:
 - Parto institucional y calificado: parto/aborto, partograma y resumen de parto-postparto.
 - Puerperio: puerperio inmediato, control de puerperio, egreso materno y reingreso materno cuando el content package provee esos formularios.
 - Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
-- Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
+- Gestante adolescente, referencia obstétrica y pertinencia cultural: el catálogo configura los formularios OBST-016, OBST-017 y OBST-018. Su publicación y contenido deben verificarse en el entorno de atención.
 
-El panel de brechas NTS usa el catálogo propio del módulo para sus 21 requisitos
-en español e inglés, también cuando se monta en un slot compartido. La fecha de
-último registro se presenta en el idioma de la interfaz.
+El panel histórico muestra la disponibilidad de registros para los 21 elementos
+del catálogo, en español e inglés. Sólo comprueba formulario y fecha dentro de
+la gestación; no verifica resultados, periodicidad ni contenido clínico. Por eso
+no muestra porcentaje de cumplimiento ni marca prestaciones como completas.
+La fecha de último registro se presenta en el idioma de la interfaz.
 
 En la pantalla de parto, los usuarios con `app:hoja.clinica.partoPuerperio.editar`
 y `Add Relationships` pueden vincular a la madre con un recién nacido que ya
@@ -36,6 +93,16 @@ defecto `e6be4def-dbc8-462a-8714-53da66903cb8`). La validación previa consulta
 `GET /emrapi/maternal/mothersAndChildren?mother={uuid}` y bloquea el guardado si
 no puede comprobar relaciones existentes, si el vínculo ya existe para esa
 madre o si el recién nacido ya figura como hijo de otra madre.
+
+El resumen de Gestantes muestra **Hijos vinculados** con acceso a la historia y
+lectura de `app:hoja.clinica.partoPuerperio`, sin exigir edición ni
+`Add Relationships`. El lector compartido también alimenta la comprobación del
+editor y el acceso inverso desde el resumen CRED. Consulta relaciones explícitas
+de EmrApi sin exigir consulta activa, carga todas las páginas y abre la historia
+nativa de cada hijo con sus permisos habituales. Los errores no se presentan
+como ausencia de hijos. No copia observaciones ni atribuye un hijo a una
+gestación por compartir conceptos; la aceptación bilateral y de permisos
+backend con pacientes sintéticos sigue siendo una comprobación de despliegue.
 
 La búsqueda usa nombre o identificador y requiere tres caracteres; este texto
 solo se envía como consulta y no se persiste ni se recorta. Al cambiar de

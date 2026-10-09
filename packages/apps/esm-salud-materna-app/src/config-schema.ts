@@ -116,6 +116,7 @@ export const configSchema = {
       prenatalSupplementationForm: 'OBST-011-SUPLEMENTACIÓN GESTANTE',
       psychoprophylaxisForm: 'OBST-012-PSICOPROFILAXIS',
       maternalDischargeForm: 'OBST-007-EGRESO MATERNO',
+      maternalEpicrisisForm: 'HOSP-010-EPICRISIS OBSTÉTRICO-POSTPARTO',
       maternalReadmissionForm: 'OBST-008-REINGRESO MATERNO',
       obstetricsServiceForm: 'OBST-010-SERVICIO DE OBSTETRICIA',
       adolescentPregnancyCareForm: 'OBST-016-ATENCIÓN DIFERENCIADA GESTANTE ADOLESCENTE',
@@ -380,6 +381,42 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Número de partos a término (≥37 semanas de gestación)',
       _default: '8795c05b-f286-4d70-a1e6-69172e676f05',
+    },
+    partosUuid: {
+      _type: Type.ConceptUuid,
+      _description:
+        'Total de partos previos. Configurar solo con un concepto canónico que represente el total; el concepto de partos a término no es equivalente.',
+      _default: '',
+    },
+    partosVaginalesUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Número de partos vaginales en antecedentes obstétricos (OBST-001)',
+      _default: '985732d6-157e-49aa-9d28-556696c5c4fe',
+    },
+    cesareasUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Número de cesáreas en antecedentes obstétricos (OBST-001)',
+      _default: '78b32019-9881-4f5a-9c85-c9f954e53f9f',
+    },
+    nacidosVivosVivenUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Nacidos vivos que viven, registrado en OBST-001',
+      _default: '5c8e69b1-d048-400a-bb6c-2df83a16387c',
+    },
+    muertePrimeraSemanaUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Nacidos vivos fallecidos durante la primera semana, registrado en OBST-001',
+      _default: '382ca587-c452-481f-8c76-45e2702cd7f2',
+    },
+    muerteDespuesPrimeraSemanaUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Nacidos vivos fallecidos después de la primera semana, registrado en OBST-001',
+      _default: 'b3d7aba6-5a45-4260-8ffd-8fac9174fc85',
+    },
+    mayorPesoRnUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Mayor peso de recién nacido en gramos, registrado en OBST-001',
+      _default: 'dee42f1a-657e-4ab3-8a0a-b012500edea6',
     },
     partoPrematuroUuid: {
       _type: Type.ConceptUuid,
@@ -1457,6 +1494,7 @@ export interface ConfigObject {
     prenatalSupplementationForm: string;
     psychoprophylaxisForm: string;
     maternalDischargeForm: string;
+    maternalEpicrisisForm: string;
     maternalReadmissionForm: string;
     obstetricsServiceForm: string;
     adolescentPregnancyCareForm: string;

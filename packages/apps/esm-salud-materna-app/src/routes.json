@@ -326,6 +326,25 @@
         "layoutMode": "anchored"
       },
       "order": 100
+    },
+    {
+      "name": "maternal-program-dashboard",
+      "slot": "patient-chart-maternal-program-dashboard-slot",
+      "component": "integratedMaternalDashboard",
+      "privileges": "app:hoja.clinica"
+    },
+    {
+      "name": "maternal-program-dashboard-link",
+      "slot": "patient-chart-dashboard-slot",
+      "component": "integratedMaternalLink",
+      "privileges": "app:hoja.clinica",
+      "meta": {
+        "slot": "patient-chart-maternal-program-dashboard-slot",
+        "path": "maternal-care-dashboard",
+        "columns": 1,
+        "columnSpan": 1,
+        "layoutMode": "anchored"
+      }
     }
   ],
   "modals": [

@@ -50,6 +50,8 @@ import { EarlyStimulation } from './well-child-care/early-stimulation.component'
 import { NeonatalCare } from './well-child-care/neonatal-care.component';
 import { WellChildControl } from './well-child-care/well-child-control.component';
 import CREDFormsSelectorWorkspace from './well-child-care/workspace/cred-forms-selector.workspace';
+import IntegratedCredDashboard from './well-child-care/integrated-cred-dashboard.component';
+import IntegratedCredLink from './well-child-care/integrated-cred-link.component';
 
 const moduleName = '@sihsalus/esm-cred-app';
 const options = {
@@ -67,6 +69,8 @@ export function startupApp(): void {
 // WELL CHILD CARE EXPORTS
 // ================================================================================
 export const wellChildCareSideNavGroup = getSyncLifecycle(createDashboardGroup(wellChildCareNavGroup), options);
+export const integratedCredDashboard = getSyncLifecycle(IntegratedCredDashboard, options);
+export const integratedCredLink = getSyncLifecycle(IntegratedCredLink, options);
 
 // Navigation Links
 export const childImmunizationScheduleLink = getSyncLifecycle(

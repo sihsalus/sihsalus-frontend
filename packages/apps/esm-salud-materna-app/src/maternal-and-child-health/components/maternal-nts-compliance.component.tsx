@@ -11,7 +11,7 @@ import { isWithinPregnancyEpisode } from '../../utils/pregnancy-episode-utils';
 import styles from './maternal-nts-compliance.scss';
 
 type FormKey = keyof ConfigObject['formsList'];
-type RequirementStatus = 'completed' | 'pending' | 'notConfigured';
+type RequirementStatus = 'available' | 'missing' | 'notConfigured';
 
 type MaternalEncounter = {
   uuid: string;
@@ -35,7 +35,7 @@ type Requirement = {
 type RequirementViewModel = Requirement & {
   configuredForm?: string;
   status: RequirementStatus;
-  completedDate?: string;
+  recordedDate?: string;
 };
 
 const maternalHealthFormsWorkspace = 'maternal-health-forms-selector-workspace';
@@ -211,12 +211,12 @@ const requirements: Array<Requirement> = [
   },
 ];
 
-const statusMeta: Record<RequirementStatus, { labelKey: string; label: string; tagType: 'green' | 'red' | 'gray' }> = {
-  completed: { labelKey: 'completed', label: 'Completo', tagType: 'green' },
-  pending: { labelKey: 'pending', label: 'Pendiente', tagType: 'red' },
+const statusMeta: Record<RequirementStatus, { labelKey: string; label: string; tagType: 'blue' | 'gray' }> = {
+  available: { labelKey: 'maternalRecordAvailable', label: 'Registro disponible', tagType: 'blue' },
+  missing: { labelKey: 'maternalRecordMissing', label: 'Sin registro', tagType: 'gray' },
   notConfigured: {
-    labelKey: 'notConfigured',
-    label: 'Sin soporte',
+    labelKey: 'maternalFormNotConfigured',
+    label: 'Formulario no configurado',
     tagType: 'gray',
   },
 };
@@ -260,7 +260,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
     [t],
   );
 
-  const completedForms = useMemo(() => {
+  const recordedForms = useMemo(() => {
     const forms = new Map<string, string>();
 
     const currentPregnancyEncounters = (data ?? [])
@@ -271,11 +271,11 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
       );
 
     for (const encounter of currentPregnancyEncounters) {
-      const completedDate = encounter.encounterDatetime;
+      const recordedDate = encounter.encounterDatetime;
       for (const value of [encounter.form?.uuid, encounter.form?.name, encounter.form?.display]) {
         const key = normalize(value);
         if (key && !forms.has(key)) {
-          forms.set(key, completedDate ?? '');
+          forms.set(key, recordedDate ?? '');
         }
       }
     }
@@ -294,15 +294,15 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
         return { ...requirement, configuredForm, status: 'notConfigured' };
       }
 
-      const completedDate = completedForms.get(normalize(configuredForm));
+      const recordedDate = recordedForms.get(normalize(configuredForm));
       return {
         ...requirement,
         configuredForm,
-        status: completedDate !== undefined ? 'completed' : 'pending',
-        completedDate,
+        status: recordedDate !== undefined ? 'available' : 'missing',
+        recordedDate,
       };
     });
-  }, [completedForms, config.formsList, translatedRequirements]);
+  }, [recordedForms, config.formsList, translatedRequirements]);
 
   const groupedRequirements = useMemo(() => {
     return requirementViewModels.reduce<Record<string, Array<RequirementViewModel>>>((groups, requirement) => {
@@ -311,13 +311,10 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
     }, {});
   }, [requirementViewModels]);
 
-  const trackableRequirements = requirementViewModels.filter((requirement) => requirement.status !== 'notConfigured');
-  const completedCount = trackableRequirements.filter((requirement) => requirement.status === 'completed').length;
-  const pendingCount = trackableRequirements.length - completedCount;
-  const unsupportedCount = requirementViewModels.length - trackableRequirements.length;
-  const completionPercent = trackableRequirements.length
-    ? Math.round((completedCount / trackableRequirements.length) * 100)
-    : 0;
+  const configuredRequirements = requirementViewModels.filter((requirement) => requirement.status !== 'notConfigured');
+  const availableCount = configuredRequirements.filter((requirement) => requirement.status === 'available').length;
+  const missingCount = configuredRequirements.length - availableCount;
+  const unconfiguredCount = requirementViewModels.length - configuredRequirements.length;
 
   const openFormsWorkspace = () => {
     launchWorkspace2(maternalHealthFormsWorkspace, { patientUuid });
@@ -328,13 +325,13 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
       <Tile className={styles.complianceCard}>
         <div className={styles.headerRow}>
           <div>
-            <p className={styles.eyebrow}>{t('pregnantMotherNts', 'NTS madre gestante')}</p>
-            <h4>{t('maternalCareGaps', 'Brechas de atención materna')}</h4>
+            <p className={styles.eyebrow}>{t('maternalRecordTracking', 'Seguimiento de registros')}</p>
+            <h4>{t('maternalCareRecords', 'Registros de atención materna')}</h4>
           </div>
           <Tag type="red">{t('error', 'Error')}</Tag>
         </div>
         <p className={styles.errorText}>
-          {t('maternalNtsComplianceLoadError', 'No se pudo cargar el estado de cumplimiento NTS.')}
+          {t('maternalRecordsLoadError', 'No se pudieron cargar los registros de atención materna.')}
         </p>
       </Tile>
     );
@@ -344,12 +341,12 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
     <Tile className={styles.complianceCard}>
       <div className={styles.headerRow}>
         <div>
-          <p className={styles.eyebrow}>NTS 105 / NTS 130</p>
-          <h4>{t('maternalCareGaps', 'Brechas de atención materna')}</h4>
+          <p className={styles.eyebrow}>{t('maternalRecordTracking', 'Seguimiento de registros')}</p>
+          <h4>{t('maternalCareRecords', 'Registros de atención materna')}</h4>
           <p className={styles.subtitle}>
             {t(
-              'maternalCareGapsSubtitle',
-              'Seguimiento operativo de atención prenatal reenfocada, parto institucional, puerperio y atención diferenciada.',
+              'maternalRecordsHelp',
+              'La presencia de un formulario no confirma resultados, controles completos ni cumplimiento de la norma. Revise el contenido y las fechas de cada atención.',
             )}
           </p>
         </div>
@@ -361,25 +358,23 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
       </div>
 
       {isPregnancyLoading || isLoading ? (
-        <InlineLoading description={t('loadingMaternalNtsGaps', 'Cargando brechas NTS...')} />
+        <InlineLoading description={t('loadingMaternalRecords', 'Cargando registros maternos...')} />
       ) : (
         <>
           <div className={styles.summaryGrid}>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryValue}>{completionPercent}%</span>
-              <span className={styles.summaryLabel}>{t('trackableProgress', 'avance trazable')}</span>
+              <span className={styles.summaryValue}>{availableCount}</span>
+              <span className={styles.summaryLabel}>{t('maternalRecordsAvailable', 'con registro')}</span>
             </div>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryValue}>{completedCount}</span>
-              <span className={styles.summaryLabel}>{t('completedPlural', 'completos')}</span>
+              <span className={styles.summaryValue}>{missingCount}</span>
+              <span className={styles.summaryLabel}>{t('maternalRecordsMissing', 'sin registro')}</span>
             </div>
             <div className={styles.summaryItem}>
-              <span className={styles.summaryValue}>{pendingCount}</span>
-              <span className={styles.summaryLabel}>{t('pendingPlural', 'pendientes')}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryValue}>{unsupportedCount}</span>
-              <span className={styles.summaryLabel}>{t('withoutSupport', 'sin soporte')}</span>
+              <span className={styles.summaryValue}>{unconfiguredCount}</span>
+              <span className={styles.summaryLabel}>
+                {t('maternalFormsNotConfigured', 'formularios no configurados')}
+              </span>
             </div>
           </div>
 
@@ -390,7 +385,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
                 <ul className={styles.requirementsList}>
                   {sectionRequirements.map((requirement) => {
                     const meta = statusMeta[requirement.status];
-                    const completedDate = formatDate(requirement.completedDate, i18n.resolvedLanguage ?? i18n.language);
+                    const recordedDate = formatDate(requirement.recordedDate, i18n.resolvedLanguage ?? i18n.language);
 
                     return (
                       <li className={styles.requirementItem} key={requirement.id}>
@@ -401,9 +396,11 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
                           </div>
                           <p>{requirement.description}</p>
                           <span className={styles.source}>{requirement.source}</span>
-                          {completedDate && (
+                          {recordedDate && (
                             <span className={styles.completedDate}>
-                              {t('lastRecordDate', 'Último registro: {{completedDate}}', { completedDate })}
+                              {t('lastRecordDate', 'Último registro: {{completedDate}}', {
+                                completedDate: recordedDate,
+                              })}
                             </span>
                           )}
                           {requirement.status === 'notConfigured' && (

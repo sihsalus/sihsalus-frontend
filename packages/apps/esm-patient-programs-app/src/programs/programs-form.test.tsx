@@ -189,6 +189,165 @@ describe('ProgramsForm', () => {
     );
   });
 
+  it('loads the existing enrollment values when its request resolves after the workspace opens', async () => {
+    const user = userEvent.setup();
+    const enrollment = {
+      ...mockEnrolledProgramsResponse[0],
+      dateEnrolled: '2020-01-16T12:00:00.000+0000',
+      dateCompleted: '2020-02-20T12:00:00.000+0000',
+    };
+    const props = {
+      ...testProps,
+      workspaceProps: { programEnrollmentId: enrollment.uuid },
+    };
+    const enrollmentResponse = {
+      data: undefined,
+      error: null,
+      isLoading: true,
+      isValidating: false,
+      activeEnrollments: [],
+      mutateEnrollments: vi.fn(),
+    };
+    mockUseEnrollments.mockReturnValue(enrollmentResponse);
+    const view = render(<ProgramsForm {...props} />);
+
+    expect(screen.getByText('Loading program enrollment')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /date enrolled/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeDisabled();
+
+    mockUseEnrollments.mockReturnValue({
+      ...enrollmentResponse,
+      data: [enrollment],
+      isLoading: false,
+    });
+    view.rerender(<ProgramsForm {...props} />);
+
+    expect(screen.getByRole('textbox', { name: /date enrolled/i })).toHaveValue('16/01/2020');
+    expect(screen.getByRole('textbox', { name: /date completed/i })).toHaveValue('20/02/2020');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockCreateProgramEnrollment).not.toHaveBeenCalled();
+    expect(mockUpdateProgramEnrollment).toHaveBeenCalledWith(
+      enrollment.uuid,
+      expect.objectContaining({
+        program: enrollment.program.uuid,
+        dateEnrolled: expect.stringMatching(/^2020-01-16T/),
+        dateCompleted: expect.stringMatching(/^2020-02-20T/),
+        location: enrollment.location.uuid,
+      }),
+      expect.any(AbortController),
+    );
+  });
+
+  it('preserves a completion date being edited when enrollment data is refreshed', async () => {
+    const user = userEvent.setup();
+    const enrollment = {
+      ...mockEnrolledProgramsResponse[0],
+      dateEnrolled: '2020-01-16T12:00:00.000+0000',
+    };
+    const props = {
+      ...testProps,
+      workspaceProps: { programEnrollmentId: enrollment.uuid },
+    };
+    const response = {
+      data: [enrollment],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      activeEnrollments: [],
+      mutateEnrollments: vi.fn(),
+    };
+    mockUseEnrollments.mockReturnValue(response);
+    const view = render(<ProgramsForm {...props} />);
+    await user.click(screen.getByRole('textbox', { name: /date completed/i }));
+    await user.paste('2020-05-05');
+    await user.tab();
+
+    mockUseEnrollments.mockReturnValue({
+      ...response,
+      data: [{ ...enrollment, dateEnrolled: '2020-01-17T12:00:00.000+0000' }],
+    });
+    view.rerender(<ProgramsForm {...props} />);
+
+    expect(screen.getByRole('textbox', { name: /date completed/i })).toHaveValue('05/05/2020');
+    expect(screen.getByRole('textbox', { name: /date enrolled/i })).toHaveValue('17/01/2020');
+  });
+
+  it.each(['patient', 'enrollment'] as const)(
+    'discards edited dates when the %s identity changes',
+    async (identity) => {
+      const user = userEvent.setup();
+      const enrollment = {
+        ...mockEnrolledProgramsResponse[0],
+        dateEnrolled: '2020-01-16T12:00:00.000+0000',
+      };
+      const props = {
+        ...testProps,
+        workspaceProps: { programEnrollmentId: enrollment.uuid },
+      };
+      const response = {
+        data: [enrollment],
+        error: null,
+        isLoading: false,
+        isValidating: false,
+        activeEnrollments: [],
+        mutateEnrollments: vi.fn(),
+      };
+      mockUseEnrollments.mockReturnValue(response);
+      const view = render(<ProgramsForm {...props} />);
+      await user.click(screen.getByRole('textbox', { name: /date completed/i }));
+      await user.paste('2020-05-05');
+      await user.tab();
+      expect(screen.getByRole('textbox', { name: /date completed/i })).toHaveValue('05/05/2020');
+
+      const nextEnrollment = {
+        ...enrollment,
+        uuid: identity === 'enrollment' ? 'next-enrollment' : enrollment.uuid,
+        dateEnrolled: '2020-02-02T12:00:00.000+0000',
+        dateCompleted: '2020-03-03T12:00:00.000+0000',
+      };
+      const nextPatientUuid = identity === 'patient' ? 'next-patient' : testProps.groupProps.patientUuid;
+      mockUseEnrollments.mockReturnValue({
+        ...response,
+        data: [nextEnrollment],
+      });
+      view.rerender(
+        <ProgramsForm
+          {...props}
+          groupProps={{ ...props.groupProps, patientUuid: nextPatientUuid }}
+          workspaceProps={{ programEnrollmentId: nextEnrollment.uuid }}
+        />,
+      );
+
+      expect(screen.getByRole('textbox', { name: /date enrolled/i })).toHaveValue('02/02/2020');
+      expect(screen.getByRole('textbox', { name: /date completed/i })).toHaveValue('03/03/2020');
+      await user.click(screen.getByRole('button', { name: /save and close/i }));
+      expect(mockCreateProgramEnrollment).not.toHaveBeenCalled();
+      expect(mockUpdateProgramEnrollment).toHaveBeenCalledWith(
+        nextEnrollment.uuid,
+        expect.objectContaining({
+          patient: nextPatientUuid,
+          dateEnrolled: expect.stringMatching(/^2020-02-02T/),
+          dateCompleted: expect.stringMatching(/^2020-03-03T/),
+        }),
+        expect.any(AbortController),
+      );
+    },
+  );
+
+  it('blocks editing when the requested enrollment is absent from the loaded patient records', async () => {
+    const user = userEvent.setup();
+    renderProgramsForm('missing-enrollment');
+
+    expect(screen.getByText('Program enrollment unavailable')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /date enrolled/i })).not.toBeInTheDocument();
+    const save = screen.getByRole('button', { name: /save and close/i });
+    expect(save).toBeDisabled();
+    await user.click(save);
+    expect(mockCreateProgramEnrollment).not.toHaveBeenCalled();
+    expect(mockUpdateProgramEnrollment).not.toHaveBeenCalled();
+  });
+
   it('preserves the existing enrollment location when editing', async () => {
     const user = userEvent.setup();
 

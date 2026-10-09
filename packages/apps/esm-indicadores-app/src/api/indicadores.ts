@@ -1,6 +1,6 @@
 import { fetchJson, mutateJson, toJsonBody } from './client';
-import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
-import { assertShape, isIdentifiedResource, isIndicadorDetail, isOptionList, isPaginatedResponse, isSQLPreview, isStringRecord } from './validate';
+import { getReportesSqlResourcePath } from './config';
+import { assertShape, isIdentifiedResource, isIndicadorDetail, isOptionList, isPaginatedResponse, isStringRecord } from './validate';
 import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
@@ -8,7 +8,6 @@ import type {
   Indicador,
   IndicadorCreatePayload,
   IndicadorDetail,
-  IndicadorSQLPreview,
   IndicadorUpdatePayload,
   IndicadorVersion,
   LocationOption,
@@ -50,7 +49,7 @@ export async function getIndicadores(page: number, size: number): Promise<Pagina
   return assertShape(data, isPaginatedResponse, 'indicadores');
 }
 
-export async function getIndicador(id: string): Promise<IndicadorDetail> {
+export async function getIndicador(id: number): Promise<IndicadorDetail> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   const data = await fetchJson<IndicadorDetail>(`${indicadoresPath}/${id}`);
   return assertShape(data, isIndicadorDetail, `indicadores/${id}`);
@@ -62,32 +61,24 @@ export async function createIndicador(payload: IndicadorCreatePayload): Promise<
   return assertShape(data, isIdentifiedResource, 'indicadores');
 }
 
-export async function updateIndicador(id: string, payload: IndicadorUpdatePayload): Promise<Indicador> {
+export async function updateIndicador(id: number, payload: IndicadorUpdatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   const data = await mutateJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) });
   return assertShape(data, isIdentifiedResource, `indicadores/${id}`);
 }
 
-export async function deleteIndicador(id: string): Promise<void> {
+export async function deleteIndicador(id: number): Promise<void> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   await mutateJson<void>(`${indicadoresPath}/${id}`, { method: 'DELETE' });
 }
 
-export async function createVersion(id: string, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
+export async function createVersion(id: number, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   const data = await mutateJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
     method: 'POST',
     ...toJsonBody({ definicion }),
   });
   return assertShape(data, isIdentifiedResource, `indicadores/${id}/versiones`);
-}
-
-export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
-  const reportesSqlBase = await getReportesSqlApiPath();
-  const data = await fetchJson<IndicadorSQLPreview>(
-    ensureQuery(`${reportesSqlBase}/indicadores/${id}/preview-sql`, { versionId }),
-  );
-  return assertShape(data, isSQLPreview, 'preview-sql');
 }
 
 export async function searchLocations(query: string): Promise<Array<LocationOption>> {

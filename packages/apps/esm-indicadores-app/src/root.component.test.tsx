@@ -46,10 +46,10 @@ describe('RootComponent lazy routed pages', () => {
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
   });
 
-  it('mounts the Panel page by default and keeps the module header visible', async () => {
+  it('mounts the Panel page by default without a redundant module header', async () => {
     renderAt('/');
 
-    expect(screen.getByText('Indicadores Clínicos')).toBeInTheDocument();
+    expect(screen.queryByText('Indicadores Clínicos')).not.toBeInTheDocument();
     expect(await screen.findByText('Panel page content')).toBeInTheDocument();
     expect(screen.queryByText('Indicadores page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();

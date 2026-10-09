@@ -14,7 +14,7 @@ import { useResultadosSeries } from '../features/resultados/hooks';
 const mockUseResultadosSeries = vi.mocked(useResultadosSeries);
 
 const indicador: Indicador = {
-  id: 'ind-001',
+  id: 1,
   nombre: 'Control de recién nacido',
   descripcion: null,
   activo: true,
@@ -77,7 +77,7 @@ describe('IndicadorResumenCard', () => {
 
     expect(screen.getByRole('link', { name: 'Control de recién nacido' })).toHaveAttribute(
       'href',
-      '/resultados?indicador=ind-001&anio=2020',
+      '/resultados?indicador=1&anio=2020',
     );
   });
 

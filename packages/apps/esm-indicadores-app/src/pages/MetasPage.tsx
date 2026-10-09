@@ -28,7 +28,7 @@ import styles from '../indicators-dashboard.module.scss';
 
 const MetasPage: React.FC = () => {
   const { t } = useTranslation();
-  const [selectedIndicatorId, setSelectedIndicatorId] = useState('');
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState(currentYear());
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<IndicadorMeta | null>(null);
@@ -44,7 +44,7 @@ const MetasPage: React.FC = () => {
     data: meta,
     isLoading: metaLoading,
     error: metaError,
-  } = useMetaByIndicator(selectedIndicatorId, selectedIndicatorId ? selectedYear : null);
+  } = useMetaByIndicator(selectedIndicatorId, selectedIndicatorId !== null ? selectedYear : null);
   const { upsertMeta } = useUpsertMeta();
   const { deleteMeta } = useDeleteMeta();
 
@@ -61,7 +61,7 @@ const MetasPage: React.FC = () => {
       meta
         ? [
             {
-              id: meta.id,
+              id: String(meta.id),
               indicador: meta.indicador_nombre,
               version: meta.version_numero,
               anio: meta.anio,
@@ -91,7 +91,7 @@ const MetasPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (payload: IndicadorMetaCreatePayload, indicatorId: string) => {
+  const handleSubmit = async (payload: IndicadorMetaCreatePayload, indicatorId: number) => {
     if (submitLockRef.current) {
       return;
     }
@@ -149,7 +149,7 @@ const MetasPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h2>{t('metasTitle', 'Metas')}</h2>
+          <h1>{t('metasTitle', 'Metas')}</h1>
           <p className={styles.subtitle}>
             {t('metasSubtitle', 'Consulte y administre la meta anual de un indicador.')}
           </p>
@@ -167,7 +167,7 @@ const MetasPage: React.FC = () => {
           itemToString={(item?: Indicador) => item?.nombre ?? ''}
           selectedItem={selectedIndicator}
           onChange={({ selectedItem }: { selectedItem: Indicador | null | undefined }) =>
-            setSelectedIndicatorId(selectedItem?.id ?? '')
+            setSelectedIndicatorId(selectedItem?.id ?? null)
           }
           placeholder={t('selectIndicator', 'Seleccione un indicador')}
           disabled={indicatorsLoading || Boolean(indicatorsError)}
@@ -208,13 +208,13 @@ const MetasPage: React.FC = () => {
         </div>
       ) : null}
 
-      {!selectedIndicatorId && !indicatorsLoading && !indicatorsError ? (
+      {selectedIndicatorId === null && !indicatorsLoading && !indicatorsError ? (
         <Tile className={styles.empty}>
           {t('selectMetaLookup', 'Seleccione un indicador y un año para consultar su meta.')}
         </Tile>
       ) : null}
 
-      {selectedIndicatorId && !metaLoading && !metaError ? (
+      {selectedIndicatorId !== null && !metaLoading && !metaError ? (
         rows.length ? (
           <div className={`${styles.tableSurface} ${styles.metasTable}`}>
             <DataTable rows={rows} headers={headers}>
@@ -268,7 +268,7 @@ const MetasPage: React.FC = () => {
         <MetaFormModal
           isOpen
           initialMeta={editingMeta}
-          initialIndicatorId={selectedIndicatorId || undefined}
+          initialIndicatorId={selectedIndicatorId ?? undefined}
           isSubmitting={isSubmitting}
           onClose={handleCloseModal}
           onSubmit={handleSubmit}

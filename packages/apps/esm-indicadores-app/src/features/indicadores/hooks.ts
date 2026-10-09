@@ -9,7 +9,6 @@ import {
   getEncounterTypes,
   getIndicador,
   getIndicadores,
-  previewSql,
   resolveDiagnosticos,
   resolveLocations,
   resolveOrdenes,
@@ -25,7 +24,6 @@ import type {
   Indicador,
   IndicadorCreatePayload,
   IndicadorDetail,
-  IndicadorSQLPreview,
   IndicadorUpdatePayload,
   LocationOption,
   OrdenOption,
@@ -33,7 +31,7 @@ import type {
 } from '../../api/types';
 
 const indicadoresKey = (page: number, size: number) => ['indicadores', page, size] as const;
-const indicadorKey = (id: string) => ['indicador', id] as const;
+const indicadorKey = (id: number) => ['indicador', id] as const;
 
 export function useIndicadores(page: number, size: number) {
   const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<Indicador>, Error>(
@@ -89,9 +87,10 @@ export function useAllIndicadores() {
   };
 }
 
-export function useIndicador(id: string) {
-  const { data, error, isLoading, mutate } = useSWR<IndicadorDetail, Error>(id ? indicadorKey(id) : null, () =>
-    getIndicador(id),
+export function useIndicador(id: number | null) {
+  const { data, error, isLoading, mutate } = useSWR<IndicadorDetail, Error>(
+    id !== null ? indicadorKey(id) : null,
+    () => getIndicador(id as number),
   );
   return {
     data,
@@ -121,7 +120,7 @@ export function useUpdateIndicador() {
   const { mutate } = useSWRConfig();
 
   const update = useCallback(
-    async (id: string, payload: IndicadorUpdatePayload) => {
+    async (id: number, payload: IndicadorUpdatePayload) => {
       const result = await updateIndicador(id, payload);
       await mutate(
         (key) => Array.isArray(key) && (key[0] === 'indicadores' || (key[0] === 'indicador' && key[1] === id)),
@@ -138,7 +137,7 @@ export function useDeleteIndicador() {
   const { mutate } = useSWRConfig();
 
   const remove = useCallback(
-    async (id: string) => {
+    async (id: number) => {
       await deleteIndicador(id);
       await mutate(
         (key) => Array.isArray(key) && (key[0] === 'indicadores' || (key[0] === 'indicador' && key[1] === id)),
@@ -150,11 +149,14 @@ export function useDeleteIndicador() {
   return { deleteIndicador: remove };
 }
 
-export function useCreateVersion(id: string) {
+export function useCreateVersion(id: number | null) {
   const { mutate } = useSWRConfig();
 
   const create = useCallback(
     async (definicion: DefinicionIndicadorForm) => {
+      if (id === null) {
+        throw new Error('Se requiere un indicador para crear una versión.');
+      }
       const result = await createVersion(id, definicion);
       await mutate(indicadorKey(id));
       return result;
@@ -165,24 +167,12 @@ export function useCreateVersion(id: string) {
   return { createVersion: create };
 }
 
-export function useSQLPreview(indicadorId: string, versionId?: string) {
-  const { data, error, isLoading, mutate } = useSWR<IndicadorSQLPreview, Error>(
-    indicadorId ? ['indicador-sql-preview', indicadorId, versionId ?? 'latest'] : null,
-    () => previewSql(indicadorId, versionId),
-  );
-
-  return {
-    data,
-    error,
-    isLoading,
-    isError: Boolean(error),
-    refetch: mutate,
-  };
-}
-
-export function useLocationSearch(query: string) {
+// `enabled` lets a selector fetch its first page on focus even before a query
+// exists, so the list can be shown without typing. Term-based endpoints may
+// return nothing (or an error) for a blank query; callers degrade accordingly.
+export function useLocationSearch(query: string, enabled = false) {
   const { data, error, isLoading } = useSWR<Array<LocationOption>, Error>(
-    query.trim() ? ['location-search', query] : null,
+    enabled || query.trim() ? ['location-search', query] : null,
     () => searchLocations(query),
   );
   return { data: data ?? [], error, isLoading };

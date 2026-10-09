@@ -39,7 +39,7 @@ describe('indicadores API contract', () => {
     const response = {
       items: [
         {
-          id: 'indicator-a',
+          id: 1,
           nombre: 'Indicador A',
           descripcion: null,
           activo: true,
@@ -60,7 +60,7 @@ describe('indicadores API contract', () => {
   });
 
   it('sends the canonical order payload on create', async () => {
-    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'indicator-a', ...createPayload, activo: true } } as never);
+    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 1, ...createPayload, activo: true } } as never);
 
     await createIndicador(createPayload);
 
@@ -83,12 +83,12 @@ describe('indicadores API contract', () => {
 
   it('updates only supported metadata fields', async () => {
     const payload = { nombre: 'Actualizado', descripcion: 'Descripción' };
-    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'indicator-a', ...payload } } as never);
+    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 1, ...payload } } as never);
 
-    await updateIndicador('indicator-a', payload);
+    await updateIndicador(1, payload);
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
-      '/services/reportes-sql/indicadores/indicator-a',
+      '/services/reportes-sql/indicadores/1',
       expect.objectContaining({ method: 'PUT', body: payload }),
     );
     expect(mockedOpenmrsFetch.mock.calls[0][1]?.body).not.toHaveProperty('activo');
@@ -97,30 +97,30 @@ describe('indicadores API contract', () => {
   it('uses the real DELETE endpoint to deactivate an indicator', async () => {
     mockedOpenmrsFetch.mockResolvedValue({ data: undefined } as never);
 
-    await deleteIndicador('indicator-a');
+    await deleteIndicador(1);
 
-    expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/indicator-a', {
+    expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/1', {
       method: 'DELETE',
       rejectOnAuthFailure: true,
     });
   });
 
   it('uses the real POST endpoint to create an immutable version', async () => {
-    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'version-b' } } as never);
+    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 5 } } as never);
 
-    await createVersion('indicator-a', definicion);
+    await createVersion(1, definicion);
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
-      '/services/reportes-sql/indicadores/indicator-a/versiones',
+      '/services/reportes-sql/indicadores/1/versiones',
       expect.objectContaining({ method: 'POST', body: { definicion } }),
     );
   });
 
   const mutations = [
     ['create', () => createIndicador(createPayload)],
-    ['update', () => updateIndicador('indicator-a', { nombre: 'A', descripcion: null })],
-    ['delete', () => deleteIndicador('indicator-a')],
-    ['createVersion', () => createVersion('indicator-a', definicion)],
+    ['update', () => updateIndicador(1, { nombre: 'A', descripcion: null })],
+    ['delete', () => deleteIndicador(1)],
+    ['createVersion', () => createVersion(1, definicion)],
   ] as const;
 
   it.each(mutations)('%s rejects 422, 500 and network failures', async (_name, invoke) => {
@@ -136,15 +136,15 @@ describe('indicadores API contract', () => {
 
   describe('getIndicador detail shape validation', () => {
     const validDetail = {
-      id: 'indicator-a',
+      id: 1,
       nombre: 'Indicador A',
       descripcion: 'desc',
       activo: true,
       creado_en: '2026-01-01',
       versiones: [
         {
-          id: 'ver-a',
-          indicador_id: 'indicator-a',
+          id: 11,
+          indicador_id: 1,
           version: 1,
           creado_en: '2026-01-01',
           definicion: { tipo: 'conteo_atenciones' },
@@ -155,8 +155,8 @@ describe('indicadores API contract', () => {
     it('resolves when the detail envelope conforms to the contract', async () => {
       mockedOpenmrsFetch.mockResolvedValue({ data: validDetail } as never);
 
-      await expect(getIndicador('indicator-a')).resolves.toEqual(validDetail);
-      expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/indicator-a', {
+      await expect(getIndicador(1)).resolves.toEqual(validDetail);
+      expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/1', {
         rejectOnAuthFailure: true,
       });
     });
@@ -165,15 +165,15 @@ describe('indicadores API contract', () => {
       const withNull = { ...validDetail, descripcion: null };
       mockedOpenmrsFetch.mockResolvedValue({ data: withNull } as never);
 
-      await expect(getIndicador('indicator-a')).resolves.toEqual(withNull);
+      await expect(getIndicador(1)).resolves.toEqual(withNull);
     });
 
     it('throws a contract error when the detail envelope is malformed (activo missing)', async () => {
       const { activo: _activo, ...malformed } = validDetail;
       mockedOpenmrsFetch.mockResolvedValue({ data: malformed } as never);
 
-      await expect(getIndicador('indicator-a')).rejects.toThrow(
-        /reportes-sql devolvió una respuesta inesperada para indicadores\/indicator-a\./,
+      await expect(getIndicador(1)).rejects.toThrow(
+        /reportes-sql devolvió una respuesta inesperada para indicadores\/1\./,
       );
     });
 
@@ -184,8 +184,8 @@ describe('indicadores API contract', () => {
       };
       mockedOpenmrsFetch.mockResolvedValue({ data: malformed } as never);
 
-      await expect(getIndicador('indicator-a')).rejects.toThrow(
-        /reportes-sql devolvió una respuesta inesperada para indicadores\/indicator-a\./,
+      await expect(getIndicador(1)).rejects.toThrow(
+        /reportes-sql devolvió una respuesta inesperada para indicadores\/1\./,
       );
     });
 
@@ -193,7 +193,7 @@ describe('indicadores API contract', () => {
       const malformed = { ...validDetail, versiones: { oops: true } };
       mockedOpenmrsFetch.mockResolvedValue({ data: malformed } as never);
 
-      await expect(getIndicador('indicator-a')).rejects.toThrow(/indicadores\/indicator-a/);
+      await expect(getIndicador(1)).rejects.toThrow(/indicadores\/1/);
     });
   });
 });

@@ -22,7 +22,7 @@ const PanelPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h2>{t('panel', 'Panel')}</h2>
+          <h1>{t('panel', 'Panel')}</h1>
           <p className={styles.subtitle}>
             {t('panelSubtitle', 'Cumplimiento anual de los indicadores activos en un solo vistazo.')}
           </p>

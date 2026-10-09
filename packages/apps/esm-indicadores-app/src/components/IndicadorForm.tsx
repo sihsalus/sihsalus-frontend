@@ -23,7 +23,6 @@ import type {
 } from '../api/types';
 import styles from '../indicators-dashboard.module.scss';
 import DiagnosticoSearchSelector from './DiagnosticoSearchSelector';
-import EncounterTypeSearchSelector from './EncounterTypeSearchSelector';
 import LocationSearchSelector from './LocationSearchSelector';
 import OrdenSearchSelector from './OrdenSearchSelector';
 
@@ -207,13 +206,6 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
       return;
     }
 
-    if (values.tipo === 'conteo_pacientes_ventana' && !values.selectedEncounterTypes.length) {
-      setValidationError(
-        t('encounterTypesRequired', 'Ingrese al menos un tipo de encuentro para el conteo en ventana.'),
-      );
-      return;
-    }
-
     const minimoOcurrencias = parseNumber(values.minimoOcurrencias);
     if (
       values.minimoOcurrencias.trim() &&
@@ -325,10 +317,6 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 >
                   <SelectItem value="conteo_atenciones" text={t('countEncounters', 'Conteo de atenciones')} />
                   <SelectItem value="conteo_pacientes" text={t('countPatients', 'Conteo de pacientes')} />
-                  <SelectItem
-                    value="conteo_pacientes_ventana"
-                    text={t('countPatientsWindow', 'Conteo de pacientes en ventana etaria')}
-                  />
                 </Select>
               </div>
             </section>
@@ -381,37 +369,44 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                   <RadioButton id="filtro-clinico-ordenes" labelText={t('orders', 'Órdenes')} value="ordenes" />
                 </RadioButtonGroup>
                 {values.filtroClinico === 'diagnosticos' ? (
-                  <div className={styles.formFieldGroup}>
-                    <DiagnosticoSearchSelector
-                      selectedItems={values.selectedDiagnosticos}
-                      onChange={(items) => updateField('selectedDiagnosticos', items)}
-                    />
-                    <div className={styles.formFieldNarrow}>
-                      <Select
-                        id="tipo-diagnostico"
-                        labelText={t('diagnosisType', 'Tipo de diagnóstico')}
-                        value={values.diagnosticoTipo}
-                        onChange={(event) =>
-                          updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])
-                        }
-                      >
-                        <SelectItem value="" text={t('unspecified', 'Sin especificar')} />
-                        <SelectItem value="definitivo" text={t('definitive', 'Definitivo')} />
-                        <SelectItem value="presuntivo" text={t('presumptive', 'Presuntivo')} />
-                      </Select>
+                  <>
+                    <div className={styles.formFieldGroup}>
+                      <DiagnosticoSearchSelector
+                        selectedItems={values.selectedDiagnosticos}
+                        onChange={(items) => updateField('selectedDiagnosticos', items)}
+                      />
                     </div>
-                  </div>
+                    <RadioButtonGroup
+                      legendText={t('diagnosisType', 'Tipo de diagnóstico')}
+                      name="tipo-diagnostico"
+                      orientation={isDesktop(layout) ? 'horizontal' : 'vertical'}
+                      valueSelected={values.diagnosticoTipo}
+                      onChange={(value) =>
+                        updateField('diagnosticoTipo', value as IndicadorFormValues['diagnosticoTipo'])
+                      }
+                    >
+                      <RadioButton
+                        id="tipo-diagnostico-ninguno"
+                        labelText={t('unspecified', 'Sin especificar')}
+                        value=""
+                      />
+                      <RadioButton
+                        id="tipo-diagnostico-definitivo"
+                        labelText={t('definitive', 'Definitivo')}
+                        value="definitivo"
+                      />
+                      <RadioButton
+                        id="tipo-diagnostico-presuntivo"
+                        labelText={t('presumptive', 'Presuntivo')}
+                        value="presuntivo"
+                      />
+                    </RadioButtonGroup>
+                  </>
                 ) : null}
                 {values.filtroClinico === 'ordenes' ? (
                   <OrdenSearchSelector
                     selectedItems={values.selectedOrdenes}
                     onChange={(items) => updateField('selectedOrdenes', items)}
-                  />
-                ) : null}
-                {values.tipo === 'conteo_pacientes_ventana' ? (
-                  <EncounterTypeSearchSelector
-                    selectedItems={values.selectedEncounterTypes}
-                    onChange={(items) => updateField('selectedEncounterTypes', items)}
                   />
                 ) : null}
               </Stack>
@@ -439,65 +434,68 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                     <SelectItem value="M" text={t('male', 'Masculino')} />
                   </Select>
                 </div>
-                <div className={styles.ageBlocks}>
-                  <div className={styles.ageBlock}>
-                    <div className={styles.ageBlockHeader}>
-                      <span className={styles.sectionMiniTitle}>{t('minAge', 'Edad mínima')}</span>
-                      <span className={styles.mutedText}>{t('minAgeHint', 'Complete solo lo necesario.')}</span>
+                <div className={styles.ageGroup}>
+                  <p className={styles.fieldLabel}>{t('age', 'Edad')}</p>
+                  <div className={styles.ageBlocks}>
+                    <div className={styles.ageBlock}>
+                      <div className={styles.ageBlockHeader}>
+                        <span className={styles.sectionMiniTitle}>{t('minAge', 'Edad mínima')}</span>
+                        <span className={styles.mutedText}>{t('minAgeHint', 'Complete solo lo necesario.')}</span>
+                      </div>
+                      <div className={styles.ageGrid}>
+                        <TextInput
+                          id="min-anios"
+                          labelText={t('minAgeYears', 'Edad mínima años')}
+                          type="number"
+                          value={values.minAnios}
+                          onChange={(event) => updateField('minAnios', event.target.value)}
+                        />
+                        <TextInput
+                          id="min-meses"
+                          labelText={t('minAgeMonths', 'Edad mínima meses')}
+                          type="number"
+                          value={values.minMeses}
+                          onChange={(event) => updateField('minMeses', event.target.value)}
+                        />
+                        <TextInput
+                          id="min-dias"
+                          labelText={t('minAgeDays', 'Edad mínima días')}
+                          type="number"
+                          value={values.minDias}
+                          onChange={(event) => updateField('minDias', event.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div className={styles.ageGrid}>
-                      <TextInput
-                        id="min-anios"
-                        labelText={t('minAgeYears', 'Edad mínima años')}
-                        type="number"
-                        value={values.minAnios}
-                        onChange={(event) => updateField('minAnios', event.target.value)}
-                      />
-                      <TextInput
-                        id="min-meses"
-                        labelText={t('minAgeMonths', 'Edad mínima meses')}
-                        type="number"
-                        value={values.minMeses}
-                        onChange={(event) => updateField('minMeses', event.target.value)}
-                      />
-                      <TextInput
-                        id="min-dias"
-                        labelText={t('minAgeDays', 'Edad mínima días')}
-                        type="number"
-                        value={values.minDias}
-                        onChange={(event) => updateField('minDias', event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.ageBlock}>
-                    <div className={styles.ageBlockHeader}>
-                      <span className={styles.sectionMiniTitle}>{t('maxAge', 'Edad máxima')}</span>
-                      <span className={styles.mutedText}>
-                        {t('maxAgeHint', 'Se interpreta como límite superior del rango.')}
-                      </span>
-                    </div>
-                    <div className={styles.ageGrid}>
-                      <TextInput
-                        id="max-anios"
-                        labelText={t('maxAgeYears', 'Edad máxima años')}
-                        type="number"
-                        value={values.maxAnios}
-                        onChange={(event) => updateField('maxAnios', event.target.value)}
-                      />
-                      <TextInput
-                        id="max-meses"
-                        labelText={t('maxAgeMonths', 'Edad máxima meses')}
-                        type="number"
-                        value={values.maxMeses}
-                        onChange={(event) => updateField('maxMeses', event.target.value)}
-                      />
-                      <TextInput
-                        id="max-dias"
-                        labelText={t('maxAgeDays', 'Edad máxima días')}
-                        type="number"
-                        value={values.maxDias}
-                        onChange={(event) => updateField('maxDias', event.target.value)}
-                      />
+                    <div className={styles.ageBlock}>
+                      <div className={styles.ageBlockHeader}>
+                        <span className={styles.sectionMiniTitle}>{t('maxAge', 'Edad máxima')}</span>
+                        <span className={styles.mutedText}>
+                          {t('maxAgeHint', 'Se interpreta como límite superior del rango.')}
+                        </span>
+                      </div>
+                      <div className={styles.ageGrid}>
+                        <TextInput
+                          id="max-anios"
+                          labelText={t('maxAgeYears', 'Edad máxima años')}
+                          type="number"
+                          value={values.maxAnios}
+                          onChange={(event) => updateField('maxAnios', event.target.value)}
+                        />
+                        <TextInput
+                          id="max-meses"
+                          labelText={t('maxAgeMonths', 'Edad máxima meses')}
+                          type="number"
+                          value={values.maxMeses}
+                          onChange={(event) => updateField('maxMeses', event.target.value)}
+                        />
+                        <TextInput
+                          id="max-dias"
+                          labelText={t('maxAgeDays', 'Edad máxima días')}
+                          type="number"
+                          value={values.maxDias}
+                          onChange={(event) => updateField('maxDias', event.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

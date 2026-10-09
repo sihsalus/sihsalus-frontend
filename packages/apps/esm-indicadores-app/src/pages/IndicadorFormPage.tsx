@@ -3,6 +3,7 @@ import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { parseEntityId } from '../api/ids';
 import type { DefinicionIndicadorForm } from '../api/types';
 import IndicadorForm from '../components/IndicadorForm';
 import { indicatorsErrorMessageOptions, getIndicadorSaveErrorMessage } from '../features/indicadores/error-handling';
@@ -27,13 +28,14 @@ interface IndicadorFormPageProps {
 const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
   const { t } = useTranslation();
   const { id } = useParams();
+  const indicadorId = parseEntityId(id);
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const { createIndicador } = useCreateIndicador();
   const { updateIndicador } = useUpdateIndicador();
-  const { data: indicador, isLoading, error } = useIndicador(mode === 'edit' ? (id ?? '') : '');
+  const { data: indicador, isLoading, error } = useIndicador(mode === 'edit' ? indicadorId : null);
 
   const firstVersion = indicador?.versiones?.[0]?.definicion;
 
@@ -108,10 +110,10 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
         const created = await createIndicador({ ...metadata, definicion });
         notifySuccess(t('indicatorCreated', 'Indicador creado'));
         navigate(`/${created.id}`);
-      } else if (id) {
-        await updateIndicador(id, metadata);
+      } else if (indicadorId !== null) {
+        await updateIndicador(indicadorId, metadata);
         notifySuccess(t('indicatorUpdated', 'Indicador actualizado'));
-        navigate(`/${id}`);
+        navigate(`/${indicadorId}`);
       }
     } catch (submitError) {
       const message = getIndicadorSaveErrorMessage(
@@ -134,7 +136,7 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
           <Link to="/indicadores" className={styles.backLink}>
             {t('backToIndicators', 'Volver a indicadores')}
           </Link>
-          <h2>{mode === 'create' ? t('newIndicator', 'Nuevo indicador') : t('editIndicator', 'Editar indicador')}</h2>
+          <h1>{mode === 'create' ? t('newIndicator', 'Nuevo indicador') : t('editIndicator', 'Editar indicador')}</h1>
         </div>
       </div>
 

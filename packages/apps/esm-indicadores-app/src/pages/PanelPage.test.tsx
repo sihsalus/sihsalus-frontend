@@ -21,7 +21,7 @@ const mockUseAllIndicadores = vi.mocked(useAllIndicadores);
 const mockUseResultadosSeries = vi.mocked(useResultadosSeries);
 
 const activo: Indicador = {
-  id: 'ind-001',
+  id: 1,
   nombre: 'Control de recién nacido',
   descripcion: null,
   activo: true,
@@ -29,7 +29,7 @@ const activo: Indicador = {
 };
 
 const inactivo: Indicador = {
-  id: 'ind-002',
+  id: 2,
   nombre: 'Anemia',
   descripcion: null,
   activo: false,
@@ -47,7 +47,7 @@ const series: SeriesResponse = {
       meta: 1000,
     },
   ],
-  indicador_id: 'ind-001',
+  indicador_id: 1,
   anio: 2020,
   granularity: 'mensual',
 };

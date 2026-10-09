@@ -49,6 +49,7 @@ describe('LocationSearchSelector', () => {
     const onChange = vi.fn();
     render(<LocationSearchSelector selectedItems={[]} onChange={onChange} />);
 
+    expect(screen.getByText('Servicios', { selector: 'p' })).toBeInTheDocument();
     typeQuery('Buscar servicios', 'materno');
 
     const results = screen.getByRole('list', { name: 'Servicios' });
@@ -60,6 +61,38 @@ describe('LocationSearchSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quitar Centro Obstétrico' }));
     expect(onChange).toHaveBeenLastCalledWith([locations[1]]);
     unmount();
+  });
+
+  it('renders every match and leaves overflow to the scroll container', () => {
+    const many: Array<LocationOption> = Array.from({ length: 25 }, (_, index) => ({
+      uuid: `loc-${index + 1}`,
+      display: `Servicio ${index + 1}`,
+    }));
+    mockedUseLocationSearch.mockReturnValue({ data: many, error: undefined, isLoading: false });
+
+    render(<LocationSearchSelector selectedItems={[]} onChange={vi.fn()} />);
+    typeQuery('Buscar servicios', 'servicio');
+
+    const results = screen.getByRole('list', { name: 'Servicios' });
+    expect(within(results).getAllByRole('listitem')).toHaveLength(25);
+  });
+
+  it('lists options on focus without typing', () => {
+    render(<LocationSearchSelector selectedItems={[]} onChange={vi.fn()} />);
+
+    fireEvent.focus(screen.getByPlaceholderText('Buscar servicios'));
+
+    const results = screen.getByRole('list', { name: 'Servicios' });
+    expect(within(results).getAllByRole('listitem')).toHaveLength(locations.length);
+  });
+
+  it('prompts to type when focused with no options and no query', () => {
+    mockedUseLocationSearch.mockReturnValue({ data: [], error: undefined, isLoading: false });
+
+    render(<LocationSearchSelector selectedItems={[]} onChange={vi.fn()} />);
+    fireEvent.focus(screen.getByPlaceholderText('Buscar servicios'));
+
+    expect(screen.getByText('Escriba para buscar opciones.')).toBeInTheDocument();
   });
 });
 
@@ -78,6 +111,7 @@ describe('DiagnosticoSearchSelector', () => {
     const onChange = vi.fn();
     render(<DiagnosticoSearchSelector selectedItems={[]} onChange={onChange} />);
 
+    expect(screen.getByText('Diagnósticos', { selector: 'p' })).toBeInTheDocument();
     typeQuery('Buscar diagnósticos', 'anemia');
 
     const results = screen.getByRole('list', { name: 'Diagnósticos' });
@@ -102,6 +136,7 @@ describe('OrdenSearchSelector', () => {
     const onChange = vi.fn();
     render(<OrdenSearchSelector selectedItems={[]} onChange={onChange} />);
 
+    expect(screen.getByText('Órdenes', { selector: 'p' })).toBeInTheDocument();
     typeQuery('Buscar órdenes o conceptos', 'hemo');
 
     const results = screen.getByRole('list', { name: 'Órdenes' });
@@ -127,6 +162,7 @@ describe('EncounterTypeSearchSelector', () => {
     const onChange = vi.fn();
     render(<EncounterTypeSearchSelector selectedItems={[]} onChange={onChange} />);
 
+    expect(screen.getByText('Tipos de encuentro', { selector: 'p' })).toBeInTheDocument();
     typeQuery('Buscar tipos de encuentro', 'cred');
 
     const results = screen.getByRole('list', { name: 'Tipos de encuentro' });

@@ -1,6 +1,6 @@
 import { Button, InlineLoading, Search, Tile } from '@carbon/react';
 import { getUserFacingErrorMessage, useDebounce } from '@openmrs/esm-framework';
-import { useEffect, useMemo, useState } from 'react';
+import { type FocusEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
@@ -20,6 +20,10 @@ interface SearchMultiSelectorProps<T> {
   itemLabel: (item: T) => string;
   onChange: (items: Array<T>) => void;
   onSearchChange: (query: string) => void;
+  /** When true, the option list is shown on focus even before typing. */
+  showResultsOnFocus?: boolean;
+  /** Called on focus; term-based callers use it to fetch a first page. */
+  onActivate?: () => void;
 }
 
 function SearchMultiSelector<T>({
@@ -36,9 +40,12 @@ function SearchMultiSelector<T>({
   itemLabel,
   onChange,
   onSearchChange,
+  showResultsOnFocus = false,
+  onActivate,
 }: SearchMultiSelectorProps<T>) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFocused, setFocused] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm);
 
   const normalizedQuery = (debouncedSearchTerm ?? '').trim();
@@ -62,8 +69,24 @@ function SearchMultiSelector<T>({
     onChange(selectedItems.filter((current) => itemKey(current) !== targetKey));
   };
 
+  // On focus the option list is revealed. Encounter types already carry the full
+  // list; term-based sources fetch their first page via `onActivate`.
+  const showResults = normalizedQuery !== '' || (isFocused && showResultsOnFocus);
+
+  const handleFocus = () => {
+    setFocused(true);
+    onActivate?.();
+  };
+
+  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setFocused(false);
+    }
+  };
+
   return (
-    <div className={styles.searchSelector}>
+    <div className={styles.searchSelector} role="group" onFocus={handleFocus} onBlur={handleBlur}>
+      <p className={styles.fieldLabel}>{label}</p>
       <Search
         size="md"
         labelText={label}
@@ -93,7 +116,7 @@ function SearchMultiSelector<T>({
         <p className={styles.fieldHelp}>{emptyText}</p>
       )}
 
-      {normalizedQuery ? (
+      {showResults ? (
         <div className={styles.searchResultsPanel}>
           {isLoading ? (
             <InlineLoading description={t('searching', 'Buscando...')} />
@@ -130,8 +153,12 @@ function SearchMultiSelector<T>({
                 </Tile>
               ))}
             </div>
-          ) : (
+          ) : normalizedQuery ? (
             <Tile className={styles.searchEmptyState}>{noResultsText}</Tile>
+          ) : (
+            <Tile className={styles.searchEmptyState}>
+              {t('searchPrompt', 'Escriba para buscar opciones.')}
+            </Tile>
           )}
         </div>
       ) : null}

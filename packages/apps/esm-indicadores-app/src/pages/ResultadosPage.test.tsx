@@ -32,8 +32,8 @@ const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
 const mockLogError = vi.mocked(logError);
 
 const indicadores = [
-  { id: 'ind-001', nombre: 'Control prenatal', descripcion: null, activo: true, creado_en: '2026-01-01' },
-  { id: 'ind-002', nombre: 'Anemia', descripcion: null, activo: true, creado_en: '2026-02-01' },
+  { id: 1, nombre: 'Control prenatal', descripcion: null, activo: true, creado_en: '2026-01-01' },
+  { id: 2, nombre: 'Anemia', descripcion: null, activo: true, creado_en: '2026-02-01' },
 ];
 
 const monthlySeries: SeriesResponse = {
@@ -41,7 +41,7 @@ const monthlySeries: SeriesResponse = {
     { periodo_label: '2026-01', valor: 100, meses_disponibles: 1, anio: 2026, mes_referencia: '2026-01-01' },
     { periodo_label: '2026-02', valor: 200, meses_disponibles: 1, anio: 2026, mes_referencia: '2026-02-01' },
   ],
-  indicador_id: 'ind-001',
+  indicador_id: 1,
   anio: 2026,
   granularity: 'mensual',
 };
@@ -51,7 +51,7 @@ const quarterlySeries: SeriesResponse = {
     { periodo_label: 'Q1', valor: 300, meses_disponibles: 3, anio: 2026, trimestre: 1 },
     { periodo_label: 'Q2', valor: 200, meses_disponibles: 2, anio: 2026, trimestre: 2 },
   ],
-  indicador_id: 'ind-001',
+  indicador_id: 1,
   anio: 2026,
   granularity: 'trimestral',
 };
@@ -143,14 +143,14 @@ describe('ResultadosPage series granularity', () => {
     } as never);
 
     renderWithSwr(
-      <MemoryRouter initialEntries={['/results?indicador=ind-001']}>
+      <MemoryRouter initialEntries={['/results?indicador=1']}>
         <ResultadosPage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByLabelText('Indicador')).toHaveValue('ind-001');
+    expect(screen.getByLabelText('Indicador')).toHaveValue('1');
     const lastSeriesParams = mockUseResultadosSeries.mock.calls[mockUseResultadosSeries.mock.calls.length - 1][0];
-    expect(lastSeriesParams).toMatchObject({ indicador_id: 'ind-001' });
+    expect(lastSeriesParams).toMatchObject({ indicador_id: 1 });
     expect(screen.getByText('2026-01')).toBeInTheDocument();
   });
 
@@ -164,14 +164,14 @@ describe('ResultadosPage series granularity', () => {
     } as never);
 
     renderWithSwr(
-      <MemoryRouter initialEntries={['/results?indicador=ind-001&anio=2024']}>
+      <MemoryRouter initialEntries={['/results?indicador=1&anio=2024']}>
         <ResultadosPage />
       </MemoryRouter>,
     );
 
     expect(screen.getByLabelText('Año de la serie')).toHaveValue('2024');
     const lastSeriesParams = mockUseResultadosSeries.mock.calls[mockUseResultadosSeries.mock.calls.length - 1][0];
-    expect(lastSeriesParams).toMatchObject({ indicador_id: 'ind-001', anio: 2024 });
+    expect(lastSeriesParams).toMatchObject({ indicador_id: 1, anio: 2024 });
   });
 
   it('ignores an out-of-range ?anio value and falls back to the current year', () => {
@@ -184,7 +184,7 @@ describe('ResultadosPage series granularity', () => {
     } as never);
 
     renderWithSwr(
-      <MemoryRouter initialEntries={['/results?indicador=ind-001&anio=1990']}>
+      <MemoryRouter initialEntries={['/results?indicador=1&anio=1990']}>
         <ResultadosPage />
       </MemoryRouter>,
     );
@@ -230,7 +230,7 @@ describe('ResultadosPage series granularity', () => {
 
     // Select an indicator to trigger series loading
     const select = screen.getByLabelText('Indicador');
-    fireEvent.change(select, { target: { value: 'ind-001' } });
+    fireEvent.change(select, { target: { value: '1' } });
 
     // Series table headers should appear
     expect(screen.getByText('Periodo')).toBeInTheDocument();
@@ -259,7 +259,7 @@ describe('ResultadosPage series granularity', () => {
 
     // Select an indicator
     const indicatorSelect = screen.getByLabelText('Indicador');
-    fireEvent.change(indicatorSelect, { target: { value: 'ind-001' } });
+    fireEvent.change(indicatorSelect, { target: { value: '1' } });
 
     // Monthly rows should appear first
     expect(screen.getByText('2026-01')).toBeInTheDocument();
@@ -295,7 +295,7 @@ describe('ResultadosPage series granularity', () => {
 
     // Select indicator
     const indicatorSelect = screen.getByLabelText('Indicador');
-    fireEvent.change(indicatorSelect, { target: { value: 'ind-001' } });
+    fireEvent.change(indicatorSelect, { target: { value: '1' } });
 
     // ContentSwitcher should be visible with both tabs
     expect(screen.getByText('Series temporales')).toBeInTheDocument();
@@ -526,7 +526,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     mockUseCalcularAhora.mockReturnValue({
       calcularAhora: vi.fn().mockResolvedValue({
         calculados: 1,
-        errores: [{ indicador_id: 'ind-002', indicador_nombre: 'Anemia', error: 'boom' }],
+        errores: [{ indicador_id: 2, indicador_nombre: 'Anemia', error: 'boom' }],
         total: 2,
       }),
     });
@@ -540,7 +540,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifySuccess).toHaveBeenCalled();
     // The page should render a warning notification with the partial-error subtitle
     expect(screen.getByText(/1 de 2 calculados/)).toBeInTheDocument();
-    expect(screen.getByText('(ind-002): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.getByText('(2): No se pudo calcular este indicador.')).toBeInTheDocument();
     expect(screen.queryByText(/boom/)).not.toBeInTheDocument();
     expect(mockLogError).toHaveBeenCalledTimes(1);
   });
@@ -550,8 +550,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       calcularAhora: vi.fn().mockResolvedValue({
         calculados: 0,
         errores: [
-          { indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', error: 'timeout' },
-          { indicador_id: 'ind-002', indicador_nombre: 'Anemia', error: 'boom' },
+          { indicador_id: 1, indicador_nombre: 'Control prenatal', error: 'timeout' },
+          { indicador_id: 2, indicador_nombre: 'Anemia', error: 'boom' },
         ],
         total: 2,
       }),
@@ -567,8 +567,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifySuccess).not.toHaveBeenCalled();
     // The on-page summary should also use the error variant subtitle.
     expect(screen.getByText(/0 de 2 calculados, todos con error/)).toBeInTheDocument();
-    expect(screen.getByText('(ind-001): No se pudo calcular este indicador.')).toBeInTheDocument();
-    expect(screen.getByText('(ind-002): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.getByText('(1): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.getByText('(2): No se pudo calcular este indicador.')).toBeInTheDocument();
     expect(screen.queryByText(/timeout|boom/)).not.toBeInTheDocument();
     expect(mockLogError).toHaveBeenCalledTimes(1);
   });
@@ -666,7 +666,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
   it('scopes the recalculate to the selected indicator when one is set', async () => {
     const recalcMock = vi.fn().mockResolvedValue({
       anio: 2025,
-      indicador_id: 'ind-001',
+      indicador_id: 1,
       meses_procesados: 12,
       indicadores_considerados: 1,
       recalculados: 12,
@@ -679,7 +679,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     // Select an indicator first
     const indicatorSelect = screen.getByLabelText('Indicador');
-    fireEvent.change(indicatorSelect, { target: { value: 'ind-001' } });
+    fireEvent.change(indicatorSelect, { target: { value: '1' } });
 
     fireEvent.click(screen.getByRole('button', { name: /Recalcular año/ }));
 
@@ -692,7 +692,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       fireEvent.click(screen.getByRole('button', { name: /Confirmar/ }));
     });
 
-    expect(recalcMock).toHaveBeenCalledWith({ anio: 2025, indicador_id: 'ind-001' });
+    expect(recalcMock).toHaveBeenCalledWith({ anio: 2025, indicador_id: 1 });
   });
 
   it('rejects a future year and does not call the hook', async () => {
@@ -728,7 +728,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       recalculados: 23,
       errores: [
         {
-          indicador_id: 'ind-002',
+          indicador_id: 2,
           indicador_nombre: 'Anemia',
           mes: 3,
           error: 'timeout',
@@ -755,7 +755,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(screen.getByText(/2025: 23 recalculados, 1 con error/)).toBeInTheDocument();
     // Failed indicator details should include the mes
     expect(
-      screen.getByText('(ind-002, mes 3): No se pudo recalcular este indicador para el mes indicado.'),
+      screen.getByText('(2, mes 3): No se pudo recalcular este indicador para el mes indicado.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/timeout/)).not.toBeInTheDocument();
     expect(mockLogError).toHaveBeenCalledTimes(1);
@@ -770,8 +770,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       recalculados: 0,
       // All items failed — errores.length equals total so the page classifies this as total failure
       errores: [
-        { indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: 1, error: 'timeout' },
-        { indicador_id: 'ind-002', indicador_nombre: 'Anemia', mes: 1, error: 'timeout' },
+        { indicador_id: 1, indicador_nombre: 'Control prenatal', mes: 1, error: 'timeout' },
+        { indicador_id: 2, indicador_nombre: 'Anemia', mes: 1, error: 'timeout' },
       ],
       total: 2,
     });
@@ -806,7 +806,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       meses_procesados: 12,
       indicadores_considerados: 2,
       recalculados: 0,
-      errores: [{ indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: 1, error: 'timeout' }],
+      errores: [{ indicador_id: 1, indicador_nombre: 'Control prenatal', mes: 1, error: 'timeout' }],
       total: 24,
     });
     mockUseRecalcularAnio.mockReturnValue({ recalcularAnio: recalcMock });
@@ -835,7 +835,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     // reports fewer errors than total.
     const calcularMock = vi.fn().mockResolvedValue({
       calculados: 0,
-      errores: [{ indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', error: 'timeout' }],
+      errores: [{ indicador_id: 1, indicador_nombre: 'Control prenatal', error: 'timeout' }],
       total: 5,
     });
     mockUseCalcularAhora.mockReturnValue({ calcularAhora: calcularMock });
@@ -849,7 +849,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifyError).toHaveBeenCalled();
     expect(notifySuccess).not.toHaveBeenCalled();
     expect(screen.getByText(/0 de 5 calculados, todos con error/)).toBeInTheDocument();
-    expect(screen.getByText('(ind-001): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.getByText('(1): No se pudo calcular este indicador.')).toBeInTheDocument();
     expect(screen.queryByText(/timeout/)).not.toBeInTheDocument();
   });
 

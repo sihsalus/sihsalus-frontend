@@ -24,6 +24,7 @@ import dayjs from 'dayjs';
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
+import { parseEntityId } from '../api/ids';
 import type { BatchCalcularNowResponse, GetResultadosParams, Granularity, RecalcularAnioResponse } from '../api/types';
 import MetaProgressCard from '../components/MetaProgressCard';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
@@ -48,7 +49,8 @@ const ResultadosPage: React.FC = () => {
   // The selected indicator lives in the URL so a card link (e.g. from the
   // panel) can deep-link straight into its results without extra clicks.
   const [searchParams, setSearchParams] = useSearchParams();
-  const indicadorId = searchParams.get('indicador') ?? '';
+  const indicadorIdParam = searchParams.get('indicador') ?? '';
+  const indicadorId = parseEntityId(indicadorIdParam);
   const [periodoInicio, setPeriodoInicio] = useState<Date | null>(null);
   const [periodoFin, setPeriodoFin] = useState<Date | null>(null);
   const [granularity, setGranularity] = useState<Granularity>('mensual');
@@ -107,7 +109,7 @@ const ResultadosPage: React.FC = () => {
         ? {
             page,
             size: pageSize,
-            indicador_id: indicadorId || undefined,
+            indicador_id: indicadorId ?? undefined,
             periodo_inicio: periodRangeInvalid ? undefined : toDateString(periodoInicio),
             periodo_fin: periodRangeInvalid ? undefined : toDateString(periodoFin),
             include_historicos: true,
@@ -125,7 +127,7 @@ const ResultadosPage: React.FC = () => {
   // Time-series rollup data
   const seriesParams = useMemo(
     () =>
-      indicadorId
+      indicadorId !== null
         ? {
             indicador_id: indicadorId,
             anio: selectedYear,
@@ -231,7 +233,7 @@ const ResultadosPage: React.FC = () => {
     actionLockRef.current = true;
     setRecalcularRunning(true);
     try {
-      const payload = indicadorId ? { anio: recalcAnio, indicador_id: indicadorId } : { anio: recalcAnio };
+      const payload = indicadorId !== null ? { anio: recalcAnio, indicador_id: indicadorId } : { anio: recalcAnio };
       const result = await recalcularAnio(payload);
       setSummary({ kind: 'recalcular', result, anio: recalcAnio });
       setRecalcModalOpen(false);
@@ -401,7 +403,7 @@ const ResultadosPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h2>{t('results', 'Resultados')}</h2>
+          <h1>{t('results', 'Resultados')}</h1>
           <p className={styles.subtitle}>
             {t('resultsSubtitle', 'Consulte resultados calculados y ejecute el cálculo manual del lote.')}
           </p>
@@ -426,12 +428,12 @@ const ResultadosPage: React.FC = () => {
         <Select
           id="resultado-indicador"
           labelText={t('indicator', 'Indicador')}
-          value={indicadorId}
+          value={indicadorIdParam}
           onChange={(event) => selectIndicador(event.target.value)}
         >
           <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
           {(indicadores ?? []).map((indicador) => (
-            <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
+            <SelectItem key={indicador.id} value={String(indicador.id)} text={indicador.nombre} />
           ))}
         </Select>
         {viewMode === 'series' ? (
@@ -492,7 +494,7 @@ const ResultadosPage: React.FC = () => {
           <Switch name="historical" text={t('historical', 'Histórico')} />
         </ContentSwitcher>
 
-        {viewMode === 'series' && indicadorId ? (
+        {viewMode === 'series' && indicadorId !== null ? (
           <Select
             id="granularity"
             labelText={t('granularity', 'Granularidad')}
@@ -520,7 +522,7 @@ const ResultadosPage: React.FC = () => {
       ) : null}
 
       {/* ── Meta progress card (series view only) ── */}
-      {!isLoading && !error && viewMode === 'series' && indicadorId && seriesData?.items.length
+      {!isLoading && !error && viewMode === 'series' && indicadorId !== null && seriesData?.items.length
         ? (() => {
             // Find first row with a non-null meta
             const metaRow = seriesData.items.find((item) => item.meta != null);
@@ -538,7 +540,7 @@ const ResultadosPage: React.FC = () => {
 
       {/* ── Series view ── */}
       {!isLoading && !error && viewMode === 'series' ? (
-        indicadorId ? (
+        indicadorId !== null ? (
           seriesData?.items.length ? (
             <div className={styles.tableSurface}>
               <Table
@@ -694,10 +696,10 @@ const ResultadosPage: React.FC = () => {
           invalidText={recalcAnioError ?? undefined}
           allowEmpty={false}
         />
-        {indicadorId ? (
+        {indicadorId !== null ? (
           <p className={styles.scopeHint}>
             {t('recalcModalScopeHint', 'Se recalculará solo el indicador seleccionado: {{nombre}}.', {
-              nombre: indicadores?.find((i) => i.id === indicadorId)?.nombre ?? indicadorId,
+              nombre: indicadores?.find((i) => i.id === indicadorId)?.nombre ?? indicadorIdParam,
             })}
           </p>
         ) : null}

@@ -180,7 +180,7 @@ const IndicadoresPage: React.FC = () => {
         <p>
           {t(
             'deactivateIndicatorConfirmation',
-            'The indicator "{{name}}" will be deactivated and will no longer be included in active calculations. Do you want to continue?',
+            'El indicador "{{name}}" quedará desactivado y ya no se incluirá en los cálculos activos. ¿Desea continuar?',
             { name: deactivationTarget?.nombre ?? '' },
           )}
         </p>

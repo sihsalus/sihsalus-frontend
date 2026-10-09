@@ -51,8 +51,8 @@ describe('LocationSearchSelector', () => {
 
     typeQuery('Buscar servicios', 'materno');
 
-    const listbox = screen.getByRole('listbox', { name: 'Servicios' });
-    fireEvent.click(within(listbox).getAllByRole('button', { name: 'Agregar' })[0]);
+    const results = screen.getByRole('list', { name: 'Servicios' });
+    fireEvent.click(within(results).getAllByRole('button', { name: 'Agregar' })[0]);
     expect(onChange).toHaveBeenCalledWith([locations[0]]);
 
     const selected = [locations[0], locations[1]];
@@ -80,9 +80,9 @@ describe('DiagnosticoSearchSelector', () => {
 
     typeQuery('Buscar diagnósticos', 'anemia');
 
-    const listbox = screen.getByRole('listbox', { name: 'Diagnósticos' });
-    expect(within(listbox).getByText('D50.9 · Anemia ferropénica')).toBeInTheDocument();
-    fireEvent.click(within(listbox).getAllByRole('button', { name: 'Agregar' })[0]);
+    const results = screen.getByRole('list', { name: 'Diagnósticos' });
+    expect(within(results).getByText('D50.9 · Anemia ferropénica')).toBeInTheDocument();
+    fireEvent.click(within(results).getAllByRole('button', { name: 'Agregar' })[0]);
     expect(onChange).toHaveBeenCalledWith([diagnosticos[0]]);
   });
 });
@@ -104,10 +104,10 @@ describe('OrdenSearchSelector', () => {
 
     typeQuery('Buscar órdenes o conceptos', 'hemo');
 
-    const listbox = screen.getByRole('listbox', { name: 'Órdenes' });
-    expect(within(listbox).getByText('Hemograma')).toBeInTheDocument();
+    const results = screen.getByRole('list', { name: 'Órdenes' });
+    expect(within(results).getByText('Hemograma')).toBeInTheDocument();
     expect(mockedUseOrdenSearch).toHaveBeenCalled();
-    fireEvent.click(within(listbox).getAllByRole('button', { name: 'Agregar' })[0]);
+    fireEvent.click(within(results).getAllByRole('button', { name: 'Agregar' })[0]);
     expect(onChange).toHaveBeenCalledWith([ordenes[0]]);
   });
 });
@@ -129,9 +129,9 @@ describe('EncounterTypeSearchSelector', () => {
 
     typeQuery('Buscar tipos de encuentro', 'cred');
 
-    const listbox = screen.getByRole('listbox', { name: 'Tipos de encuentro' });
-    expect(within(listbox).getByText('CRED Neonato')).toBeInTheDocument();
-    fireEvent.click(within(listbox).getAllByRole('button', { name: 'Agregar' })[0]);
+    const results = screen.getByRole('list', { name: 'Tipos de encuentro' });
+    expect(within(results).getByText('CRED Neonato')).toBeInTheDocument();
+    fireEvent.click(within(results).getAllByRole('button', { name: 'Agregar' })[0]);
     expect(onChange).toHaveBeenCalledWith([encounterTypes[0]]);
   });
 });

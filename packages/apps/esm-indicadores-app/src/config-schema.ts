@@ -16,17 +16,9 @@ export const configSchema = {
       '(e.g. http://127.0.0.1:8000) — openmrsFetch passes absolute URLs through unchanged, ' +
       'so no dev-server proxy is needed.',
   },
-  bypassPrivilegeGuard: {
-    _type: Type.Boolean,
-    _default: false,
-    _description:
-      'Dev-only escape hatch: skips the app:indicadores privilege guard so the module ' +
-      'mounts without the privilege. NEVER enable in production.',
-  },
 };
 
 export type ConfigObject = {
   indicatorsApiPath: string;
   reportesSqlApiPath: string;
-  bypassPrivilegeGuard: boolean;
 };

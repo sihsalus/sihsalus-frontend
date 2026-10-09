@@ -1,12 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { useConfig, useLeftNav } from '@openmrs/esm-framework';
+import { useLeftNav } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
-import { type ConfigObject } from './config-schema';
 import RootComponent from './root.component';
 
 const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
-vi.mock('@openmrs/esm-framework', () => ({ useConfig: vi.fn(), useLeftNav: vi.fn() }));
+vi.mock('@openmrs/esm-framework', () => ({ useLeftNav: vi.fn() }));
 vi.mock('./pages/PanelPage', () => ({ default: () => <div>Panel page content</div> }));
 vi.mock('./pages/IndicadoresPage', () => ({ default: () => <div>Indicadores page content</div> }));
 vi.mock('./pages/IndicadorDetailPage', () => ({ default: () => <div>Detalle page content</div> }));
@@ -19,14 +18,7 @@ vi.mock('@sihsalus/esm-rbac', () => ({
   RequireModulePrivilege: (props: { children: ReactNode; privilege: string }) => mockRequireModulePrivilege(props),
 }));
 
-const mockUseConfig = vi.mocked(useConfig);
 const mockUseLeftNav = vi.mocked(useLeftNav);
-
-const defaultTestConfig: ConfigObject = {
-  indicatorsApiPath: '/ws/module/indicators/api',
-  reportesSqlApiPath: '/services/reportes-sql',
-  bypassPrivilegeGuard: false,
-};
 
 const indicatorsBaseUrl = '/openmrs/spa/indicators';
 
@@ -39,7 +31,6 @@ describe('RootComponent privilege guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
-    mockUseConfig.mockReturnValue(defaultTestConfig);
   });
 
   it('enforces the indicators privilege', () => {
@@ -53,7 +44,6 @@ describe('RootComponent lazy routed pages', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
-    mockUseConfig.mockReturnValue(defaultTestConfig);
   });
 
   it('mounts the Panel page by default and keeps the module header visible', async () => {
@@ -107,28 +97,5 @@ describe('RootComponent lazy routed pages', () => {
     expect(await screen.findByText('Metas page content')).toBeInTheDocument();
     expect(screen.queryByText('Panel page content')).not.toBeInTheDocument();
     expect(screen.queryByText('Resultados page content')).not.toBeInTheDocument();
-  });
-});
-
-describe('RootComponent privilege guard bypass (dev-only)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
-  });
-
-  it('enforces the guard by default (bypassPrivilegeGuard: false)', async () => {
-    mockUseConfig.mockReturnValue(defaultTestConfig);
-    renderAt('/');
-
-    expect(mockRequireModulePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:indicadores' }));
-    expect(await screen.findByText('Panel page content')).toBeInTheDocument();
-  });
-
-  it('skips RequireModulePrivilege when bypassPrivilegeGuard is true', async () => {
-    mockUseConfig.mockReturnValue({ ...defaultTestConfig, bypassPrivilegeGuard: true });
-    renderAt('/');
-
-    expect(mockRequireModulePrivilege).not.toHaveBeenCalled();
-    expect(await screen.findByText('Panel page content')).toBeInTheDocument();
   });
 });

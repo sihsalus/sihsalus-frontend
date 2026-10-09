@@ -1,5 +1,11 @@
 export const MIN_INDICATOR_YEAR = 2000;
 
+/**
+ * Upper bound for meta (annual target) years. Metas may target future years,
+ * unlike result queries which stop at the current year.
+ */
+export const MAX_META_YEAR = 2100;
+
 export const currentYear = () => new Date().getFullYear();
 
 export const isSelectableYear = (year: number) =>

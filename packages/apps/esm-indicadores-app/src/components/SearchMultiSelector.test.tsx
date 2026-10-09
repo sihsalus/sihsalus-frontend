@@ -46,7 +46,7 @@ describe('SearchMultiSelector', () => {
     render(<SearchMultiSelector {...props()} />);
 
     expect(screen.getByText('Ningún servicio seleccionado')).toBeInTheDocument();
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('propagates the typed query through the debounced onSearchChange callback', () => {
@@ -69,10 +69,10 @@ describe('SearchMultiSelector', () => {
     // First call is the initial mount with the empty normalized query.
     // No subsequent call with a whitespace-only value (it normalizes to '').
     expect(onSearchChange).toHaveBeenLastCalledWith('');
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
-  it('renders the matching options as a listbox, excluding already-selected items', () => {
+  it('renders the matching options as a list, excluding already-selected items', () => {
     render(
       <SearchMultiSelector
         {...props({
@@ -84,12 +84,12 @@ describe('SearchMultiSelector', () => {
     const input = screen.getByPlaceholderText('Buscar servicio...');
     fireEvent.change(input, { target: { value: 'o' } });
 
-    const listbox = screen.getByRole('listbox');
+    const results = screen.getByRole('list');
     // Selected item (loc-002) is filtered out of the results; the other two
     // that contain "o" remain.
-    expect(within(listbox).getByText(/Centro Obstétrico/)).toBeInTheDocument();
-    expect(within(listbox).getByText(/Posta Rural/)).toBeInTheDocument();
-    expect(within(listbox).queryByText(/Hospital Central/)).not.toBeInTheDocument();
+    expect(within(results).getByText(/Centro Obstétrico/)).toBeInTheDocument();
+    expect(within(results).getByText(/Posta Rural/)).toBeInTheDocument();
+    expect(within(results).queryByText(/Hospital Central/)).not.toBeInTheDocument();
   });
 
   it('adds an item via the Agregar button, clears the search input, and calls onChange', () => {
@@ -113,8 +113,8 @@ describe('SearchMultiSelector', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Buscar servicio...'), { target: { value: 'centro' } });
 
-    const listbox = screen.getByRole('listbox');
-    fireEvent.click(within(listbox).getByText('Centro Obstétrico'));
+    const results = screen.getByRole('list');
+    fireEvent.click(within(results).getByText('Centro Obstétrico'));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith([{ uuid: 'loc-001', display: 'Centro Obstétrico' }]);
@@ -158,7 +158,7 @@ describe('SearchMultiSelector', () => {
     fireEvent.change(screen.getByPlaceholderText('Buscar servicio...'), { target: { value: 'a' } });
 
     expect(screen.getByText(/Buscando/)).toBeInTheDocument();
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('renders the error banner (fallback message) when the search errored', () => {
@@ -169,7 +169,7 @@ describe('SearchMultiSelector', () => {
 
     // getUserFacingErrorMessage is mocked to return its fallback argument.
     expect(screen.getByText('No se pudieron cargar las opciones.')).toBeInTheDocument();
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('shows the no-results tile when the query returned no matches', () => {
@@ -178,7 +178,7 @@ describe('SearchMultiSelector', () => {
     fireEvent.change(screen.getByPlaceholderText('Buscar servicio...'), { target: { value: 'zzz' } });
 
     expect(screen.getByText('Sin coincidencias')).toBeInTheDocument();
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('renders the helper text when provided (instead of the empty selection state)', () => {

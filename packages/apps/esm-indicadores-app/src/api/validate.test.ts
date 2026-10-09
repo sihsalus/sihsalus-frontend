@@ -2,14 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertShape,
-  isBatchResponse,
+  isCalcularNowResponse,
+  isIdentifiedResource,
   isIndicadorDetail,
   isIndicadorMeta,
   isIndicadorResultado,
+  isOptionList,
   isPaginatedResponse,
+  isRecalcularAnioResponse,
   isSerieRow,
   isSeriesResponse,
   isSQLPreview,
+  isStringRecord,
 } from './validate';
 
 describe('isPaginatedResponse', () => {
@@ -223,18 +227,100 @@ describe('isIndicadorMeta', () => {
   });
 });
 
-describe('isBatchResponse', () => {
-  it('accepts calculados/recalculados payloads with total and errores', () => {
-    expect(isBatchResponse({ calculados: 1, errores: [], total: 1 })).toBe(true);
-    expect(
-      isBatchResponse({ anio: 2026, recalculados: 0, errores: [{ indicador_id: 'a' }], total: 1 }),
-    ).toBe(true);
+describe('isIdentifiedResource', () => {
+  it('accepts a payload carrying the id the UI navigates with', () => {
+    expect(isIdentifiedResource({ id: 'indicator-a' })).toBe(true);
+    expect(isIdentifiedResource({ id: 'indicator-a', activo: true, definicion: { tipo: 'x' } })).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['a bare string', 'indicator-a'],
+    ['missing id', { nombre: 'sin id' }],
+    ['id not a string', { id: 42 }],
+  ])('rejects %s', (_name, value) => {
+    expect(isIdentifiedResource(value)).toBe(false);
+  });
+});
+
+describe('isOptionList', () => {
+  const valid = [
+    { uuid: 'loc-1', display: 'Centro' },
+    { uuid: 'loc-2', nombre: 'Hospital' },
+  ];
+
+  it('accepts a list of uuid-bearing options', () => {
+    expect(isOptionList(valid)).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['an object', { uuid: 'loc-1' }],
+    ['an item without uuid', [{ display: 'sin uuid' }]],
+    ['a non-string uuid', [{ uuid: 7 }]],
+    ['a nested non-record', ['loc-1']],
+  ])('rejects %s', (_name, value) => {
+    expect(isOptionList(value)).toBe(false);
+  });
+});
+
+describe('isStringRecord', () => {
+  it('accepts a uuid → name resolution map', () => {
+    expect(isStringRecord({ 'order-a': 'Hemograma', 'order-b': 'Ferritina' })).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['an array', ['a']],
+    ['a non-string value', { 'order-a': 3 }],
+  ])('rejects %s', (_name, value) => {
+    expect(isStringRecord(value)).toBe(false);
+  });
+});
+
+describe('isCalcularNowResponse', () => {
+  const valid = { calculados: 3, errores: [], total: 3 };
+
+  it('accepts a well-formed calcular-ahora envelope', () => {
+    expect(isCalcularNowResponse(valid)).toBe(true);
   });
 
   it.each([
     ['missing total', { calculados: 1, errores: [] }],
-    ['errores not an array', { calculados: 1, errores: 'none', total: 1 }],
+    ['missing calculados', { errores: [], total: 1 }],
+    ['errores not an array', { ...valid, errores: 'none' }],
+    ['calculados not a number', { ...valid, calculados: '3' }],
   ])('rejects %s', (_name, value) => {
-    expect(isBatchResponse(value)).toBe(false);
+    expect(isCalcularNowResponse(value)).toBe(false);
+  });
+});
+
+describe('isRecalcularAnioResponse', () => {
+  const valid = {
+    anio: 2026,
+    indicador_id: null,
+    meses_procesados: 12,
+    indicadores_considerados: 2,
+    recalculados: 24,
+    errores: [],
+    total: 24,
+  };
+
+  it('accepts a well-formed recalcular-anio envelope', () => {
+    expect(isRecalcularAnioResponse(valid)).toBe(true);
+  });
+
+  it('accepts a scoped recalculation with a string indicador_id', () => {
+    expect(isRecalcularAnioResponse({ ...valid, indicador_id: 'ind-001' })).toBe(true);
+  });
+
+  it.each([
+    ['missing meses_procesados', { ...valid, meses_procesados: undefined }],
+    ['indicador_id neither string nor null', { ...valid, indicador_id: 7 }],
+    ['recalculados not a number', { ...valid, recalculados: '24' }],
+    ['errores not an array', { ...valid, errores: {} }],
+    ['anio not a number', { ...valid, anio: '2026' }],
+  ])('rejects %s', (_name, value) => {
+    expect(isRecalcularAnioResponse(value)).toBe(false);
   });
 });

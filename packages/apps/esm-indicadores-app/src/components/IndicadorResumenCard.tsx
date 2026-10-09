@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import type { GetSeriesParams, Indicador } from '../api/types';
 import { useResultadosSeries } from '../features/resultados/hooks';
 import { type MetaStatus, calculateProgress, getMetaStatus } from '../features/resultados/progress';
+import { currentYear } from '../features/resultados/years';
 import MetaProgressBar from './MetaProgressBar';
 import styles from '../indicators-dashboard.module.scss';
 
@@ -53,7 +54,7 @@ const IndicadorResumenCard: React.FC<IndicadorResumenCardProps> = ({ indicador, 
     };
   }, [data]);
 
-  const expectedMonths = anio === new Date().getFullYear() ? new Date().getMonth() + 1 : 12;
+  const expectedMonths = anio === currentYear() ? new Date().getMonth() + 1 : 12;
   const hasTarget = summary?.meta != null && Number.isFinite(summary.meta) && summary.meta > 0;
   const percentage = hasTarget ? calculateProgress(summary.meta as number, summary.accumulated) : 0;
   const status = hasTarget ? getMetaStatus(percentage) : null;

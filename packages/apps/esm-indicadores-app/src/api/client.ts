@@ -13,24 +13,22 @@ function normalizeError(error: unknown): Error {
   return new Error(translate('requestFailed', 'No se pudo completar la solicitud.'));
 }
 
-export async function fetchJson<T>(url: string, init?: FetchConfig): Promise<T> {
+async function requestJson<T>(url: string, init: FetchConfig | undefined, logContext: string): Promise<T> {
   try {
     const response = (await openmrsFetch(url, { ...init, rejectOnAuthFailure: true })) as FetchResponse<T>;
     return response.data;
   } catch (error) {
-    logError(error, 'Indicadores: consulta a reportes-sql');
+    logError(error, logContext);
     throw normalizeError(error);
   }
 }
 
+export async function fetchJson<T>(url: string, init?: FetchConfig): Promise<T> {
+  return requestJson(url, init, 'Indicadores: consulta a reportes-sql');
+}
+
 export async function mutateJson<T>(url: string, init?: FetchConfig): Promise<T> {
-  try {
-    const response = (await openmrsFetch(url, { ...init, rejectOnAuthFailure: true })) as FetchResponse<T>;
-    return response.data;
-  } catch (error) {
-    logError(error, 'Indicadores: mutación a reportes-sql');
-    throw normalizeError(error);
-  }
+  return requestJson(url, init, 'Indicadores: mutación a reportes-sql');
 }
 
 export function toJsonBody(payload: unknown): Pick<FetchConfig, 'headers' | 'body'> {

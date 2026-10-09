@@ -73,6 +73,14 @@ describe('indicadores API contract', () => {
     ).toEqual([{ concepto_uuid: 'order-a' }, { concepto_uuid: 'order-b' }]);
   });
 
+  it('rejects a create payload without the id the UI navigates with', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({ data: { nombre: 'sin id' } } as never);
+
+    await expect(createIndicador(createPayload)).rejects.toThrow(
+      /reportes-sql devolvió una respuesta inesperada para indicadores\./,
+    );
+  });
+
   it('updates only supported metadata fields', async () => {
     const payload = { nombre: 'Actualizado', descripcion: 'Descripción' };
     mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'indicator-a', ...payload } } as never);
@@ -208,6 +216,12 @@ describe('resolveOrdenes', () => {
     await expect(resolveOrdenes(['order-a', 'order-b'])).resolves.toEqual(data);
   });
 
+  it('rejects a resolution map with non-string values', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({ data: { 'order-a': 3 } } as never);
+
+    await expect(resolveOrdenes(['order-a'])).rejects.toThrow(/conceptos\/buscar\/resolve/);
+  });
+
   it('propagates network errors to the caller', async () => {
     const error = new TypeError('Failed to fetch');
     mockedOpenmrsFetch.mockRejectedValue(error);
@@ -233,6 +247,12 @@ describe('getEncounterTypes', () => {
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/conceptos/encounter-types', {
       rejectOnAuthFailure: true,
     });
+  });
+
+  it('rejects an encounter-type list whose items lack a uuid', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({ data: [{ display: 'sin uuid' }] } as never);
+
+    await expect(getEncounterTypes()).rejects.toThrow(/conceptos\/encounter-types/);
   });
 
   it('propagates network errors to the caller', async () => {

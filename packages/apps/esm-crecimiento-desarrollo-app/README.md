@@ -349,3 +349,9 @@ y no aplica otra espera desde el alta. Partos domiciliarios documentados pueden
 atenderse al conocerse el nacimiento; falta persistir esa notificación y validar los
 registros retrospectivos y la captación tardía en QLTY. Estos límites mantienen
 abierto el [issue #98](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/98).
+
+La fecha de próximo tamizaje de anemia del widget es **orientativa**: se estima
+con la última Hb y una banda de edad. No determina el calendario completo de
+NTS 213 ni incorpora inicio/fin de suplementación, tratamiento o prematuridad.
+La interfaz pide confirmar la fecha con el profesional; no añade reglas
+clínicas ni cambia la Hb registrada para suplir ese contexto.

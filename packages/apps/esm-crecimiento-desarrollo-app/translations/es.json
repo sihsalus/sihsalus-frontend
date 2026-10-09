@@ -433,7 +433,7 @@
   "next": "Siguiente",
   "nextDueControl": "Próximo Control",
   "nextMonth": "Siguiente mes",
-  "nextScreening": "Próximo tamizaje",
+  "nextScreening": "Próximo tamizaje (orientativo)",
   "nipples": "Pezones",
   "no": "No",
   "noAppointmentLocationUuid": "No se configuró la UPSS asistencial para las citas CRED.",
@@ -686,5 +686,6 @@
   "withData": "Con datos",
   "yes": "Sí",
   "zScoreMode": "Puntajes Z",
-  "zScoreView": "Puntajes Z"
+  "zScoreView": "Puntajes Z",
+  "anemiaScreeningDateHelp": "Confirme la fecha con el profesional según prematuridad, resultado de hemoglobina y suplementación."
 }

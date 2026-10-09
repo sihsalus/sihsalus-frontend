@@ -428,7 +428,7 @@
   "next": "Next",
   "nextDueControl": "Next Control",
   "nextMonth": "Next month",
-  "nextScreening": "Next screening",
+  "nextScreening": "Next screening (estimate)",
   "nipples": "nipples",
   "no": "No",
   "noAppointmentLocationUuid": "The operational UPSS for CRED appointments has not been configured.",
@@ -678,5 +678,6 @@
   "withData": "With data",
   "yes": "Yes",
   "zScoreMode": "Z-scores",
-  "zScoreView": "Z-scores"
+  "zScoreView": "Z-scores",
+  "anemiaScreeningDateHelp": "Confirm the date with the clinician based on prematurity, hemoglobin result, and supplementation."
 }

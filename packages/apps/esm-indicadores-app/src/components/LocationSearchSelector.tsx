@@ -13,7 +13,8 @@ interface LocationSearchSelectorProps {
 const LocationSearchSelector: React.FC<LocationSearchSelectorProps> = ({ selectedItems, onChange }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const { data, isLoading, error } = useLocationSearch(query);
+  const [activated, setActivated] = useState(false);
+  const { data, isLoading, error } = useLocationSearch(query, activated);
 
   return (
     <SearchMultiSelector
@@ -28,6 +29,8 @@ const LocationSearchSelector: React.FC<LocationSearchSelectorProps> = ({ selecte
       error={error}
       itemKey={(item) => item.uuid}
       itemLabel={(item) => item.display}
+      showResultsOnFocus
+      onActivate={() => setActivated(true)}
       onChange={onChange}
       onSearchChange={setQuery}
     />

@@ -7,8 +7,8 @@ const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockedGetConfig = vi.mocked(getConfig);
 
 const meta = {
-  id: 'meta-a',
-  indicador_version_id: 'version-a',
+  id: 1,
+  indicador_version_id: 11,
   anio: 2026,
   valor_meta: 1500,
   creado_en: '2026-01-01',
@@ -25,15 +25,15 @@ describe('metas API contract', () => {
   it('looks up the latest active version meta by indicador_id and year', async () => {
     mockedOpenmrsFetch.mockResolvedValue({ data: meta } as never);
 
-    await expect(getMetaByIndicator('indicator-a', 2026)).resolves.toEqual(meta);
-    expect(mockedOpenmrsFetch.mock.calls[0][0]).toBe('/services/reportes-sql/metas?indicador_id=indicator-a&anio=2026');
+    await expect(getMetaByIndicator(1, 2026)).resolves.toEqual(meta);
+    expect(mockedOpenmrsFetch.mock.calls[0][0]).toBe('/services/reportes-sql/metas?indicador_id=1&anio=2026');
   });
 
   it('does not mistake a 500 response for an absent meta', async () => {
     const error = Object.assign(new Error('database failed'), { response: { status: 500 } });
     mockedOpenmrsFetch.mockRejectedValue(error);
 
-    await expect(getMetaByIndicator('indicator-a', 2026)).rejects.toBe(error);
+    await expect(getMetaByIndicator(1, 2026)).rejects.toBe(error);
     expect(isMetaNotFoundError(error)).toBe(false);
   });
 
@@ -42,14 +42,14 @@ describe('metas API contract', () => {
       data: { ...meta, valor_meta: '1500' },
     } as never);
 
-    await expect(getMetaByIndicator('indicator-a', 2026)).rejects.toThrow(/inesperada/);
+    await expect(getMetaByIndicator(1, 2026)).rejects.toThrow(/inesperada/);
   });
 
   it('propagates backend failures instead of substituting example data', async () => {
     const error = Object.assign(new Error('database failed'), { response: { status: 500 } });
     mockedOpenmrsFetch.mockRejectedValue(error);
 
-    await expect(getMetaByIndicator('ind-001', 2026)).rejects.toBe(error);
+    await expect(getMetaByIndicator(1, 2026)).rejects.toBe(error);
   });
 
   it('recognizes only the contractual missing-meta 404 as an absent meta', () => {
@@ -78,8 +78,8 @@ describe('metas API contract', () => {
   });
 
   it('upserts through the real backend and accepts its metadata-light response', async () => {
-    const payload = { indicador_version_id: 'version-a', anio: 2026, valor_meta: 1500 };
-    const response = { id: 'meta-a', ...payload, creado_en: '2026-01-01' };
+    const payload = { indicador_version_id: 11, anio: 2026, valor_meta: 1500 };
+    const response = { id: 1, ...payload, creado_en: '2026-01-01' };
     mockedOpenmrsFetch.mockResolvedValue({ data: response } as never);
 
     await expect(upsertMeta(payload)).resolves.toEqual(response);
@@ -92,17 +92,17 @@ describe('metas API contract', () => {
   it('deletes through the query contract used by reportes-sql', async () => {
     mockedOpenmrsFetch.mockResolvedValue({ data: undefined } as never);
 
-    await deleteMeta('version-a', 2026);
+    await deleteMeta(11, 2026);
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
-      '/services/reportes-sql/metas?indicador_version_id=version-a&anio=2026',
+      '/services/reportes-sql/metas?indicador_version_id=11&anio=2026',
       { method: 'DELETE', rejectOnAuthFailure: true },
     );
   });
 
   const mutations = [
-    ['upsert', () => upsertMeta({ indicador_version_id: 'version-a', anio: 2026, valor_meta: 10 })],
-    ['delete', () => deleteMeta('version-a', 2026)],
+    ['upsert', () => upsertMeta({ indicador_version_id: 11, anio: 2026, valor_meta: 10 })],
+    ['delete', () => deleteMeta(11, 2026)],
   ] as const;
 
   it.each(mutations)('%s rejects 422, 500 and network errors', async (_name, invoke) => {

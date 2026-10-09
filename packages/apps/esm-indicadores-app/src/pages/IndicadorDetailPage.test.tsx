@@ -21,13 +21,6 @@ vi.mock('../features/indicadores/hooks', () => ({
   useResolvedDiagnosticos: vi.fn(),
   useResolvedOrdenes: vi.fn(),
   useResolvedEncounterTypes: vi.fn(),
-  useSQLPreview: vi.fn(() => ({
-    data: undefined,
-    error: undefined,
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-  })),
   useLocationSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   useDiagnosticoSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   useOrdenSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
@@ -44,22 +37,22 @@ const mockUseResolvedOrdenes = vi.mocked(useResolvedOrdenes);
 const mockUseResolvedEncounterTypes = vi.mocked(useResolvedEncounterTypes);
 
 const sampleIndicator = {
-  id: 'ind-001',
+  id: 1,
   nombre: 'Atenciones de control prenatal',
   descripcion: 'Gestantes atendidas con control prenatal.',
   activo: true,
   creado_en: '2026-01-15T10:00:00.000Z',
   versiones: [
     {
-      id: 'ver-001-1',
-      indicador_id: 'ind-001',
+      id: 11,
+      indicador_id: 1,
       version: 1,
       definicion: { tipo: 'conteo_atenciones' as const },
       creado_en: '2026-01-15T10:00:00.000Z',
     },
     {
-      id: 'ver-001-2',
-      indicador_id: 'ind-001',
+      id: 12,
+      indicador_id: 1,
       version: 2,
       definicion: { tipo: 'conteo_atenciones' as const },
       creado_en: '2026-02-20T14:30:00.000Z',
@@ -69,7 +62,7 @@ const sampleIndicator = {
 
 function renderPage() {
   return renderWithSwr(
-    <MemoryRouter initialEntries={['/ind-001']}>
+    <MemoryRouter initialEntries={['/1']}>
       <Routes>
         <Route path="/:id" element={<IndicadorDetailPage />} />
         <Route path="/:id/edit" element={<div data-testid="edit-page">Edit Page</div>} />
@@ -313,18 +306,18 @@ describe('IndicadorDetailPage', () => {
     ).toBe(true);
   });
 
-  it('hydrates the new-version form with a window definition and its encounter types', () => {
+  it('hydrates the new-version form with its minimum occurrences and age window', () => {
     mockUseIndicador.mockReturnValue({
       data: {
         ...sampleIndicator,
         versiones: [
           {
-            id: 'ver-001-1',
-            indicador_id: 'ind-001',
+            id: 11,
+            indicador_id: 1,
             version: 1,
             creado_en: '2026-01-15T10:00:00.000Z',
             definicion: {
-              tipo: 'conteo_pacientes_ventana',
+              tipo: 'conteo_pacientes',
               evento: { encounter_type_uuids: ['enc-cred-neonato'], minimo_ocurrencias: 4 },
               poblacion: { max_dias: 28 },
             },
@@ -346,8 +339,6 @@ describe('IndicadorDetailPage', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Nueva versión' }));
 
-    const selectedPills = Array.from(document.querySelectorAll('.selectedItemPill'));
-    expect(selectedPills.some((pill) => pill.textContent?.includes('CRED Neonato'))).toBe(true);
     expect(screen.getByLabelText('Mínimo de ocurrencias')).toHaveValue(4);
     expect(screen.getByLabelText('Edad máxima días')).toHaveValue(28);
   });

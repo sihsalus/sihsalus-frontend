@@ -199,7 +199,7 @@ describe('IndicadorForm reportes-sql contract', () => {
   });
 });
 
-describe('IndicadorForm conteo_pacientes_ventana contract', () => {
+describe('IndicadorForm encounter types contract', () => {
   it('serializes encounter types, min occurrences and the day window into the definicion', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(
@@ -207,7 +207,7 @@ describe('IndicadorForm conteo_pacientes_ventana contract', () => {
         mode="create"
         defaultValues={{
           nombre: 'CRED Neonato',
-          tipo: 'conteo_pacientes_ventana',
+          tipo: 'conteo_pacientes',
           selectedEncounterTypes: [{ uuid: 'enc-cred', display: 'CRED Neonato' }],
         }}
         onSubmit={onSubmit}
@@ -220,7 +220,7 @@ describe('IndicadorForm conteo_pacientes_ventana contract', () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0].definicion).toEqual({
-      tipo: 'conteo_pacientes_ventana',
+      tipo: 'conteo_pacientes',
       evento: {
         minimo_ocurrencias: 4,
         encounter_type_uuids: ['enc-cred'],
@@ -237,57 +237,38 @@ describe('IndicadorForm conteo_pacientes_ventana contract', () => {
     });
   });
 
-  it('rejects the window tipo without any selected encounter type', async () => {
-    const onSubmit = vi.fn();
+  it('does not render an encounter-type picker', () => {
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Window' }} onSubmit={vi.fn()} />);
+
+    expect(screen.queryByRole('searchbox', { name: 'Tipos de encuentro' })).not.toBeInTheDocument();
+  });
+});
+
+describe('IndicadorForm diagnosis type control', () => {
+  it('offers the diagnosis type as radio options and submits the selected one', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(
       <IndicadorForm
         mode="create"
-        defaultValues={{ nombre: 'Sin encounter types', tipo: 'conteo_pacientes_ventana' }}
+        defaultValues={{
+          nombre: 'Con diagnósticos',
+          filtroClinico: 'diagnosticos',
+          selectedDiagnosticos: [{ uuid: 'dx-1', nombre: 'Anemia' }],
+        }}
         onSubmit={onSubmit}
       />,
     );
 
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+    expect(screen.getByRole('radio', { name: 'Definitivo' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Presuntivo' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Sin especificar' })).toBeInTheDocument();
 
-    expect(screen.getByText(/al menos un tipo de encuentro/i)).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it('shows the encounter-type picker only for the window tipo', async () => {
-    const onSubmit = vi.fn();
-    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Window' }} onSubmit={onSubmit} />);
-
-    expect(screen.queryByRole('searchbox', { name: 'Tipos de encuentro' })).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Tipo', { selector: 'select' }), {
-      target: { value: 'conteo_pacientes_ventana' },
-    });
-    expect(screen.getByRole('searchbox', { name: 'Tipos de encuentro' })).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Tipo', { selector: 'select' }), { target: { value: 'conteo_atenciones' } });
-    expect(screen.queryByRole('searchbox', { name: 'Tipos de encuentro' })).not.toBeInTheDocument();
-  });
-
-  it('adds an encounter type through the picker and submits it in the definicion', async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'CRED Neonato' }} onSubmit={onSubmit} />);
-
-    fireEvent.change(screen.getByLabelText('Tipo', { selector: 'select' }), {
-      target: { value: 'conteo_pacientes_ventana' },
-    });
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Tipos de encuentro' }), { target: { value: 'CRED' } });
-    await act(async () => {});
-
-    fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));
-    expect(screen.getByText('CRED Neonato')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Mínimo de ocurrencias'), { target: { value: '4' } });
-    fireEvent.change(screen.getByLabelText('Edad máxima días'), { target: { value: '28' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Presuntivo' }));
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit.mock.calls[0][0].definicion.evento.encounter_type_uuids).toEqual(['enc-cred-neonato']);
-    expect(onSubmit.mock.calls[0][0].definicion.evento.minimo_ocurrencias).toBe(4);
-    expect(onSubmit.mock.calls[0][0].definicion.poblacion.max_dias).toBe(28);
+    expect(onSubmit.mock.calls[0][0].definicion.evento.diagnosticos).toEqual([
+      { concepto_uuids: ['dx-1'], tipo_diagnostico: 'presuntivo' },
+    ]);
   });
 });

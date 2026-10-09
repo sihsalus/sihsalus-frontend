@@ -64,16 +64,16 @@ function expectInvalidatesResultadosKeys(matcher: KeyMatcher | null) {
   // The hook must invalidate the `resultados` namespace, regardless of the
   // payload that follows the first element (params, fetcher, etc.).
   expect(isInvalidated(['resultados', { page: 1, size: 10 }])).toBe(true);
-  expect(isInvalidated(['resultados', { indicador_id: 'ind-001' }])).toBe(true);
+  expect(isInvalidated(['resultados', { indicador_id: 1 }])).toBe(true);
   // And the `resultados-series` namespace too.
-  expect(isInvalidated(['resultados-series', { indicador_id: 'ind-001', anio: 2026 }])).toBe(true);
-  expect(isInvalidated(['resultados-series', { indicador_id: 'ind-002', anio: 2026, granularity: 'trimestral' }])).toBe(
+  expect(isInvalidated(['resultados-series', { indicador_id: 1, anio: 2026 }])).toBe(true);
+  expect(isInvalidated(['resultados-series', { indicador_id: 2, anio: 2026, granularity: 'trimestral' }])).toBe(
     true,
   );
   // Other namespaces must NOT be touched.
   expect(isInvalidated(['indicadores', 1, 10])).toBe(false);
-  expect(isInvalidated(['indicador', 'ind-001'])).toBe(false);
-  expect(isInvalidated(['indicador-sql-preview', 'ind-001', 'latest'])).toBe(false);
+  expect(isInvalidated(['indicador', 1])).toBe(false);
+  expect(isInvalidated(['indicador-sql-preview', 1, 'latest'])).toBe(false);
   expect(isInvalidated(['location-search', 'materno'])).toBe(false);
   // Non-array keys must NOT be touched (SWR passes the key as-is; the
   // predicate should not throw or return true on a non-array).
@@ -85,13 +85,13 @@ function expectInvalidatesResultadosKeys(matcher: KeyMatcher | null) {
 const resultadosParams = {
   page: 0,
   size: 20,
-  indicador_id: 'ind-001',
+  indicador_id: 1,
   periodo_inicio: '2026-01-01',
   periodo_fin: '2026-01-31',
 } satisfies GetResultadosParams;
 
 const seriesParams = {
-  indicador_id: 'ind-001',
+  indicador_id: 1,
   anio: 2026,
   granularity: 'mensual',
 } satisfies GetSeriesParams;
@@ -126,7 +126,7 @@ describe('useCalcularAhora', () => {
     const capture = captureMatcher();
     mockedCalcularAhora.mockResolvedValueOnce({
       calculados: 0,
-      errores: [{ indicador_id: 'ind-001', indicador_nombre: 'X', error: 'boom' }],
+      errores: [{ indicador_id: 1, indicador_nombre: 'X', error: 'boom' }],
       total: 1,
     });
 
@@ -174,9 +174,9 @@ describe('useRecalcularAnio', () => {
     const capture = captureMatcher();
     const { result } = renderHook(() => useRecalcularAnio());
 
-    await result.current.recalcularAnio({ anio: 2025, indicador_id: 'ind-001' });
+    await result.current.recalcularAnio({ anio: 2025, indicador_id: 1 });
 
-    expect(mockedRecalcularAnio).toHaveBeenCalledWith({ anio: 2025, indicador_id: 'ind-001' });
+    expect(mockedRecalcularAnio).toHaveBeenCalledWith({ anio: 2025, indicador_id: 1 });
     expectInvalidatesResultadosKeys(capture.matcher);
   });
 });
@@ -252,7 +252,7 @@ describe('useResultadosSeries', () => {
           mes_referencia: '2026-01',
         },
       ],
-      indicador_id: 'ind-001',
+      indicador_id: 1,
       anio: 2026,
       granularity: 'mensual',
     });
@@ -272,7 +272,7 @@ describe('useResultadosSeries', () => {
   it('does not call resultados series API when params are null', () => {
     mockGetResultadosSeries.mockResolvedValue({
       items: [],
-      indicador_id: 'ind-001',
+      indicador_id: 1,
       anio: 2026,
       granularity: 'mensual',
     });

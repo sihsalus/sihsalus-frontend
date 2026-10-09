@@ -8,12 +8,12 @@ function isMetaKey(key: unknown): boolean {
   return Array.isArray(key) && key[0] === 'meta';
 }
 
-export function useMetaByIndicator(indicadorId: string, anio: number | null) {
+export function useMetaByIndicator(indicadorId: number | null, anio: number | null) {
   const { data, error, isLoading, mutate } = useSWR<IndicadorMeta | null, Error>(
-    indicadorId && anio !== null ? ['meta', 'indicator', indicadorId, anio] : null,
+    indicadorId !== null && anio !== null ? ['meta', 'indicator', indicadorId, anio] : null,
     async () => {
       try {
-        return await getMetaByIndicator(indicadorId, anio as number);
+        return await getMetaByIndicator(indicadorId as number, anio as number);
       } catch (lookupError) {
         if (isMetaNotFoundError(lookupError)) {
           return null;
@@ -51,7 +51,7 @@ export function useDeleteMeta() {
   const { mutate } = useSWRConfig();
 
   const remove = useCallback(
-    async (indicadorVersionId: string, anio: number) => {
+    async (indicadorVersionId: number, anio: number) => {
       await deleteMeta(indicadorVersionId, anio);
       await mutate((key) => isMetaKey(key));
     },

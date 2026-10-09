@@ -50,16 +50,11 @@ for (const locale of ['en', 'es']) {
 
   test(`new indicator and form-preview labels resolve in ${locale} without language fallback`, async () => {
     const indicatorLabels = {
-      countPatientsWindow: ['Patient count within age window', 'Conteo de pacientes en ventana etaria'],
       definitionEncounterTypes: ['Encounter types:', 'Tipos de encuentro:'],
       encounterTypes: ['Encounter types', 'Tipos de encuentro'],
       encounterTypesHelperText: [
         'Filter by the encounter type, for example CRED.',
         'Filtra por el tipo de atención del evento, por ejemplo CRED.',
-      ],
-      encounterTypesRequired: [
-        'Enter at least one encounter type for the count within the age window.',
-        'Ingrese al menos un tipo de encuentro para el conteo en ventana.',
       ],
       noEncounterTypesFound: [
         'No encounter types found matching these criteria.',

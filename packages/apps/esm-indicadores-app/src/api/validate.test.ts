@@ -12,7 +12,6 @@ import {
   isRecalcularAnioResponse,
   isSerieRow,
   isSeriesResponse,
-  isSQLPreview,
   isStringRecord,
 } from './validate';
 
@@ -45,22 +44,22 @@ describe('isPaginatedResponse', () => {
 });
 
 describe('isSeriesResponse', () => {
-  const valid = { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' };
+  const valid = { items: [], indicador_id: 1, anio: 2026, granularity: 'mensual' };
 
   it('accepts a well-formed series envelope', () => {
     expect(isSeriesResponse(valid)).toBe(true);
   });
 
   it('accepts an envelope with extra fields', () => {
-    expect(isSeriesResponse({ ...valid, version_id: 'ver-2' })).toBe(true);
+    expect(isSeriesResponse({ ...valid, version_id: 2 })).toBe(true);
   });
 
   it.each([
     ['null', null],
     ['an array', []],
-    ['no items', { indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' }],
+    ['no items', { indicador_id: 1, anio: 2026, granularity: 'mensual' }],
     ['items not an array', { ...valid, items: 'x' }],
-    ['indicador_id not a string', { ...valid, indicador_id: 1 }],
+    ['indicador_id not a number', { ...valid, indicador_id: 'ind-001' }],
     ['anio not a number', { ...valid, anio: '2026' }],
     ['granularity not a string', { ...valid, granularity: 3 }],
   ])('rejects %s', (_name, value) => {
@@ -68,49 +67,16 @@ describe('isSeriesResponse', () => {
   });
 });
 
-describe('isSQLPreview', () => {
-  const valid = {
-    sql: 'SELECT 1',
-    params: { anio: 2026 },
-    periodo_inicio: '2026-01-01',
-    periodo_fin: '2026-12-31',
-    version_id: 'ver-1',
-    version_num: 1,
-  };
-
-  it('accepts a well-formed SQL preview envelope', () => {
-    expect(isSQLPreview(valid)).toBe(true);
-  });
-
-  it('accepts an envelope with extra fields', () => {
-    expect(isSQLPreview({ ...valid, indicador_id: 'ind-1' })).toBe(true);
-  });
-
-  it.each([
-    ['null', null],
-    ['no sql', { ...valid, sql: undefined }],
-    ['sql not a string', { ...valid, sql: 42 }],
-    ['params not a record', { ...valid, params: [] }],
-    ['params null', { ...valid, params: null }],
-    ['periodo_inicio not a string', { ...valid, periodo_inicio: 20260101 }],
-    ['periodo_fin not a string', { ...valid, periodo_fin: 20261231 }],
-    ['version_id not a string', { ...valid, version_id: 1 }],
-    ['version_num not a number', { ...valid, version_num: '1' }],
-  ])('rejects %s', (_name, value) => {
-    expect(isSQLPreview(value)).toBe(false);
-  });
-});
-
 describe('isIndicadorDetail', () => {
   const validVersion = {
-    id: 'ver-1',
-    indicador_id: 'ind-1',
+    id: 11,
+    indicador_id: 1,
     version: 1,
     creado_en: '2026-01-01',
     definicion: { tipo: 'conteo_atenciones' },
   };
   const valid = {
-    id: 'ind-1',
+    id: 1,
     nombre: 'Indicador',
     descripcion: 'desc',
     activo: true,
@@ -134,14 +100,14 @@ describe('isIndicadorDetail', () => {
     ['null', null],
     ['undefined', undefined],
     ['an array', []],
-    ['id not a string', { ...valid, id: 1 }],
+    ['id not a number', { ...valid, id: 'ind-1' }],
     ['nombre not a string', { ...valid, nombre: 2 }],
     ['descripcion not string|null', { ...valid, descripcion: 3 }],
     ['activo not a boolean', { ...valid, activo: 'true' }],
     ['creado_en not a string', { ...valid, creado_en: 20260101 }],
     ['versiones not an array', { ...valid, versiones: { oops: true } }],
     ['version missing id', { ...valid, versiones: [{ ...validVersion, id: undefined }] }],
-    ['version indicador_id not a string', { ...valid, versiones: [{ ...validVersion, indicador_id: 1 }] }],
+    ['version indicador_id not a number', { ...valid, versiones: [{ ...validVersion, indicador_id: 'ind-1' }] }],
     ['version not a number', { ...valid, versiones: [{ ...validVersion, version: '1' }] }],
     ['version creado_en not a string', { ...valid, versiones: [{ ...validVersion, creado_en: 1 }] }],
     ['version definicion not a record', { ...valid, versiones: [{ ...validVersion, definicion: [] }] }],
@@ -171,7 +137,7 @@ describe('assertShape', () => {
 
 describe('isIndicadorResultado', () => {
   const valid = {
-    id: 'res-1',
+    id: 1,
     periodo_inicio: '2026-01-01',
     periodo_fin: '2026-01-31',
     valor: 12,
@@ -208,8 +174,8 @@ describe('isSerieRow', () => {
 
 describe('isIndicadorMeta', () => {
   const valid = {
-    id: 'meta-1',
-    indicador_version_id: 'ver-1',
+    id: 1,
+    indicador_version_id: 11,
     anio: 2026,
     valor_meta: 100,
     creado_en: '2026-01-01',
@@ -229,15 +195,15 @@ describe('isIndicadorMeta', () => {
 
 describe('isIdentifiedResource', () => {
   it('accepts a payload carrying the id the UI navigates with', () => {
-    expect(isIdentifiedResource({ id: 'indicator-a' })).toBe(true);
-    expect(isIdentifiedResource({ id: 'indicator-a', activo: true, definicion: { tipo: 'x' } })).toBe(true);
+    expect(isIdentifiedResource({ id: 1 })).toBe(true);
+    expect(isIdentifiedResource({ id: 1, activo: true, definicion: { tipo: 'x' } })).toBe(true);
   });
 
   it.each([
     ['null', null],
     ['a bare string', 'indicator-a'],
     ['missing id', { nombre: 'sin id' }],
-    ['id not a string', { id: 42 }],
+    ['id not a number', { id: 'indicator-a' }],
   ])('rejects %s', (_name, value) => {
     expect(isIdentifiedResource(value)).toBe(false);
   });
@@ -310,13 +276,13 @@ describe('isRecalcularAnioResponse', () => {
     expect(isRecalcularAnioResponse(valid)).toBe(true);
   });
 
-  it('accepts a scoped recalculation with a string indicador_id', () => {
-    expect(isRecalcularAnioResponse({ ...valid, indicador_id: 'ind-001' })).toBe(true);
+  it('accepts a scoped recalculation with a numeric indicador_id', () => {
+    expect(isRecalcularAnioResponse({ ...valid, indicador_id: 1 })).toBe(true);
   });
 
   it.each([
     ['missing meses_procesados', { ...valid, meses_procesados: undefined }],
-    ['indicador_id neither string nor null', { ...valid, indicador_id: 7 }],
+    ['indicador_id neither number nor null', { ...valid, indicador_id: 'ind-001' }],
     ['recalculados not a number', { ...valid, recalculados: '24' }],
     ['errores not an array', { ...valid, errores: {} }],
     ['anio not a number', { ...valid, anio: '2026' }],

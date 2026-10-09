@@ -13,7 +13,7 @@ vi.mock('../features/indicadores/hooks', () => ({
 }));
 
 const indicator = {
-  id: 'indicator-a',
+  id: 1,
   nombre: 'Atenciones de control prenatal',
   descripcion: 'Gestantes atendidas.',
   activo: true,
@@ -82,7 +82,7 @@ describe('IndicadoresPage backend contract', () => {
       ),
     );
 
-    expect(deleteIndicador).toHaveBeenCalledWith('indicator-a');
+    expect(deleteIndicador).toHaveBeenCalledWith(1);
     expect(notifySuccess).toHaveBeenCalledWith('Indicador desactivado');
     expect(screen.getByRole('dialog', { name: 'Desactivar indicador' })).not.toHaveTextContent(
       'Atenciones de control prenatal',

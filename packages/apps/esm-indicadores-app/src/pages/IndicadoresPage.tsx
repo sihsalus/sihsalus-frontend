@@ -27,11 +27,12 @@ const IndicadoresPage: React.FC = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deactivationTarget, setDeactivationTarget] = useState<Indicador | null>(null);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
-  const deletingIdsRef = useRef(new Set<string>());
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(() => new Set());
+  const deletingIdsRef = useRef(new Set<number>());
   const [pageSize, setPageSize] = useState(10);
   const { data, isLoading, error } = useIndicadores(page, pageSize);
   const { deleteIndicador } = useDeleteIndicador();
+  const isDeletingTarget = deactivationTarget !== null && deletingIds.has(deactivationTarget.id);
 
   const handleDelete = async () => {
     const target = deactivationTarget;
@@ -63,7 +64,7 @@ const IndicadoresPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h2>{t('indicators', 'Indicadores')}</h2>
+          <h1>{t('indicators', 'Indicadores')}</h1>
           <p className={styles.subtitle}>
             {t('indicatorsPageSubtitle', 'Listado principal del módulo, con acceso a detalle, edición y versionado.')}
           </p>
@@ -161,16 +162,16 @@ const IndicadoresPage: React.FC = () => {
         open={Boolean(deactivationTarget)}
         modalHeading={t('deactivateIndicator', 'Desactivar indicador')}
         primaryButtonText={
-          deletingIds.has(deactivationTarget?.id ?? '') ? (
+          isDeletingTarget ? (
             <InlineLoading description={t('deactivating', 'Desactivando...')} />
           ) : (
             t('deactivate', 'Desactivar')
           )
         }
-        primaryButtonDisabled={deletingIds.has(deactivationTarget?.id ?? '')}
+        primaryButtonDisabled={isDeletingTarget}
         secondaryButtonText={t('cancel', 'Cancelar')}
         onRequestClose={() => {
-          if (!deletingIds.has(deactivationTarget?.id ?? '')) {
+          if (!isDeletingTarget) {
             setDeactivationTarget(null);
           }
         }}

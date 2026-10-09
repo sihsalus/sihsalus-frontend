@@ -1,4 +1,4 @@
-type TipoIndicador = 'conteo_atenciones' | 'conteo_pacientes' | 'conteo_pacientes_ventana';
+type TipoIndicador = 'conteo_atenciones' | 'conteo_pacientes';
 export type TipoDiagnostico = 'definitivo' | 'presuntivo';
 export type Sexo = 'M' | 'F';
 
@@ -16,7 +16,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface Indicador {
-  id: string;
+  id: number;
   nombre: string;
   descripcion: string | null;
   activo: boolean;
@@ -57,8 +57,8 @@ export interface DefinicionIndicadorForm {
 }
 
 export interface IndicadorVersion {
-  id: string;
-  indicador_id: string;
+  id: number;
+  indicador_id: number;
   version: number;
   definicion: DefinicionIndicadorForm;
   creado_en: string;
@@ -101,8 +101,8 @@ export interface EncounterTypeOption {
 }
 
 export interface IndicadorResultado {
-  id: string;
-  indicador_version_id: string;
+  id: number;
+  indicador_version_id: number;
   indicador_nombre: string | null;
   indicador_version_num: number | null;
   periodo_inicio: string;
@@ -123,28 +123,28 @@ export interface SerieRow {
   semestre?: number;
   meta?: number | null;
   // Monthly rows carry version_id/version_num; aggregated rows carry `versiones` instead.
-  version_id?: string | null;
+  version_id?: number | null;
   version_num?: number | null;
   versiones?: Array<number>;
 }
 
 export interface SeriesResponse {
   items: Array<SerieRow>;
-  indicador_id: string;
+  indicador_id: number;
   anio: number;
   granularity: Granularity;
 }
 
 export interface GetSeriesParams {
-  indicador_id: string;
+  indicador_id: number;
   anio?: number;
   granularity?: Granularity;
   include_meta?: boolean;
 }
 
 export interface IndicadorMetaRecord {
-  id: string;
-  indicador_version_id: string;
+  id: number;
+  indicador_version_id: number;
   anio: number;
   valor_meta: number;
   creado_en: string;
@@ -156,13 +156,13 @@ export interface IndicadorMeta extends IndicadorMetaRecord {
 }
 
 export interface IndicadorMetaCreatePayload {
-  indicador_version_id: string;
+  indicador_version_id: number;
   anio: number;
   valor_meta: number;
 }
 
 interface ErrorCalculo {
-  indicador_id: string;
+  indicador_id: number;
   indicador_nombre: string;
   error: string;
 }
@@ -174,7 +174,7 @@ export interface BatchCalcularNowResponse {
 }
 
 interface ErrorRecalculo {
-  indicador_id: string;
+  indicador_id: number;
   indicador_nombre: string;
   mes: number;
   error: string;
@@ -182,12 +182,12 @@ interface ErrorRecalculo {
 
 export interface RecalcularAnioParams {
   anio: number;
-  indicador_id?: string;
+  indicador_id?: number;
 }
 
 export interface RecalcularAnioResponse {
   anio: number;
-  indicador_id: string | null;
+  indicador_id: number | null;
   meses_procesados: number;
   indicadores_considerados: number;
   recalculados: number;
@@ -196,7 +196,7 @@ export interface RecalcularAnioResponse {
 }
 
 interface ResultadosFilters {
-  indicador_id?: string;
+  indicador_id?: number;
   periodo_inicio?: string;
   periodo_fin?: string;
 }
@@ -205,16 +205,7 @@ export interface GetResultadosParams extends ResultadosFilters {
   page: number;
   size: number;
   include_historicos?: boolean;
-  version_id?: string;
-}
-
-export interface IndicadorSQLPreview {
-  sql: string;
-  params: Record<string, unknown>;
-  periodo_inicio: string;
-  periodo_fin: string;
-  version_id: string;
-  version_num: number;
+  version_id?: number;
 }
 
 export interface IndicadorFormValues {

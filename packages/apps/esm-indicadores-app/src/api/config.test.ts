@@ -70,9 +70,9 @@ describe('getReportesSqlResourcePath', () => {
       reportesSqlApiPath: '/services/reportes-sql',
     });
 
-    const result = await getReportesSqlResourcePath('indicadores/abc/preview-sql');
+    const result = await getReportesSqlResourcePath('indicadores/abc/versiones');
 
-    expect(result).toBe('/services/reportes-sql/indicadores/abc/preview-sql');
+    expect(result).toBe('/services/reportes-sql/indicadores/abc/versiones');
   });
 
   it('avoids double slash when base has no trailing slash', async () => {

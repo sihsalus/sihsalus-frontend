@@ -64,7 +64,7 @@ const IndicadorResumenCard: React.FC<IndicadorResumenCardProps> = ({ indicador, 
   return (
     <Tile className={styles.summaryCard}>
       <Link
-        to={`/resultados?indicador=${encodeURIComponent(indicador.id)}&anio=${anio}`}
+        to={`/resultados?indicador=${encodeURIComponent(String(indicador.id))}&anio=${anio}`}
         className={`${styles.inlineLink} ${styles.summaryCardTitle}`}
       >
         {indicador.nombre}

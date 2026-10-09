@@ -14,17 +14,17 @@ const mockUseIndicador = vi.mocked(useIndicador);
 
 const indicators: Array<Indicador> = [
   {
-    id: 'indicator-a',
+    id: 1,
     nombre: 'Control prenatal',
     descripcion: null,
     activo: true,
     creado_en: '2026-01-01',
   },
-  { id: 'indicator-b', nombre: 'Anemia', descripcion: null, activo: true, creado_en: '2026-01-01' },
+  { id: 2, nombre: 'Anemia', descripcion: null, activo: true, creado_en: '2026-01-01' },
 ];
 
 const indicatorBeyondFirstPage: Indicador = {
-  id: 'indicator-101',
+  id: 101,
   nombre: 'Indicador 101',
   descripcion: null,
   activo: true,
@@ -34,50 +34,50 @@ const indicatorsWithSecondPage = [
   ...indicators,
   ...Array.from({ length: 98 }, (_, index) => ({
     ...indicators[0],
-    id: `indicator-${index + 3}`,
+    id: index + 3,
     nombre: `Indicador ${index + 3}`,
   })),
   indicatorBeyondFirstPage,
 ];
 
 const details: Record<string, IndicadorDetail> = {
-  'indicator-a': {
+  '1': {
     ...indicators[0],
     versiones: [
       {
-        id: 'version-a-1',
-        indicador_id: 'indicator-a',
+        id: 11,
+        indicador_id: 1,
         version: 1,
         definicion: { tipo: 'conteo_atenciones' },
         creado_en: '2026-01-01',
       },
       {
-        id: 'version-a-2',
-        indicador_id: 'indicator-a',
+        id: 12,
+        indicador_id: 1,
         version: 2,
         definicion: { tipo: 'conteo_atenciones' },
         creado_en: '2026-02-01',
       },
     ],
   },
-  'indicator-b': {
+  '2': {
     ...indicators[1],
     versiones: [
       {
-        id: 'version-b-1',
-        indicador_id: 'indicator-b',
+        id: 21,
+        indicador_id: 2,
         version: 1,
         definicion: { tipo: 'conteo_pacientes' },
         creado_en: '2026-01-01',
       },
     ],
   },
-  'indicator-101': {
+  '101': {
     ...indicatorBeyondFirstPage,
     versiones: [
       {
-        id: 'version-101-1',
-        indicador_id: 'indicator-101',
+        id: 1011,
+        indicador_id: 101,
         version: 1,
         definicion: { tipo: 'conteo_atenciones' },
         creado_en: '2026-01-01',
@@ -87,8 +87,8 @@ const details: Record<string, IndicadorDetail> = {
 };
 
 const existingMeta: IndicadorMeta = {
-  id: 'meta-a',
-  indicador_version_id: 'version-a-2',
+  id: 1,
+  indicador_version_id: 12,
   anio: 2025,
   valor_meta: 1200,
   creado_en: '2026-01-01',
@@ -110,7 +110,7 @@ async function selectIndicator(container: HTMLElement, name: string) {
   fireEvent.input(getIndicatorInput(container), { target: { value: name } });
   fireEvent.click(screen.getByText(name));
   await waitFor(() =>
-    expect((screen.getByLabelText('Versión vigente') as HTMLSelectElement).value).toMatch(/^version-/),
+    expect((screen.getByLabelText('Versión vigente') as HTMLSelectElement).value).toMatch(/^\d+$/),
   );
 }
 
@@ -125,7 +125,7 @@ describe('MetaFormModal', () => {
       refetch: vi.fn(),
     });
     mockUseIndicador.mockImplementation((id) => ({
-      data: details[id],
+      data: details[String(id)],
       error: undefined,
       isLoading: false,
       isError: false,
@@ -139,14 +139,14 @@ describe('MetaFormModal', () => {
     await selectIndicator(container, 'Control prenatal');
 
     expect(screen.getByLabelText('Versión vigente')).toBeDisabled();
-    expect(screen.getByLabelText('Versión vigente')).toHaveValue('version-a-2');
+    expect(screen.getByLabelText('Versión vigente')).toHaveValue('12');
     fireEvent.change(screen.getByLabelText('Año'), { target: { value: '2026' } });
     fireEvent.change(screen.getByLabelText('Valor de la meta'), { target: { value: '1500' } });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /Guardar/ })));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      { indicador_version_id: 'version-a-2', anio: 2026, valor_meta: 1500 },
-      'indicator-a',
+      { indicador_version_id: 12, anio: 2026, valor_meta: 1500 },
+      1,
     );
   });
 
@@ -154,15 +154,15 @@ describe('MetaFormModal', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const { container, rerender } = renderModal({ onSubmit });
     await selectIndicator(container, 'Control prenatal');
-    expect(screen.getByLabelText('Versión vigente')).toHaveValue('version-a-2');
+    expect(screen.getByLabelText('Versión vigente')).toHaveValue('12');
 
     const refreshedDetail: IndicadorDetail = {
-      ...details['indicator-a'],
+      ...details['1'],
       versiones: [
-        ...details['indicator-a'].versiones,
+        ...details['1'].versiones,
         {
-          id: 'version-a-3',
-          indicador_id: 'indicator-a',
+          id: 13,
+          indicador_id: 1,
           version: 3,
           definicion: { tipo: 'conteo_atenciones' },
           creado_en: '2026-03-01',
@@ -170,7 +170,7 @@ describe('MetaFormModal', () => {
       ],
     };
     mockUseIndicador.mockImplementation((id) => ({
-      data: id === 'indicator-a' ? refreshedDetail : details[id],
+      data: id === 1 ? refreshedDetail : details[String(id)],
       error: undefined,
       isLoading: false,
       isError: false,
@@ -178,34 +178,34 @@ describe('MetaFormModal', () => {
     }));
     rerender(<MetaFormModal isOpen onClose={vi.fn()} onSubmit={onSubmit} />);
 
-    await waitFor(() => expect(screen.getByLabelText('Versión vigente')).toHaveValue('version-a-3'));
+    await waitFor(() => expect(screen.getByLabelText('Versión vigente')).toHaveValue('13'));
     fireEvent.change(screen.getByLabelText('Año'), { target: { value: '2026' } });
     fireEvent.change(screen.getByLabelText('Valor de la meta'), { target: { value: '1500' } });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /Guardar/ })));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      { indicador_version_id: 'version-a-3', anio: 2026, valor_meta: 1500 },
-      'indicator-a',
+      { indicador_version_id: 13, anio: 2026, valor_meta: 1500 },
+      1,
     );
   });
 
   it('preserves the exact edited version if a newer version appears before detail loads', async () => {
-    const versionOneMeta = { ...existingMeta, indicador_version_id: 'version-a-1', version_numero: 1 };
+    const versionOneMeta = { ...existingMeta, indicador_version_id: 11, version_numero: 1 };
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    renderModal({ initialMeta: versionOneMeta, initialIndicatorId: 'indicator-a', onSubmit });
+    renderModal({ initialMeta: versionOneMeta, initialIndicatorId: 1, onSubmit });
 
-    await waitFor(() => expect(screen.getByLabelText('Versión de la meta')).toHaveValue('version-a-1'));
+    await waitFor(() => expect(screen.getByLabelText('Versión de la meta')).toHaveValue('11'));
     fireEvent.change(screen.getByLabelText('Valor de la meta'), { target: { value: '1300' } });
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /Guardar/ })));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      { indicador_version_id: 'version-a-1', anio: 2025, valor_meta: 1300 },
-      'indicator-a',
+      { indicador_version_id: 11, anio: 2025, valor_meta: 1300 },
+      1,
     );
   });
 
   it('locks indicator, version and year while editing the selected record', async () => {
-    const { container } = renderModal({ initialMeta: existingMeta, initialIndicatorId: 'indicator-a' });
+    const { container } = renderModal({ initialMeta: existingMeta, initialIndicatorId: 1 });
 
     await waitFor(() => expect(getIndicatorInput(container)).toHaveValue('Control prenatal'));
     expect(getIndicatorInput(container)).toBeDisabled();
@@ -217,7 +217,7 @@ describe('MetaFormModal', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const { container, rerender } = renderModal({
       initialMeta: existingMeta,
-      initialIndicatorId: 'indicator-a',
+      initialIndicatorId: 1,
       onSubmit,
     });
 
@@ -235,7 +235,7 @@ describe('MetaFormModal', () => {
       <MetaFormModal
         isOpen
         initialMeta={existingMeta}
-        initialIndicatorId="indicator-a"
+        initialIndicatorId={1}
         onClose={vi.fn()}
         onSubmit={onSubmit}
       />,
@@ -247,7 +247,7 @@ describe('MetaFormModal', () => {
 
   it('does not restore the initial filter after the user selects another indicator', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    const { container, rerender } = renderModal({ initialIndicatorId: 'indicator-a', onSubmit });
+    const { container, rerender } = renderModal({ initialIndicatorId: 1, onSubmit });
     await waitFor(() => expect(getIndicatorInput(container)).toHaveValue('Control prenatal'));
     await selectIndicator(container, 'Anemia');
     expect(getIndicatorInput(container)).toHaveValue('Anemia');
@@ -259,10 +259,10 @@ describe('MetaFormModal', () => {
       isError: false,
       refetch: vi.fn(),
     });
-    rerender(<MetaFormModal isOpen initialIndicatorId="indicator-a" onClose={vi.fn()} onSubmit={onSubmit} />);
+    rerender(<MetaFormModal isOpen initialIndicatorId={1} onClose={vi.fn()} onSubmit={onSubmit} />);
 
     expect(getIndicatorInput(container)).toHaveValue('Anemia');
-    expect(screen.getByLabelText('Versión vigente')).toHaveValue('version-b-1');
+    expect(screen.getByLabelText('Versión vigente')).toHaveValue('21');
   });
 
   it('submits only once while a save request is pending', async () => {
@@ -299,7 +299,7 @@ describe('MetaFormModal', () => {
     await selectIndicator(container, 'Indicador 101');
 
     expect(getIndicatorInput(container)).toHaveValue('Indicador 101');
-    expect(screen.getByLabelText('Versión vigente')).toHaveValue('version-101-1');
+    expect(screen.getByLabelText('Versión vigente')).toHaveValue('1011');
   });
 
   it('rejects a year outside the backend range', async () => {
@@ -346,7 +346,7 @@ describe('MetaFormModal', () => {
       isError: true,
       refetch: vi.fn(),
     });
-    renderModal({ initialIndicatorId: 'indicator-a' });
+    renderModal({ initialIndicatorId: 1 });
 
     expect(screen.getByText('No se pudieron cargar las versiones')).toBeInTheDocument();
     expect(screen.queryByText('technical database message')).not.toBeInTheDocument();
@@ -396,7 +396,7 @@ describe('MetaFormModal', () => {
     );
 
     mockUseIndicador.mockReturnValue({
-      data: details['indicator-a'],
+      data: details['1'],
       error: undefined,
       isLoading: false,
       isError: false,
@@ -404,7 +404,7 @@ describe('MetaFormModal', () => {
     });
     rerender(<MetaFormModal isOpen onClose={vi.fn()} onSubmit={onSubmit} />);
 
-    await waitFor(() => expect(screen.getByLabelText('Versión vigente')).toHaveValue('version-a-2'));
+    await waitFor(() => expect(screen.getByLabelText('Versión vigente')).toHaveValue('12'));
     expect(screen.queryByText(/no tiene versiones/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Guardar/ })).not.toBeDisabled();
 
@@ -413,8 +413,8 @@ describe('MetaFormModal', () => {
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /Guardar/ })));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      { indicador_version_id: 'version-a-2', anio: 2026, valor_meta: 1500 },
-      'indicator-a',
+      { indicador_version_id: 12, anio: 2026, valor_meta: 1500 },
+      1,
     );
   });
 });

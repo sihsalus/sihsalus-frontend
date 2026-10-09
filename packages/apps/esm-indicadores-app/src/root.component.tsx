@@ -21,14 +21,6 @@ const ModuleLayout: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.moduleHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>{t('indicatorsTitle', 'Indicadores Clínicos')}</h1>
-          <p className={styles.subtitle}>
-            {t('rootSubtitle', 'Configuración, versionado y resultados de indicadores clínicos en un solo módulo.')}
-          </p>
-        </div>
-      </div>
       <Suspense fallback={<InlineLoading description={t('pageLoading', 'Cargando página...')} />}>
         <Outlet />
       </Suspense>

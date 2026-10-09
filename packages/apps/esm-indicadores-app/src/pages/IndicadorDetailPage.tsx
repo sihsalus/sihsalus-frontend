@@ -3,10 +3,10 @@ import { formatDate, getUserFacingErrorMessage, parseDate } from '@openmrs/esm-f
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { parseEntityId } from '../api/ids';
 import type { DefinicionIndicadorForm } from '../api/types';
 import DefinicionView from '../components/DefinicionView';
 import IndicadorForm from '../components/IndicadorForm';
-import SQLPreviewSection from '../components/SQLPreviewSection';
 import { getIndicadorSaveErrorMessage, indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import {
   notifyError,
@@ -26,14 +26,15 @@ const formatVersionDate = (iso: string) => formatDate(parseDate(iso));
 
 const IndicadorDetailPage: React.FC = () => {
   const { t } = useTranslation();
-  const { id = '' } = useParams();
+  const { id } = useParams();
+  const indicadorId = parseEntityId(id);
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showVersionForm, setShowVersionForm] = useState(false);
   const [isSubmittingVersion, setSubmittingVersion] = useState(false);
   const submittingVersionRef = useRef(false);
-  const { data, isLoading, error } = useIndicador(id);
-  const { createVersion } = useCreateVersion(id);
+  const { data, isLoading, error } = useIndicador(indicadorId);
+  const { createVersion } = useCreateVersion(indicadorId);
 
   const latestVersion = useMemo(() => {
     // `Array.prototype.reduce` with no initial value throws `TypeError` on an
@@ -179,7 +180,7 @@ const IndicadorDetailPage: React.FC = () => {
           <Tile className={styles.detailCard}>
             <div className={styles.header}>
               <div>
-                <h2>{data.nombre}</h2>
+                <h1>{data.nombre}</h1>
                 <p className={styles.subtitle}>{data.descripcion ?? t('noDescription', 'Sin descripción')}</p>
               </div>
               <Tag type={data.activo ? 'green' : 'gray'}>
@@ -233,11 +234,6 @@ const IndicadorDetailPage: React.FC = () => {
                     </span>
                   </div>
                   <DefinicionView definicion={latestVersion.definicion} resolved={resolved} />
-                  <SQLPreviewSection
-                    indicadorId={data.id}
-                    versionId={latestVersion.id}
-                    versionNum={latestVersion.version}
-                  />
                 </Tile>
               ) : (
                 <Tile className={styles.empty}>

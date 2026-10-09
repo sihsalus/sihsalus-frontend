@@ -17,6 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   Tile,
 } from '@carbon/react';
 import { formatDate, getUserFacingErrorMessage, logError, parseDate } from '@openmrs/esm-framework';
@@ -27,6 +28,7 @@ import { useSearchParams } from 'react-router-dom';
 import { parseEntityId } from '../api/ids';
 import type { BatchCalcularNowResponse, GetResultadosParams, Granularity, RecalcularAnioResponse } from '../api/types';
 import MetaProgressCard from '../components/MetaProgressCard';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { isBatchTotalFailure } from '../features/resultados/batch-results';
@@ -42,6 +44,15 @@ type SummaryState =
 // Formats in LOCAL time: the Carbon DatePicker yields local-midnight dates and
 // toISOString() would shift the day backwards in UTC+ timezones.
 const toDateString = (date: Date | null): string | undefined => (date ? dayjs(date).format('YYYY-MM-DD') : undefined);
+
+// Months contained in each rollup period (mensual/trimestral/semestral/anual).
+// Shown as "available/total" so a bare number is not left unexplained.
+const PERIOD_MONTHS: Record<Granularity, number> = {
+  mensual: 1,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
 
 const ResultadosPage: React.FC = () => {
   const { t } = useTranslation();
@@ -402,12 +413,10 @@ const ResultadosPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h1>{t('results', 'Resultados')}</h1>
-          <p className={styles.subtitle}>
-            {t('resultsSubtitle', 'Consulte resultados calculados y ejecute el cálculo manual del lote.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('results', 'Resultados')}
+          subtitle={t('resultsSubtitle', 'Consulte resultados calculados y ejecute el cálculo manual del lote.')}
+        />
         <div className={styles.headerActions}>
           <Button kind="tertiary" onClick={openRecalcularModal} disabled={anyActionRunning}>
             {t('recalculateYear', 'Recalcular año')}
@@ -560,7 +569,17 @@ const ResultadosPage: React.FC = () => {
                     <TableRow key={`${item.periodo_label}-${item.anio}`}>
                       <TableCell>{item.periodo_label}</TableCell>
                       <TableCell>{item.valor}</TableCell>
-                      <TableCell>{item.meses_disponibles}</TableCell>
+                      <TableCell>
+                        {item.meses_disponibles >= PERIOD_MONTHS[granularity] ? (
+                          <Tag type="green">
+                            {item.meses_disponibles}/{PERIOD_MONTHS[granularity]}
+                          </Tag>
+                        ) : (
+                          <Tag type="red">
+                            {item.meses_disponibles}/{PERIOD_MONTHS[granularity]}
+                          </Tag>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

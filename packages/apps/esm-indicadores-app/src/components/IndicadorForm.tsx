@@ -422,18 +422,17 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
                 </p>
               </header>
               <Stack gap={5}>
-                <div className={styles.formFieldNarrow}>
-                  <Select
-                    id="sexo"
-                    labelText={t('sex', 'Sexo')}
-                    value={values.sexo}
-                    onChange={(event) => updateField('sexo', event.target.value as IndicadorFormValues['sexo'])}
-                  >
-                    <SelectItem value="" text={t('noFilter', 'Sin filtro')} />
-                    <SelectItem value="F" text={t('female', 'Femenino')} />
-                    <SelectItem value="M" text={t('male', 'Masculino')} />
-                  </Select>
-                </div>
+                <RadioButtonGroup
+                  legendText={t('sex', 'Sexo')}
+                  name="sexo"
+                  orientation={isDesktop(layout) ? 'horizontal' : 'vertical'}
+                  valueSelected={values.sexo}
+                  onChange={(value) => updateField('sexo', value as IndicadorFormValues['sexo'])}
+                >
+                  <RadioButton id="sexo-ninguno" labelText={t('noFilter', 'Sin filtro')} value="" />
+                  <RadioButton id="sexo-f" labelText={t('female', 'Femenino')} value="F" />
+                  <RadioButton id="sexo-m" labelText={t('male', 'Masculino')} value="M" />
+                </RadioButtonGroup>
                 <div className={styles.ageGroup}>
                   <p className={styles.fieldLabel}>{t('age', 'Edad')}</p>
                   <div className={styles.ageBlocks}>

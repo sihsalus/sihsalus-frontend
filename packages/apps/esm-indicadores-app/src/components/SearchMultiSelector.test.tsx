@@ -92,7 +92,7 @@ describe('SearchMultiSelector', () => {
     expect(within(results).queryByText(/Hospital Central/)).not.toBeInTheDocument();
   });
 
-  it('adds an item via the Agregar button, clears the search input, and calls onChange', () => {
+  it('adds an item via the Agregar button, keeps the results open, and calls onChange', () => {
     const onChange = vi.fn();
     render(<SearchMultiSelector {...props({ onChange })} />);
 
@@ -103,8 +103,8 @@ describe('SearchMultiSelector', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith([{ uuid: 'loc-001', display: 'Centro Obstétrico' }]);
-    // Search input is cleared after a successful add so the next search starts fresh.
-    expect(screen.getByPlaceholderText('Buscar servicio...')).toHaveValue('');
+    // The results stay open after adding so several items can be selected.
+    expect(screen.getByRole('list')).toBeInTheDocument();
   });
 
   it('adds an item when the whole result row is clicked, not only the Agregar button', () => {
@@ -118,6 +118,35 @@ describe('SearchMultiSelector', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith([{ uuid: 'loc-001', display: 'Centro Obstétrico' }]);
+  });
+
+  it('keeps focus (prevents default) on row mousedown so the click still adds', () => {
+    const onChange = vi.fn();
+    render(<SearchMultiSelector {...props({ onChange })} />);
+
+    fireEvent.change(screen.getByPlaceholderText('Buscar servicio...'), { target: { value: 'centro' } });
+
+    const row = within(screen.getByRole('list')).getByText('Centro Obstétrico');
+    const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    fireEvent(row, mouseDown);
+    expect(mouseDown.defaultPrevented).toBe(true);
+
+    fireEvent.click(row);
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the results on Escape and reopens when typing again', () => {
+    render(<SearchMultiSelector {...props()} />);
+    const input = screen.getByPlaceholderText('Buscar servicio...');
+
+    fireEvent.change(input, { target: { value: 'centro' } });
+    expect(screen.getByRole('list')).toBeInTheDocument();
+
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: 'post' } });
+    expect(screen.getByRole('list')).toBeInTheDocument();
   });
 
   it('removes a selected item via the pill button and calls onChange with the remaining items', () => {
@@ -138,6 +167,26 @@ describe('SearchMultiSelector', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith([{ uuid: 'loc-003', display: 'Posta Rural' }]);
+  });
+
+  it('clears every selected item via the "Quitar todos" button', () => {
+    const onChange = vi.fn();
+    render(
+      <SearchMultiSelector
+        {...props({
+          onChange,
+          selectedItems: [
+            { uuid: 'loc-001', display: 'Centro Obstétrico' },
+            { uuid: 'loc-003', display: 'Posta Rural' },
+          ],
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar todos' }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith([]);
   });
 
   it('shows an anchor aria-label interpolated with the item label on each pill remove button', () => {

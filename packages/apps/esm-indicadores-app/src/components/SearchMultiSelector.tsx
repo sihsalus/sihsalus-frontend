@@ -1,6 +1,6 @@
 import { Button, InlineLoading, Search, Tile } from '@carbon/react';
 import { getUserFacingErrorMessage, useDebounce } from '@openmrs/esm-framework';
-import { type FocusEvent, useEffect, useMemo, useState } from 'react';
+import { type FocusEvent, type KeyboardEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
@@ -46,6 +46,7 @@ function SearchMultiSelector<T>({
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFocused, setFocused] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm);
 
   const normalizedQuery = (debouncedSearchTerm ?? '').trim();
@@ -59,9 +60,10 @@ function SearchMultiSelector<T>({
     return data.filter((item) => !selectedKeys.has(itemKey(item)));
   }, [data, itemKey, selectedItems]);
 
+  // Keep the current query so the results stay open after adding (allowing
+  // several selections in a row); the added item is filtered out below.
   const handleAdd = (item: T) => {
     onChange([...selectedItems, item]);
-    setSearchTerm('');
   };
 
   const handleRemove = (item: T) => {
@@ -70,11 +72,13 @@ function SearchMultiSelector<T>({
   };
 
   // On focus the option list is revealed. Encounter types already carry the full
-  // list; term-based sources fetch their first page via `onActivate`.
-  const showResults = normalizedQuery !== '' || (isFocused && showResultsOnFocus);
+  // list; term-based sources fetch their first page via `onActivate`. The list
+  // stays open after adding (for multiple selections) until dismissed.
+  const showResults = !dismissed && (normalizedQuery !== '' || (isFocused && showResultsOnFocus));
 
   const handleFocus = () => {
     setFocused(true);
+    setDismissed(false);
     onActivate?.();
   };
 
@@ -84,33 +88,58 @@ function SearchMultiSelector<T>({
     }
   };
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      setDismissed(true);
+    }
+  };
+
   return (
-    <div className={styles.searchSelector} role="group" onFocus={handleFocus} onBlur={handleBlur}>
+    <div
+      className={styles.searchSelector}
+      role="group"
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+    >
       <p className={styles.fieldLabel}>{label}</p>
       <Search
         size="md"
         labelText={label}
         placeholder={placeholder}
         value={searchTerm}
-        onChange={(event) => setSearchTerm(event.target.value)}
+        onChange={(event) => {
+          setSearchTerm(event.target.value);
+          setDismissed(false);
+        }}
       />
       {helperText ? <p className={styles.fieldHelp}>{helperText}</p> : null}
 
       {selectedItems.length ? (
-        <div className={styles.selectedItemsList}>
-          {selectedItems.map((item) => (
-            <span key={itemKey(item)} className={styles.selectedItemPill}>
-              <span>{itemLabel(item)}</span>
-              <button
-                type="button"
-                className={styles.pillRemoveButton}
-                onClick={() => handleRemove(item)}
-                aria-label={t('removeItem', 'Quitar {{label}}', { label: itemLabel(item) })}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+        <div className={styles.selectedItemsBlock}>
+          <div className={styles.selectedItemsList}>
+            {selectedItems.map((item) => (
+              <span key={itemKey(item)} className={styles.selectedItemPill}>
+                <span>{itemLabel(item)}</span>
+                <button
+                  type="button"
+                  className={styles.pillRemoveButton}
+                  onClick={() => handleRemove(item)}
+                  aria-label={t('removeItem', 'Quitar {{label}}', { label: itemLabel(item) })}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            kind="danger--ghost"
+            className={styles.clearSelectedButton}
+            onClick={() => onChange([])}
+          >
+            {t('clearSelected', 'Quitar todos')}
+          </Button>
         </div>
       ) : (
         <p className={styles.fieldHelp}>{emptyText}</p>
@@ -135,6 +164,9 @@ function SearchMultiSelector<T>({
                   key={itemKey(item)}
                   className={styles.searchResultItem}
                   role="listitem"
+                  // Keep focus on the search input so the panel is not unmounted
+                  // on blur before this row's click fires.
+                  onMouseDown={(event) => event.preventDefault()}
                   onClick={() => handleAdd(item)}
                 >
                   <div className={styles.searchResultContent}>

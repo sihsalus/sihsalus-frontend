@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { Indicador } from '../api/types';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
@@ -63,12 +64,13 @@ const IndicadoresPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h1>{t('indicators', 'Indicadores')}</h1>
-          <p className={styles.subtitle}>
-            {t('indicatorsPageSubtitle', 'Listado principal del módulo, con acceso a detalle, edición y versionado.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('indicators', 'Indicadores')}
+          subtitle={t(
+            'indicatorsPageSubtitle',
+            'Listado principal del módulo, con acceso a detalle, edición y versionado.',
+          )}
+        />
         <div className={styles.headerActions}>
           <Button onClick={() => navigate('/new')}>{t('newIndicator', 'Nuevo indicador')}</Button>
         </div>

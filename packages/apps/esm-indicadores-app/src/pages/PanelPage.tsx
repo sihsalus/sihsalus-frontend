@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import IndicadorResumenCard from '../components/IndicadorResumenCard';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { useAllIndicadores } from '../features/indicadores/hooks';
 import { currentYear, indicatorYearOptions } from '../features/resultados/years';
@@ -21,12 +22,10 @@ const PanelPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h1>{t('panel', 'Panel')}</h1>
-          <p className={styles.subtitle}>
-            {t('panelSubtitle', 'Cumplimiento anual de los indicadores activos en un solo vistazo.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('panel', 'Panel')}
+          subtitle={t('panelSubtitle', 'Cumplimiento anual de los indicadores activos en un solo vistazo.')}
+        />
         <div className={styles.headerActions}>
           <Select
             id="panel-anio"

@@ -95,10 +95,6 @@ export async function runDevelop(args: DevelopArgs) {
     .replace(/src="\/openmrs\/spa/g, `src="${spaPath}`)
     .replace(/https:\/\/dev3\.openmrs\.org\/openmrs\/spa\/importmap\.json/g, `${spaPath}/importmap.json`);
 
-  const sw = resolve(source, 'service-worker.js');
-  // remove any full references to dev3.openmrs.org
-  const swContent = readFileSync(sw, 'utf-8').replace(/https:\/\/dev3\.openmrs\.org\/openmrs\/spa\//g, `${spaPath}`);
-
   const pageUrl = `http://${host}:${port}${spaPath}`;
 
   // Set up routes. Note that different middlewares have different rules
@@ -118,7 +114,7 @@ export async function runDevelop(args: DevelopArgs) {
 
   if (routes.type === 'inline') {
     let stringifiedRoutes = routes.value;
-    if (watchedRoutesPaths && !!Object.keys(watchedRoutesPaths).length) {
+    if (watchedRoutesPaths && Object.keys(watchedRoutesPaths).length) {
       // watchedRoutesPath is keyed from package to path, but here we need to go from
       // path to package.
       const watchedRoutesByPath = Object.fromEntries(Object.entries(watchedRoutesPaths).map(([k, v]) => [v, k]));
@@ -149,6 +145,10 @@ export async function runDevelop(args: DevelopArgs) {
 
   // Route for custom `service-worker.js` before most things
   if (supportOffline) {
+    const sw = resolve(source, 'service-worker.js');
+    // remove any full references to dev3.openmrs.org
+    const swContent = readFileSync(sw, 'utf-8').replace(/https:\/\/dev3\.openmrs\.org\/openmrs\/spa\//g, `${spaPath}`);
+
     app.get(`${spaPath}/service-worker.js`, indexRateLimit, (_, res) => {
       res.contentType('js').send(swContent);
     });

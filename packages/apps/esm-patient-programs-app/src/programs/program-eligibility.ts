@@ -31,7 +31,7 @@ function getPatientBirthDate(patient: PatientLike): string | undefined {
 
 function getPatientAgeFallback(patient: PatientLike): number | undefined {
   const age = patient?.age ?? patient?.person?.age;
-  return typeof age === 'number' && Number.isFinite(age) ? age : undefined;
+  return typeof age === 'number' && Number.isFinite(age) && age >= 0 ? age : undefined;
 }
 
 export function getPatientAgeYears(patient: PatientLike, today: Dayjs = dayjs()): number | undefined {
@@ -40,6 +40,9 @@ export function getPatientAgeYears(patient: PatientLike, today: Dayjs = dayjs())
   if (birthDate) {
     const parsedBirthDate = dayjs(birthDate);
     if (parsedBirthDate.isValid()) {
+      if (parsedBirthDate.isAfter(today, 'day')) {
+        return undefined;
+      }
       return today.diff(parsedBirthDate, 'year');
     }
   }

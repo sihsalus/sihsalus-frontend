@@ -2,9 +2,10 @@ import { fetchJson, mutateJson, toJsonBody } from './client';
 import { getReportesSqlApiPath } from './config';
 import {
   assertShape,
-  isBatchResponse,
+  isCalcularNowResponse,
   isIndicadorResultado,
   isPaginatedResponse,
+  isRecalcularAnioResponse,
   isSerieRow,
   isSeriesResponse,
 } from './validate';
@@ -57,7 +58,7 @@ export async function calcularAhora(): Promise<BatchCalcularNowResponse> {
   const data = await mutateJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, {
     method: 'POST',
   });
-  return assertShape(data, isBatchResponse, 'resultados/calcular-ahora');
+  return assertShape(data, isCalcularNowResponse, 'resultados/calcular-ahora');
 }
 
 export async function recalcularAnio(params: RecalcularAnioParams): Promise<RecalcularAnioResponse> {
@@ -66,7 +67,7 @@ export async function recalcularAnio(params: RecalcularAnioParams): Promise<Reca
     method: 'POST',
     ...toJsonBody(params),
   });
-  return assertShape(data, isBatchResponse, 'resultados/recalcular-anio');
+  return assertShape(data, isRecalcularAnioResponse, 'resultados/recalcular-anio');
 }
 
 export async function getResultadosSeries(params: GetSeriesParams): Promise<SeriesResponse> {

@@ -23,15 +23,13 @@ import MetaFormModal from '../components/MetaFormModal';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetaByIndicator, useUpsertMeta } from '../features/metas/hooks';
+import { MAX_META_YEAR, MIN_INDICATOR_YEAR, currentYear } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
-
-const MIN_YEAR = 2000;
-const MAX_YEAR = 2100;
 
 const MetasPage: React.FC = () => {
   const { t } = useTranslation();
   const [selectedIndicatorId, setSelectedIndicatorId] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(currentYear());
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<IndicadorMeta | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IndicadorMeta | null>(null);
@@ -177,12 +175,12 @@ const MetasPage: React.FC = () => {
         <NumberInput
           id="meta-filter-year"
           label={t('year', 'Año')}
-          min={MIN_YEAR}
-          max={MAX_YEAR}
+          min={MIN_INDICATOR_YEAR}
+          max={MAX_META_YEAR}
           value={selectedYear}
           onChange={(_event, { value }) => {
             const nextYear = Number(value);
-            if (Number.isInteger(nextYear) && nextYear >= MIN_YEAR && nextYear <= MAX_YEAR) {
+            if (Number.isInteger(nextYear) && nextYear >= MIN_INDICATOR_YEAR && nextYear <= MAX_META_YEAR) {
               setSelectedYear(nextYear);
             }
           }}

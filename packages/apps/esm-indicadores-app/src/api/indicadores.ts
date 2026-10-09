@@ -1,6 +1,6 @@
 import { fetchJson, mutateJson, toJsonBody } from './client';
 import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
-import { assertShape, isIndicadorDetail, isPaginatedResponse, isSQLPreview } from './validate';
+import { assertShape, isIdentifiedResource, isIndicadorDetail, isOptionList, isPaginatedResponse, isSQLPreview, isStringRecord } from './validate';
 import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
@@ -58,12 +58,14 @@ export async function getIndicador(id: string): Promise<IndicadorDetail> {
 
 export async function createIndicador(payload: IndicadorCreatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return mutateJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) });
+  const data = await mutateJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) });
+  return assertShape(data, isIdentifiedResource, 'indicadores');
 }
 
 export async function updateIndicador(id: string, payload: IndicadorUpdatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return mutateJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) });
+  const data = await mutateJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) });
+  return assertShape(data, isIdentifiedResource, `indicadores/${id}`);
 }
 
 export async function deleteIndicador(id: string): Promise<void> {
@@ -73,10 +75,11 @@ export async function deleteIndicador(id: string): Promise<void> {
 
 export async function createVersion(id: string, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return mutateJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
+  const data = await mutateJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
     method: 'POST',
     ...toJsonBody({ definicion }),
   });
+  return assertShape(data, isIdentifiedResource, `indicadores/${id}/versiones`);
 }
 
 export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
@@ -89,12 +92,16 @@ export async function previewSql(id: string, versionId?: string): Promise<Indica
 
 export async function searchLocations(query: string): Promise<Array<LocationOption>> {
   const conceptosPath = await getReportesSqlResourcePath('conceptos');
-  return fetchJson<Array<LocationOption>>(ensureQuery(`${conceptosPath}/locations`, { q: query }));
+  const data = await fetchJson<Array<LocationOption>>(ensureQuery(`${conceptosPath}/locations`, { q: query }));
+  return assertShape(data, isOptionList, 'conceptos/locations');
 }
 
 export async function searchDiagnosticos(query: string): Promise<Array<DiagnosticoOption>> {
   const conceptosPath = await getReportesSqlResourcePath('conceptos');
-  return fetchJson<Array<DiagnosticoOption>>(ensureQuery(`${conceptosPath}/diagnosticos/buscar`, { q: query }));
+  const data = await fetchJson<Array<DiagnosticoOption>>(
+    ensureQuery(`${conceptosPath}/diagnosticos/buscar`, { q: query }),
+  );
+  return assertShape(data, isOptionList, 'conceptos/diagnosticos/buscar');
 }
 
 export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> {
@@ -102,7 +109,7 @@ export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> 
   const response = await fetchJson<Array<OpenmrsConcept>>(
     ensureQuery(`${conceptosPath}/buscar`, { q: query, clase: 'Test' }),
   );
-  return response.map(mapConceptToOrden);
+  return assertShape(response, isOptionList, 'conceptos/buscar').map(mapConceptToOrden);
 }
 
 /**
@@ -111,7 +118,8 @@ export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> 
  */
 export async function getEncounterTypes(): Promise<Array<EncounterTypeOption>> {
   const conceptosPath = await getReportesSqlResourcePath('conceptos');
-  return fetchJson<Array<EncounterTypeOption>>(`${conceptosPath}/encounter-types`);
+  const data = await fetchJson<Array<EncounterTypeOption>>(`${conceptosPath}/encounter-types`);
+  return assertShape(data, isOptionList, 'conceptos/encounter-types');
 }
 
 export async function resolveLocations(uuids: Array<string>): Promise<Array<LocationOption>> {
@@ -120,9 +128,10 @@ export async function resolveLocations(uuids: Array<string>): Promise<Array<Loca
   }
 
   const conceptosPath = await getReportesSqlResourcePath('conceptos');
-  return fetchJson<Array<LocationOption>>(
+  const data = await fetchJson<Array<LocationOption>>(
     ensureQuery(`${conceptosPath}/locations/resolve`, { uuids: uuids.join(',') }),
   );
+  return assertShape(data, isOptionList, 'conceptos/locations/resolve');
 }
 
 export async function resolveDiagnosticos(uuids: Array<string>): Promise<Array<DiagnosticoOption>> {
@@ -131,9 +140,10 @@ export async function resolveDiagnosticos(uuids: Array<string>): Promise<Array<D
   }
 
   const conceptosPath = await getReportesSqlResourcePath('conceptos');
-  return fetchJson<Array<DiagnosticoOption>>(
+  const data = await fetchJson<Array<DiagnosticoOption>>(
     ensureQuery(`${conceptosPath}/diagnosticos/resolve`, { uuids: uuids.join(',') }),
   );
+  return assertShape(data, isOptionList, 'conceptos/diagnosticos/resolve');
 }
 
 export async function resolveOrdenes(uuids: Array<string>): Promise<Record<string, string>> {
@@ -142,5 +152,8 @@ export async function resolveOrdenes(uuids: Array<string>): Promise<Record<strin
   }
 
   const conceptosPath = await getReportesSqlResourcePath('conceptos');
-  return fetchJson<Record<string, string>>(ensureQuery(`${conceptosPath}/buscar/resolve`, { uuids: uuids.join(',') }));
+  const data = await fetchJson<Record<string, string>>(
+    ensureQuery(`${conceptosPath}/buscar/resolve`, { uuids: uuids.join(',') }),
+  );
+  return assertShape(data, isStringRecord, 'conceptos/buscar/resolve');
 }

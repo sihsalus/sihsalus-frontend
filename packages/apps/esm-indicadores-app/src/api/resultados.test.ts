@@ -371,6 +371,15 @@ describe('recalcularAnio routing', () => {
 
     await expect(recalcularAnio({ anio: 2026 })).rejects.toBe(fetchError);
   });
+
+  it('rejects a recalcular-anio envelope missing the processing counters', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { anio: 2026, indicador_id: null, recalculados: 0, errores: [], total: 0 },
+    } as never);
+
+    await expect(recalcularAnio({ anio: 2026 })).rejects.toThrow(/resultados\/recalcular-anio/);
+  });
 });
 
 describe('indicadores CRUD now routes through reportes-sql', () => {

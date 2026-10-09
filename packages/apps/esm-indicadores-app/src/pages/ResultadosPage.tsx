@@ -20,6 +20,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { formatDate, getUserFacingErrorMessage, logError, parseDate } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -29,7 +30,7 @@ import { indicatorsErrorMessageOptions } from '../features/indicadores/error-han
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { isBatchTotalFailure } from '../features/resultados/batch-results';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
-import { currentYear, indicatorYearOptions, isSelectableYear } from '../features/resultados/years';
+import { MIN_INDICATOR_YEAR, currentYear, indicatorYearOptions, isSelectableYear } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
 
 type SummaryState =
@@ -37,7 +38,9 @@ type SummaryState =
   | { kind: 'recalcular'; result: RecalcularAnioResponse; anio: number }
   | null;
 
-const toDateString = (date: Date | null): string | undefined => (date ? date.toISOString().slice(0, 10) : undefined);
+// Formats in LOCAL time: the Carbon DatePicker yields local-midnight dates and
+// toISOString() would shift the day backwards in UTC+ timezones.
+const toDateString = (date: Date | null): string | undefined => (date ? dayjs(date).format('YYYY-MM-DD') : undefined);
 
 const ResultadosPage: React.FC = () => {
   const { t } = useTranslation();
@@ -184,7 +187,7 @@ const ResultadosPage: React.FC = () => {
       notifyError(
         getUserFacingErrorMessage(
           calculationError,
-          'No se pudieron calcular los indicadores.',
+          t('calculateFailed', 'No se pudieron calcular los indicadores.'),
           indicatorsErrorMessageOptions(t),
         ),
       );
@@ -202,8 +205,8 @@ const ResultadosPage: React.FC = () => {
     if (value > currentYear()) {
       return t('recalcAnioFuture', 'El año no puede ser futuro.');
     }
-    if (value < 2000) {
-      return t('recalcAnioTooOld', 'El año debe ser mayor o igual a 2000.');
+    if (value < MIN_INDICATOR_YEAR) {
+      return t('recalcAnioTooOld', 'El año debe ser mayor o igual a {{minYear}}.', { minYear: MIN_INDICATOR_YEAR });
     }
     return null;
   };
@@ -677,7 +680,7 @@ const ResultadosPage: React.FC = () => {
         <NumberInput
           id="recalc-anio"
           label={t('year', 'Año')}
-          min={2000}
+          min={MIN_INDICATOR_YEAR}
           max={currentYear()}
           value={recalcAnio}
           onChange={(_event, { value }) => {

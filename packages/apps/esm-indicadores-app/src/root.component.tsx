@@ -1,11 +1,10 @@
 import { InlineLoading } from '@carbon/react';
-import { useConfig, useLeftNav } from '@openmrs/esm-framework';
+import { useLeftNav } from '@openmrs/esm-framework';
 import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React, { Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 
-import { type ConfigObject } from './config-schema';
 import styles from './indicators-dashboard.module.scss';
 
 const PanelPage = React.lazy(() => import('./pages/PanelPage'));
@@ -70,15 +69,6 @@ const IndicatorsContent: React.FC = () => {
 };
 
 const RootComponent: React.FC = () => {
-  const { bypassPrivilegeGuard } = useConfig<ConfigObject>();
-
-  // Dev-only escape hatch (config `bypassPrivilegeGuard`). Skips the
-  // app:indicadores guard so the module mounts without the privilege.
-  // NEVER enable in production.
-  if (bypassPrivilegeGuard) {
-    return <IndicatorsContent />;
-  }
-
   return (
     <RequireModulePrivilege privilege={modulePrivileges.indicators}>
       <IndicatorsContent />

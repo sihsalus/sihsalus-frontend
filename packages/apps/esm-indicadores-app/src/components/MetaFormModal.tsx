@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload, IndicadorVersion } from '../api/types';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { useAllIndicadores, useIndicador } from '../features/indicadores/hooks';
+import { MAX_META_YEAR, MIN_INDICATOR_YEAR } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
 
 interface MetaFormModalProps {
@@ -17,8 +18,6 @@ interface MetaFormModalProps {
   onSubmit: (payload: IndicadorMetaCreatePayload, indicatorId: string) => Promise<void>;
 }
 
-const MIN_YEAR = 2000;
-const MAX_YEAR = 2100;
 const MAX_META_VALUE = 1_000_000_000;
 
 const MetaFormModal: React.FC<MetaFormModalProps> = ({
@@ -124,10 +123,10 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
     if (!selectedVersionId) {
       return t('metaValidationVersion', 'Seleccione una versión.');
     }
-    if (anio === '' || !Number.isInteger(anio) || anio < MIN_YEAR || anio > MAX_YEAR) {
+    if (anio === '' || !Number.isInteger(anio) || anio < MIN_INDICATOR_YEAR || anio > MAX_META_YEAR) {
       return t('metaValidationYear', 'El año debe estar entre {{minYear}} y {{maxYear}}.', {
-        minYear: MIN_YEAR,
-        maxYear: MAX_YEAR,
+        minYear: MIN_INDICATOR_YEAR,
+        maxYear: MAX_META_YEAR,
       });
     }
     if (valorMeta === '' || !Number.isFinite(valorMeta) || Number(valorMeta) < 0) {
@@ -244,8 +243,8 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
         <NumberInput
           id="meta-anio"
           label={t('year', 'Año')}
-          min={MIN_YEAR}
-          max={MAX_YEAR}
+          min={MIN_INDICATOR_YEAR}
+          max={MAX_META_YEAR}
           value={anio}
           onChange={(_event, { value }) => {
             setAnio(typeof value === 'number' ? value : value === '' ? '' : Number(value));

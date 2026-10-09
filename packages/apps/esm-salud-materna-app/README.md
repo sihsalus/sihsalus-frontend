@@ -94,6 +94,16 @@ defecto `e6be4def-dbc8-462a-8714-53da66903cb8`). La validación previa consulta
 no puede comprobar relaciones existentes, si el vínculo ya existe para esa
 madre o si el recién nacido ya figura como hijo de otra madre.
 
+El resumen de Gestantes muestra **Hijos vinculados** con acceso a la historia y
+lectura de `app:hoja.clinica.partoPuerperio`, sin exigir edición ni
+`Add Relationships`. El lector compartido también alimenta la comprobación del
+editor y el acceso inverso desde el resumen CRED. Consulta relaciones explícitas
+de EmrApi sin exigir consulta activa, carga todas las páginas y abre la historia
+nativa de cada hijo con sus permisos habituales. Los errores no se presentan
+como ausencia de hijos. No copia observaciones ni atribuye un hijo a una
+gestación por compartir conceptos; la aceptación bilateral y de permisos
+backend con pacientes sintéticos sigue siendo una comprobación de despliegue.
+
 La búsqueda usa nombre o identificador y requiere tres caracteres; este texto
 solo se envía como consulta y no se persiste ni se recorta. Al cambiar de
 paciente se cierra el selector. Un guardado sin UUID confirmado bloquea nuevos

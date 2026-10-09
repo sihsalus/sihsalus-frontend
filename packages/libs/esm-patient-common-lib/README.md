@@ -221,3 +221,21 @@ The explicit-patient workspace launcher does not inherit another patient's group
 or accept conflicting patient UUIDs. A pending visit prompt cannot open its form
 after the owning view unmounts or changes patient. It resolves the patient's
 workspace group again after the visit prompt so the new visit context is retained.
+
+## Mother–child history navigation
+
+`MotherChildRelationships` displays explicit EmrApi mother–child relationships
+in either direction. Its owner supplies the existing clinical read permission,
+the current patient's role in the relationship, and its translation namespace.
+It mounts no reader without that permission. Links use the related patient's
+name and UUID and open the native patient chart with its existing access guards.
+The resource `useMotherAndChildLinks` is also used by the maternal relationship
+editor; it loads every REST page without requiring an active inpatient visit.
+
+A failed or incomplete lookup never reports that the relationship is absent.
+Deployment acceptance must verify the canonical EmrApi metadata mapping, the
+frontend relationship type, both directions with synthetic patients, and backend
+permissions for the intended clinical profiles. There is no relationship REST
+fallback when that mapping is missing. This reader neither infers kinship from
+concepts or identifiers nor copies observations between patient charts; a family
+relationship alone does not identify a pregnancy or birth episode.

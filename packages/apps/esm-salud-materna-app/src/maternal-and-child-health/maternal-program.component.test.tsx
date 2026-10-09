@@ -14,11 +14,16 @@ const readers = vi.hoisted(() => ({
   measurements: vi.fn(),
   launchForms: vi.fn(),
   delivery: vi.fn(),
+  relationships: vi.fn(),
 }));
 vi.mock('@openmrs/esm-patient-common-lib', async (original) => ({
   ...(await original<typeof import('@openmrs/esm-patient-common-lib')>()),
   usePatientEnrollment: vi.fn(),
   useLaunchWorkspaceRequiringVisit: () => readers.launchForms,
+  MotherChildRelationships: (props) => {
+    readers.relationships(props);
+    return props.canView ? <div>Mother relationship reader {props.patientUuid}</div> : null;
+  },
 }));
 vi.mock('./components/prenatal-care/prenatalCareChart.component', () => ({
   default: ({ patientUuid }) => {
@@ -135,6 +140,30 @@ it('keeps delivery and newborn care in Gestantes for a delivery-only role', asyn
   await userEvent.click(screen.getByRole('tab', { name: /^maternalDeliveryTab/ }));
   expect(readers.delivery).toHaveBeenCalledWith(patient.id);
   expect(screen.queryByRole('tab', { name: 'maternalPrenatalTab' })).not.toBeInTheDocument();
+});
+
+it('reads the mother’s linked children with delivery view permission without requiring relation editing', () => {
+  privileges = ['app:hoja.clinica', 'app:hoja.clinica.partoPuerperio'];
+  render(<IntegratedMaternalDashboard />);
+  expect(readers.relationships).toHaveBeenCalledWith(
+    expect.objectContaining({
+      patientUuid: patient.id,
+      patientRole: 'mother',
+      canView: true,
+      translationNamespace: '@sihsalus/esm-salud-materna-app',
+    }),
+  );
+  expect(screen.getByText(`Mother relationship reader ${patient.id}`)).toBeInTheDocument();
+});
+
+it('removes the relationship reader when delivery view permission is revoked', () => {
+  privileges.push('app:hoja.clinica.partoPuerperio');
+  const { rerender } = render(<IntegratedMaternalDashboard />);
+  expect(screen.getByText(`Mother relationship reader ${patient.id}`)).toBeInTheDocument();
+  privileges = ['app:hoja.clinica', 'app:hoja.clinica.controlPrenatal'];
+  rerender(<IntegratedMaternalDashboard />);
+  expect(screen.queryByText(/Mother relationship reader/)).not.toBeInTheDocument();
+  expect(readers.relationships).toHaveBeenLastCalledWith(expect.objectContaining({ canView: false }));
 });
 
 it('groups the visible care tasks into the four HCMP sections without bypassing permissions', async () => {

@@ -687,5 +687,15 @@
   "yes": "Sí",
   "zScoreMode": "Puntajes Z",
   "zScoreView": "Puntajes Z",
-  "anemiaScreeningDateHelp": "Confirme la fecha con el profesional según prematuridad, resultado de hemoglobina y suplementación."
+  "anemiaScreeningDateHelp": "Confirme la fecha con el profesional según prematuridad, resultado de hemoglobina y suplementación.",
+  "motherChildLinkedChildren": "Hijos vinculados",
+  "motherChildLinkedMother": "Madre vinculada",
+  "motherChildRelationshipHelp": "Se muestran únicamente vínculos madre–hijo registrados. Abre la historia de la persona vinculada para revisar sus propios registros.",
+  "motherChildRelationshipError": "No se pudieron cargar los vínculos",
+  "motherChildRelationshipErrorHelp": "No se pudo verificar el vínculo. Intenta de nuevo más tarde o comunícate con soporte.",
+  "motherChildRelationshipLoading": "Cargando vínculos registrados…",
+  "motherChildNameUnavailable": "Nombre del paciente no disponible",
+  "motherChildOpenChart": "Abrir historia de {{name}}",
+  "motherChildNoLinkedChildren": "No hay un vínculo madre–hijo registrado para este paciente.",
+  "motherChildNoLinkedMother": "No hay un vínculo madre–hijo registrado para este paciente."
 }

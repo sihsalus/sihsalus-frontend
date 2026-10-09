@@ -74,6 +74,8 @@ export { default as FormsTable } from './forms-selector/forms-table.component';
 export type { CompletedFormInfo, Form } from './forms-selector/types';
 export * from './get-patient-uuid-from-url';
 export * from './launchStartVisitPrompt';
+export * from './mother-child-relationships/mother-child-relationships.component';
+export * from './mother-child-relationships/mother-child-relationships.resource';
 export * from './nav-group/createDashboardGroup';
 export * from './nav-group/DashboardGroupExtension';
 export * from './nav-group/nav-group';

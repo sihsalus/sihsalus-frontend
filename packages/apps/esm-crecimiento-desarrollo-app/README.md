@@ -26,6 +26,15 @@ clínico compartido. La ruta directa comprueba también esa inscripción antes d
 montar los lectores clínicos; carga incompleta o error no habilitan el panel.
 No se crea otro evaluador de programas.
 
+El resumen muestra **Madre vinculada** con acceso a la historia y lectura
+neonatal (`app:hoja.clinica.cred.neonatal`), sin exigir edición de relaciones.
+El lector compartido consulta el vínculo explícito de EmrApi por el UUID del
+niño y abre la historia nativa de la madre. Carga todas las páginas; un error de
+consulta o configuración no se presenta como ausencia de madre. No deriva
+parentesco de conceptos compartidos ni copia datos maternos al niño. La
+aceptación en QLTY requiere comprobar el mapeo canónico, los perfiles backend y
+el recorrido bilateral con pacientes sintéticos.
+
 **Abrir formularios del control** reutiliza el workspace y la comprobación de
 consulta activa existentes. **Consultas anteriores** conserva el permiso de
 visitas y abre el historial del mismo paciente sin cambiar la consulta activa.

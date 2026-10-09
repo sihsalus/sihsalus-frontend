@@ -7,7 +7,11 @@ import {
   usePatient,
   useSession,
 } from '@openmrs/esm-framework';
-import { useLaunchWorkspaceRequiringVisit, usePatientEnrollment } from '@openmrs/esm-patient-common-lib';
+import {
+  MotherChildRelationships,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientEnrollment,
+} from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen } from '@testing-library/react';
 import {
   credAntecedentsPrivilege,
@@ -29,6 +33,9 @@ import IntegratedCredLink from './integrated-cred-link.component';
 vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@openmrs/esm-patient-common-lib')>()),
   useLaunchWorkspaceRequiringVisit: vi.fn(),
+  MotherChildRelationships: vi.fn((props) =>
+    props.canView ? <div>Child relationship reader {props.patientUuid}</div> : null,
+  ),
 }));
 vi.mock('../../../../libs/esm-patient-common-lib/src/clinical-view-group/clinical-view-group.resource', () => ({
   usePatientEnrollment: vi.fn(),
@@ -87,6 +94,33 @@ const allFamilies = [
   credEarlyStimulationPrivilege,
   credImmunizationPrivilege,
 ];
+
+it('reads the child’s linked mother with chart and neonatal view permission without relationship editing', () => {
+  setPrivileges(['app:hoja.clinica', credCourseLifePrivilege, credNeonatalPrivilege]);
+  render(<IntegratedCredDashboard />);
+  expect(MotherChildRelationships).toHaveBeenCalledWith(
+    expect.objectContaining({
+      patientUuid: patient.id,
+      patientRole: 'child',
+      canView: true,
+      translationNamespace: '@sihsalus/esm-cred-app',
+    }),
+    expect.anything(),
+  );
+  expect(screen.getByText(`Child relationship reader ${patient.id}`)).toBeInTheDocument();
+});
+
+it('removes the linked mother reader when neonatal view or global chart access is missing', () => {
+  setPrivileges(['app:hoja.clinica', credCourseLifePrivilege, credNeonatalPrivilege, credWellChildPrivilege]);
+  const { rerender } = render(<IntegratedCredDashboard />);
+  expect(screen.getByText(`Child relationship reader ${patient.id}`)).toBeInTheDocument();
+  setPrivileges(['app:hoja.clinica', credCourseLifePrivilege, credWellChildPrivilege]);
+  rerender(<IntegratedCredDashboard />);
+  expect(screen.queryByText(/Child relationship reader/)).not.toBeInTheDocument();
+  setPrivileges([credCourseLifePrivilege, credNeonatalPrivilege]);
+  rerender(<IntegratedCredDashboard />);
+  expect(screen.queryByText(/Child relationship reader/)).not.toBeInTheDocument();
+});
 
 function setPrivileges(privileges: string[], authenticated = true) {
   vi.mocked(useSession).mockReturnValue({

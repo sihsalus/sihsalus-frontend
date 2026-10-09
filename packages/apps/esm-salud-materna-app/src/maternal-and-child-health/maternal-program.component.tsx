@@ -15,6 +15,7 @@ import {
   createClinicalDashboardLink,
   ErrorState,
   evaluateShowWhenExpression,
+  MotherChildRelationships,
   TabbedDashboard,
   type TabConfig,
   useLaunchWorkspaceRequiringVisit,
@@ -231,6 +232,12 @@ const MaternalProgram: React.FC<Props> = ({ patient, patientUuid }) => {
     content: panel(
       <>
         <p className={styles.help}>{t('maternalOverviewHelp')}</p>
+        <MotherChildRelationships
+          patientUuid={patientUuid}
+          patientRole="mother"
+          canView={canViewMaternalProgram(session) && delivery}
+          translationNamespace={namespace}
+        />
         {prenatal ? <MaternalEpisodeSummary patientUuid={patientUuid} /> : null}
         <div className={styles.overviewGrid}>
           {hcmpSections.map(({ titleKey, icon: Icon, tabIds }) => {

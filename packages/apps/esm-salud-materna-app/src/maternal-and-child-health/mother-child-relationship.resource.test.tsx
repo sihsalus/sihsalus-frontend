@@ -1,16 +1,17 @@
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
+import { useMotherAndChildLinks as sharedRelationshipReader } from '@openmrs/esm-patient-common-lib';
 import {
   createMotherChildRelationship,
   useMotherAndChildLinks,
   useNewbornPatientSearch,
 } from './mother-child-relationship.resource';
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn(), fetchAll: vi.fn() }));
+const mocks = vi.hoisted(() => ({ fetch: vi.fn(), relationships: vi.fn() }));
+vi.mock('@openmrs/esm-patient-common-lib', () => ({ useMotherAndChildLinks: mocks.relationships }));
 vi.mock('@openmrs/esm-framework', () => ({
   openmrsFetch: mocks.fetch,
-  useOpenmrsFetchAll: mocks.fetchAll,
   makeUrl: (url: string) => url,
   restBaseUrl: '/openmrs/ws/rest/v1',
 }));
@@ -22,26 +23,10 @@ function wrapper({ children }: { children: React.ReactNode }) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetch.mockResolvedValue({ data: { results: [] } });
-  mocks.fetchAll.mockReturnValue({ data: [], error: undefined, isLoading: false });
 });
 
-it('queries both directions without requiring inpatient visits or the birth encounter', () => {
-  renderHook(() => useMotherAndChildLinks({ motherUuid: 'synthetic-mother', childUuid: 'synthetic-child' }, true));
-  const url: URL = mocks.fetchAll.mock.calls[0][0];
-  expect(url.pathname).toBe('/openmrs/ws/rest/v1/emrapi/maternal/mothersAndChildren');
-  expect(url.searchParams.get('mother')).toBe('synthetic-mother');
-  expect(url.searchParams.get('child')).toBe('synthetic-child');
-  expect(url.searchParams.get('requireMotherHasActiveVisit')).toBe('false');
-  expect(url.searchParams.get('requireChildHasActiveVisit')).toBe('false');
-  expect(url.searchParams.get('requireChildBornDuringMothersActiveVisit')).toBe('false');
-});
-
-it.each([
-  { query: {}, enabled: true },
-  { query: { motherUuid: 'synthetic-mother' }, enabled: false },
-])('never requests all hospital families for an empty or disabled query', ({ query, enabled }) => {
-  renderHook(() => useMotherAndChildLinks(query, enabled));
-  expect(mocks.fetchAll).toHaveBeenCalledWith(null);
+it('shares the same relationship reader with both clinical dashboards', () => {
+  expect(useMotherAndChildLinks).toBe(sharedRelationshipReader);
 });
 
 it.each([

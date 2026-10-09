@@ -1,11 +1,11 @@
 import { Button, InlineLoading, Tile } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { formatDate } from '@openmrs/esm-framework';
-import { ErrorState } from '@openmrs/esm-patient-common-lib';
+import { formatDate, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { ErrorState, MotherChildRelationships } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credWellChildPrivilege } from '../constants';
+import { credNeonatalPrivilege, credWellChildPrivilege } from '../constants';
 import useEncountersCRED from '../hooks/useEncountersCRED';
 import { groupCREDControlEncounters } from '../hooks/useCREDSchedule';
 import styles from './integrated-cred-dashboard.scss';
@@ -63,8 +63,22 @@ interface IntegratedCredSummaryProps {
 export default function IntegratedCredSummary({ patientUuid, sections, onNavigate }: IntegratedCredSummaryProps) {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
 
+  const session = useSession();
+  const canViewRelationships = Boolean(
+    session?.authenticated &&
+      session.user?.uuid &&
+      userHasAccess('app:hoja.clinica', session.user) &&
+      userHasAccess(credNeonatalPrivilege, session.user),
+  );
+
   return (
     <div className={styles.panel}>
+      <MotherChildRelationships
+        patientUuid={patientUuid}
+        patientRole="child"
+        canView={canViewRelationships}
+        translationNamespace="@sihsalus/esm-cred-app"
+      />
       <RequirePrivilege privilege={credWellChildPrivilege} hideUnauthorized>
         <RecentCREDRecords patientUuid={patientUuid} />
       </RequirePrivilege>

@@ -493,5 +493,15 @@
   "maternalRecordMissing": "Sin registro",
   "maternalRecordsAvailable": "con registro",
   "maternalRecordsMissing": "sin registro",
-  "maternalFormsNotConfigured": "formularios no configurados"
+  "maternalFormsNotConfigured": "formularios no configurados",
+  "motherChildLinkedChildren": "Hijos vinculados",
+  "motherChildLinkedMother": "Madre vinculada",
+  "motherChildRelationshipHelp": "Se muestran únicamente vínculos madre–hijo registrados. Abre la historia de la persona vinculada para revisar sus propios registros.",
+  "motherChildRelationshipError": "No se pudieron cargar los vínculos",
+  "motherChildRelationshipErrorHelp": "No se pudo verificar el vínculo. Intenta de nuevo más tarde o comunícate con soporte.",
+  "motherChildRelationshipLoading": "Cargando vínculos registrados…",
+  "motherChildNameUnavailable": "Nombre del paciente no disponible",
+  "motherChildOpenChart": "Abrir historia de {{name}}",
+  "motherChildNoLinkedChildren": "No hay un vínculo madre–hijo registrado para este paciente.",
+  "motherChildNoLinkedMother": "No hay un vínculo madre–hijo registrado para este paciente."
 }

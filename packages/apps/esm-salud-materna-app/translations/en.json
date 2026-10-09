@@ -492,5 +492,15 @@
   "maternalRecordMissing": "No record",
   "maternalRecordsAvailable": "with a record",
   "maternalRecordsMissing": "without a record",
-  "maternalFormsNotConfigured": "forms not configured"
+  "maternalFormsNotConfigured": "forms not configured",
+  "motherChildLinkedChildren": "Linked children",
+  "motherChildLinkedMother": "Linked mother",
+  "motherChildRelationshipHelp": "Only registered mother–child relationships are shown. Open the related patient’s chart to review their own records.",
+  "motherChildRelationshipError": "Relationships could not be loaded",
+  "motherChildRelationshipErrorHelp": "The relationship could not be verified. Try again later or contact support.",
+  "motherChildRelationshipLoading": "Loading registered relationships…",
+  "motherChildNameUnavailable": "Patient name unavailable",
+  "motherChildOpenChart": "Open {{name}}’s chart",
+  "motherChildNoLinkedChildren": "No mother–child relationship is registered for this patient.",
+  "motherChildNoLinkedMother": "No mother–child relationship is registered for this patient."
 }

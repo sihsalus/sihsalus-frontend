@@ -1,7 +1,9 @@
 @use "@carbon/styles/scss/theme" as theme;
 
 .container {
-  padding: 1rem;
+  /* Tighter top/left so the page heading sits closer to the navbar and the
+   * left rail; keep room on the right/bottom for the content. */
+  padding: 0.5rem 1rem 1rem 0.5rem;
 }
 
 /*
@@ -638,6 +640,17 @@
 .summaryCardTitle {
   font-size: 0.9375rem;
   font-weight: 600;
+  line-height: 1.3;
+  /*
+   * Reserve three lines and clamp to three so a name that wraps to fewer (or
+   * more) lines does not shift the value below it. Without this, the "value /
+   * Sin meta" block lines up differently on every card.
+   */
+  min-height: calc(3 * 1.3em);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .summaryCardValues {

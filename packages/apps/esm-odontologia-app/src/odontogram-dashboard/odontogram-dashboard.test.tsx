@@ -91,7 +91,7 @@ describe('OdontogramDashboard', () => {
     rerender(<OdontogramDashboard patientUuid="synthetic-child" />);
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByTitle('Empty data illustration')).toBeInTheDocument();
-    expect(mockUseOdontogramEncounter().save).not.toHaveBeenCalled();
+    expect(mockUseOdontogramEncounter('synthetic-child').save).not.toHaveBeenCalled();
   });
 
   it('opens the editable canvas when registering the first odontogram', async () => {
@@ -126,7 +126,7 @@ describe('OdontogramDashboard', () => {
     expect(screen.queryByRole('button', { name: /(?:registrar|record) odontograma inicial/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/(?:there are no|no hay) odontograma inicial/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Synthetic internal history failure')).not.toBeInTheDocument();
-    expect(mockUseOdontogramEncounter().save).not.toHaveBeenCalled();
+    expect(mockUseOdontogramEncounter('synthetic-child').save).not.toHaveBeenCalled();
   });
 
   it('preserves the dental draft through a failed history refresh', async () => {
@@ -160,7 +160,7 @@ describe('OdontogramDashboard', () => {
       }),
     );
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(mockUseOdontogramEncounter().save).toHaveBeenCalledWith(
+    expect(mockUseOdontogramEncounter('synthetic-child').save).toHaveBeenCalledWith(
       expect.objectContaining({
         patientUuid: 'patient-uuid',
         recordType: 'base',
@@ -206,7 +206,7 @@ describe('OdontogramDashboard', () => {
     await user.click(screen.getByTestId('continue-edit-btn'));
     expect(screen.getByText('55')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(mockUseOdontogramEncounter().save).toHaveBeenCalledWith(
+    expect(mockUseOdontogramEncounter('synthetic-child').save).toHaveBeenCalledWith(
       expect.objectContaining({
         recordType: 'attention',
         baseEncounterUuid: 'primary-base',

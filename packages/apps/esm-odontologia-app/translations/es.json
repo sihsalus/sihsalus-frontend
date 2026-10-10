@@ -149,5 +149,6 @@
   "visitType": "Tipo de visita",
   "white": "Blanco",
   "yellow": "Amarillo",
+  "odontogramContextRequired": "Inicie una consulta activa y verifique el profesional y la ubicación de su sesión antes de registrar un odontograma. Si el problema continúa, contacte a soporte.",
   "loadingOdontogram": "Cargando odontograma"
 }

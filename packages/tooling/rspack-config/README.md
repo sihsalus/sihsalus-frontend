@@ -20,6 +20,9 @@ this contract require rebuilding both the shell and consuming microfrontends.
 The tooling owner can remove the local `app-shell/swr-runtime.ts` entry when an
 upstream shell provides all four entry points and passes this same worker and
 cross-bundle refresh regression; OpenMRS 10.0.0 currently shares only `_internal`.
+Early chunks use Webpack's `auto` public path from the shell script URL; OpenMRS
+`initializeSpa` still applies its configured SPA base afterwards. The browser
+case starts on a patient deep link to exercise loading before that initialization.
 
 The OpenMRS 10 SVG rule imports markup as text for the shared icon and
 pictogram registries. Imports with `?url` emit a file URL for `<img>` consumers

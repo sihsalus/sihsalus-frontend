@@ -316,6 +316,7 @@ test('rejects an app-shell config that can emit an unresolved React global', () 
 
 test('source shell resolves explicit workspace imports to TypeScript', () => {
   const config = getAppShellWebpackConfig();
+  assert.equal(config.output.publicPath, 'auto');
   assert.deepEqual(config.resolve.extensionAlias, { '.js': ['.js', '.ts', '.tsx'] });
   assert.deepEqual(config.entry, [
     path.join(getAppShellPackageRoot(), 'src/index.ts'),

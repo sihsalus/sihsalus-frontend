@@ -1284,7 +1284,10 @@ test('a saved close refreshes observations across independently bundled microfro
     framework,
     "export const restBaseUrl='/ws/rest/v1'; export const fhirBaseUrl='/ws/fhir2/R4'; export function openmrsFetch(){throw Error('Unexpected clinical request');}",
   );
-  await writeFile(path.join(fixture, 'host.js'), 'import("./host-bootstrap.js");');
+  await writeFile(
+    path.join(fixture, 'host.js'),
+    'window.initializeHost = () => { __webpack_public_path__ = "/openmrs/spa/"; return import("./host-bootstrap.js"); };',
+  );
   await writeFile(
     path.join(fixture, 'host-bootstrap.js'),
     `
@@ -1353,7 +1356,7 @@ test('a saved close refreshes observations across independently bundled microfro
       output: {
         path: outputPath,
         filename: 'host.js',
-        publicPath: 'http://swr.test/',
+        publicPath: shellConfig.output.publicPath,
         uniqueName: 'swr-host',
       },
       module: shellConfig.module,
@@ -1380,7 +1383,7 @@ test('a saved close refreshes observations across independently bundled microfro
         output: {
           path: outputPath,
           filename: `${name}-main.js`,
-          publicPath: 'http://swr.test/',
+          publicPath: 'http://swr.test/openmrs/spa/',
           uniqueName: `swr-${name}`,
         },
         module: appConfig.module,
@@ -1411,13 +1414,13 @@ test('a saved close refreshes observations across independently bundled microfro
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.origin !== 'http://swr.test' || route.request().method() !== 'GET') return route.abort();
-    if (url.pathname === '/')
+    if (url.pathname === '/openmrs/spa/patient/synthetic-child/chart/WellChildCare')
       return route.fulfill({
         contentType: 'text/html',
-        body: '<div id="reader"></div><div id="saver"></div><script src="/host.js"></script><script src="/reader-remote.js"></script><script src="/saver-remote.js"></script>',
+        body: '<div id="reader"></div><div id="saver"></div><script src="/openmrs/spa/host.js"></script><script src="/openmrs/spa/reader-remote.js"></script><script src="/openmrs/spa/saver-remote.js"></script><script>window.initializeHost();</script>',
       });
     const filename = path.basename(url.pathname);
-    if (url.pathname !== `/${filename}`) return route.abort();
+    if (url.pathname !== `/openmrs/spa/${filename}`) return route.fulfill({ status: 404, body: '' });
     try {
       return route.fulfill({
         contentType: 'text/javascript',
@@ -1427,7 +1430,7 @@ test('a saved close refreshes observations across independently bundled microfro
       return route.fulfill({ status: 404, body: '' });
     }
   });
-  await page.goto('http://swr.test/');
+  await page.goto('http://swr.test/openmrs/spa/patient/synthetic-child/chart/WellChildCare');
   await page.waitForFunction(() => window.hostReady);
   await page.evaluate(() => window.mountReaders());
   await expect(page.getByLabel('sessions')).toHaveText('0');

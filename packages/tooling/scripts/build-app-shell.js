@@ -57,6 +57,9 @@ function getAppShellPackageRoot() {
 function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
   const config = configFactory({}, { mode: 'production' });
+  // Early shared chunks load relative to the shell script, before initializeSpa
+  // sets its configured public path. Deep links must not become the asset base.
+  config.output.publicPath = 'auto';
   // SWR 2.5 shares state through modules outside _internal. Provide every
   // consumed entry point from this graph so remotes share cache and revalidators.
   const federation = config.plugins.find((plugin) => plugin._options?.shared);

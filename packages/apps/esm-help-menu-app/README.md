@@ -19,6 +19,9 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 ## Integraciones
 
 - Configuración global de navegación y ayuda.
+- Ayuda se abre desde el menú de usuario de la navegación principal
+  (`user-panel-slot`) mediante un modal del framework. Conserva las opciones de
+  `help-menu-slot` y evita un botón flotante sobre acciones o formularios.
 - Componentes de menú y rutas del shell del frontend.
 - Enlaces externos o internos según configuración del despliegue. Las opciones
   `releaseNotesUrl`, `documentationUrl` y `supportUrl` apuntan por defecto al
@@ -39,6 +42,6 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 El código y las pruebas usan las [opciones estrictas de TypeScript](tsconfig.json) declaradas en este paquete.
 Desde la raíz, ejecutar `yarn workspace @sihsalus/esm-help-menu-app typescript`
 y los scripts `lint`, `test` y `build` del mismo paquete. Las pruebas del menú
-cubren el cierre al pulsar fuera con ratón o pantalla táctil y su permanencia
-al pulsar dentro. Si desaparecen la sesión autenticada, el usuario o las opciones
-de ayuda, el menú se cierra y permanece cerrado al recuperarse.
+cubren la apertura del modal nativo y la visibilidad por sesión y opciones.
+Si desaparecen la sesión autenticada, el usuario o las opciones de ayuda,
+el modal se cierra y no muestra enlaces.

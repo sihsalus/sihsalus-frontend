@@ -1,12 +1,14 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
-  "pages": [
-    {
-      "component": "root",
-      "route": true
-    }
-  ],
   "extensions": [
+    {
+      "name": "help-menu",
+      "slot": "user-panel-slot",
+      "component": "root",
+      "online": true,
+      "offline": true,
+      "order": 2
+    },
     {
       "name": "release-notes",
       "slot": "help-menu-slot",
@@ -34,6 +36,12 @@
       "component": "contact",
       "online": true,
       "offline": true
+    }
+  ],
+  "modals": [
+    {
+      "name": "help-menu-modal",
+      "component": "helpMenuModal"
     }
   ]
 }

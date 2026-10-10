@@ -1,5 +1,5 @@
 import { Button, ButtonSet, Form } from '@carbon/react';
-import { ArrowLeftIcon, launchWorkspace, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import { ArrowLeftIcon, launchWorkspace2, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
 import { type ComponentProps, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type DefaultPatientWorkspaceProps } from '../workspaces';
@@ -48,7 +48,7 @@ export default function FormsSelectorWorkspace({
     closeWorkspace({
       onWorkspaceClose: () => {
         if (backWorkspace) {
-          launchWorkspace(backWorkspace);
+          void launchWorkspace2(backWorkspace);
         }
       },
       closeWorkspaceGroup: false,

@@ -250,6 +250,13 @@ relationship alone does not identify a pregnancy or birth episode.
 
 `FormsSelectorWorkspace` is a Workspace2 view shared by the CRED and maternal
 selectors. Its native shell covers the previous workspace; the form list owns
-vertical scrolling while the Cancel/Finish actions remain visible. Keep this
+vertical scrolling while the Cancel/Close forms actions remain visible. Keep this
 component within the Workspace2 runtime context, including its patient-scoped
 parent window. The layout does not change encounter selection or submission.
+
+Closing this selector invokes the consumer callback and closes the workspace. It
+does not save or sign a clinical record: each form owns its confirmed submission.
+CRED refreshes its history on close; the maternal selector supplies no separate
+completion action. Form rows use Carbon Link's supported `as="button"` rendering
+to preserve link styling while providing native focus, Enter and Space activation
+without submitting an ancestor form.

@@ -1139,7 +1139,7 @@ createRoot(document.getElementById('fixture')).render(<I18nextProvider i18n={i18
 <WorkspaceContext.Provider value={{workspaceName:'selector', isRootWorkspace:false, closeWorkspace:async()=>true, showActionMenu:false}}>
 <Selector availableForms={forms} patientAge="18 meses" controlNumber={1} title="Clinical forms" patientUuid="synthetic-patient"
 closeWorkspace={()=>{}} closeWorkspaceWithSavedChanges={()=>{window.finished=(window.finished??0)+1}}
-onFormLaunch={(form, encounter, submitted)=>{window.opened=form.uuid;submitted()}} />
+onFormLaunch={(form, encounter, submitted)=>{(window.opened??=[]).push(form.uuid);submitted()}} />
 </WorkspaceContext.Provider>
 </div></div></I18nextProvider>);
 });`,
@@ -1222,7 +1222,7 @@ onFormLaunch={(form, encounter, submitted)=>{window.opened=form.uuid;submitted()
       document.body.className = width >= 1024 ? 'omrs-breakpoint-gt-tablet' : 'omrs-breakpoint-lt-desktop';
     }, width);
     await expect(page.getByRole('banner', { name: 'workspaceHeader' })).toHaveCount(2);
-    const footer = page.getByRole('button', { name: 'Guardar y Firmar' });
+    const footer = page.getByRole('button', { name: 'Cerrar formularios' });
     await expect
       .poll(() =>
         footer.evaluate((button) => button.closest('form').parentElement.parentElement.getBoundingClientRect().width),
@@ -1230,13 +1230,15 @@ onFormLaunch={(form, encounter, submitted)=>{window.opened=form.uuid;submitted()
       .toBe(width >= 1024 ? 420 : width);
     await expect(footer).toBeInViewport();
     const before = await footer.boundingBox();
-    const last = page.getByText('Consejería, acuerdos y compromisos', {
-      exact: true,
-    });
+    const last = page.getByRole('button', { name: 'Consejería, acuerdos y compromisos' });
     await last.scrollIntoViewIfNeeded();
     await expect(last).toBeInViewport();
     await last.click();
-    assert.equal(await page.evaluate(() => window.opened), 'form-26');
+    await last.focus();
+    await expect(last).toBeFocused();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Space');
+    assert.deepEqual(await page.evaluate(() => window.opened.slice(-3)), ['form-26', 'form-26', 'form-26']);
     assert.deepEqual(await footer.boundingBox(), before, 'footer stays visible while the forms scroll');
     await footer.focus();
     await page.keyboard.press('Enter');

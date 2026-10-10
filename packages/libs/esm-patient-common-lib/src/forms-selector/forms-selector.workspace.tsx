@@ -64,7 +64,7 @@ export default function FormsSelectorWorkspace({
     [onFormLaunch],
   );
 
-  const handleFinishControl = useCallback(() => {
+  const handleCloseForms = useCallback(() => {
     if (onComplete) {
       onComplete();
     }
@@ -149,8 +149,8 @@ export default function FormsSelectorWorkspace({
           <Button kind="secondary" onClick={backToPreviousWorkspace} className={styles.button}>
             {t('cancel', 'Cancelar')}
           </Button>
-          <Button kind="primary" onClick={handleFinishControl} disabled={!isAnyFormCompleted} className={styles.button}>
-            {t('finishAndSign', 'Guardar y Firmar')}
+          <Button kind="primary" onClick={handleCloseForms} disabled={!isAnyFormCompleted} className={styles.button}>
+            {t('closeForms', 'Cerrar formularios')}
           </Button>
         </ButtonSet>
       </Form>

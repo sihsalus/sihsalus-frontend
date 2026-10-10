@@ -48,6 +48,8 @@ describe('FormsSelectorWorkspace', () => {
       submitOpenedForm = onFormSubmitted;
     });
 
+    const onComplete = vi.fn();
+    const closeWorkspaceWithSavedChanges = vi.fn();
     render(
       <FormsSelectorWorkspace
         availableForms={availableForms}
@@ -56,14 +58,15 @@ describe('FormsSelectorWorkspace', () => {
         patientUuid="patient-uuid"
         onFormLaunch={onFormLaunch}
         closeWorkspace={vi.fn()}
-        closeWorkspaceWithSavedChanges={vi.fn()}
+        onComplete={onComplete}
+        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
         promptBeforeClosing={vi.fn()}
         setTitle={vi.fn()}
       />,
     );
 
     const finishButton = screen.getByRole('button', {
-      name: /guardar y firmar/i,
+      name: /cerrar formularios/i,
     });
     expect(finishButton).toBeDisabled();
 
@@ -77,5 +80,9 @@ describe('FormsSelectorWorkspace', () => {
 
     expect(finishButton).toBeEnabled();
     expect(screen.getByText(/formularios completados/i)).toHaveTextContent('1');
+    await user.click(finishButton);
+    expect(onComplete).toHaveBeenCalledOnce();
+    expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce();
+    expect(onFormLaunch).toHaveBeenCalledOnce();
   });
 });

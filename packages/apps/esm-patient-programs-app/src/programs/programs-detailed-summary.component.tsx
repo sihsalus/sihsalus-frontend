@@ -52,7 +52,7 @@ const ProgramsDetailedSummary: React.FC<ProgramsDetailedSummaryProps> = ({ patie
     const headers = [
       {
         key: 'display',
-        header: t('activePrograms', 'Active programs'),
+        header: t('programName', 'Program name'),
       },
       {
         key: 'location',

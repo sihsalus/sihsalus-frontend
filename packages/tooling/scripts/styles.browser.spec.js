@@ -1349,15 +1349,18 @@ test('a saved close refreshes observations across independently bundled microfro
     {
       mode: 'production',
       context: fixture,
-      entry: path.join(fixture, 'host.js'),
+      entry: [path.join(fixture, 'host.js'), ...shellConfig.entry.filter((entry) => entry.endsWith('/swr-runtime.ts'))],
       output: {
         path: outputPath,
         filename: 'host.js',
         publicPath: 'http://swr.test/',
         uniqueName: 'swr-host',
       },
+      module: shellConfig.module,
+      resolveLoader: { modules: [path.join(repositoryRoot, 'node_modules')] },
       resolve: { modules: [path.join(repositoryRoot, 'node_modules')] },
       plugins: [
+        ...shellConfig.plugins.filter((plugin) => plugin.constructor.name === 'InjectManifest'),
         new webpack.container.ModuleFederationPlugin({
           name: 'host',
           shared: shared(shellShared),

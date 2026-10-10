@@ -61,11 +61,12 @@ function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   // consumed entry point from this graph so remotes share cache and revalidators.
   const federation = config.plugins.find((plugin) => plugin._options?.shared);
   const swrVersion = require('swr/package.json').version;
-  for (const dependency of ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal']) {
+  const swrEntries = ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal'];
+  for (const dependency of swrEntries) {
     federation._options.shared[dependency] = {
       ...federation._options.shared['swr/_internal'],
       requiredVersion: swrVersion,
-      import: require.resolve(dependency),
+      import: dependency,
       packageName: 'swr',
       shareKey: dependency,
       version: swrVersion,
@@ -75,7 +76,9 @@ function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   // Include the built global CSS in the shell entry so Webpack emits and links it
   // with the rest of the shell styles, including its font assets.
   const styleguideCss = path.join(REPOSITORY_ROOT, 'packages/libs/esm-styleguide/dist/openmrs-esm-styleguide.css');
-  config.entry = [config.entry, styleguideCss];
+  // Request each provider in the host graph without forcing unused absolute
+  // providers into Workbox's child compilation, which has no async chunk loader.
+  config.entry = [config.entry, path.join(REPOSITORY_ROOT, 'packages/tooling/app-shell/swr-runtime.ts'), styleguideCss];
   // Workspace SWC output uses explicit .js imports while this build consumes TypeScript sources.
   // Match the monorepo's existing Rspack resolution contract.
   config.resolve.extensionAlias = { '.js': ['.js', '.ts', '.tsx'] };

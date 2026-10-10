@@ -302,8 +302,9 @@ test('installed app-shell build provides React and shares the resolved runtime v
   for (const entry of ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal']) {
     assert.equal(shared[entry].singleton, true);
     assert.equal(shared[entry].shareKey, entry);
-    assert.equal(shared[entry].import, require.resolve(entry));
+    assert.equal(shared[entry].import, entry);
   }
+  assert.ok(config.entry.includes(path.join(repositoryRoot, 'packages/tooling/app-shell/swr-runtime.ts')));
 });
 
 test('rejects an app-shell config that can emit an unresolved React global', () => {
@@ -318,6 +319,7 @@ test('source shell resolves explicit workspace imports to TypeScript', () => {
   assert.deepEqual(config.resolve.extensionAlias, { '.js': ['.js', '.ts', '.tsx'] });
   assert.deepEqual(config.entry, [
     path.join(getAppShellPackageRoot(), 'src/index.ts'),
+    path.join(repositoryRoot, 'packages/tooling/app-shell/swr-runtime.ts'),
     path.join(repositoryRoot, 'packages/libs/esm-styleguide/dist/openmrs-esm-styleguide.css'),
   ]);
 });

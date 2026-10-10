@@ -150,6 +150,16 @@ como ausencia de datos; el selector espera la lectura completa y muestra un esta
 de error si falla. Las búsquedas de observaciones de riesgo usan `s=default` para
 conservar el filtro por concepto en el backend probado.
 
+Las tablas de observaciones agrupadas editan la atención que muestran, mediante
+su UUID y el paciente explícito. Reutilizan el resolutor de formularios maternos
+publicados, conservando el formulario del registro, y el lanzador de consulta
+existente; FormEntry recupera la consulta
+original de la atención editada. Una lectura incompleta o fallida no habilita una
+creación alternativa. El lector compartido recorre todas las páginas cuando el
+formulario se identifica por nombre y conserva la consulta latest-only cuando
+REST filtra por un UUID canónico. Validar en QLTY edición, guardado y recarga del
+mismo encuentro, sin cambiar paciente, consulta ni observaciones independientes.
+
 Vacíos conocidos:
 
 - Falta convertir el placeholder de gestante adolescente en formulario real cuando content incorpore la ficha diferenciada.

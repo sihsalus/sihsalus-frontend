@@ -35,6 +35,9 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
 });
 
 vi.mock('./observation-group-details.component', () => ({ default: () => null }));
+vi.mock('../../hooks/useMaternalFormLauncher', () => ({
+  useMaternalFormIdentifierLauncher: () => ({ launchForm: vi.fn(), isLoading: false }),
+}));
 vi.mock('@sihsalus/esm-rbac', () => ({ RequirePrivilege: () => null }));
 
 const namespace = '@sihsalus/esm-salud-materna-app';

@@ -23,7 +23,7 @@ export const LabourDelivery: React.FC<LabourDeliveryProps> = ({
   const tabs: TabConfig[] = useMemo(
     () => [
       {
-        labelKey: 'summaryOfLaborAndPostpartum',
+        labelKey: 'resumenPartoPuerperio',
         icon: Report,
         slotName: 'labour-delivery-summary-slot',
       },
@@ -51,7 +51,7 @@ export const LabourDelivery: React.FC<LabourDeliveryProps> = ({
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}
-        titleKey="labourAndDelivery"
+        titleKey="maternalDeliveryTab"
         tabs={tabs}
         ariaLabelKey="labourAndDeliveryTabs"
         translationNamespace={translationNamespace}

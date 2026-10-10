@@ -170,23 +170,32 @@ test('controlled selections settle with asynchronous calculated fields in a prod
        questionOptions: { rendering, concept: 'synthetic-' + id },
        validators: [{ type: 'form_field' }],
        meta: { initialValue: { omrsObject: null, refinedValue: null }, submission: null } });
+     const calculated = new URLSearchParams(location.search).has('calculated');
+     const score = field('score', 'Score', 'number');
+     score.fieldDependents = new Set(['outcome']);
      const outcome = field('outcome', 'Outcome', 'select');
      outcome.questionOptions.answers = [
        { concept: 'green', label: 'Green' }, { concept: 'yellow', label: 'Yellow' },
        { concept: 'red', label: 'Red' },
      ];
-     outcome.fieldDependents = new Set(['risk', 'plan']);
+     if (calculated) {
+       outcome.readonly = true;
+       outcome.questionOptions.calculate = { calculateExpression:
+         'isEmpty(score) ? undefined : (score <= 2 ? "green" : score <= 7 ? "yellow" : "red")' };
+     }
+     outcome.fieldDependents = new Set(['risk']);
      const risk = field('risk', 'Risk', 'number');
      risk.type = 'control';
      risk.readonly = true;
      risk.questionOptions.calculate = { calculateExpression:
        'isEmpty(outcome) ? undefined : (outcome === "red" ? 2 : outcome === "yellow" ? 1 : 0)' };
+     risk.fieldDependents = new Set(['plan']);
      const plan = field('plan', 'Plan', 'textarea');
-     plan.required = 'outcome === "yellow" || outcome === "red"';
-     plan.hide = { hideWhenExpression: 'isEmpty(outcome) || outcome === "green"' };
+     plan.required = 'risk > 0';
+     plan.hide = { hideWhenExpression: 'isEmpty(risk) || risk === 0' };
      const editing = new URLSearchParams(location.search).has('edit');
      if (editing) outcome.meta.initialValue.omrsObject = { uuid: 'synthetic-observation', value: 'green' };
-     const fields = [outcome, risk, plan];
+     const fields = calculated ? [score, outcome, risk, plan] : [outcome, risk, plan];
      const schema = { name: 'Synthetic outcome', pages: [{ label: 'Outcome',
        sections: [{ label: 'Assessment', questions: fields }] }] };
      const context = { isPreview: true, formJson: schema, formFields: fields,
@@ -199,7 +208,7 @@ test('controlled selections settle with asynchronous calculated fields in a prod
      createRoot(document.getElementById('root')).render(
        <ErrorBoundary fallback={<p>Render error</p>} onError={error => { window.renderError = error.message; }}>
          <FormRenderer processorContext={context}
-           initialValues={{ outcome: editing ? 'green' : null, risk: editing ? 0 : null, plan: null }}
+           initialValues={{ score: null, outcome: editing ? 'green' : null, risk: editing ? 0 : null, plan: null }}
            isSubForm={false} setIsLoadingFormDependencies={() => {}} onDependencyError={() => {}} />
        </ErrorBoundary>);`,
   );
@@ -278,8 +287,10 @@ test('controlled selections settle with asynchronous calculated fields in a prod
     }
     return route.continue();
   });
-  for (const editing of [false, true]) {
-    await page.goto(`${origin}/${editing ? '?edit' : ''}`);
+  for (const mode of ['calculated', 'enter', 'edit']) {
+    const editing = mode === 'edit';
+    const calculated = mode === 'calculated';
+    await page.goto(`${origin}/${editing ? '?edit' : calculated ? '?calculated' : ''}`);
     const outcome = page.getByRole('combobox', { name: 'Outcome' });
     await expect(outcome).toBeVisible();
     const selections = [
@@ -291,8 +302,14 @@ test('controlled selections settle with asynchronous calculated fields in a prod
     for (const [label, value, risk, required] of editing
       ? selections.filter(([label]) => label !== 'Green')
       : selections) {
-      await outcome.click();
-      await page.getByRole('option', { name: label, exact: true }).click();
+      if (calculated) {
+        await page
+          .getByRole('spinbutton', { name: 'Score' })
+          .fill(value === 'yellow' ? '3' : value === 'red' ? '8' : '0');
+      } else {
+        await outcome.click();
+        await page.getByRole('option', { name: label, exact: true }).click();
+      }
       await expect(outcome).toContainText(label);
       await expect(page.locator('#risk')).toHaveValue(risk);
       await expect(page.locator('#plan')).toBeVisible({ visible: required });

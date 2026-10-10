@@ -216,3 +216,35 @@ it('adapts a calculated initial value after native asynchronous initialization',
   expect(screen.getByRole('spinbutton', { name: /BMI/i })).toHaveValue(20);
   expect(fields.find((field) => field.id === 'imc').meta.submission.newValue).toMatchObject({ value: 20 });
 });
+
+it('propagates calculated values to chained calculations, visibility and required fields', async () => {
+  const score = numberField('score', 'Score');
+  const outcome = numberField('outcome', 'Outcome');
+  outcome.readonly = true;
+  outcome.questionOptions.calculate = { calculateExpression: 'isEmpty(score) ? undefined : (score >= 3 ? 1 : 0)' };
+  const risk = numberField('risk', 'Risk');
+  risk.readonly = true;
+  risk.questionOptions.calculate = { calculateExpression: 'isEmpty(outcome) ? undefined : outcome + 1' };
+  const plan = numberField('plan', 'Plan');
+  plan.required = 'outcome === 1';
+  plan.hide = { hideWhenExpression: 'isEmpty(outcome) || outcome === 0' };
+  const context = rendererContext([score, outcome, risk, plan]);
+  const values = await new EncounterFormProcessor(context.formJson).getInitialValues(context);
+  mount(context, values);
+  const input = await screen.findByRole('spinbutton', { name: /Score/i });
+  for (const value of [3, 0, 8]) {
+    fireEvent.change(input, { target: { value: String(value) } });
+    await waitFor(() => expect(screen.getByRole('spinbutton', { name: /^Risk/i })).toHaveValue(value >= 3 ? 2 : 1));
+    await settle();
+    if (value >= 3) {
+      expect(screen.getByRole('spinbutton', { name: /Plan/i })).toBeInTheDocument();
+      expect(within(screen.getByTestId('plan-label')).getByTitle('Required')).toBeInTheDocument();
+    } else {
+      expect(screen.queryByRole('spinbutton', { name: /Plan/i })).not.toBeInTheDocument();
+      expect(signals.context.getFormField('plan').isRequired).toBe(false);
+    }
+    expect(signals.context.getFormField('outcome').meta.submission.newValue).toMatchObject({
+      value: value >= 3 ? 1 : 0,
+    });
+  }
+});

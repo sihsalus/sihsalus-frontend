@@ -80,6 +80,7 @@ function evaluateFieldDependents(field: FormField, values: FormValues, context: 
           },
         )
           .then((result) => {
+            const previousValue = context.methods.getValues(dependent.id);
             setValue(dependent.id, result);
 
             const { errors, warnings } = validateFieldValue(dependent, result, context.formFieldValidators, {
@@ -100,6 +101,9 @@ function evaluateFieldDependents(field: FormField, values: FormValues, context: 
             }
 
             updateFormField(dependent);
+            if (!Object.is(previousValue, result)) {
+              handleFieldLogic(dependent, context);
+            }
           })
           .catch((error: unknown) => {
             reportError(toError(error), 'Error evaluating calculate expression');

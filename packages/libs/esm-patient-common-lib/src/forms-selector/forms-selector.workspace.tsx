@@ -35,7 +35,7 @@ export default function FormsSelectorWorkspace({
   backWorkspace = 'wellchild-control-form',
   onComplete,
   onFormLaunch,
-  patientUuid: _patientUuid,
+  patientUuid,
   closeWorkspace,
   closeWorkspaceWithSavedChanges,
 }: FormsSelectorWorkspaceProps): JSX.Element {
@@ -48,12 +48,12 @@ export default function FormsSelectorWorkspace({
     closeWorkspace({
       onWorkspaceClose: () => {
         if (backWorkspace) {
-          void launchWorkspace2(backWorkspace);
+          void launchWorkspace2(backWorkspace, { patientUuid });
         }
       },
       closeWorkspaceGroup: false,
     });
-  }, [closeWorkspace, backWorkspace]);
+  }, [closeWorkspace, backWorkspace, patientUuid]);
 
   const handleFormOpen = useCallback(
     (form: FormSchema, encounterUuid: string) => {

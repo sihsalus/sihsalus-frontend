@@ -254,9 +254,10 @@ vertical scrolling while the Cancel/Close forms actions remain visible. Keep thi
 component within the Workspace2 runtime context, including its patient-scoped
 parent window. The layout does not change encounter selection or submission.
 
-Cancel and Back restore the configured parent through `launchWorkspace2`, which
-retains an already open parent and its patient/visit context. They must not open
-a second legacy workspace over the native window.
+Cancel and Back restore the configured parent through `launchWorkspace2` with
+the selected patient UUID. The native runtime retains a compatible open parent
+and its patient/visit context; a newly opened parent also receives the patient.
+They must not open a second legacy workspace over the native window.
 
 Closing this selector invokes the consumer callback and closes the workspace. It
 does not save or sign a clinical record: each form owns its confirmed submission.

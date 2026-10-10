@@ -74,7 +74,9 @@ describe('FormsSelectorWorkspace', () => {
       const options = closeWorkspace.mock.calls[0][0];
       expect(options.closeWorkspaceGroup).toBe(false);
       act(() => options.onWorkspaceClose());
-      expect(launchWorkspace2).toHaveBeenCalledExactlyOnceWith('wellchild-control-form');
+      expect(launchWorkspace2).toHaveBeenCalledExactlyOnceWith('wellchild-control-form', {
+        patientUuid: 'synthetic-child',
+      });
       expect(launchWorkspace).not.toHaveBeenCalled();
     },
   );

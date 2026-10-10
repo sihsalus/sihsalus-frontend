@@ -277,6 +277,16 @@ error existente; no abre el primer resultado aproximado ni un borrador. Estas
 condiciones corresponden a la metadata servida por OpenMRS y no añaden reglas
 clínicas a content.
 
+Los resúmenes de consejería alimentaria y seguimiento nutricional leen el último
+encounter activo de CRED-007 y CRED-008, respectivamente, con todas las páginas
+REST. Sus campos pertenecen al mismo formulario, paciente y episodio; una obs
+anulada o ausente no se sustituye por la de otro registro. CRED-007 muestra la
+práctica revisada, consejería y acuerdos registrados. CRED-008 muestra la
+clasificación, evolución y referencia registradas. Estos resúmenes no derivan
+lactancia, consumo de suplementos ni cumplimiento del plan a partir de otros
+formularios. `cred-nutrition-records.test.tsx` cubre esa separación, paginación,
+errores y cambio de paciente; la aceptación visual requiere el recorrido QLTY.
+
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.
 - Probar en QLTY el flujo end-to-end de CRED neonatal: abrir formulario, guardar, recargar la historia y confirmar que los widgets leen el encounter y las obs guardadas.
 - Probar balance de líquidos, biometría, evaluación cefalocaudal, alojamiento conjunto y consejería de lactancia con datos sintéticos en DEV/QLTY autorizado y coordinado.

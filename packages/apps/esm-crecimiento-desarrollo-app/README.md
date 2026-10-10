@@ -332,6 +332,10 @@ coordinación de content antes del frontend están en el contrato conjunto.
 
 ## Curvas escolares y primer control neonatal
 
+La fecha FHIR de nacimiento se interpreta como fecha de calendario mediante el
+lector de fechas compartido. No se convierte a medianoche UTC: eso adelantaba
+la edad mostrada un día en Lima y desplazaba la edad usada por las curvas.
+
 Las curvas escolares reutilizan el componente Carbon de crecimiento para IMC/edad y
 talla/edad, con referencias OMS 2007 de ambos sexos entre 61 y 228 meses. Los
 parámetros LMS, procedencia y límites están en

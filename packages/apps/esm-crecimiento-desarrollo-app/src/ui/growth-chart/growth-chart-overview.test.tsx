@@ -1,4 +1,4 @@
-import { userHasAccess, useSession } from '@openmrs/esm-framework';
+import { age, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 
 import { credNeonatalEditPrivilege } from '../../constants';
@@ -33,6 +33,8 @@ const patient = {
 } as unknown as fhir.Patient;
 
 describe('GrowthChartOverview', () => {
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     mockUseBiometrics.mockReturnValue({
       data: [],
@@ -65,6 +67,21 @@ describe('GrowthChartOverview', () => {
       points.filter((point) => !point.isPatientMeasurement).every((point) => point.date >= 61 && point.date <= 228),
     ).toBe(true);
     expect(points.find((point) => point.isPatientMeasurement)?.value).toBeCloseTo(24 / 1.2 ** 2, 6);
+  });
+
+  it('preserves the calendar birth date for age and growth references west of UTC', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const today = new Date(2026, 9, 10, 14);
+    vi.setSystemTime(today);
+    mockUseBiometrics.mockReturnValue({
+      data: [{ eventDate: today, dataValues: { weight: '10.8', height: '81', headCircumference: '46.5' } }],
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useBiometrics>);
+
+    render(<GrowthChartOverview patient={{ ...patient, birthDate: '2025-04-10' }} patientUuid="patient-1" />);
+
+    expect(age).toHaveBeenLastCalledWith(new Date(2025, 3, 10), today);
   });
 
   it('offers to record data when the user has the neonatal edit privilege', () => {

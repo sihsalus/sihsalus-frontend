@@ -3,6 +3,7 @@ import { Add, Analytics, ChartLineData } from '@carbon/react/icons';
 import {
   isDesktop as isDesktopLayout,
   launchWorkspace2,
+  parseDate,
   useLayoutType,
   userHasAccess,
   useSession,
@@ -49,7 +50,7 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
   }, [patient]);
 
   const dateOfBirth = useMemo(() => {
-    const parsed = patient?.birthDate ? new Date(patient.birthDate) : null;
+    const parsed = patient?.birthDate ? parseDate(patient.birthDate) : null;
     return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
   }, [patient?.birthDate]);
   const { data, isLoading: isLoading, error } = useBiometrics(patientUuid);

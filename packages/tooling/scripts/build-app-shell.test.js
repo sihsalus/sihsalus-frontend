@@ -298,6 +298,12 @@ test('installed app-shell build provides React and shares the resolved runtime v
   const config = getAppShellWebpackConfig(getAppShellPackageRoot());
 
   assert.doesNotThrow(() => assertCompatibleAppShellConfig(config));
+  const shared = config.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  for (const entry of ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal']) {
+    assert.equal(shared[entry].singleton, true);
+    assert.equal(shared[entry].shareKey, entry);
+    assert.equal(shared[entry].import, require.resolve(entry));
+  }
 });
 
 test('rejects an app-shell config that can emit an unresolved React global', () => {

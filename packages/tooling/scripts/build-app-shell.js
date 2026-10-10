@@ -57,6 +57,20 @@ function getAppShellPackageRoot() {
 function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
   const config = configFactory({}, { mode: 'production' });
+  // SWR 2.5 shares state through modules outside _internal. Provide every
+  // consumed entry point from this graph so remotes share cache and revalidators.
+  const federation = config.plugins.find((plugin) => plugin._options?.shared);
+  const swrVersion = require('swr/package.json').version;
+  for (const dependency of ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal']) {
+    federation._options.shared[dependency] = {
+      ...federation._options.shared['swr/_internal'],
+      requiredVersion: swrVersion,
+      import: require.resolve(dependency),
+      packageName: 'swr',
+      shareKey: dependency,
+      version: swrVersion,
+    };
+  }
   // OpenMRS 10 no longer loads the styleguide stylesheet from its HTML template.
   // Include the built global CSS in the shell entry so Webpack emits and links it
   // with the rest of the shell styles, including its font assets.
@@ -232,6 +246,9 @@ function assertCompatibleAppShellConfig(
     '@openmrs/esm-framework': frameworkVersion,
     '@openmrs/esm-framework/src/internal': frameworkVersion,
     'swr/_internal': swrVersion,
+    swr: swrVersion,
+    'swr/infinite': swrVersion,
+    'swr/immutable': swrVersion,
     i18next: require('i18next/package.json').version,
     'react-i18next': require('react-i18next/package.json').version,
     'react-router-dom': require('react-router-dom/package.json').version,

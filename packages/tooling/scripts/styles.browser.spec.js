@@ -1102,6 +1102,7 @@ export const ArrowRightIcon = () => null;
 export const ArrowLeftIcon = () => null;
 export const closeWorkspaceGroup2 = () => {};
 export const launchWorkspace = () => {};
+export const launchWorkspace2 = () => {};
 export const ResponsiveWrapper = ({children}) => <>{children}</>;
 export const formatDatetime = () => 'Hoy';
 const state = {
@@ -1256,5 +1257,193 @@ onFormLaunch={(form, encounter, submitted)=>{(window.opened??=[]).push(form.uuid
     );
   }
   assert.equal(await page.evaluate(() => window.finished), 3, 'footer activation works by keyboard');
+  assert.deepEqual(errors, []);
+});
+
+test('a saved close refreshes observations across independently bundled microfrontends', async (t) => {
+  const { readFile } = require('node:fs/promises');
+  const fixture = await mkdtemp(path.join(tmpdir(), 'sihsalus-swr-federation-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const shellConfig = getAppShellWebpackConfig();
+  const shellShared = shellConfig.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  const appConfig = loadConfig(
+    path.join(repositoryRoot, 'packages/apps/esm-crecimiento-desarrollo-app'),
+    'rspack.config.js',
+  );
+  const appShared = appConfig.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  const shared = (entries) =>
+    Object.fromEntries(
+      Object.entries(entries).filter(
+        ([key]) => key === 'react' || key === 'react-dom' || key === 'swr' || key.startsWith('swr/'),
+      ),
+    );
+  const outputPath = path.join(fixture, 'dist');
+  const helper = path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/visit/revalidation-utils.ts');
+  const framework = path.join(fixture, 'framework.js');
+  await writeFile(
+    framework,
+    "export const restBaseUrl='/ws/rest/v1'; export const fhirBaseUrl='/ws/fhir2/R4'; export function openmrsFetch(){throw Error('Unexpected clinical request');}",
+  );
+  await writeFile(path.join(fixture, 'host.js'), 'import("./host-bootstrap.js");');
+  await writeFile(
+    path.join(fixture, 'host-bootstrap.js'),
+    `
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { SWRConfig } from 'swr';
+    import { initCache } from 'swr/_internal';
+    const cache = new Map(); initCache(cache);
+    window.mountReaders = async () => {
+      await __webpack_init_sharing__('default');
+      for (const name of ['reader', 'saver']) {
+        await window[name].init(__webpack_share_scopes__.default);
+        const component = (await window[name].get('./start'))().default;
+        createRoot(document.getElementById(name)).render(React.createElement(SWRConfig,
+          {value:{provider:()=>cache,revalidateOnFocus:false,shouldRetryOnError:false}}, React.createElement(component)));
+      }
+    };
+    window.hostReady = true;
+  `,
+  );
+  await writeFile(
+    path.join(fixture, 'reader.js'),
+    `
+    import React from 'react'; import useSWR from 'swr';
+    import useSWRImmutable from 'swr/immutable'; import useSWRInfinite from 'swr/infinite';
+    const read = async (key) => {
+      window.reads ??= {}; window.reads[key] = (window.reads[key] ?? 0) + 1;
+      return window.saved ? ['saved-observation'] : [];
+    };
+    export default function Reader() {
+      const {data} = useSWR('/ws/rest/v1/obs?patient=synthetic-child&concept=stimulation&s=default', read);
+      const immutable = useSWRImmutable('/ws/rest/v1/obs?patient=synthetic-child&concept=counseling&s=default', read);
+      const other = useSWR('/ws/rest/v1/obs?patient=synthetic-child-other&concept=stimulation&s=default', read);
+      const metadata = useSWR('/ws/rest/v1/concept/stimulation', read);
+      const pages = useSWRInfinite(index => index < 2 ? '/ws/rest/v1/encounter?patient=synthetic-child&startIndex='+index : null,
+        async key => { await read(key); return [window.saved ? 'new-page' : 'old-page']; });
+      React.useEffect(()=>{void pages.setSize(2);},[pages.setSize]);
+      const output = (label,value) => React.createElement('output', {'aria-label':label,key:label}, value);
+      return React.createElement('div', null,
+        output('sessions',data ? data.length : 'loading'),
+        output('counseling',immutable.data ? immutable.data.length : 'loading'),
+        output('other patient',other.data ? other.data.length : 'loading'),
+        output('metadata',metadata.data ? metadata.data.length : 'loading'),
+        output('history',pages.data?.flat().join(',')));
+    }
+  `,
+  );
+  await writeFile(
+    path.join(fixture, 'saver.js'),
+    `
+    import React from 'react'; import {useSWRConfig} from 'swr';
+    import {invalidateVisitAndEncounterData} from ${JSON.stringify(helper)};
+    export default function Saver() {
+      const {mutate,cache}=useSWRConfig();
+      return React.createElement('button', {onClick:()=>{
+        window.saved=true; invalidateVisitAndEncounterData(mutate,'synthetic-child',cache);
+      }}, 'Confirmed synthetic save');
+    }
+  `,
+  );
+  await compile(
+    {
+      mode: 'production',
+      context: fixture,
+      entry: path.join(fixture, 'host.js'),
+      output: {
+        path: outputPath,
+        filename: 'host.js',
+        publicPath: 'http://swr.test/',
+        uniqueName: 'swr-host',
+      },
+      resolve: { modules: [path.join(repositoryRoot, 'node_modules')] },
+      plugins: [
+        new webpack.container.ModuleFederationPlugin({
+          name: 'host',
+          shared: shared(shellShared),
+        }),
+      ],
+      devtool: false,
+      performance: false,
+    },
+    webpack,
+  );
+  for (const name of ['reader', 'saver']) {
+    await compile(
+      {
+        mode: 'production',
+        context: fixture,
+        entry: {},
+        output: {
+          path: outputPath,
+          filename: `${name}-main.js`,
+          publicPath: 'http://swr.test/',
+          uniqueName: `swr-${name}`,
+        },
+        module: appConfig.module,
+        resolve: {
+          ...appConfig.resolve,
+          modules: [path.join(repositoryRoot, 'node_modules')],
+          alias: { '@openmrs/esm-framework': framework },
+        },
+        plugins: [
+          new rspack.container.ModuleFederationPluginV1({
+            name,
+            filename: `${name}-remote.js`,
+            exposes: { './start': path.join(fixture, `${name}.js`) },
+            shared: shared(appShared),
+          }),
+        ],
+        devtool: false,
+        performance: false,
+      },
+      rspack,
+    );
+  }
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin !== 'http://swr.test' || route.request().method() !== 'GET') return route.abort();
+    if (url.pathname === '/')
+      return route.fulfill({
+        contentType: 'text/html',
+        body: '<div id="reader"></div><div id="saver"></div><script src="/host.js"></script><script src="/reader-remote.js"></script><script src="/saver-remote.js"></script>',
+      });
+    const filename = path.basename(url.pathname);
+    if (url.pathname !== `/${filename}`) return route.abort();
+    try {
+      return route.fulfill({
+        contentType: 'text/javascript',
+        body: await readFile(path.join(outputPath, filename)),
+      });
+    } catch {
+      return route.fulfill({ status: 404, body: '' });
+    }
+  });
+  await page.goto('http://swr.test/');
+  await page.waitForFunction(() => window.hostReady);
+  await page.evaluate(() => window.mountReaders());
+  await expect(page.getByLabel('sessions')).toHaveText('0');
+  await expect(page.getByLabel('counseling')).toHaveText('0');
+  await expect(page.getByLabel('other patient')).toHaveText('0');
+  await expect(page.getByLabel('metadata')).toHaveText('0');
+  await expect(page.getByLabel('history')).toHaveText('old-page,old-page');
+  const before = await page.evaluate(() => window.reads);
+  await page.getByRole('button', { name: 'Confirmed synthetic save' }).click();
+  await expect(page.getByLabel('sessions')).toHaveText('1');
+  await expect(page.getByLabel('counseling')).toHaveText('1');
+  await expect(page.getByLabel('history')).toHaveText('new-page,new-page');
+  await expect(page.getByLabel('other patient')).toHaveText('0');
+  await expect(page.getByLabel('metadata')).toHaveText('0');
+  const after = await page.evaluate(() => window.reads);
+  for (const key of Object.keys(before).filter(
+    (key) => key.includes('synthetic-child-other') || key.includes('/concept/'),
+  )) {
+    assert.equal(after[key], before[key], `${key} is not revalidated`);
+  }
   assert.deepEqual(errors, []);
 });

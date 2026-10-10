@@ -275,6 +275,11 @@ export const FormFieldRenderer = ({
           const controlledValue: unknown = value;
           const previousValue: unknown = historicalValue?.value;
           const handleControlledChange = (nextValue: FormFieldValue): void => {
+            // A controlled input can re-emit while its dependent calculations render.
+            if (Object.is(getValues(field.id), nextValue)) {
+              onBlur();
+              return;
+            }
             onChange(nextValue);
             onAfterChange(nextValue);
             onBlur();

@@ -67,7 +67,7 @@ describe('FormsSelectorWorkspace', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button', { name: action, exact: true }));
+      await user.click(screen.getByRole('button', { name: action }));
       expect(closeWorkspace).toHaveBeenCalledOnce();
       expect(launchWorkspace2).not.toHaveBeenCalled();
       expect(launchWorkspace).not.toHaveBeenCalled();

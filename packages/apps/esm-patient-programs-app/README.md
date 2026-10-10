@@ -23,3 +23,5 @@ The link only appears when a target is configured. This keeps generic programs s
 ## Editing enrollment records
 
 An editing workspace waits for the patient's enrollment record before showing dates or allowing Save. React Hook Form's reactive values populate the existing program, enrollment date, completion date and status when the request resolves; refreshing the record preserves fields the user is editing. Changing the patient or enrollment resets the form so edited fields cannot carry into another record. A missing enrollment shows an unavailable message and cannot fall through to creating a new enrollment.
+
+After creating, updating or deleting an enrollment, the workspace/modal revalidates the patient's enrollment keys using its SWR provider's mutator before closing. This refreshes the Programs table's status and active/historical navigation without a reload; other patients and program metadata are not invalidated. The global SWR mutator cannot reach the component decorator's provider-owned cache.

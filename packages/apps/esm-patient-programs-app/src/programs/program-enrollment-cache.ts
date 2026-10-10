@@ -1,4 +1,4 @@
-import { mutate } from 'swr';
+import type { ScopedMutator } from 'swr';
 
 function getCacheKeyStrings(key: unknown): Array<string> {
   if (typeof key === 'string') {
@@ -27,6 +27,6 @@ export function isPatientProgramEnrollmentCacheKey(key: unknown, patientUuid: st
   });
 }
 
-export function mutatePatientProgramEnrollments(patientUuid: string) {
+export function mutatePatientProgramEnrollments(patientUuid: string, mutate: ScopedMutator) {
   return mutate((key) => isPatientProgramEnrollmentCacheKey(key, patientUuid));
 }

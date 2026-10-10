@@ -127,7 +127,7 @@ describe('ProgramsForm', () => {
         dateEnrolled: expect.stringMatching(/^2020-05-05T/),
       }),
     );
-    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id, expect.any(Function));
 
     expect(mockCloseWorkspace).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
@@ -178,7 +178,7 @@ describe('ProgramsForm', () => {
         dateEnrolled: expect.stringMatching(/^2020-01-1[5-6]T/),
       }),
     );
-    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id, expect.any(Function));
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({

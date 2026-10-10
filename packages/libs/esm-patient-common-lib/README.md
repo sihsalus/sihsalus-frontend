@@ -245,3 +245,11 @@ permissions for the intended clinical profiles. There is no relationship REST
 fallback when that mapping is missing. This reader neither infers kinship from
 concepts or identifiers nor copies observations between patient charts; a family
 relationship alone does not identify a pregnancy or birth episode.
+
+### Clinical form selector layout
+
+`FormsSelectorWorkspace` is a Workspace2 view shared by the CRED and maternal
+selectors. Its native shell covers the previous workspace; the form list owns
+vertical scrolling while the Cancel/Finish actions remain visible. Keep this
+component within the Workspace2 runtime context, including its patient-scoped
+parent window. The layout does not change encounter selection or submission.

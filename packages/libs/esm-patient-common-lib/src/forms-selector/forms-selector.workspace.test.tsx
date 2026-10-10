@@ -5,6 +5,11 @@ import type { FormsListProps } from './forms-list.component';
 import FormsSelectorWorkspace, { type FormLaunchHandler } from './forms-selector.workspace';
 import type { CompletedFormInfo } from './types';
 
+vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  Workspace2: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 let submitOpenedForm: (() => void) | undefined;
 
 vi.mock('./forms-list.component', () => ({

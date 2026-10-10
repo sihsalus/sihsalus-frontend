@@ -1073,3 +1073,186 @@ for (const owner of styleOwners) {
     );
   });
 }
+
+test('clinical form selectors cover the previous workspace and keep their last row and footer reachable', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'forms-selector-workspace-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/libs/esm-styleguide');
+  const config = loadConfig(workspace, 'rspack.config.cjs');
+  const outputPath = path.join(fixture, 'dist');
+  const source = (file) => JSON.stringify(path.join(workspace, 'src', file));
+  const stubs = path.join(fixture, 'context.jsx');
+  await writeFile(
+    stubs,
+    `import React, { useEffect, useState } from 'react';
+export { Workspace2 } from ${source('workspaces2/workspace2.component')};
+export const WorkspaceContext = React.createContext({});
+export const useWorkspace2Context = () => React.useContext(WorkspaceContext);
+export const isDesktop = layout => layout === 'small-desktop';
+export function useLayoutType() {
+  const read = () => innerWidth >= 1024 ? 'small-desktop' : 'phone';
+  const [layout, setLayout] = useState(read);
+  useEffect(() => { const update = () => setLayout(read()); addEventListener('resize', update);
+    return () => removeEventListener('resize', update); }, []);
+  return layout;
+}
+export const getCoreTranslation = key => key;
+export const CloseIcon = () => null;
+export const ArrowRightIcon = () => null;
+export const ArrowLeftIcon = () => null;
+export const closeWorkspaceGroup2 = () => {};
+export const launchWorkspace = () => {};
+export const ResponsiveWrapper = ({children}) => <>{children}</>;
+export const formatDatetime = () => 'Hoy';
+const state = {
+  openedGroup: { groupName: 'clinical', props: {} },
+  openedWindows: [{ windowName: 'forms', openedWorkspaces: [
+    { workspaceName: 'previous', uuid: 'previous' }, { workspaceName: 'selector', uuid: 'selector' }] }],
+  registeredGroupsByName: { clinical: { name: 'clinical', persistence: 'closable' } },
+  registeredWindowsByName: { forms: { name: 'forms', group: 'clinical' } },
+  registeredWorkspacesByName: { previous: { window: 'forms' }, selector: { window: 'forms' } },
+  workspaceTitleByWorkspaceName: { previous: 'Previous workspace', selector: 'Clinical forms' },
+  setWorkspaceTitle() {}, setHasUnsavedChanges() {}, setWindowMaximized() {}, hideWindow() {},
+};
+export const useWorkspace2Store = () => state;`,
+  );
+  await writeFile(
+    path.join(fixture, 'entry.jsx'),
+    `import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { createInstance } from 'i18next';
+import { I18nextProvider, initReactI18next } from 'react-i18next';
+import { Workspace2, WorkspaceContext } from './context.jsx';
+import ${source('components/_general.scss')};
+import menu from ${source('workspaces2/workspace-windows-and-menu.module.scss')};
+import Selector from ${JSON.stringify(path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/forms-selector/forms-selector.workspace'))};
+const forms = Array.from({length:27}, (_, index) => ({ form: { uuid: 'form-'+index,
+  name: index === 26 ? 'Consejería, acuerdos y compromisos' : 'Formulario clínico '+index,
+  version:'1', published:true, retired:false, resources:[] }, associatedEncounters: [] }));
+const i18n = createInstance();
+i18n.use(initReactI18next).init({lng:'es', fallbackLng:false, resources:{es:{translation:{}}}, interpolation:{escapeValue:false}}).then(() => {
+createRoot(document.getElementById('fixture')).render(<I18nextProvider i18n={i18n}>
+<div className={menu.workspaceWindowsAndMenuContainer}><div className={menu.workspaceWindowsContainer}>
+<WorkspaceContext.Provider value={{workspaceName:'previous', isRootWorkspace:true, closeWorkspace:async()=>true, showActionMenu:false}}>
+<Workspace2 title="Previous workspace"><label>Previous consultation date<input aria-label="Previous consultation date" type="date" /></label></Workspace2>
+</WorkspaceContext.Provider>
+<WorkspaceContext.Provider value={{workspaceName:'selector', isRootWorkspace:false, closeWorkspace:async()=>true, showActionMenu:false}}>
+<Selector availableForms={forms} patientAge="18 meses" controlNumber={1} title="Clinical forms" patientUuid="synthetic-patient"
+closeWorkspace={()=>{}} closeWorkspaceWithSavedChanges={()=>{window.finished=(window.finished??0)+1}}
+onFormLaunch={(form, encounter, submitted)=>{window.opened=form.uuid;submitted()}} />
+</WorkspaceContext.Provider>
+</div></div></I18nextProvider>);
+});`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.jsx'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'fixture.js',
+        publicPath: '',
+      },
+      module: {
+        rules: config.module.rules.map((rule) => ({
+          ...rule,
+          use: Array.isArray(rule.use)
+            ? rule.use.map((loader) =>
+                loader.loader === 'css-loader'
+                  ? {
+                      ...loader,
+                      options: {
+                        ...loader.options,
+                        modules: {
+                          ...loader.options.modules,
+                          auto: (resource) => /\.module\.scss$|forms-(selector|list|table)\.scss$/.test(resource),
+                        },
+                      },
+                    }
+                  : loader,
+              )
+            : rule.use,
+        })),
+      },
+      resolve: {
+        ...config.resolve,
+        modules: [path.join(repositoryRoot, 'node_modules'), 'node_modules'],
+        alias: {
+          '@openmrs/esm-framework$': stubs,
+          '@openmrs/esm-react-utils$': stubs,
+          '@openmrs/esm-translations$': stubs,
+          './workspace2$': stubs,
+          '../icons$': stubs,
+        },
+      },
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  page.setDefaultTimeout(5000);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setContent(
+    '<div id="omrs-top-nav-app-container"></div><div id="omrs-left-nav-container"></div><div id="omrs-workspaces-container"><div id="fixture" style="height:100%;position:relative"></div></div><div id="omrs-apps-container"></div>',
+  );
+  await page.addStyleTag({
+    path: require.resolve('@carbon/styles/css/styles.css'),
+  });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addStyleTag({
+    content: 'body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}',
+  });
+  await page.evaluate(() => {
+    document.body.className = 'omrs-breakpoint-gt-tablet';
+  });
+  await page.addScriptTag({ path: path.join(outputPath, 'fixture.js') });
+  for (const width of [1280, 768, 420]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate((width) => {
+      document.body.className = width >= 1024 ? 'omrs-breakpoint-gt-tablet' : 'omrs-breakpoint-lt-desktop';
+    }, width);
+    await expect(page.getByRole('banner', { name: 'workspaceHeader' })).toHaveCount(2);
+    const footer = page.getByRole('button', { name: 'Guardar y Firmar' });
+    await expect
+      .poll(() =>
+        footer.evaluate((button) => button.closest('form').parentElement.parentElement.getBoundingClientRect().width),
+      )
+      .toBe(width >= 1024 ? 420 : width);
+    await expect(footer).toBeInViewport();
+    const before = await footer.boundingBox();
+    const last = page.getByText('Consejería, acuerdos y compromisos', {
+      exact: true,
+    });
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+    await last.click();
+    assert.equal(await page.evaluate(() => window.opened), 'form-26');
+    assert.deepEqual(await footer.boundingBox(), before, 'footer stays visible while the forms scroll');
+    await footer.focus();
+    await page.keyboard.press('Enter');
+    const previous = page.getByLabel('Previous consultation date');
+    const covered = await previous.evaluate((input) => {
+      const box = input.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return !hit || (hit !== input && !input.contains(hit));
+    });
+    assert.ok(covered, 'opaque native workspace covers previous consultation controls');
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight),
+      true,
+      'workspace owns scrolling',
+    );
+  }
+  assert.equal(await page.evaluate(() => window.finished), 3, 'footer activation works by keyboard');
+  assert.deepEqual(errors, []);
+});

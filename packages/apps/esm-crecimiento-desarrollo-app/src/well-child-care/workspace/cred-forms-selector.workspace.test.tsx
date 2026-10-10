@@ -7,6 +7,7 @@ import CREDFormsSelectorWorkspace from './cred-forms-selector.workspace';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  Workspace2: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useOpenmrsFetchAll: (await import('../../../../../libs/esm-react-utils/src/useOpenmrsFetchAll')).useOpenmrsFetchAll,
 }));
 

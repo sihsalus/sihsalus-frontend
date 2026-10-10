@@ -2,7 +2,6 @@ import {
   Button,
   InlineLoading,
   Modal,
-  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { Indicador } from '../api/types';
+import AppPagination from '../components/AppPagination';
 import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores } from '../features/indicadores/hooks';
@@ -143,7 +143,7 @@ const IndicadoresPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <Pagination
+            <AppPagination
               page={page}
               pageSize={pageSize}
               pageSizes={[10, 20, 50]}

@@ -7,7 +7,6 @@ import {
   InlineNotification,
   Modal,
   NumberInput,
-  Pagination,
   Select,
   SelectItem,
   Switch,
@@ -27,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { parseEntityId } from '../api/ids';
 import type { BatchCalcularNowResponse, GetResultadosParams, Granularity, RecalcularAnioResponse } from '../api/types';
+import AppPagination from '../components/AppPagination';
 import MetaProgressCard from '../components/MetaProgressCard';
 import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
@@ -575,7 +575,7 @@ const ResultadosPage: React.FC = () => {
                             {item.meses_disponibles}/{PERIOD_MONTHS[granularity]}
                           </Tag>
                         ) : (
-                          <Tag type="red">
+                          <Tag type="gray">
                             {item.meses_disponibles}/{PERIOD_MONTHS[granularity]}
                           </Tag>
                         )}
@@ -629,7 +629,7 @@ const ResultadosPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <Pagination
+            <AppPagination
               page={page}
               pageSize={pageSize}
               pageSizes={[10, 20, 50]}

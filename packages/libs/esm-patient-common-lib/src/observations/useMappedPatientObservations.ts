@@ -39,6 +39,21 @@ interface PatientObservationsSwrKey {
   patientUuid: string;
 }
 
+export function isPatientObservationsKey(key: unknown, patientUuid: string): key is PatientObservationsSwrKey {
+  return Boolean(
+    key &&
+      typeof key === 'object' &&
+      'patientUuid' in key &&
+      key.patientUuid === patientUuid &&
+      'conceptUuids' in key &&
+      typeof key.conceptUuids === 'string' &&
+      'page' in key &&
+      typeof key.page === 'number' &&
+      'pageSize' in key &&
+      typeof key.pageSize === 'number',
+  );
+}
+
 interface UseMappedPatientObservationsOptions<Row extends PatientObservationBaseRow> {
   conceptUuids: Array<string | null | undefined>;
   finalizeRow?: (row: Row) => Row;

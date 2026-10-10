@@ -260,3 +260,18 @@ CRED refreshes its history on close; the maternal selector supplies no separate
 completion action. Form rows use Carbon Link's supported `as="button"` rendering
 to preserve link styling while providing native focus, Enter and Space activation
 without submitting an ancestor form.
+
+### Revalidation after a confirmed encounter save
+
+The existing `invalidateVisitAndEncounterData` helper accepts the provider cache
+from `useSWRConfig`. FormEntry passes that cache when it closes after a save so
+patient encounter/history and observation readers refresh together, including
+REST pagination and the structured FHIR observation keys used by vitals.
+
+SWR 2.5.1 excludes infinite aggregates from key-filter mutations. The helper uses
+the public key filter and `swr/infinite` serialization API, clears only matching
+page data through `mutate`, and revalidates the existing aggregates so every
+loaded page is fetched. It does not access private cache fields or add widget
+subscriptions. Other patients and metadata are excluded; the existing current
+visit callback remains responsible for the active visit. These are cache reads,
+not another clinical save or inferred episode.

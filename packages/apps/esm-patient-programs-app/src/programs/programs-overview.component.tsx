@@ -88,7 +88,7 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
   const tableHeaders = [
     {
       key: 'display',
-      header: t('activePrograms', 'Active programs'),
+      header: t('programName', 'Program name'),
     },
     {
       key: 'location',

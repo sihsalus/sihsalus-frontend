@@ -57,11 +57,31 @@ function getAppShellPackageRoot() {
 function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
   const config = configFactory({}, { mode: 'production' });
+  // Early shared chunks load relative to the shell script, before initializeSpa
+  // sets its configured public path. Deep links must not become the asset base.
+  config.output.publicPath = 'auto';
+  // SWR 2.5 shares state through modules outside _internal. Provide every
+  // consumed entry point from this graph so remotes share cache and revalidators.
+  const federation = config.plugins.find((plugin) => plugin._options?.shared);
+  const swrVersion = require('swr/package.json').version;
+  const swrEntries = ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal'];
+  for (const dependency of swrEntries) {
+    federation._options.shared[dependency] = {
+      ...federation._options.shared['swr/_internal'],
+      requiredVersion: swrVersion,
+      import: dependency,
+      packageName: 'swr',
+      shareKey: dependency,
+      version: swrVersion,
+    };
+  }
   // OpenMRS 10 no longer loads the styleguide stylesheet from its HTML template.
   // Include the built global CSS in the shell entry so Webpack emits and links it
   // with the rest of the shell styles, including its font assets.
   const styleguideCss = path.join(REPOSITORY_ROOT, 'packages/libs/esm-styleguide/dist/openmrs-esm-styleguide.css');
-  config.entry = [config.entry, styleguideCss];
+  // Request each provider in the host graph without forcing unused absolute
+  // providers into Workbox's child compilation, which has no async chunk loader.
+  config.entry = [config.entry, path.join(REPOSITORY_ROOT, 'packages/tooling/app-shell/swr-runtime.ts'), styleguideCss];
   // Workspace SWC output uses explicit .js imports while this build consumes TypeScript sources.
   // Match the monorepo's existing Rspack resolution contract.
   config.resolve.extensionAlias = { '.js': ['.js', '.ts', '.tsx'] };
@@ -232,6 +252,9 @@ function assertCompatibleAppShellConfig(
     '@openmrs/esm-framework': frameworkVersion,
     '@openmrs/esm-framework/src/internal': frameworkVersion,
     'swr/_internal': swrVersion,
+    swr: swrVersion,
+    'swr/infinite': swrVersion,
+    'swr/immutable': swrVersion,
     i18next: require('i18next/package.json').version,
     'react-i18next': require('react-i18next/package.json').version,
     'react-router-dom': require('react-router-dom/package.json').version,

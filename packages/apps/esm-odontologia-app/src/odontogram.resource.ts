@@ -1,5 +1,9 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
-import type { OdontogramEncounterPayload, OdontogramObs } from './odontogram/ampath-form-odontogram-mapper';
+import type {
+  OdontogramEncounterCreatePayload,
+  OdontogramEncounterPayload,
+  OdontogramObs,
+} from './odontogram/ampath-form-odontogram-mapper';
 
 export interface EncounterResult {
   uuid: string;
@@ -10,7 +14,7 @@ export interface EncounterResult {
 const BASE_URL = '/ws/rest/v1';
 const ENCOUNTER_CUSTOM_REP =
   'custom:(uuid,encounterDatetime,encounterType:(uuid),encounterProviders:(uuid,provider:(uuid,person:(uuid,display))),obs:(uuid,concept:(uuid,display),value))';
-const ENCOUNTER_OBS_REP = 'custom:(obs:(uuid,concept:(uuid)))';
+const ENCOUNTER_OBS_REP = 'custom:(uuid,patient:(uuid),obs:(uuid,concept:(uuid)))';
 
 export function getEncountersByTypeUrl(
   patientUuid: string,
@@ -22,7 +26,7 @@ export function getEncountersByTypeUrl(
   return `${BASE_URL}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}${formFilter}&v=${ENCOUNTER_CUSTOM_REP}&limit=${limit}`;
 }
 
-export function saveEncounter(payload: OdontogramEncounterPayload): Promise<{ data: unknown }> {
+export function saveEncounter(payload: OdontogramEncounterCreatePayload): Promise<{ data: unknown }> {
   return openmrsFetch(`${BASE_URL}/encounter`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -35,17 +39,20 @@ export function saveEncounter(payload: OdontogramEncounterPayload): Promise<{ da
  * Reusing the obs uuid makes OpenMRS edit the value in place (void + recreate)
  * instead of appending a second obs for the same concept.
  */
-export async function fetchEncounterObs(encounterUuid: string): Promise<OdontogramObs[]> {
-  const { data } = await openmrsFetch<{ obs?: OdontogramObs[] }>(
+export async function fetchEncounterObs(encounterUuid: string, patientUuid: string): Promise<OdontogramObs[]> {
+  const { data } = await openmrsFetch<{ uuid?: string; patient?: { uuid?: string }; obs?: OdontogramObs[] }>(
     `${BASE_URL}/encounter/${encounterUuid}?v=${ENCOUNTER_OBS_REP}`,
   );
 
-  return data?.obs ?? [];
+  if (data?.uuid !== encounterUuid || data?.patient?.uuid !== patientUuid || !Array.isArray(data.obs)) {
+    throw new Error('Odontogram encounter identity or observations could not be verified');
+  }
+  return data.obs;
 }
 
 export function updateEncounter(
   encounterUuid: string,
-  payload: OdontogramEncounterPayload,
+  payload: Pick<OdontogramEncounterPayload, 'obs'>,
 ): Promise<{ data: unknown }> {
   return openmrsFetch(`${BASE_URL}/encounter/${encounterUuid}`, {
     method: 'POST',

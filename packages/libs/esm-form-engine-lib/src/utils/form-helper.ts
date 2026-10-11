@@ -12,6 +12,7 @@ import type {
   SessionMode,
 } from '../types';
 import { isEmpty } from '../validators/form-validator';
+import { isTrue } from './boolean-utils';
 import { parseToLocalDateTime } from './common-utils';
 import { type EvaluateReturnType, type ExpressionContext, type FormNode } from './expression-runner';
 
@@ -134,6 +135,22 @@ export function evalConditionalRequired(
     return typeof referencedValue === 'string' ? (referenceQuestionAnswers?.includes(referencedValue) ?? false) : false;
   }
   return false;
+}
+
+export function evaluateRequired(
+  field: FormField,
+  allFields: FormField[],
+  formValues: Record<string, unknown>,
+  context: ExpressionContext,
+  expressionRunner: ExpressionRunner,
+): boolean {
+  if (typeof field.required === 'object' && field.required?.type === 'conditionalRequired') {
+    return evalConditionalRequired(field, allFields, formValues);
+  }
+  if (typeof field.required === 'string' && field.required !== 'true' && field.required !== 'false') {
+    return expressionRunner(field.required, { value: field, type: 'field' }, allFields, formValues, context) === true;
+  }
+  return isTrue(field.required as string | boolean);
 }
 
 export function evaluateDisabled(

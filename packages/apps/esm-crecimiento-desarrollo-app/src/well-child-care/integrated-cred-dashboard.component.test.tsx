@@ -3,8 +3,8 @@ import {
   formatDate,
   navigate,
   UserHasAccess,
-  userHasAccess,
   usePatient,
+  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import {
@@ -177,7 +177,7 @@ it('mounts the seven sections and reads clinical panels only after selection', a
   expect(screen.getByRole('tab', { name: 'Crecimiento y nutrición' })).toHaveAttribute('aria-selected', 'true');
   expect(await screen.findByText('Curvas: synthetic-child')).toBeVisible();
   expect(ChildMedicalHistory).not.toHaveBeenCalled();
-  expect(screen.queryByText('Atenciones CRED registradas')).not.toBeInTheDocument();
+  expect(screen.queryByText('Atenciones de crecimiento y desarrollo registradas')).not.toBeInTheDocument();
 });
 
 it('permits a nutrition reader without granting child-checkup, neonatal or immunization access', () => {
@@ -225,7 +225,7 @@ it('waits for enrollment and blocks direct access when the program is absent', (
     error: null,
   } as ReturnType<typeof usePatientEnrollment>);
   const { rerender } = render(<IntegratedCredDashboard />);
-  expect(screen.getByText('Comprobando inscripción al programa CRED…')).toBeVisible();
+  expect(screen.getByText('Comprobando inscripción al programa de crecimiento y desarrollo…')).toBeVisible();
   expect(useEncountersCRED).not.toHaveBeenCalled();
   vi.mocked(usePatientEnrollment).mockReturnValue({
     activePatientEnrollment: [],
@@ -233,7 +233,7 @@ it('waits for enrollment and blocks direct access when the program is absent', (
     error: null,
   } as ReturnType<typeof usePatientEnrollment>);
   rerender(<IntegratedCredDashboard />);
-  expect(screen.getByText('El programa CRED no está activo')).toBeVisible();
+  expect(screen.getByText('El programa de crecimiento y desarrollo no está activo')).toBeVisible();
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(useEncountersCRED).not.toHaveBeenCalled();
 });
@@ -334,13 +334,13 @@ it('does not render a previous patient under a different patient UUID', () => {
 it('keeps the same program and read-permission conditions on the new navigation link', () => {
   setPrivileges([credCourseLifePrivilege, credImmunizationPrivilege]);
   const { rerender } = render(<IntegratedCredLink basePath="/patient/synthetic-child/chart" />);
-  expect(screen.getByRole('link', { name: 'CRED' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: 'Crecimiento y desarrollo' })).toHaveAttribute(
     'href',
     '/patient/synthetic-child/chart/cred-dashboard',
   );
   setPrivileges([credCourseLifePrivilege]);
   rerender(<IntegratedCredLink basePath="/patient/synthetic-child/chart" />);
-  expect(screen.queryByRole('link', { name: 'CRED' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Crecimiento y desarrollo' })).not.toBeInTheDocument();
 });
 
 it.each([

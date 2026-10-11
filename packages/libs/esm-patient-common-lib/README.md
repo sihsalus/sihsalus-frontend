@@ -25,6 +25,12 @@ The observation representation includes `formFieldNamespace` and `formFieldPath`
 so consumers can distinguish fields that share a concept without assigning an
 unidentified historical value to a guessed clinical location.
 
+`useFilteredEncounter` applies the same native pagination contract to grouped
+observation tables: UUID-filtered queries request the latest record, while form
+names are resolved only after every page loads. Invalid or failed pages remain
+errors; changing patient hides the previous data and refresh traverses the whole
+history again. Callers must retain the returned encounter UUID when editing.
+
 `ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.
 
 `src/antecedents/_condition-form.scss` supplies the shared workspace layout for
@@ -239,3 +245,38 @@ permissions for the intended clinical profiles. There is no relationship REST
 fallback when that mapping is missing. This reader neither infers kinship from
 concepts or identifiers nor copies observations between patient charts; a family
 relationship alone does not identify a pregnancy or birth episode.
+
+### Clinical form selector layout
+
+`FormsSelectorWorkspace` is a Workspace2 view shared by the CRED and maternal
+selectors. Its native shell covers the previous workspace; the form list owns
+vertical scrolling while the Cancel/Close forms actions remain visible. Keep this
+component within the Workspace2 runtime context, including its patient-scoped
+parent window. The layout does not change encounter selection or submission.
+
+Cancel and Back restore the configured parent through `launchWorkspace2` with
+the selected patient UUID. The native runtime retains a compatible open parent
+and its patient/visit context; a newly opened parent also receives the patient.
+They must not open a second legacy workspace over the native window.
+
+Closing this selector invokes the consumer callback and closes the workspace. It
+does not save or sign a clinical record: each form owns its confirmed submission.
+CRED refreshes its history on close; the maternal selector supplies no separate
+completion action. Form rows use Carbon Link's supported `as="button"` rendering
+to preserve link styling while providing native focus, Enter and Space activation
+without submitting an ancestor form.
+
+### Revalidation after a confirmed encounter save
+
+The existing `invalidateVisitAndEncounterData` helper accepts the provider cache
+from `useSWRConfig`. FormEntry passes that cache when it closes after a save so
+patient encounter/history and observation readers refresh together, including
+REST pagination and the structured FHIR observation keys used by vitals.
+
+SWR 2.5.1 excludes infinite aggregates from key-filter mutations. The helper uses
+the public key filter and `swr/infinite` serialization API, clears only matching
+page data through `mutate`, and revalidates the existing aggregates so every
+loaded page is fetched. It does not access private cache fields or add widget
+subscriptions. Other patients and metadata are excluded; the existing current
+visit callback remains responsible for the active visit. These are cache reads,
+not another clinical save or inferred episode.

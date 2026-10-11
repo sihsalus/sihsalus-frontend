@@ -1,20 +1,18 @@
 import { Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
-import { Button, ButtonSet, IconButton, InlineLoading, DataTableSkeleton, Tag, Tooltip } from '@carbon/react';
+import { Button, ButtonSet, DataTableSkeleton, IconButton, InlineLoading, Tag, Tooltip } from '@carbon/react';
 import {
   formatDate,
   getUserFacingErrorMessage,
   launchWorkspace,
   showModal,
   showSnackbar,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { countSolutions } from './count-solutions';
-import OdontogramRecordList from './odontogram-record-list.component';
-import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
+import { odontogramContextErrorCode, useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
@@ -23,7 +21,9 @@ import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
 import { deleteEncounter } from '../odontogram.resource';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 import type { OdontogramRecord, OdontogramRecordType } from '../types/odontogram-record';
+import { countSolutions } from './count-solutions';
 import styles from './odontogram-dashboard.scss';
+import OdontogramRecordList from './odontogram-record-list.component';
 
 interface OdontogramDashboardProps {
   patientUuid: string;
@@ -59,7 +59,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess('app:hoja.clinica.odontologia.editar', session?.user);
-  const { save, isSaving } = useOdontogramEncounter();
+  const { save, isSaving } = useOdontogramEncounter(patientUuid);
 
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
   const setSelectedEncounterUuid = useOdontogramDataStore((s) => s.setSelectedEncounterUuid);
@@ -266,7 +266,15 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
         subtitle: getUserFacingErrorMessage(
           err,
           t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
-          { logContext: 'Save odontogram from dashboard' },
+          {
+            logContext: 'Save odontogram from dashboard',
+            codeMessages: {
+              [odontogramContextErrorCode]: t(
+                'odontogramContextRequired',
+                'Start an active visit and verify your session provider and location before recording an odontogram. If the problem continues, contact support.',
+              ),
+            },
+          },
         ),
       });
     }

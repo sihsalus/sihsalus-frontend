@@ -65,6 +65,20 @@ los controles de acceso existentes; el dashboard requiere
 `app:hoja.clinica.odontologia.editar` para iniciar edición. Los errores de guardado
 conservan el borrador y usan la notificación segura existente.
 
+La creación de iniciales y evolutivos requiere una consulta activa del mismo
+paciente, el profesional y la ubicación de la sesión y el rol clínico configurado
+en EmrApi. Reutiliza `useVisit`, `useSession` y `useEmrConfiguration`; no infiere
+el profesional ni añade un UUID de rol alternativo. Si el contexto está pendiente,
+falla o está incompleto, no envía el encuentro y conserva el borrador con una ayuda
+traducida. El payload nuevo vincula explícitamente visita, ubicación y profesional.
+
+La edición verifica por GET el paciente y UUID del encuentro antes de reutilizar
+sus UUID de observaciones. Envía únicamente las observaciones: conserva la visita,
+fecha, formulario, tipo, ubicación y profesionales originales, incluso sin consulta
+activa actual. No reasigna un registro histórico a la sesión vigente. La prueba
+local cubre estos contratos; guardar/recargar/editar en QLTY sigue pendiente de la
+aceptación coordinada indicada abajo.
+
 ### Procedencia y validación pendiente
 
 La estructura temporal procede de la

@@ -19,6 +19,7 @@ export function startupApp() {
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
+export const helpMenuModal = getAsyncLifecycle(() => import('./help-menu/help-popup.component'), options);
 
 export const releaseNotes = getSyncLifecycle(ReleaseNotesComponent, options);
 export const docs = getSyncLifecycle(DocsComponent, options);

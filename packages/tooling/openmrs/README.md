@@ -74,6 +74,11 @@ npx openmrs
 
 Performs a debug build of the app shell and runs it against a given OpenMRS backend. Can be proxied to any network and used with any import map configuration.
 
+`--support-offline` defaults to `false`, so startup does not read a packaged
+service worker. When enabled, the CLI requires that worker and fails startup if
+it is missing. `yarn start` still validates and serves the separately assembled
+SPA in `dist/spa`, including its required service worker.
+
 Example:
 
 ```sh

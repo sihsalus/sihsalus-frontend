@@ -135,7 +135,7 @@ describe('ProgramsDetailedSummary', () => {
 
     expect(screen.getByText(/Care Programs/i)).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /active programs/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /program name/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /date enrolled/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /go to/i })).toBeInTheDocument();

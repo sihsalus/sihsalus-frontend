@@ -48,6 +48,12 @@ export interface OdontogramEncounterPayload {
   }>;
 }
 
+export interface OdontogramEncounterCreatePayload extends OdontogramEncounterPayload {
+  visit: string;
+  location: string;
+  encounterProviders: Array<{ provider: string; encounterRole: string }>;
+}
+
 function getObsByConcept(encounter: OdontogramEncounter, conceptUuid: string) {
   return encounter.obs?.find((obs) => obs.concept?.uuid === conceptUuid);
 }

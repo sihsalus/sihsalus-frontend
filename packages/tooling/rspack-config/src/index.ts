@@ -97,6 +97,10 @@ const alwaysHostSharedDependencies = new Set([
   '@openmrs/esm-framework',
   '@openmrs/esm-framework/src/internal',
   'single-spa',
+  'swr',
+  'swr/infinite',
+  'swr/immutable',
+  'swr/_internal',
 ]);
 
 // These packages are re-exported by @openmrs/esm-framework/src/internal in the app shell.
@@ -483,45 +487,28 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
             throw new Error(msg);
           }
 
-          if (depName === 'swr') {
-            // SWR is annoying with Module Federation
-            // See: https://github.com/webpack/webpack/issues/16125 and https://github.com/vercel/swr/issues/2356
-            // Must match the app-shell host config which shares as 'swr/_internal'
-            obj['swr/_internal'] = {
-              requiredVersion: peerDependencies['swr'] ?? false,
-              strictVersion: false,
-              singleton: true,
-              import: 'swr/_internal',
-              shareKey: 'swr/_internal',
-              shareScope: 'default',
-              version: (require('swr/package.json') as VersionedPackageJson).version,
-            };
-          } else {
-            const sharedHostDependency = isProvidedByFrameworkInternal
-              ? '@openmrs/esm-framework/src/internal'
-              : depName;
-            const installedVersion = getInstalledVersion(sharedHostDependency);
-            const packageName = getPackageNameForDependency(depName);
-            obj[depName] = {
-              // Federation excludes prereleases from broad ranges (even >=0.0.0-0).
-              // Bind wildcard host contracts to the version used by this build.
-              requiredVersion:
-                versionSpec === '*' || (!versionSpec && alwaysHostSharedDependencies.has(depName))
-                  ? (installedVersion ?? versionSpec)
-                  : versionSpec,
-              strictVersion: false,
-              singleton: true,
-              import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,
-              ...(isProvidedByFrameworkInternal
-                ? { packageName: '@openmrs/esm-framework' }
-                : depName !== packageName
-                  ? { packageName }
-                  : {}),
-              shareKey: sharedHostDependency,
-              shareScope: 'default',
-              version: installedVersion,
-            };
-          }
+          const sharedHostDependency = isProvidedByFrameworkInternal ? '@openmrs/esm-framework/src/internal' : depName;
+          const installedVersion = getInstalledVersion(sharedHostDependency);
+          const packageName = getPackageNameForDependency(depName);
+          obj[depName] = {
+            // Federation excludes prereleases from broad ranges (even >=0.0.0-0).
+            // Bind wildcard host contracts to the version used by this build.
+            requiredVersion:
+              versionSpec === '*' || (!versionSpec && alwaysHostSharedDependencies.has(depName))
+                ? (installedVersion ?? versionSpec)
+                : versionSpec,
+            strictVersion: false,
+            singleton: true,
+            import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,
+            ...(isProvidedByFrameworkInternal
+              ? { packageName: '@openmrs/esm-framework' }
+              : depName !== packageName
+                ? { packageName }
+                : {}),
+            shareKey: sharedHostDependency,
+            shareScope: 'default',
+            version: installedVersion,
+          };
 
           return obj;
         }, {}),

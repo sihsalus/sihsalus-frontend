@@ -54,6 +54,54 @@ describe('program eligibility', () => {
     expect(getPatientAgeYears({ age: 35 }, today)).toBe(35);
   });
 
+  it.each(['2026-06-10', '2026-12-09', '2027-06-09'])(
+    'rejects a future birth date %s without using the age fallback',
+    (birthDate) => {
+      const patient = { birthDate, age: 0 };
+      expect(getPatientAgeYears(patient, today)).toBeUndefined();
+      expect(isProgramEligibleForPatient(wellChildProgram, patient, rules, today)).toBe(false);
+    },
+  );
+
+  it('rejects a future OpenMRS birth date without using its age fallback', () => {
+    const patient = { person: { birthdate: '2026-06-10', age: 0 } };
+    expect(getPatientAgeYears(patient, today)).toBeUndefined();
+    expect(isProgramEligibleForPatient(wellChildProgram, patient, rules, today)).toBe(false);
+  });
+
+  it('accepts birth on the reference day even when its time is later', () => {
+    const patient = { birthDate: '2026-06-09T23:59:59' };
+    expect(getPatientAgeYears(patient, today)).toBe(0);
+    expect(isProgramEligibleForPatient(wellChildProgram, patient, rules, today)).toBe(true);
+  });
+
+  it.each([{ age: -1 }, { person: { age: -0.5 } }])('rejects a negative age fallback %j', (patient) => {
+    expect(getPatientAgeYears(patient, today)).toBeUndefined();
+    expect(isProgramEligibleForPatient(wellChildProgram, patient, rules, today)).toBe(false);
+  });
+
+  it('retains the non-negative age fallback when the birth date is invalid', () => {
+    expect(getPatientAgeYears({ birthDate: 'invalid-date', age: 11 }, today)).toBe(11);
+    expect(isProgramEligibleForPatient(wellChildProgram, { birthDate: 'invalid-date', age: 11 }, rules, today)).toBe(
+      true,
+    );
+    expect(getPatientAgeYears({ birthDate: 'invalid-date', age: -1 }, today)).toBeUndefined();
+  });
+
+  it('keeps unrestricted programs visible when the age is invalid', () => {
+    const patient = { birthDate: '2026-06-10', age: -1 };
+    expect(isProgramEligibleForPatient(tuberculosisProgram, patient, rules, today)).toBe(true);
+    expect(
+      isProgramEligibleForPatient(createProgram('unconfigured-program', 'Unconfigured'), patient, rules, today),
+    ).toBe(true);
+  });
+
+  it('retains pediatric eligibility through age eleven and excludes the twelfth birthday', () => {
+    expect(isProgramEligibleForPatient(wellChildProgram, { birthDate: '2014-06-11' }, rules, today)).toBe(true);
+    expect(isProgramEligibleForPatient(wellChildProgram, { birthDate: '2014-06-10' }, rules, today)).toBe(true);
+    expect(isProgramEligibleForPatient(wellChildProgram, { birthDate: '2014-06-09' }, rules, today)).toBe(false);
+  });
+
   it('normalizes FHIR and OpenMRS gender values', () => {
     expect(normalizePatientGender('F')).toBe('female');
     expect(normalizePatientGender('female')).toBe('female');

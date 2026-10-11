@@ -679,6 +679,26 @@ test('mobile workspace actions stay above the intrinsic action menu when labels 
   await writeFile(
     stubs,
     `import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Document } from '@carbon/react/icons';
+import HelpMenu from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-help-menu-app/src/help-menu/help.component.tsx'))};
+import HelpMenuPopup from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-help-menu-app/src/help-menu/help-popup.component.tsx'))};
+export { showModal } from ${source('modals')};
+export const reportError = error => { throw new Error(String(error)); };
+export const userCanLaunch = () => true;
+const modalRoots = new Map();
+export function getModalRegistration(name) {
+  if (name !== 'help-menu-modal') return null;
+  return { load: async () => ({
+    bootstrap: async () => {},
+    mount: async props => {
+      const root = createRoot(props.domElement);
+      modalRoots.set(props.domElement, root);
+      root.render(<HelpMenuPopup close={props.close} />);
+    },
+    unmount: async props => { modalRoots.get(props.domElement)?.unmount(); modalRoots.delete(props.domElement); },
+  }) };
+}
 import { ActionMenuButton2 } from ${source('workspaces2/action-menu2/action-menu-button2.component')};
 export const ComponentContext = React.createContext({});
 export const WorkspaceContext = React.createContext({});
@@ -691,11 +711,13 @@ export function useLayoutType() {
     return () => removeEventListener('resize', update); }, []);
   return layout;
 }
-export const useSession = () => ({ user: {} });
+export const useSession = () => ({ authenticated: true, user: {} });
+export const useAssignedExtensions = () => [{ id: 'qa-help' }];
 export const userHasAccess = () => true;
 export const subscribeOpenmrsEvent = () => () => {};
 export const getCoreTranslation = key => key;
-export const CloseIcon = () => null;
+export { Close as CloseIcon, UserAvatar as UserAvatarIcon } from '@carbon/react/icons';
+export const useOnClickOutside = () => React.useRef(null);
 export const ArrowRightIcon = () => null;
 export const closeWorkspaceGroup2 = () => {};
 export const launchWorkspace2 = () => {};
@@ -709,13 +731,14 @@ let state = {
   registeredWorkspacesByName: { 'test-workspace': { window: 'test-window' } },
   workspaceTitleByWorkspaceName: { 'test-workspace': 'Antecedentes' },
   setWorkspaceTitle() {}, setHasUnsavedChanges() {}, setWindowMaximized() {}, hideWindow() {},
+
 };
 export const useWorkspace2Store = () => useSyncExternalStore(
   listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => state);
 export function updateFixture(options) {
-  const groupName = options.groupName ?? state.openedGroup.groupName;
+  const groupName = options.groupName ?? state.openedGroup?.groupName ?? group.name;
   state = { ...state,
-    openedGroup: { groupName, props: {} },
+    openedGroup: options.closed ? null : { groupName, props: {} },
     registeredGroupsByName: { [groupName]: { ...group, name: groupName, overlay: options.overlay ?? false } },
     openedWindows: [{ ...state.openedWindows[0], maximized: options.maximized ?? false,
       props: { isRootWorkspace: options.root !== false } }],
@@ -724,9 +747,12 @@ export function updateFixture(options) {
   };
   listeners.forEach(listener => listener());
 }
-export function ExtensionSlot() {
-  return <>{['Signos vitales', 'Formularios de evaluación clínica, antecedentes y seguimiento de la consulta', 'Citas', 'Órdenes', 'Lista de tareas'].map(label =>
-    <div key={label}><ActionMenuButton2 label={label} icon={() => <svg width="16" height="16" />}
+export function ExtensionSlot({ name }) {
+  if (name === 'user-panel-slot') return <HelpMenu />;
+  if (name === 'user-panel-bottom-slot') return null;
+  if (name === 'help-menu-slot') return <a href="#qa-help">Ayuda de la fixture QA aislada</a>;
+  return <>{['Resumen de consulta', 'Formularios clínicos', 'Canasta de órdenes', 'Lista de tareas', 'Ver FUAs del paciente'].map(label =>
+    <div key={label}><ActionMenuButton2 label={label} icon={() => <Document size={16} />}
       workspaceToLaunch={{ workspaceName: 'test-workspace' }} /></div>)}</>;
 }`,
   );
@@ -740,9 +766,9 @@ import form from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-p
 export default function Window({ showActionMenu, openedWindow }) {
   return <WorkspaceContext.Provider value={{ workspaceName: 'test-workspace',
     isRootWorkspace: openedWindow.props?.isRootWorkspace !== false, showActionMenu }}>
-    <Workspace2 title="Antecedentes"><form className={form.form} onSubmit={event => {
+    <Workspace2 title="Fixture QA local aislada"><form className={form.form} onSubmit={event => {
       event.preventDefault(); window.saved = (window.saved ?? 0) + 1;
-    }}><div className={form.formContent} id="fields"><div style={{height:1200}}>Campos del antecedente</div></div>
+    }}><div className={form.formContent} id="fields"><div style={{height:1200}}>Fixture de diseño local, sin pacientes ni conexión</div></div>
       <footer className={form.formActions}><ButtonSet>
         <Button kind="secondary" className={form.button}>Cancelar</Button>
         <Button type="submit" className={form.button}>Guardar y cerrar</Button>
@@ -753,11 +779,27 @@ export default function Window({ showActionMenu, openedWindow }) {
   );
   await writeFile(
     path.join(fixture, 'entry.js'),
-    `import ${source('components/_general.scss')};
+    `import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { Header, HeaderGlobalBar } from '@carbon/react';
+import UserMenuButton from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-primary-navigation-app/src/components/navbar/user-menu-button.component.tsx'))};
+import ${source('_all.scss')};
+import { setupModals, showModal } from ${source('modals')};
+window.openHelpModal = () => showModal('help-menu-modal', { size: 'sm' });
+function NavigationFixture() {
+  const [active, setActive] = React.useState(false);
+  return React.createElement(Header, { 'aria-label': 'QA local aislada' },
+    React.createElement('span', { style: {color:'white',padding:16} }, 'QA local aislada'),
+    React.createElement(HeaderGlobalBar, {}, React.createElement(UserMenuButton, {
+      isActivePanel: () => active, togglePanel: () => setActive(value => !value), hidePanel: () => () => setActive(false),
+    })));
+}
 import { renderWorkspaceWindowsAndMenu } from ${source('workspaces2/workspace-windows-and-menu.component')};
 import { updateFixture } from './context.jsx';
 window.updateFixture = updateFixture;
-renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container'));`,
+renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container'));
+createRoot(document.getElementById('omrs-top-nav-app-container')).render(React.createElement(NavigationFixture));
+setupModals(document.getElementById('omrs-modals-container'));`,
   );
   await compile(
     {
@@ -782,7 +824,8 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
                         ...loader.options,
                         modules: {
                           ...loader.options.modules,
-                          auto: (resource) => /\.module\.scss$|conditions-form\.scss$/.test(resource),
+                          auto: (resource) =>
+                            /\.module\.scss$|conditions-form\.scss$|help(?:-popup)?\.styles\.scss$|(?:navbar|user-menu-panel)\.scss$/.test(resource),
                         },
                       },
                     }
@@ -795,6 +838,10 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
         ...config.resolve,
         modules: [path.join(repositoryRoot, 'node_modules'), 'node_modules'],
         alias: {
+          '@openmrs/esm-framework$': stubs,
+          '@openmrs/esm-extensions$': stubs,
+          '@openmrs/esm-error-handling$': stubs,
+          '../access$': stubs,
           '@openmrs/esm-react-utils$': stubs,
           '@openmrs/esm-api$': stubs,
           '@openmrs/esm-emr-api$': stubs,
@@ -815,7 +862,7 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
   );
   const context = await browser.newContext({
     offline: true,
-    viewport: { width: 420, height: 1000 },
+    viewport: { width: 420, height: 900 },
   });
   t.after(() => context.close());
   const page = await context.newPage();
@@ -823,12 +870,10 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.setContent(
-    '<div id="omrs-top-nav-app-container"></div><div id="omrs-left-nav-container"></div>' +
-      '<div id="omrs-workspaces-container"></div><div id="omrs-apps-container"></div>',
+    '<div id="omrs-top-nav-app-container">QA local aislada · barra móvil</div><div id="omrs-left-nav-container"></div>' +
+      '<div id="omrs-workspaces-container"></div><div id="omrs-apps-container"></div>' +
+      '<div id="omrs-modals-container" class="omrs-modals-container" style="visibility:hidden"></div>',
   );
-  await page.addStyleTag({
-    path: require.resolve('@carbon/styles/css/styles.css'),
-  });
   for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
     await page.addStyleTag({ path: path.join(outputPath, asset) });
   }
@@ -853,10 +898,68 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
     }).toPass({ timeout: 5000 });
     await save.click();
   };
-  await expect(async () => {
-    const box = await rail.boundingBox();
-    assert.ok(box.height >= 118, `wrapped menu height: ${box.height}`);
-  }).toPass({ timeout: 5000 });
+  const help = page.getByRole('button', { name: 'Help menu', exact: true });
+  await expect(help).not.toBeInViewport();
+  const geometry = await rail.evaluate(node => [...node.querySelectorAll('button')].map(button => {
+    const rect = button.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(button.lastElementChild);
+    return { label: button.lastElementChild.textContent, left: rect.left, right: rect.right,
+      text: [...range.getClientRects()].map(r => ({ left: r.left, right: r.right })),
+      hit: button.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.bottom - 4)) };
+  }));
+  assert.deepEqual(geometry.map(action => action.label), [
+    'Resumen de consulta', 'Formularios clínicos', 'Canasta de órdenes', 'Lista de tareas', 'Ver FUAs del paciente',
+  ]);
+  for (const action of geometry) {
+    assert.ok(action.left >= 0 && action.right <= 420, JSON.stringify(action));
+    assert.ok(action.text.every(rect => rect.left >= action.left && rect.right <= action.right), JSON.stringify(action));
+    assert.ok(action.hit, `action is covered: ${action.label}`);
+  }
+  await page.getByRole('button', { name: 'Ver FUAs del paciente', exact: true }).click();
+  await page.getByRole('button', { name: 'My Account', exact: true }).click();
+  await expect(help).toBeVisible();
+  await help.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Help menu' })).toBeVisible();
+  await expect(dialog.getByRole('link', { name: 'Ayuda de la fixture QA aislada' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+  const dialogBox = await dialog.boundingBox();
+  assert.ok(dialogBox.x >= 0 && dialogBox.x + dialogBox.width <= 420 &&
+    dialogBox.y >= 0 && dialogBox.y + dialogBox.height <= 900, JSON.stringify(dialogBox));
+  await expect(page.locator('#omrs-modals-container')).toHaveClass(/cds--modal.*is-visible/);
+  await expect(page.locator('#omrs-modals-container')).toHaveCSS('opacity', '1');
+  await page.evaluate(() => window.openHelpModal());
+  await expect(page.locator('[role="dialog"]')).toHaveCount(2);
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+  // Carbon dismisses an open tooltip before the modal. The mobile Close icon
+  // appears under the pointer left by My Account, so exercise that priority explicitly.
+  await dialog.locator('.cds--modal-close').hover();
+  await expect(dialog.getByRole('tooltip')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog.getByRole('tooltip')).toHaveCount(0);
+  await expect(page.locator('[role="dialog"]')).toHaveCount(2);
+  await dialog.getByRole('heading', { name: 'Help menu' }).hover();
+  await expect(page.locator('[role="tooltip"][aria-hidden="false"]')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[role="dialog"]')).toHaveCount(1);
+  await expect(dialog).toBeVisible();
+  await expect(page.locator('#omrs-modals-container')).toHaveClass(/is-visible/);
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('#omrs-modals-container')).not.toHaveClass(/is-visible/);
+  await expect(help).toBeFocused();
+  await page.getByRole('button', { name: 'My Account', exact: true }).click();
+  await expect(help).not.toBeInViewport();
+  await expect(save).toBeInViewport({ ratio: 1 });
+  assert.equal(await save.evaluate(button => {
+    const rect = button.getBoundingClientRect();
+    return button.contains(document.elementFromPoint(rect.right - 4, rect.y + rect.height / 2));
+  }), true, 'help does not cover the workspace save action');
   await assertAccessible('save stays above wrapped menu');
   await page.locator('#fields').evaluate((node) => {
     node.scrollTop = node.scrollHeight;
@@ -875,7 +978,7 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
   const initialHeight = (await rail.boundingBox()).height;
   await page
     .getByRole('button', {
-      name: 'Formularios de evaluación clínica, antecedentes y seguimiento de la consulta',
+      name: 'Formularios clínicos',
       exact: true,
     })
     .locator('span')
@@ -897,7 +1000,21 @@ renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container
   });
   await expect(page.locator('#omrs-workspaces-container > div')).toHaveCSS('--bottom-nav-height', '0px');
   await expect(rail).toHaveCSS('position', 'static');
+  await expect(help).not.toBeInViewport();
   await save.click();
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => window.openHelpModal());
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+    await dialog.getByRole('heading', { name: 'Help menu' }).hover();
+    await expect(page.locator('[role="tooltip"][aria-hidden="false"]')).toHaveCount(0);
+    const box = await dialog.boundingBox();
+    assert.ok(box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height <= 1000, JSON.stringify(box));
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator('#omrs-modals-container')).not.toHaveClass(/is-visible/);
+  }
   for (const width of [320, 768]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.evaluate(() => {
@@ -1073,3 +1190,383 @@ for (const owner of styleOwners) {
     );
   });
 }
+
+test('clinical form selectors cover the previous workspace and keep their last row and footer reachable', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'forms-selector-workspace-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/libs/esm-styleguide');
+  const config = loadConfig(workspace, 'rspack.config.cjs');
+  const outputPath = path.join(fixture, 'dist');
+  const source = (file) => JSON.stringify(path.join(workspace, 'src', file));
+  const stubs = path.join(fixture, 'context.jsx');
+  await writeFile(
+    stubs,
+    `import React, { useEffect, useState } from 'react';
+export { Workspace2 } from ${source('workspaces2/workspace2.component')};
+export const WorkspaceContext = React.createContext({});
+export const useWorkspace2Context = () => React.useContext(WorkspaceContext);
+export const isDesktop = layout => layout === 'small-desktop';
+export function useLayoutType() {
+  const read = () => innerWidth >= 1024 ? 'small-desktop' : 'phone';
+  const [layout, setLayout] = useState(read);
+  useEffect(() => { const update = () => setLayout(read()); addEventListener('resize', update);
+    return () => removeEventListener('resize', update); }, []);
+  return layout;
+}
+export const getCoreTranslation = key => key;
+export const CloseIcon = () => null;
+export const ArrowRightIcon = () => null;
+export const ArrowLeftIcon = () => null;
+export const closeWorkspaceGroup2 = () => {};
+export const launchWorkspace = () => {};
+export const launchWorkspace2 = () => {};
+export const ResponsiveWrapper = ({children}) => <>{children}</>;
+export const formatDatetime = () => 'Hoy';
+const state = {
+  openedGroup: { groupName: 'clinical', props: {} },
+  openedWindows: [{ windowName: 'forms', openedWorkspaces: [
+    { workspaceName: 'previous', uuid: 'previous' }, { workspaceName: 'selector', uuid: 'selector' }] }],
+  registeredGroupsByName: { clinical: { name: 'clinical', persistence: 'closable' } },
+  registeredWindowsByName: { forms: { name: 'forms', group: 'clinical' } },
+  registeredWorkspacesByName: { previous: { window: 'forms' }, selector: { window: 'forms' } },
+  workspaceTitleByWorkspaceName: { previous: 'Previous workspace', selector: 'Clinical forms' },
+  setWorkspaceTitle() {}, setHasUnsavedChanges() {}, setWindowMaximized() {}, hideWindow() {},
+};
+export const useWorkspace2Store = () => state;`,
+  );
+  await writeFile(
+    path.join(fixture, 'entry.jsx'),
+    `import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { createInstance } from 'i18next';
+import { I18nextProvider, initReactI18next } from 'react-i18next';
+import { Workspace2, WorkspaceContext } from './context.jsx';
+import ${source('components/_general.scss')};
+import menu from ${source('workspaces2/workspace-windows-and-menu.module.scss')};
+import Selector from ${JSON.stringify(path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/forms-selector/forms-selector.workspace'))};
+const forms = Array.from({length:27}, (_, index) => ({ form: { uuid: 'form-'+index,
+  name: index === 26 ? 'Consejería, acuerdos y compromisos' : 'Formulario clínico '+index,
+  version:'1', published:true, retired:false, resources:[] }, associatedEncounters: [] }));
+const i18n = createInstance();
+i18n.use(initReactI18next).init({lng:'es', fallbackLng:false, resources:{es:{translation:{}}}, interpolation:{escapeValue:false}}).then(() => {
+createRoot(document.getElementById('fixture')).render(<I18nextProvider i18n={i18n}>
+<div className={menu.workspaceWindowsAndMenuContainer}><div className={menu.workspaceWindowsContainer}>
+<WorkspaceContext.Provider value={{workspaceName:'previous', isRootWorkspace:true, closeWorkspace:async()=>true, showActionMenu:false}}>
+<Workspace2 title="Previous workspace"><label>Previous consultation date<input aria-label="Previous consultation date" type="date" /></label></Workspace2>
+</WorkspaceContext.Provider>
+<WorkspaceContext.Provider value={{workspaceName:'selector', isRootWorkspace:false, closeWorkspace:async()=>true, showActionMenu:false}}>
+<Selector availableForms={forms} patientAge="18 meses" controlNumber={1} title="Clinical forms" patientUuid="synthetic-patient"
+closeWorkspace={()=>{}} closeWorkspaceWithSavedChanges={()=>{window.finished=(window.finished??0)+1}}
+onFormLaunch={(form, encounter, submitted)=>{(window.opened??=[]).push(form.uuid);submitted()}} />
+</WorkspaceContext.Provider>
+</div></div></I18nextProvider>);
+});`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.jsx'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'fixture.js',
+        publicPath: '',
+      },
+      module: {
+        rules: config.module.rules.map((rule) => ({
+          ...rule,
+          use: Array.isArray(rule.use)
+            ? rule.use.map((loader) =>
+                loader.loader === 'css-loader'
+                  ? {
+                      ...loader,
+                      options: {
+                        ...loader.options,
+                        modules: {
+                          ...loader.options.modules,
+                          auto: (resource) => /\.module\.scss$|forms-(selector|list|table)\.scss$/.test(resource),
+                        },
+                      },
+                    }
+                  : loader,
+              )
+            : rule.use,
+        })),
+      },
+      resolve: {
+        ...config.resolve,
+        modules: [path.join(repositoryRoot, 'node_modules'), 'node_modules'],
+        alias: {
+          '@openmrs/esm-framework$': stubs,
+          '@openmrs/esm-react-utils$': stubs,
+          '@openmrs/esm-translations$': stubs,
+          './workspace2$': stubs,
+          '../icons$': stubs,
+        },
+      },
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  page.setDefaultTimeout(5000);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setContent(
+    '<div id="omrs-top-nav-app-container"></div><div id="omrs-left-nav-container"></div><div id="omrs-workspaces-container"><div id="fixture" style="height:100%;position:relative"></div></div><div id="omrs-apps-container"></div>',
+  );
+  await page.addStyleTag({
+    path: require.resolve('@carbon/styles/css/styles.css'),
+  });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addStyleTag({
+    content: 'body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}',
+  });
+  await page.evaluate(() => {
+    document.body.className = 'omrs-breakpoint-gt-tablet';
+  });
+  await page.addScriptTag({ path: path.join(outputPath, 'fixture.js') });
+  for (const width of [1280, 768, 420]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate((width) => {
+      document.body.className = width >= 1024 ? 'omrs-breakpoint-gt-tablet' : 'omrs-breakpoint-lt-desktop';
+    }, width);
+    await expect(page.getByRole('banner', { name: 'workspaceHeader' })).toHaveCount(2);
+    const footer = page.getByRole('button', { name: 'Cerrar formularios' });
+    await expect
+      .poll(() =>
+        footer.evaluate((button) => button.closest('form').parentElement.parentElement.getBoundingClientRect().width),
+      )
+      .toBe(width >= 1024 ? 420 : width);
+    await expect(footer).toBeInViewport();
+    const before = await footer.boundingBox();
+    const last = page.getByRole('button', { name: 'Consejería, acuerdos y compromisos' });
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+    await last.click();
+    await last.focus();
+    await expect(last).toBeFocused();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Space');
+    assert.deepEqual(await page.evaluate(() => window.opened.slice(-3)), ['form-26', 'form-26', 'form-26']);
+    assert.deepEqual(await footer.boundingBox(), before, 'footer stays visible while the forms scroll');
+    await footer.focus();
+    await page.keyboard.press('Enter');
+    const previous = page.getByLabel('Previous consultation date');
+    const covered = await previous.evaluate((input) => {
+      const box = input.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return !hit || (hit !== input && !input.contains(hit));
+    });
+    assert.ok(covered, 'opaque native workspace covers previous consultation controls');
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight),
+      true,
+      'workspace owns scrolling',
+    );
+  }
+  assert.equal(await page.evaluate(() => window.finished), 3, 'footer activation works by keyboard');
+  assert.deepEqual(errors, []);
+});
+
+test('a saved close refreshes observations across independently bundled microfrontends', async (t) => {
+  const { readFile } = require('node:fs/promises');
+  const fixture = await mkdtemp(path.join(tmpdir(), 'sihsalus-swr-federation-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const shellConfig = getAppShellWebpackConfig();
+  const shellShared = shellConfig.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  const appConfig = loadConfig(
+    path.join(repositoryRoot, 'packages/apps/esm-crecimiento-desarrollo-app'),
+    'rspack.config.js',
+  );
+  const appShared = appConfig.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  const shared = (entries) =>
+    Object.fromEntries(
+      Object.entries(entries).filter(
+        ([key]) => key === 'react' || key === 'react-dom' || key === 'swr' || key.startsWith('swr/'),
+      ),
+    );
+  const outputPath = path.join(fixture, 'dist');
+  const helper = path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/visit/revalidation-utils.ts');
+  const framework = path.join(fixture, 'framework.js');
+  await writeFile(
+    framework,
+    "export const restBaseUrl='/ws/rest/v1'; export const fhirBaseUrl='/ws/fhir2/R4'; export function openmrsFetch(){throw Error('Unexpected clinical request');}",
+  );
+  await writeFile(
+    path.join(fixture, 'host.js'),
+    'window.initializeHost = () => { __webpack_public_path__ = "/openmrs/spa/"; return import("./host-bootstrap.js"); };',
+  );
+  await writeFile(
+    path.join(fixture, 'host-bootstrap.js'),
+    `
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { SWRConfig } from 'swr';
+    import { initCache } from 'swr/_internal';
+    const cache = new Map(); initCache(cache);
+    window.mountReaders = async () => {
+      await __webpack_init_sharing__('default');
+      for (const name of ['reader', 'saver']) {
+        await window[name].init(__webpack_share_scopes__.default);
+        const component = (await window[name].get('./start'))().default;
+        createRoot(document.getElementById(name)).render(React.createElement(SWRConfig,
+          {value:{provider:()=>cache,revalidateOnFocus:false,shouldRetryOnError:false}}, React.createElement(component)));
+      }
+    };
+    window.hostReady = true;
+  `,
+  );
+  await writeFile(
+    path.join(fixture, 'reader.js'),
+    `
+    import React from 'react'; import useSWR from 'swr';
+    import useSWRImmutable from 'swr/immutable'; import useSWRInfinite from 'swr/infinite';
+    const read = async (key) => {
+      window.reads ??= {}; window.reads[key] = (window.reads[key] ?? 0) + 1;
+      return window.saved ? ['saved-observation'] : [];
+    };
+    export default function Reader() {
+      const {data} = useSWR('/ws/rest/v1/obs?patient=synthetic-child&concept=stimulation&s=default', read);
+      const immutable = useSWRImmutable('/ws/rest/v1/obs?patient=synthetic-child&concept=counseling&s=default', read);
+      const other = useSWR('/ws/rest/v1/obs?patient=synthetic-child-other&concept=stimulation&s=default', read);
+      const metadata = useSWR('/ws/rest/v1/concept/stimulation', read);
+      const pages = useSWRInfinite(index => index < 2 ? '/ws/rest/v1/encounter?patient=synthetic-child&startIndex='+index : null,
+        async key => { await read(key); return [window.saved ? 'new-page' : 'old-page']; });
+      React.useEffect(()=>{void pages.setSize(2);},[pages.setSize]);
+      const output = (label,value) => React.createElement('output', {'aria-label':label,key:label}, value);
+      return React.createElement('div', null,
+        output('sessions',data ? data.length : 'loading'),
+        output('counseling',immutable.data ? immutable.data.length : 'loading'),
+        output('other patient',other.data ? other.data.length : 'loading'),
+        output('metadata',metadata.data ? metadata.data.length : 'loading'),
+        output('history',pages.data?.flat().join(',')));
+    }
+  `,
+  );
+  await writeFile(
+    path.join(fixture, 'saver.js'),
+    `
+    import React from 'react'; import {useSWRConfig} from 'swr';
+    import {invalidateVisitAndEncounterData} from ${JSON.stringify(helper)};
+    export default function Saver() {
+      const {mutate,cache}=useSWRConfig();
+      return React.createElement('button', {onClick:()=>{
+        window.saved=true; invalidateVisitAndEncounterData(mutate,'synthetic-child',cache);
+      }}, 'Confirmed synthetic save');
+    }
+  `,
+  );
+  await compile(
+    {
+      mode: 'production',
+      context: fixture,
+      entry: [path.join(fixture, 'host.js'), ...shellConfig.entry.filter((entry) => entry.endsWith('/swr-runtime.ts'))],
+      output: {
+        path: outputPath,
+        filename: 'host.js',
+        publicPath: shellConfig.output.publicPath,
+        uniqueName: 'swr-host',
+      },
+      module: shellConfig.module,
+      resolveLoader: { modules: [path.join(repositoryRoot, 'node_modules')] },
+      resolve: { modules: [path.join(repositoryRoot, 'node_modules')] },
+      plugins: [
+        ...shellConfig.plugins.filter((plugin) => plugin.constructor.name === 'InjectManifest'),
+        new webpack.container.ModuleFederationPlugin({
+          name: 'host',
+          shared: shared(shellShared),
+        }),
+      ],
+      devtool: false,
+      performance: false,
+    },
+    webpack,
+  );
+  for (const name of ['reader', 'saver']) {
+    await compile(
+      {
+        mode: 'production',
+        context: fixture,
+        entry: {},
+        output: {
+          path: outputPath,
+          filename: `${name}-main.js`,
+          publicPath: 'http://swr.test/openmrs/spa/',
+          uniqueName: `swr-${name}`,
+        },
+        module: appConfig.module,
+        resolve: {
+          ...appConfig.resolve,
+          modules: [path.join(repositoryRoot, 'node_modules')],
+          alias: { '@openmrs/esm-framework': framework },
+        },
+        plugins: [
+          new rspack.container.ModuleFederationPluginV1({
+            name,
+            filename: `${name}-remote.js`,
+            exposes: { './start': path.join(fixture, `${name}.js`) },
+            shared: shared(appShared),
+          }),
+        ],
+        devtool: false,
+        performance: false,
+      },
+      rspack,
+    );
+  }
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin !== 'http://swr.test' || route.request().method() !== 'GET') return route.abort();
+    if (url.pathname === '/openmrs/spa/patient/synthetic-child/chart/WellChildCare')
+      return route.fulfill({
+        contentType: 'text/html',
+        body: '<div id="reader"></div><div id="saver"></div><script src="/openmrs/spa/host.js"></script><script src="/openmrs/spa/reader-remote.js"></script><script src="/openmrs/spa/saver-remote.js"></script><script>window.initializeHost();</script>',
+      });
+    const filename = path.basename(url.pathname);
+    if (url.pathname !== `/openmrs/spa/${filename}`) return route.fulfill({ status: 404, body: '' });
+    try {
+      return route.fulfill({
+        contentType: 'text/javascript',
+        body: await readFile(path.join(outputPath, filename)),
+      });
+    } catch {
+      return route.fulfill({ status: 404, body: '' });
+    }
+  });
+  await page.goto('http://swr.test/openmrs/spa/patient/synthetic-child/chart/WellChildCare');
+  await page.waitForFunction(() => window.hostReady);
+  await page.evaluate(() => window.mountReaders());
+  await expect(page.getByLabel('sessions')).toHaveText('0');
+  await expect(page.getByLabel('counseling')).toHaveText('0');
+  await expect(page.getByLabel('other patient')).toHaveText('0');
+  await expect(page.getByLabel('metadata')).toHaveText('0');
+  await expect(page.getByLabel('history')).toHaveText('old-page,old-page');
+  const before = await page.evaluate(() => window.reads);
+  await page.getByRole('button', { name: 'Confirmed synthetic save' }).click();
+  await expect(page.getByLabel('sessions')).toHaveText('1');
+  await expect(page.getByLabel('counseling')).toHaveText('1');
+  await expect(page.getByLabel('history')).toHaveText('new-page,new-page');
+  await expect(page.getByLabel('other patient')).toHaveText('0');
+  await expect(page.getByLabel('metadata')).toHaveText('0');
+  const after = await page.evaluate(() => window.reads);
+  for (const key of Object.keys(before).filter(
+    (key) => key.includes('synthetic-child-other') || key.includes('/concept/'),
+  )) {
+    assert.equal(after[key], before[key], `${key} is not revalidated`);
+  }
+  assert.deepEqual(errors, []);
+});

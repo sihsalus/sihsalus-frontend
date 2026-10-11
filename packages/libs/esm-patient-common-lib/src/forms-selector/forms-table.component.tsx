@@ -85,13 +85,13 @@ const FormsTable = ({
                       <TableRow key={key ?? row.id} {...rowProps}>
                         <TableCell key={row.cells[0].id}>
                           <Link
-                            style={{ cursor: 'pointer' }}
+                            as="button"
+                            type="button"
                             onClick={() => {
                               if (formRow) {
                                 handleFormOpen?.(formRow.form, formRow.encounterUuid ?? '');
                               }
                             }}
-                            role="presentation"
                             className={styles.formName}
                           >
                             {formRow?.formName}

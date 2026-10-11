@@ -117,6 +117,13 @@ form value. Loading an existing encounter or resetting a form must update the
 display without submitting a change; removing one answer preserves the others.
 The input must not maintain a second copy of the persisted selection.
 
+Non-searchable checkbox groups display the same schema validation errors and
+warnings as searchable multi-selects using Carbon's group validation props.
+The visible group message describes each checkbox for keyboard and screen-reader
+users; errors take precedence over warnings, and clearing validation removes the
+association. Readonly groups retain Carbon's readonly validation behavior.
+Rendering this feedback does not change validation rules or submission handling.
+
 Encounter role suggestions read the complete active catalog and filter partial
 names locally. OpenMRS' `q` search can require an exact name. A failed or repeated
 page rejects the lookup rather than presenting an incomplete catalog.

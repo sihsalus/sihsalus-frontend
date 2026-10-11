@@ -34,6 +34,7 @@ import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import { type ConfigObject } from '../config-schema';
 import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
@@ -89,6 +90,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
     ? props.workspaceProps.programEnrollmentId
     : props.programEnrollmentId;
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const { patient: fetchedPatient } = usePatient(patientUuid);
@@ -190,7 +192,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
           await createProgramEnrollment(payload, abortController);
         }
 
-        await mutatePatientProgramEnrollments(patientUuid);
+        await mutatePatientProgramEnrollments(patientUuid, mutate);
         closeWorkspace({ discardUnsavedChanges: true });
 
         showSnackbar({
@@ -210,7 +212,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
         });
       }
     },
-    [closeWorkspace, currentEnrollment, currentState, enrollmentLocationUuid, inEditMode, patientUuid, t],
+    [closeWorkspace, currentEnrollment, currentState, enrollmentLocationUuid, inEditMode, mutate, patientUuid, t],
   );
 
   const programName = (

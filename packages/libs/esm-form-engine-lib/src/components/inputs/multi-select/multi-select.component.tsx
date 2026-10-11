@@ -1,5 +1,5 @@
 import { Checkbox, CheckboxGroup, FilterableMultiSelect, Layer, Tag } from '@carbon/react';
-import React, { useMemo } from 'react';
+import React, { useId, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormProviderContext } from '../../../provider/form-provider';
 import { type FormFieldInputProps, type FormFieldValue } from '../../../types';
@@ -22,6 +22,9 @@ interface SelectOption {
 const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, errors, warnings, setFieldValue }) => {
   const { t } = useTranslation();
   const { layoutType, sessionMode, workspaceLayout, formFieldAdapters } = useFormProviderContext();
+  const validationMessageId = useId();
+  const validationDescriptionId =
+    !isTrue(field.readonly) && (errors.length > 0 || warnings.length > 0) ? validationMessageId : undefined;
 
   const selectOptions = field.questionOptions.answers
     .filter((answer) => !answer.isHidden)
@@ -97,10 +100,20 @@ const MultiSelect: React.FC<FormFieldInputProps<string[]>> = ({ field, value, er
                 warnText={warnings[0]?.message}
               />
             ) : (
-              <CheckboxGroup legendText={<FieldLabel field={field} />} readOnly={isTrue(field.readonly)}>
+              <CheckboxGroup
+                legendText={<FieldLabel field={field} />}
+                readOnly={isTrue(field.readonly)}
+                invalid={errors.length > 0}
+                invalidText={<span id={validationMessageId}>{errors[0]?.message}</span>}
+                warn={warnings.length > 0}
+                warnText={<span id={validationMessageId}>{warnings[0]?.message}</span>}
+                aria-describedby={validationDescriptionId}
+              >
                 {selectOptions?.map((option, index) => {
                   return (
                     <Checkbox
+                      aria-describedby={validationDescriptionId}
+                      aria-invalid={!isTrue(field.readonly) && errors.length > 0 ? true : undefined}
                       className={styles.checkbox}
                       checked={value?.includes(option.concept) ?? false}
                       disabled={option.disabled}

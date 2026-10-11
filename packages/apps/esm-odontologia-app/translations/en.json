@@ -148,5 +148,6 @@
   "visitType": "Visit type",
   "white": "White",
   "yellow": "Yellow",
+  "odontogramContextRequired": "Start an active visit and verify your session provider and location before recording an odontogram. If the problem continues, contact support.",
   "loadingOdontogram": "Loading odontogram"
 }

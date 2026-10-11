@@ -87,6 +87,14 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
+    min-inline-size: 0;
+    padding-inline: layout.$spacing-02;
+
+    & > span {
+      max-inline-size: 100%;
+      overflow-wrap: anywhere;
+      text-align: center;
+    }
   }
 
   .active {

@@ -1,27 +1,6 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 
 .helpMenuButton {
-  z-index: 7900;
-  background-color: colors.$white;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  border-radius: layout.$spacing-02;
-  bottom: layout.$spacing-05;
-  color: colors.$gray-100;
-  cursor: pointer;
-  right: layout.$spacing-03;
-  height: layout.$spacing-08;
-  width: layout.$spacing-08;
-  position: fixed;
-  padding-inline: 0 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background-color: colors.$gray-20;
-    color: colors.$black;
-  }
+  width: 100%;
+  gap: layout.$spacing-04;
 }

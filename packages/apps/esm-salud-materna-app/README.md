@@ -133,12 +133,32 @@ de abrir el formulario. Solo abre una coincidencia publicada y no retirada; cons
 y la actualización posterior al guardado. Los errores muestran un mensaje genérico y permiten reintentar;
 las aperturas pendientes se descartan al cerrar el selector o perder el acceso, y se evitan clics duplicados.
 
+El resumen de suplementación muestra la suma de tabletas indicadas registradas
+por concepto en la gestación, conservando el cero registrado y distinguiendo
+fierro/ácido fólico de ácido fólico solo. Los conceptos corresponden a
+«Indicación» en `OBST-003` y `OBST-011`; no acreditan entrega, consumo ni
+adherencia. No se derivan metas, porcentajes ni cumplimiento clínico. Las tres
+lecturas de indicaciones y las sesiones de psicoprofilaxis recorren todas las
+páginas REST antes de mostrar resultados; un error de página se presenta como
+error, y el cambio de paciente no conserva resultados del anterior. Las
+anulaciones se respetan mediante la búsqueda nativa de registros no anulados.
+
 Los lectores de embarazo actual, plan de parto, biometría prenatal, riesgo obstétrico,
 brechas NTS y el selector de formularios recorren todas las páginas REST antes de
 calcular el episodio o mostrar el historial. Una página fallida no se interpreta
 como ausencia de datos; el selector espera la lectura completa y muestra un estado
 de error si falla. Las búsquedas de observaciones de riesgo usan `s=default` para
 conservar el filtro por concepto en el backend probado.
+
+Las tablas de observaciones agrupadas editan la atención que muestran, mediante
+su UUID y el paciente explícito. Reutilizan el resolutor de formularios maternos
+publicados, conservando el formulario del registro, y el lanzador de consulta
+existente; FormEntry recupera la consulta
+original de la atención editada. Una lectura incompleta o fallida no habilita una
+creación alternativa. El lector compartido recorre todas las páginas cuando el
+formulario se identifica por nombre y conserva la consulta latest-only cuando
+REST filtra por un UUID canónico. Validar en QLTY edición, guardado y recarga del
+mismo encuentro, sin cambiar paciente, consulta ni observaciones independientes.
 
 Vacíos conocidos:
 

@@ -3,6 +3,15 @@
 The vitals widget provides tabular and chart-based overviews, a form for
 recording vitals and biometrics, and a header with the most recent values.
 
+## Header reference ranges
+
+The normal-range tooltip uses the same patient-specific range resolver as the
+header's value interpretation. If the patient-specific response has no range
+for a concept, or is unavailable, both retain the existing ConceptNumeric
+fallback. A normal interval with a missing bound is displayed as unavailable.
+This keeps the explanation consistent with the displayed flag; it does not
+introduce clinical thresholds or approve the ranges supplied by the backend.
+
 ## Clinical write contract
 
 - A new record requires an active visit, its verified location, a configured

@@ -26,12 +26,13 @@ const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) =>
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { feedingType, lastAssessmentDate, isBreastfeeding, isLoading, error } = useFeedingAssessment(patientUuid);
+  const { feedingPractice, counseling, caregiverAgreements, lastAssessmentDate, isLoading, error } =
+    useFeedingAssessment(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('feedingCounselingForm');
   const headerTitle = t('cnCounselingTitle', 'Consejería alimentaria');
 
   if (isLoading) {
-    return <DataTableSkeleton size="sm" rowCount={3} columnCount={2} />;
+    return <DataTableSkeleton size="sm" rowCount={4} columnCount={2} />;
   }
 
   if (error) {
@@ -42,7 +43,7 @@ const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) =>
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         <Tag type={lastAssessmentDate ? 'green' : 'gray'} size="sm">
-          {lastAssessmentDate ? t('completed', 'Completed') : t('pending', 'Pending')}
+          {lastAssessmentDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
         </Tag>
         {canEdit && (
           <Button
@@ -62,26 +63,26 @@ const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) =>
           <StructuredListBody>
             <StructuredListRow>
               <StructuredListCell className={styles.label}>
-                {t('cnFeedingType', 'Tipo de alimentación')}
+                {t('cnFeedingPractice', 'Práctica alimentaria revisada')}
               </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {feedingType ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+                {feedingPractice ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>
               <StructuredListCell className={styles.label}>
-                {t('cnBreastfeeding', 'Lactancia Materna')}
+                {t('cnFeedingCounseling', 'Consejería brindada')}
               </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {isBreastfeeding != null ? (
-                  isBreastfeeding ? (
-                    t('yes', 'Sí')
-                  ) : (
-                    t('no', 'No')
-                  )
-                ) : (
-                  <span className={styles.noData}>{t('noData', 'Sin datos')}</span>
-                )}
+                {counseling ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+              </StructuredListCell>
+            </StructuredListRow>
+            <StructuredListRow>
+              <StructuredListCell className={styles.label}>
+                {t('cnCaregiverAgreements', 'Acuerdos con el cuidador')}
+              </StructuredListCell>
+              <StructuredListCell className={styles.value}>
+                {caregiverAgreements ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>

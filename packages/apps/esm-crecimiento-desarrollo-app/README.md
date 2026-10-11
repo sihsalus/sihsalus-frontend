@@ -277,6 +277,16 @@ error existente; no abre el primer resultado aproximado ni un borrador. Estas
 condiciones corresponden a la metadata servida por OpenMRS y no añaden reglas
 clínicas a content.
 
+Los resúmenes de consejería alimentaria y seguimiento nutricional leen el último
+encounter activo de CRED-007 y CRED-008, respectivamente, con todas las páginas
+REST. Sus campos pertenecen al mismo formulario, paciente y episodio; una obs
+anulada o ausente no se sustituye por la de otro registro. CRED-007 muestra la
+práctica revisada, consejería y acuerdos registrados. CRED-008 muestra la
+clasificación, evolución y referencia registradas. Estos resúmenes no derivan
+lactancia, consumo de suplementos ni cumplimiento del plan a partir de otros
+formularios. `cred-nutrition-records.test.tsx` cubre esa separación, paginación,
+errores y cambio de paciente; la aceptación visual requiere el recorrido QLTY.
+
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que el widget correspondiente lee los datos persistidos.
 - Probar en QLTY el flujo end-to-end de CRED neonatal: abrir formulario, guardar, recargar la historia y confirmar que los widgets leen el encounter y las obs guardadas.
 - Probar balance de líquidos, biometría, evaluación cefalocaudal, alojamiento conjunto y consejería de lactancia con datos sintéticos en DEV/QLTY autorizado y coordinado.
@@ -332,6 +342,10 @@ coordinación de content antes del frontend están en el contrato conjunto.
 
 ## Curvas escolares y primer control neonatal
 
+La fecha FHIR de nacimiento se interpreta como fecha de calendario mediante el
+lector de fechas compartido. No se convierte a medianoche UTC: eso adelantaba
+la edad mostrada un día en Lima y desplazaba la edad usada por las curvas.
+
 Las curvas escolares reutilizan el componente Carbon de crecimiento para IMC/edad y
 talla/edad, con referencias OMS 2007 de ambos sexos entre 61 y 228 meses. Los
 parámetros LMS, procedencia y límites están en
@@ -364,3 +378,12 @@ con la última Hb y una banda de edad. No determina el calendario completo de
 NTS 213 ni incorpora inicio/fin de suplementación, tratamiento o prematuridad.
 La interfaz pide confirmar la fecha con el profesional; no añade reglas
 clínicas ni cambia la Hb registrada para suplir ese contexto.
+
+### Growth and development summary cards
+
+The visible module name is “Crecimiento y desarrollo” / “Growth and development”.
+Canonical translation keys, routes, workspace names and form identifiers remain unchanged.
+The controls, nutrition follow-up and development follow-up cards use the shared native
+`CardHeader` and Carbon structured lists, with module-local responsive styles. Recorded
+values wrap without adding clinical interpretations; registration and appointment
+actions retain their existing privilege and scheduling checks.

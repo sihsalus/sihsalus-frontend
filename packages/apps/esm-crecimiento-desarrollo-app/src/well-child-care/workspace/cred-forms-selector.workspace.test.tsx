@@ -7,6 +7,7 @@ import CREDFormsSelectorWorkspace from './cred-forms-selector.workspace';
 
 vi.mock('@openmrs/esm-framework', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@openmrs/esm-framework')>()),
+  Workspace2: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useOpenmrsFetchAll: (await import('../../../../../libs/esm-react-utils/src/useOpenmrsFetchAll')).useOpenmrsFetchAll,
 }));
 
@@ -197,10 +198,10 @@ it('preserves the saved-form state across a failed refresh and retry', async () 
   };
   await act(async () => opened.handlePostResponse({ uuid: 'control-one' }));
   const retry = await screen.findByRole('button', { name: 'Reintentar' });
-  expect(screen.queryByRole('button', { name: 'Guardar y Firmar' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Cerrar formularios' })).not.toBeInTheDocument();
 
   readControlNumbers = async () => response(controlNumbers);
   await userEvent.click(retry);
-  expect(await screen.findByRole('button', { name: 'Guardar y Firmar' })).toBeEnabled();
+  expect(await screen.findByRole('button', { name: 'Cerrar formularios' })).toBeEnabled();
   expect(screen.getByText('Formularios completados: 1')).toBeVisible();
 });

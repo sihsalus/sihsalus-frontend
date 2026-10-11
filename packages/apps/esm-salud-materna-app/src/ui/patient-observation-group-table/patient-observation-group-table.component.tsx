@@ -14,12 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import { Edit } from '@carbon/react/icons';
+import { formatDate, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { formEntryWorkspace } from '../../types';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
@@ -46,9 +47,7 @@ const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => {
   return (
     <div>
       <div style={{ fontWeight: 'bold' }}>{group.title}</div>
-      <div style={{ fontSize: '0.875rem', color: '#6f6f6f' }}>
-        {t('observationCount', { count: group.count })}
-      </div>
+      <div style={{ fontSize: '0.875rem', color: '#6f6f6f' }}>{t('observationCount', { count: group.count })}</div>
     </div>
   );
 };
@@ -74,20 +73,15 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     error,
     mutate,
   } = useFilteredEncounter(patientUuid, encounterType, formUuid);
-  //TODO: MODIFY THIS TO SEND THE CURRENT DATA TO THE WORKSPACE , IT SHOULD BE EDITABLE
-  const launchForm = useCallback(() => {
-    try {
-      if (formWorkspace) {
-        launchWorkspace2(formEntryWorkspace, {
-          form: { uuid: formWorkspace },
-          encounterUuid: '',
-          handlePostResponse: () => void mutate(),
-        });
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
-    }
-  }, [formWorkspace, mutate]);
+  const { launchForm, isLoading: isFormLoading } = useMaternalFormIdentifierLauncher(
+    data?.form?.uuid || formWorkspace,
+    headerTitle,
+    patientUuid,
+  );
+  const handleLaunchForm = useCallback(() => {
+    if (isLoading || error) return;
+    launchForm(data?.uuid ?? '', () => void mutate());
+  }, [data?.uuid, error, isLoading, launchForm, mutate]);
 
   const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
@@ -151,7 +145,11 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
         privilege={editPrivilege}
         fallback={<EmptyState headerTitle={headerTitle} displayText={displayText} />}
       >
-        <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={launchForm} />
+        <EmptyState
+          headerTitle={headerTitle}
+          displayText={displayText}
+          launchForm={formWorkspace && !isFormLoading ? handleLaunchForm : undefined}
+        />
       </RequirePrivilege>
     );
   }
@@ -164,9 +162,10 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
           <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
             <Button
               kind="ghost"
-              renderIcon={(props) => <AddIcon size={16} {...props} />}
-              onClick={launchForm}
-              aria-label={t('add', 'Add')}
+              renderIcon={Edit}
+              onClick={handleLaunchForm}
+              disabled={isLoading || isFormLoading}
+              aria-label={t('edit', 'Edit')}
             >
               {t('edit', 'Edit')}
             </Button>

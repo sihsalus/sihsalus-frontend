@@ -34,7 +34,7 @@
     "lint": "node node_modules/turbo/bin/turbo run lint",
     "lint:all": "biome lint .",
     "test:tooling": "node --test \"packages/tooling/scripts/*.test.js\"",
-    "test:styles": "yarn workspace @openmrs/rspack-config build && node --test packages/tooling/scripts/styles.browser.spec.js",
+    "test:styles": "yarn build --filter=@openmrs/rspack-config --filter=@openmrs/esm-state... && node --test packages/tooling/scripts/styles.browser.spec.js",
     "security:audit": "yarn validate:react-router && node packages/tooling/scripts/audit-patched-dependencies.js",
     "validate:concepts": "node packages/tooling/scripts/validate-concept-existence.js",
     "validate:error-exposure": "node packages/tooling/scripts/validate-error-exposure.js",

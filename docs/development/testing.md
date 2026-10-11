@@ -18,7 +18,9 @@ yarn test:styles                            # Check compiled CSS/SCSS in Chromiu
 ```
 
 Run `yarn playwright install chromium` before the first local `yarn test:styles`.
-This command builds the shared Rspack configuration and checks its CSS/SCSS rules
+This command builds the shared Rspack configuration and the native state library
+with its dependencies, so the modal fixture also works in a clean checkout.
+It checks the CSS/SCSS rules
 through Imágenes, Stock and Onboarding, plus the styleguide's CSS extraction
 and the source-built app shell's Webpack rules.
 It verifies default imports, scoped classes and computed styles using temporary

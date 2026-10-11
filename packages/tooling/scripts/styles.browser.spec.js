@@ -934,6 +934,16 @@ setupModals(document.getElementById('omrs-modals-container'));`,
   await page.evaluate(() => window.openHelpModal());
   await expect(page.locator('[role="dialog"]')).toHaveCount(2);
   await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+  // Carbon dismisses an open tooltip before the modal. The mobile Close icon
+  // appears under the pointer left by My Account, so exercise that priority explicitly.
+  await dialog.locator('.cds--modal-close').hover();
+  await expect(dialog.getByRole('tooltip')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog.getByRole('tooltip')).toHaveCount(0);
+  await expect(page.locator('[role="dialog"]')).toHaveCount(2);
+  await dialog.getByRole('heading', { name: 'Help menu' }).hover();
+  await expect(page.locator('[role="tooltip"][aria-hidden="false"]')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(page.locator('[role="dialog"]')).toHaveCount(1);
   await expect(dialog).toBeVisible();
@@ -996,6 +1006,9 @@ setupModals(document.getElementById('omrs-modals-container'));`,
     await page.setViewportSize({ width, height: 1000 });
     await page.evaluate(() => window.openHelpModal());
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+    await dialog.getByRole('heading', { name: 'Help menu' }).hover();
+    await expect(page.locator('[role="tooltip"][aria-hidden="false"]')).toHaveCount(0);
     const box = await dialog.boundingBox();
     assert.ok(box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height <= 1000, JSON.stringify(box));
     await page.keyboard.press('Escape');

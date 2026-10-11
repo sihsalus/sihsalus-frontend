@@ -129,7 +129,7 @@ describe('ProgramsOverview', () => {
     expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
-  it("renders a tabular overview of the patient's active program enrollments when available", async () => {
+  it("renders a tabular overview of the patient's program enrollments when available", async () => {
     const user = userEvent.setup();
 
     mockProgramsState({ enrollments: mockEnrolledProgramsResponse });
@@ -140,7 +140,7 @@ describe('ProgramsOverview', () => {
 
     expect(screen.getByText(/Care Programs/i)).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /active programs/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /program name/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /date enrolled/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /go to/i })).toBeInTheDocument();
 

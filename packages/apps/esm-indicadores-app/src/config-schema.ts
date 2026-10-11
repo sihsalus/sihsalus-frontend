@@ -11,10 +11,10 @@ export const configSchema = {
     _default: '/services/reportes-sql',
     _description:
       'Base path for the reportes-sql backend service. ' +
-      'Use a relative path (e.g. /services/reportes-sql) in production — openmrsFetch prepends the OpenMRS base. ' +
-      'For local development against a standalone reportes-sql backend, set this to an absolute URL ' +
-      '(e.g. http://127.0.0.1:8000) — openmrsFetch passes absolute URLs through unchanged, ' +
-      'so no dev-server proxy is needed.',
+      'Use a relative path (e.g. /services/reportes-sql): openmrsFetch prepends the OpenMRS base, ' +
+      'the request stays same-origin, and the OpenMRS session cookie is sent. ' +
+      'Keep it relative — an absolute URL bypasses the gateway and, being cross-origin, ' +
+      'would not carry the session cookie.',
   },
 };
 

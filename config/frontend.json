@@ -484,9 +484,6 @@
       "en-GB": "es-ES"
     }
   },
-  "@sihsalus/esm-indicadores-app": {
-    "reportesSqlApiPath": "/services/reportes-sql"
-  },
   "core": {
     "Translation overrides": {
       "es": {

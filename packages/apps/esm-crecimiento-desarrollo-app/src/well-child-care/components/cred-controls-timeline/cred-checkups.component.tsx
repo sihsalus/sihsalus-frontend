@@ -1,7 +1,16 @@
-import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
+import {
+  Button,
+  InlineLoading,
+  InlineNotification,
+  StructuredListBody,
+  StructuredListCell,
+  StructuredListRow,
+  StructuredListWrapper,
+  Tag,
+} from '@carbon/react';
 import { Add, Calendar } from '@carbon/react/icons';
 import { showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,11 +18,10 @@ import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
+import styles from '../../../ui/summary-card.scss';
 import { getCREDControlsToSchedule } from '../../../utils/cred-control-intervals';
 import { translateCredControlLabel } from '../../../utils/cred-label-translations';
 import { createCREDAppointments } from '../../common/cred-appointments.resource';
-
-import styles from './cred-schedule.scss';
 
 interface CredCheckupsProps {
   patientUuid: string;
@@ -135,67 +143,92 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
 
   return (
     <div className={styles.widgetCard}>
-      <div className={styles.desktopHeading}>
-        <h4>{t('credCheckups', 'Controles Crecimiento y Desarrollo')}</h4>
-      </div>
-
-      <div className={styles.checkups}>
+      <CardHeader title={t('credCheckups', 'Controles de crecimiento y desarrollo')}>
+        <div className={styles.headerActions}>
+          {nextDueControl?.status === 'overdue' && (
+            <Tag type="red" size="sm">
+              {t('statusOverdue', 'Vencido')}
+            </Tag>
+          )}
+          {nextDueControl?.status === 'pending' && (
+            <Tag type="green" size="sm">
+              {t('statusPending', 'Pendiente')}
+            </Tag>
+          )}
+          {nextDueControl?.status === 'scheduled' && (
+            <Tag type="blue" size="sm">
+              {t('statusScheduled', 'Programado')}
+            </Tag>
+          )}
+          {nextDueControl?.status === 'future' && (
+            <Tag type="gray" size="sm">
+              {t('statusFuture', 'Futuro')}
+            </Tag>
+          )}
+          {canEdit && nextDueControl && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={handleRegisterControl}
+              disabled={!canRegisterNextControl}
+            >
+              {t('registerControl', 'Registrar control')}
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <div className={styles.container}>
         {missingNeonatalDischarge && (
           <InlineNotification kind="warning" lowContrast hideCloseButton title={t('neonatalDischargeRequired')} />
         )}
-        {/* Next due control */}
         {nextDueControl && (
-          <>
-            <div className={styles.sectionTitle}>{t('nextDueControl', 'Próximo Control')}</div>
-            <div className={styles.nextDueCard}>
-              <div className={styles.nextDueInfo}>
-                <span className={styles.nextDueLabel}>
-                  {t('realControlNumber', 'Número de control real')}: {nextDueControl.controlNumber}
-                </span>
-                <span className={styles.nextDueDate}>
+          <StructuredListWrapper isCondensed>
+            <StructuredListBody>
+              <StructuredListRow>
+                <StructuredListCell className={styles.label}>
+                  {t('nextDueControl', 'Próximo control')}
+                </StructuredListCell>
+                <StructuredListCell className={styles.value}>
+                  {t('credRecordedControlNumber', 'Control {{number}}', { number: nextDueControl.controlNumber })}
+                </StructuredListCell>
+              </StructuredListRow>
+              <StructuredListRow>
+                <StructuredListCell className={styles.label}>
                   {nextDueControl.controlNumber === 1
                     ? t('recommendedControlDate', 'Fecha recomendada')
                     : t('minimumControlDate', 'Fecha mínima')}
-                  : {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
-                </span>
-                {nextDueControl.appointmentDate && (
-                  <span className={styles.nextDueDate}>
-                    {t('appointmentDate', 'Fecha de cita')}:{' '}
+                </StructuredListCell>
+                <StructuredListCell className={styles.value}>
+                  {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
+                </StructuredListCell>
+              </StructuredListRow>
+              {nextDueControl.appointmentDate && (
+                <StructuredListRow>
+                  <StructuredListCell className={styles.label}>
+                    {t('appointmentDate', 'Fecha de cita')}
+                  </StructuredListCell>
+                  <StructuredListCell className={styles.value}>
                     {dayjs(nextDueControl.appointmentDate).format('DD/MM/YYYY')}
-                  </span>
-                )}
-                {nextDueControl.status === 'overdue' && <Tag type="red">{t('statusOverdue', 'Vencido')}</Tag>}
-                {nextDueControl.status === 'pending' && <Tag type="green">{t('statusPending', 'Pendiente')}</Tag>}
-                {nextDueControl.status === 'scheduled' && <Tag type="blue">{t('statusScheduled', 'Programado')}</Tag>}
-                {nextDueControl.status === 'future' && <Tag type="gray">{t('statusFuture', 'Futuro')}</Tag>}
-              </div>
-              {canEdit && (
-                <Button
-                  kind="primary"
-                  size="sm"
-                  renderIcon={Add}
-                  onClick={handleRegisterControl}
-                  disabled={!canRegisterNextControl}
-                >
-                  {t('registerControl', 'Registrar Control')}
-                </Button>
+                  </StructuredListCell>
+                </StructuredListRow>
               )}
-            </div>
-          </>
+            </StructuredListBody>
+          </StructuredListWrapper>
         )}
 
         {/* Scheduled controls */}
         {scheduledControls.length > 0 && (
           <>
             <div className={styles.sectionTitle}>
-              {t('scheduledControls', 'Citas Programadas')} ({scheduledControls.length})
+              {t('scheduledControls', 'Citas programadas')} ({scheduledControls.length})
             </div>
             {scheduledControls.map((control) => (
-              <div key={control.controlNumber} className={styles.checkupItem}>
+              <div key={control.controlNumber} className={styles.summaryRow}>
                 <span>
                   {t('idealAgeSlot', 'Edad programada')}: {translateCredControlLabel(t, control.label)}
                 </span>
-                <span className={styles.dueDate}>
+                <span className={styles.value}>
                   {control.appointmentDate ? dayjs(control.appointmentDate).format('DD/MM/YYYY') : ''}
                 </span>
                 <Tag type="blue">{t('statusScheduled', 'Programado')}</Tag>
@@ -206,7 +239,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
 
         {/* Progress summary */}
         <div className={styles.sectionTitle}>{t('progressSummary', 'Resumen')}</div>
-        <div className={styles.checkupItem}>
+        <div className={styles.summaryRow}>
           <span>
             {t('completedOf', '{{completed}} de {{total}} controles', {
               completed: completedCount,
@@ -216,21 +249,21 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
         </div>
 
         {/* Generate appointments button */}
-        <div className={styles.generateSection}>
-          {canEdit && (
+        {canEdit && (
+          <div className={styles.generateSection}>
             <Button
-              kind="tertiary"
-              size="md"
+              kind="ghost"
+              size="sm"
               renderIcon={Calendar}
               onClick={handleGenerateAppointments}
               disabled={isGenerating || controlsToSchedule.length === 0}
             >
               {isGenerating
                 ? t('generatingAppointments', 'Generando citas...')
-                : t('generateAppointments', 'Generar cita Crecimiento y Desarrollo')}
+                : t('generateAppointments', 'Generar cita')}
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

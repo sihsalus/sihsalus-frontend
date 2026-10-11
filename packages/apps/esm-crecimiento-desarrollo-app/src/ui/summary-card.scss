@@ -1,0 +1,93 @@
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.widgetCard {
+  min-width: 0;
+  border: 1px solid $ui-03;
+  background: $ui-background;
+
+  // CardHeader owns the typography; allow its title and action group to wrap together.
+  > :first-child {
+    height: auto;
+    min-height: layout.$spacing-09;
+    gap: layout.$spacing-03 layout.$spacing-05;
+    flex-wrap: wrap;
+    padding: layout.$spacing-04 layout.$spacing-05;
+
+    > h4 {
+      min-width: 0;
+      flex: 1 1 12rem;
+    }
+  }
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-inline-start: auto;
+}
+
+.container {
+  padding: 0 layout.$spacing-05 layout.$spacing-05;
+
+  :global(.cds--structured-list) {
+    margin-bottom: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+}
+
+.label,
+.value {
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.label {
+  width: 42%;
+  color: $text-02;
+}
+
+.value {
+  font-weight: 400;
+  text-align: start;
+}
+
+.noData {
+  color: $text-02;
+  font-style: italic;
+}
+
+.sectionTitle {
+  margin-top: layout.$spacing-05;
+  margin-bottom: layout.$spacing-03;
+  color: $text-02;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03 layout.$spacing-05;
+  padding-block: layout.$spacing-03;
+}
+
+.generateSection {
+  margin-top: layout.$spacing-04;
+  padding-top: layout.$spacing-03;
+  border-top: 1px solid $ui-03;
+}
+
+@media (max-width: 672px) {
+  .widgetCard > :first-child {
+    padding-inline: layout.$spacing-04;
+  }
+
+  .container {
+    padding-inline: layout.$spacing-04;
+  }
+}

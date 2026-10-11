@@ -16,7 +16,7 @@ import { credNutritionEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionFollowup } from '../../../../hooks/useNutritionFollowup';
 
-import styles from './nutrition-followup.scss';
+import styles from '../../../../ui/summary-card.scss';
 
 interface NutritionFollowupProps {
   patientUuid: string;
@@ -42,21 +42,23 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
-          {lastFollowupDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <div className={styles.headerActions}>
+          <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
+            {lastFollowupDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
+          </Tag>
+          {canEdit && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={() => handleAdd()}
+              iconDescription={t('add', 'Add')}
+              disabled={isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

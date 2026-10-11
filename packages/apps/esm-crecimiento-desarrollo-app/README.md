@@ -378,3 +378,12 @@ con la última Hb y una banda de edad. No determina el calendario completo de
 NTS 213 ni incorpora inicio/fin de suplementación, tratamiento o prematuridad.
 La interfaz pide confirmar la fecha con el profesional; no añade reglas
 clínicas ni cambia la Hb registrada para suplir ese contexto.
+
+### Growth and development summary cards
+
+The visible module name is “Crecimiento y desarrollo” / “Growth and development”.
+Canonical translation keys, routes, workspace names and form identifiers remain unchanged.
+The controls, nutrition follow-up and development follow-up cards use the shared native
+`CardHeader` and Carbon structured lists, with module-local responsive styles. Recorded
+values wrap without adding clinical interpretations; registration and appointment
+actions retain their existing privilege and scheduling checks.

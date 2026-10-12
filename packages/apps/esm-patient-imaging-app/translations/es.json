@@ -213,5 +213,14 @@
   "uploadStuiesError": "Error al cargar estudios",
   "validStepTime": "Ingresa una hora válida entre 01:00 y 12:59",
   "viewerUnavailable": "Visor no disponible para este servidor de imágenes",
-  "worklist": "Lista de trabajo"
+  "worklist": "Lista de trabajo",
+  "imagingSections": "Secciones de imágenes",
+  "studiesPanelHelp": "Consulta las imágenes del paciente, vincula un estudio existente o sube archivos DICOM.",
+  "uploadDicom": "Subir DICOM",
+  "noLinkedStudies": "No hay estudios vinculados",
+  "noLinkedStudiesHelp": "Los estudios que vincules o subas aparecerán aquí.",
+  "requestsPanelHelp": "Crea solicitudes de imágenes y consulta su avance en la lista de trabajo.",
+  "newImagingRequest": "Nueva solicitud",
+  "noImagingRequests": "No hay solicitudes de imágenes",
+  "noImagingRequestsHelp": "Crea una solicitud para programar un estudio de imágenes para este paciente."
 }

@@ -1,19 +1,10 @@
 import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import * as imagingApi from '../../api/api';
+import { addNewRequestWorkspace, linkStudiesFormWorkspace, uploadStudiesFormWorkspace } from '../constants';
 import { useImagingAccess } from '../utils/use-imaging-access';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
 
-type CardHeaderProps = {
-  children?: ReactNode;
-  title: string;
-};
-type EmptyStateProps = {
-  displayText: string;
-  headerTitle: string;
-  launchForm?: () => void;
-};
 type ErrorStateProps = {
   error?: Error | null;
   headerTitle: string;
@@ -42,29 +33,11 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
-  CardHeader: ({ children, title }: CardHeaderProps) => (
-    <div>
-      <h1>{title}</h1>
-      {children}
-    </div>
-  ),
-  EmptyState: ({ displayText, headerTitle, launchForm }: EmptyStateProps) => (
-    <div data-testid="empty-state">
-      {headerTitle}: {displayText}
-      {launchForm && (
-        <button type="button" onClick={launchForm}>
-          Launch
-        </button>
-      )}
-    </div>
-  ),
   ErrorState: ({ error, headerTitle }: ErrorStateProps) => (
     <div data-testid="error-state">
       {headerTitle}: {error?.message || 'Error'}
     </div>
   ),
-  PatientChartPagination: () => <div data-testid="patient-chart-pagination" />,
-  compare: (a: string, b: string) => a.localeCompare(b),
 }));
 
 describe('<ImagingDetailedSummary />', () => {
@@ -114,7 +87,13 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getAllByRole('progressbar')).toHaveLength(2);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(screen.getByTestId('studies-loading')).toBeVisible();
+    expect(screen.getByTestId('requests-loading')).not.toBeVisible();
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(screen.getByTestId('requests-loading')).toBeVisible();
+    expect(screen.getByTestId('studies-loading')).not.toBeVisible();
   });
 
   it('renders empty state when no studies or requests exist', () => {
@@ -124,8 +103,12 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getByText(/Studies: Studies/i)).toBeInTheDocument();
-    expect(screen.getByText(/Worklist: Requests/i)).toBeInTheDocument();
+    expect(screen.getByText('No linked studies')).toBeVisible();
+    expect(screen.getByText('No imaging requests')).not.toBeVisible();
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    expect(screen.getByText('No imaging requests')).toBeVisible();
+    expect(screen.getByText('No linked studies')).not.toBeVisible();
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
   });
 
   it('renders error states if API returns errors', () => {
@@ -145,8 +128,9 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getAllByTestId('error-state')).toHaveLength(2);
-    expect(screen.getAllByText(/Worklist: Failed to fetch/i)).toHaveLength(1);
+    expect(screen.getByText(/Studies: Failed to fetch/)).toBeVisible();
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    expect(screen.getByText(/Requests: Failed to fetch/)).toBeVisible();
   });
 
   it('renders error states if studies error', () => {
@@ -164,6 +148,9 @@ describe('<ImagingDetailedSummary />', () => {
 
     expect(screen.getAllByTestId('error-state')).toHaveLength(1);
     expect(screen.getAllByText(/Studies: Failed to fetch/i)).toHaveLength(1);
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    expect(screen.getByText('No imaging requests')).toBeVisible();
+    expect(screen.getByTestId('error-state')).not.toBeVisible();
   });
 
   it('renders RequestProcedureTable when requests exist', () => {
@@ -189,7 +176,9 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getByText('RequestProcedureTable')).toBeInTheDocument();
+    expect(screen.getByText('RequestProcedureTable')).not.toBeVisible();
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    expect(screen.getByText('RequestProcedureTable')).toBeVisible();
   });
 
   it('triggers workspace launches when buttons clicked', () => {
@@ -218,13 +207,39 @@ describe('<ImagingDetailedSummary />', () => {
     const linkButton = screen.getByText(/Link studies/i);
     fireEvent.click(linkButton);
 
-    const uploadButton = screen.getByText(/Upload/i);
+    const uploadButton = screen.getByRole('button', { name: 'Upload DICOM' });
     fireEvent.click(uploadButton);
 
     const mockedLaunchWorkspace = vi.mocked(launchWorkspace);
     expect(mockedLaunchWorkspace).toHaveBeenCalledTimes(2);
-    expect(mockedLaunchWorkspace.mock.calls[0]?.[1]).toEqual({ patientUuid });
-    expect(mockedLaunchWorkspace.mock.calls[1]?.[1]).toEqual({ patientUuid });
+    expect(mockedLaunchWorkspace).toHaveBeenNthCalledWith(1, linkStudiesFormWorkspace, { patientUuid });
+    expect(mockedLaunchWorkspace).toHaveBeenNthCalledWith(2, uploadStudiesFormWorkspace, { patientUuid });
+  });
+
+  it('keeps a single management surface and launches a request for the current patient', () => {
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
+    render(<ImagingDetailedSummary patientUuid={patientUuid} />);
+    expect(screen.queryByText('Manage studies')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Studies' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New request' }));
+    expect(launchWorkspace).toHaveBeenCalledWith(addNewRequestWorkspace, { patientUuid });
+  });
+
+  it('resets to studies when the patient changes', () => {
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
+    const { rerender } = render(<ImagingDetailedSummary patientUuid={patientUuid} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    rerender(<ImagingDetailedSummary patientUuid="another-synthetic-patient" />);
+    expect(screen.getByRole('tab', { name: 'Studies' })).toHaveAttribute('aria-selected', 'true');
+    expect(mockUseStudiesByPatient).toHaveBeenLastCalledWith('another-synthetic-patient');
+    expect(mockUseRequestsByPatient).toHaveBeenLastCalledWith('another-synthetic-patient');
+    fireEvent.click(screen.getByRole('button', { name: 'Upload DICOM' }));
+    expect(launchWorkspace).toHaveBeenLastCalledWith(uploadStudiesFormWorkspace, {
+      patientUuid: 'another-synthetic-patient',
+    });
   });
 
   it.each([true, false])('keeps read-only actions disabled with online=%s', (isOnline) => {
@@ -232,10 +247,13 @@ describe('<ImagingDetailedSummary />', () => {
     mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
     mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
-    expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Upload DICOM' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Link studies' })).toBeDisabled();
-    expect(screen.queryByRole('button', { name: 'Launch' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Upload DICOM' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Link studies' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
+    expect(screen.getByRole('button', { name: 'New request' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'New request' }));
     expect(launchWorkspace).not.toHaveBeenCalled();
     if (!isOnline) expect(screen.getByText(/Connect to the network/)).toBeInTheDocument();
   });

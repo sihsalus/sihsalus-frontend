@@ -150,15 +150,18 @@ the old fixtures before enabling it. No production or real-patient testing is al
 
 ## Studies and worklist presentation
 
-The patient dashboard uses one panel with Carbon **Studies** and **Requests** tabs.
-Studies provides link/upload actions; Requests provides one new-request action,
-including when the worklist is populated. Each tab presents its own loading,
-error, empty or populated state; only the selected panel is visible. Both data
+The patient dashboard uses Carbon **Studies** and **Requests** tabs with the
+standard line indicator. Studies provides compact ghost link/upload actions.
+Both tabs reuse the patient-chart `EmptyState`, including its heading, illustration
+and translated message. Requests uses its standard record action when empty and
+one compact ghost action above the populated table, leaving room for its filters
+at narrow widths. There is no second instruction banner or duplicate create button.
+Read-only/offline empty states omit the write action. Each tab presents its own
+loading, error, empty or populated state; only the selected panel is visible. Both data
 sources still load independently, and changing patients resets the tab and table
 state. Actions retain the existing online/edit-permission requirements.
 
-The actions wrap at narrow widths. Empty states explain what appears in each tab
-without repeating the heading or adding another create button. Linking and uploading use the same scrollable
+The actions wrap at narrow widths. Linking and uploading use the same scrollable
 content and fixed two-button footer pattern as the request form, with translated
 workspace titles. File restrictions, queue reconciliation, patient association,
 permissions and network checks retain their existing contracts.

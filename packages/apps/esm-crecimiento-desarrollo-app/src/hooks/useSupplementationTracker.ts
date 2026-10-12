@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { ConfigObject } from '../config-schema';
 
 interface SupplementationResult {
+  hasRecords: boolean;
   delivered: number;
   total: number;
   percentage: number;
@@ -50,7 +51,7 @@ export function useSupplementationTracker(patientUuid: string): SupplementationR
     const percentage = totalTarget > 0 ? Math.min((delivered / totalTarget) * 100, 100) : 0;
     const isComplete = delivered >= totalTarget;
 
-    return { delivered, total: totalTarget, percentage, isComplete };
+    return { hasRecords: observations.length > 0, delivered, total: totalTarget, percentage, isComplete };
   }, [data, totalTarget]);
 
   return {

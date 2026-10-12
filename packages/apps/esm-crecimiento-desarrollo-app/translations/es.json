@@ -415,6 +415,7 @@
   "minimumControlDate": "Fecha mínima",
   "minValidationInputError": "El valor debe ser mayor o igual a {{min}}",
   "missingPatientOrLocation": "Se requiere una visita activa con una UPSS asistencial",
+  "mmnDeliveries": "Entregas de micronutrientes",
   "mmnDescription": "Las entregas no confirman el consumo. Confirme dosis y duración según edad y prescripción.",
   "mmnDeliveryTargetReached": "Meta de entregas alcanzada",
   "mmnDeliveriesInProgress": "Entregas en curso",

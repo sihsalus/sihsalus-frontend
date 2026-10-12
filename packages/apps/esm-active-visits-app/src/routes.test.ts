@@ -33,3 +33,16 @@ describe('active visits route privilege contract', () => {
     });
   });
 });
+
+describe('my attentions access', () => {
+  it.each(['my-attentions-app-menu-item', 'my-attentions-home-dashboard-link', 'my-attentions-home-dashboard'])(
+    'protects %s and excludes offline use',
+    (name) => {
+      expect(extension(name)).toMatchObject({
+        privileges: ['Get Encounters', 'Get Patients', 'Get Visits'],
+        online: true,
+        offline: false,
+      });
+    },
+  );
+});

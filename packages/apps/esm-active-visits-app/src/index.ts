@@ -38,3 +38,9 @@ export const homeTotalVisitsTile = getAsyncLifecycle(
   () => import('./home-page-tiles/total-visits-metric-tile/total-visits-tile.component'),
   options,
 );
+
+export const myAttentions = getAsyncLifecycle(() => import('./my-attentions/my-attentions.component'), options);
+export const myAttentionsLink = getAsyncLifecycle(
+  () => import('./my-attentions/my-attentions-link.component'),
+  options,
+);

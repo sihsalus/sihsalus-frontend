@@ -56,3 +56,66 @@ Si el servidor responde 401/403 pese al preflight, la sincronización se oculta 
 deriva a un usuario autorizado; solo los fallos transitorios mantienen el reintento.
 El nombre del paciente solo enlaza a la hoja clínica con `app:hoja.clinica`;
 para el rol administrativo permanece como texto informativo.
+
+## Mis atenciones
+
+`/home/my-attentions` ofrece una consulta de solo lectura de las atenciones del
+profesional de la sesión. Se registra en `homepage-dashboard-slot` y `app-menu-slot`
+usando la navegación de Inicio; no añade un ordenamiento propio. Requiere los tres
+privilegios `Get Encounters`, `Get Patients` y `Get Visits`, tanto en los accesos
+como al cargar datos. `app:hoja.clinica` habilita por separado `Ver consulta` y
+`Abrir historia`. El detalle reutiliza `VisitDetail` y muestra las atenciones
+permitidas de la consulta completa, no solo las del profesional actual.
+
+### Contrato backend
+
+Requiere `GET /ws/rest/v1/emrapi/myattentions` del fork SIHSalus de EMR API
+(`3.5.1-sihsalus.3-SNAPSHOT`, implementación `MyAttentionsController`,
+`MyAttentionsQuery` y `HibernateMyAttentionsDao`). El número de versión por sí
+solo no garantiza esta capacidad: se debe desplegar el cambio que incorpora
+ese endpoint antes de aceptar el flujo. No se consulta FHIR ni se necesitan
+UUIDs de contenido nuevos.
+
+El servidor determina la persona del usuario autenticado y todos sus registros
+`provider`, incluidos los retirados para conservar historia. La autoría proviene
+de `encounter_provider`, no de `creator` ni de la ubicación de sesión. El cliente
+no envía usuario, persona ni profesional seleccionable. El backend excluye
+registros anulados y atenciones cuyo tipo no permita ver al usuario; agrupa por
+consulta antes de paginar. Las atenciones sin consulta conservan una fila propia.
+El contador y la fecha de último registro corresponden a las atenciones del
+profesional que coinciden con el rango; el estado abierto/cerrado corresponde a
+la consulta nativa, no implica que una atención esté terminada.
+
+| Parámetro             | Semántica                                                                                                                                                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `from`, `until`       | Instantes ISO: medianoche local inicial inclusiva y medianoche siguiente al día final exclusiva; máximo 366 días de duración, como valida `MyAttentionsQuery`. El filtro usa fecha de atención, no fecha de creación.        |
+| `q`                   | Nombre o identificador, sin espacios exteriores. Máximo operativo de búsqueda de 100 unidades UTF-16, conforme a `MyAttentionsQuery.text`; no es un campo de persistencia. La UI conserva y rechaza el exceso sin truncarlo. |
+| `status`              | `all`, `open`, `closed` o `unlinked`.                                                                                                                                                                                        |
+| `startIndex`, `limit` | Desplazamiento y tamaño de página. UI: 10, 20 o 50 filas.                                                                                                                                                                    |
+
+La respuesta contiene `hasProvider`, `results`, `totalCount`, `startIndex` y
+`limit`. Cada resultado incluye paciente/identificador, consulta opcional, tipo,
+ubicación, estado, cantidad y fecha del último registro. El backend ordena por
+fecha más reciente y desempata de forma estable. SWR conserva respuestas solo
+en memoria y separa la clave por UUID del usuario; no arrastra resultados al
+cambiar filtros o usuario. No se habilita navegación offline.
+
+### Estados y validación mínima
+
+La UI distingue carga, lista vacía y falta de profesional vinculado. Una respuesta
+fallida, incluido un endpoint ausente, muestra un error seguro y permite actualizar;
+401/403 explican el problema de acceso sin presentar resultados cacheados como
+historia válida. La sesión vencida oculta la pantalla y solicita iniciar sesión.
+
+Las pruebas locales cubren fechas, límite de búsqueda, aislamiento de caché,
+permisos permitidos/denegados, sesión vencida, carga/error/vacío, filtros,
+paginación, registros sin consulta y acceso al detalle. El smoke visual local usa
+Carbon y el componente real a 320, 420 y 1440 px, con respuestas sintéticas y el
+detalle de consulta simulado; no valida el backend ni el shell desplegado.
+
+Antes de aceptar en DEV/QLTY, comprobar el SHA desplegado de frontend y EMR API,
+roles con/sin permisos, profesionales múltiples/retirados, encuentros realizados
+por un profesional y registrados por otro usuario, consultas abiertas/cerradas,
+atenciones sin consulta, límites de fecha, paginación y apertura del detalle y la
+historia. Esa integración sigue pendiente mientras el endpoint no esté desplegado;
+una lista local simulada no acredita el resultado clínico.

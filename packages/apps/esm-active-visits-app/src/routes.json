@@ -42,6 +42,36 @@
       "slot": "home-metrics-tiles-slot",
       "component": "homeTotalVisitsTile",
       "privileges": "app:home.tabla.consultas.activas"
+    },
+    {
+      "name": "my-attentions-app-menu-item",
+      "slot": "app-menu-slot",
+      "component": "myAttentionsLink",
+      "privileges": ["Get Encounters", "Get Patients", "Get Visits"],
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "my-attentions-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "myAttentionsLink",
+      "privileges": ["Get Encounters", "Get Patients", "Get Visits"],
+      "meta": {
+        "name": "my-attentions",
+        "slot": "my-attentions-dashboard-slot",
+        "title": "myAttentions",
+        "path": "/home/my-attentions"
+      },
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "my-attentions-home-dashboard",
+      "slot": "my-attentions-dashboard-slot",
+      "component": "myAttentions",
+      "privileges": ["Get Encounters", "Get Patients", "Get Visits"],
+      "online": true,
+      "offline": false
     }
   ],
   "pages": []

@@ -1,0 +1,76 @@
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.page {
+  padding: layout.$spacing-05;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+
+  h2 {
+    @include type.type-style("productive-heading-03");
+  }
+  p {
+    margin-top: layout.$spacing-03;
+  }
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: start;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
+
+  button {
+    align-self: start;
+    margin-top: layout.$spacing-06;
+  }
+}
+
+.summary {
+  margin-block: layout.$spacing-05;
+}
+.tableContainer {
+  max-width: 100%;
+
+  table {
+    min-width: 60rem;
+  }
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-07;
+
+  h3 {
+    @include type.type-style("heading-compact-01");
+  }
+}
+
+.pagination {
+  flex-wrap: wrap;
+
+  :global(.cds--pagination__left),
+  :global(.cds--pagination__right) {
+    flex-wrap: wrap;
+    min-width: 0;
+    row-gap: layout.$spacing-03;
+  }
+}

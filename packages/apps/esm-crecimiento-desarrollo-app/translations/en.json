@@ -410,6 +410,7 @@
   "minimumControlDate": "Minimum date",
   "minValidationInputError": "The value must be greater than or equal to {{min}}",
   "missingPatientOrLocation": "An active visit with an operational UPSS is required",
+  "mmnDeliveries": "Micronutrient deliveries",
   "mmnDescription": "Deliveries do not confirm intake. Confirm dose and duration according to age and prescription.",
   "mmnDeliveryTargetReached": "Delivery target reached",
   "mmnDeliveriesInProgress": "Deliveries in progress",

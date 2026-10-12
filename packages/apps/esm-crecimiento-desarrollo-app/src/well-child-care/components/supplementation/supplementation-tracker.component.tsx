@@ -1,7 +1,7 @@
 import { Button, DataTableSkeleton, ProgressBar, Tag } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
-import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../constants';
@@ -18,7 +18,8 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { delivered, total, percentage, isComplete, isLoading, error } = useSupplementationTracker(patientUuid);
+  const { hasRecords, delivered, total, percentage, isComplete, isLoading, error } =
+    useSupplementationTracker(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
   const headerTitle = t('mmnSupplementation', 'Suplementación MMN');
 
@@ -27,7 +28,25 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
   }
 
   if (isLoading) {
-    return <DataTableSkeleton size="sm" rowCount={2} columnCount={2} />;
+    return (
+      <DataTableSkeleton
+        size="sm"
+        rowCount={2}
+        columnCount={2}
+        role="progressbar"
+        aria-label={t('loadingData', 'Loading data...')}
+      />
+    );
+  }
+
+  if (!hasRecords) {
+    return (
+      <EmptyState
+        displayText={t('mmnDeliveries', 'Entregas de micronutrientes')}
+        headerTitle={headerTitle}
+        launchForm={canEdit && !isFormLoading ? () => handleAdd() : undefined}
+      />
+    );
   }
 
   return (

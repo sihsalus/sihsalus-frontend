@@ -387,6 +387,18 @@ NTS 213 ni incorpora inicio/fin de suplementación, tratamiento o prematuridad.
 La interfaz pide confirmar la fecha con el profesional; no añade reglas
 clínicas ni cambia la Hb registrada para suplir ese contexto.
 
+La tarjeta de suplementación MMN distingue una lectura completa sin observaciones
+de una cantidad registrada igual a cero. Sin registros muestra el `EmptyState`
+compartido, sin etiqueta «Entregas en curso», contador ni porcentaje. La carga y
+los errores conservan sus estados propios; una página pendiente o fallida no se
+presenta como ausencia de entregas. El acceso al formulario desde el estado vacío
+requiere permiso de edición y que termine la carga de su metadata. Las cantidades
+registradas y la meta configurada mantienen su cálculo existente; el resumen no
+establece consumo, dosis, duración ni finalización clínica del suplemento.
+Las pruebas con REST sintético cubren vacío, cero registrado, carga, error de
+paginación, datos y permisos en inglés y español. La aceptación visual del SHA
+desplegado sigue requiriendo el recorrido coordinado DEV/QLTY.
+
 ### Growth and development summary cards
 
 The visible module name is “Crecimiento y desarrollo” / “Growth and development”.

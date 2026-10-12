@@ -212,12 +212,5 @@
   "viewerUnavailable": "Viewer unavailable for this imaging server",
   "worklist": "Worklist",
   "imagingSections": "Imaging sections",
-  "studiesPanelHelp": "View images linked to this patient, link an existing study or upload DICOM files.",
-  "uploadDicom": "Upload DICOM",
-  "noLinkedStudies": "No linked studies",
-  "noLinkedStudiesHelp": "When a study is linked or uploaded, it will appear here.",
-  "requestsPanelHelp": "Create imaging requests and follow their progress in the worklist.",
-  "newImagingRequest": "New request",
-  "noImagingRequests": "No imaging requests",
-  "noImagingRequestsHelp": "Create a request to schedule an imaging study for this patient."
+  "uploadDicom": "Upload DICOM"
 }

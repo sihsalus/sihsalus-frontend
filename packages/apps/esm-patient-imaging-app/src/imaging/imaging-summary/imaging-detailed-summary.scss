@@ -1,40 +1,12 @@
-@use "@carbon/styles/scss/theme";
 @use "@carbon/layout";
-@use "@carbon/type";
 
 .summary {
   min-width: 0;
-  background: theme.$layer-01;
-  border: 1px solid theme.$border-subtle-01;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: layout.$spacing-04;
-  margin-bottom: layout.$spacing-05;
-  p {
-    flex: 1 1 18rem;
-    @include type.type-style("body-compact-01");
-  }
 }
 .actions {
   display: flex;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: layout.$spacing-03;
-}
-.empty {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: layout.$spacing-04;
-  padding: layout.$spacing-07 layout.$spacing-05;
-  text-align: center;
-  h4 {
-    @include type.type-style("heading-compact-01");
-  }
-  p {
-    @include type.type-style("body-compact-01");
-  }
+  margin-bottom: layout.$spacing-03;
 }

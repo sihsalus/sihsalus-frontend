@@ -27,7 +27,8 @@ vi.mock('../components/requests-details-table.component', () => ({ default: () =
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (_key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string, values?: Record<string, unknown>) =>
+      defaultValue.replace(/\{\{(\w+)\}\}/g, (placeholder, key) => String(values?.[key] ?? placeholder)),
   }),
 }));
 
@@ -103,11 +104,16 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getByText('No linked studies')).toBeVisible();
-    expect(screen.getByText('No imaging requests')).not.toBeVisible();
+    expect(screen.getByText('There are no studies to display for this patient')).toBeVisible();
+    expect(screen.getByText('There are no requests to display for this patient')).not.toBeVisible();
     fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
-    expect(screen.getByText('No imaging requests')).toBeVisible();
-    expect(screen.getByText('No linked studies')).not.toBeVisible();
+    expect(screen.getByText('There are no requests to display for this patient')).toBeVisible();
+    expect(screen.getByText('There are no studies to display for this patient')).not.toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Requests' })).toBeVisible();
+    expect(screen.getAllByRole('button', { name: 'Record requests' })).toHaveLength(1);
+    expect(
+      screen.queryByText('Create imaging requests and follow their progress in the worklist.'),
+    ).not.toBeInTheDocument();
     expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
   });
 
@@ -149,11 +155,11 @@ describe('<ImagingDetailedSummary />', () => {
     expect(screen.getAllByTestId('error-state')).toHaveLength(1);
     expect(screen.getAllByText(/Studies: Failed to fetch/i)).toHaveLength(1);
     fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
-    expect(screen.getByText('No imaging requests')).toBeVisible();
+    expect(screen.getByText('There are no requests to display for this patient')).toBeVisible();
     expect(screen.getByTestId('error-state')).not.toBeVisible();
   });
 
-  it('renders RequestProcedureTable when requests exist', () => {
+  it('renders requests with one patient-scoped action that stops when editing access is lost', () => {
     mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
 
     mockUseRequestsByPatient.mockReturnValue(
@@ -174,11 +180,21 @@ describe('<ImagingDetailedSummary />', () => {
       }),
     );
 
-    render(<ImagingDetailedSummary patientUuid={patientUuid} />);
+    const { rerender } = render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
     expect(screen.getByText('RequestProcedureTable')).not.toBeVisible();
     fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
     expect(screen.getByText('RequestProcedureTable')).toBeVisible();
+    expect(screen.getAllByRole('button', { name: 'Add' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(launchWorkspace).toHaveBeenCalledWith(addNewRequestWorkspace, { patientUuid });
+
+    vi.mocked(useImagingAccess).mockReturnValue({ canWrite: false, isOnline: true });
+    vi.mocked(launchWorkspace).mockClear();
+    rerender(<ImagingDetailedSummary patientUuid={patientUuid} />);
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(launchWorkspace).not.toHaveBeenCalled();
   });
 
   it('triggers workspace launches when buttons clicked', () => {
@@ -223,7 +239,7 @@ describe('<ImagingDetailedSummary />', () => {
     expect(screen.queryByText('Manage studies')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Studies' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
-    fireEvent.click(screen.getByRole('button', { name: 'New request' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Record requests' }));
     expect(launchWorkspace).toHaveBeenCalledWith(addNewRequestWorkspace, { patientUuid });
   });
 
@@ -252,8 +268,7 @@ describe('<ImagingDetailedSummary />', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Upload DICOM' }));
     fireEvent.click(screen.getByRole('button', { name: 'Link studies' }));
     fireEvent.click(screen.getByRole('tab', { name: 'Requests' }));
-    expect(screen.getByRole('button', { name: 'New request' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'New request' }));
+    expect(screen.queryByRole('button', { name: 'Record requests' })).not.toBeInTheDocument();
     expect(launchWorkspace).not.toHaveBeenCalled();
     if (!isOnline) expect(screen.getByText(/Connect to the network/)).toBeInTheDocument();
   });

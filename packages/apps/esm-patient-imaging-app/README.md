@@ -150,9 +150,15 @@ the old fixtures before enabling it. No production or real-patient testing is al
 
 ## Studies and worklist presentation
 
-The study actions wrap at narrow widths. Empty states pass translated resource
-names to the shared patient-chart component so its message and action label do
-not repeat “No studies found”. Linking and uploading use the same scrollable
+The patient dashboard uses one panel with Carbon **Studies** and **Requests** tabs.
+Studies provides link/upload actions; Requests provides one new-request action,
+including when the worklist is populated. Each tab presents its own loading,
+error, empty or populated state; only the selected panel is visible. Both data
+sources still load independently, and changing patients resets the tab and table
+state. Actions retain the existing online/edit-permission requirements.
+
+The actions wrap at narrow widths. Empty states explain what appears in each tab
+without repeating the heading or adding another create button. Linking and uploading use the same scrollable
 content and fixed two-button footer pattern as the request form, with translated
 workspace titles. File restrictions, queue reconciliation, patient association,
 permissions and network checks retain their existing contracts.

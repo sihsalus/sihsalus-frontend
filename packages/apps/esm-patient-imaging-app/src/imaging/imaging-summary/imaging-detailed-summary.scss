@@ -1,31 +1,40 @@
+@use "@carbon/styles/scss/theme";
 @use "@carbon/layout";
+@use "@carbon/type";
 
 .summary {
-  display: flex;
-  flex-direction: column;
-  gap: layout.$spacing-06;
   min-width: 0;
+  background: theme.$layer-01;
+  border: 1px solid theme.$border-subtle-01;
 }
-
-.managementHeader > div {
-  height: auto;
-  min-height: layout.$spacing-09;
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: layout.$spacing-03 layout.$spacing-05;
-  padding: layout.$spacing-04 layout.$spacing-05;
-  border: 1px solid var(--cds-border-subtle-01);
-  border-bottom: 0;
+  gap: layout.$spacing-04;
+  margin-bottom: layout.$spacing-05;
+  p {
+    flex: 1 1 18rem;
+    @include type.type-style("body-compact-01");
+  }
 }
-
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: layout.$spacing-03;
-  margin-inline-start: auto;
 }
-
-@media (max-width: 42rem) {
-  .actions {
-    margin-inline-start: 0;
+.empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  text-align: center;
+  h4 {
+    @include type.type-style("heading-compact-01");
+  }
+  p {
+    @include type.type-style("body-compact-01");
   }
 }

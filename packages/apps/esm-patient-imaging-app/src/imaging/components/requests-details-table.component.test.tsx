@@ -208,6 +208,14 @@ describe('RequestProcedureTable', () => {
     render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} showDeleteButton={false} />);
     expect(screen.queryByRole('button', { name: 'Remove requst' })).not.toBeInTheDocument();
   });
+
+  it('allows the enclosing panel to own the create action while preserving the standalone default', () => {
+    const { rerender } = render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} />);
+    expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled();
+    rerender(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} showCreateButton={false} />);
+    expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeVisible();
+  });
 });
 
 vi.mock('../utils/use-imaging-access', () => ({ useImagingAccess: vi.fn(() => ({ canWrite: true, isOnline: true })) }));

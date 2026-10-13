@@ -100,7 +100,7 @@
     "webpack": "^5.99.9",
     "workbox-routing": "7.4.1",
     "workbox-strategies": "7.4.1",
-    "workbox-webpack-plugin": "^6.6.1"
+    "workbox-webpack-plugin": "^7.4.1"
   },
   "lint-staged": {
     "*.{css,js,json,tsx}": "biome check --write",

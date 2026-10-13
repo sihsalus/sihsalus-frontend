@@ -286,7 +286,7 @@ export function getMutableSessionProps(context: FormContextProps): {
     sessionDate,
     visit,
   } = context;
-  const defaultEncounterRole = isPlainObject(customDependencies.defaultEncounterRole)
+  const defaultEncounterRole = isPlainObject(customDependencies?.defaultEncounterRole)
     ? customDependencies.defaultEncounterRole
     : undefined;
   const encounterRoleValue = formFields.find((field) => field.type === 'encounterRole')?.meta.submission?.newValue;

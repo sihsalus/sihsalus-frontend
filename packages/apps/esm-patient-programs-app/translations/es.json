@@ -48,5 +48,6 @@
   "saving": "Guardando",
   "seeAll": "Ver todo",
   "state": "Estado",
-  "status": "Estado"
+  "status": "Estado",
+  "enrollmentBeforeBirth": "La fecha de inscripción no puede ser anterior a la fecha de nacimiento del paciente."
 }

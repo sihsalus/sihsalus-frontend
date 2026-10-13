@@ -285,3 +285,11 @@ loaded page is fetched. It does not access private cache fields or add widget
 subscriptions. Other patients and metadata are excluded; the existing current
 visit callback remains responsible for the active visit. These are cache reads,
 not another clinical save or inferred episode.
+
+### Duplicate active condition responses
+
+The condition REST writer maps Core's `Condition.activeDuplicate` field
+validation to a translated, actionable message. The server owns duplicate
+validation, including concurrent writes; the frontend does not deduplicate or
+remove clinical history. This requires the companion Core change for
+sihsalus/sihsalus#366. Older servers keep their existing persistence behavior.

@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useWatch } from 'react-hook-form';
 import { useFormProviderContext } from '../../../provider/form-provider';
 import { getRegisteredDataSource } from '../../../registry/registry';
@@ -79,5 +80,40 @@ describe('UiSelectExtended', () => {
     // still mounted right after the fetch call. Query asynchronously to wait
     // for the ComboBox to replace it.
     expect(await screen.findByRole('combobox')).toHaveValue('Consultorio actual');
+  });
+  it('opens the role catalog without typing and preserves an explicit nursing selection', async () => {
+    mockUseWatch.mockReturnValue(undefined as never);
+    const roles = [
+      { uuid: 'nurse', display: 'Enfermería Responsable' },
+      { uuid: 'doctor', display: 'Médico Responsable' },
+    ];
+    const fetchData = vi.fn().mockResolvedValue(roles);
+    mockGetRegisteredDataSource.mockResolvedValue({
+      fetchData,
+      fetchSingleItem,
+      toUuidAndDisplay: (item) => item,
+    } as never);
+    const setFieldValue = vi.fn();
+    render(
+      <UiSelectExtended
+        errors={[]}
+        warnings={[]}
+        setFieldValue={setFieldValue}
+        value={undefined}
+        field={
+          {
+            id: 'role',
+            label: 'Rol',
+            type: 'encounterRole',
+            meta: {},
+            questionOptions: { rendering: 'encounter-role', isSearchable: false },
+          } as never
+        }
+      />,
+    );
+    await waitFor(() => expect(fetchData).toHaveBeenCalled());
+    await userEvent.click(await screen.findByRole('button', { name: /open/i }));
+    await userEvent.click(await screen.findByText('Enfermería Responsable'));
+    expect(setFieldValue).toHaveBeenCalledWith('nurse');
   });
 });

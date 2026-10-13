@@ -1,8 +1,11 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
+import { renderHook, waitFor } from '@testing-library/react';
+import { createElement } from 'react';
+import { SWRConfig } from 'swr';
 
 import type { ConfigObject } from '../../../config-schema';
 
-import { saveAdverseReaction } from './adverse-reaction.resource';
+import { saveAdverseReaction, useAdverseReactions } from './adverse-reaction.resource';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -92,3 +95,40 @@ describe('adverse reaction resource', () => {
     });
   });
 });
+
+it.each(['mild', 'moderate', 'severe', 'historical'] as const)(
+  'maps severity by configured UUID: %s',
+  async (severity) => {
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        results: [
+          {
+            uuid: 'synthetic-esavi',
+            encounterDatetime: '2026-10-10T05:00:00Z',
+            form: { name: config.formsList.adverseReactionForm },
+            obs: [
+              {
+                uuid: 'synthetic-severity',
+                concept: { uuid: config.adverseReactionReporting.severityConceptUuid },
+                value: {
+                  uuid:
+                    severity === 'historical'
+                      ? 'old-concept'
+                      : config.adverseReactionReporting.severityAnswers[severity],
+                  display: 'Stored label',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    } as never);
+    const { result } = renderHook(() => useAdverseReactions('synthetic-child', config), {
+      wrapper: ({ children }) => createElement(SWRConfig, { value: { provider: () => new Map() } }, children),
+    });
+    await waitFor(() => expect(result.current.reactions).toHaveLength(1));
+    expect(result.current.reactions[0].severityCode).toBe(severity === 'historical' ? undefined : severity);
+    expect(result.current.reactions[0].severity).toBe('Stored label');
+  },
+);

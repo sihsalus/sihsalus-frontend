@@ -303,3 +303,12 @@ Contributions are what makes the open-source community such an amazing place to 
 Distributed under the MPLv2 with Healthcare Disclaimer License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#top">Back to top</a>)</p>
+
+### Encounter role selection
+
+A catalog without the generic `Clinician` role has no implicit default role.
+The first catalog item may be `Unknown` or belong to another profession.
+Content can set `isSearchable: false` to show the existing role catalog without
+typing. CRED uses explicit nursing/medical role selection; the authenticated
+provider remains the default responsible professional and editing retains the
+stored provider and role. Encounter roles do not grant clinical privileges.

@@ -709,5 +709,9 @@
   "motherChildNameUnavailable": "Nombre del paciente no disponible",
   "motherChildOpenChart": "Abrir historia de {{name}}",
   "motherChildNoLinkedChildren": "No hay un vínculo madre–hijo registrado para este paciente.",
-  "motherChildNoLinkedMother": "No hay un vínculo madre–hijo registrado para este paciente."
+  "motherChildNoLinkedMother": "No hay un vínculo madre–hijo registrado para este paciente.",
+  "neonatalDischargeBeforeBirth": "El alta del recién nacido es anterior a su nacimiento. Corrija el alta en Datos del Nacimiento o revise la fecha de nacimiento del paciente.",
+  "neonatalDischargeInFuture": "El alta del recién nacido está en el futuro. Corrija la fecha y hora en Datos del Nacimiento.",
+  "neonatalDischargeInvalid": "La fecha de alta del recién nacido o la de nacimiento no es válida. Revise Datos del Nacimiento y la fecha de nacimiento del paciente.",
+  "conditionActiveDuplicate": "Esta condición ya está activa. Actualice el registro existente o resuélvalo antes de registrar otro episodio."
 }

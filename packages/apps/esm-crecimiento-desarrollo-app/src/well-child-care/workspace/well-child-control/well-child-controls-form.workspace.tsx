@@ -452,7 +452,12 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
           {neonatal.missingDischarge && (
-            <InlineNotification kind="warning" lowContrast hideCloseButton title={t('neonatalDischargeRequired')} />
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title={t(neonatal.validationMessage ?? 'neonatalDischargeRequired')}
+            />
           )}
           <EncounterDateTimeSection control={control} minDate={minimumConsultationDate} />
 

@@ -50,7 +50,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@carbon/react": "^1.117.0",
+    "@carbon/react": "^1.118.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@playwright/test": "^1.64.0",
@@ -78,8 +78,8 @@
   },
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
-    "dotenv": "^18.0.5",
-    "playwright": "^1.63.0",
+    "dotenv": "^18.0.7",
+    "playwright": "^1.64.0",
     "react-hook-form": "^7.89.0",
     "uuid": "^14.0.2"
   }

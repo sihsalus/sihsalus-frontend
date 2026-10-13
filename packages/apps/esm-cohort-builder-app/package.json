@@ -53,13 +53,13 @@
     "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
-    "dotenv": "^18.0.5",
+    "dotenv": "^18.0.7",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.89.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@carbon/react": "^1.117.0",
+    "@carbon/react": "^1.118.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@playwright/test": "^1.64.0",

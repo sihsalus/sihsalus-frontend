@@ -74,6 +74,14 @@ por `requiredVersion: false` ni suprimir advertencias de consola.
 Las pruebas de build verifican los rangos con el evaluador del runtime y
 comprueban que los peers de los workspaces acepten las dependencias instaladas.
 
+El selector de fechas combina `react-aria-components` con los hooks de
+`@react-aria/datepicker`. Ambos deben resolver la misma implementación de
+`react-aria` y `react-stately`: sus hooks comparten estado interno por instancia
+del módulo. Al actualizar estos paquetes, usar `yarn dedupe react-aria
+react-stately @react-types/shared` para unificar las versiones compatibles del
+lockfile y ejecutar las pruebas de `esm-styleguide/src/datepicker`. Dos copias
+pueden compilar correctamente y fallar al renderizar los segmentos de fecha.
+
 ## Parches temporales de dependencias
 
 `braces` 3.0.3 conserva el parche local para

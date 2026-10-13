@@ -1464,23 +1464,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/charts-react@npm:^1.27.20":
-  version: 1.27.20
-  resolution: "@carbon/charts-react@npm:1.27.20"
+"@carbon/charts-react@npm:^1.27.21":
+  version: 1.27.21
+  resolution: "@carbon/charts-react@npm:1.27.21"
   dependencies:
-    "@carbon/charts": "npm:1.27.20"
+    "@carbon/charts": "npm:1.27.21"
     "@carbon/icons-react": "npm:^11.64.0"
     "@ibm/telemetry-js": "npm:^1.9.1"
   peerDependencies:
     react: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
-  checksum: 10c0/11e6af17ab037cb308892aaebd6ee11ad54eadd6e934acbd1010179663e11b05de00aaadf303003693e31f445ea50832380c099773e1eef0d592f03ff6df244a
+  checksum: 10c0/f0f5d2406e5fa1fee68c2066e89fa8ffe02f1fb13a71922e64853cd33a881bed74004c9ab3488350beeb8c255b4e9fb78f7d08890645498f456de2e7526be228
   languageName: node
   linkType: hard
 
-"@carbon/charts@npm:1.27.20, @carbon/charts@npm:^1.27.20":
-  version: 1.27.20
-  resolution: "@carbon/charts@npm:1.27.20"
+"@carbon/charts@npm:1.27.21, @carbon/charts@npm:^1.27.21":
+  version: 1.27.21
+  resolution: "@carbon/charts@npm:1.27.21"
   dependencies:
     "@carbon/colors": "npm:^11.37.0"
     "@carbon/utils-position": "npm:^1.3.0"
@@ -1496,7 +1496,7 @@ __metadata:
     lodash-es: "npm:^4.18.0"
     topojson-client: "npm:^3.1.0"
     tslib: "npm:^2.8.1"
-  checksum: 10c0/c316c396d156f8ac5128f3537ff9ab3e58b50d42a5d90f74d599f131099c37f6662ffdc52268562f700e285564b5f0d2029a1382eb677932718fed41994e2824
+  checksum: 10c0/1ebde1b89cc1d2672b34a0fa5a5c3153e47582ffd012a3e5b1a3a20bcd0e5e20f2b5b8cbf001b6ae6c7567417c4674c390711591459dcf47d2ae5593c354a813
   languageName: node
   linkType: hard
 
@@ -1506,15 +1506,6 @@ __metadata:
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
   checksum: 10c0/b3c521c9b607f0075ecfa09a132fdd15b9b681d932c2d583a99fc8deafeafb6fc1ec64d5f271f774a9ffa76c2414af299ef3b0d436a8be248c2cb034274e56bb
-  languageName: node
-  linkType: hard
-
-"@carbon/colors@npm:^11.59.0":
-  version: 11.59.0
-  resolution: "@carbon/colors@npm:11.59.0"
-  dependencies:
-    "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/e386b5722f624e12dab73fa3d7e37a55919279bdab9cea1a996c7dd9fa32b145e75a1c3197dd306900566553e65a2b05823df776202c863c966267fb398a9485
   languageName: node
   linkType: hard
 
@@ -1545,13 +1536,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/grid@npm:^11.63.0":
-  version: 11.63.0
-  resolution: "@carbon/grid@npm:11.63.0"
+"@carbon/grid@npm:^11.64.0":
+  version: 11.64.0
+  resolution: "@carbon/grid@npm:11.64.0"
   dependencies:
-    "@carbon/layout": "npm:^11.60.0"
+    "@carbon/layout": "npm:^11.61.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/ec808883ecd692dbc61feb0faf92c7ffc68baf2cc1ca6d5bba13962fac7dbb242713785d4137ec2a77961e7d5bfc0ced55fd49267e2f99b46ae4d0c1faf84300
+  checksum: 10c0/06e00a6119a2b849f85fb5dcf31c0b112c6f1ff46706399c7040e67a2730bd92589b0b9113609c1f48e918595b1d0f5c1adb455244aac28ee6ff609283b49675
   languageName: node
   linkType: hard
 
@@ -1564,12 +1555,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.83.0":
-  version: 10.83.0
-  resolution: "@carbon/icon-helpers@npm:10.83.0"
+"@carbon/icon-helpers@npm:^10.84.0":
+  version: 10.84.0
+  resolution: "@carbon/icon-helpers@npm:10.84.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/f2ea32eeef9ec567f42c32d837edde9cc7c52283e6e6e364c7b351af58cdec8ad631c4e1920264c8bb6153b7a20d235add28085aa1f23b10ba1d2285cf5bcbbc
+  checksum: 10c0/a2759d761cc7dcb7785179b8fdf384320c5c993a4cb6cb9d688736244dfe50a57234c7c5ff90e743e9086a476d7e195cf05a2e9b01327d8f14b27a0c32bc84d7
   languageName: node
   linkType: hard
 
@@ -1586,16 +1577,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.89.0":
-  version: 11.89.0
-  resolution: "@carbon/icons-react@npm:11.89.0"
+"@carbon/icons-react@npm:^11.90.0":
+  version: 11.90.0
+  resolution: "@carbon/icons-react@npm:11.90.0"
   dependencies:
-    "@carbon/icon-helpers": "npm:^10.83.0"
+    "@carbon/icon-helpers": "npm:^10.84.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.8.1"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/dbe9cc0423b8afcc6de2cadf52ced610d459909311ea4556e9b1c9508ab9aab5c2b0bc170f14bf6695fcf38eee953a8d53a5d12efa050fab889ffb425ea1083c
+  checksum: 10c0/0c455398ff6c19aa20074a91e49bccaa54e6004984b2e3c9b0380895ff57ae0d563f8b563f8fccb9cd900a6949f9486c2804dc32937793737ce2d83cd30fd0b3
   languageName: node
   linkType: hard
 
@@ -1608,15 +1599,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/layout@npm:^11.60.0":
-  version: 11.60.0
-  resolution: "@carbon/layout@npm:11.60.0"
-  dependencies:
-    "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/29794202b6e9b836586ee425d80e022036060b3057c341bbf502c7b33ae0a939bd6c079d727351c4749329e5cb6e78a7591c174bda6edd50c550e43f29133f81
-  languageName: node
-  linkType: hard
-
 "@carbon/layout@npm:^11.61.0":
   version: 11.61.0
   resolution: "@carbon/layout@npm:11.61.0"
@@ -1626,26 +1608,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/motion@npm:^11.53.0":
-  version: 11.53.0
-  resolution: "@carbon/motion@npm:11.53.0"
+"@carbon/motion@npm:^11.54.0":
+  version: 11.54.0
+  resolution: "@carbon/motion@npm:11.54.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/988c418cdc670ad988b84b7285849ca0544bf53224af102a0a5fa712d7f20729ceca39afcc0faf0c90ea79421aa5644a90228b3c4c64d0c764bdc5286ffa699d
+  checksum: 10c0/19ae076fededc7197151e5cb6aa173a1b21b6e06ec8b7cb1efa827f2e58528cd6daf3a8459dd6a6a8266b0fc7d3729b45ad53b317f6137859ee1a90d26e62de7
   languageName: node
   linkType: hard
 
-"@carbon/react@npm:^1.117.0":
-  version: 1.117.0
-  resolution: "@carbon/react@npm:1.117.0"
+"@carbon/react@npm:^1.118.0":
+  version: 1.118.0
+  resolution: "@carbon/react@npm:1.118.0"
   dependencies:
     "@babel/runtime": "npm:^8.0.0"
     "@carbon/feature-flags": "npm:^1.10.0"
-    "@carbon/icons-react": "npm:^11.89.0"
-    "@carbon/layout": "npm:^11.60.0"
-    "@carbon/motion": "npm:^11.53.0"
-    "@carbon/styles": "npm:^1.116.0"
-    "@carbon/utilities": "npm:^0.26.0"
+    "@carbon/icons-react": "npm:^11.90.0"
+    "@carbon/layout": "npm:^11.61.0"
+    "@carbon/motion": "npm:^11.54.0"
+    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/utilities": "npm:^0.27.0"
     "@floating-ui/react": "npm:^0.27.4"
     "@ibm/telemetry-js": "npm:^1.5.0"
     classnames: "npm:2.5.1"
@@ -1663,7 +1645,7 @@ __metadata:
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
     react-is: ^16.13.1 || ^17.0.2 || ^18.3.1 || ^19.0.0
     sass: ^1.33.0
-  checksum: 10c0/49d86aef71bb14dccd2360d278c9483c871865c8798e100d28567d86031ad64f5225e34b40c8fe25001a353f4e078f206c0380d4e3ef9014fa636f31a2f3c268
+  checksum: 10c0/ae3068284ece307667bc923ff38c28405bc047f48a6a1f4439f29557f020af7bba606d8edd73e21f17bd0a1280ebabef4405ff0c506b61b189805d613dd4b2a1
   languageName: node
   linkType: hard
 
@@ -1698,16 +1680,16 @@ __metadata:
   linkType: hard
 
 "@carbon/styles@npm:^1.116.0":
-  version: 1.116.0
-  resolution: "@carbon/styles@npm:1.116.0"
+  version: 1.117.0
+  resolution: "@carbon/styles@npm:1.117.0"
   dependencies:
-    "@carbon/colors": "npm:^11.59.0"
+    "@carbon/colors": "npm:^11.60.0"
     "@carbon/feature-flags": "npm:^1.10.0"
-    "@carbon/grid": "npm:^11.63.0"
-    "@carbon/layout": "npm:^11.60.0"
-    "@carbon/motion": "npm:^11.53.0"
-    "@carbon/themes": "npm:^11.82.0"
-    "@carbon/type": "npm:^11.68.0"
+    "@carbon/grid": "npm:^11.64.0"
+    "@carbon/layout": "npm:^11.61.0"
+    "@carbon/motion": "npm:^11.54.0"
+    "@carbon/themes": "npm:^11.83.0"
+    "@carbon/type": "npm:^11.69.0"
     "@ibm/plex": "npm:6.4.1"
     "@ibm/plex-mono": "npm:2.5.0"
     "@ibm/plex-sans": "npm:1.1.0"
@@ -1723,31 +1705,31 @@ __metadata:
   peerDependenciesMeta:
     sass:
       optional: true
-  checksum: 10c0/5a7f40b7dbc772320341dc3782e41181f336b30195265984be2152c4a47fd75fdd85e01fc21fbea4ba79676994502cfa852d2c4a3affef44777c610b0c0a474f
+  checksum: 10c0/85a60e4a0c3ed6b73ae230679e244d59436c7f39c614dc90a9e726b9b8e21afe60fce7d402bbb3c795bb5c945264d5a8056ec4b8a09a83d1827862bb27208775
   languageName: node
   linkType: hard
 
-"@carbon/themes@npm:^11.82.0":
-  version: 11.82.0
-  resolution: "@carbon/themes@npm:11.82.0"
+"@carbon/themes@npm:^11.83.0":
+  version: 11.83.0
+  resolution: "@carbon/themes@npm:11.83.0"
   dependencies:
-    "@carbon/colors": "npm:^11.59.0"
-    "@carbon/layout": "npm:^11.60.0"
-    "@carbon/type": "npm:^11.68.0"
+    "@carbon/colors": "npm:^11.60.0"
+    "@carbon/layout": "npm:^11.61.0"
+    "@carbon/type": "npm:^11.69.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     color: "npm:^4.0.0"
-  checksum: 10c0/9b31f46e3dd49e67eab2c3fcb353cda306208c29ed30a49c5dccde28a59d42701160f4422c71028d24741ce81b06366a1e43ea7fad096746685e3a4d376d023b
+  checksum: 10c0/a145fe13e7fa12743489aace59cb55bf22fd5880fd061ea3e1a928321c7435a56876b910edcf29a54cd80a2c164efec2990ddfe3ba4fbb70a9499289785c8b82
   languageName: node
   linkType: hard
 
-"@carbon/type@npm:^11.68.0":
-  version: 11.68.0
-  resolution: "@carbon/type@npm:11.68.0"
+"@carbon/type@npm:^11.69.0":
+  version: 11.69.0
+  resolution: "@carbon/type@npm:11.69.0"
   dependencies:
-    "@carbon/grid": "npm:^11.63.0"
-    "@carbon/layout": "npm:^11.60.0"
+    "@carbon/grid": "npm:^11.64.0"
+    "@carbon/layout": "npm:^11.61.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/2ac13a411b6a8838ef68a441736283a4f16b497af66e0cfa27a3835f6a4d2b992e60d7b142620daa5b77315ca23d32ae13ca6668e65c57547e067f6f0618d98f
+  checksum: 10c0/c78ebda8d2c6ec02c6b419688657db8325c3a7ce9865d201ea6e845fb917bdccdb1cad81d9e3128f8a1d894361c910120b2b38bd54e69dfa42df706c846a3830
   languageName: node
   linkType: hard
 
@@ -1761,14 +1743,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/utilities@npm:^0.26.0":
-  version: 0.26.0
-  resolution: "@carbon/utilities@npm:0.26.0"
+"@carbon/utilities@npm:^0.27.0":
+  version: 0.27.0
+  resolution: "@carbon/utilities@npm:0.27.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.6.1"
     "@internationalized/number": "npm:^3.6.1"
     temporal-polyfill: "npm:^1.0.4"
-  checksum: 10c0/8007513c31fcd07b6e3f9a0e4dd59a2c04a0c807a8e97ee3ac868b2a2ac2fab727e8ea9e676b65974d62801e81bf8de49df697cec0cfbea78690e25edededa90
+  checksum: 10c0/2fd74aa1f0474b71f83d4e8f9018493806bc5ac18fa652d2066e64bb15b34fdb96bf53c372693012d664d52207c52702a2822fe3a32a4a111ed641a0dc4fa1e0
   languageName: node
   linkType: hard
 
@@ -2698,12 +2680,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@internationalized/number@npm:^3.6.8":
-  version: 3.6.8
-  resolution: "@internationalized/number@npm:3.6.8"
+"@internationalized/number@npm:^3.6.9":
+  version: 3.6.9
+  resolution: "@internationalized/number@npm:3.6.9"
   dependencies:
     "@swc/helpers": "npm:^0.5.0"
-  checksum: 10c0/c43ed927ef718be6caebfbcb3e5bb7dbb84ad49028a4433c704eacdf810b48da22d889efadb1eddcd995fd83102089a8b53e143a9cd23694b2d00d73032cd8c3
+  checksum: 10c0/4cb61a4b2159c5f087aad602ed1a1b3cd52c06a7bf8a7eff0cb802312c58e27345954bb35ef841bab834f426e761d9060aebd9b6065522f90a6837e31faa3e2e
   languageName: node
   linkType: hard
 
@@ -4397,7 +4379,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/esm-form-engine-app@workspace:packages/apps/esm-form-engine-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -4562,7 +4544,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/esm-patient-common-lib@workspace:packages/libs/esm-patient-common-lib"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-framework": "workspace:*"
@@ -4712,8 +4694,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/esm-styleguide@workspace:packages/libs/esm-styleguide"
   dependencies:
-    "@carbon/charts": "npm:^1.27.20"
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/charts": "npm:^1.27.21"
+    "@carbon/react": "npm:^1.118.0"
     "@internationalized/date": "npm:^3.12.4"
     "@openmrs/esm-api": "workspace:*"
     "@openmrs/esm-config": "workspace:*"
@@ -4739,7 +4721,7 @@ __metadata:
     d3: "npm:^7.8.0"
     geopattern: "npm:^1.2.3"
     lodash-es: "npm:^4.17.21"
-    react-aria-components: "npm:^1.21.1"
+    react-aria-components: "npm:^1.22.1"
     react-router-dom: "npm:7.18.4"
     sass-embedded: "npm:1.105.1"
     sass-loader: "npm:17.0.1"
@@ -5890,12 +5872,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-types/shared@npm:^3.36.1":
-  version: 3.36.1
-  resolution: "@react-types/shared@npm:3.36.1"
+"@react-types/shared@npm:^3.37.0":
+  version: 3.37.0
+  resolution: "@react-types/shared@npm:3.37.0"
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10c0/377e9287025f046f3b088e73655a53813ce60f08d569094c098fd46f45d4eac1d288c5005bcb8a5a388aa9d1245763ef11e6fa86c00a2355b43f24fde447ca54
+  checksum: 10c0/13f3bc02e024f58bec3b1a3f47c738fb5960015eee33a55ea0dfdb9c66cdca831e843190c60d0225b18e728ef930fa6d62179f651c2cc35b2bd848c309eff715
   languageName: node
   linkType: hard
 
@@ -6696,7 +6678,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-active-visits-app@workspace:packages/apps/esm-active-visits-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -6722,7 +6704,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-appointments-app@workspace:packages/apps/esm-appointments-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -6757,8 +6739,8 @@ __metadata:
   dependencies:
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.117.0"
-    "@carbon/styles": "npm:^1.116.0"
+    "@carbon/react": "npm:^1.118.0"
+    "@carbon/styles": "npm:^1.117.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -6820,7 +6802,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-bed-management-app@workspace:packages/apps/esm-bed-management-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -6847,7 +6829,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-billing-app@workspace:packages/apps/esm-billing-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -6865,7 +6847,7 @@ __metadata:
     concurrently: "npm:^8.2.2"
     d3-selection: "npm:^3.0.0"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     fuzzy: "npm:^0.1.3"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
@@ -6902,8 +6884,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-blood-bank-app@workspace:packages/apps/esm-blood-bank-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
-    "@carbon/styles": "npm:^1.116.0"
+    "@carbon/react": "npm:^1.118.0"
+    "@carbon/styles": "npm:^1.117.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@rspack/core": "npm:2.2.8"
@@ -6977,7 +6959,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-cohort-builder-app@workspace:packages/apps/esm-cohort-builder-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
@@ -6990,7 +6972,7 @@ __metadata:
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.0.2"
     lodash: "npm:^4.18.1"
@@ -7029,7 +7011,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.0.2"
     lodash-es: "npm:^4.17.21"
@@ -7060,12 +7042,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-cred-app@workspace:packages/apps/esm-crecimiento-desarrollo-app"
   dependencies:
-    "@carbon/charts": "npm:^1.27.20"
-    "@carbon/charts-react": "npm:^1.27.20"
+    "@carbon/charts": "npm:^1.27.21"
+    "@carbon/charts-react": "npm:^1.27.21"
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.117.0"
-    "@carbon/styles": "npm:^1.116.0"
+    "@carbon/react": "npm:^1.118.0"
+    "@carbon/styles": "npm:^1.117.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -7114,7 +7096,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-devtools-app@workspace:packages/apps/esm-devtools-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@types/node": "npm:^26.6.5"
@@ -7140,7 +7122,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-dispensing-app@workspace:packages/apps/esm-dispensing-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@playwright/test": "npm:^1.64.0"
@@ -7151,7 +7133,7 @@ __metadata:
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"
@@ -7210,7 +7192,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-emergency-app@workspace:packages/apps/esm-emergency-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -7243,7 +7225,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-fast-data-entry-app@workspace:packages/apps/esm-fast-data-entry-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.64.0"
@@ -7255,12 +7237,12 @@ __metadata:
     "@types/testing-library__jest-dom": "npm:^5.14.9"
     "@typescript/native": "npm:typescript@7.0.2"
     concurrently: "npm:^6.5.1"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
-    playwright: "npm:^1.63.0"
+    playwright: "npm:^1.64.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.89.0"
@@ -7292,8 +7274,8 @@ __metadata:
   dependencies:
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.117.0"
-    "@carbon/styles": "npm:^1.116.0"
+    "@carbon/react": "npm:^1.118.0"
+    "@carbon/styles": "npm:^1.117.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -7334,7 +7316,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-form-builder-app@workspace:packages/apps/esm-form-builder-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/modifiers": "npm:^6.0.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
@@ -7385,7 +7367,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-form-engine-lib@workspace:packages/libs/esm-form-engine-lib"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -7433,7 +7415,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-form-entry-react-app@workspace:packages/apps/esm-form-entry-react-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -7492,8 +7474,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-generic-patient-widgets-app@workspace:packages/apps/esm-generic-patient-widgets-app"
   dependencies:
-    "@carbon/charts-react": "npm:^1.27.20"
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/charts-react": "npm:^1.27.21"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -7517,7 +7499,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-help-menu-app@workspace:packages/apps/esm-help-menu-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -7564,7 +7546,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-implementer-tools-app@workspace:packages/apps/esm-implementer-tools-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7656,7 +7638,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-laboratory-app@workspace:packages/apps/esm-laboratory-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.64.0"
@@ -7692,7 +7674,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-login-app@workspace:packages/apps/esm-login-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-api": "workspace:*"
     "@openmrs/esm-framework": "workspace:*"
@@ -7726,8 +7708,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-odontologia-app@workspace:packages/apps/esm-odontologia-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
-    "@carbon/styles": "npm:^1.116.0"
+    "@carbon/react": "npm:^1.118.0"
+    "@carbon/styles": "npm:^1.117.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -7749,8 +7731,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-offline-tools-app@workspace:packages/apps/esm-offline-tools-app"
   dependencies:
-    "@carbon/icons-react": "npm:^11.89.0"
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/icons-react": "npm:^11.90.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -7782,7 +7764,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-openconceptlab-app@workspace:packages/apps/esm-openconceptlab-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7807,7 +7789,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-allergies-app@workspace:packages/apps/esm-patient-allergies-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -7832,7 +7814,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-attachments-app@workspace:packages/apps/esm-patient-attachments-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -7858,7 +7840,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-banner-app@workspace:packages/apps/esm-patient-banner-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -7923,7 +7905,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-conditions-app@workspace:packages/apps/esm-patient-conditions-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -7948,7 +7930,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-flags-app@workspace:packages/apps/esm-patient-flags-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -7972,7 +7954,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-forms-app@workspace:packages/apps/esm-patient-forms-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8011,7 +7993,7 @@ __metadata:
     "@types/react-dom": "npm:^18.2.6"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.0.2"
     openmrs: "npm:*"
@@ -8047,7 +8029,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-immunizations-app@workspace:packages/apps/esm-patient-immunizations-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -8077,7 +8059,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-label-printing-app@workspace:packages/apps/esm-patient-label-printing-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8097,7 +8079,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-list-management-app@workspace:packages/apps/esm-patient-list-management-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -8121,7 +8103,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-lists-app@workspace:packages/apps/esm-patient-lists-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8145,7 +8127,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-medications-app@workspace:packages/apps/esm-patient-medications-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -8200,7 +8182,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-orders-app@workspace:packages/apps/esm-patient-orders-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -8226,7 +8208,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-procedures-app@workspace:packages/apps/esm-patient-procedures-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -8254,7 +8236,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-programs-app@workspace:packages/apps/esm-patient-programs-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8279,7 +8261,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-registration-app@workspace:packages/apps/esm-patient-registration-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-offline": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -8313,7 +8295,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -8341,7 +8323,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-task-list-app@workspace:packages/apps/esm-patient-task-list-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -8368,8 +8350,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-tests-app@workspace:packages/apps/esm-patient-tests-app"
   dependencies:
-    "@carbon/charts-react": "npm:^1.27.20"
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/charts-react": "npm:^1.27.21"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8393,8 +8375,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-vitals-app@workspace:packages/apps/esm-patient-vitals-app"
   dependencies:
-    "@carbon/charts-react": "npm:^1.27.20"
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/charts-react": "npm:^1.27.21"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
@@ -8421,8 +8403,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-primary-navigation-app@workspace:packages/apps/esm-primary-navigation-app"
   dependencies:
-    "@carbon/icons-react": "npm:^11.89.0"
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/icons-react": "npm:^11.90.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
     "@sihsalus/esm-audit-logger": "workspace:*"
@@ -8486,7 +8468,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-rbac@workspace:packages/libs/esm-rbac"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-audit-logger": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8533,13 +8515,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-reports-app@workspace:packages/apps/esm-reports-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@datasert/cronjs-matcher": "npm:^1.2.0"
     "@datasert/cronjs-parser": "npm:^1.2.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
-    cronstrue: "npm:^3.27.0"
+    cronstrue: "npm:^3.31.0"
     dayjs: "npm:^1.11.23"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -8560,12 +8542,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-salud-materna-app@workspace:packages/apps/esm-salud-materna-app"
   dependencies:
-    "@carbon/charts": "npm:^1.27.20"
-    "@carbon/charts-react": "npm:^1.27.20"
+    "@carbon/charts": "npm:^1.27.21"
+    "@carbon/charts-react": "npm:^1.27.21"
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.117.0"
-    "@carbon/styles": "npm:^1.116.0"
+    "@carbon/react": "npm:^1.118.0"
+    "@carbon/styles": "npm:^1.117.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8637,7 +8619,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-service-queues-app@workspace:packages/apps/esm-service-queues-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -8666,7 +8648,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-staff-scheduling-app@workspace:packages/apps/esm-staff-scheduling-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8688,7 +8670,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-stock-management-app@workspace:packages/apps/esm-stock-management-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
@@ -8736,7 +8718,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-system-admin-app@workspace:packages/apps/esm-system-admin-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8821,7 +8803,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-user-onboarding-app@workspace:packages/apps/esm-user-onboarding-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@playwright/test": "npm:^1.64.0"
@@ -8832,7 +8814,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     i18next: "npm:^26.4.2"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
@@ -8861,7 +8843,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-ward-app@workspace:packages/apps/esm-ward-app"
   dependencies:
-    "@carbon/react": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:2.2.8"
@@ -8905,7 +8887,7 @@ __metadata:
     acorn: "npm:8.19.0"
     chalk: "npm:^4.1.2"
     cross-env: "npm:^10.1.0"
-    dotenv: "npm:^18.0.5"
+    dotenv: "npm:^18.0.7"
     eslint-scope: "npm:9.1.2"
     express: "npm:^4.22.0"
     express-rate-limit: "npm:8.7.1"
@@ -12838,12 +12820,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cronstrue@npm:^3.27.0":
-  version: 3.27.0
-  resolution: "cronstrue@npm:3.27.0"
+"cronstrue@npm:^3.31.0":
+  version: 3.31.0
+  resolution: "cronstrue@npm:3.31.0"
   bin:
     cronstrue: bin/cli.js
-  checksum: 10c0/87dbcc9dae9fcdf7d335a8b11f6ab8d60f12089e59fcf67424b2f9134499f25b3f646d0743c3303325f112c97522bd183063538b2b996089f6d884a3343d0989
+  checksum: 10c0/5ed1c4720d2b4fe5016a67fc7d8bb99bdf84939227390244ea02419092f6e515eb451176f77748f70603dbc888b65e9e03c64436d9898a99136d855e2739a951
   languageName: node
   linkType: hard
 
@@ -13783,12 +13765,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^18.0.5":
-  version: 18.0.5
-  resolution: "dotenv@npm:18.0.5"
+"dotenv@npm:^18.0.7":
+  version: 18.0.7
+  resolution: "dotenv@npm:18.0.7"
   bin:
     dotenv: dist/index.cjs
-  checksum: 10c0/fade137f063f3d3483459b71c6ed0f98f18189fa52b14c9f192e57df6b76719340aa6d9a1d194e4fa0e025deb5af9d545efcc3a28f09230af815518f0b9c0785
+  checksum: 10c0/bda2efbfa3194eec5ae592308db16285a3e163b505282a052ec9e10538be1c6a526f0437b431e78183e9bd367db0ad7c446d0180ab62310bc0a384787bec8894
   languageName: node
   linkType: hard
 
@@ -19962,15 +19944,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.63.0, playwright-core@npm:^1.62.1":
-  version: 1.63.0
-  resolution: "playwright-core@npm:1.63.0"
-  bin:
-    playwright-core: cli.js
-  checksum: 10c0/39c1ebae4029ca2e9371e00a5588d962038e24b6e0bdb7d0d27374dde04838f349b83ae0c8b3b648653d0935cba7fb9011f1201adaab9dd0db7801ad6c75e9aa
-  languageName: node
-  linkType: hard
-
 "playwright-core@npm:1.64.0":
   version: 1.64.0
   resolution: "playwright-core@npm:1.64.0"
@@ -19980,7 +19953,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:1.64.0":
+"playwright-core@npm:^1.62.1":
+  version: 1.63.0
+  resolution: "playwright-core@npm:1.63.0"
+  bin:
+    playwright-core: cli.js
+  checksum: 10c0/39c1ebae4029ca2e9371e00a5588d962038e24b6e0bdb7d0d27374dde04838f349b83ae0c8b3b648653d0935cba7fb9011f1201adaab9dd0db7801ad6c75e9aa
+  languageName: node
+  linkType: hard
+
+"playwright@npm:1.64.0, playwright@npm:^1.64.0":
   version: 1.64.0
   resolution: "playwright@npm:1.64.0"
   dependencies:
@@ -19988,17 +19970,6 @@ __metadata:
   bin:
     playwright: cli.js
   checksum: 10c0/f1ee856c280af2ac256225a1cc5e957847f0d2c56a039c89f02e31b0c9928c44e04311923a1b315bea16e3b26e5124e7c296644ad3c05e4c0a6aaa9584009933
-  languageName: node
-  linkType: hard
-
-"playwright@npm:^1.63.0":
-  version: 1.63.0
-  resolution: "playwright@npm:1.63.0"
-  dependencies:
-    playwright-core: "npm:1.63.0"
-  bin:
-    playwright: cli.js
-  checksum: 10c0/d1fd048a89be27c9aba6757dc4f70eff4a5163b49f439ad691767be8b2a482327d0dd1928b4f73c8fe0d8b33aab2c9dc2670424ab60f112d9e98e91b94e3b090
   languageName: node
   linkType: hard
 
@@ -20351,41 +20322,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-aria-components@npm:^1.21.1":
-  version: 1.21.1
-  resolution: "react-aria-components@npm:1.21.1"
+"react-aria-components@npm:^1.22.1":
+  version: 1.22.1
+  resolution: "react-aria-components@npm:1.22.1"
   dependencies:
     "@internationalized/date": "npm:^3.12.4"
     "@internationalized/string": "npm:^3.2.10"
-    "@react-types/shared": "npm:^3.36.1"
+    "@react-types/shared": "npm:^3.37.0"
     "@swc/helpers": "npm:^0.5.0"
     client-only: "npm:^0.0.1"
-    react-aria: "npm:3.52.1"
-    react-stately: "npm:3.50.0"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-    react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10c0/ce719a2f97909eb670760cc0143e9d63f70fb0458c931984803e7598db8e405b2e11f8327b35fac2334d9e93b95208647459920a98925403f926a4b0a2991909
-  languageName: node
-  linkType: hard
-
-"react-aria@npm:3.52.1, react-aria@npm:^3.48.0":
-  version: 3.52.1
-  resolution: "react-aria@npm:3.52.1"
-  dependencies:
-    "@internationalized/date": "npm:^3.12.4"
-    "@internationalized/number": "npm:^3.6.8"
-    "@internationalized/string": "npm:^3.2.10"
-    "@react-types/shared": "npm:^3.36.1"
-    "@swc/helpers": "npm:^0.5.0"
-    aria-hidden: "npm:^1.2.3"
-    clsx: "npm:^2.0.0"
-    react-stately: "npm:3.50.0"
+    react-aria: "npm:3.53.1"
+    react-stately: "npm:3.51.0"
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10c0/cb03653bbbfb047e4ffb4ba0ec63d64878261f6695c6cdff112ff6f19f95c22a20ea9893ae454c1782119ad98763f8f76d86e00334ca93d39dd53e7105ff8d1b
+  checksum: 10c0/41df0f9c2c210ff5cc1314c2a86290ec21c467819c40cd32150a4f1f7356eeae4ff73d2bf2a490e16b40ccdbbbb8b54eb708a4f3a2d88f7b5532abf2e8ede381
+  languageName: node
+  linkType: hard
+
+"react-aria@npm:3.53.1, react-aria@npm:^3.48.0":
+  version: 3.53.1
+  resolution: "react-aria@npm:3.53.1"
+  dependencies:
+    "@internationalized/date": "npm:^3.12.4"
+    "@internationalized/number": "npm:^3.6.9"
+    "@internationalized/string": "npm:^3.2.10"
+    "@react-types/shared": "npm:^3.37.0"
+    "@swc/helpers": "npm:^0.5.0"
+    aria-hidden: "npm:^1.2.3"
+    clsx: "npm:^2.0.0"
+    react-stately: "npm:3.51.0"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
+    react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
+  checksum: 10c0/89b6cf252bdddfa06738ce8a6a84789a1a2310daf79c9f30d21112341de5778ab8afb23cac5db8dad9eadc0297bb90dbb447c4895d930a6f1ceec155e34cce05
   languageName: node
   linkType: hard
 
@@ -20669,19 +20641,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-stately@npm:3.50.0, react-stately@npm:^3.46.0":
-  version: 3.50.0
-  resolution: "react-stately@npm:3.50.0"
+"react-stately@npm:3.51.0, react-stately@npm:^3.46.0":
+  version: 3.51.0
+  resolution: "react-stately@npm:3.51.0"
   dependencies:
     "@internationalized/date": "npm:^3.12.4"
-    "@internationalized/number": "npm:^3.6.8"
+    "@internationalized/number": "npm:^3.6.9"
     "@internationalized/string": "npm:^3.2.10"
-    "@react-types/shared": "npm:^3.36.1"
+    "@react-types/shared": "npm:^3.37.0"
     "@swc/helpers": "npm:^0.5.0"
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10c0/878adc27e3309d495b7ad7e8718133dcc1a0a0a927c869b3838e2dacbd9e4b4fa4f14b27fc6c34b1f93da067c889dccd9be3c24b4a4c2825b05b4e86e51ad039
+  checksum: 10c0/bd161d9a9937f1510d9ccfe1751a2968cfc7eafab61b89084051f7cfaccb36757396a16cf4086f2892052699adfa7cf4ef5bd9e5458bc35144dbec56bc113d6d
   languageName: node
   linkType: hard
 

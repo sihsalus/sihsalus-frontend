@@ -48,8 +48,8 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "dependencies": {
-    "@carbon/charts": "^1.27.20",
-    "@carbon/react": "^1.117.0",
+    "@carbon/charts": "^1.27.21",
+    "@carbon/react": "^1.118.0",
     "@internationalized/date": "^3.12.4",
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-routes": "workspace:*",
@@ -59,7 +59,7 @@
     "d3": "^7.8.0",
     "geopattern": "^1.2.3",
     "lodash-es": "^4.17.21",
-    "react-aria-components": "^1.21.1"
+    "react-aria-components": "^1.22.1"
   },
   "devDependencies": {
     "@openmrs/esm-api": "workspace:*",

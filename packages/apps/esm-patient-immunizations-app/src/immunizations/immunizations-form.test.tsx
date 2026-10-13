@@ -21,6 +21,7 @@ import {
 } from './immunizations.resource';
 import ImmunizationsForm from './immunizations-form.workspace';
 import { immunizationFormSub } from './utils';
+import { useImmunizations } from '../hooks/useImmunizations';
 
 const mockCloseWorkspace = vi.fn();
 const mockGetImmunizationSaveErrorDetails = getImmunizationSaveErrorDetails as Mock;
@@ -106,11 +107,82 @@ describe('Immunizations Form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useImmunizations).mockReturnValue({
+      data: [],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    });
     mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: false }));
     mockGetImmunizationSaveErrorDetails.mockReturnValue({ type: 'unknown' });
     mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({});
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
+  });
+
+  it('marks the required inputs without marking optional batch details or dose', async () => {
+    render(<ImmunizationsForm {...testProps} />);
+    expect(await screen.findByText('Vaccination date *')).toBeVisible();
+    expect(screen.getByText('Immunization *')).toBeVisible();
+    expect(screen.getByText('Estado de aplicación *')).toBeVisible();
+    expect(screen.getByText('Contexto MINSA *')).toBeVisible();
+    expect(screen.getByText('Fields marked with * are required.')).toBeVisible();
+    expect(screen.getByLabelText(/Manufacturer/i)).not.toHaveAttribute('required');
+    expect(screen.getByLabelText(/Lot Number/i)).not.toHaveAttribute('required');
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    expect(screen.queryByText('Dose number within series *')).not.toBeInTheDocument();
+  });
+
+  it('marks the reason as required only for a vaccination that was not administered', async () => {
+    const user = userEvent.setup();
+    render(<ImmunizationsForm {...testProps} />);
+    expect(screen.queryByLabelText(/Motivo de no aplicación/i)).not.toBeInTheDocument();
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await selectOption(screen.getByRole('combobox', { name: /Estado de aplicación/i }), 'No aplicada / diferida');
+    expect(screen.getByLabelText(/Motivo de no aplicación o diferimiento \*/i)).toBeRequired();
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+    expect(await screen.findByText('Please provide the reason for non-administration or deferral')).toBeVisible();
+    expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+  });
+
+  it('blocks saving when the vaccination history failed instead of assuming an empty history', async () => {
+    vi.mocked(useImmunizations).mockReturnValue({
+      data: [],
+      error: new Error('private backend details'),
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    });
+    render(<ImmunizationsForm {...testProps} />);
+    expect(await screen.findByText('Vaccination history unavailable')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Save/i })).toBeDisabled();
+    expect(screen.queryByText('private backend details')).not.toBeInTheDocument();
+    expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+  });
+
+  it('preserves inputs and shows safe feedback when FHIR rejects the encounter provider', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: true }));
+    mockGetImmunizationSaveErrorDetails.mockReturnValue({
+      type: 'validation',
+      diagnostics: 'private provider and encounter details',
+    });
+    mockSavePatientImmunization.mockRejectedValue({ status: 422 });
+    render(<ImmunizationsForm {...testProps} />);
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'The vaccination could not be confirmed as saved. Review the history before trying again.',
+        }),
+      ),
+    );
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+    expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox', { name: /Immunization/i })).toHaveTextContent('Hepatitis B vaccination');
   });
 
   it('should render ImmunizationsForm component', async () => {

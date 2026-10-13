@@ -1,4 +1,9 @@
 {
+  "requiredFieldsHint": "Los campos marcados con * son obligatorios.",
+  "vaccinationServiceUnavailable": "El registro de vacunas no está disponible. Contacte a soporte antes de volver a intentarlo.",
+  "vaccinationSaveUnconfirmed": "No se pudo confirmar el guardado de la vacuna. Revise el historial antes de volver a intentarlo.",
+  "vaccinationHistoryUnavailable": "Historial de vacunación no disponible",
+  "vaccinationHistoryRequired": "No se pudo cargar el historial de vacunación. Cierre este formulario y vuelva a cargar el historial antes de registrar una vacuna.",
   "actions": "Acciones",
   "active": "activa",
   "activeScheduleVersion": "v{{version}} activa",

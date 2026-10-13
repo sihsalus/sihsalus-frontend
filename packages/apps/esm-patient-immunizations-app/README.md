@@ -54,3 +54,30 @@ TODO i18n/UI:
 - Agregar smoke tests que detecten claves crudas visibles en vacunación y CRED infantil.
 - Validar que el estado vacío por `501` se mantenga silencioso para usuarios, pero que el error quede trazable para QA/backend.
 - Revisar labels de dosis, advertencias y acciones en español para que no mezclen terminología clínica con claves técnicas.
+
+### Reportes de inmunización #376–378
+
+El formulario indica sus campos requeridos con asterisco: fecha, vacuna, estado
+y contexto. El motivo es obligatorio cuando la vacuna no se aplicó. Dosis, lote,
+fabricante y demás campos opcionales conservan su validación. Un fallo al leer
+el historial bloquea el guardado; no equivale a un historial vacío. Los errores
+de guardado conservan el formulario y muestran mensajes traducidos sin respuestas
+técnicas ni identificadores del servidor. No se agrega un fallback de escritura
+ante un error de validación FHIR.
+
+Los reportes [#376](https://github.com/sihsalus/sihsalus/issues/376) y
+[#377](https://github.com/sihsalus/sihsalus/issues/377) siguen bloqueados para su
+resolución completa: FHIR2 exige un proveedor con el rol configurado para la
+atención de inmunización. El código fijado por la distribución en
+`069deb714818428540719182472ea13711628526` reutiliza la última atención de
+inmunización de la consulta y rechaza su lectura si falta ese proveedor/rol; ver
+[ImmunizationTranslatorImpl](https://github.com/openmrs/openmrs-module-fhir2/blob/069deb714818428540719182472ea13711628526/api/src/main/java/org/openmrs/module/fhir2/api/translators/impl/ImmunizationTranslatorImpl.java)
+y [ImmunizationObsGroupHelper](https://github.com/openmrs/openmrs-module-fhir2/blob/069deb714818428540719182472ea13711628526/api/src/main/java/org/openmrs/module/fhir2/api/util/ImmunizationObsGroupHelper.java).
+La referencia FHIR `Encounter/<visitUuid>` es parte de ese contrato; no debe
+sustituirse por un UUID de atención REST.
+
+Esta corrección modifica únicamente frontend: no reasigna profesionales o roles,
+no repara registros históricos ni modifica backend/content. El responsable de
+backend debe revisar el contrato y los registros afectados en una tarea separada.
+Las pruebas locales de interfaz no acreditan el guardado/lectura real de esos
+reportes. Queda pendiente aceptación en QLTY con paciente sintético y rol CRED.

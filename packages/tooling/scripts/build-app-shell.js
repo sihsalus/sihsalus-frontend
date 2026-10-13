@@ -62,12 +62,12 @@ function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
   config.output.publicPath = 'auto';
   // SWR 2.5 shares state through modules outside _internal. Provide every
   // consumed entry point from this graph so remotes share cache and revalidators.
-  const federation = config.plugins.find((plugin) => plugin._options?.shared);
+  const federation = config.plugins.find((plugin) => plugin.options?.shared);
   const swrVersion = require('swr/package.json').version;
   const swrEntries = ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal'];
   for (const dependency of swrEntries) {
-    federation._options.shared[dependency] = {
-      ...federation._options.shared['swr/_internal'],
+    federation.options.shared[dependency] = {
+      ...federation.options.shared['swr/_internal'],
       requiredVersion: swrVersion,
       import: dependency,
       packageName: 'swr',
@@ -243,7 +243,7 @@ function assertCompatibleAppShellConfig(
   }
 
   const moduleFederationPlugin = plugins.find((plugin) => plugin?.constructor?.name === 'ModuleFederationPlugin');
-  const shared = moduleFederationPlugin?._options?.shared;
+  const shared = moduleFederationPlugin?.options?.shared;
   if (!shared || typeof shared !== 'object') {
     throw new Error('App-shell webpack config is missing Module Federation shared dependencies');
   }

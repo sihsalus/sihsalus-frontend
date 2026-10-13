@@ -54,8 +54,8 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@carbon/colors": "^11.59.0",
-    "@carbon/layout": "^11.60.0",
+    "@carbon/colors": "^11.60.0",
+    "@carbon/layout": "^11.61.0",
     "@carbon/react": "^1.117.0",
     "@carbon/styles": "^1.116.0",
     "@openmrs/esm-framework": "workspace:*",
@@ -76,7 +76,7 @@
     "sass": "^1.105.1",
     "single-spa": "^6.0.3",
     "swr": "^2.5.1",
-    "vite": "8.3.2",
+    "vite": "8.3.4",
     "vitest": "^5.0.3"
   }
 }

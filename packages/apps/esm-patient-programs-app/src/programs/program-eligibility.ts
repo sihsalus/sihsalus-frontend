@@ -25,7 +25,7 @@ export type PatientLike =
   | null
   | undefined;
 
-function getPatientBirthDate(patient: PatientLike): string | undefined {
+export function getPatientBirthDate(patient: PatientLike): string | undefined {
   return patient?.birthDate ?? patient?.birthdate ?? patient?.person?.birthDate ?? patient?.person?.birthdate;
 }
 

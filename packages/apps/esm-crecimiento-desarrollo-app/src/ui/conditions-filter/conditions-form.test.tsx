@@ -7,6 +7,7 @@ import {
   updateCondition,
   usePatientConditions as useConditions,
 } from '@openmrs/esm-patient-common-lib/src/antecedents/conditions.resource';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { TFunction } from 'i18next';
@@ -153,9 +154,7 @@ describe('ConditionsForm (CRED)', () => {
   });
 
   it('keeps the form open and explains a server-rejected active duplicate', async () => {
-    const { getUserFacingErrorMessage: normalize } =
-      await vi.importActual<typeof import('@openmrs/esm-error-handling')>('@openmrs/esm-error-handling');
-    vi.mocked(getUserFacingErrorMessage).mockImplementationOnce(normalize);
+    vi.mocked(getUserFacingErrorMessage).mockImplementationOnce(getCompatibleUserFacingErrorMessage);
     mockCreateCondition.mockRejectedValueOnce(
       Object.assign(new Error('Synthetic duplicate'), { code: 'CONDITION_ACTIVE_DUPLICATE' }),
     );

@@ -51,6 +51,17 @@ describe('neonatal discharge timing', () => {
     });
   });
 
+  it('compares a FHIR birth calendar date with local midnight', () => {
+    const midnight = new Date(2026, 0, 1);
+    const before = new Date(midnight.getTime() - 1).toISOString();
+    const encounter = { ...birthEncounter, obs: [{ ...birthEncounter.obs[0], value: before }] };
+    expect(getNeonatalDischarge([pregnancy, encounter], '2026-01-01', config).validationMessage).toBe(
+      'neonatalDischargeBeforeBirth',
+    );
+    encounter.obs[0].value = midnight.toISOString();
+    expect(getNeonatalDischarge([pregnancy, encounter], '2026-01-01', config).missingDischarge).toBe(false);
+  });
+
   it('does not resurrect an old discharge after the latest birth form clears it', () => {
     const cleared = { ...birthEncounter, uuid: 'updated', encounterDatetime: '2026-01-04T09:00:00-05:00', obs: [] };
     expect(getNeonatalDischarge([pregnancy, birthEncounter, cleared], birth, config).missingDischarge).toBe(true);

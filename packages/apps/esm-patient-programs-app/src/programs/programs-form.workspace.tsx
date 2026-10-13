@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import { type ConfigObject } from '../config-schema';
+import { getPatientBirthDate } from './program-eligibility';
 import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
 import {
   createProgramEnrollment,
@@ -100,6 +101,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const session = useSession();
   const { patient: fetchedPatient } = usePatient(patientUuid);
   const patient = workspacePatient ?? fetchedPatient;
+  const birthDate = getPatientBirthDate(patient);
   const { data: enrollments, isLoading: isLoadingEnrollments } = useEnrollments(patientUuid);
   const config = useConfig<ConfigObject>();
   const { data: availablePrograms, eligiblePrograms: eligibleAvailablePrograms } = useAvailablePrograms(
@@ -111,7 +113,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const patientEnrollments = enrollments ?? [];
   const availableProgramsList = availablePrograms ?? [];
 
-  const programsFormSchema = useMemo(() => createProgramsFormSchema(t, patient?.birthDate), [t, patient?.birthDate]);
+  const programsFormSchema = useMemo(() => createProgramsFormSchema(t, birthDate), [t, birthDate]);
 
   const currentEnrollment = programEnrollmentId && patientEnrollments.filter((e) => e.uuid === programEnrollmentId)[0];
   const currentProgram = currentEnrollment
@@ -261,9 +263,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
           {...field}
           id="enrollmentDate"
           data-testid="enrollmentDate"
-          minDate={
-            patient?.birthDate && dayjs(patient.birthDate).isValid() ? dayjs(patient.birthDate).toDate() : undefined
-          }
+          minDate={birthDate && dayjs(birthDate).isValid() ? dayjs(birthDate).toDate() : undefined}
           maxDate={(() => {
             const completionDate = watch('completionDate');
             return completionDate ? dayjs(completionDate).subtract(1, 'day').toDate() : new Date();

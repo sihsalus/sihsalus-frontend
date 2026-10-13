@@ -31,6 +31,18 @@ safety policies.
 - Also read the root README, the affected package README, and any applicable
   clinical or technical contracts.
 
+## Human review
+
+- Follow the human-review procedure in `CONTRIBUTING.md`. Prepare small,
+  understandable diffs and explain choices, failure modes, and pending checks.
+- A human must review the finished result before a merge, release publication,
+  deployment, permission grant, or destructive shared operation. Approval names
+  the exact PR head, artifact/digest and target, or account and permissions.
+  Generic “yolo”/“continue” instructions and approval of a plan are insufficient.
+- Never complete human-review fields, approve deployment jobs using the human's
+  credentials, enable auto-merge, or bypass protections. Material changes require
+  new review. Merge and deployment approvals are separate decisions.
+
 ## Setup commands
 
 Always inspect the current state before changing files:
@@ -129,8 +141,8 @@ yarn verify:changed --base origin/main --head HEAD
 - Opening or updating a PR does not authorize any merge. Merge only when an
   explicit user instruction authorizes that exact merge. Treat merges into
   `main` or `pre-release` as release-affecting: the configured workflow can
-  publish immutable images and move `latest` or `next` after successful CI, and
-  `main` can signal DEV/QLTY deployment. Generic authorization to prepare a PR
+  publish immutable images and move `latest` or `next` after successful CI.
+  Deployment requires separate human approval. Generic authorization to prepare a PR
   is insufficient.
 - If a missing decision or authority could change the outcome, stop and ask
   only for what is required.

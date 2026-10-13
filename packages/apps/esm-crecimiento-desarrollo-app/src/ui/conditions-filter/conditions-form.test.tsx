@@ -1,16 +1,16 @@
+import { getUserFacingErrorMessage, useConfig, useSession } from '@openmrs/esm-framework';
 import type { Condition } from '@openmrs/esm-patient-common-lib';
-import { useConfig, useSession } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import type { TFunction } from 'i18next';
-import type { ReactNode } from 'react';
+import { useConditionsSearchFromConceptSet } from '@openmrs/esm-patient-common-lib/src/antecedents/condition-concept-set.resource';
 import {
   createCondition,
   updateCondition,
   usePatientConditions as useConditions,
 } from '@openmrs/esm-patient-common-lib/src/antecedents/conditions.resource';
-import { useConditionsSearchFromConceptSet } from '@openmrs/esm-patient-common-lib/src/antecedents/condition-concept-set.resource';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { TFunction } from 'i18next';
+import type { ReactNode } from 'react';
 import ConditionsForm, { createSchema } from './conditions-form.workspace';
 
 vi.mock('@sihsalus/esm-rbac', () => ({
@@ -152,6 +152,22 @@ describe('ConditionsForm (CRED)', () => {
     expect(mockUpdateCondition).not.toHaveBeenCalled();
   });
 
+  it('keeps the form open and explains a server-rejected active duplicate', async () => {
+    const { getUserFacingErrorMessage: normalize } =
+      await vi.importActual<typeof import('@openmrs/esm-error-handling')>('@openmrs/esm-error-handling');
+    vi.mocked(getUserFacingErrorMessage).mockImplementationOnce(normalize);
+    mockCreateCondition.mockRejectedValueOnce(
+      Object.assign(new Error('Synthetic duplicate'), { code: 'CONDITION_ACTIVE_DUPLICATE' }),
+    );
+    const { closeWorkspace } = renderForm();
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('searchbox'), 'Asma');
+    await user.click(screen.getByRole('button', { name: 'Asma' }));
+    await user.click(screen.getByRole('radio', { name: 'Active' }));
+    await user.click(screen.getByRole('button', { name: /save.*close/i }));
+    expect(await screen.findByText(/This condition is already active/)).toBeInTheDocument();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
   it('crea la condición con el concepto seleccionado de la búsqueda', async () => {
     const user = userEvent.setup();
     renderForm();
@@ -171,35 +187,35 @@ describe('ConditionsForm (CRED)', () => {
       }),
     );
   });
-  it.each([
-    'creating',
-    'editing',
-  ] as const)('keeps an unconfirmed %s write locked without claiming success', async (formContext) => {
-    const write = formContext === 'creating' ? mockCreateCondition : mockUpdateCondition;
-    write.mockRejectedValueOnce(
-      Object.assign(new Error('Synthetic unconfirmed response'), { code: 'CONDITION_WRITE_UNCONFIRMED' }),
-    );
-    const user = userEvent.setup();
-    const { closeWorkspace } = renderForm({
-      formContext,
-      condition: formContext === 'editing' ? matchingCondition : undefined,
-    });
-    if (formContext === 'creating') {
-      await user.type(screen.getByRole('searchbox'), 'Asma');
-      await user.click(screen.getByRole('button', { name: 'Asma' }));
-      await user.click(screen.getByRole('radio', { name: 'Active' }));
-    }
-    const form = screen.getByRole('button', { name: /save.*close/i }).closest('form');
-    await user.click(screen.getByRole('button', { name: /save.*close/i }));
-    expect(screen.getByRole('button', { name: 'Save unconfirmed' })).toBeDisabled();
-    expect(screen.getByText(/The save could not be confirmed.*reload the history/)).toBeInTheDocument();
-    expect(screen.queryByText('Antecedent saved')).not.toBeInTheDocument();
-    fireEvent.submit(form);
-    await waitFor(() => expect(write).toHaveBeenCalledTimes(1));
-    expect(closeWorkspace).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(closeWorkspace).toHaveBeenCalledTimes(1);
-  });
+  it.each(['creating', 'editing'] as const)(
+    'keeps an unconfirmed %s write locked without claiming success',
+    async (formContext) => {
+      const write = formContext === 'creating' ? mockCreateCondition : mockUpdateCondition;
+      write.mockRejectedValueOnce(
+        Object.assign(new Error('Synthetic unconfirmed response'), { code: 'CONDITION_WRITE_UNCONFIRMED' }),
+      );
+      const user = userEvent.setup();
+      const { closeWorkspace } = renderForm({
+        formContext,
+        condition: formContext === 'editing' ? matchingCondition : undefined,
+      });
+      if (formContext === 'creating') {
+        await user.type(screen.getByRole('searchbox'), 'Asma');
+        await user.click(screen.getByRole('button', { name: 'Asma' }));
+        await user.click(screen.getByRole('radio', { name: 'Active' }));
+      }
+      const form = screen.getByRole('button', { name: /save.*close/i }).closest('form');
+      await user.click(screen.getByRole('button', { name: /save.*close/i }));
+      expect(screen.getByRole('button', { name: 'Save unconfirmed' })).toBeDisabled();
+      expect(screen.getByText(/The save could not be confirmed.*reload the history/)).toBeInTheDocument();
+      expect(screen.queryByText('Antecedent saved')).not.toBeInTheDocument();
+      fireEvent.submit(form);
+      await waitFor(() => expect(write).toHaveBeenCalledTimes(1));
+      expect(closeWorkspace).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(closeWorkspace).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('waits for the verified record and initializes edit values after asynchronous loading', async () => {
     const response = {

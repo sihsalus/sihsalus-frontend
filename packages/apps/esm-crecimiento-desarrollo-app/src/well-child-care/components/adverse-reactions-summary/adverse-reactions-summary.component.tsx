@@ -11,7 +11,15 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  launchWorkspace2,
+  parseDate,
+  useConfig,
+  usePatient,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -74,7 +82,18 @@ const AdverseReactionsSummary: React.FC = () => {
           </Button>
         )}
       </CardHeader>
-      <DataTable headers={tableHeaders} rows={reactions} size="sm" useZebraStyles>
+      <DataTable
+        headers={tableHeaders}
+        rows={reactions.map((reaction) => ({
+          ...reaction,
+          occurrenceDate: Number.isFinite(Date.parse(reaction.occurrenceDate))
+            ? formatDate(parseDate(reaction.occurrenceDate), { mode: 'standard' })
+            : '--',
+          severity: reaction.severityCode ? t(reaction.severityCode) : reaction.severity || '--',
+        }))}
+        size="sm"
+        useZebraStyles
+      >
         {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
           <TableContainer>
             <Table {...getTableProps()} aria-label={headerTitle}>

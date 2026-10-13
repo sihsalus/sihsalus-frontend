@@ -515,5 +515,6 @@
   "motherChildNameUnavailable": "Patient name unavailable",
   "motherChildOpenChart": "Open {{name}}’s chart",
   "motherChildNoLinkedChildren": "No mother–child relationship is registered for this patient.",
-  "motherChildNoLinkedMother": "No mother–child relationship is registered for this patient."
+  "motherChildNoLinkedMother": "No mother–child relationship is registered for this patient.",
+  "conditionActiveDuplicate": "This condition is already active. Update the existing record or resolve it before recording another episode."
 }

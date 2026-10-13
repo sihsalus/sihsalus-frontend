@@ -516,5 +516,6 @@
   "motherChildNameUnavailable": "Nombre del paciente no disponible",
   "motherChildOpenChart": "Abrir historia de {{name}}",
   "motherChildNoLinkedChildren": "No hay un vínculo madre–hijo registrado para este paciente.",
-  "motherChildNoLinkedMother": "No hay un vínculo madre–hijo registrado para este paciente."
+  "motherChildNoLinkedMother": "No hay un vínculo madre–hijo registrado para este paciente.",
+  "conditionActiveDuplicate": "Esta condición ya está activa. Actualice el registro existente o resuélvalo antes de registrar otro episodio."
 }

@@ -1,6 +1,6 @@
 import { configSchema } from '../config-schema';
-import { getNeonatalDischarge } from './useNeonatalDischarge';
 import { getNextCREDControlRecommendation, getNextCREDMinimumDate } from '../utils/cred-control-intervals';
+import { getNeonatalDischarge } from './useNeonatalDischarge';
 
 const config = { formsList: configSchema.formsList._default, neonatalConcepts: configSchema.neonatalConcepts._default };
 const birth = '2026-01-01T09:00:00-05:00';
@@ -39,14 +39,15 @@ describe('neonatal discharge timing', () => {
   });
 
   it.each([
-    'invalid',
-    '2025-12-31T10:00:00Z',
-    '2099-01-01T00:00:00Z',
-  ])('rejects invalid birth discharge %s', (value) => {
+    ['invalid', 'neonatalDischargeInvalid'],
+    ['2025-12-31T10:00:00Z', 'neonatalDischargeBeforeBirth'],
+    ['2099-01-01T00:00:00Z', 'neonatalDischargeInFuture'],
+  ])('explains invalid birth discharge %s', (value, validationMessage) => {
     const encounter = { ...birthEncounter, obs: [{ ...birthEncounter.obs[0], value }] };
     expect(getNeonatalDischarge([pregnancy, encounter], birth, config)).toEqual({
       dischargeDate: undefined,
       missingDischarge: true,
+      validationMessage,
     });
   });
 

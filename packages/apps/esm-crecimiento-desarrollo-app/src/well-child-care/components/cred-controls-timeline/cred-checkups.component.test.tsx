@@ -215,3 +215,17 @@ it('withholds registration while the schedule is loading or has failed', async (
   expect(screen.getByText(es.errorLoadingSchedule)).toBeVisible();
   expect(screen.queryByRole('button', { name: es.registerControl })).not.toBeInTheDocument();
 });
+
+it.each(['es', 'en'] as const)(
+  'explains a discharge before birth without calling it missing (%s)',
+  async (language) => {
+    vi.mocked(useCREDSchedule).mockReturnValue({
+      ...vi.mocked(useCREDSchedule)('child'),
+      missingNeonatalDischarge: true,
+      neonatalValidationMessage: 'neonatalDischargeBeforeBirth',
+    });
+    await renderCards(language);
+    const messages = language === 'es' ? es : en;
+    expect(screen.getByText(messages.neonatalDischargeBeforeBirth)).toBeInTheDocument();
+  },
+);

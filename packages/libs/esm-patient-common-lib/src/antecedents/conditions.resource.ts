@@ -248,6 +248,17 @@ function throwConditionWriteError(error: unknown): never {
   const candidate = isRecord(error) ? error : undefined;
   const response = isRecord(candidate?.response) ? candidate.response : undefined;
   const status = Number(response?.status ?? candidate?.status ?? candidate?.statusCode);
+  const responseBody = isRecord(candidate?.responseBody) ? candidate.responseBody : undefined;
+  const validation = isRecord(responseBody?.error) ? responseBody.error : undefined;
+  const fields = isRecord(validation?.fieldErrors) ? validation.fieldErrors : undefined;
+  const conditionErrors = fields?.condition;
+  if (
+    status === 400 &&
+    Array.isArray(conditionErrors) &&
+    conditionErrors.some((entry) => isRecord(entry) && entry.code === 'Condition.activeDuplicate')
+  ) {
+    throw Object.assign(new Error('An active condition already exists.'), { code: 'CONDITION_ACTIVE_DUPLICATE' });
+  }
   if (Number.isInteger(status) && status >= 400 && status < 500 && status !== 408) {
     throw error;
   }

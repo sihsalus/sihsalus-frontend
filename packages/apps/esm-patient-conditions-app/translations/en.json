@@ -122,5 +122,6 @@
   "searching": "Searching",
   "seeAll": "See all",
   "show": "Show",
-  "status": "Status"
+  "status": "Status",
+  "conditionActiveDuplicate": "This condition is already active. Update the existing record or resolve it before recording another episode."
 }

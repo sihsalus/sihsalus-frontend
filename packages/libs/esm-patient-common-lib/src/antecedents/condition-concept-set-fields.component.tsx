@@ -19,28 +19,27 @@ import {
   useDebounce,
   useSession,
 } from '@openmrs/esm-framework';
-import type { ConditionFormSubmissionResult } from './use-condition-form-lifecycle';
-import { isConditionForPatient } from './conditions-model';
-import { matchesConditionStatusFilter } from './condition-status';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
+import { matchesConditionStatusFilter } from './condition-status';
+import { isConditionForPatient } from './conditions-model';
+import type { ConditionFormSubmissionResult } from './use-condition-form-lifecycle';
 import 'dayjs/plugin/utc';
 import type { TFunction } from 'i18next';
 import React, { type Dispatch, useCallback, useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-
-import {
-  createCondition,
-  syncConditionCache,
-  updateCondition,
-  usePatientConditions,
-  isUnconfirmedConditionWriteError,
-} from './conditions.resource';
-import type { CodedCondition, Condition, FormFields } from './conditions.types';
 import { useConditionsSearchFromConceptSet } from './condition-concept-set.resource';
 import styles from './condition-concept-set-form.scss';
 import { type ConditionsFormSchema } from './condition-concept-set-form.workspace';
+import {
+  createCondition,
+  isUnconfirmedConditionWriteError,
+  syncConditionCache,
+  updateCondition,
+  usePatientConditions,
+} from './conditions.resource';
+import type { CodedCondition, Condition, FormFields } from './conditions.types';
 
 export interface ConditionsWidgetHandle {
   submit: () => Promise<ConditionFormSubmissionResult>;
@@ -209,6 +208,10 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
             {
               logContext: 'Create condition',
               codeMessages: {
+                CONDITION_ACTIVE_DUPLICATE: t(
+                  'conditionActiveDuplicate',
+                  'This condition is already active. Update the existing record or resolve it before recording another episode.',
+                ),
                 CONDITION_TEXT_TOO_LONG: t(
                   'antecedentTextTooLong',
                   'Shorten the antecedent description or note before saving.',
@@ -318,6 +321,10 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
             {
               logContext: 'Update condition',
               codeMessages: {
+                CONDITION_ACTIVE_DUPLICATE: t(
+                  'conditionActiveDuplicate',
+                  'This condition is already active. Update the existing record or resolve it before recording another episode.',
+                ),
                 CONDITION_TEXT_TOO_LONG: t(
                   'antecedentTextTooLong',
                   'Shorten the antecedent description or note before saving.',

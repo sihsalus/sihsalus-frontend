@@ -12,8 +12,5 @@ export function useEncounterRole(): {
   );
   const clinicalEncounterRole = data?.data.results.find((encounterRole) => encounterRole.name === 'Clinician');
 
-  if (clinicalEncounterRole) {
-    return { encounterRole: clinicalEncounterRole, error, isLoading };
-  }
-  return { encounterRole: data?.data.results[0], error, isLoading };
+  return { encounterRole: clinicalEncounterRole, error, isLoading };
 }

@@ -407,3 +407,16 @@ The controls, nutrition follow-up and development follow-up cards use the shared
 `CardHeader` and Carbon structured lists, with module-local responsive styles. Recorded
 values wrap without adding clinical interpretations; registration and appointment
 actions retain their existing privilege and scheduling checks.
+
+### Validación de altas y presentación ESAVI
+
+El aviso neonatal distingue un alta ausente, inválida, futura o anterior al
+nacimiento. Conserva la espera de 48 horas desde un alta institucional válida.
+ESAVI presenta la fecha con el formato compartido y traduce las severidades
+mediante los UUID configurados; conserva la etiqueta de valores históricos
+desconocidos. No cambia las observaciones persistidas.
+
+La protección contra condiciones codificadas activas duplicadas depende de la
+corrección de `ConditionService` en OpenMRS Core asociada a sihsalus/sihsalus#366.
+El frontend muestra ese rechazo sin cerrar el formulario ni confirmar un guardado.
+No elimina duplicados históricos automáticamente.

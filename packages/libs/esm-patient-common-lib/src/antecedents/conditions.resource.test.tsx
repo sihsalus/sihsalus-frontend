@@ -378,6 +378,18 @@ describe('condition write boundary', () => {
     clinicalStatus: 'inactive',
   };
 
+  it('maps the backend duplicate validation code without exposing its raw message', async () => {
+    fetchMock.mockRejectedValueOnce({
+      response: { status: 400 },
+      responseBody: {
+        error: {
+          fieldErrors: { condition: [{ code: 'Condition.activeDuplicate', message: 'Synthetic technical detail' }] },
+        },
+      },
+    });
+    await expect(createCondition(fields)).rejects.toMatchObject({ code: 'CONDITION_ACTIVE_DUPLICATE' });
+  });
+
   describe.each(['create', 'update', 'delete'] as const)('%s acknowledgement', (operation) => {
     it.each([
       [new TypeError('Synthetic lost response'), true],
@@ -415,19 +427,19 @@ describe('condition write boundary', () => {
   });
 
   describe.each(['update', 'delete'] as const)('%s preflight', (operation) => {
-    it.each([
-      new TypeError('Synthetic GET offline'),
-      { response: { status: 500 } },
-    ])('does not classify a failed preflight GET as an uncertain write %#', async (failure) => {
-      fetchMock.mockRejectedValueOnce(failure);
-      const request =
-        operation === 'update'
-          ? updateCondition('condition-a', { ...fields, originalCondition: resource() })
-          : deleteCondition('condition-a', 'patient-a', 'Synthetic removal reason');
-      await expect(request).rejects.toBe(failure);
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-      expect(fetchMock.mock.calls[0][1]?.method).toBeUndefined();
-    });
+    it.each([new TypeError('Synthetic GET offline'), { response: { status: 500 } }])(
+      'does not classify a failed preflight GET as an uncertain write %#',
+      async (failure) => {
+        fetchMock.mockRejectedValueOnce(failure);
+        const request =
+          operation === 'update'
+            ? updateCondition('condition-a', { ...fields, originalCondition: resource() })
+            : deleteCondition('condition-a', 'patient-a', 'Synthetic removal reason');
+        await expect(request).rejects.toBe(failure);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock.mock.calls[0][1]?.method).toBeUndefined();
+      },
+    );
   });
 
   it('recognizes only the fixed uncertainty code without inspecting technical message contents', () => {
@@ -555,14 +567,13 @@ describe('condition write boundary', () => {
     expect(fetchMock.mock.calls.every(([, options]) => options?.method !== 'DELETE')).toBe(true);
   });
 
-  it.each([
-    '',
-    '   ',
-    'x'.repeat(256),
-  ])('rejects missing or excessive deletion reasons before any request %#', async (reason) => {
-    await expect(deleteCondition('condition-a', 'patient-a', reason)).rejects.toThrow(/valid reason/i);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
+  it.each(['', '   ', 'x'.repeat(256)])(
+    'rejects missing or excessive deletion reasons before any request %#',
+    async (reason) => {
+      await expect(deleteCondition('condition-a', 'patient-a', reason)).rejects.toThrow(/valid reason/i);
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 
   it('deletes a matching condition after a fresh GET, using a distinct read nonce for each attempt', async () => {
     fetchMock.mockResolvedValue(response(resource()));

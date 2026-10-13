@@ -218,6 +218,10 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
               {
                 logContext: 'Save antecedent',
                 codeMessages: {
+                  CONDITION_ACTIVE_DUPLICATE: t(
+                    'conditionActiveDuplicate',
+                    'This condition is already active. Update the existing record or resolve it before recording another episode.',
+                  ),
                   CONDITION_CODED_DIAGNOSIS_REQUIRED: t(
                     'antecedentCodedDiagnosisRequired',
                     'A definitive diagnosis requires a coded concept.',
@@ -340,6 +344,10 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
               {
                 logContext: 'Save antecedent',
                 codeMessages: {
+                  CONDITION_ACTIVE_DUPLICATE: t(
+                    'conditionActiveDuplicate',
+                    'This condition is already active. Update the existing record or resolve it before recording another episode.',
+                  ),
                   CONDITION_CODED_DIAGNOSIS_REQUIRED: t(
                     'antecedentCodedDiagnosisRequired',
                     'A definitive diagnosis requires a coded concept.',

@@ -83,6 +83,32 @@ vi.mock('./program-enrollment-cache', () => ({
 }));
 
 describe('ProgramsForm', () => {
+  it.each([false, true])('rejects a date before birth when editing=%s, and allows the birthday', async (editing) => {
+    const user = userEvent.setup();
+    const props = {
+      ...testProps,
+      groupProps: { ...testProps.groupProps, patient: { ...testProps.groupProps.patient, birthDate: '2020-05-05' } },
+      workspaceProps: editing ? { programEnrollmentId: mockEnrolledProgramsResponse[0].uuid } : {},
+    };
+    render(<ProgramsForm {...props} />);
+    if (!editing) {
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /program name/i }),
+        mockCareProgramsResponse[0].uuid,
+      );
+    }
+    const date = screen.getByRole('textbox', { name: /date enrolled/i });
+    fireEvent.change(date, { target: { value: '2020-05-04' } });
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+    expect(screen.getByText('The enrollment date cannot be before the patient’s date of birth.')).toBeInTheDocument();
+    expect(mockCreateProgramEnrollment).not.toHaveBeenCalled();
+    expect(mockUpdateProgramEnrollment).not.toHaveBeenCalled();
+
+    fireEvent.change(date, { target: { value: '2020-05-05' } });
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+    expect(editing ? mockUpdateProgramEnrollment : mockCreateProgramEnrollment).toHaveBeenCalledTimes(1);
+  });
+
   it('renders a success toast notification upon successfully recording a program enrollment', async () => {
     const user = userEvent.setup();
 

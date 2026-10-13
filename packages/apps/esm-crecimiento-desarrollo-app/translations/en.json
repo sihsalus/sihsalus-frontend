@@ -701,5 +701,9 @@
   "motherChildNameUnavailable": "Patient name unavailable",
   "motherChildOpenChart": "Open {{name}}’s chart",
   "motherChildNoLinkedChildren": "No mother–child relationship is registered for this patient.",
-  "motherChildNoLinkedMother": "No mother–child relationship is registered for this patient."
+  "motherChildNoLinkedMother": "No mother–child relationship is registered for this patient.",
+  "neonatalDischargeBeforeBirth": "The newborn discharge is earlier than the date of birth. Correct the discharge in Birth Data or review the patient’s date of birth.",
+  "neonatalDischargeInFuture": "The newborn discharge is in the future. Correct the date and time in Birth Data.",
+  "neonatalDischargeInvalid": "The newborn discharge or date of birth is invalid. Review Birth Data and the patient’s date of birth.",
+  "conditionActiveDuplicate": "This condition is already active. Update the existing record or resolve it before recording another episode."
 }

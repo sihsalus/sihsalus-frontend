@@ -48,5 +48,6 @@
   "saving": "Saving",
   "seeAll": "See all",
   "state": "State",
-  "status": "Status"
+  "status": "Status",
+  "enrollmentBeforeBirth": "The enrollment date cannot be before the patient’s date of birth."
 }

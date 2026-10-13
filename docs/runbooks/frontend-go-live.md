@@ -1,100 +1,69 @@
 # Runbook: despliegue y go-live del frontend
 
-**Última actualización:** 2026-08-17. Complementa al gate clínico
-([issue #670](https://github.com/sihsalus/sihsalus-frontend/issues/670)) y a
-`docs/audits/2026-07-27-production-readiness.md`; no los reemplaza.
+**Última actualización:** 2026-10-13. Complementa el gate clínico
+([issue #670](https://github.com/sihsalus/sihsalus-frontend/issues/670)); no lo reemplaza.
 
-## 1. Cadena de despliegue (cómo llega un merge a un ambiente)
+## 1. Revisión, publicación y despliegue
 
-```text
-merge a main ──► CI (ci.yml) ──► release.yml (workflow_run)
-                                   │  imagen inmutable + Trivy + promoción
-                                   │  tag frontend-release-<sha40>
-                                   ▼
-                 sihsalus/sihsalus · workflow "Deploy Frontend"
-                   ├─ dispara por: tag push, repository_dispatch
-                   │  (frontend-published) y cron de drift cada ~5 min
-                   ├─ resolve: verifica sha40 + digest sha256 contra GHCR
-                   ├─ Deploy DEV ──► Deploy QLTY (SSH + deploy key;
-                   │  guards de MAC/node-id del host; auto-rollback si falla)
-                   └─ verificación externa: build-info.json == sha esperado
-```
+Un mantenedor revisa el diff final, sus decisiones, riesgos y evidencia, y
+aprueba el PR/SHA y sus efectos de publicación. El [procedimiento de contribución](../../CONTRIBUTING.md#human-review-of-assisted-work)
+exige aprobación separada para aplicar el resultado a un entorno.
 
-Notas operativas verificadas el 2026-08-17:
+Después del merge, CI y `release.yml` construyen y analizan la imagen inmutable,
+y pueden actualizar `latest`/`next`. El resumen registra SHA y digest para
+revisión; el release no envía señales de despliegue al distro.
 
-- Los pushes rápidos consecutivos **cancelan por supersesión** los CI de main
-  intermedios; sus releases quedan `skipped`. Solo importa el CI del tip.
-- El cron de drift puede **retrasarse bastante** bajo carga de GitHub; el
-  estado converge solo, no relanzar en pánico.
-- La concurrencia del deploy es un lock único (`deploy-frontend-non-production`):
-  un rerun encolado detrás de un cron activo es redundante — cancelarlo para
-  no reiniciar el contenedor dos veces con la misma imagen.
+La [revisión humana del distro](https://github.com/sihsalus/sihsalus/blob/main/docs/operations/human-review.md)
+gobierna la siguiente operación:
+
+- Para hosts con selección persistente de release, preparar los wrappers y
+  [manifiestos](https://github.com/sihsalus/sihsalus/blob/main/docs/operations/release-manifests.md),
+  evidencia y rollback antes de solicitar aprobación del checksum y nodo.
+- La ruta individual `Deploy Frontend` solo admite ejecución manual con SHA y
+  digest completos. Verifica las protecciones nativas de GitHub y espera la
+  aprobación del job de cada environment. No tiene cron ni disparadores por tags.
+  Los hosts con manifiestos rechazan esta ruta; no retirar su marcador.
+
+Un agente no puede aprobar esos jobs con las credenciales del mantenedor,
+considerar “yolo” como revisión ni presentar CI como aceptación clínica.
 
 ## 2. Verificación de un despliegue
 
-DEV y QLTY no requieren OpenVPN. Comprobar directamente HTTPS y, cuando esté
-autorizado, SSH mediante los alias `gidis-dev` y `gidis-qlty`, que seleccionan
-la identidad configurada. No usar el estado de OpenVPN o Tailscale como requisito
-para estos dos ambientes. La conectividad debe verificarse en cada operación.
+DEV y QLTY no requieren OpenVPN. Comprobar HTTPS y SSH mediante `gidis-dev` y
+`gidis-qlty` cuando la operación esté autorizada; verificar MAC y UUID del nodo
+con el procedimiento existente.
 
 ```sh
-# ¿Qué sirve cada ambiente? (comparar gitSha con el tip esperado)
 curl -sk https://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/spa/build-info.json
 curl -sk https://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs/spa/build-info.json
-
-# Estado del pipeline
-gh run list --workflow=release.yml --limit 3            # en sihsalus-frontend
-gh run list -R sihsalus/sihsalus --limit 5              # Deploy Frontend
+gh run list --workflow=release.yml --limit 3
+gh run list -R sihsalus/sihsalus --limit 5
 ```
 
-## 3. Rollback
+Seguir el [checklist vigente](https://github.com/sihsalus/sihsalus/blob/main/docs/operations/deploy-checklist.md):
+identidad, imágenes, Initializer, salud, autenticación y aceptación clínica se
+registran por separado. Comparar la revisión con el artefacto aprobado, no con
+un `latest` que pueda haber cambiado después de la decisión.
 
-El deploy remoto restaura la configuración anterior **automáticamente** si el
-despliegue falla (verificado en vivo el 2026-08-17: QLTY siguió sirviendo la
-imagen previa durante horas de fallos, sin corte).
+## 3. Recuperación
 
-Rollback manual a un SHA anterior conocido:
+Revisar y conservar antes del despliegue el manifiesto anterior, sus imágenes,
+el respaldo y la señal que autoriza su recuperación. El rollback de manifiestos
+usa la misma herramienta y selección completa; no restaura automáticamente la
+base de datos ni revierte migraciones.
 
-```sh
-gh workflow run "Deploy Frontend" -R sihsalus/sihsalus \
-  -f sha=<sha40-anterior> [-f digest=sha256:<64hex>]
-```
+El script individual conserva su rollback acotado al frontend. No usarlo para
+recuperar una instalación administrada por manifiestos. Seguir el procedimiento
+nativo aprobado y registrar el resultado, incluso si la recuperación falla.
 
-Registrar SIEMPRE el sha/digest previo antes de promover uno nuevo
-(criterio de salida del issue #670).
+## 4. Fallos operativos
 
-## 4. Incidentes conocidos y su tratamiento
-
-### 4.1 Disco lleno en el host (2026-08-17, QLTY)
-
-**Síntoma:** `failed to register layer: … no space left on device` en el job
-Deploy; el cron reintenta en loop y falla igual. El servicio NO se cae
-(rollback automático), pero el ambiente queda congelado en la imagen vieja.
-
-**Diagnóstico y limpieza segura** (en el host, por SSH):
-
-```sh
-df -h / && docker system df
-docker builder prune -f     # cache de builds: el culpable aquel día (98%→77%)
-docker image prune -f       # solo capas huérfanas
-# NUNCA docker system prune -a global en un host clínico (política del
-# distro: scripts/deploy/deploy-frontend.sh ya poda scoped el frontend).
-```
-
-Tras liberar espacio no hay que hacer nada más: el cron de drift redespliega
-solo. Prevención: chequeo de disco pre-deploy en el script remoto (propuesto
-al distro) y prune periódico del builder como tarea operativa.
-
-### 4.2 Timeout SSH desde los runners (2026-08-17, QLTY)
-
-**Síntoma:** `ssh: connect to host … port 22: Connection timed out` repetido
-desde el runner, con el host sano (SSH directo funciona y DEV conecta en el
-mismo run). Causa probable: baneo puntual (fail2ban activo en el host) o
-perímetro de red; cada run usa una IP de runner distinta.
-
-**Tratamiento:** reintentar el run (IP nueva). Si falla en serie:
-`sudo fail2ban-client status sshd` en el host y evaluar
-`sudo fail2ban-client unban --all`.
+Ante falta de disco, errores SSH o un arranque fallido, registrar la evidencia
+sin secretos y revisar el estado antes de reintentar. Una autorización de
+frontend no permite borrar volúmenes, podar imágenes retenidas, desactivar
+protecciones ni cambiar permisos o red para forzar el resultado. Preparar el
+remedio concreto y solicitar aprobación cuando exceda el alcance revisado.
+No hay reintentos de despliegue por cron.
 
 ## 5. Gate E2E autenticado (pendiente de primera ejecución)
 

@@ -30,7 +30,7 @@ README of every package you will modify.
   and must follow the [go-live runbook](docs/runbooks/frontend-go-live.md).
 - The release workflow treats `main` and `pre-release` as release branches and
   may publish immutable images and move `latest` or `next` when its CI
-  preconditions are met. `main` may also signal deployment to DEV/QLTY. Before
+  preconditions are met. Deployment requires a separate human decision. Before
   merging into either branch, an authorized human maintainer must explicitly
   approve that consequence and confirm green checks, resolved conversations,
   domain review, and clinical or security approval when applicable.
@@ -42,6 +42,41 @@ If that is unavailable, email `sihsalus@pucp.edu.pe` without sensitive details
 and request a private channel.
 
 ## Preparing a change
+
+### Human review of assisted work
+
+Agents may investigate, prepare isolated changes, and run appropriate checks.
+Before requesting a decision, present a focused diff, the problem and cause,
+design choices and alternatives, failure modes, and executed/pending validation.
+Offer a walkthrough so the maintainer can challenge and explain the solution.
+Avoid changes too large for that review; split independent outcomes.
+
+Approval of a plan, “yolo”, “continue”, or green CI does not authorize a merge,
+release publication, deployment, privilege grant, or destructive shared action.
+A human must review the finished result and authorize the specific action:
+PR and head SHA for a merge; artifact/digest and environment for a deployment;
+account and exact roles for access changes. Material changes require renewed
+review. Approval remains valid for the reviewed scope and does not need to be
+requested repeatedly for the same action.
+
+Leave the human-review section of the PR pending for the reviewer. Do not
+approve through the maintainer's credentials, fabricate reviewer identity,
+enable auto-merge, or bypass checks. A bot review is supporting evidence.
+Clinical decisions and permission policies need the responsible domain reviewer;
+the agent must expose unresolved decisions rather than invent their approval.
+
+Merging into a release branch may publish a verified image and update registry
+aliases. It does not authorize application to DEV, QLTY, or production. The
+distro's human-review and manifest procedures govern that separate action.
+
+The proposed native [main ruleset](.github/rulesets/main.json) requires one
+approval, approval of the last push, dismissal of stale approvals, resolved
+conversations, and the existing CI checks from GitHub Actions, with no bypass.
+It must be reviewed and applied by an authorized administrator through the
+[native ruleset API](https://docs.github.com/en/rest/repos/rules), then verified
+in GitHub Settings; committing the file does not activate protection. Identify another
+human maintainer able to review before enabling it. Native approval counts
+still need the human-review policy above; a bot's approval is not acceptance.
 
 ### 1. Check the current context
 

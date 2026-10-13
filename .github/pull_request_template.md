@@ -54,6 +54,18 @@ Delete the example row and add as many rows as required.
 - Stop or rollback signal:
 - Rollback procedure, or `N/A` with reason:
 
+## Human review and decision
+
+<!-- The human reviewer completes this after reviewing the finished diff.
+Agents must leave the decision pending; a bot review or CI is not approval. -->
+
+- Explanation for the reviewer: cause, design choice, alternative, and failure modes:
+- AI assistance: tools and affected areas, or `none`:
+- Human reviewer and reviewed head SHA: **Pending**
+- Clinical/security reviewer when required: **Pending or N/A with reason**
+- Decision, scope, and release effects accepted by the human: **Pending**
+- Deployment authorization: **Separate decision; not granted by this PR**
+
 ## Final checklist
 
 - [ ] The diff matches the scope and contains no unrelated changes or accidental artifacts.

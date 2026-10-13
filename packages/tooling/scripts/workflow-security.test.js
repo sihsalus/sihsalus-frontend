@@ -48,7 +48,7 @@ test('release scans the immutable digest before promoting mutable aliases', () =
   const scanStep = releaseWorkflow.slice(scanIndex, promotionIndex);
   assert.match(scanStep, /image-ref: .*@\$\{\{ steps\.build\.outputs\.digest \}\}/);
   assert.match(scanStep, /severity: HIGH,CRITICAL/);
-  assert.match(scanStep, /exit-code: '1'/);
+  assert.match(scanStep, /exit-code: (['"])1\1/);
   assert.doesNotMatch(scanStep, /trivyignores:/);
 
   const promotionStep = releaseWorkflow.slice(promotionIndex);
@@ -79,7 +79,7 @@ test('multiarch scans both immutable platforms before promoting its mutable alia
   assert.equal((scanSteps.match(/image-ref: .*@\$\{\{ steps\.build\.outputs\.digest \}\}/g) ?? []).length, 2);
   assert.match(scanSteps, /TRIVY_PLATFORM: linux\/amd64/);
   assert.match(scanSteps, /TRIVY_PLATFORM: linux\/arm64/);
-  assert.equal((scanSteps.match(/exit-code: '1'/g) ?? []).length, 2);
+  assert.equal((scanSteps.match(/exit-code: (['"])1\1/g) ?? []).length, 2);
   assert.doesNotMatch(scanSteps, /trivyignores:/);
   assert.equal((scanSteps.match(/limit-severities-for-sarif: true/g) ?? []).length, 2);
 

@@ -4160,13 +4160,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openmrs/esm-context@npm:10.0.0":
-  version: 10.0.0
-  resolution: "@openmrs/esm-context@npm:10.0.0"
+"@openmrs/esm-context@npm:11.0.0":
+  version: 11.0.0
+  resolution: "@openmrs/esm-context@npm:11.0.0"
   peerDependencies:
-    "@openmrs/esm-globals": ^10.0.0
-    "@openmrs/esm-state": ^10.0.0
-  checksum: 10c0/d607c2aecf75d1e3ae93504eeac156f8ca6eb49bbfa7f5e6a9fe5ce22a2071bad390d0909169bb89f0aa9ae371a85474a9d9d11539e8f02a68c9837ac06e1a60
+    "@openmrs/esm-globals": ^11.0.0
+    "@openmrs/esm-state": ^11.0.0
+  checksum: 10c0/c6786a65035391ef8e12d8e64840683c2719a252702cfbe8e5d18fd24475ffe9d51da946ab6fa7a3df5e8be5ed63d7e172660f09f3fc768dfdaebb8711e4cb15
   languageName: node
   linkType: hard
 
@@ -4362,7 +4362,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-api": "workspace:*"
     "@openmrs/esm-config": "workspace:*"
-    "@openmrs/esm-context": "npm:10.0.0"
+    "@openmrs/esm-context": "npm:11.0.0"
     "@openmrs/esm-dynamic-loading": "workspace:*"
     "@openmrs/esm-emr-api": "workspace:*"
     "@openmrs/esm-error-handling": "workspace:*"
@@ -4530,7 +4530,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-api": "workspace:*"
     "@openmrs/esm-config": "workspace:*"
-    "@openmrs/esm-context": "npm:10.0.0"
+    "@openmrs/esm-context": "npm:11.0.0"
     "@openmrs/esm-emr-api": "workspace:*"
     "@openmrs/esm-error-handling": "workspace:*"
     "@openmrs/esm-extensions": "workspace:*"

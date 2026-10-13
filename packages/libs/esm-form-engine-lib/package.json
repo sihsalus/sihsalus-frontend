@@ -36,7 +36,7 @@
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "dependencies": {
-    "@carbon/react": "^1.117.0",
+    "@carbon/react": "^1.118.0",
     "@openmrs/esm-utils": "workspace:*",
     "classnames": "^2.5.1",
     "jsep": "^1.4.0",

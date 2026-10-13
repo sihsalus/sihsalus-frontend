@@ -1550,7 +1550,7 @@ test('a saved close refreshes observations across independently bundled microfro
   const fixture = await mkdtemp(path.join(tmpdir(), 'sihsalus-swr-federation-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));
   const shellConfig = getAppShellWebpackConfig();
-  const shellShared = shellConfig.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  const shellShared = shellConfig.plugins.find((plugin) => plugin.options?.shared).options.shared;
   const appConfig = loadConfig(
     path.join(repositoryRoot, 'packages/apps/esm-crecimiento-desarrollo-app'),
     'rspack.config.js',

@@ -23,6 +23,8 @@ cross-bundle refresh regression; OpenMRS 10.0.0 currently shares only `_internal
 Early chunks use Webpack's `auto` public path from the shell script URL; OpenMRS
 `initializeSpa` still applies its configured SPA base afterwards. The browser
 case starts on a patient deep link to exercise loading before that initialization.
+The shell's Webpack 5.111 configuration uses the federation plugin's public
+`options` property; the Rspack 2 remote retains its own `_options` contract.
 
 The OpenMRS 10 SVG rule imports markup as text for the shared icon and
 pictogram registries. Imports with `?url` emit a file URL for `<img>` consumers

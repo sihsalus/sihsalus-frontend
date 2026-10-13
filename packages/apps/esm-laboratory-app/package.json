@@ -55,7 +55,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.16.13",
     "@types/react": "^18.3.21",
@@ -69,7 +69,7 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.4",
-    "vite": "8.3.2",
+    "vite": "8.3.4",
     "vitest": "^5.0.3"
   }
 }

@@ -122,5 +122,6 @@
   "searching": "Buscando",
   "seeAll": "Ver todo",
   "show": "Mostrar",
-  "status": "Estado"
+  "status": "Estado",
+  "conditionActiveDuplicate": "Esta condición ya está activa. Actualice el registro existente o resuélvalo antes de registrar otro episodio."
 }

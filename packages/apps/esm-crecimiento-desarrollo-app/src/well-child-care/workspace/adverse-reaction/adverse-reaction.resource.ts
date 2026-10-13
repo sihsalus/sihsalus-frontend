@@ -3,7 +3,7 @@ import useSWR from 'swr';
 
 import type { ConfigObject } from '../../../config-schema';
 
-type Severity = 'mild' | 'moderate' | 'severe';
+export type Severity = 'mild' | 'moderate' | 'severe';
 
 export interface AdverseReactionPayload {
   patientUuid: string;
@@ -51,6 +51,7 @@ export interface AdverseReactionSummary {
   occurrenceDate: string;
   vaccineName: string;
   severity: string;
+  severityCode?: Severity;
   reactionDescription: string;
 }
 
@@ -140,6 +141,10 @@ export function useAdverseReactions(patientUuid: string, config: ConfigObject) {
           occurrenceDate: encounter.encounterDatetime,
           vaccineName: getObsDisplayValue(obsByConcept.get(adverseReactionConfig.vaccineNameConceptUuid)),
           severity: getObsDisplayValue(obsByConcept.get(adverseReactionConfig.severityConceptUuid)),
+          severityCode: getSeverityCode(
+            obsByConcept.get(adverseReactionConfig.severityConceptUuid),
+            adverseReactionConfig.severityAnswers,
+          ),
           reactionDescription: getObsDisplayValue(
             obsByConcept.get(adverseReactionConfig.reactionDescriptionConceptUuid),
           ),
@@ -152,6 +157,12 @@ export function useAdverseReactions(patientUuid: string, config: ConfigObject) {
     isLoading,
     mutate,
   };
+}
+
+function getSeverityCode(obs: ObsResponse | undefined, answers: Record<Severity, string>): Severity | undefined {
+  if (!obs?.value || typeof obs.value !== 'object') return undefined;
+  const uuid = obs.value.uuid;
+  return (Object.keys(answers) as Severity[]).find((severity) => answers[severity] === uuid);
 }
 
 function getObsDisplayValue(obs?: ObsResponse) {

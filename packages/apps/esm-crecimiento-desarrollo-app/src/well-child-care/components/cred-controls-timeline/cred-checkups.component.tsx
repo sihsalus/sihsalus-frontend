@@ -32,8 +32,16 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
-  const { controls, nextDueControl, completedCount, totalCount, isLoading, error, missingNeonatalDischarge } =
-    useCREDSchedule(patientUuid);
+  const {
+    controls,
+    nextDueControl,
+    completedCount,
+    totalCount,
+    isLoading,
+    error,
+    missingNeonatalDischarge,
+    neonatalValidationMessage,
+  } = useCREDSchedule(patientUuid);
   const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{
     workspaceTitle: string;
     patientUuid: string;
@@ -180,7 +188,12 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
       </CardHeader>
       <div className={styles.container}>
         {missingNeonatalDischarge && (
-          <InlineNotification kind="warning" lowContrast hideCloseButton title={t('neonatalDischargeRequired')} />
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            title={t(neonatalValidationMessage ?? 'neonatalDischargeRequired')}
+          />
         )}
         {nextDueControl && (
           <StructuredListWrapper isCondensed>

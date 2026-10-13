@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import { type ConfigObject } from '../config-schema';
+import { getPatientBirthDate } from './program-eligibility';
 import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
 import {
   createProgramEnrollment,
@@ -51,10 +52,15 @@ export interface ProgramsFormProps {
   programEnrollmentId?: string;
 }
 
-const createProgramsFormSchema = (t: TFunction) =>
+const createProgramsFormSchema = (t: TFunction, birthDate?: string) =>
   z.object({
     selectedProgram: z.string().refine((value) => !!value, t('programRequired', 'Program is required')),
-    enrollmentDate: z.date(),
+    enrollmentDate: z
+      .date()
+      .refine(
+        (date) => !birthDate || !dayjs(birthDate).isValid() || !dayjs(date).isBefore(dayjs(birthDate), 'day'),
+        t('enrollmentBeforeBirth', 'The enrollment date cannot be before the patient’s date of birth.'),
+      ),
     completionDate: z.date().optional().nullable(),
     selectedProgramStatus: z.string(),
   });
@@ -95,6 +101,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const session = useSession();
   const { patient: fetchedPatient } = usePatient(patientUuid);
   const patient = workspacePatient ?? fetchedPatient;
+  const birthDate = getPatientBirthDate(patient);
   const { data: enrollments, isLoading: isLoadingEnrollments } = useEnrollments(patientUuid);
   const config = useConfig<ConfigObject>();
   const { data: availablePrograms, eligiblePrograms: eligibleAvailablePrograms } = useAvailablePrograms(
@@ -106,7 +113,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   const patientEnrollments = enrollments ?? [];
   const availableProgramsList = availablePrograms ?? [];
 
-  const programsFormSchema = useMemo(() => createProgramsFormSchema(t), [t]);
+  const programsFormSchema = useMemo(() => createProgramsFormSchema(t, birthDate), [t, birthDate]);
 
   const currentEnrollment = programEnrollmentId && patientEnrollments.filter((e) => e.uuid === programEnrollmentId)[0];
   const currentProgram = currentEnrollment
@@ -178,7 +185,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
         dateCompleted: completionDate ? dayjs(completionDate).format() : null,
         location: enrollmentLocationUuid,
         states:
-          !!selectedProgramStatus && selectedProgramStatus !== currentState?.state.uuid
+          selectedProgramStatus && selectedProgramStatus !== currentState?.state.uuid
             ? [{ state: { uuid: selectedProgramStatus } }]
             : [],
       };
@@ -256,6 +263,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
           {...field}
           id="enrollmentDate"
           data-testid="enrollmentDate"
+          minDate={birthDate && dayjs(birthDate).isValid() ? dayjs(birthDate).toDate() : undefined}
           maxDate={(() => {
             const completionDate = watch('completionDate');
             return completionDate ? dayjs(completionDate).subtract(1, 'day').toDate() : new Date();
@@ -298,7 +306,7 @@ const ProgramsEnrollmentForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   );
 
   let workflowStates = [];
-  if (!currentProgram && !!selectedProgram) {
+  if (!currentProgram && selectedProgram) {
     const program = eligiblePrograms.find((p) => p.uuid === selectedProgram);
     if (program?.allWorkflows.length > 0) workflowStates = program.allWorkflows[0].states;
   } else if (currentProgram?.allWorkflows.length > 0) {

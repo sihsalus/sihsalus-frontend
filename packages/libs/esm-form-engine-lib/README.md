@@ -312,3 +312,11 @@ Content can set `isSearchable: false` to show the existing role catalog without
 typing. CRED uses explicit nursing/medical role selection; the authenticated
 provider remains the default responsible professional and editing retains the
 stored provider and role. Encounter roles do not grant clinical privileges.
+
+When no default role exists and the encounter/program history is empty, custom
+dependencies may remain uninitialized. Submission still honors an explicitly
+selected encounter role; it neither dereferences missing dependencies nor assigns
+an implicit role. This addresses sihsalus/sihsalus#373 and #374. The helper
+regression reproduces the original failure and covers absence of a selected role.
+Manual save/reload of CRED physical examination and visual screening remains a
+QLTY acceptance check.

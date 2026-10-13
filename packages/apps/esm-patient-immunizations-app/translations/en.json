@@ -1,4 +1,9 @@
 {
+  "requiredFieldsHint": "Fields marked with * are required.",
+  "vaccinationServiceUnavailable": "Vaccination is unavailable. Contact support before trying again.",
+  "vaccinationSaveUnconfirmed": "The vaccination could not be confirmed as saved. Review the history before trying again.",
+  "vaccinationHistoryUnavailable": "Vaccination history unavailable",
+  "vaccinationHistoryRequired": "The vaccination history could not be loaded. Close this form and reload the history before recording a vaccination.",
   "actions": "Actions",
   "active": "activa",
   "activeScheduleVersion": "v{{version}} activa",

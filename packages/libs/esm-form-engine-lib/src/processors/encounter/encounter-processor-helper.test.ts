@@ -95,6 +95,23 @@ describe('hasDuplicatePatientIdentifiers', () => {
 });
 
 describe('getMutableSessionProps', () => {
+  it('preserves the selected role when no default role dependencies were initialized', () => {
+    const context = createFormContext({
+      customDependencies: undefined,
+      formFields: [createSubmissionField('encounterRole', 'selected-nursing-role')],
+    });
+
+    expect(getMutableSessionProps(context)).toMatchObject({
+      encounterRole: 'selected-nursing-role',
+      encounterProvider: 'provider-uuid',
+      encounterLocation: 'location-uuid',
+    });
+  });
+
+  it('does not invent a default role when custom dependencies are absent', () => {
+    expect(getMutableSessionProps(createFormContext({ customDependencies: undefined })).encounterRole).toBeUndefined();
+  });
+
   it('does not default active visits to the client clock when no encounter datetime was submitted', () => {
     const context = createFormContext({
       visit: { uuid: 'active-visit-uuid' } as never,

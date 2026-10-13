@@ -40,7 +40,7 @@ import {
 import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
 import { mapToAmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 import { DoseInput } from './components/dose-input.component';
-import { fhirImmunizationConceptMappingLabels, getFhirImmunizationConceptMappings } from './fhir-immunization-config';
+import { getFhirImmunizationConceptMappings } from './fhir-immunization-config';
 import { mapToFHIRImmunizationResource } from './immunization-mapper';
 import {
   getImmunizationSaveErrorDetails,
@@ -60,9 +60,14 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const currentUser = useSession();
   const activeVisitLocationUuid = visitContext?.location?.uuid;
   const isTablet = useLayoutType() === 'tablet';
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-patient-immunizations-app');
   const { immunizationsConceptSet } = useImmunizationsConceptSet(config);
-  const { data: existingImmunizations, isLoading: isLoadingImmunizations, mutate } = useImmunizations(patientUuid);
+  const {
+    data: existingImmunizations,
+    error: immunizationsError,
+    isLoading: isLoadingImmunizations,
+    mutate,
+  } = useImmunizations(patientUuid);
   const { scheduleData } = useVaccinationSchedule();
 
   const [immunizationToEditMeta, setImmunizationToEditMeta] = useState<{
@@ -282,6 +287,9 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
 
   const onSubmit = useCallback(
     async (data: ImmunizationFormInputData) => {
+      if (isLoadingImmunizations || immunizationsError) {
+        return;
+      }
       if (!locationUuid) {
         showSnackbar({
           title: t('errorSaving', 'Error saving vaccination'),
@@ -377,28 +385,13 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         });
       } catch (err) {
         const errorDetails = getImmunizationSaveErrorDetails(err, fhirConceptMappings);
-        const configKeyLabel =
-          errorDetails.type === 'missing-fhir-mapping' && errorDetails.configKey
-            ? fhirImmunizationConceptMappingLabels[errorDetails.configKey]
-            : undefined;
         const subtitle =
-          errorDetails.type === 'missing-fhir-mapping'
-            ? t(
-                'fhirImmunizationMissingMapping',
-                'FHIR immunization setup is incomplete. No unique concept is mapped to {{mapping}}{{configKey}}. Update sihsalus-content and reload backend content.',
-                {
-                  mapping: errorDetails.mapping,
-                  configKey: configKeyLabel ? ` (${configKeyLabel})` : '',
-                },
-              )
-            : errorDetails.type === 'fhir-setup'
-              ? t(
-                  'fhirImmunizationSetupError',
-                  'FHIR immunization setup is incomplete. Update sihsalus-content and reload backend content.',
-                )
-              : errorDetails.type === 'validation'
-                ? (errorDetails.diagnostics ?? t('invalidVaccinationRequest', 'The vaccination request is invalid.'))
-                : (errorDetails.message ?? t('unknownVaccinationSaveError', 'Unknown error while saving vaccination.'));
+          errorDetails.type === 'missing-fhir-mapping' || errorDetails.type === 'fhir-setup'
+            ? t('vaccinationServiceUnavailable', 'Vaccination is unavailable. Contact support before trying again.')
+            : t(
+                'vaccinationSaveUnconfirmed',
+                'The vaccination could not be confirmed as saved. Review the history before trying again.',
+              );
 
         showSnackbar({
           title: t('errorSaving', 'Error saving vaccination'),
@@ -410,6 +403,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
     },
     [
       patientUuid,
+      immunizationsError,
+      isLoadingImmunizations,
       currentUser?.currentProvider?.uuid,
       visitContext?.uuid,
       immunizationToEditMeta,
@@ -427,8 +422,21 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
     <Workspace2 title={t('immunizationWorkspaceTitle', 'Immunization')} hasUnsavedChanges={isDirty}>
       <RequirePrivilege privilege={immunizationEditPrivilege}>
         <FormProvider {...formProps}>
-          <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+          <Form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
             <Stack gap={5} className={styles.container}>
+              <p>{t('requiredFieldsHint', 'Fields marked with * are required.')}</p>
+              {immunizationsError ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('vaccinationHistoryUnavailable', 'Vaccination history unavailable')}
+                  subtitle={t(
+                    'vaccinationHistoryRequired',
+                    'The vaccination history could not be loaded. Close this form and reload the history before recording a vaccination.',
+                  )}
+                />
+              ) : null}
               <ResponsiveWrapper>
                 <Controller
                   name="vaccinationDate"
@@ -440,7 +448,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                       id="vaccinationDate"
                       invalid={Boolean(fieldState?.error?.message)}
                       invalidText={fieldState?.error?.message}
-                      labelText={t('vaccinationDate', 'Vaccination date')}
+                      labelText={`${t('vaccinationDate', 'Vaccination date')} *`}
+                      isRequired
                       maxDate={new Date()}
                     />
                   )}
@@ -463,7 +472,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                       label={t('selectImmunization', 'Select immunization')}
                       onChange={(val) => onChange(val.selectedItem)}
                       selectedItem={value}
-                      titleText={t('immunization', 'Immunization')}
+                      titleText={`${t('immunization', 'Immunization')} *`}
+                      aria-required
                     />
                   )}
                 />
@@ -502,7 +512,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                       label={t('selectStatus', 'Seleccione estado')}
                       onChange={(val) => onChange(val.selectedItem)}
                       selectedItem={value}
-                      titleText={t('immunizationStatus', 'Estado de aplicación')}
+                      titleText={`${t('immunizationStatus', 'Estado de aplicación')} *`}
+                      aria-required
                     />
                   )}
                 />
@@ -526,7 +537,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                       label={t('selectProgramContext', 'Seleccione contexto')}
                       onChange={(val) => onChange(val.selectedItem)}
                       selectedItem={value}
-                      titleText={t('programContext', 'Contexto MINSA')}
+                      titleText={`${t('programContext', 'Contexto MINSA')} *`}
+                      aria-required
                     />
                   )}
                 />
@@ -541,7 +553,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                         id="statusReason"
                         invalid={!!errors?.statusReason}
                         invalidText={errors?.statusReason?.message}
-                        labelText={t('statusReason', 'Motivo de no aplicación o diferimiento')}
+                        labelText={`${t('statusReason', 'Motivo de no aplicación o diferimiento')} *`}
+                        required
                         onChange={(evt) => onChange(evt.target.value)}
                         type="text"
                         value={value}
@@ -651,7 +664,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
               <Button
                 className={styles.button}
                 kind="primary"
-                disabled={isSubmitting || isLoadingImmunizations}
+                disabled={isSubmitting || isLoadingImmunizations || !!immunizationsError}
                 type="submit"
               >
                 {isSubmitting ? (

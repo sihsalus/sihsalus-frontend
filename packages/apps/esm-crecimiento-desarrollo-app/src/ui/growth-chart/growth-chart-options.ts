@@ -1,8 +1,11 @@
 import { type LineChartOptions, ScaleTypes } from '@carbon/charts';
+import type { TFunction } from 'i18next';
 
 import type { GrowthChartPoint } from './growth-chart-utils';
 
 interface BuildGrowthChartOptionsParams {
+  t: TFunction;
+  locale?: string;
   chartTitle: string;
   colorScale: Record<string, string>;
   translatedXAxisLabel: string;
@@ -12,6 +15,8 @@ interface BuildGrowthChartOptionsParams {
 }
 
 export function buildGrowthChartOptions({
+  t,
+  locale,
   chartTitle,
   colorScale,
   translatedXAxisLabel,
@@ -21,6 +26,21 @@ export function buildGrowthChartOptions({
 }: BuildGrowthChartOptionsParams): LineChartOptions {
   return {
     title: chartTitle,
+    locale: {
+      code: locale,
+      translations: {
+        toolbar: {
+          exportAsCSV: t('chartExportCSV', 'Export as CSV'),
+          exportAsPNG: t('chartExportPNG', 'Export as PNG'),
+          zoomIn: t('chartZoomIn', 'Zoom in'),
+          zoomOut: t('chartZoomOut', 'Zoom out'),
+          resetZoom: t('chartResetZoom', 'Reset zoom'),
+          moreOptions: t('chartMoreOptions', 'More options'),
+          makeFullScreen: t('chartFullscreen', 'Make fullscreen'),
+          exitFullScreen: t('chartExitFullscreen', 'Exit fullscreen'),
+        },
+      },
+    },
     axes: {
       bottom: {
         title: translatedXAxisLabel,

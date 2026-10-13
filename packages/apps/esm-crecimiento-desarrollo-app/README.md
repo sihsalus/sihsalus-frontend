@@ -420,3 +420,16 @@ La protección contra condiciones codificadas activas duplicadas depende de la
 corrección de `ConditionService` en OpenMRS Core asociada a sihsalus/sihsalus#366.
 El frontend muestra ese rechazo sin cerrar el formulario ni confirmar un guardado.
 No elimina duplicados históricos automáticamente.
+
+### Reportes CRED #372 y #375
+
+Los controles de exportación, zoom, menú y pantalla completa de las curvas usan
+las traducciones nativas de Carbon Charts con el idioma de CRED. Las acciones y
+los datos exportados conservan su comportamiento.
+
+Reacciones adversas señala con asterisco sus cuatro campos obligatorios: vacuna,
+descripción, severidad y fecha. La descripción sigue siendo obligatoria, según la
+decisión del responsable funcional del 13/10/2026. Un error de guardado conserva
+la entrada y muestra un mensaje traducido sin detalles internos del servidor.
+Las pruebas cubren los campos incompletos, guardado confirmado y error. La
+aceptación visual y persistencia con rol CRED en QLTY siguen pendientes.

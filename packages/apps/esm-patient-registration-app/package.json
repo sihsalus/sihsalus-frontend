@@ -45,7 +45,7 @@
     "formik": "^2.1.5",
     "lodash-es": "^4.17.15",
     "uuid": "^14.0.2",
-    "yup": "^0.29.1"
+    "yup": "^1.7.1"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

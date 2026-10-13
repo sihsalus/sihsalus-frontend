@@ -46,7 +46,7 @@
     "formik": "^2.2.9",
     "lodash-es": "^4.17.23",
     "react-hook-form": "^7.89.0",
-    "yup": "^0.32.11",
+    "yup": "^1.7.1",
     "zod": "^4.6.5"
   },
   "peerDependencies": {

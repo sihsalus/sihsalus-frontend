@@ -22,6 +22,7 @@ it('formats occurrence dates and coded severity while preserving historical labe
         occurrenceDate: 'invalid',
         vaccineName: 'BCG',
         severity: 'Historical severity',
+        severityCode: undefined,
         reactionDescription: 'Historical reaction',
       },
     ],

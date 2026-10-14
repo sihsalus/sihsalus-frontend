@@ -55,4 +55,5 @@ export const request: CaseRequest = {
   severity: "MILD",
   origin: "AUTOCHTHONOUS",
   onsetDate: "2026-01-19",
+  investigationDate: "2026-01-20",
 };

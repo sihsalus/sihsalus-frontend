@@ -25,6 +25,9 @@ import {
 import { ErrorNotification } from "./error-notification.component";
 import { EventsPanel } from "./events-panel.component";
 import { ReportPanel } from "./report-panel.component";
+import { DemographicPanel } from "./demographic-panel.component";
+import { AgeGroupsPanel } from "./age-groups.component";
+import { reloadSurveillancePage } from "./reload-surveillance";
 import type { Catalogue } from "./types";
 import styles from "./dashboard.scss";
 
@@ -44,7 +47,6 @@ function SessionDashboard() {
   const [catalogue, setCatalogue] = useState<Catalogue>();
   const [error, setError] = useState<unknown>();
   const [retry, setRetry] = useState(0);
-  const [revision, setRevision] = useState(0);
   const [formKey, setFormKey] = useState(0);
   const [showCaseForm, setShowCaseForm] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and session identity must invalidate the catalogue even when authentication stays true.
@@ -70,7 +72,7 @@ function SessionDashboard() {
       <p>
         {t(
           "surveillanceDescription",
-          "Register cases and review epidemiological indicators.",
+          "Register cases and review epidemiological information.",
         )}
       </p>
       {error ? (
@@ -94,16 +96,38 @@ function SessionDashboard() {
             )}
           >
             <Tab>{t("cases", "Cases")}</Tab>
+            <Tab>{t("temporalInformation")}</Tab>
             <Tab>{t("indicators", "Indicators")}</Tab>
+            <Tab>{t("demographic.title")}</Tab>
+            <Tab>{t("geographic")}</Tab>
             <Tab>{t("events", "Events")}</Tab>
+            <Tab>{t("configuration")}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
               <RequirePrivilege privilege={caseViewPrivilege}>
                 <RequirePrivilege privilege={caseRegisterPrivilege}>
-                  <CasesPanel catalogue={catalogue} revision={revision} onNewCase={() => { setFormKey((value) => value + 1); setShowCaseForm(true); }} />
-                  <Modal open={showCaseForm} modalHeading={t("newCase", "New case")} passiveModal onRequestClose={() => setShowCaseForm(false)} size="lg">
-                    <CaseForm key={String(session?.user?.uuid) + ":" + formKey} catalogue={catalogue} onSaved={() => { setRevision((value) => value + 1); setShowCaseForm(false); }} />
+                  <CasesPanel
+                    catalogue={catalogue}
+                    revision={0}
+                    onSaved={reloadSurveillancePage}
+                    onNewCase={() => {
+                      setFormKey((value) => value + 1);
+                      setShowCaseForm(true);
+                    }}
+                  />
+                  <Modal
+                    open={showCaseForm}
+                    modalHeading={t("newCase", "New case")}
+                    passiveModal
+                    onRequestClose={() => setShowCaseForm(false)}
+                    size="lg"
+                  >
+                    <CaseForm
+                      key={String(session?.user?.uuid) + ":" + formKey}
+                      catalogue={catalogue}
+                      onSaved={reloadSurveillancePage}
+                    />
                   </Modal>
                 </RequirePrivilege>
               </RequirePrivilege>
@@ -113,12 +137,24 @@ function SessionDashboard() {
                 <ReportPanel catalogue={catalogue} />
               </RequirePrivilege>
             </TabPanel>
+            <TabPanel />
+            <TabPanel>
+              <RequirePrivilege privilege={reportPrivilege}>
+                <DemographicPanel catalogue={catalogue} />
+              </RequirePrivilege>
+            </TabPanel>
+            <TabPanel />
             <TabPanel>
               <RequirePrivilege privilege={managePrivilege}>
                 <EventsPanel
                   catalogue={catalogue}
-                  onEventsChanged={() => setRetry((value) => value + 1)}
+                  onEventsChanged={reloadSurveillancePage}
                 />
+              </RequirePrivilege>
+            </TabPanel>
+            <TabPanel>
+              <RequirePrivilege privilege={managePrivilege}>
+                <AgeGroupsPanel onSaved={reloadSurveillancePage} />
               </RequirePrivilege>
             </TabPanel>
           </TabPanels>

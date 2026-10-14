@@ -8,7 +8,45 @@ Terminología: visita = consulta; encounter = atención.
 
 Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación/defunción. No se incorpora React Form Engine en este cambio.
 
-Cubre RF-01 a RF-09, RF-15 a RF-17 y RF-27; usabilidad RNF-04, RNF-05 y RNF-06. No incluye distribución demográfica, NOTI/Excel, mapas o clasificación automática de focos.
+Cubre el registro, la información temporal y la distribución demográfica (RF-22),
+con usabilidad RNF-04, RNF-05 y RNF-06. NOTI/Excel, mapas y clasificación automática
+de focos no se incluyen en este cambio.
+
+### Pestañas, demografía y configuración
+
+Pestañas: **Casos**, **Información temporal** (antes Indicadores), **Indicadores**,
+**Demográfico**, **Geográfico**, **Eventos** y **Configuración**. Por indicación del
+usuario, Indicadores y Geográfico quedan vacías: no calculan indicadores numéricos
+ni muestran mapas. Casos e Información temporal identifican sus controles con
+el título Filtros. Nuevo caso usa el mismo botón primario con icono de Nuevo evento.
+
+Demográfico cruza Fila y Columna: edad, sexo, enfermedad, grupo etario, etnia,
+gestación o periodo. El tipo de periodo solo aparece al usar esa variable;
+incluye día, semana epidemiológica, mes, trimestre, semestre y año. Al elegir
+enfermedad se borra y bloquea el evento individual y aparece una selección múltiple
+de enfermedades a comparar. La tabla incluye totales y permite ocultar filas y
+columnas completamente nulas sin cambiar los totales. No acepta la misma variable
+en ambos ejes. El cálculo se realiza en el servidor; no descarga fichas de pacientes.
+
+El filtro temporal usa inicio de síntomas, y la
+clasificación puede ser confirmado, probable o ambos; excluye descartados.
+Edad, sexo y gestación usan el caso guardado; la etnia usa el atributo vigente
+del paciente. Los datos demográficos ausentes quedan en Sin dato. Se informa por
+separado cuántos casos de las enfermedades elegidas no tienen inicio de síntomas.
+
+Configuración → Configurar grupo etario guarda límites compartidos en el servidor:
+infantes 0–1, niños 2–11, adolescentes 12–17, jóvenes 18–29, adultos 30–59 y adultos
+mayores desde 60. Al editar un máximo se calcula el mínimo siguiente. Se exige
+cobertura desde 0, sin huecos ni solapamientos y con el último grupo sin máximo.
+Cambiar los grupos reclasifica los reportes, sin modificar la edad guardada en casos.
+
+Demográfico requiere el privilegio de indicadores; Configuración requiere el de
+configuración. Los endpoints también verifican los permisos. Se requiere el OMOD
+con `liquibase-age-groups.xml`. Contrato: `epidemiologysurveillance/docs/demographics.md`.
+
+Crear o modificar casos o eventos recarga la página completa de Vigilancia
+Epidemiológica tras confirmar el guardado. Un error conserva el formulario y no
+recarga. Guardar grupos etarios también recarga para aplicar los límites nuevos.
 
 ### Edición de eventos notificables
 
@@ -27,15 +65,18 @@ la lista y el catálogo; al fallar conserva los datos para reintentar.
 ### Consulta y edición de casos guardados
 
 La pestaña Casos abre modales Carbon desde los iconos Ver y Editar. El detalle
-consulta `GET /cases/{uuid}` y la ficha REST del paciente (incluida
-`person.preferredAddress.stateProvince/countyDistrict/cityVillage`); la residencia
-se muestra como provincia → distrito → centro poblado y no se copia al caso.
+consulta `GET /cases/{uuid}`. Nombres, apellido paterno, apellido materno, sexo,
+edad en años cumplidos y residencia son copias persistidas por el servidor al crear
+el caso. La residencia incluye provincia → distrito → centro poblado y las líneas
+de dirección disponibles. Las copias no cambian al editar el paciente o el caso.
+Los casos históricos sin copia muestran datos no disponibles; no se reconstruyen
+con la ficha actual. Requiere `liquibase-case-snapshot.xml` y actualizar OMOD/ESM juntos.
 No se muestran UUID: nombres ausentes se presentan como no disponibles.
 El OMOD aporta nombres de atención, profesional, localidad, orden y la ruta del lugar
 de infección; requiere la versión que incluye `liquibase-case-laboratory.xml`.
 
-La edición usa `PUT /cases/{uuid}`: origen, vacunación, vigilancia,
-fechas, centro poblado de infección y resultado de laboratorio de la atención.
+La edición usa `PUT /cases/{uuid}`: origen, vacunación, vigilancia, gestante,
+fechas editables, centro poblado de infección y resultado de laboratorio de la atención.
 Conserva paciente, atención, diagnóstico, profesional y localidad; no permite
 editar datos demográficos ni metadatos de respuesta. Conserva la orden de laboratorio
 previa salvo selección o eliminación explícita. La clasificación se deriva del
@@ -92,7 +133,7 @@ Lecturas clínicas: FHIR R4 `Patient,Encounter,Observation`; REST `encounter` (d
 }
 ```
 
-Periodos: `dia,semana,mes,trimestre,semestre`. Fechas iniciales respetan cobertura; servidor admite hasta 731 días de diferencia.
+Periodos: `dia,semana,mes,trimestre,semestre`. Fechas iniciales respetan cobertura; no hay límite de duración del intervalo.
 
 El OMOD fija los UUID clínicos en `SurveillanceCatalog.java` tras contrastarlos con `sihsalus-content`; no lee archivo JSON ni global property. Abrir el catálogo no exige validar todos los conceptos. Al guardar se comprueban las referencias utilizadas: `CLINICAL_CONCEPT_UNAVAILABLE` indica un concepto ausente o retirado y `CLINICAL_DATATYPE_MISMATCH` un tipo incompatible. Actualizar el OMOD y el ESM juntos porque el contrato usa `/catalog` y la propiedad `catalog`.
 
@@ -101,6 +142,14 @@ El backend ofrece `GET /events`, `GET /events/{uuid}`, `POST /events` y
 `GET /healthcheck` devuelve `{"status":"UP"}` con una sesión autorizada.
 
 ## Registro y trabajo sin conexión
+
+Gestante ofrece Sí/No solo para sexo femenino con edad de 10 a 55 años cumplidos,
+ambos inclusive, a la fecha de investigación. En los demás casos, incluidos datos
+insuficientes, se bloquea con No; el servidor aplica la misma regla. La edición usa
+sexo y edad copiados. La fecha de investigación es de solo lectura y el servidor
+la deriva de la atención del diagnóstico en la zona horaria del catálogo. Debe
+ser menor o igual a hoy y a la notificación, cuando esta se consigne. La notificación
+no admite fechas futuras. La edad se calcula entre investigación y nacimiento.
 
 La solicitud lleva UUID nuevo estable para el intento, paciente, UUID de la atención de metaxénicas existente, proveedor de la sesión, localidad, evento, estado, gravedad, origen, especie opcional, inicio de síntomas y resultado opcional; no copia nombres/historia clínica.
 
@@ -151,8 +200,8 @@ incluye los filtros aplicados; los títulos de los gráficos reflejan el diagnó
 
 El histórico suma las zonas y diagnósticos de cada año antes de calcular cuartiles,
 sin fabricar ceros para años sin filas ni clasificar períodos incompletos como zonas
-definitivas. La distribución demográfica (RF-22) queda fuera de esta iteración y ya no
-se muestra. Contrato vigente: `epidemiologysurveillance/docs/api-contract.md`.
+definitivas. La distribución demográfica (RF-22) tiene su propia pestaña y usa casos,
+sin depender de los agregados del canal. Contrato temporal: `epidemiologysurveillance/docs/api-contract.md`.
 
 Gráficos SVG con tablas accesibles; colores, texto e iconos para alertas. Estados de carga, vacío, sin permisos, sin contenido, sin conexión y error accionable. Traducciones en español/inglés; etiquetas del catálogo proceden del servidor.
 
@@ -170,6 +219,37 @@ Se muestra fecha de generación del reporte y aviso sin conexión. La caché com
 | `report-panel.component.tsx`                    | Filtros, gráficos y tablas.                             |
 
 ## Desarrollo y validación
+
+### Correcciones de información y formularios (14/10/2026)
+
+Las pestañas se presentan como Información demográfica e Información geográfica.
+Información temporal identifica sus fechas como Inicio de síntomas desde/hasta.
+Información demográfica reutiliza los filtros de nivel geográfico y jerarquía
+del reporte temporal: filtra el lugar probable de infección mediante `zoneLevel`
+y `address` en `/reports/demographics`. Provincia y distrito sirven para buscar
+la dirección del nivel elegido; sin seleccionar esa dirección se incluyen todas
+las zonas. Requiere actualizar también el OMOD.
+
+Las etiquetas de periodos proceden del calendario epidemiológico del servidor:
+diario `DD/MM/AAAA`, semanal `AAAA-SXX`, mensual `AAAA-MM`, trimestral `AAAA-QX`,
+semestral `AAAA-X` y anual `AAAA`. Las fechas del módulo se presentan en día/mes/año,
+incluidos los selectores Carbon; el contrato API conserva ISO. El selector valida
+el formato completo antes de interpretar una fecha escrita parcialmente.
+
+Los campos respaldados por columnas no nulas llevan `(obligatorio)` y asterisco
+rojo en registro y edición. La referencia es `liquibase-surveillance-case.xml`:
+paciente, atención, profesional, localidad, diagnóstico y clasificación en casos;
+enfermedad, periodicidad, norma y vigencia inicial en eventos. Los campos derivados
+conservan su bloqueo. La edición sigue el orden del registro: origen, infección,
+inicio de síntomas, laboratorio, clasificación, vacunación, gestación, vigilancia
+y fechas de investigación, notificación y defunción.
+
+Validación local: Maven `package` PASSED (117 pruebas API y 6 REST), TypeScript
+con `tsc6 --noEmit` PASSED y compilación Rspack PASSED. Smoke visual con backend
+DEV/QLTY NOT RUN: no hay sesión de pruebas coordinada. No se desplegó.
+El script `test` PASSED con 103 pruebas Vitest y una comprobación HMR; `lint` y
+Prettier del README PASSED. Carbon avisa que `parseDate` quedará obsoleto en su
+próxima versión mayor; se usa para rechazar interpretaciones de fechas incompletas.
 
 El módulo usa `openmrs/default-rspack-config` y la versión de Rspack fijada en
 el monorepo (actualmente 2.2.8). Sus utilidades HMR `log` y `emitter` ya ofrecen
@@ -267,3 +347,48 @@ fuera del cambio actual; no se modificó ese archivo.
 Validación integrada OpenMRS/MariaDB: NOT RUN, omitida por decisión del usuario.
 
 QA DEV/QLTY pendiente: catálogo/privilegios reales; sospechoso, positivo confirmado y negativo descartado; persistencia tras recarga; duplicados; alertas grave/gestante/foco/umbrales; cotejo de conteos; desconexión/reconexión y cambio de cuenta; teclado y presentación móvil. Solo pacientes sintéticos. Resultados medidos y límites en `epidemiologysurveillance/docs/informe-pruebas-iteracion-1.md`.
+
+### Rangos, canal y errores por campo (14/10/2026)
+
+Información temporal y demográfica permiten rangos mayores a dos años. Se mantienen
+el orden de las fechas, el límite de hoy y la cobertura del reporte temporal.
+Información temporal muestra únicamente el canal endémico y su tabla; el periodo
+diario permite consultar la evolución diaria. Los selectores de fecha ocupan el
+ancho disponible en la grilla, con etiquetas que pueden ajustarse en pantallas pequeñas.
+
+Registro y edición presentan las validaciones debajo del campo en rojo. Cada
+mensaje corresponde a una sola condición incumplida; las fechas se validan por
+formato, relaciones y límites antes de guardar. Los campos derivados bloqueados
+conservan sus mensajes. Errores sin campo, como falta de red o permisos, permanecen
+a nivel del formulario. La norma de referencia admite 100 unidades UTF-16 después
+de quitar espacios en los extremos, según el contrato existente del servidor y
+`reference_regulation varchar(100)`; no se truncan valores ni se bloquea la edición
+para ocultar un valor histórico fuera del límite.
+
+Requiere actualizar OMOD y ESM juntos: las respuestas de validación conservan
+`code` y `fields` y añaden `fieldErrors`, con nombres de campos y motivos permitidos.
+El frontend descarta nombres y motivos desconocidos; no presenta valores enviados
+ni mensajes internos del servidor.
+
+Validación de esta corrección: `mvn package` PASSED (119 pruebas API y 6 REST);
+`yarn workspace @sihsalus/esm-epidemiological-surveillance-app test` PASSED
+(109 pruebas Vitest y una comprobación HMR); `lint`, `build` y
+`node ../../../node_modules/typescript/bin/tsc6 --noEmit` PASSED. Revisión visual
+integrada DEV/QLTY NOT RUN, sin sesión coordinada. No se realizó despliegue.
+
+Corrección del ancho de fechas: la clase local pertenece al contenedor exterior
+`cds--form-item`; los selectores alcanzan ahora el DatePicker interior y el `span`
+que contiene el campo y el icono, y sustituyen su `inline-size` fijo. La prueba
+`node --test tooling/date-input-layout.check.cjs` renderiza componentes Carbon
+reales con sus estilos y verifica sus dimensiones a 1280, 947, 600 y 375 px.
+PASSED en Edge sin interfaz (`PLAYWRIGHT_CHANNEL=msedge`), junto con lint y build.
+Es una prueba aislada de presentación, no un smoke clínico del SPA.
+
+Corrección del guardado de grupos etarios: el cuerpo del PUT se serializa
+explícitamente como un arreglo JSON, porque `openmrsFetch` solo serializa objetos
+planos automáticamente. La prueba comprueba la decodificación del cuerpo enviado,
+incluido el límite superior nulo del último grupo. Validación local PASSED:
+`node ../../../node_modules/vitest/vitest.mjs run src/demographic.resource.test.ts src/age-groups.component.test.tsx`
+(6 pruebas), `yarn lint`, `yarn build` y
+`node ../../../node_modules/typescript/bin/tsc6 --noEmit`. Guardado integrado en
+DEV/QLTY NOT RUN; no se realizó despliegue.

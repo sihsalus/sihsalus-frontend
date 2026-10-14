@@ -28,6 +28,8 @@ export interface ClinicalCatalog {
   falseConceptUuid: string | null;
   surveillanceStartDate: string;
   timezone: string;
+  firstDayOfWeek?: string;
+  minimalDaysInFirstWeek?: number;
   questions: Record<string, string>;
   statuses: Choice[];
   origins: Choice[];
@@ -52,6 +54,7 @@ export interface Catalogue {
   events: SurveillanceEvent[];
 }
 export interface CaseRequest {
+  pregnant?: boolean;
   uuid: string; // Stable idempotency key; the source encounter keeps its own UUID.
   patientUuid: string;
   sourceEncounterUuid: string;
@@ -84,6 +87,7 @@ export interface CaseResult {
 }
 
 export interface SurveillanceCaseDraft {
+  pregnant?: boolean;
   patientUuid: string;
   encounterUuid: string;
   providerUuid: string;
@@ -103,6 +107,11 @@ export interface SurveillanceCaseDraft {
 }
 
 export interface SurveillanceCase extends SurveillanceCaseDraft {
+  patientGivenNames?: string;
+  patientPaternalSurname?: string;
+  patientMaternalSurname?: string;
+  patientAge?: number;
+  patientResidence?: string;
   encounterDisplay?: string;
   encounterDate?: string;
   providerDisplay?: string;

@@ -88,8 +88,8 @@ describe("report screen", () => {
     );
     expect(screen.getByText("Insufficient history")).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: "Epidemic curve" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("img", { name: "Epidemic curve" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Endemic channel" }),
     ).toBeInTheDocument();

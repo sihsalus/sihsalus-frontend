@@ -10,10 +10,12 @@ import styles from "./infection-address-selector.scss";
 export function InfectionAddressSelector({
   value,
   display,
+  invalidText,
   onChange,
 }: {
   value?: string;
   display?: string;
+  invalidText?: string;
   onChange: (value: string, display?: string) => void;
 }) {
   const { t } = useTranslation(moduleName);
@@ -114,6 +116,11 @@ export function InfectionAddressSelector({
             </ul>
           )}
         </>
+      )}
+      {invalidText && (
+        <p role="alert" style={{ color: "#da1e28" }}>
+          {invalidText}
+        </p>
       )}
     </fieldset>
   );

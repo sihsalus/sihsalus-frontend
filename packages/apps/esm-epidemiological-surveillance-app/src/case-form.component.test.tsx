@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseForm } from "./case-form.component";
-import { createSurveillanceCase } from "./api";
+import { createSurveillanceCase, getPatient } from "./api";
 import { catalogue, request } from "./test-fixtures";
 import en from "../translations/en.json";
 const connection = vi.hoisted(() => ({ online: true }));
@@ -106,7 +106,7 @@ describe("case registration screen", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(
-      screen.getByText("Complete the highlighted fields"),
+      screen.getAllByText("This field is required.")[0],
     ).toBeInTheDocument();
     expect(createSurveillanceCase).not.toHaveBeenCalled();
   });
@@ -140,6 +140,18 @@ describe("case registration screen", () => {
       ),
     );
   });
+  it("does not close or refresh the page when case registration fails", async () => {
+    vi.mocked(createSurveillanceCase).mockRejectedValueOnce(new Error("synthetic failure"));
+    const saved = vi.fn();
+    render(<CaseForm catalogue={catalogue} initial={request} onSaved={saved} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Register case" }));
+    await screen.findByText("Could not complete the operation");
+    expect(saved).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Register case" })).toBeInTheDocument();
+  });
   it("captures all case fields on step two and keeps step three read-only", async () => {
     render(<CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />);
     await screen.findByText("Synthetic Patient");
@@ -148,11 +160,12 @@ describe("case registration screen", () => {
     for (const label of ["Investigation date", "Notification date", "Death date", "Vaccination status", "Surveillance type"])
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Vaccination status"), { target: { value: "SI" } });
-    fireEvent.change(screen.getByLabelText("Investigation date"), { target: { value: "2026-01-20" } });
+    expect(screen.getByLabelText("Investigation date")).toBeDisabled();
+    expect(screen.getByLabelText("Investigation date")).toHaveValue("20/01/2026");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.queryByLabelText("Vaccination status")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Investigation date")).not.toBeInTheDocument();
-    expect(screen.getByText("2026-01-20")).toBeInTheDocument();
+    expect(screen.getByText("20/01/2026")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByLabelText("Vaccination status")).toHaveValue("SI");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -169,8 +182,30 @@ describe("case registration screen", () => {
     connection.online = false;
     view.rerender(<CaseForm {...props} />);
     expect(screen.getByLabelText("Symptom onset date")).toHaveValue(
-      "2026-01-19",
+      "19/01/2026",
     );
     expect(screen.getByText("Offline")).toBeInTheDocument();
+  });
+  it.each([
+    ["male", "2000-01-01", false],
+    ["female", "2016-01-21", false],
+    ["female", "2016-01-20", true],
+    ["female", "1970-01-21", true],
+    ["female", "1970-01-20", false],
+  ])("enforces pregnancy options for %s born %s", async (gender, birthDate, eligible) => {
+    vi.mocked(getPatient).mockResolvedValueOnce({ resourceType: "Patient", id: "patient", name: [{ text: "Synthetic Patient" }], gender, birthDate });
+    render(<CaseForm catalogue={catalogue} initial={{ ...request, pregnant: true }} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const pregnant = screen.getByLabelText("Pregnant");
+    if (eligible) {
+      expect(pregnant).toBeEnabled();
+      expect(pregnant).toHaveValue("SI");
+      fireEvent.change(pregnant, { target: { value: "NO" } });
+      expect(pregnant).toHaveValue("NO");
+    } else {
+      expect(pregnant).toBeDisabled();
+      expect(pregnant).toHaveValue("NO");
+    }
   });
 });

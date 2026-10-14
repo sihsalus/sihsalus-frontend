@@ -1,16 +1,27 @@
+import { FieldError } from "./field-error.component";
+import {
+  caseDateErrors,
+  serverFieldErrors,
+  type FieldErrors,
+} from "./field-validation";
+import { DateInput } from "./date-input.component";
+import {
+  RequiredFieldLabel,
+  requiredCaseFields,
+} from "./required-field-label.component";
+import { displayDate } from "./date-display";
 import {
   Button,
   InlineLoading,
   Modal,
   Select,
   SelectItem,
-  TextInput,
 } from "@carbon/react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  safeError,
   getEncounterObservations,
-  getPatient,
   getSurveillanceCase,
   updateSurveillanceCase,
   SurveillanceApiError,
@@ -18,9 +29,7 @@ import {
 import {
   dateInZone,
   findDiagnosisMapping,
-  patientAge,
-  patientDni,
-  patientName,
+  pregnancyEligible,
 } from "./case-form.utils";
 import { moduleName } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
@@ -64,6 +73,7 @@ export function caseUpdatePayload(
   value: SurveillanceCaseDraft,
 ): SurveillanceCaseDraft {
   return {
+    pregnant: value.pregnant,
     patientUuid: value.patientUuid,
     encounterUuid: value.encounterUuid,
     providerUuid: value.providerUuid,
@@ -98,12 +108,18 @@ export function CaseModal({
 }) {
   const { t } = useTranslation(moduleName);
   const [value, setValue] = useState<SurveillanceCase>();
-  const [patient, setPatient] = useState<FhirResource>();
   const [observations, setObservations] = useState<FhirResource[]>([]);
   const [disease, setDisease] =
     useState<Catalogue["catalog"]["diseases"][number]>();
   const [infectionDisplay, setInfectionDisplay] = useState("");
   const [loading, setLoading] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const fieldProps = (key: string) => ({
+    invalid: !!fieldErrors[key],
+    invalidText: fieldErrors[key]
+      ? t(`validation.${fieldErrors[key]}`)
+      : undefined,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [retry, setRetry] = useState(0);
@@ -119,7 +135,6 @@ export function CaseModal({
     setValue(undefined);
     void (async () => {
       const record = await getSurveillanceCase(uuid, abort.signal);
-      const person = await getPatient(record.patientUuid, abort.signal);
       const labs = await getEncounterObservations(
         record.encounterUuid,
         record.patientUuid,
@@ -142,7 +157,6 @@ export function CaseModal({
         setDisease(caseDisease);
         setInfectionDisplay(record.infectionAddressDisplay || "");
         setValue(record);
-        setPatient(person);
         setObservations(labs);
         setLocked(!!record.deathDate);
       }
@@ -155,21 +169,35 @@ export function CaseModal({
       });
     return () => abort.abort();
   }, [uuid, mode, retry, catalogue]);
-  const change = (key: keyof SurveillanceCaseDraft, next: string) =>
+  const change = (key: keyof SurveillanceCaseDraft, next: string) => {
+    setFieldErrors((current) => {
+      const errors = { ...current };
+      delete errors[key];
+      if (
+        key.endsWith("Date") &&
+        value &&
+        Object.keys(current).some((field) => field.endsWith("Date"))
+      ) {
+        for (const field of Object.keys(errors))
+          if (field.endsWith("Date")) delete errors[field];
+        Object.assign(
+          errors,
+          caseDateErrors(
+            { ...value, [key]: next },
+            dateInZone(catalogue.catalog.timezone),
+          ),
+        );
+      }
+      return errors;
+    });
     setValue((current) => (current ? { ...current, [key]: next } : current));
+  };
   const save = async () => {
     if (!value || !canEdit || submitting.current) return;
-    const onset = value.onsetDate;
-    if (
-      onset &&
-      dateFields.slice(1).some((key) => {
-        const date = value[key];
-        return date && date < onset;
-      })
-    ) {
-      setError(new SurveillanceApiError("INVALID_DATE_RANGE", 422));
-      return;
-    }
+    const dates = caseDateErrors(value, dateInZone(catalogue.catalog.timezone));
+    setFieldErrors(dates);
+    setError(undefined);
+    if (Object.keys(dates).length) return;
     submitting.current = true;
     setBusy(true);
     setError(undefined);
@@ -177,7 +205,10 @@ export function CaseModal({
       await updateSurveillanceCase(uuid, caseUpdatePayload(value));
       onSaved();
     } catch (reason) {
-      setError(reason);
+      const failure = safeError(reason);
+      const fields = serverFieldErrors(failure);
+      setFieldErrors(fields);
+      setError(Object.keys(fields).length ? undefined : failure);
       if (
         reason instanceof SurveillanceApiError &&
         reason.code === "CASE_CLOSED"
@@ -188,7 +219,13 @@ export function CaseModal({
       setBusy(false);
     }
   };
-  const fieldLabel = (key: string) => t(`caseDetails.fields.${key}`);
+  const fieldLabel = (key: string) => (
+    <RequiredFieldLabel
+      required={mode === "edit" && requiredCaseFields.has(key)}
+    >
+      {t(`caseDetails.fields.${key}`)}
+    </RequiredFieldLabel>
+  );
   const labResults = observations.filter(
     (obs) =>
       classifyLaboratoryObservation(obs, catalogue.catalog, disease) !== null,
@@ -201,11 +238,50 @@ export function CaseModal({
     : value?.laboratoryObservationDisplay;
   const enumLabel = (key: string, entry?: string) =>
     entry ? t(`caseDetails.values.${key}.${entry}`, entry) : "—";
-  const detail = (key: string, label: string, content?: string | number) => (
+  const detailFields: Record<string, string> = {
+    name: "patientUuid",
+    encounter: "encounterUuid",
+    provider: "providerUuid",
+    location: "locationUuid",
+    diagnosisEncounter: "diagnosisUuid",
+  };
+  const detail = (
+    key: string,
+    label: React.ReactNode,
+    content?: string | number,
+  ) => (
     <div key={key}>
       <dt>{label}</dt>
-      <dd>{content === undefined || content === "" ? "—" : content}</dd>
+      <dd>
+        {content === undefined || content === "" ? "\u2014" : content}
+        <FieldError message={fieldProps(detailFields[key]).invalidText} />
+      </dd>
     </div>
+  );
+  const renderOption = (key: keyof typeof options) => (
+    <>
+      <Select
+        key={key}
+        id={`edit-${key}`}
+        {...fieldProps(key)}
+        labelText={fieldLabel(key)}
+        disabled={key === "diagnosisType"}
+        value={String(value[key as keyof SurveillanceCase] ?? "")}
+        onChange={(event) =>
+          change(key as keyof SurveillanceCaseDraft, event.target.value)
+        }
+      >
+        {key !== "diagnosisType" && (
+          <SelectItem value="" text={t("notAvailable")} />
+        )}
+        {options[key].map((entry) => (
+          <SelectItem key={entry} value={entry} text={enumLabel(key, entry)} />
+        ))}
+      </Select>
+      {key === "diagnosisType" && (
+        <FieldError message={fieldProps(key).invalidText} />
+      )}
+    </>
   );
   return (
     <Modal
@@ -238,43 +314,29 @@ export function CaseModal({
       {!loading && value && (
         <div className={styles.form}>
           <dl className={styles.caseDetails}>
-            {detail(
-              "dni",
-              t("casesTable.dni"),
-              patient ? patientDni(patient) : value.patientIdentifier,
-            )}
+            {detail("dni", t("casesTable.dni"), value.patientIdentifier)}
             {detail(
               "name",
-              t("casesTable.patient"),
-              patient ? patientName(patient) : value.patientDisplay,
+              <RequiredFieldLabel required={mode === "edit"}>
+                {t("casesTable.patient")}
+              </RequiredFieldLabel>,
+              value.patientDisplay,
             )}
             {detail(
               "sex",
               t("casesTable.sex"),
-              enumLabel("sex", patient?.gender ?? value.patientSex),
+              enumLabel("sex", value.patientSex),
             )}
-            {detail(
-              "age",
-              t("casesTable.age"),
-              patientAge(
-                patient?.birthDate ?? value.patientBirthDate,
-                dateInZone(catalogue.catalog.timezone),
-              ),
-            )}
+            {detail("age", t("casesTable.age"), value.patientAge)}
             {detail(
               "residence",
               t("caseDetails.residence"),
-              patient?.residence,
-            )}
-            {detail(
-              "diagnosis",
-              t("casesTable.diagnosis"),
-              value.diagnosisDisplay,
+              value.patientResidence,
             )}
             {detail(
               "encounter",
               fieldLabel("encounterUuid"),
-              [value.encounterDate?.slice(0, 10), value.encounterDisplay]
+              [displayDate(value.encounterDate), value.encounterDisplay]
                 .filter(Boolean)
                 .join(" · "),
             )}
@@ -291,51 +353,20 @@ export function CaseModal({
             {detail(
               "diagnosisEncounter",
               fieldLabel("diagnosisUuid"),
-              value.encounterDisplay,
+              value.diagnosisDisplay,
             )}
           </dl>
           {locked && <p>{t("caseDetails.locked")}</p>}
           {canEdit ? (
             <fieldset disabled={busy} className={styles.caseEditFields}>
               <legend>{t("caseDetails.editableFields")}</legend>
-              {Object.entries(options).map(([key, choices]) => (
-                <Select
-                  key={key}
-                  id={`edit-${key}`}
-                  labelText={fieldLabel(key)}
-                  disabled={key === "diagnosisType"}
-                  value={value[key as keyof SurveillanceCase] ?? ""}
-                  onChange={(event) =>
-                    change(
-                      key as keyof SurveillanceCaseDraft,
-                      event.target.value,
-                    )
-                  }
-                >
-                  {key !== "diagnosisType" && (
-                    <SelectItem value="" text={t("notAvailable")} />
-                  )}
-                  {choices.map((entry) => (
-                    <SelectItem
-                      key={entry}
-                      value={entry}
-                      text={enumLabel(key, entry)}
-                    />
-                  ))}
-                </Select>
-              ))}
-              {dateFields.map((key) => (
-                <TextInput
-                  key={key}
-                  id={`edit-${key}`}
-                  type="date"
-                  labelText={fieldLabel(key)}
-                  value={value[key]?.slice(0, 10) ?? ""}
-                  onChange={(event) => change(key, event.target.value)}
-                />
-              ))}
-              {value.deathDate && <p>{t("caseDetails.deathWarning")}</p>}
+              {renderOption("origin")}
               <InfectionAddressSelector
+                invalidText={
+                  fieldErrors.infectionAddressUuid
+                    ? t(`validation.${fieldErrors.infectionAddressUuid}`)
+                    : undefined
+                }
                 value={value.infectionAddressUuid}
                 display={infectionDisplay}
                 onChange={(next, display) => {
@@ -343,11 +374,34 @@ export function CaseModal({
                   setInfectionDisplay(display || "");
                 }}
               />
+              {dateFields
+                .filter((key) => key === "onsetDate")
+                .map((key) => (
+                  <DateInput
+                    key={key}
+                    id={`edit-${key}`}
+                    {...fieldProps(key)}
+                    type="date"
+
+                    max={dateInZone(catalogue.catalog.timezone)}
+
+                    labelText={fieldLabel(key)}
+                    value={value[key]?.slice(0, 10) ?? ""}
+                    onChange={(event) => change(key, event.target.value)}
+                  />
+                ))}
               <Select
                 id="edit-laboratory"
+                {...fieldProps("laboratoryObservationUuid")}
                 labelText={fieldLabel("laboratoryObservationUuid")}
                 value={value.laboratoryObservationUuid || ""}
                 onChange={(event) => {
+                  setFieldErrors((current) => {
+                    const next = { ...current };
+                    delete next.laboratoryObservationUuid;
+                    delete next.diagnosisType;
+                    return next;
+                  });
                   const obs = labResults.find(
                     (item) => item.id === event.target.value,
                   );
@@ -388,25 +442,83 @@ export function CaseModal({
                     />
                   )}
                 {labResults.map((obs) => (
-                    <SelectItem
-                      key={obs.id}
-                      value={obs.id}
-                      text={laboratoryLabel(obs) || t("laboratoryResult")}
-                    />
-                  ))}
+                  <SelectItem
+                    key={obs.id}
+                    value={obs.id}
+                    text={laboratoryLabel(obs) || t("laboratoryResult")}
+                  />
+                ))}
               </Select>
+              {renderOption("diagnosisType")}
+              {renderOption("vaccinationStatus")}
+              <Select
+                id="edit-pregnant"
+                labelText={t("fields.pregnant")}
+                value={
+                  value.pregnant &&
+                  pregnancyEligible(value.patientSex, value.patientAge)
+                    ? "SI"
+                    : "NO"
+                }
+                disabled={
+                  !pregnancyEligible(value.patientSex, value.patientAge)
+                }
+                onChange={(event) =>
+                  setValue({ ...value, pregnant: event.target.value === "SI" })
+                }
+              >
+                <SelectItem value="SI" text={t("vaccinationValues.SI")} />
+                <SelectItem value="NO" text={t("vaccinationValues.NO")} />
+              </Select>
+              {renderOption("surveillanceType")}
+              {dateFields
+                .filter((key) => key !== "onsetDate")
+                .map((key) => (
+                  <DateInput
+                    key={key}
+                    id={`edit-${key}`}
+                    {...fieldProps(key)}
+                    type="date"
+                    disabled={key === "investigationDate"}
+                    max={
+                      key === "deathDate"
+                        ? undefined
+                        : dateInZone(catalogue.catalog.timezone)
+                    }
+                    min={
+                      key === "notificationDate"
+                        ? value.investigationDate
+                        : undefined
+                    }
+                    labelText={fieldLabel(key)}
+                    value={value[key]?.slice(0, 10) ?? ""}
+                    onChange={(event) => change(key, event.target.value)}
+                  />
+                ))}
+              {value.deathDate && <p>{t("caseDetails.deathWarning")}</p>}
             </fieldset>
           ) : (
             <dl className={styles.caseDetails}>
+              {detail(
+                "pregnant",
+                t("fields.pregnant"),
+                value.pregnant == null
+                  ? undefined
+                  : t(
+                      value.pregnant
+                        ? "vaccinationValues.SI"
+                        : "vaccinationValues.NO",
+                    ),
+              )}
               {Object.keys(options).map((key) =>
                 detail(
                   key,
                   fieldLabel(key),
-                  enumLabel(key, value[key as keyof SurveillanceCase]),
+                  enumLabel(key, value[key as keyof typeof options]),
                 ),
               )}
               {dateFields.map((key) =>
-                detail(key, fieldLabel(key), value[key]),
+                detail(key, fieldLabel(key), displayDate(value[key])),
               )}
               {detail(
                 "infection",

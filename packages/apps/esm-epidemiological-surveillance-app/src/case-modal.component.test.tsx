@@ -25,6 +25,12 @@ vi.mock("./error-notification.component", () => ({
 }));
 const record: SurveillanceCase = {
   uuid: "synthetic-case",
+  patientDisplay: "Paciente de prueba",
+  patientIdentifier: "TEST-DNI",
+  patientSex: "F",
+  patientAge: 26,
+  patientResidence: "Dirección sintética",
+  investigationDate: "2026-09-01",
   patientUuid: "synthetic-patient",
   encounterUuid: "synthetic-encounter",
   providerUuid: "synthetic-provider",
@@ -85,8 +91,10 @@ it("loads all case data and residence in a read-only modal", async () => {
   expect(await screen.findByText("Dirección sintética")).toBeInTheDocument();
   expect(screen.getByText("TEST-DNI")).toBeInTheDocument();
   expect(screen.getByText("Paciente de prueba")).toBeInTheDocument();
+  expect(getPatient).not.toHaveBeenCalled();
+  expect(screen.getByText("26")).toBeInTheDocument();
   expect(
-    screen.getByText("2026-09-01 · Atención sintética"),
+    screen.getByText("01/09/2026 · Atención sintética"),
   ).toBeInTheDocument();
   expect(screen.queryByText("caseDetails.fields.testOrderUuid")).not.toBeInTheDocument();
   expect(screen.getByText("Prueba sintética · Positivo")).toBeInTheDocument();
@@ -132,6 +140,9 @@ it("edits epidemiological fields without sending demographic or response fields"
     }),
   );
   const payload = vi.mocked(updateSurveillanceCase).mock.calls[0][1];
+  expect(screen.getByLabelText("caseDetails.fields.investigationDate")).toBeDisabled();
+  for (const field of ["patientGivenNames", "patientPaternalSurname", "patientMaternalSurname", "patientSex", "patientAge", "patientResidence"])
+    expect(payload).not.toHaveProperty(field);
   expect(payload).not.toHaveProperty("uuid");
   expect(payload).not.toHaveProperty("diagnosisDisplay");
   expect(payload).not.toHaveProperty("residence");
@@ -170,7 +181,7 @@ it("rejects dates before onset without submitting", async () => {
     { target: { value: "2026-08-01" } },
   );
   fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-  await screen.findByText("Error seguro");
+  await screen.findByText("validation.beforeOnset");
   expect(updateSurveillanceCase).not.toHaveBeenCalled();
 });
 it("preserves edited values after a rejected save", async () => {
@@ -188,7 +199,17 @@ it("preserves edited values after a rejected save", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
   await screen.findByText("Error seguro");
   expect(saved).not.toHaveBeenCalled();
-  expect(screen.getByLabelText("caseDetails.fields.diagnosisType")).toHaveValue(
+  expect(screen.getByLabelText(/caseDetails.fields.diagnosisType/)).toHaveValue(
     "CONFIRMADO",
   );
+});
+
+it("keeps editable case fields in registration order and marks only non-null fields", async () => {
+  render(<CaseModal uuid="case" mode="edit" catalogue={catalogue} onClose={vi.fn()} onSaved={vi.fn()} />);
+  await screen.findByLabelText(/caseDetails.fields.diagnosisType/);
+  const fields = Array.from(document.querySelectorAll("fieldset input, fieldset select"))
+    .map((item) => item.id).filter((id) => id.startsWith("edit-"));
+  expect(fields).toEqual(["edit-origin", "edit-onsetDate", "edit-laboratory", "edit-diagnosisType", "edit-vaccinationStatus", "edit-pregnant", "edit-surveillanceType", "edit-investigationDate", "edit-notificationDate", "edit-deathDate"]);
+  expect(screen.getByLabelText(/caseDetails.fields.diagnosisType/)).toHaveAccessibleName(/requiredField/);
+  expect(screen.getByLabelText("caseDetails.fields.origin")).toBeInTheDocument();
 });

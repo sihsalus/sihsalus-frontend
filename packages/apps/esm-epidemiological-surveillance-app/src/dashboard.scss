@@ -167,3 +167,38 @@
 :global(.cds--list-box__menu) {
   max-height: 12rem !important;
 }
+
+.requiredAsterisk {
+  color: #da1e28;
+}
+
+.dateInput {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+
+  :global(.cds--date-picker),
+  :global(.cds--date-picker-container),
+  :global(.cds--date-picker-input__wrapper),
+  :global(.cds--date-picker-input__wrapper) > span {
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+
+  :global(.cds--date-picker.cds--date-picker--single)
+    :global(.cds--date-picker__input) {
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+  }
+  :global(.cds--label) {
+    white-space: normal;
+  }
+}
+
+.fieldError,
+.form :global(.cds--form-requirement) {
+  color: #da1e28;
+}

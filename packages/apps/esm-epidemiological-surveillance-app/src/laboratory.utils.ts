@@ -1,3 +1,4 @@
+import { displayDate } from "./date-display";
 import type { ClinicalCatalog, Disease, FhirResource } from "./types";
 import { hasConcept, valueConcepts } from "./case-form.utils";
 
@@ -44,7 +45,7 @@ export function classifyLaboratoryObservation(
 export function laboratoryLabel(obs: FhirResource): string {
   return [
     obs.orderDisplay || obs.code?.text || obs.code?.coding?.[0]?.display,
-    obs.effectiveDateTime?.slice(0, 10),
+    displayDate(obs.effectiveDateTime),
     obs.valueCodeableConcept?.text ||
       obs.valueCodeableConcept?.coding?.[0]?.display ||
       obs.valueString,

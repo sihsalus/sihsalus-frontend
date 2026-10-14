@@ -1,3 +1,11 @@
+import {
+  isCalendarDate,
+  serverFieldErrors,
+  type FieldErrors,
+} from "./field-validation";
+import { DateInput } from "./date-input.component";
+import { RequiredFieldLabel } from "./required-field-label.component";
+import { displayDate } from "./date-display";
 import { Add, Edit } from "@carbon/react/icons";
 import {
   Button,
@@ -19,6 +27,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  safeError,
   getEvents,
   saveEvent,
   updateEvent,
@@ -57,6 +66,32 @@ export function EventsPanel({
   const [validTo, setValidTo] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<unknown>();
+  const [attempted, setAttempted] = useState(false);
+  const [remoteErrors, setRemoteErrors] = useState<FieldErrors>({});
+  const localErrors: FieldErrors = {};
+  if (!concept) localErrors.conceptUuid = "required";
+  if (!referenceRegulation.trim()) localErrors.referenceRegulation = "required";
+  else if (referenceRegulation.trim().length > 100)
+    localErrors.referenceRegulation = "referenceLength";
+  if (!validFrom) localErrors.validFrom = "required";
+  else if (!isCalendarDate(validFrom)) localErrors.validFrom = "dateFormat";
+  if (validTo && !isCalendarDate(validTo)) localErrors.validTo = "dateFormat";
+  else if (validTo && isCalendarDate(validFrom) && validTo < validFrom)
+    localErrors.validTo = "endBeforeStart";
+  const fieldErrors = { ...remoteErrors, ...(attempted ? localErrors : {}) };
+  const fieldProps = (field: string) => ({
+    invalid: !!fieldErrors[field],
+    invalidText: fieldErrors[field]
+      ? t(`validation.${fieldErrors[field]}`)
+      : undefined,
+  });
+  const clearField = (field: string) =>
+    setRemoteErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      if (field === "validFrom") delete next.validTo;
+      return next;
+    });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const load = useCallback(
     () =>
@@ -85,10 +120,8 @@ export function EventsPanel({
   };
   const save = async () => {
     if (busy) return;
-    if (!concept || !referenceRegulation.trim() || !validFrom)
-      return setFormError({ responseBody: { code: "REQUIRED_FIELDS" } });
-    if (validTo && validTo < validFrom)
-      return setFormError({ responseBody: { code: "INVALID_EVENT" } });
+    setAttempted(true);
+    if (Object.keys(localErrors).length) return;
     setBusy(true);
     setFormError(undefined);
     try {
@@ -105,7 +138,10 @@ export function EventsPanel({
       load();
       onEventsChanged?.();
     } catch (reason) {
-      setFormError(reason);
+      const failure = safeError(reason);
+      const fields = serverFieldErrors(failure);
+      setRemoteErrors(fields);
+      setFormError(Object.keys(fields).length ? undefined : failure);
     } finally {
       setBusy(false);
     }
@@ -136,8 +172,8 @@ export function EventsPanel({
     concept: event.conceptDisplay ?? event.conceptUuid,
     periodicity: periodicities[event.periodicity] ?? event.periodicity,
     reference: event.referenceRegulation,
-    from: event.validFrom,
-    to: event.validTo ?? "—",
+    from: displayDate(event.validFrom),
+    to: displayDate(event.validTo) || "—",
   }));
   return (
     <section aria-label={t("events", "Eventos")} className={styles.form}>
@@ -155,6 +191,8 @@ export function EventsPanel({
             setValidFrom(today());
             setValidTo("");
             setFormError(undefined);
+            setAttempted(false);
+            setRemoteErrors({});
             setOpen(true);
           }}
         >
@@ -238,6 +276,8 @@ export function EventsPanel({
                                 );
                                 setValidTo(event.validTo?.slice(0, 10) ?? "");
                                 setFormError(undefined);
+                                setAttempted(false);
+                                setRemoteErrors({});
                                 setOpen(true);
                               }}
                             />
@@ -281,15 +321,14 @@ export function EventsPanel({
           }
           primaryButtonText={t("save", "Guardar")}
           secondaryButtonText={t("cancel", "Cancelar")}
-          primaryButtonDisabled={
-            busy || !concept || !referenceRegulation.trim() || !validFrom
-          }
+          primaryButtonDisabled={busy}
           onRequestClose={() => {
             if (!busy) setOpen(false);
           }}
           onRequestSubmit={save}
         >
           <div
+            className={styles.form}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -303,22 +342,36 @@ export function EventsPanel({
             )}
             <ComboBox
               id="event-concept"
-              titleText={t("eventsTable.concept", "Enfermedad (Concepto)")}
+              {...fieldProps("conceptUuid")}
+              titleText={
+                <RequiredFieldLabel>
+                  {t("eventsTable.concept", "Enfermedad (Concepto)")}
+                </RequiredFieldLabel>
+              }
               items={concepts}
               selectedItem={concept}
               itemToString={(item) => item?.display ?? ""}
               onInputChange={search}
-              onChange={({ selectedItem }) => setConcept(selectedItem ?? null)}
+              onChange={({ selectedItem }) => {
+                setConcept(selectedItem ?? null);
+                clearField("conceptUuid");
+              }}
             />
             <Select
               id="event-periodicity"
-              labelText={t("period", "Periodicidad")}
+              {...fieldProps("periodicity")}
+              labelText={
+                <RequiredFieldLabel>
+                  {t("period", "Periodicidad")}
+                </RequiredFieldLabel>
+              }
               value={periodicity}
-              onChange={(event) =>
+              onChange={(event) => {
                 setPeriodicity(
                   event.target.value as SurveillanceEvent["periodicity"],
-                )
-              }
+                );
+                clearField("periodicity");
+              }}
             >
               <SelectItem
                 value="SEMANAL"
@@ -331,23 +384,43 @@ export function EventsPanel({
             </Select>
             <TextInput
               id="event-reference-regulation"
-              labelText={t("referenceRegulation", "Norma de referencia")}
+              {...fieldProps("referenceRegulation")}
+              labelText={
+                <RequiredFieldLabel>
+                  {t("referenceRegulation", "Norma de referencia")}
+                </RequiredFieldLabel>
+              }
               value={referenceRegulation}
-              onChange={(event) => setReferenceRegulation(event.target.value)}
+              onChange={(event) => {
+                setReferenceRegulation(event.target.value);
+                clearField("referenceRegulation");
+              }}
             />
-            <TextInput
+            <DateInput
               id="event-valid-from"
+              {...fieldProps("validFrom")}
               type="date"
-              labelText={t("validFrom", "Vigente desde")}
+              labelText={
+                <RequiredFieldLabel>
+                  {t("validFrom", "Vigente desde")}
+                </RequiredFieldLabel>
+              }
               value={validFrom}
-              onChange={(event) => setValidFrom(event.target.value)}
+              onChange={(event) => {
+                setValidFrom(event.target.value);
+                clearField("validFrom");
+              }}
             />
-            <TextInput
+            <DateInput
               id="event-valid-to"
+              {...fieldProps("validTo")}
               type="date"
               labelText={t("validTo", "Vigente hasta (opcional)")}
               value={validTo}
-              onChange={(event) => setValidTo(event.target.value)}
+              onChange={(event) => {
+                setValidTo(event.target.value);
+                clearField("validTo");
+              }}
             />
           </div>
         </Modal>

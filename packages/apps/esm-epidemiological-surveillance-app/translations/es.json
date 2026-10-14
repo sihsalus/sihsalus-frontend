@@ -1,4 +1,55 @@
 {
+  "filters": "Filtros",
+  "temporalInformation": "Información temporal",
+  "geographic": "Información geográfica",
+  "configuration": "Configuración",
+  "configureAgeGroups": "Configurar grupo etario",
+  "ageGroupsCoverage": "Modifica la edad máxima de cada grupo. La edad mínima siguiente se ajusta automáticamente para incluir todas las edades, desde 0 y sin límite superior en adultos mayores.",
+  "ageGroupsYears": "Edades en años cumplidos",
+  "ageGroupsNoUpperLimit": "Sin límite superior",
+  "ageGroupsInvalid": "Usa edades enteras consecutivas y crecientes. Cada grupo debe incluir al menos una edad.",
+  "saveAgeGroups": "Guardar grupos etarios",
+  "ageGroups": {
+    "INFANTS": "Infantes",
+    "CHILDREN": "Niños",
+    "ADOLESCENTS": "Adolescentes",
+    "YOUNG_ADULTS": "Jóvenes",
+    "ADULTS": "Adultos",
+    "OLDER_ADULTS": "Adultos mayores"
+  },
+  "demographic": {
+    "title": "Información demográfica",
+    "row": "Fila",
+    "column": "Columna",
+    "total": "Total",
+    "from": "Inicio de síntomas desde",
+    "to": "Inicio de síntomas hasta",
+    "periodType": "Tipo de periodo",
+    "annual": "Anual",
+    "compareDiseases": "Enfermedades a comparar",
+    "hideZero": "Ocultar filas y columnas con todos sus valores iguales a 0",
+    "selectVariables": "Selecciona una enfermedad o las enfermedades a comparar y dos variables distintas.",
+    "unknown": "Sin dato",
+    "basis": "Conteo de casos por fecha de inicio de síntomas. Edad, sexo y gestación corresponden a los datos conservados en el caso. Los descartados no se incluyen.",
+    "ethnicitySource": "La etnia se obtiene del atributo vigente del paciente.",
+    "undated": "Casos de las enfermedades seleccionadas sin inicio de síntomas, excluidos del filtro temporal",
+    "dimensions": {
+      "age": "Edad",
+      "sex": "Sexo",
+      "disease": "Enfermedad",
+      "ageGroup": "Grupo etario",
+      "ethnicity": "Etnia",
+      "pregnancy": "Condición de gestante",
+      "period": "Periodo"
+    },
+    "values": {
+      "F": "Femenino",
+      "M": "Masculino",
+      "OTHER": "Otro",
+      "YES": "Sí",
+      "NO": "No"
+    }
+  },
   "tablePagination": {
     "previous": "Página anterior",
     "next": "Página siguiente",
@@ -84,7 +135,11 @@
     "countyDistrict": "Buscar distrito",
     "cityVillage": "Buscar centro poblado"
   },
-  "vaccinationValues": { "SI": "Sí", "NO": "No", "IGN": "Ignorado" },
+  "vaccinationValues": {
+    "SI": "Sí",
+    "NO": "No",
+    "IGN": "Ignorado"
+  },
   "surveillanceValues": {
     "PASIVA": "Pasiva",
     "BUSQUEDA_ACTIVA": "Búsqueda activa"
@@ -109,7 +164,7 @@
   "reportAllCenters": "Todos los centros poblados (todos los distritos)",
   "noSelectedCases": "No hay casos que coincidan con los filtros seleccionados.",
   "epidemiologicalSurveillance": "Vigilancia epidemiológica",
-  "surveillanceDescription": "Registra casos y consulta indicadores epidemiológicos.",
+  "surveillanceDescription": "Registra casos y consulta información epidemiológica.",
   "cases": "Casos",
   "indicators": "Indicadores",
   "registerCase": "Registrar caso",
@@ -163,7 +218,9 @@
   "demographics": "Distribución demográfica",
   "groupBy": "Agrupar por",
   "unknown": "Sin información",
+  "caseDateInvalid": "La investigación debe corresponder a la atención y no superar la notificación ni hoy. La notificación no puede superar hoy; las fechas no pueden preceder al inicio de síntomas.",
   "fields": {
+    "pregnant": "Gestante",
     "infectionAddressUuid": "Lugar probable de infección",
     "vaccinationStatus": "Estado de vacunación",
     "surveillanceType": "Tipo de vigilancia",
@@ -249,6 +306,10 @@
     "PARTIAL_PERIOD": "El rango seleccionado incluye periodos parciales; compara con precaución."
   },
   "errors": {
+    "INVALID_AGE_GROUPS": "Los seis grupos deben cubrir todas las edades desde 0, sin huecos ni solapamientos, y el último no debe tener límite superior.",
+    "INVALID_DEMOGRAPHIC_DIMENSIONS": "Selecciona dos variables diferentes y un tipo de periodo válido.",
+    "INVALID_DEMOGRAPHIC_EVENTS": "Selecciona una enfermedad o las enfermedades que deseas comparar.",
+    "DEMOGRAPHIC_TABLE_TOO_LARGE": "La tabla es demasiado grande. Reduce el rango de fechas o cambia las variables.",
     "CASE_CLOSED": "El caso tiene una fecha de defunción registrada y ya no puede editarse.",
     "ADDRESS_SEARCH_TOO_BROAD": "La búsqueda es demasiado amplia. Escribe un nombre más específico o el código del centro poblado.",
     "ADDRESS_METADATA_INCOMPLETE": "Hay lugares sin código o jerarquía completa. Solicita revisar el catálogo de direcciones.",
@@ -277,7 +338,7 @@
     "IDEMPOTENCY_CONFLICT": "Este registro ya se recibió con otros datos. Revisa el registro existente; no crees un duplicado.",
     "CASE_NOT_FOUND": "No se encontró el caso.",
     "INVALID_CASE_DATA": "El caso está incompleto. Solicita a epidemiología que revise sus datos de origen.",
-    "INVALID_DATE_RANGE": "Selecciona un rango válido de hasta dos años, sin superar la fecha de hoy.",
+    "INVALID_DATE_RANGE": "La fecha inicial no puede superar la final y la fecha final no puede superar hoy.",
     "OUTSIDE_COVERAGE": "Selecciona fechas dentro de la cobertura verificada de vigilancia.",
     "INVALID_PERIOD": "Selecciona un periodo de reporte disponible.",
     "INVALID_ZONE_LEVEL": "Selecciona distrito o centro poblado para consultar los indicadores.",
@@ -339,5 +400,22 @@
     "SUSPECTED": "Sospechoso",
     "CONFIRMED": "Confirmado",
     "DISCARDED": "Descartado"
+  },
+  "requiredField": "obligatorio",
+  "validation": {
+    "required": "Este campo es obligatorio.",
+    "selection": "Selecciona un valor válido para este campo.",
+    "dateFormat": "Ingresa una fecha válida en formato DD/MM/AAAA.",
+    "future": "La fecha no puede ser posterior a hoy.",
+    "beforeBirth": "La fecha no puede ser anterior al nacimiento del paciente.",
+    "afterCare": "El inicio de síntomas no puede ser posterior a la fecha de atención.",
+    "beforeOnset": "La fecha no puede ser anterior al inicio de síntomas.",
+    "notificationBeforeInvestigation": "La notificación no puede ser anterior a la investigación.",
+    "endBeforeStart": "La vigencia final no puede ser anterior a la vigencia inicial.",
+    "referenceLength": "La norma de referencia no puede superar los 100 caracteres.",
+    "duplicateDiagnosis": "Ya existe un caso para este diagnóstico.",
+    "invalidLaboratory": "Selecciona un resultado de laboratorio válido de esta atención.",
+    "laboratoryRequired": "Selecciona el resultado de laboratorio que sustenta esta clasificación.",
+    "laboratoryConflict": "La clasificación no corresponde al resultado de laboratorio."
   }
 }

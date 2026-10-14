@@ -1,9 +1,10 @@
+import { DateInput } from "./date-input.component";
+import { displayDate } from "./date-display";
 import {
   InlineLoading,
   InlineNotification,
   Select,
   SelectItem,
-  TextInput,
   Tile,
 } from "@carbon/react";
 import { useConfig, useConnectivity } from "@openmrs/esm-framework";
@@ -23,23 +24,17 @@ import type {
 import { ReportAddressFilter } from "./report-address-filter.component";
 import styles from "./dashboard.scss";
 
-function SeriesChart({
-  report,
-  channel,
-}: {
-  report: Report;
-  channel?: boolean;
-}) {
+function SeriesChart({ report }: { report: Report }) {
   const { t } = useTranslation(moduleName);
   const titleId = useId();
-  const values = channel ? report.channel : report.curve;
+  const values = report.channel;
   const width = 800;
   const height = 240;
   const pad = 28;
   const maximum = Math.max(
     1,
     ...values.map((point) => point.cases),
-    ...(channel ? report.channel.map((point) => point.q3 ?? 0) : []),
+    ...report.channel.map((point) => point.q3 ?? 0),
   );
   const x = (index: number) =>
     pad + (index * (width - 2 * pad)) / Math.max(1, values.length - 1);
@@ -66,11 +61,7 @@ function SeriesChart({
         role="img"
         aria-labelledby={titleId}
       >
-        <title id={titleId}>
-          {channel
-            ? t("endemicChannel", "Endemic channel")
-            : t("epidemicCurve", "Epidemic curve")}
-        </title>
+        <title id={titleId}>{t("endemicChannel", "Endemic channel")}</title>
         <line
           x1={pad}
           y1={pad}
@@ -91,17 +82,16 @@ function SeriesChart({
         <text x={6} y={height - pad}>
           0
         </text>
-        {channel &&
-          (["q1", "q2", "q3"] as const).map((key, index) => (
-            <path
-              key={key}
-              d={line(report.channel.map((point) => point[key]))}
-              fill="none"
-              stroke={["#198038", "#b28600", "#da1e28"][index]}
-              strokeWidth="2"
-              strokeDasharray={["3 3", "8 3", "12 3"][index]}
-            />
-          ))}
+        {(["q1", "q2", "q3"] as const).map((key, index) => (
+          <path
+            key={key}
+            d={line(report.channel.map((point) => point[key]))}
+            fill="none"
+            stroke={["#198038", "#b28600", "#da1e28"][index]}
+            strokeWidth="2"
+            strokeDasharray={["3 3", "8 3", "12 3"][index]}
+          />
+        ))}
         <path
           d={line(values.map((point) => point.cases))}
           fill="none"
@@ -117,20 +107,20 @@ function SeriesChart({
             fill="#0f62fe"
           >
             <title>
-              {point.date}: {point.cases}
+              {displayDate(point.date)}: {point.cases}
             </title>
           </circle>
         ))}
         <text x={pad} y={height - 3}>
-          {values[0]?.date}
+          {displayDate(values[0]?.date)}
         </text>
         <text x={width - pad} y={height - 3} textAnchor="end">
-          {values.at(-1)?.date}
+          {displayDate(values.at(-1)?.date)}
         </text>
       </svg>
       <figcaption>
         {t(`reportDiagnoses.${report.diagnosisType}`)}
-        {channel ? " · Q1 (25%) · Q2 (50%) · Q3 (75%)" : ""}
+        {" · Q1 (25%) · Q2 (50%) · Q3 (75%)"}
       </figcaption>
     </figure>
   );
@@ -197,7 +187,8 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
     address,
   ]);
   return (
-    <section className={styles.form} aria-label={t("indicators", "Indicators")}>
+    <section className={styles.form} aria-label={t("temporalInformation")}>
+      <h3>{t("filters")}</h3>
       <div className={styles.filters}>
         <Select
           id="report-event"
@@ -213,19 +204,19 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             />
           ))}
         </Select>
-        <TextInput
+        <DateInput
           id="report-from"
           type="date"
-          labelText={t("from", "From")}
+          labelText={t("demographic.from")}
           value={from}
           min={catalogue.catalog.surveillanceStartDate}
           max={to}
           onChange={(event) => setFrom(event.target.value)}
         />
-        <TextInput
+        <DateInput
           id="report-to"
           type="date"
-          labelText={t("to", "To")}
+          labelText={t("demographic.to")}
           value={to}
           min={from}
           max={today}
@@ -307,7 +298,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             </h3>
             <p>
               {t("calculatedAt", "Calculated at")}:{" "}
-              {new Date(report.generatedAt).toLocaleString()}
+              {new Date(report.generatedAt).toLocaleString("es-PE")}
             </p>
           </Tile>
           {report.warnings.map((code) => (
@@ -324,10 +315,8 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
               {t("noSelectedCases", "No cases match the selected filters.")}
             </p>
           )}
-          <h3>{t("epidemicCurve", "Epidemic curve")}</h3>
-          <SeriesChart report={report} />
           <h3>{t("endemicChannel", "Endemic channel")}</h3>
-          <SeriesChart report={report} channel />
+          <SeriesChart report={report} />
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <caption>{t("channelDetail", "Endemic channel detail")}</caption>
@@ -351,7 +340,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
               <tbody>
                 {report.channel.map((point) => (
                   <tr key={point.date}>
-                    <td>{point.date}</td>
+                    <td>{displayDate(point.date)}</td>
                     <td>{point.cases}</td>
                     <td>{point.q1 ?? "—"}</td>
                     <td>{point.q2 ?? "—"}</td>
@@ -367,25 +356,6 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
               </tbody>
             </table>
           </div>
-          <details>
-            <summary>{t("dailyDetail", "View daily counts")}</summary>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">{t("columns.date")}</th>
-                  <th scope="col">{t("columns.cases")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.curve.map((point) => (
-                  <tr key={point.date}>
-                    <td>{point.date}</td>
-                    <td>{point.cases}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </details>
         </>
       )}
     </section>

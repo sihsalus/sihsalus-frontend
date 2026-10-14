@@ -1,3 +1,5 @@
+import { DateInput } from "./date-input.component";
+import { displayDate } from "./date-display";
 import {
   Button,
   ComboBox,
@@ -11,15 +13,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TextInput,
 } from "@carbon/react";
-import { Edit, View } from "@carbon/react/icons";
+import { Add, Edit, View } from "@carbon/react/icons";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
 import styles from "./dashboard.scss";
 import { listSurveillanceCases, searchPatients } from "./api";
-import { patientAge, patientDni, patientName } from "./case-form.utils";
+import { patientDni, patientName } from "./case-form.utils";
 import { ErrorNotification } from "./error-notification.component";
 import { CaseModal } from "./case-modal.component";
 import { TablePagination } from "./table-pagination.component";
@@ -29,10 +30,12 @@ export function CasesPanel({
   catalogue,
   revision,
   onNewCase,
+  onSaved,
 }: {
   catalogue: Catalogue;
   revision: number;
   onNewCase: () => void;
+  onSaved?: () => void;
 }) {
   const { t } = useTranslation(moduleName);
   const [selectedCase, setSelectedCase] = useState<{
@@ -77,9 +80,12 @@ export function CasesPanel({
     setFilters((current) => ({ ...current, [key]: value }));
   return (
     <>
-      <Button kind="tertiary" onClick={onNewCase}>
-        Nuevo caso
-      </Button>
+      <div className={styles.actions}>
+        <Button kind="primary" renderIcon={Add} onClick={onNewCase}>
+          {t("newCase", "Nuevo caso")}
+        </Button>
+      </div>
+      <h3>{t("filters")}</h3>
       <div
         style={{
           display: "grid",
@@ -125,28 +131,28 @@ export function CasesPanel({
             />
           ))}
         </Select>
-        <TextInput
+        <DateInput
           id="case-filter-onset-from"
           type="date"
           labelText="Inicio de síntomas desde"
           value={filters.onsetFrom ?? ""}
           onChange={(event) => update("onsetFrom", event.target.value)}
         />
-        <TextInput
+        <DateInput
           id="case-filter-onset-to"
           type="date"
           labelText="Inicio de síntomas hasta"
           value={filters.onsetTo ?? ""}
           onChange={(event) => update("onsetTo", event.target.value)}
         />
-        <TextInput
+        <DateInput
           id="case-filter-notification-from"
           type="date"
           labelText="Notificación desde"
           value={filters.notificationFrom ?? ""}
           onChange={(event) => update("notificationFrom", event.target.value)}
         />
-        <TextInput
+        <DateInput
           id="case-filter-notification-to"
           type="date"
           labelText="Notificación hasta"
@@ -206,14 +212,7 @@ export function CasesPanel({
                       <TableCell className={styles.patientCell}>
                         {item.patientDisplay || "—"}
                       </TableCell>
-                      <TableCell>
-                        {item.patientBirthDate
-                          ? (patientAge(
-                              item.patientBirthDate,
-                              new Date().toISOString().slice(0, 10),
-                            ) ?? "—")
-                          : "—"}
-                      </TableCell>
+                      <TableCell>{item.patientAge ?? "—"}</TableCell>
                       <TableCell>
                         {item.patientSex === "M"
                           ? t("casesTable.male", "Masculino")
@@ -229,10 +228,10 @@ export function CasesPanel({
                           )}
                       </TableCell>
                       <TableCell className={styles.dateCell}>
-                        {item.onsetDate || "—"}
+                        {displayDate(item.onsetDate) || "—"}
                       </TableCell>
                       <TableCell className={styles.dateCell}>
-                        {item.notificationDate || "—"}
+                        {displayDate(item.notificationDate) || "—"}
                       </TableCell>
                       <TableCell>
                         <div className={styles.cellActions}>
@@ -294,6 +293,7 @@ export function CasesPanel({
           onSaved={() => {
             setSelectedCase(undefined);
             setSavedRevision((current) => current + 1);
+            onSaved?.();
           }}
         />
       )}

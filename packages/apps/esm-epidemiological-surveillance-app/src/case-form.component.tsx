@@ -1,3 +1,15 @@
+import { FieldError } from "./field-error.component";
+import {
+  caseDateErrors,
+  serverFieldErrors,
+  type FieldErrors,
+} from "./field-validation";
+import { DateInput } from "./date-input.component";
+import {
+  RequiredFieldLabel,
+  requiredCaseFields,
+} from "./required-field-label.component";
+import { displayDate } from "./date-display";
 import {
   Button,
   ComboBox,
@@ -7,7 +19,6 @@ import {
   ProgressStep,
   Select,
   SelectItem,
-  TextInput,
   Tile,
 } from "@carbon/react";
 import { useConnectivity, useSession } from "@openmrs/esm-framework";
@@ -29,6 +40,8 @@ import {
   patientDni,
   patientName,
   patientAge,
+  pregnancyEligible,
+  encounterDate,
   prefill,
   referenceId,
   validateCase,
@@ -47,7 +60,10 @@ import type {
   NamedReference,
 } from "./types";
 import styles from "./dashboard.scss";
-import { classifyLaboratoryObservation, laboratoryLabel } from "./laboratory.utils";
+import {
+  classifyLaboratoryObservation,
+  laboratoryLabel,
+} from "./laboratory.utils";
 
 export function CaseForm({
   catalogue,
@@ -78,6 +94,7 @@ export function CaseForm({
     useState<string>("");
   const [locations, setLocations] = useState<NamedReference[]>([]);
   const [providers, setProviders] = useState<NamedReference[]>([]);
+  const [remoteErrors, setRemoteErrors] = useState<FieldErrors>({});
   const [invalid, setInvalid] = useState<string[]>([]);
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
@@ -96,9 +113,27 @@ export function CaseForm({
     (item) => item.uuid === request.eventUuid,
   );
   const userUuid = session?.user?.uuid;
+  const investigationDate = encounterDate(source, m.timezone);
+  const caseAge = investigationDate
+    ? patientAge(patient?.birthDate, investigationDate)
+    : undefined;
+  const canSelectPregnancy = pregnancyEligible(patient?.gender, caseAge);
+  useEffect(() => {
+    if (!patient || !source) return;
+    setRequest((current) => ({
+      ...current,
+      investigationDate,
+      pregnant: canSelectPregnancy ? (current.pregnant ?? false) : false,
+    }));
+  }, [investigationDate, canSelectPregnancy, patient, source]);
   const ageLabel = (item: FhirResource) => {
-    const age = patientAge(item.birthDate, dateInZone(m.timezone));
-    return age === undefined ? t("patientAgeUnknown") : `${age} ${t(age === 1 ? "patientAgeYear" : "patientAgeYears")}`;
+    const age = patientAge(
+      item.birthDate,
+      investigationDate ?? dateInZone(m.timezone),
+    );
+    return age === undefined
+      ? t("patientAgeUnknown")
+      : `${age} ${t(age === 1 ? "patientAgeYear" : "patientAgeYears")}`;
   };
 
   useEffect(() => {
@@ -106,27 +141,27 @@ export function CaseForm({
     void Promise.allSettled([
       references("location", abort.signal),
       references("provider", abort.signal),
-    ])
-      .then(([locationsResult, providersResult]) => {
-        if (abort.signal.aborted) return;
-        if (locationsResult.status === "fulfilled") setLocations(locationsResult.value);
-        if (providersResult.status === "fulfilled") {
-          const ownProviders = providersResult.value.filter(
-            (item) => item.person?.uuid === session?.user?.person?.uuid,
-          );
-          setProviders(ownProviders);
-          if (ownProviders.length === 1 && !initial?.providerUuid)
-            setRequest((current) => ({
-              ...current,
-              providerUuid: ownProviders[0].uuid,
-            }));
-        }
-        if (
-          locationsResult.status === "rejected" &&
-          providersResult.status === "rejected"
-        )
-          setError(locationsResult.reason);
-      })
+    ]).then(([locationsResult, providersResult]) => {
+      if (abort.signal.aborted) return;
+      if (locationsResult.status === "fulfilled")
+        setLocations(locationsResult.value);
+      if (providersResult.status === "fulfilled") {
+        const ownProviders = providersResult.value.filter(
+          (item) => item.person?.uuid === session?.user?.person?.uuid,
+        );
+        setProviders(ownProviders);
+        if (ownProviders.length === 1 && !initial?.providerUuid)
+          setRequest((current) => ({
+            ...current,
+            providerUuid: ownProviders[0].uuid,
+          }));
+      }
+      if (
+        locationsResult.status === "rejected" &&
+        providersResult.status === "rejected"
+      )
+        setError(locationsResult.reason);
+    });
     return () => abort.abort();
   }, [session?.user?.person?.uuid, initial?.providerUuid]);
 
@@ -147,26 +182,28 @@ export function CaseForm({
         abort.signal,
       ),
     ])
-      .then(([nextPatient, nextEncounters, nextObservations, nextDiagDetails]) => {
-        if (abort.signal.aborted) return;
-        setPatient(nextPatient);
-        if (nextPatient) setPatients([nextPatient]);
-        setEncounters(nextEncounters);
-        setObservations(nextObservations);
-        const notifyingDiagnoses = nextDiagDetails.filter((d) =>
-          findDiagnosisMapping(d.conceptUuid, catalogue),
-        );
-        setEncounterDiagnoses(notifyingDiagnoses);
-        const matched = notifyingDiagnoses.find((d) => {
-          const mapping = findDiagnosisMapping(d.conceptUuid, catalogue);
-          return mapping?.eventUuid === initial.eventUuid;
-        });
-        if (matched) {
-          setSelectedDiagnosisUuid(matched.uuid);
-        } else if (notifyingDiagnoses.length > 0) {
-          setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
-        }
-      })
+      .then(
+        ([nextPatient, nextEncounters, nextObservations, nextDiagDetails]) => {
+          if (abort.signal.aborted) return;
+          setPatient(nextPatient);
+          if (nextPatient) setPatients([nextPatient]);
+          setEncounters(nextEncounters);
+          setObservations(nextObservations);
+          const notifyingDiagnoses = nextDiagDetails.filter((d) =>
+            findDiagnosisMapping(d.conceptUuid, catalogue),
+          );
+          setEncounterDiagnoses(notifyingDiagnoses);
+          const matched = notifyingDiagnoses.find((d) => {
+            const mapping = findDiagnosisMapping(d.conceptUuid, catalogue);
+            return mapping?.eventUuid === initial.eventUuid;
+          });
+          if (matched) {
+            setSelectedDiagnosisUuid(matched.uuid);
+          } else if (notifyingDiagnoses.length > 0) {
+            setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
+          }
+        },
+      )
       .catch((failure) => {
         if (!abort.signal.aborted) setError(failure);
       });
@@ -181,6 +218,14 @@ export function CaseForm({
   );
   const update = (key: keyof CaseRequest, value: string) => {
     setRequest((current) => ({ ...current, [key]: value }));
+    setRemoteErrors((current) => {
+      const next = { ...current };
+      delete next[key];
+      if (key.endsWith("Date"))
+        for (const field of Object.keys(next))
+          if (field.endsWith("Date")) delete next[field];
+      return next;
+    });
     setInvalid((current) => current.filter((field) => field !== key));
     setError(undefined);
   };
@@ -334,14 +379,12 @@ export function CaseForm({
       status:
         request.status || (!request.laboratoryResultUuid ? "SUSPECTED" : ""),
     };
+    setRemoteErrors({});
     const errors = validateCase(currentRequest, m, patient, source);
     const relevant =
       step === 0
         ? errors.filter((field) =>
-            [
-              "patientUuid",
-              "sourceEncounterUuid",
-            ].includes(field),
+            ["patientUuid", "sourceEncounterUuid"].includes(field),
           )
         : errors;
     setInvalid(relevant);
@@ -357,6 +400,7 @@ export function CaseForm({
       status:
         request.status || (!request.laboratoryResultUuid ? "SUSPECTED" : ""),
     };
+    setRemoteErrors({});
     const errors = validateCase(currentRequest, m, patient, source);
     setInvalid(errors);
     if (errors.length) {
@@ -368,19 +412,61 @@ export function CaseForm({
     setError(undefined);
     try {
       const saved = await createSurveillanceCase(
-        toSurveillanceCaseDraft(currentRequest as CaseRequest, selectedDiagnosisUuid),
+        toSurveillanceCaseDraft(
+          currentRequest as CaseRequest,
+          selectedDiagnosisUuid,
+        ),
       );
       setQueued(false);
-      setResult({ uuid: saved.uuid, diagnosisConceptUuid: saved.diagnosisUuid, icd10: "", periodicity: "", deadlineDays: 0, replayed: false, immediateAlerts: [], outbreakAlerts: [], warnings: [] });
+      setResult({
+        uuid: saved.uuid,
+        diagnosisConceptUuid: saved.diagnosisUuid,
+        icd10: "",
+        periodicity: "",
+        deadlineDays: 0,
+        replayed: false,
+        immediateAlerts: [],
+        outbreakAlerts: [],
+        warnings: [],
+      });
       onSaved();
     } catch (failure) {
-      setError(safeError(failure));
-      onSaved();
+      const safe = safeError(failure);
+      const fields = serverFieldErrors(safe, true);
+      setRemoteErrors(fields);
+      if (Object.keys(fields).length) {
+        setInvalid(Object.keys(fields));
+        setStep(fields.patientUuid || fields.sourceEncounterUuid ? 0 : 1);
+        setError(undefined);
+      } else setError(safe);
     } finally {
       submitting.current = false;
       setBusy(false);
     }
   }
+  const dateErrors = caseDateErrors(
+    request,
+    dateInZone(m.timezone),
+    patient?.birthDate,
+    source?.period?.start?.slice(0, 10),
+  );
+  const fieldProps = (key: string) => {
+    const reason =
+      remoteErrors[key] ??
+      (key.endsWith("Date")
+        ? (dateErrors[key] ??
+          (!request[key as keyof CaseRequest] ? "required" : undefined))
+        : !request[key as keyof CaseRequest]
+          ? key === "laboratoryResultUuid"
+            ? "laboratoryRequired"
+            : "required"
+          : "selection");
+    return {
+      invalid: invalid.includes(key) && !!reason,
+      invalidText:
+        invalid.includes(key) && reason ? t(`validation.${reason}`) : undefined,
+    };
+  };
   function select(
     key: keyof CaseRequest,
     items: { value: string; text: string }[],
@@ -389,21 +475,35 @@ export function CaseForm({
     return (
       <Select
         id={`case-${key}`}
-        labelText={t(`fields.${key}`)}
-        value={request[key] ?? ""}
-        disabled={busy}
-        invalid={invalid.includes(key)}
-        invalidText={t(
-          "requiredSelection",
-          "Select a valid value to continue.",
-        )}
-        onChange={(event) =>
-          (onChange ?? ((value) => update(key, value)))(event.target.value)
+        labelText={
+          <RequiredFieldLabel required={requiredCaseFields.has(key)}>
+            {t(`fields.${key}`)}
+          </RequiredFieldLabel>
         }
+        value={String(request[key] ?? "")}
+        disabled={busy}
+        {...fieldProps(key)}
+        onChange={(event) => {
+          const affected =
+            key === "laboratoryResultUuid" ? [key, "status"] : [key];
+          setInvalid((current) =>
+            current.filter((field) => !affected.includes(field)),
+          );
+          setRemoteErrors((current) => {
+            const next = { ...current };
+            for (const field of affected) delete next[field];
+            return next;
+          });
+          (onChange ?? ((value) => update(key, value)))(event.target.value);
+        }}
       >
         <SelectItem value="" text={t("selectOption", "Select an option")} />
         {items.map((item, index) => (
-          <SelectItem key={item.value || `opt-${index}`} value={item.value} text={item.text} />
+          <SelectItem
+            key={item.value || `opt-${index}`}
+            value={item.value}
+            text={item.text}
+          />
         ))}
       </Select>
     );
@@ -422,8 +522,11 @@ export function CaseForm({
         )}
       />
     );
-  const classifyLabObservation = (obs: FhirResource) => classifyLaboratoryObservation(obs, m, disease);
-  const labResults = observations.filter((obs) => classifyLabObservation(obs) !== null);
+  const classifyLabObservation = (obs: FhirResource) =>
+    classifyLaboratoryObservation(obs, m, disease);
+  const labResults = observations.filter(
+    (obs) => classifyLabObservation(obs) !== null,
+  );
   return (
     <section
       aria-label={t("registerCase", "Register case")}
@@ -448,22 +551,20 @@ export function CaseForm({
       )}
       {error ? <ErrorNotification error={error} /> : null}
       {busy && <InlineLoading description={t("loading", "Loading")} />}
-      {invalid.length > 0 && (
-        <InlineNotification
-          kind="error"
-          lowContrast
-          hideCloseButton
-          title={t("completeFields", "Complete the highlighted fields")}
-          subtitle={invalid.map((field) => t(`fields.${field}`)).join(", ")}
-        />
-      )}
       {step === 0 && (
         <>
           {!initial && (
             <ComboBox
               id="case-patient"
-              titleText={t("fields.patientUuid", "Paciente")}
-              placeholder={t("selectPatient", "Buscar y seleccionar paciente...")}
+              titleText={
+                <RequiredFieldLabel>
+                  {t("fields.patientUuid", "Paciente")}
+                </RequiredFieldLabel>
+              }
+              placeholder={t(
+                "selectPatient",
+                "Buscar y seleccionar paciente...",
+              )}
               items={patients}
               itemToString={(item) =>
                 item
@@ -474,11 +575,7 @@ export function CaseForm({
               onChange={({ selectedItem }) => {
                 choosePatient(selectedItem?.id ?? "");
               }}
-              invalid={invalid.includes("patientUuid")}
-              invalidText={t(
-                "requiredSelection",
-                "Select a valid value to continue.",
-              )}
+              {...fieldProps("patientUuid")}
             />
           )}
           {patient && (
@@ -495,7 +592,7 @@ export function CaseForm({
             "sourceEncounterUuid",
             encounters.map((item) => ({
               value: item.id,
-              text: `${item.period?.start?.slice(0, 10) ?? ""} · ${item.type?.[0]?.text ?? item.type?.[0]?.coding?.[0]?.display ?? t("careRecord", "Care record")}`,
+              text: `${displayDate(item.period?.start)} · ${item.type?.[0]?.text ?? item.type?.[0]?.coding?.[0]?.display ?? t("careRecord", "Care record")}`,
             })),
             chooseEncounter,
           )}
@@ -505,42 +602,58 @@ export function CaseForm({
         <>
           <Select
             id="case-providerUuid"
-            labelText={t("fields.providerUuid")}
+            labelText={
+              <RequiredFieldLabel>
+                {t("fields.providerUuid")}
+              </RequiredFieldLabel>
+            }
             value={request.providerUuid ?? ""}
             disabled
-            invalid={invalid.includes("providerUuid")}
-            invalidText={t("requiredSelection", "Select a valid value to continue.")}
+            {...fieldProps("providerUuid")}
             onChange={() => {}}
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
             {providers.map((item) => (
-              <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
+              <SelectItem
+                key={item.uuid}
+                value={item.uuid}
+                text={item.display}
+              />
             ))}
           </Select>
+          <FieldError message={fieldProps("providerUuid").invalidText} />
           <Select
             id="case-locationUuid"
-            labelText={t("fields.locationUuid")}
+            labelText={
+              <RequiredFieldLabel>
+                {t("fields.locationUuid")}
+              </RequiredFieldLabel>
+            }
             value={request.locationUuid ?? ""}
             disabled
-            invalid={invalid.includes("locationUuid")}
-            invalidText={t("requiredSelection", "Select a valid value to continue.")}
+            {...fieldProps("locationUuid")}
             onChange={() => {}}
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
             {locations.map((item) => (
-              <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
+              <SelectItem
+                key={item.uuid}
+                value={item.uuid}
+                text={item.display}
+              />
             ))}
           </Select>
+          <FieldError message={fieldProps("locationUuid").invalidText} />
           <Select
             id="case-disease-diagnosis"
-            labelText={t("fields.diagnosisUuid", "Diagnóstico del encuentro")}
+            labelText={
+              <RequiredFieldLabel>
+                {t("fields.diagnosisUuid", "Diagnóstico del encuentro")}
+              </RequiredFieldLabel>
+            }
             value={selectedDiagnosisUuid}
             disabled={busy || !encounterDiagnoses.length}
-            invalid={invalid.includes("eventUuid")}
-            invalidText={t(
-              "requiredSelection",
-              "Select a valid value to continue.",
-            )}
+            {...fieldProps("eventUuid")}
             onChange={(event) => onDiagnosisChange(event.target.value)}
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
@@ -557,7 +670,10 @@ export function CaseForm({
               kind="warning"
               lowContrast
               hideCloseButton
-              title={t("noDiagnosesInEncounterTitle", "Atención sin diagnósticos")}
+              title={t(
+                "noDiagnosesInEncounterTitle",
+                "Atención sin diagnósticos",
+              )}
               subtitle={t(
                 "noDiagnosesInEncounter",
                 "La atención seleccionada no tiene diagnósticos asociados para vigilancia epidemiológica.",
@@ -568,28 +684,37 @@ export function CaseForm({
             "origin",
             m.origins.map((item) => ({ value: item.key, text: item.label })),
           )}
-          <InfectionAddressSelector value={request.infectionAddressUuid} display={infectionAddressDisplay} onChange={(value, display) => {
-            update("infectionAddressUuid", value);
-            setInfectionAddressDisplay(display ?? "");
-          }} />
-          <TextInput
+          <InfectionAddressSelector
+            invalidText={
+              invalid.includes("infectionAddressUuid")
+                ? t(
+                    `validation.${remoteErrors.infectionAddressUuid ?? "selection"}`,
+                  )
+                : undefined
+            }
+            value={request.infectionAddressUuid}
+            display={infectionAddressDisplay}
+            onChange={(value, display) => {
+              update("infectionAddressUuid", value);
+              setInfectionAddressDisplay(display ?? "");
+            }}
+          />
+          <DateInput
             id="case-onset"
             type="date"
             labelText={t("fields.onsetDate")}
             value={request.onsetDate ?? ""}
             max={dateInZone(m.timezone)}
-            invalid={invalid.includes("onsetDate")}
-            invalidText={t(
-              "invalidDate",
-              "Use a valid date between birth and care, no later than today.",
-            )}
+            {...fieldProps("onsetDate")}
             onChange={(event) => update("onsetDate", event.target.value)}
           />
           {select(
             "laboratoryResultUuid",
             labResults.map((obs) => ({
               value: obs.id,
-              text: laboratoryLabel(obs) || t("laboratoryResult", "Laboratory result"),
+              text:
+                laboratoryLabel(obs) ||
+                t("laboratoryResult", "Laboratory result"),
             })),
             (value) => {
               const obs = labResults.find((item) => item.id === value);
@@ -604,11 +729,12 @@ export function CaseForm({
           )}
           <Select
             id="case-status"
-            labelText={t("fields.status")}
+            labelText={
+              <RequiredFieldLabel>{t("fields.status")}</RequiredFieldLabel>
+            }
             value={request.status ?? ""}
             disabled
-            invalid={invalid.includes("status")}
-            invalidText={t("requiredSelection", "Select a valid value to continue.")}
+            {...fieldProps("status")}
             onChange={() => {}}
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
@@ -616,68 +742,131 @@ export function CaseForm({
               <SelectItem key={s.key} value={s.key} text={s.label} />
             ))}
           </Select>
-          {select("vaccinationStatus", ["SI", "NO", "IGN"].map((value) => ({ value, text: t(`vaccinationValues.${value}`) })))}
-          {select("surveillanceType", ["PASIVA", "BUSQUEDA_ACTIVA"].map((value) => ({ value, text: t(`surveillanceValues.${value}`) })))}
-          {(["investigationDate", "notificationDate", "deathDate"] as const).map((key) => (
-            <TextInput key={key} id={`case-${key}`} type="date" labelText={t(`fields.${key}`)} value={request[key] ?? ""} disabled={busy} onChange={(e) => update(key, e.target.value)} />
+          <FieldError message={fieldProps("status").invalidText} />
+          {select(
+            "vaccinationStatus",
+            ["SI", "NO", "IGN"].map((value) => ({
+              value,
+              text: t(`vaccinationValues.${value}`),
+            })),
+          )}
+          <Select
+            id="case-pregnant"
+            labelText={t("fields.pregnant")}
+            value={request.pregnant ? "SI" : "NO"}
+            disabled={busy || !canSelectPregnancy}
+            onChange={(e) =>
+              setRequest((current) => ({
+                ...current,
+                pregnant: e.target.value === "SI",
+              }))
+            }
+          >
+            <SelectItem value="SI" text={t("vaccinationValues.SI")} />
+            <SelectItem value="NO" text={t("vaccinationValues.NO")} />
+          </Select>
+          {select(
+            "surveillanceType",
+            ["PASIVA", "BUSQUEDA_ACTIVA"].map((value) => ({
+              value,
+              text: t(`surveillanceValues.${value}`),
+            })),
+          )}
+          {(
+            ["investigationDate", "notificationDate", "deathDate"] as const
+          ).map((key) => (
+            <DateInput
+              key={key}
+              id={`case-${key}`}
+              type="date"
+              labelText={
+                <RequiredFieldLabel required={requiredCaseFields.has(key)}>
+                  {t(`fields.${key}`)}
+                </RequiredFieldLabel>
+              }
+              value={request[key] ?? ""}
+              disabled={busy || key === "investigationDate"}
+              max={key === "deathDate" ? undefined : dateInZone(m.timezone)}
+              min={key === "notificationDate" ? investigationDate : undefined}
+              {...fieldProps(key)}
+              onChange={(e) => update(key, e.target.value)}
+            />
           ))}
         </>
       )}
       {step === 2 && (
         <>
-        <Tile>
-          <h3>{t("reviewBeforeSave", "Review before registering")}</h3>
-          <p>
-            {patient ? patientName(patient) : ""} · {event?.conceptDisplay ?? event?.conceptUuid}
-          </p>
-          <dl>
-            {(["onsetDate", "status", "origin", "vaccinationStatus", "surveillanceType", "investigationDate", "notificationDate", "deathDate"] as const)
-              .filter((key) => request[key])
-              .map((key) => (
-                <div key={key}>
-                  <dt>{t(`fields.${key}`)}</dt>
+          <Tile>
+            <h3>{t("reviewBeforeSave", "Review before registering")}</h3>
+            <p>
+              {patient ? patientName(patient) : ""} ·{" "}
+              {event?.conceptDisplay ?? event?.conceptUuid}
+            </p>
+            <dl>
+              <div>
+                <dt>{t("fields.pregnant")}</dt>
+                <dd>
+                  {t(
+                    request.pregnant
+                      ? "vaccinationValues.SI"
+                      : "vaccinationValues.NO",
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("casesTable.age")}</dt>
+                <dd>{caseAge ?? t("patientAgeUnknown")}</dd>
+              </div>
+              {(
+                [
+                  "onsetDate",
+                  "status",
+                  "origin",
+                  "vaccinationStatus",
+                  "surveillanceType",
+                  "investigationDate",
+                  "notificationDate",
+                  "deathDate",
+                ] as const
+              )
+                .filter((key) => request[key])
+                .map((key) => (
+                  <div key={key}>
+                    <dt>{t(`fields.${key}`)}</dt>
+                    <dd>
+                      {key.endsWith("Date")
+                        ? displayDate(request[key])
+                        : key === "vaccinationStatus"
+                          ? t(`vaccinationValues.${request[key]}`)
+                          : key === "surveillanceType"
+                            ? t(`surveillanceValues.${request[key]}`)
+                            : ([...m.statuses, ...m.origins].find(
+                                (item) => item.key === request[key],
+                              )?.label ?? request[key])}
+                    </dd>
+                  </div>
+                ))}
+              {request.infectionAddressUuid && (
+                <div>
+                  <dt>{t("fields.infectionAddressUuid")}</dt>
                   <dd>
-                    {key === "vaccinationStatus" ? t(`vaccinationValues.${request[key]}`) : key === "surveillanceType" ? t(`surveillanceValues.${request[key]}`) : [...m.statuses, ...m.origins].find(
-                      (item) => item.key === request[key],
-                    )?.label ?? request[key]}
+                    {infectionAddressDisplay || t("infectionPreservedCenter")}
                   </dd>
                 </div>
-              ))}
-            {request.infectionAddressUuid && <div><dt>{t("fields.infectionAddressUuid")}</dt><dd>{infectionAddressDisplay || t("infectionPreservedCenter")}</dd></div>}
-            {request.severity && (
-              <div>
-                <dt>{t("fields.severity")}</dt>
-                <dd>
-                  {disease?.severities.find(
-                    (item) => item.key === request.severity,
-                  )?.label ?? request.severity}
-                </dd>
-              </div>
-            )}
-            {request.species && (
-              <div>
-                <dt>{t("fields.species")}</dt>
-                <dd>
-                  {disease?.species.find(
-                    (item) => item.key === request.species,
-                  )?.label ?? request.species}
-                </dd>
-              </div>
-            )}
-          </dl>
-          <p>
-            {t(
-              "classificationNotice",
-              "The server validates ICD-10, laboratory evidence, duplicates and alerts before confirming the registration.",
-            )}
-          </p>
-          <p>
-            {t(
-              "notificationNotice",
-              "Regulatory export to NOTI is not included in this iteration.",
-            )}
-          </p>
-        </Tile></>
+              )}
+              {request.severity && (
+                <div>
+                  <dt>{t("fields.severity")}</dt>
+                  <dd>
+                    {disease?.severities.find(
+                      (item) => item.key === request.severity,
+                    )?.label ?? request.severity}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </Tile>
+        </>
       )}
       <div className={styles.actions}>
         {step > 0 && (

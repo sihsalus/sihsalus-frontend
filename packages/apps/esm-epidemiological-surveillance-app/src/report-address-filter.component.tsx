@@ -8,9 +8,11 @@ import type { NamedReference, ReportZoneLevel } from "./types";
 
 export function ReportAddressFilter({
   level,
+  idPrefix = "report",
   onChange,
 }: {
   level: ReportZoneLevel;
+  idPrefix?: string;
   onChange: (address: string) => void;
 }) {
   const { t } = useTranslation(moduleName);
@@ -50,7 +52,7 @@ export function ReportAddressFilter({
   return (
     <>
       <Select
-        id="report-province"
+        id={`${idPrefix}-province`}
         labelText={t("reportProvince")}
         value={province}
         disabled={loading}
@@ -68,7 +70,7 @@ export function ReportAddressFilter({
         ))}
       </Select>
       <Select
-        id="report-district"
+        id={`${idPrefix}-district`}
         labelText={t("reportDistrict")}
         value={district}
         disabled={!province || loading}
@@ -93,7 +95,7 @@ export function ReportAddressFilter({
       </Select>
       {level === "CENTRO_POBLADO" && (
         <Select
-          id="report-center"
+          id={`${idPrefix}-center`}
           labelText={t("reportCenter")}
           value={center}
           disabled={!district || loading}

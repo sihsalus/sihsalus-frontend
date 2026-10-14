@@ -1,3 +1,4 @@
+import { formFields, validationMessages, type FieldErrors } from "./field-validation";
 import { openmrsFetch, restBaseUrl } from "@openmrs/esm-framework";
 import type {
   Catalogue,
@@ -17,11 +18,17 @@ export class SurveillanceApiError extends Error {
     public code: string,
     public status: number,
     public fields: string[] = [],
+    public fieldErrors: FieldErrors = {},
   ) {
     super("Surveillance operation failed");
   }
 }
 const safeCodes = new Set([
+  "INVALID_DATE", "INVALID_INFECTION_ADDRESS", "CASE_ALREADY_EXISTS_FOR_DIAGNOSIS",
+  "INVALID_AGE_GROUPS",
+  "INVALID_DEMOGRAPHIC_DIMENSIONS",
+  "INVALID_DEMOGRAPHIC_EVENTS",
+  "DEMOGRAPHIC_TABLE_TOO_LARGE",
   "INVALID_ZONE_LEVEL",
   "INVALID_DIAGNOSIS_TYPE",
   "INVALID_REPORT_ADDRESS",
@@ -61,7 +68,7 @@ export function safeError(error: unknown): SurveillanceApiError {
   const failure = error as {
     status?: number;
     response?: { status?: number };
-    responseBody?: { code?: string; fields?: unknown };
+    responseBody?: { code?: string; fields?: unknown; fieldErrors?: unknown };
   };
   const status = failure?.status ?? failure?.response?.status ?? 0;
   const code = failure?.responseBody?.code;
@@ -74,6 +81,9 @@ export function safeError(error: unknown): SurveillanceApiError {
           ? code
           : "SERVICE_UNAVAILABLE",
     status,
+    Array.isArray(failure?.responseBody?.fields) ? failure.responseBody.fields.filter((field): field is string => typeof field === "string" && formFields.has(field)) : [],
+    failure?.responseBody?.fieldErrors && typeof failure.responseBody.fieldErrors === "object"
+      ? Object.fromEntries(Object.entries(failure.responseBody.fieldErrors).filter(([field, reason]) => formFields.has(field) && typeof reason === "string" && Object.hasOwn(validationMessages, reason))) as FieldErrors : {},
   );
 }
 export async function read<T>(url: string, signal?: AbortSignal): Promise<T> {

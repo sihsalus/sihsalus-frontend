@@ -1,4 +1,55 @@
 {
+  "filters": "Filters",
+  "temporalInformation": "Temporal information",
+  "geographic": "Geographic information",
+  "configuration": "Configuration",
+  "configureAgeGroups": "Configure age groups",
+  "ageGroupsCoverage": "Edit each group's maximum age. The next minimum adjusts automatically to cover all ages, starting at 0 with no upper limit for older adults.",
+  "ageGroupsYears": "Ages in completed years",
+  "ageGroupsNoUpperLimit": "No upper limit",
+  "ageGroupsInvalid": "Use consecutive, increasing integer ages. Each group must include at least one age.",
+  "saveAgeGroups": "Save age groups",
+  "ageGroups": {
+    "INFANTS": "Infants",
+    "CHILDREN": "Children",
+    "ADOLESCENTS": "Adolescents",
+    "YOUNG_ADULTS": "Young adults",
+    "ADULTS": "Adults",
+    "OLDER_ADULTS": "Older adults"
+  },
+  "demographic": {
+    "title": "Demographic information",
+    "row": "Row",
+    "column": "Column",
+    "total": "Total",
+    "from": "Symptom onset from",
+    "to": "Symptom onset to",
+    "periodType": "Period type",
+    "annual": "Annual",
+    "compareDiseases": "Diseases to compare",
+    "hideZero": "Hide rows and columns whose values are all 0",
+    "selectVariables": "Select a disease or diseases to compare and two different variables.",
+    "unknown": "Unknown",
+    "basis": "Case counts by symptom onset date. Age, sex and pregnancy use the values preserved in each case. Discarded cases are excluded.",
+    "ethnicitySource": "Ethnicity comes from the patient's current attribute.",
+    "undated": "Cases for selected diseases without symptom onset, excluded from the date filter",
+    "dimensions": {
+      "age": "Age",
+      "sex": "Sex",
+      "disease": "Disease",
+      "ageGroup": "Age group",
+      "ethnicity": "Ethnicity",
+      "pregnancy": "Pregnancy",
+      "period": "Period"
+    },
+    "values": {
+      "F": "Female",
+      "M": "Male",
+      "OTHER": "Other",
+      "YES": "Yes",
+      "NO": "No"
+    }
+  },
   "tablePagination": {
     "previous": "Previous page",
     "next": "Next page",
@@ -84,7 +135,11 @@
     "countyDistrict": "Search district",
     "cityVillage": "Search populated center"
   },
-  "vaccinationValues": { "SI": "Yes", "NO": "No", "IGN": "Unknown" },
+  "vaccinationValues": {
+    "SI": "Yes",
+    "NO": "No",
+    "IGN": "Unknown"
+  },
   "surveillanceValues": {
     "PASIVA": "Passive",
     "BUSQUEDA_ACTIVA": "Active search"
@@ -109,7 +164,7 @@
   "reportAllCenters": "All populated centers (all districts)",
   "noSelectedCases": "No cases match the selected filters.",
   "epidemiologicalSurveillance": "Epidemiological Surveillance",
-  "surveillanceDescription": "Register cases and review epidemiological indicators.",
+  "surveillanceDescription": "Register cases and review epidemiological information.",
   "cases": "Cases",
   "indicators": "Indicators",
   "registerCase": "Register case",
@@ -163,7 +218,9 @@
   "demographics": "Demographic distribution",
   "groupBy": "Group by",
   "unknown": "Unknown",
+  "caseDateInvalid": "Investigation must match the encounter and be no later than notification or today. Notification cannot be in the future; dates cannot precede symptom onset.",
   "fields": {
+    "pregnant": "Pregnant",
     "infectionAddressUuid": "Probable place of infection",
     "vaccinationStatus": "Vaccination status",
     "surveillanceType": "Surveillance type",
@@ -249,6 +306,10 @@
     "PARTIAL_PERIOD": "The selected range includes partial periods; compare with caution."
   },
   "errors": {
+    "INVALID_AGE_GROUPS": "The six groups must cover every age from 0, without gaps or overlaps, and the last group must have no upper bound.",
+    "INVALID_DEMOGRAPHIC_DIMENSIONS": "Select two different variables and a valid period type.",
+    "INVALID_DEMOGRAPHIC_EVENTS": "Select a disease or the diseases you want to compare.",
+    "DEMOGRAPHIC_TABLE_TOO_LARGE": "The table is too large. Reduce the date range or change the variables.",
     "CASE_CLOSED": "The case has a recorded date of death and can no longer be edited.",
     "ADDRESS_SEARCH_TOO_BROAD": "Search is too broad. Enter a more specific name or populated-center code.",
     "ADDRESS_METADATA_INCOMPLETE": "Some places lack a code or complete hierarchy. Ask the administrator to review the address catalog.",
@@ -277,7 +338,7 @@
     "IDEMPOTENCY_CONFLICT": "This record was already received with different data. Review the existing registration; do not create a duplicate.",
     "CASE_NOT_FOUND": "The case could not be found.",
     "INVALID_CASE_DATA": "The case is incomplete. Ask epidemiology to review its source data.",
-    "INVALID_DATE_RANGE": "Select a valid date range of up to two years, ending no later than today.",
+    "INVALID_DATE_RANGE": "The start date cannot be after the end date, and the end date cannot be after today.",
     "OUTSIDE_COVERAGE": "Select dates within the verified surveillance coverage.",
     "INVALID_PERIOD": "Choose an available reporting period.",
     "INVALID_ZONE_LEVEL": "Select district or populated center to view indicators.",
@@ -339,5 +400,22 @@
     "SUSPECTED": "Suspected",
     "CONFIRMED": "Confirmed",
     "DISCARDED": "Discarded"
+  },
+  "requiredField": "required",
+  "validation": {
+    "required": "This field is required.",
+    "selection": "Select a valid value for this field.",
+    "dateFormat": "Enter a valid date in DD/MM/YYYY format.",
+    "future": "The date cannot be after today.",
+    "beforeBirth": "The date cannot be before the patient’s birth.",
+    "afterCare": "Symptom onset cannot be after the care date.",
+    "beforeOnset": "The date cannot be before symptom onset.",
+    "notificationBeforeInvestigation": "Notification cannot be before investigation.",
+    "endBeforeStart": "The end date cannot be before the start date.",
+    "referenceLength": "The reference regulation cannot exceed 100 characters.",
+    "duplicateDiagnosis": "A case already exists for this diagnosis.",
+    "invalidLaboratory": "Select a valid laboratory result from this encounter.",
+    "laboratoryRequired": "Select the laboratory result supporting this classification.",
+    "laboratoryConflict": "The classification does not match the laboratory result."
   }
 }

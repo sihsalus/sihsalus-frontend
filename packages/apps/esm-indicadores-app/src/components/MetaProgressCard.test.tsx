@@ -5,10 +5,11 @@ describe('MetaProgressCard', () => {
   it('renders the meta, current value and progress percentage', () => {
     render(<MetaProgressCard meta={1000} currentValue={750} />);
 
-    expect(screen.getByText('Meta')).toBeInTheDocument();
+    expect(screen.getByText('Meta anual')).toBeInTheDocument();
     expect(screen.getByText('1000')).toBeInTheDocument();
-    expect(screen.getByText('Valor actual')).toBeInTheDocument();
+    expect(screen.getByText('Avance anual acumulado')).toBeInTheDocument();
     expect(screen.getByText('750')).toBeInTheDocument();
+    expect(screen.getByText('Progreso anual')).toBeInTheDocument();
     expect(screen.getByText('75%')).toBeInTheDocument();
   });
 
@@ -30,5 +31,11 @@ describe('MetaProgressCard', () => {
     const { container } = render(<MetaProgressCard meta={null} currentValue={100} />);
 
     expect(container.firstChild).toBeNull();
+  });
+
+  it('treats a negative current value as 0% instead of rendering a negative percentage', () => {
+    render(<MetaProgressCard meta={100} currentValue={-25} />);
+
+    expect(screen.getByText('0%')).toBeInTheDocument();
   });
 });

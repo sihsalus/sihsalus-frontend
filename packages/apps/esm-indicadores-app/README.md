@@ -24,6 +24,11 @@ yarn --cwd packages/apps/esm-indicadores-app start
 ## Límites funcionales
 
 - Construye vistas de indicadores, métricas y resúmenes analíticos.
+- La pestaña **Panel** resume el cumplimiento anual de los indicadores activos con
+  una tarjeta por indicador (acumulado del año frente a la meta anual, porcentaje y
+  una banda de color de umbrales fijos: rojo por debajo de 20%, amarillo hasta 60%
+  y verde desde 60%). Reutiliza el endpoint de series por indicador; no requiere un
+  endpoint agregado.
 - Consume datos agregados para monitoreo y toma de decisiones.
 - No captura ni modifica registros clínicos fuente de OpenMRS.
 - Crea y versiona definiciones, configura metas y solicita cálculos persistidos en la base de indicadores mediante el backend autorizado.
@@ -37,9 +42,7 @@ yarn --cwd packages/apps/esm-indicadores-app start
 ## Backend e integración
 
 - El módulo valida `reportesSqlApiPath` (`/services/reportes-sql` por defecto) y opera en modo **fail-closed**.
-- Los datos demo solo se habilitan explícitamente con `enableDemoData: true` y se limitan a consultas que fallen por red o HTTP 5xx.
-- Las respuestas HTTP 4xx nunca usan datos demo. Las escrituras siempre se ejecutan contra `reportes-sql` y nunca tienen fallback mock.
-- En producción, `enableDemoData` debe permanecer en `false`.
+- Los errores del backend se propagan a la UI con mensajes estables; no hay datos de ejemplo ni fallback local.
 - Mantener el botón del módulo en el menú (`app-menu-item-slot`) para acceso sin depender del backend.
 
 Estado histórico QLTY 2026-07-04:
@@ -47,7 +50,7 @@ Estado histórico QLTY 2026-07-04:
 - La configuración versionada usaba `http://127.0.0.1:8000`, una URL que apuntaba al localhost del navegador y no al host QLTY.
 - Ese override fue retirado; la aplicación usa ahora `/services/reportes-sql` por defecto.
 - La ruta publica `/services/reportes-sql/health` responde `404` y `/openmrs/services/reportes-sql/health` responde `502`.
-- QLTY requiere una ruta `reportesSqlApiPath` operativa. Una ruta no disponible se muestra como error y no habilita el modo demo automáticamente.
+- QLTY requiere una ruta `reportesSqlApiPath` operativa. Una ruta no disponible se muestra como error.
 
 ## Backend Express / TypeScript
 
@@ -70,8 +73,10 @@ institucional configurado en `OPENMRS_REQUIRED_PRIVILEGE`. Este cambio no crea
 roles ni asigna permisos. Una sesión vencida se rechaza para liberar el estado
 de carga, sin sustituir la respuesta por datos de demostración.
 
-Las páginas de indicadores, resultados y metas tienen rutas propias; detalle,
-creación y edición admiten enlaces directos. Las traducciones de formulario,
+Las páginas de panel, indicadores, resultados y metas tienen rutas propias; detalle,
+creación y edición admiten enlaces directos. El módulo expone navegación propia en el
+slot `indicadores-nav-slot` (Panel, Indicadores, Resultados y Metas), además del botón
+del menú principal (`app-menu-item-slot`). Las traducciones de formulario,
 errores y estados vacíos están en español e inglés. Las listas auxiliares
 recorren páginas y rechazan respuestas incompletas en lugar de mostrarlas como
 un catálogo completo. Las series agregadas consumen `versiones: number[]`, como

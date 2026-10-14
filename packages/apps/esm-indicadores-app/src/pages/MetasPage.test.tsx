@@ -25,12 +25,12 @@ vi.mock('../components/MetaFormModal', () => ({
     onSubmit,
   }: {
     initialMeta?: IndicadorMeta | null;
-    onSubmit: (payload: IndicadorMetaCreatePayload, indicatorId: string) => Promise<void>;
+    onSubmit: (payload: IndicadorMetaCreatePayload, indicatorId: number) => Promise<void>;
   }) => (
     <div role="dialog" aria-label={initialMeta ? 'Editar meta' : 'Nueva meta'}>
       <button
         type="button"
-        onClick={() => onSubmit({ indicador_version_id: 'version-a', anio: 2026, valor_meta: 1500 }, 'indicator-a')}
+        onClick={() => onSubmit({ indicador_version_id: 11, anio: 2026, valor_meta: 1500 }, 1)}
       >
         Guardar meta de prueba
       </button>
@@ -44,8 +44,8 @@ const mockUseUpsertMeta = vi.mocked(useUpsertMeta);
 const mockUseDeleteMeta = vi.mocked(useDeleteMeta);
 
 const sampleMeta: IndicadorMeta = {
-  id: 'meta-a',
-  indicador_version_id: 'version-a',
+  id: 1,
+  indicador_version_id: 11,
   anio: 2026,
   valor_meta: 1500,
   creado_en: '2026-01-01',
@@ -74,7 +74,7 @@ describe('MetasPage', () => {
     mockUseAllIndicadores.mockReturnValue({
       data: [
         {
-          id: 'indicator-a',
+          id: 1,
           nombre: 'Control prenatal',
           descripcion: null,
           activo: true,
@@ -118,14 +118,14 @@ describe('MetasPage', () => {
     renderPage();
 
     expect(screen.getByText(/Seleccione un indicador y un año/i)).toBeInTheDocument();
-    expect(mockUseMetaByIndicator).toHaveBeenCalledWith('', null);
+    expect(mockUseMetaByIndicator).toHaveBeenCalledWith(null, null);
   });
 
   it('renders the meta returned for the selected indicator and year', async () => {
     const { container } = renderPage();
     await selectIndicator(container);
 
-    expect(mockUseMetaByIndicator).toHaveBeenLastCalledWith('indicator-a', 2026);
+    expect(mockUseMetaByIndicator).toHaveBeenLastCalledWith(1, 2026);
     expect(screen.getByText('1500')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
@@ -175,7 +175,7 @@ describe('MetasPage', () => {
     });
     const upsertMeta = vi.fn(async (payload: IndicadorMetaCreatePayload) => {
       await pendingUpsert;
-      return { id: 'meta-a', ...payload, creado_en: '2026-01-01' };
+      return { id: 1, ...payload, creado_en: '2026-01-01' };
     });
     mockUseUpsertMeta.mockReturnValue({ upsertMeta });
     renderPage();
@@ -215,7 +215,7 @@ describe('MetasPage', () => {
     const confirmButtons = screen.getAllByRole('button', { name: /Eliminar$/ });
     await act(async () => fireEvent.click(confirmButtons[confirmButtons.length - 1]));
 
-    expect(deleteMeta).toHaveBeenCalledWith('version-a', 2026);
+    expect(deleteMeta).toHaveBeenCalledWith(11, 2026);
     expect(notifySuccess).toHaveBeenCalledWith('Meta eliminada');
   });
 

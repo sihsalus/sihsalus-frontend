@@ -32,17 +32,14 @@ const createPayload = {
 describe('indicadores API contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: false,
-    });
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql' });
   });
 
   it('uses the paginated metadata-only list contract', async () => {
     const response = {
       items: [
         {
-          id: 'indicator-a',
+          id: 1,
           nombre: 'Indicador A',
           descripcion: null,
           activo: true,
@@ -63,7 +60,7 @@ describe('indicadores API contract', () => {
   });
 
   it('sends the canonical order payload on create', async () => {
-    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'indicator-a', ...createPayload, activo: true } } as never);
+    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 1, ...createPayload, activo: true } } as never);
 
     await createIndicador(createPayload);
 
@@ -76,14 +73,22 @@ describe('indicadores API contract', () => {
     ).toEqual([{ concepto_uuid: 'order-a' }, { concepto_uuid: 'order-b' }]);
   });
 
+  it('rejects a create payload without the id the UI navigates with', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({ data: { nombre: 'sin id' } } as never);
+
+    await expect(createIndicador(createPayload)).rejects.toThrow(
+      /reportes-sql devolvió una respuesta inesperada para indicadores\./,
+    );
+  });
+
   it('updates only supported metadata fields', async () => {
     const payload = { nombre: 'Actualizado', descripcion: 'Descripción' };
-    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'indicator-a', ...payload } } as never);
+    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 1, ...payload } } as never);
 
-    await updateIndicador('indicator-a', payload);
+    await updateIndicador(1, payload);
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
-      '/services/reportes-sql/indicadores/indicator-a',
+      '/services/reportes-sql/indicadores/1',
       expect.objectContaining({ method: 'PUT', body: payload }),
     );
     expect(mockedOpenmrsFetch.mock.calls[0][1]?.body).not.toHaveProperty('activo');
@@ -92,33 +97,33 @@ describe('indicadores API contract', () => {
   it('uses the real DELETE endpoint to deactivate an indicator', async () => {
     mockedOpenmrsFetch.mockResolvedValue({ data: undefined } as never);
 
-    await deleteIndicador('indicator-a');
+    await deleteIndicador(1);
 
-    expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/indicator-a', {
+    expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/1', {
       method: 'DELETE',
       rejectOnAuthFailure: true,
     });
   });
 
   it('uses the real POST endpoint to create an immutable version', async () => {
-    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 'version-b' } } as never);
+    mockedOpenmrsFetch.mockResolvedValue({ data: { id: 5 } } as never);
 
-    await createVersion('indicator-a', definicion);
+    await createVersion(1, definicion);
 
     expect(mockedOpenmrsFetch).toHaveBeenCalledWith(
-      '/services/reportes-sql/indicadores/indicator-a/versiones',
+      '/services/reportes-sql/indicadores/1/versiones',
       expect.objectContaining({ method: 'POST', body: { definicion } }),
     );
   });
 
   const mutations = [
     ['create', () => createIndicador(createPayload)],
-    ['update', () => updateIndicador('indicator-a', { nombre: 'A', descripcion: null })],
-    ['delete', () => deleteIndicador('indicator-a')],
-    ['createVersion', () => createVersion('indicator-a', definicion)],
+    ['update', () => updateIndicador(1, { nombre: 'A', descripcion: null })],
+    ['delete', () => deleteIndicador(1)],
+    ['createVersion', () => createVersion(1, definicion)],
   ] as const;
 
-  it.each(mutations)('%s rejects 422, 500 and network failures without a mock result', async (_name, invoke) => {
+  it.each(mutations)('%s rejects 422, 500 and network failures', async (_name, invoke) => {
     for (const error of [
       Object.assign(new Error('validation details'), { response: { status: 422 } }),
       Object.assign(new Error('database details'), { response: { status: 500 } }),
@@ -131,15 +136,15 @@ describe('indicadores API contract', () => {
 
   describe('getIndicador detail shape validation', () => {
     const validDetail = {
-      id: 'indicator-a',
+      id: 1,
       nombre: 'Indicador A',
       descripcion: 'desc',
       activo: true,
       creado_en: '2026-01-01',
       versiones: [
         {
-          id: 'ver-a',
-          indicador_id: 'indicator-a',
+          id: 11,
+          indicador_id: 1,
           version: 1,
           creado_en: '2026-01-01',
           definicion: { tipo: 'conteo_atenciones' },
@@ -150,8 +155,8 @@ describe('indicadores API contract', () => {
     it('resolves when the detail envelope conforms to the contract', async () => {
       mockedOpenmrsFetch.mockResolvedValue({ data: validDetail } as never);
 
-      await expect(getIndicador('indicator-a')).resolves.toEqual(validDetail);
-      expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/indicator-a', {
+      await expect(getIndicador(1)).resolves.toEqual(validDetail);
+      expect(mockedOpenmrsFetch).toHaveBeenCalledWith('/services/reportes-sql/indicadores/1', {
         rejectOnAuthFailure: true,
       });
     });
@@ -160,15 +165,15 @@ describe('indicadores API contract', () => {
       const withNull = { ...validDetail, descripcion: null };
       mockedOpenmrsFetch.mockResolvedValue({ data: withNull } as never);
 
-      await expect(getIndicador('indicator-a')).resolves.toEqual(withNull);
+      await expect(getIndicador(1)).resolves.toEqual(withNull);
     });
 
     it('throws a contract error when the detail envelope is malformed (activo missing)', async () => {
       const { activo: _activo, ...malformed } = validDetail;
       mockedOpenmrsFetch.mockResolvedValue({ data: malformed } as never);
 
-      await expect(getIndicador('indicator-a')).rejects.toThrow(
-        /reportes-sql devolvió una respuesta inesperada para indicadores\/indicator-a\./,
+      await expect(getIndicador(1)).rejects.toThrow(
+        /reportes-sql devolvió una respuesta inesperada para indicadores\/1\./,
       );
     });
 
@@ -179,8 +184,8 @@ describe('indicadores API contract', () => {
       };
       mockedOpenmrsFetch.mockResolvedValue({ data: malformed } as never);
 
-      await expect(getIndicador('indicator-a')).rejects.toThrow(
-        /reportes-sql devolvió una respuesta inesperada para indicadores\/indicator-a\./,
+      await expect(getIndicador(1)).rejects.toThrow(
+        /reportes-sql devolvió una respuesta inesperada para indicadores\/1\./,
       );
     });
 
@@ -188,7 +193,7 @@ describe('indicadores API contract', () => {
       const malformed = { ...validDetail, versiones: { oops: true } };
       mockedOpenmrsFetch.mockResolvedValue({ data: malformed } as never);
 
-      await expect(getIndicador('indicator-a')).rejects.toThrow(/indicadores\/indicator-a/);
+      await expect(getIndicador(1)).rejects.toThrow(/indicadores\/1/);
     });
   });
 });
@@ -196,10 +201,7 @@ describe('indicadores API contract', () => {
 describe('resolveOrdenes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: false,
-    });
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql' });
   });
 
   it('returns an empty record without calling the backend for empty input', async () => {
@@ -214,33 +216,24 @@ describe('resolveOrdenes', () => {
     await expect(resolveOrdenes(['order-a', 'order-b'])).resolves.toEqual(data);
   });
 
-  it('fails closed on network errors when demo data is disabled', async () => {
+  it('rejects a resolution map with non-string values', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({ data: { 'order-a': 3 } } as never);
+
+    await expect(resolveOrdenes(['order-a'])).rejects.toThrow(/conceptos\/buscar\/resolve/);
+  });
+
+  it('propagates network errors to the caller', async () => {
     const error = new TypeError('Failed to fetch');
     mockedOpenmrsFetch.mockRejectedValue(error);
 
     await expect(resolveOrdenes(['order-a'])).rejects.toBe(error);
-  });
-
-  it('uses examples on network errors only when demo data is explicitly enabled', async () => {
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: true,
-    });
-    mockedOpenmrsFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-
-    await expect(resolveOrdenes(['ord-hemograma', 'unknown'])).resolves.toEqual({
-      'ord-hemograma': 'Hemograma',
-    });
   });
 });
 
 describe('getEncounterTypes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: false,
-    });
+    mockedGetConfig.mockResolvedValue({ reportesSqlApiPath: '/services/reportes-sql' });
   });
 
   it('fetches the full encounter-type list without a query param', async () => {
@@ -256,23 +249,16 @@ describe('getEncounterTypes', () => {
     });
   });
 
-  it('fails closed on network errors when demo data is disabled', async () => {
+  it('rejects an encounter-type list whose items lack a uuid', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({ data: [{ display: 'sin uuid' }] } as never);
+
+    await expect(getEncounterTypes()).rejects.toThrow(/conceptos\/encounter-types/);
+  });
+
+  it('propagates network errors to the caller', async () => {
     const error = new TypeError('Failed to fetch');
     mockedOpenmrsFetch.mockRejectedValue(error);
 
     await expect(getEncounterTypes()).rejects.toBe(error);
-  });
-
-  it('returns the full example list on network errors only when demo data is enabled', async () => {
-    mockedGetConfig.mockResolvedValue({
-      reportesSqlApiPath: '/services/reportes-sql',
-      enableDemoData: true,
-    });
-    mockedOpenmrsFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-
-    const result = await getEncounterTypes();
-
-    expect(result.length).toBeGreaterThan(0);
-    expect(result.every((item) => typeof item.uuid === 'string' && typeof item.display === 'string')).toBe(true);
   });
 });

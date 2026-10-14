@@ -49,8 +49,8 @@ function expectInvalidatesMetaKeys(matcher: KeyMatcher | null) {
 }
 
 const sampleMeta = {
-  id: 'meta-a',
-  indicador_version_id: 'version-a',
+  id: 1,
+  indicador_version_id: 11,
   anio: 2026,
   valor_meta: 1000,
   creado_en: '2026-01-01',
@@ -63,11 +63,11 @@ describe('useMetaByIndicator', () => {
 
   it('loads the selected indicator and year only', async () => {
     mockedGetMetaByIndicator.mockResolvedValue(sampleMeta);
-    const { result } = renderHook(() => useMetaByIndicator('indicator-a', 2026), { wrapper: swrWrapper });
+    const { result } = renderHook(() => useMetaByIndicator(1, 2026), { wrapper: swrWrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockedGetMetaByIndicator).toHaveBeenCalledWith('indicator-a', 2026);
+    expect(mockedGetMetaByIndicator).toHaveBeenCalledWith(1, 2026);
     expect(result.current.data).toEqual(sampleMeta);
   });
 
@@ -76,7 +76,7 @@ describe('useMetaByIndicator', () => {
       response: { status: 404 },
       responseBody: { detail: { field: 'indicador_version_id', message: 'Meta no encontrada' } },
     });
-    const { result } = renderHook(() => useMetaByIndicator('indicator-a', 2026), { wrapper: swrWrapper });
+    const { result } = renderHook(() => useMetaByIndicator(1, 2026), { wrapper: swrWrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -86,7 +86,7 @@ describe('useMetaByIndicator', () => {
 
   it('surfaces a generic 404 because it can mean that the service route is unavailable', async () => {
     mockedGetMetaByIndicator.mockRejectedValue({ response: { status: 404 } });
-    const { result } = renderHook(() => useMetaByIndicator('indicator-a', 2026), { wrapper: swrWrapper });
+    const { result } = renderHook(() => useMetaByIndicator(1, 2026), { wrapper: swrWrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.data).toBeUndefined();
@@ -97,7 +97,7 @@ describe('useMetaByIndicator', () => {
       response: { status: 404 },
       responseBody: { detail: { field: 'indicador_id', message: 'No hay versiones activas' } },
     });
-    const { result } = renderHook(() => useMetaByIndicator('indicator-a', 2026), { wrapper: swrWrapper });
+    const { result } = renderHook(() => useMetaByIndicator(1, 2026), { wrapper: swrWrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.data).toBeUndefined();
@@ -105,14 +105,14 @@ describe('useMetaByIndicator', () => {
 
   it.each([422, 500])('surfaces HTTP %s instead of treating it as no meta', async (status) => {
     mockedGetMetaByIndicator.mockRejectedValue({ response: { status } });
-    const { result } = renderHook(() => useMetaByIndicator('indicator-a', 2026), { wrapper: swrWrapper });
+    const { result } = renderHook(() => useMetaByIndicator(1, 2026), { wrapper: swrWrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.data).toBeUndefined();
   });
 
   it('does not issue a lookup until both filters exist', () => {
-    renderHook(() => useMetaByIndicator('', null), { wrapper: swrWrapper });
+    renderHook(() => useMetaByIndicator(null, null), { wrapper: swrWrapper });
     expect(mockedGetMetaByIndicator).not.toHaveBeenCalled();
   });
 });
@@ -125,7 +125,7 @@ describe('meta mutations', () => {
     const capture = captureMatcher();
     const { result } = renderHook(() => useUpsertMeta());
     const payload: IndicadorMetaCreatePayload = {
-      indicador_version_id: 'version-a',
+      indicador_version_id: 11,
       anio: 2026,
       valor_meta: 1500,
     };
@@ -143,7 +143,7 @@ describe('meta mutations', () => {
     const { result } = renderHook(() => useUpsertMeta());
 
     await expect(
-      result.current.upsertMeta({ indicador_version_id: 'version-a', anio: 2026, valor_meta: 1500 }),
+      result.current.upsertMeta({ indicador_version_id: 11, anio: 2026, valor_meta: 1500 }),
     ).rejects.toBe(error);
     expect(capture.matcher).toBeNull();
   });
@@ -153,9 +153,9 @@ describe('meta mutations', () => {
     const capture = captureMatcher();
     const { result } = renderHook(() => useDeleteMeta());
 
-    await result.current.deleteMeta('version-a', 2026);
+    await result.current.deleteMeta(11, 2026);
 
-    expect(mockedDeleteMeta).toHaveBeenCalledWith('version-a', 2026);
+    expect(mockedDeleteMeta).toHaveBeenCalledWith(11, 2026);
     expectInvalidatesMetaKeys(capture.matcher);
   });
 
@@ -165,7 +165,7 @@ describe('meta mutations', () => {
     const capture = captureMatcher();
     const { result } = renderHook(() => useDeleteMeta());
 
-    await expect(result.current.deleteMeta('version-a', 2026)).rejects.toBe(error);
+    await expect(result.current.deleteMeta(11, 2026)).rejects.toBe(error);
     expect(capture.matcher).toBeNull();
   });
 });

@@ -3,10 +3,10 @@ import { formatDate, getUserFacingErrorMessage, parseDate } from '@openmrs/esm-f
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { parseEntityId } from '../api/ids';
 import type { DefinicionIndicadorForm } from '../api/types';
 import DefinicionView from '../components/DefinicionView';
 import IndicadorForm from '../components/IndicadorForm';
-import SQLPreviewSection from '../components/SQLPreviewSection';
 import { getIndicadorSaveErrorMessage, indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import {
   notifyError,
@@ -26,14 +26,15 @@ const formatVersionDate = (iso: string) => formatDate(parseDate(iso));
 
 const IndicadorDetailPage: React.FC = () => {
   const { t } = useTranslation();
-  const { id = '' } = useParams();
+  const { id } = useParams();
+  const indicadorId = parseEntityId(id);
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showVersionForm, setShowVersionForm] = useState(false);
   const [isSubmittingVersion, setSubmittingVersion] = useState(false);
   const submittingVersionRef = useRef(false);
-  const { data, isLoading, error } = useIndicador(id);
-  const { createVersion } = useCreateVersion(id);
+  const { data, isLoading, error } = useIndicador(indicadorId);
+  const { createVersion } = useCreateVersion(indicadorId);
 
   const latestVersion = useMemo(() => {
     // `Array.prototype.reduce` with no initial value throws `TypeError` on an
@@ -59,12 +60,11 @@ const IndicadorDetailPage: React.FC = () => {
     [latestVersion],
   );
 
-  const { data: ordenesData, isLoading: ordenesLoading } = useResolvedOrdenes(ordenUuids);
-
   // Resolve names for EVERY version definition once, at page level, instead
   // of letting each DefinicionView fire its own resolve requests (N×3
   // fetches for N versions). SWR dedupes only identical keys, so distinct
-  // uuid subsets still produce distinct network calls.
+  // uuid subsets still produce distinct network calls — hence a single
+  // page-wide `useResolvedOrdenes(allOrdenUuids)` instead of one per subset.
   const allLocationUuids = useMemo(
     () => Array.from(new Set(data?.versiones.flatMap((v) => v.definicion.evento?.location_uuids ?? []) ?? [])),
     [data],
@@ -113,7 +113,6 @@ const IndicadorDetailPage: React.FC = () => {
     [locationNames, diagnosticoNames, ordenNames, encounterTypeNames],
   );
 
-  const ordenesReady = ordenUuids.length === 0 || (!ordenesLoading && Boolean(ordenesData));
   const formNamesReady =
     (latestLocationUuids.length === 0 || !locationNamesLoading) &&
     (latestDiagnosticoUuids.length === 0 || !diagnosticoNamesLoading) &&
@@ -157,11 +156,11 @@ const IndicadorDetailPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <Link to="/" className={styles.backLink}>
+      <Link to="/indicadores" className={styles.backLink}>
         {t('backToIndicators', 'Volver a indicadores')}
       </Link>
 
-      {isLoading ? <p>{t('loadingIndicator', 'Cargando indicador...')}</p> : null}
+      {isLoading ? <InlineLoading description={t('loadingIndicator', 'Cargando indicador...')} /> : null}
       {error ? (
         <div className={styles.errorBanner}>
           {getUserFacingErrorMessage(
@@ -172,12 +171,16 @@ const IndicadorDetailPage: React.FC = () => {
         </div>
       ) : null}
 
+      {!isLoading && !error && !data ? (
+        <Tile className={styles.empty}>{t('indicatorNotFound', 'No se encontró el indicador.')}</Tile>
+      ) : null}
+
       {data ? (
         <div className={styles.detailLayout}>
           <Tile className={styles.detailCard}>
             <div className={styles.header}>
               <div>
-                <h2>{data.nombre}</h2>
+                <h1>{data.nombre}</h1>
                 <p className={styles.subtitle}>{data.descripcion ?? t('noDescription', 'Sin descripción')}</p>
               </div>
               <Tag type={data.activo ? 'green' : 'gray'}>
@@ -197,7 +200,7 @@ const IndicadorDetailPage: React.FC = () => {
           {showVersionForm ? (
             <Tile className={styles.section}>
               <h3 className={styles.sectionTitle}>{t('createNewVersion', 'Crear nueva versión')}</h3>
-              {ordenesReady && formNamesReady ? (
+              {formNamesReady ? (
                 <IndicadorForm
                   mode="version"
                   defaultValues={latestVersion ? parseDefinicion(latestVersion.definicion, formNames) : undefined}
@@ -209,8 +212,8 @@ const IndicadorDetailPage: React.FC = () => {
               ) : (
                 <InlineLoading
                   description={t(
-                    ordenesReady ? 'loadingNames' : 'loadingOrders',
-                    ordenesReady ? 'Cargando nombres clínicos...' : 'Cargando órdenes...',
+                    ordenUuids.length ? 'loadingOrders' : 'loadingNames',
+                    ordenUuids.length ? 'Cargando órdenes...' : 'Cargando nombres clínicos...',
                   )}
                 />
               )}
@@ -231,13 +234,12 @@ const IndicadorDetailPage: React.FC = () => {
                     </span>
                   </div>
                   <DefinicionView definicion={latestVersion.definicion} resolved={resolved} />
-                  <SQLPreviewSection
-                    indicadorId={data.id}
-                    versionId={latestVersion.id}
-                    versionNum={latestVersion.version}
-                  />
                 </Tile>
-              ) : null}
+              ) : (
+                <Tile className={styles.empty}>
+                  {t('noVersionsYet', 'Este indicador aún no tiene versiones.')}
+                </Tile>
+              )}
             </div>
 
             <aside className={styles.detailAside}>
@@ -247,7 +249,9 @@ const IndicadorDetailPage: React.FC = () => {
                   <li key={version.id} className={styles.historyItem}>
                     <details className={styles.historyDetails}>
                       <summary className={styles.historySummary}>
-                        <span className={styles.historyItemTitle}>Versión #{version.version}</span>
+                        <span className={styles.historyItemTitle}>
+                          {t('versionNumber', 'Versión #{{num}}', { num: version.version })}
+                        </span>
                         <span className={styles.historyItemDate}>
                           <time dateTime={version.creado_en}>{formatVersionDate(version.creado_en)}</time>
                         </span>

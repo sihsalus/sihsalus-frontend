@@ -18,6 +18,7 @@ describe('indicatorsErrorMessageOptions', () => {
       indicatorsError404: 'The requested record no longer exists.',
       indicatorsError409: 'The record was modified.',
       indicatorsError422: 'The submitted data is not valid for the indicator.',
+      indicatorsError429: 'Too many requests. Wait a few minutes and try again.',
       indicatorsError500: 'The indicators service encountered an error.',
       indicatorsError502: 'The indicators service is unavailable.',
       indicatorsError503: 'The indicators service is unavailable.',
@@ -34,6 +35,7 @@ describe('indicatorsErrorMessageOptions', () => {
       404: englishMessages.indicatorsError404,
       409: englishMessages.indicatorsError409,
       422: englishMessages.indicatorsError422,
+      429: englishMessages.indicatorsError429,
       500: englishMessages.indicatorsError500,
       502: englishMessages.indicatorsError502,
       503: englishMessages.indicatorsError503,
@@ -86,6 +88,19 @@ describe('getIndicadorSaveErrorMessage', () => {
     const message = getIndicadorSaveErrorMessage(error, t, 'fallback');
 
     expect(message).toBe('fallback');
+  });
+
+  it('ignores non-string unknown_uuids instead of rendering them', () => {
+    const error = Object.assign(new Error('validation'), {
+      responseBody: {
+        detail: { field: 'encounter_type_uuids', unknown_uuids: [123, null] },
+      },
+    });
+
+    const message = getIndicadorSaveErrorMessage(error, t, 'fallback');
+
+    expect(message).toBe('fallback');
+    expect(mockedGetUserFacingErrorMessage).toHaveBeenCalledTimes(1);
   });
 
   it('delegates to getUserFacingErrorMessage for 502 gateway failures', () => {

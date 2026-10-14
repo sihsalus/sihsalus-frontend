@@ -2,7 +2,6 @@ import {
   Button,
   InlineLoading,
   Modal,
-  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { Indicador } from '../api/types';
+import AppPagination from '../components/AppPagination';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
@@ -27,11 +28,12 @@ const IndicadoresPage: React.FC = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [deactivationTarget, setDeactivationTarget] = useState<Indicador | null>(null);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
-  const deletingIdsRef = useRef(new Set<string>());
-  const pageSize = 10;
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(() => new Set());
+  const deletingIdsRef = useRef(new Set<number>());
+  const [pageSize, setPageSize] = useState(10);
   const { data, isLoading, error } = useIndicadores(page, pageSize);
   const { deleteIndicador } = useDeleteIndicador();
+  const isDeletingTarget = deactivationTarget !== null && deletingIds.has(deactivationTarget.id);
 
   const handleDelete = async () => {
     const target = deactivationTarget;
@@ -62,12 +64,13 @@ const IndicadoresPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h2>{t('indicators', 'Indicadores')}</h2>
-          <p className={styles.subtitle}>
-            {t('indicatorsPageSubtitle', 'Listado principal del módulo, con acceso a detalle, edición y versionado.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('indicators', 'Indicadores')}
+          subtitle={t(
+            'indicatorsPageSubtitle',
+            'Listado principal del módulo, con acceso a detalle, edición y versionado.',
+          )}
+        />
         <div className={styles.headerActions}>
           <Button onClick={() => navigate('/new')}>{t('newIndicator', 'Nuevo indicador')}</Button>
         </div>
@@ -140,12 +143,15 @@ const IndicadoresPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <Pagination
-              page={data.page}
-              pageSize={data.size}
-              pageSizes={[10]}
+            <AppPagination
+              page={page}
+              pageSize={pageSize}
+              pageSizes={[10, 20, 50]}
               totalItems={data.total}
-              onChange={({ page }: { page: number }) => setPage(page)}
+              onChange={({ page, pageSize }: { page: number; pageSize: number }) => {
+                setPage(page);
+                setPageSize(pageSize);
+              }}
               size="sm"
             />
           </>
@@ -158,16 +164,16 @@ const IndicadoresPage: React.FC = () => {
         open={Boolean(deactivationTarget)}
         modalHeading={t('deactivateIndicator', 'Desactivar indicador')}
         primaryButtonText={
-          deletingIds.has(deactivationTarget?.id ?? '') ? (
+          isDeletingTarget ? (
             <InlineLoading description={t('deactivating', 'Desactivando...')} />
           ) : (
             t('deactivate', 'Desactivar')
           )
         }
-        primaryButtonDisabled={deletingIds.has(deactivationTarget?.id ?? '')}
+        primaryButtonDisabled={isDeletingTarget}
         secondaryButtonText={t('cancel', 'Cancelar')}
         onRequestClose={() => {
-          if (!deletingIds.has(deactivationTarget?.id ?? '')) {
+          if (!isDeletingTarget) {
             setDeactivationTarget(null);
           }
         }}
@@ -177,7 +183,7 @@ const IndicadoresPage: React.FC = () => {
         <p>
           {t(
             'deactivateIndicatorConfirmation',
-            'The indicator "{{name}}" will be deactivated and will no longer be included in active calculations. Do you want to continue?',
+            'El indicador "{{name}}" quedará desactivado y ya no se incluirá en los cálculos activos. ¿Desea continuar?',
             { name: deactivationTarget?.nombre ?? '' },
           )}
         </p>

@@ -3,22 +3,23 @@ import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { parseEntityId } from '../api/ids';
 import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload, IndicadorVersion } from '../api/types';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { useAllIndicadores, useIndicador } from '../features/indicadores/hooks';
+import { MAX_META_YEAR, MIN_INDICATOR_YEAR } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
 
 interface MetaFormModalProps {
   isOpen: boolean;
   initialMeta?: IndicadorMeta | null;
-  initialIndicatorId?: string;
+  initialIndicatorId?: number;
   isSubmitting?: boolean;
   onClose: () => void;
-  onSubmit: (payload: IndicadorMetaCreatePayload, indicatorId: string) => Promise<void>;
+  onSubmit: (payload: IndicadorMetaCreatePayload, indicatorId: number) => Promise<void>;
 }
 
-const MIN_YEAR = 2000;
-const MAX_YEAR = 2100;
+const MAX_META_VALUE = 1_000_000_000;
 
 const MetaFormModal: React.FC<MetaFormModalProps> = ({
   isOpen,
@@ -37,7 +38,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
   );
 
   const [selectedIndicator, setSelectedIndicator] = useState<Indicador | null>(initialIndicator ?? null);
-  const [selectedVersionId, setSelectedVersionId] = useState<string>(initialMeta?.indicador_version_id ?? '');
+  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(initialMeta?.indicador_version_id ?? null);
   const [anio, setAnio] = useState<number | ''>(initialMeta?.anio ?? '');
   const [valorMeta, setValorMeta] = useState<number | ''>(initialMeta?.valor_meta ?? '');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
@@ -48,7 +49,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
     data: selectedIndicatorDetail,
     isLoading: versionsLoading,
     error: versionsError,
-  } = useIndicador(selectedIndicator?.id ?? '');
+  } = useIndicador(selectedIndicator?.id ?? null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -64,7 +65,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
     initializationKeyRef.current = initializationKey;
     initialIndicatorHydrationKeyRef.current = initialIndicatorId ? null : initializationKey;
     setSelectedIndicator(null);
-    setSelectedVersionId(initialMeta?.indicador_version_id ?? '');
+    setSelectedVersionId(initialMeta?.indicador_version_id ?? null);
     setAnio(initialMeta?.anio ?? '');
     setValorMeta(initialMeta?.valor_meta ?? '');
     setValidationMessage(null);
@@ -107,30 +108,33 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
 
   useEffect(() => {
     if (!selectedIndicator) {
-      setSelectedVersionId('');
+      setSelectedVersionId(null);
       return;
     }
     if (!selectedIndicatorDetail) {
       return;
     }
-    setSelectedVersionId(initialMeta?.indicador_version_id ?? latestVersion?.id ?? '');
+    setSelectedVersionId(initialMeta?.indicador_version_id ?? latestVersion?.id ?? null);
   }, [initialMeta?.indicador_version_id, latestVersion, selectedIndicator, selectedIndicatorDetail]);
 
   const validate = (): string | null => {
     if (!selectedIndicator) {
       return t('metaValidationIndicator', 'Seleccione un indicador.');
     }
-    if (!selectedVersionId) {
+    if (selectedVersionId === null) {
       return t('metaValidationVersion', 'Seleccione una versión.');
     }
-    if (anio === '' || !Number.isInteger(anio) || anio < MIN_YEAR || anio > MAX_YEAR) {
+    if (anio === '' || !Number.isInteger(anio) || anio < MIN_INDICATOR_YEAR || anio > MAX_META_YEAR) {
       return t('metaValidationYear', 'El año debe estar entre {{minYear}} y {{maxYear}}.', {
-        minYear: MIN_YEAR,
-        maxYear: MAX_YEAR,
+        minYear: MIN_INDICATOR_YEAR,
+        maxYear: MAX_META_YEAR,
       });
     }
     if (valorMeta === '' || !Number.isFinite(valorMeta) || Number(valorMeta) < 0) {
       return t('metaValidationValue', 'La meta no puede ser negativa.');
+    }
+    if (Number(valorMeta) > MAX_META_VALUE) {
+      return t('metaValidationValueMax', 'La meta no puede ser mayor a {{max}}.', { max: MAX_META_VALUE });
     }
     return null;
   };
@@ -204,7 +208,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
           selectedItem={selectedIndicator}
           onChange={(data: { selectedItem: Indicador | null | undefined }) => {
             setSelectedIndicator(data.selectedItem ?? null);
-            setSelectedVersionId('');
+            setSelectedVersionId(null);
           }}
           placeholder={t('selectIndicator', 'Seleccione un indicador')}
           disabled={Boolean(initialMeta) || isSubmitting}
@@ -227,21 +231,21 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
         <Select
           id="meta-version"
           labelText={initialMeta ? t('metaVersion', 'Versión de la meta') : t('currentVersion', 'Versión vigente')}
-          value={selectedVersionId}
-          onChange={(event) => setSelectedVersionId(event.target.value)}
+          value={selectedVersionId !== null ? String(selectedVersionId) : ''}
+          onChange={(event) => setSelectedVersionId(parseEntityId(event.target.value))}
           disabled
         >
           <SelectItem value="" text={t('selectVersion', 'Seleccione una versión')} />
           {versionOptions.map((version) => (
-            <SelectItem key={version.id} value={version.id} text={String(version.version)} />
+            <SelectItem key={version.id} value={String(version.id)} text={String(version.version)} />
           ))}
         </Select>
 
         <NumberInput
           id="meta-anio"
           label={t('year', 'Año')}
-          min={MIN_YEAR}
-          max={MAX_YEAR}
+          min={MIN_INDICATOR_YEAR}
+          max={MAX_META_YEAR}
           value={anio}
           onChange={(_event, { value }) => {
             setAnio(typeof value === 'number' ? value : value === '' ? '' : Number(value));

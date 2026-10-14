@@ -1,18 +1,6 @@
-import {
-  getIndicadorById,
-  getSqlPreviewMock,
-  listIndicadores,
-  resolveDiagnosticosMock,
-  resolveLocationsMock,
-  resolveOrdenesMock,
-  searchDiagnosticosMock,
-  searchEncounterTypesMock,
-  searchLocationsMock,
-  searchOrdenesMock,
-} from '../mocks/indicators-data';
-import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
-import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
-import { assertShape, isIndicadorDetail, isPaginatedResponse, isSQLPreview } from './validate';
+import { fetchJson, mutateJson, toJsonBody } from './client';
+import { getReportesSqlResourcePath } from './config';
+import { assertShape, isIdentifiedResource, isIndicadorDetail, isOptionList, isPaginatedResponse, isStringRecord } from './validate';
 import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
@@ -20,7 +8,6 @@ import type {
   Indicador,
   IndicadorCreatePayload,
   IndicadorDetail,
-  IndicadorSQLPreview,
   IndicadorUpdatePayload,
   IndicadorVersion,
   LocationOption,
@@ -58,91 +45,62 @@ function mapConceptToOrden(concept: OpenmrsConcept): OrdenOption {
 export async function getIndicadores(page: number, size: number): Promise<PaginatedResponse<Indicador>> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   const url = ensureQuery(`${indicadoresPath}/`, { page, size });
-  return withMockFallback(
-    () =>
-      fetchJson<PaginatedResponse<Indicador>>(url).then((data) =>
-        assertShape(data, isPaginatedResponse, 'indicadores'),
-      ),
-    () => listIndicadores(page, size),
-  );
+  const data = await fetchJson<PaginatedResponse<Indicador>>(url);
+  return assertShape(data, isPaginatedResponse, 'indicadores');
 }
 
-export async function getIndicador(id: string): Promise<IndicadorDetail> {
+export async function getIndicador(id: number): Promise<IndicadorDetail> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return withMockFallback(
-    () =>
-      fetchJson<IndicadorDetail>(`${indicadoresPath}/${id}`).then((data) =>
-        assertShape(data, isIndicadorDetail, `indicadores/${id}`),
-      ),
-    () => getIndicadorById(id),
-  );
+  const data = await fetchJson<IndicadorDetail>(`${indicadoresPath}/${id}`);
+  return assertShape(data, isIndicadorDetail, `indicadores/${id}`);
 }
 
 export async function createIndicador(payload: IndicadorCreatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return mutateJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) });
+  const data = await mutateJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) });
+  return assertShape(data, isIdentifiedResource, 'indicadores');
 }
 
-export async function updateIndicador(id: string, payload: IndicadorUpdatePayload): Promise<Indicador> {
+export async function updateIndicador(id: number, payload: IndicadorUpdatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return mutateJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) });
+  const data = await mutateJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) });
+  return assertShape(data, isIdentifiedResource, `indicadores/${id}`);
 }
 
-export async function deleteIndicador(id: string): Promise<void> {
+export async function deleteIndicador(id: number): Promise<void> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   await mutateJson<void>(`${indicadoresPath}/${id}`, { method: 'DELETE' });
 }
 
-export async function createVersion(id: string, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
+export async function createVersion(id: number, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return mutateJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
+  const data = await mutateJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
     method: 'POST',
     ...toJsonBody({ definicion }),
   });
-}
-
-export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
-  const reportesSqlBase = await getReportesSqlApiPath();
-  return withMockFallback(
-    () =>
-      fetchJson<IndicadorSQLPreview>(
-        ensureQuery(`${reportesSqlBase}/indicadores/${id}/preview-sql`, { versionId }),
-      ).then((data) => assertShape(data, isSQLPreview, 'preview-sql')),
-    () => getSqlPreviewMock(id, versionId),
-  );
+  return assertShape(data, isIdentifiedResource, `indicadores/${id}/versiones`);
 }
 
 export async function searchLocations(query: string): Promise<Array<LocationOption>> {
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      return fetchJson<Array<LocationOption>>(ensureQuery(`${conceptosPath}/locations`, { q: query }));
-    },
-    () => searchLocationsMock(query),
-  );
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const data = await fetchJson<Array<LocationOption>>(ensureQuery(`${conceptosPath}/locations`, { q: query }));
+  return assertShape(data, isOptionList, 'conceptos/locations');
 }
 
 export async function searchDiagnosticos(query: string): Promise<Array<DiagnosticoOption>> {
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      return fetchJson<Array<DiagnosticoOption>>(ensureQuery(`${conceptosPath}/diagnosticos/buscar`, { q: query }));
-    },
-    () => searchDiagnosticosMock(query),
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const data = await fetchJson<Array<DiagnosticoOption>>(
+    ensureQuery(`${conceptosPath}/diagnosticos/buscar`, { q: query }),
   );
+  return assertShape(data, isOptionList, 'conceptos/diagnosticos/buscar');
 }
 
 export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> {
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      const response = await fetchJson<Array<OpenmrsConcept>>(
-        ensureQuery(`${conceptosPath}/buscar`, { q: query, clase: 'Test' }),
-      );
-      return response.map(mapConceptToOrden);
-    },
-    () => searchOrdenesMock(query),
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const response = await fetchJson<Array<OpenmrsConcept>>(
+    ensureQuery(`${conceptosPath}/buscar`, { q: query, clase: 'Test' }),
   );
+  return assertShape(response, isOptionList, 'conceptos/buscar').map(mapConceptToOrden);
 }
 
 /**
@@ -150,13 +108,9 @@ export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> 
  * endpoint; the client filters the full list by display name (e.g. "CRED").
  */
 export async function getEncounterTypes(): Promise<Array<EncounterTypeOption>> {
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      return fetchJson<Array<EncounterTypeOption>>(`${conceptosPath}/encounter-types`);
-    },
-    () => searchEncounterTypesMock(''),
-  );
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const data = await fetchJson<Array<EncounterTypeOption>>(`${conceptosPath}/encounter-types`);
+  return assertShape(data, isOptionList, 'conceptos/encounter-types');
 }
 
 export async function resolveLocations(uuids: Array<string>): Promise<Array<LocationOption>> {
@@ -164,15 +118,11 @@ export async function resolveLocations(uuids: Array<string>): Promise<Array<Loca
     return [];
   }
 
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      return fetchJson<Array<LocationOption>>(
-        ensureQuery(`${conceptosPath}/locations/resolve`, { uuids: uuids.join(',') }),
-      );
-    },
-    () => resolveLocationsMock(uuids),
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const data = await fetchJson<Array<LocationOption>>(
+    ensureQuery(`${conceptosPath}/locations/resolve`, { uuids: uuids.join(',') }),
   );
+  return assertShape(data, isOptionList, 'conceptos/locations/resolve');
 }
 
 export async function resolveDiagnosticos(uuids: Array<string>): Promise<Array<DiagnosticoOption>> {
@@ -180,15 +130,11 @@ export async function resolveDiagnosticos(uuids: Array<string>): Promise<Array<D
     return [];
   }
 
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      return fetchJson<Array<DiagnosticoOption>>(
-        ensureQuery(`${conceptosPath}/diagnosticos/resolve`, { uuids: uuids.join(',') }),
-      );
-    },
-    () => resolveDiagnosticosMock(uuids),
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const data = await fetchJson<Array<DiagnosticoOption>>(
+    ensureQuery(`${conceptosPath}/diagnosticos/resolve`, { uuids: uuids.join(',') }),
   );
+  return assertShape(data, isOptionList, 'conceptos/diagnosticos/resolve');
 }
 
 export async function resolveOrdenes(uuids: Array<string>): Promise<Record<string, string>> {
@@ -196,13 +142,9 @@ export async function resolveOrdenes(uuids: Array<string>): Promise<Record<strin
     return {};
   }
 
-  return withMockFallback(
-    async () => {
-      const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      return fetchJson<Record<string, string>>(
-        ensureQuery(`${conceptosPath}/buscar/resolve`, { uuids: uuids.join(',') }),
-      );
-    },
-    () => resolveOrdenesMock(uuids),
+  const conceptosPath = await getReportesSqlResourcePath('conceptos');
+  const data = await fetchJson<Record<string, string>>(
+    ensureQuery(`${conceptosPath}/buscar/resolve`, { uuids: uuids.join(',') }),
   );
+  return assertShape(data, isStringRecord, 'conceptos/buscar/resolve');
 }

@@ -7,7 +7,6 @@ import {
   InlineNotification,
   Modal,
   NumberInput,
-  Pagination,
   Select,
   SelectItem,
   Switch,
@@ -17,17 +16,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   Tile,
 } from '@carbon/react';
 import { formatDate, getUserFacingErrorMessage, logError, parseDate } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
+import { parseEntityId } from '../api/ids';
 import type { BatchCalcularNowResponse, GetResultadosParams, Granularity, RecalcularAnioResponse } from '../api/types';
+import AppPagination from '../components/AppPagination';
 import MetaProgressCard from '../components/MetaProgressCard';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { isBatchTotalFailure } from '../features/resultados/batch-results';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
+import { MIN_INDICATOR_YEAR, currentYear, indicatorYearOptions, isSelectableYear } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
 
 type SummaryState =
@@ -35,14 +41,27 @@ type SummaryState =
   | { kind: 'recalcular'; result: RecalcularAnioResponse; anio: number }
   | null;
 
-const currentYear = () => new Date().getFullYear();
+// Formats in LOCAL time: the Carbon DatePicker yields local-midnight dates and
+// toISOString() would shift the day backwards in UTC+ timezones.
+const toDateString = (date: Date | null): string | undefined => (date ? dayjs(date).format('YYYY-MM-DD') : undefined);
 
-const toDateString = (date: Date | null): string | undefined => (date ? date.toISOString().slice(0, 10) : undefined);
+// Months contained in each rollup period (mensual/trimestral/semestral/anual).
+// Shown as "available/total" so a bare number is not left unexplained.
+const PERIOD_MONTHS: Record<Granularity, number> = {
+  mensual: 1,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
 
 const ResultadosPage: React.FC = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ indicador_id: '' });
+  // The selected indicator lives in the URL so a card link (e.g. from the
+  // panel) can deep-link straight into its results without extra clicks.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const indicadorIdParam = searchParams.get('indicador') ?? '';
+  const indicadorId = parseEntityId(indicadorIdParam);
   const [periodoInicio, setPeriodoInicio] = useState<Date | null>(null);
   const [periodoFin, setPeriodoFin] = useState<Date | null>(null);
   const [granularity, setGranularity] = useState<Granularity>('mensual');
@@ -55,10 +74,40 @@ const ResultadosPage: React.FC = () => {
   const [recalcAnio, setRecalcAnio] = useState<number>(currentYear());
   const [recalcAnioError, setRecalcAnioError] = useState<string | null>(null);
   const actionLockRef = useRef(false);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const currentYearValue = currentYear();
   const periodRangeInvalid = Boolean(periodoInicio && periodoFin && periodoInicio > periodoFin);
+  const yearParam = Number(searchParams.get('anio'));
+  const selectedYear = isSelectableYear(yearParam) ? yearParam : currentYearValue;
+  const yearOptions = useMemo(() => indicatorYearOptions(), []);
+
+  const selectIndicador = (value: string) => {
+    setPage(1);
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value) {
+          next.set('indicador', value);
+        } else {
+          next.delete('indicador');
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const selectYear = (year: number) => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set('anio', String(year));
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   const { data: indicadores } = useAllIndicadores();
 
@@ -71,13 +120,13 @@ const ResultadosPage: React.FC = () => {
         ? {
             page,
             size: pageSize,
-            indicador_id: filters.indicador_id || undefined,
+            indicador_id: indicadorId ?? undefined,
             periodo_inicio: periodRangeInvalid ? undefined : toDateString(periodoInicio),
             periodo_fin: periodRangeInvalid ? undefined : toDateString(periodoFin),
             include_historicos: true,
           }
         : null,
-    [viewMode, page, filters.indicador_id, periodRangeInvalid, periodoInicio, periodoFin],
+    [viewMode, page, pageSize, indicadorId, periodRangeInvalid, periodoInicio, periodoFin],
   );
 
   const {
@@ -89,15 +138,15 @@ const ResultadosPage: React.FC = () => {
   // Time-series rollup data
   const seriesParams = useMemo(
     () =>
-      filters.indicador_id
+      indicadorId !== null
         ? {
-            indicador_id: filters.indicador_id,
-            anio: currentYearValue,
+            indicador_id: indicadorId,
+            anio: selectedYear,
             granularity,
             include_meta: true,
           }
         : null,
-    [filters.indicador_id, granularity, currentYearValue],
+    [indicadorId, granularity, selectedYear],
   );
 
   const { data: seriesData, isLoading: seriesLoading, error: seriesError } = useResultadosSeries(seriesParams);
@@ -151,7 +200,7 @@ const ResultadosPage: React.FC = () => {
       notifyError(
         getUserFacingErrorMessage(
           calculationError,
-          'No se pudieron calcular los indicadores.',
+          t('calculateFailed', 'No se pudieron calcular los indicadores.'),
           indicatorsErrorMessageOptions(t),
         ),
       );
@@ -169,8 +218,8 @@ const ResultadosPage: React.FC = () => {
     if (value > currentYear()) {
       return t('recalcAnioFuture', 'El año no puede ser futuro.');
     }
-    if (value < 2000) {
-      return t('recalcAnioTooOld', 'El año debe ser mayor o igual a 2000.');
+    if (value < MIN_INDICATOR_YEAR) {
+      return t('recalcAnioTooOld', 'El año debe ser mayor o igual a {{minYear}}.', { minYear: MIN_INDICATOR_YEAR });
     }
     return null;
   };
@@ -195,9 +244,7 @@ const ResultadosPage: React.FC = () => {
     actionLockRef.current = true;
     setRecalcularRunning(true);
     try {
-      const payload = filters.indicador_id
-        ? { anio: recalcAnio, indicador_id: filters.indicador_id }
-        : { anio: recalcAnio };
+      const payload = indicadorId !== null ? { anio: recalcAnio, indicador_id: indicadorId } : { anio: recalcAnio };
       const result = await recalcularAnio(payload);
       setSummary({ kind: 'recalcular', result, anio: recalcAnio });
       setRecalcModalOpen(false);
@@ -366,12 +413,10 @@ const ResultadosPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h2>{t('results', 'Resultados')}</h2>
-          <p className={styles.subtitle}>
-            {t('resultsSubtitle', 'Consulte resultados calculados y ejecute el cálculo manual del lote.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('results', 'Resultados')}
+          subtitle={t('resultsSubtitle', 'Consulte resultados calculados y ejecute el cálculo manual del lote.')}
+        />
         <div className={styles.headerActions}>
           <Button kind="tertiary" onClick={openRecalcularModal} disabled={anyActionRunning}>
             {t('recalculateYear', 'Recalcular año')}
@@ -392,42 +437,54 @@ const ResultadosPage: React.FC = () => {
         <Select
           id="resultado-indicador"
           labelText={t('indicator', 'Indicador')}
-          value={filters.indicador_id}
-          onChange={(event) => {
-            setPage(1);
-            setFilters((current) => ({ ...current, indicador_id: event.target.value }));
-          }}
+          value={indicadorIdParam}
+          onChange={(event) => selectIndicador(event.target.value)}
         >
           <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
           {(indicadores ?? []).map((indicador) => (
-            <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
+            <SelectItem key={indicador.id} value={String(indicador.id)} text={indicador.nombre} />
           ))}
         </Select>
-        <DatePicker
-          datePickerType="single"
-          dateFormat="Y-m-d"
-          value={periodoInicio ?? undefined}
-          onChange={(dates: Date[]) => {
-            setPage(1);
-            setPeriodoInicio(dates[0] ?? null);
-          }}
-        >
-          <DatePickerInput id="resultado-desde" labelText={t('from', 'Desde')} />
-        </DatePicker>
-        <DatePicker
-          datePickerType="single"
-          dateFormat="Y-m-d"
-          value={periodoFin ?? undefined}
-          onChange={(dates: Date[]) => {
-            setPage(1);
-            setPeriodoFin(dates[0] ?? null);
-          }}
-        >
-          <DatePickerInput id="resultado-hasta" labelText={t('to', 'Hasta')} />
-        </DatePicker>
+        {viewMode === 'series' ? (
+          <Select
+            id="resultado-anio"
+            labelText={t('seriesYear', 'Año de la serie')}
+            value={selectedYear}
+            onChange={(event) => selectYear(Number(event.target.value))}
+          >
+            {yearOptions.map((year) => (
+              <SelectItem key={year} value={year} text={String(year)} />
+            ))}
+          </Select>
+        ) : (
+          <>
+            <DatePicker
+              datePickerType="single"
+              dateFormat="Y-m-d"
+              value={periodoInicio ?? undefined}
+              onChange={(dates: Date[]) => {
+                setPage(1);
+                setPeriodoInicio(dates[0] ?? null);
+              }}
+            >
+              <DatePickerInput id="resultado-desde" labelText={t('from', 'Desde')} />
+            </DatePicker>
+            <DatePicker
+              datePickerType="single"
+              dateFormat="Y-m-d"
+              value={periodoFin ?? undefined}
+              onChange={(dates: Date[]) => {
+                setPage(1);
+                setPeriodoFin(dates[0] ?? null);
+              }}
+            >
+              <DatePickerInput id="resultado-hasta" labelText={t('to', 'Hasta')} />
+            </DatePicker>
+          </>
+        )}
       </div>
 
-      {periodRangeInvalid ? (
+      {periodRangeInvalid && viewMode === 'historical' ? (
         <InlineNotification
           kind="error"
           lowContrast
@@ -446,7 +503,7 @@ const ResultadosPage: React.FC = () => {
           <Switch name="historical" text={t('historical', 'Histórico')} />
         </ContentSwitcher>
 
-        {viewMode === 'series' && filters.indicador_id ? (
+        {viewMode === 'series' && indicadorId !== null ? (
           <Select
             id="granularity"
             labelText={t('granularity', 'Granularidad')}
@@ -474,22 +531,25 @@ const ResultadosPage: React.FC = () => {
       ) : null}
 
       {/* ── Meta progress card (series view only) ── */}
-      {!isLoading && !error && viewMode === 'series' && filters.indicador_id && seriesData?.items.length
+      {!isLoading && !error && viewMode === 'series' && indicadorId !== null && seriesData?.items.length
         ? (() => {
             // Find first row with a non-null meta
             const metaRow = seriesData.items.find((item) => item.meta != null);
-            if (metaRow?.meta == null) {
+            if (metaRow?.meta == null || !Number.isFinite(metaRow.meta)) {
               return null;
             }
             // Calculate accumulated value from all rows
-            const accumulatedValue = seriesData.items.reduce((sum, item) => sum + (item.valor ?? 0), 0);
+            const accumulatedValue = seriesData.items.reduce(
+              (sum, item) => sum + (Number.isFinite(item.valor) ? item.valor : 0),
+              0,
+            );
             return <MetaProgressCard meta={metaRow.meta} currentValue={accumulatedValue} />;
           })()
         : null}
 
       {/* ── Series view ── */}
       {!isLoading && !error && viewMode === 'series' ? (
-        filters.indicador_id ? (
+        indicadorId !== null ? (
           seriesData?.items.length ? (
             <div className={styles.tableSurface}>
               <Table
@@ -509,7 +569,17 @@ const ResultadosPage: React.FC = () => {
                     <TableRow key={`${item.periodo_label}-${item.anio}`}>
                       <TableCell>{item.periodo_label}</TableCell>
                       <TableCell>{item.valor}</TableCell>
-                      <TableCell>{item.meses_disponibles}</TableCell>
+                      <TableCell>
+                        {item.meses_disponibles >= PERIOD_MONTHS[granularity] ? (
+                          <Tag type="green">
+                            {item.meses_disponibles}/{PERIOD_MONTHS[granularity]}
+                          </Tag>
+                        ) : (
+                          <Tag type="gray">
+                            {item.meses_disponibles}/{PERIOD_MONTHS[granularity]}
+                          </Tag>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -559,12 +629,15 @@ const ResultadosPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <Pagination
-              page={historicalData.page}
-              pageSize={historicalData.size}
-              pageSizes={[10]}
+            <AppPagination
+              page={page}
+              pageSize={pageSize}
+              pageSizes={[10, 20, 50]}
               totalItems={historicalData.total}
-              onChange={({ page }: { page: number }) => setPage(page)}
+              onChange={({ page, pageSize }: { page: number; pageSize: number }) => {
+                setPage(page);
+                setPageSize(pageSize);
+              }}
               size="sm"
             />
           </>
@@ -628,7 +701,7 @@ const ResultadosPage: React.FC = () => {
         <NumberInput
           id="recalc-anio"
           label={t('year', 'Año')}
-          min={2000}
+          min={MIN_INDICATOR_YEAR}
           max={currentYear()}
           value={recalcAnio}
           onChange={(_event, { value }) => {
@@ -642,10 +715,10 @@ const ResultadosPage: React.FC = () => {
           invalidText={recalcAnioError ?? undefined}
           allowEmpty={false}
         />
-        {filters.indicador_id ? (
+        {indicadorId !== null ? (
           <p className={styles.scopeHint}>
             {t('recalcModalScopeHint', 'Se recalculará solo el indicador seleccionado: {{nombre}}.', {
-              nombre: indicadores?.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id,
+              nombre: indicadores?.find((i) => i.id === indicadorId)?.nombre ?? indicadorIdParam,
             })}
           </p>
         ) : null}

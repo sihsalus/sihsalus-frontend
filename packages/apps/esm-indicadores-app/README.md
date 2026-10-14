@@ -74,7 +74,9 @@ roles ni asigna permisos. Una sesión vencida se rechaza para liberar el estado
 de carga, sin sustituir la respuesta por datos de demostración.
 
 Las páginas de panel, indicadores, resultados y metas tienen rutas propias; detalle,
-creación y edición admiten enlaces directos. Las traducciones de formulario,
+creación y edición admiten enlaces directos. El módulo expone navegación propia en el
+slot `indicadores-nav-slot` (Panel, Indicadores, Resultados y Metas), además del botón
+del menú principal (`app-menu-item-slot`). Las traducciones de formulario,
 errores y estados vacíos están en español e inglés. Las listas auxiliares
 recorren páginas y rechazan respuestas incompletas en lugar de mostrarlas como
 un catálogo completo. Las series agregadas consumen `versiones: number[]`, como

@@ -723,5 +723,7 @@
   "neonatalDischargeBeforeBirth": "El alta del recién nacido es anterior a su nacimiento. Corrija el alta en Datos del Nacimiento o revise la fecha de nacimiento del paciente.",
   "neonatalDischargeInFuture": "El alta del recién nacido está en el futuro. Corrija la fecha y hora en Datos del Nacimiento.",
   "neonatalDischargeInvalid": "La fecha de alta del recién nacido o la de nacimiento no es válida. Revise Datos del Nacimiento y la fecha de nacimiento del paciente.",
-  "conditionActiveDuplicate": "Esta condición ya está activa. Actualice el registro existente o resuélvalo antes de registrar otro episodio."
+  "conditionActiveDuplicate": "Esta condición ya está activa. Actualice el registro existente o resuélvalo antes de registrar otro episodio.",
+  "onsetDateCannotBeBeforeBirthDate": "La fecha de inicio no puede ser anterior a la fecha de nacimiento del paciente",
+  "reactionSavedRefreshFailed": "La reacción quedó registrada. Recargue la tabla para verla; no vuelva a registrarla."
 }

@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -70,6 +70,23 @@ describe('ProgramsOverview', () => {
         },
       ],
     });
+  });
+
+  it.each([{ enrollments: [] }, { enrollments: mockEnrolledProgramsResponse }])(
+    'does not offer enrollment to a read-only user',
+    ({ enrollments }) => {
+      vi.mocked(userHasAccess).mockReturnValue(false);
+      mockProgramsState({ enrollments });
+      renderWithSwr(<ProgramsOverview {...testProps} />);
+      expect(screen.queryByRole('button', { name: /record|add/i })).not.toBeInTheDocument();
+    },
+  );
+
+  it('honors the configured add-button restriction even in the empty state', () => {
+    mockUseConfig.mockReturnValue({ ...getDefaultsFromConfigSchema(configSchema), hideAddProgramButton: true });
+    mockProgramsState({ enrollments: [] });
+    renderWithSwr(<ProgramsOverview {...testProps} />);
+    expect(screen.queryByRole('button', { name: /record/i })).not.toBeInTheDocument();
   });
 
   it.each([
@@ -198,4 +215,8 @@ describe('ProgramsOverview', () => {
     expect(screen.getByText(/no eligible programs available/i)).toBeInTheDocument();
     expect(screen.getByText(/there are no more programs left to enroll this patient in/i)).toBeInTheDocument();
   });
+});
+
+beforeEach(() => {
+  vi.mocked(userHasAccess).mockReturnValue(true);
 });

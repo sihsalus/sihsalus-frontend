@@ -1,4 +1,4 @@
-import { getUserFacingErrorMessage, useConfig, useSession } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import type { Condition } from '@openmrs/esm-patient-common-lib';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { useConditionsSearchFromConceptSet } from '@openmrs/esm-patient-common-lib/src/antecedents/condition-concept-set.resource';
@@ -91,6 +91,12 @@ function renderForm(overrides: { condition?: Condition; formContext?: 'creating'
 describe('ConditionsForm (CRED)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(usePatient).mockReturnValue({
+      patient: { resourceType: 'Patient', id: patientUuid, birthDate: '2020-01-01' },
+      patientUuid,
+      isLoading: false,
+      error: null,
+    });
     mockUseSession.mockReturnValue({
       currentProvider: { uuid: 'provider-1' },
       user: { uuid: 'user-1' },
@@ -113,6 +119,47 @@ describe('ConditionsForm (CRED)', () => {
     });
     mockCreateCondition.mockResolvedValue({} as Awaited<ReturnType<typeof createCondition>>);
     mockUpdateCondition.mockResolvedValue(undefined);
+  });
+
+  it('rejects an onset before birth and accepts the birth calendar day', async () => {
+    vi.mocked(usePatient).mockReturnValue({
+      patient: { resourceType: 'Patient', id: patientUuid, birthDate: '2026-01-01' },
+      patientUuid,
+      isLoading: false,
+      error: null,
+    });
+    const user = userEvent.setup();
+    const { closeWorkspace } = renderForm();
+    await user.type(screen.getByRole('searchbox'), 'Asma');
+    await user.click(screen.getByRole('button', { name: 'Asma' }));
+    await user.click(screen.getByRole('radio', { name: 'Active' }));
+    fireEvent.change(screen.getByLabelText('Onset date'), { target: { value: '2025-12-31' } });
+    await user.click(screen.getByRole('button', { name: /save.*close/i }));
+    expect(await screen.findByText("Onset date cannot be earlier than the patient's birth date")).toBeVisible();
+    expect(mockCreateCondition).not.toHaveBeenCalled();
+    expect(closeWorkspace).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Onset date'), { target: { value: '2026-01-01' } });
+    await user.click(screen.getByRole('button', { name: /save.*close/i }));
+    await waitFor(() => expect(mockCreateCondition).toHaveBeenCalledOnce());
+  });
+
+  it('waits for patient demographics before allowing a condition to be recorded', () => {
+    vi.mocked(usePatient).mockReturnValue({ patient: null, patientUuid, isLoading: true, error: null });
+    renderForm();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save.*close/i })).not.toBeInTheDocument();
+  });
+
+  it('rejects demographics from another patient instead of using their birth date', () => {
+    vi.mocked(usePatient).mockReturnValue({
+      patient: { resourceType: 'Patient', id: 'other-patient', birthDate: '2020-01-01' },
+      patientUuid,
+      isLoading: false,
+      error: null,
+    });
+    renderForm();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save.*close/i })).not.toBeInTheDocument();
   });
 
   it('al editar muestra el nombre de la condición y envía su concepto real', async () => {
@@ -399,3 +446,24 @@ it('reports a clinical-status error when a new active antecedent retains an end 
     );
   }
 });
+
+it.each(['creating', 'editing'] as const)(
+  'checks the birth boundary when %s without rejecting family history',
+  (context) => {
+    const t = ((_key: string, fallback: string) => fallback) as TFunction;
+    const values = {
+      conditionName: 'Synthetic antecedent',
+      clinicalStatus: 'inactive',
+      onsetDateTime: new Date(2025, 11, 31),
+    };
+    expect(createSchema(context, t, undefined, '2026-01-01').safeParse(values).success).toBe(false);
+    expect(
+      createSchema(context, t, undefined, '2026-01-01').safeParse({ ...values, onsetDateTime: new Date(2026, 0, 1) })
+        .success,
+    ).toBe(true);
+    expect(
+      createSchema(context, t, { ...matchingCondition, antecedentType: 'family' }, '2026-01-01').safeParse(values)
+        .success,
+    ).toBe(true);
+  },
+);

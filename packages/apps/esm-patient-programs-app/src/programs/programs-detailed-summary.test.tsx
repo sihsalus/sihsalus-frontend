@@ -1,4 +1,4 @@
-import { formatDatetime, getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { formatDatetime, getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -204,4 +204,8 @@ describe('ProgramsDetailedSummary', () => {
 
     expect(screen.getByRole('columnheader', { name: /program status/i })).toBeInTheDocument();
   });
+});
+
+beforeEach(() => {
+  vi.mocked(userHasAccess).mockReturnValue(true);
 });

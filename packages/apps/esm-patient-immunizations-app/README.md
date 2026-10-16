@@ -31,6 +31,13 @@ Contratos de frontend:
 - El usuario final no debe ver detalles tecnicos del endpoint, salvo que sea una pantalla de diagnostico.
 - Las advertencias MINSA por edad/dosis no deben bloquear guardado sin una regla clinica explicita.
 - Si una vacuna de la NTS no existe en content/backend, debe estar deshabilitada o documentada como pendiente, no simulada silenciosamente.
+- En «Vacunación reciente», la fecha/hora de aplicación determina el registro
+  mostrado. Si varios registros de una vacuna tienen exactamente la misma
+  fecha/hora, se muestra el mayor número de dosis registrado, conservando la
+  etiqueta de secuencia configurada cuando exista. El número procede de FHIR
+  `protocolApplied.doseNumberPositiveInt` o de la observación configurada de
+  Ampath; nunca se calcula contando registros. Este desempate no determina la
+  hora real de aplicación ni valida la pertinencia clínica de las dosis.
 
 TODO content/backend:
 
@@ -47,6 +54,12 @@ TODO QA/QLTY:
 - Probar el flujo end-to-end de vacunación: abrir formulario, registrar vacuna, guardar, recargar y confirmar lectura por FHIR2.
 - Probar un paciente sin inmunizaciones, un paciente con esquema parcial y un paciente con dosis fuera de ventana de edad para validar advertencias MINSA.
 - Confirmar permisos de usuario para crear y editar inmunizaciones en QLTY.
+- Para el reporte #393, verificar con datos sintéticos el resumen de dosis 1, 2
+  y 3 con una misma fecha, tanto antes como después de recargar; debe mostrar 3
+  y conservar los tres registros al expandir la fila. Una dosis 1 de fecha
+  posterior debe seguir siendo la más reciente. Comparar con la respuesta
+  persistida: si todos los registros contienen dosis 1, el frontend debe seguir
+  mostrando 1, y corresponde investigar el registro sin inventar una secuencia.
 - Volver a incluir la pantalla de vacunación infantil en los GIFs CRED cuando el save/read real este validado en QLTY.
 
 TODO i18n/UI:

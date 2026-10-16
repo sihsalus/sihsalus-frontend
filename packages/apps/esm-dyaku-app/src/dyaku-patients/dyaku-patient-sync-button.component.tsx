@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './dyaku-patient-sync-button.scss';
-import { type DyakuPatient, type SyncResult, useDyakuSync } from './dyaku-patients.resource';
+import { type DyakuPatient, type SyncResult, getDyakuSyncErrorCode, useDyakuSync } from './dyaku-patients.resource';
 
 interface DyakuPatientSyncButtonProps {
   patient: DyakuPatient;
@@ -62,7 +62,7 @@ const DyakuPatientSyncButton: React.FC<DyakuPatientSyncButtonProps> = ({ patient
           success: false,
           synchronized: 0,
           failed: 1,
-          errors: [error instanceof Error ? error.message : String(error)],
+          errors: [getDyakuSyncErrorCode(error)],
         });
         setShowResult(true);
 
@@ -90,7 +90,7 @@ const DyakuPatientSyncButton: React.FC<DyakuPatientSyncButtonProps> = ({ patient
           subtitle={
             syncResult.success
               ? t('patientSyncedSuccessfully', 'Paciente sincronizado')
-              : syncResult.errors[0] || t('syncErrorOccurred', 'Error en sincronización')
+              : t(syncResult.errors[0] ?? 'syncImportFailed')
           }
           hideCloseButton
           lowContrast

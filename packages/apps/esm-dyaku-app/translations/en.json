@@ -10,7 +10,7 @@
   "dyakuPatientsSubtitle": "List of patients registered in MINSA's FHIR system",
   "dyakuPatientsTitle": "FHIR Patients - Dyaku MINSA",
   "email": "Email",
-  "errorLoadingPatients": "Error loading patients: {{error}}",
+  "errorLoadingPatients": "Patients could not be retrieved. Try again. If the problem continues, contact support.",
   "failed": "Failed",
   "female": "Female",
   "firstName": "First name",
@@ -47,5 +47,14 @@
   "syncSuccessMessage_one": "Successfully synchronized {{count}} patient.",
   "syncSuccessMessage_many": "Successfully synchronized {{count}} patients.",
   "syncSuccessMessage_other": "Successfully synchronized {{count}} patients.",
-  "syncWarning": "Existing patients will be updated, and new ones will be created automatically."
+  "syncWarning": "Existing patients will be updated, and new ones will be created automatically.",
+  "syncDuplicateInBatch": "Import blocked: this identity is repeated in the batch or is already being processed. Review the source records.",
+  "syncIdentityAmbiguous": "Import blocked: the local identity could not be matched uniquely by DNI and document type. Review the existing records.",
+  "syncIdentityInvalid": "Import blocked: a single explicit, unchanged eight-digit DNI and an active patient are required. Review the source record.",
+  "syncImportFailed": "The patient import could not be completed. Review the local record and contact support before trying again.",
+  "syncLocalLookupFailed": "Import blocked: the local identity search could not be completed. Check your connection and access before trying again.",
+  "syncMetadataInvalid": "Import blocked: identifier or location metadata could not be verified. Contact support.",
+  "syncPatientDataInvalid": "Import blocked: the source demographics are incomplete or invalid. Review the name, birth date and gender.",
+  "syncRemoteResponseInvalid": "The source patient response could not be verified. No import was started. Contact support.",
+  "syncWriteUnconfirmed": "The patient save could not be confirmed. Review the local record before trying again."
 }

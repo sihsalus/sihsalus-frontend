@@ -1,127 +1,85 @@
-# Funcionalidad de Búsqueda de Pacientes DYAKU
+# Identidad en la consulta e importación Dyaku
 
-## Descripción
+## Alcance
 
-Se ha implementado una funcionalidad de búsqueda por DNI con debounce para los pacientes del sistema FHIR DYAKU del MINSA. Esta funcionalidad permite buscar pacientes específicos por su número de documento de identidad (DNI) de manera eficiente.
+El módulo consulta `Patient` por HTTP FHIR y permite importar datos demográficos
+mediante el REST e IdGen existentes de OpenMRS. El lote procesa como máximo la
+primera página solicitada; no representa una sincronización de todo el padrón.
+No implementa IPS, acreditación SIHCE, consentimiento RENHICE ni firma digital.
+La autorización institucional para importar desde la fuente configurada debe
+verificarse por separado; no se realizó ninguna importación remota al desarrollar
+esta corrección.
 
-## Componentes Implementados
+## Contrato de identidad
 
-### 1. `DyakuPatientsOverview`
-- **Ubicación**: `src/dyaku-patients/dyaku-patients-overview.component.tsx`
-- **Propósito**: Componente principal que incluye la búsqueda y la tabla de pacientes
-- **Características**:
-  - Campo de búsqueda con debounce de 500ms
-  - Integración con la tabla de pacientes existente
-  - Indicador visual de búsqueda activa
+- Se acepta un único DNI de exactamente ocho dígitos, sin recortar, quitar
+  caracteres ni inferir un dígito verificador. Esta restricción corresponde al
+  tipo DNI de SIHSALUS content (`^[0-9]{8}$`), no a una validación de RENIEC.
+- Debe estar identificado por el sistema legado
+  `urn:oid:2.16.840.1.113883.3.9143.2.1.5`, o por el tipo oficial
+  `https://www.gob.pe/minsa/RENHICE/fhir/CodeSystem/IdspersonaPeru` con código `1`.
+  Un código `DNI` sin sistema, otro documento o el primer identificador arbitrario
+  no bastan. Identificadores DNI contradictorios bloquean la importación.
+- La referencia del tipo oficial es la [guía MINSA
+  PacientePe](https://dyaku.minsa.gob.pe/guides/StructureDefinition-PacientePe.html),
+  versión de desarrollo `0.1`, publicada el 19 de junio de 2026. Reconocer ese
+  código no significa validar todo el perfil ni su vigencia legal.
+- La búsqueda local usa `identifier` (exacto por defecto en REST), red fresca y
+  rechazo de errores de autenticación; verifica el tipo configurado en la respuesta. Solo una lista vacía válida confirma ausencia.
+  Errores, respuestas incompletas, paginación pendiente, pacientes anulados,
+  coincidencias parciales, otro tipo de documento o múltiples resultados bloquean
+  la escritura y requieren revisión. No se elige el primer resultado.
+- Los botones de la tabla resuelven al paciente por el ID estable de la fila,
+  también después de ordenar. Una fila con ID ambiguo no ofrece importación.
+- Todos los registros con un DNI o ID de origen repetido en el lote se bloquean
+  antes de escribir. Un bloqueo temporal en memoria evita procesar concurrentemente
+  el mismo DNI en esta instancia del navegador; no conserva datos entre sesiones.
+  La unicidad entre clientes sigue siendo responsabilidad del backend.
 
-### 2. `DyakuPatientsTable` (Actualizado)
-- **Ubicación**: `src/dyaku-patients/dyaku-patients-table.component.tsx`
-- **Propósito**: Tabla de pacientes con soporte para búsqueda por DNI
-- **Características**:
-  - Acepta parámetro `searchDni` opcional
-  - Cambia automáticamente entre vista completa y resultados de búsqueda
-  - Títulos y subtítulos dinámicos según el modo de visualización
+## Persistencia y conservación de datos
 
-### 3. `useDyakuPatientsByDni` Hook
-- **Ubicación**: `src/dyaku-patients/dyaku-patients.resource.ts`
-- **Propósito**: Hook personalizado para búsqueda por DNI
-- **Características**:
-  - Solo ejecuta búsqueda si el DNI tiene al menos 8 caracteres
-  - Utiliza SWR para cache y optimización
-  - Búsqueda por identificador FHIR
+Al crear se exige nombre, apellido, sexo y fecha de nacimiento completa válida.
+Solo después de validar identidad y metadatos se solicita un HCE a IdGen.
+Una respuesta inválida de IdGen impide crear al paciente. Si luego falla la
+creación, el identificador podría haberse consumido: no se reutiliza ni se intenta
+revertir desde el frontend.
 
-## Funcionalidades
+Al actualizar no se envía la colección de identificadores ni se solicita otro HCE.
+Se envían únicamente los campos demográficos presentes y válidos en el origen;
+no se envían `null`, nombres vacíos, sexo por defecto ni listas de atributos vacías
+para reemplazar los datos ausentes. Una identidad ya existente sin nuevos campos
+no necesita un POST. Las diferencias entre valores presentes continúan siguiendo
+la actualización demográfica del importador existente; no se añade resolución
+clínica de conflictos, fusión de pacientes ni promociones de personas.
 
-### Búsqueda por DNI
-- **Mínimo**: 8 dígitos requeridos para activar la búsqueda
-- **Debounce**: 500ms para evitar búsquedas excesivas
-- **Limpieza**: Botón para limpiar la búsqueda
-- **Responsive**: Diseño adaptativo para dispositivos móviles
+El tipo de identificador se consulta antes de crear. `NOT_USED` omite ubicación;
+`REQUIRED` usa únicamente el UUID configurado si una consulta confirma que existe
+y está activo. Una política desconocida o una ubicación no verificada bloquean
+la creación; nunca se selecciona `locations[0]` ni una ubicación de respaldo.
+Los UUID siguen perteneciendo a `config-schema`.
 
-### Validación de DNI Peruano
-- Incluye algoritmo de validación para DNI peruano con dígito verificador
-- Corrección automática del dígito verificador si es necesario
-- Soporte para DNI de 8 y 9 dígitos
+El guardado solo se informa como confirmado cuando REST devuelve éxito y UUID
+válido (el mismo en una actualización). Una respuesta fallida o perdida no prueba
+que el servidor haya descartado la escritura. No hay reintentos automáticos:
+se pide revisar el registro local, y cualquier nuevo intento repite la búsqueda.
+Los errores visibles son mensajes controlados traducidos a español e inglés;
+no incluyen identificadores de pacientes, DNI, nombres, URLs ni errores crudos.
 
-### Estados de la Interfaz
-- **Búsqueda activa**: Muestra términos de búsqueda actuales
-- **Resultados**: Contador de pacientes encontrados
-- **Sin resultados**: Mensaje apropiado si no se encuentran pacientes
-- **Error**: Manejo de errores de conectividad o API
+## Validación
 
-## Estilos
+Las pruebas usan datos sintéticos y simulan REST/FHIR: DNI sin modificación,
+tipos explícitos, búsquedas 401/403/500, ambigüedad, paginación, respuestas
+inválidas, conservación de identificadores y campos ausentes, ubicación,
+respuestas de IdGen/guardado, duplicados de lote, concurrencia y errores visibles.
 
-### `dyaku-patients-overview.scss`
-- **Container**: Diseño principal con fondo gris claro
-- **Search Container**: Área de búsqueda con fondo blanco y sombra
-- **Search Info**: Indicador visual de búsqueda activa
-- **Responsive**: Adaptación para tablets y móviles
-
-## Traducciones
-
-### Español (`es.json`)
-```json
-{
-  "dyakuPatientsSearchTitle": "Resultados de búsqueda - Pacientes FHIR Dyaku MINSA",
-  "dyakuPatientsSearchSubtitle": "Resultados para DNI: {{dni}} ({{total}} paciente(s) encontrado(s))",
-  "searchByDni": "Buscar por DNI",
-  "searchByDniPlaceholder": "Ingrese el DNI del paciente (mínimo 8 dígitos)",
-  "searchingFor": "Buscando por DNI:"
-}
+```sh
+yarn workspace @sihsalus/esm-dyaku-app test
+yarn workspace @sihsalus/esm-dyaku-app lint
+yarn workspace @sihsalus/esm-dyaku-app typescript
+yarn build --filter=@sihsalus/esm-dyaku-app... --concurrency=2
 ```
 
-### Inglés (`en.json`)
-```json
-{
-  "dyakuPatientsSearchTitle": "Search Results - Dyaku MINSA FHIR Patients",
-  "dyakuPatientsSearchSubtitle": "Results for DNI: {{dni}} ({{total}} patient(s) found)",
-  "searchByDni": "Search by DNI",
-  "searchByDniPlaceholder": "Enter patient's DNI (minimum 8 digits)",
-  "searchingFor": "Searching by DNI:"
-}
-```
-
-## Integración
-
-### Actualización del Punto de Entrada
-El componente `testeo.component.tsx` ha sido actualizado para usar `DyakuPatientsOverview` en lugar de `DyakuPatientsTable` directamente.
-
-### API FHIR
-La búsqueda utiliza el parámetro `identifier` del API FHIR de DYAKU:
-```
-GET {fhirBaseUrl}/Patient?identifier={dni}
-```
-
-## Optimizaciones
-
-- **SWR Cache**: Resultados en cache para mejorar rendimiento
-- **Debounce**: Previene búsquedas excesivas mientras el usuario escribe
-- **Lazy Loading**: Solo busca cuando hay suficientes caracteres
-- **Error Handling**: Manejo robusto de errores de red y API
-
-## Uso
-
-```tsx
-import DyakuPatientsOverview from './dyaku-patients-overview.component';
-
-// Usar con tamaño de página personalizado
-<DyakuPatientsOverview pageSize={20} />
-
-// Usar con configuración por defecto
-<DyakuPatientsOverview />
-```
-
-## Consideraciones de Rendimiento
-
-1. **Debounce**: Evita llamadas API excesivas
-2. **Validación local**: Verificación de DNI antes de hacer búsquedas
-3. **Cache inteligente**: SWR maneja automáticamente el cache y revalidación
-4. **Paginación**: Mantiene la paginación en los resultados de búsqueda
-
-## Documentación DYAKU
-
-La implementación sigue las especificaciones del perfil PacientePe de DYAKU:
-- Estructura de identificadores conforme a FHIR R4
-- Búsqueda por identifier según estándares FHIR
-- Manejo de telecomunicaciones (email, teléfono)
-- Procesamiento de nombres estructurados FHIR
+Pendiente antes de desplegar: revisión humana del cambio y pruebas con datos
+sintéticos en DEV/QLTY que confirmen las representaciones REST y la conservación
+de datos de OpenMRS. Pruebas unitarias y compilación no acreditan interoperabilidad
+RENHICE ni autorización para transferir datos desde un servidor real.

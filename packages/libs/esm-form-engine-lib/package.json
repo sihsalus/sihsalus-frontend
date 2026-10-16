@@ -33,7 +33,7 @@
     "test": "vitest run --passWithNoTests",
     "typescript": "tsc --noEmit",
     "build": "rimraf dist && swc --strip-leading-paths --copy-files --ignore '**/*.test.*' --ignore '**/setup-tests.*' --ignore '**/test-utils.*' src -d dist && tsc --project tsconfig.build.json",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "dependencies": {
     "@carbon/react": "^1.118.0",
@@ -67,7 +67,7 @@
     "dayjs": "^1.11.23",
     "husky": "^8.0.3",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.3.0",
+    "i18next-cli": "1.75.3",
     "lint-staged": "^17.6.0",
     "openmrs": "workspace:*",
     "react": "^18.3.1",

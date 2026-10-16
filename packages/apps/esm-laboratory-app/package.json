@@ -15,7 +15,7 @@
     "prettier": "node ../../tooling/scripts/run-biome.js format --write src",
     "typescript": "tsc",
     "test": "vitest run --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs",
     "coverage": "vitest run --coverage --passWithNoTests",
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/laboratory/playwright.config.ts"
   },
@@ -63,7 +63,7 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "^1.11.23",
     "file-saver": "^2.0.5",
-    "i18next-parser": "^9.3.0",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

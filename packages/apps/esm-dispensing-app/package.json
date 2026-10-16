@@ -16,7 +16,7 @@
     "test:watch": "vitest watch",
     "typescript": "tsc",
     "verify": "turbo run lint test typescript",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs",
     "check-translations": "yarn extract-translations && git diff --exit-code -- translations/en.json",
     "coverage": "vitest run --coverage --passWithNoTests",
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/dispensing/playwright.config.ts"
@@ -69,7 +69,7 @@
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.7",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.3.0",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

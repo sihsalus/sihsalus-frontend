@@ -18,7 +18,7 @@
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/form-builder/playwright.config.ts",
     "verify": "turbo run lint typescript coverage --color",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "files": [
     "dist",
@@ -80,7 +80,7 @@
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.3.0",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

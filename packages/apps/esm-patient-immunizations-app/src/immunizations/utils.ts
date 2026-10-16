@@ -17,5 +17,15 @@ export const linkConfiguredSequences = (
   });
 };
 
-export const latestFirst = (a: ExistingDoses, b: ExistingDoses) =>
-  new Date(b.occurrenceDateTime).getTime() - new Date(a.occurrenceDateTime).getTime();
+export const latestFirst = (a: ExistingDoses, b: ExistingDoses) => {
+  const dateDifference = new Date(b.occurrenceDateTime).getTime() - new Date(a.occurrenceDateTime).getTime();
+  if (dateDifference !== 0) {
+    return dateDifference;
+  }
+
+  // Date-only records can share an occurrence time. Use the recorded sequence
+  // to break that tie, never the API response order or the number of records.
+  const recordedDoseNumber = (dose: ExistingDoses) =>
+    Number.isInteger(dose.doseNumber) && dose.doseNumber > 0 ? dose.doseNumber : 0;
+  return recordedDoseNumber(b) - recordedDoseNumber(a);
+};

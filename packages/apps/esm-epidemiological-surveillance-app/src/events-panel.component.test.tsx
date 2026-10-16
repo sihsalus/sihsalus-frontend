@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { getEvents, saveEvent, updateEvent, searchConcepts } from "./api";
 import { EventsPanel } from "./events-panel.component";
@@ -37,12 +43,50 @@ beforeEach(() => {
   });
 });
 
+it("combines disease and periodicity filters and restores all events", async () => {
+  const event = { referenceRegulation: "NTS", validFrom: "2026-01-01" };
+  vi.mocked(getEvents).mockResolvedValue([
+    {
+      ...event,
+      uuid: "a",
+      conceptUuid: "dengue",
+      conceptDisplay: "Dengue",
+      periodicity: "SEMANAL",
+    },
+    {
+      ...event,
+      uuid: "b",
+      conceptUuid: "malaria",
+      conceptDisplay: "Malaria",
+      periodicity: "DIARIA",
+    },
+  ]);
+  render(<EventsPanel />);
+  const table = await screen.findByRole("table");
+  expect(within(table).getAllByRole("row")).toHaveLength(3);
+  fireEvent.change(screen.getByLabelText("Enfermedad"), {
+    target: { value: "dengue" },
+  });
+  expect(within(table).getByText("Dengue")).toBeInTheDocument();
+  expect(within(table).queryByText("Malaria")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Periodicidad"), {
+    target: { value: "DIARIA" },
+  });
+  expect(within(table).queryByText("Dengue")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Enfermedad"), {
+    target: { value: "" },
+  });
+  expect(within(table).getByText("Malaria")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Periodicidad"), {
+    target: { value: "" },
+  });
+  expect(within(table).getAllByRole("row")).toHaveLength(3);
+});
+
 it("edits every event attribute and refreshes the catalogue", async () => {
   const onEventsChanged = vi.fn();
   render(<EventsPanel onEventsChanged={onEventsChanged} />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Editar" }),
-  );
+  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   expect(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
   ).toHaveValue("Dengue");
@@ -53,9 +97,12 @@ it("edits every event attribute and refreshes the catalogue", async () => {
     { target: { value: "Malaria" } },
   );
   fireEvent.click(await screen.findByText("Malaria"));
-  fireEvent.change(screen.getByLabelText(/Periodicidad/), {
-    target: { value: "INMEDIATA" },
-  });
+  fireEvent.change(
+    within(screen.getByRole("dialog")).getByLabelText(/Periodicidad/),
+    {
+      target: { value: "INMEDIATA" },
+    },
+  );
   fireEvent.change(screen.getByLabelText(/Norma de referencia/i), {
     target: { value: "NTS actualizada" },
   });
@@ -82,16 +129,19 @@ it("edits every event attribute and refreshes the catalogue", async () => {
 
 it("cancels edits without saving and resets the creation form", async () => {
   render(<EventsPanel />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Editar" }),
+  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+  fireEvent.change(
+    within(screen.getByRole("dialog")).getByLabelText(/Periodicidad/),
+    {
+      target: { value: "INMEDIATA" },
+    },
   );
-  fireEvent.change(screen.getByLabelText(/Periodicidad/), {
-    target: { value: "INMEDIATA" },
-  });
   fireEvent.click(screen.getByRole("button", { name: /Cancelar|Cancel/i }));
   expect(updateEvent).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText(/Nueva versión|New event/i));
-  expect(screen.getByLabelText(/Periodicidad/)).toHaveValue("SEMANAL");
+  expect(
+    within(screen.getByRole("dialog")).getByLabelText(/Periodicidad/),
+  ).toHaveValue("SEMANAL");
   expect(screen.getByLabelText(/Norma de referencia/i)).toHaveValue("");
 });
 
@@ -99,9 +149,7 @@ it("allows clearing the end date", async () => {
   const event = (await getEvents())[0];
   vi.mocked(getEvents).mockResolvedValue([{ ...event, validTo: "2026-12-31" }]);
   render(<EventsPanel />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Editar" }),
-  );
+  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   fireEvent.change(screen.getByLabelText(/Vigente hasta/i), {
     target: { value: "" },
   });
@@ -118,9 +166,7 @@ it("keeps edits after a rejected save and allows retrying", async () => {
   vi.mocked(updateEvent).mockRejectedValueOnce({ code: "INVALID_EVENT" });
   const onEventsChanged = vi.fn();
   render(<EventsPanel onEventsChanged={onEventsChanged} />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Editar" }),
-  );
+  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   fireEvent.change(screen.getByLabelText(/Norma de referencia/i), {
     target: { value: "NTS corregida" },
   });
@@ -136,9 +182,7 @@ it("keeps edits after a rejected save and allows retrying", async () => {
 
 it("rejects an end date before the start without sending an update", async () => {
   render(<EventsPanel />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Editar" }),
-  );
+  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   fireEvent.change(screen.getByLabelText(/Vigente hasta/i), {
     target: { value: "2025-12-31" },
   });
@@ -175,35 +219,41 @@ it("paginates events and opens the selected event on the second page", async () 
     })),
   );
   render(<EventsPanel />);
-  await screen.findByText("Evento 1");
-  expect(screen.queryByText("Evento 11")).not.toBeInTheDocument();
+  await screen.findByText("Evento 1", { selector: "td" });
+  expect(
+    screen.queryByText("Evento 11", { selector: "td" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Página anterior" }),
   ).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
-  expect(screen.getByText("Evento 11")).toBeInTheDocument();
+  expect(screen.getByText("Evento 11", { selector: "td" })).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Página siguiente" }),
   ).toBeDisabled();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Editar" }),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "Editar" }));
   expect(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
   ).toHaveValue("Evento 11");
   fireEvent.click(screen.getByRole("button", { name: /Cancelar|Cancel/i }));
   fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
-  expect(screen.getByText("Evento 1")).toBeInTheDocument();
+  expect(screen.getByText("Evento 1", { selector: "td" })).toBeInTheDocument();
 });
 
 it("creates an event version with regulation and validity", async () => {
   render(<EventsPanel />);
-  await screen.findByText("Dengue");
+  await screen.findByText("Dengue", { selector: "td" });
   fireEvent.click(screen.getByText(/Nueva versión|New event/i));
-  expect(screen.getByRole("option", { name: "Semanal" })).toBeInTheDocument();
-  expect(screen.getByRole("option", { name: "Inmediata" })).toBeInTheDocument();
   expect(
-    screen.queryByRole("option", { name: "Diaria" }),
+    within(screen.getByRole("dialog")).getByRole("option", { name: "Semanal" }),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("dialog")).getByRole("option", {
+      name: "Inmediata",
+    }),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("dialog")).queryByRole("option", { name: "Diaria" }),
   ).not.toBeInTheDocument();
   fireEvent.change(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
@@ -238,19 +288,32 @@ it("shows only the violated reference condition below its input", async () => {
   fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
   expect(field).toHaveAttribute("aria-invalid", "true");
   expect(field).toHaveAccessibleErrorMessage("validation.referenceLength");
-  expect(screen.queryByText("Could not complete the operation")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("Could not complete the operation"),
+  ).not.toBeInTheDocument();
   expect(updateEvent).not.toHaveBeenCalled();
   fireEvent.change(field, { target: { value: "" } });
   expect(field).toHaveAccessibleErrorMessage("validation.required");
-  expect(screen.queryByText("validation.referenceLength")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("validation.referenceLength"),
+  ).not.toBeInTheDocument();
 });
 
 it("places a server condition under its corresponding field", async () => {
-  vi.mocked(updateEvent).mockRejectedValueOnce({ code: "INVALID_EVENT", fields: ["validTo"], fieldErrors: { validTo: "endBeforeStart" } });
+  vi.mocked(updateEvent).mockRejectedValueOnce({
+    code: "INVALID_EVENT",
+    fields: ["validTo"],
+    fieldErrors: { validTo: "endBeforeStart" },
+  });
   render(<EventsPanel />);
   fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
   await screen.findByText("validation.endBeforeStart");
-  expect(screen.getByLabelText(/Vigente hasta/i)).toHaveAttribute("aria-invalid", "true");
-  expect(screen.queryByText("Could not complete the operation")).not.toBeInTheDocument();
+  expect(screen.getByLabelText(/Vigente hasta/i)).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(
+    screen.queryByText("Could not complete the operation"),
+  ).not.toBeInTheDocument();
 });

@@ -51,6 +51,8 @@ export function EventsPanel({
 }) {
   const { t } = useTranslation(moduleName);
   const [events, setEvents] = useState<SurveillanceEvent[]>([]);
+  const [diseaseFilter, setDiseaseFilter] = useState("");
+  const [periodicityFilter, setPeriodicityFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
@@ -167,7 +169,20 @@ export function EventsPanel({
     DIARIA: t("periodicityValues.diaria", "Diaria"),
     SEMANAL: t("periodicityValues.semanal", "Semanal"),
   };
-  const rows = events.map((event) => ({
+  const diseases = Array.from(
+    new Map(
+      events.map((event) => [
+        event.conceptUuid,
+        event.conceptDisplay ?? event.conceptUuid,
+      ]),
+    ).entries(),
+  );
+  const filteredEvents = events.filter(
+    (event) =>
+      (!diseaseFilter || event.conceptUuid === diseaseFilter) &&
+      (!periodicityFilter || event.periodicity === periodicityFilter),
+  );
+  const rows = filteredEvents.map((event) => ({
     id: event.uuid,
     concept: event.conceptDisplay ?? event.conceptUuid,
     periodicity: periodicities[event.periodicity] ?? event.periodicity,
@@ -198,6 +213,37 @@ export function EventsPanel({
         >
           {t("newEvent", "Nueva versión de evento")}
         </Button>
+      </div>
+      <h3>{t("filters", "Filtros")}</h3>
+      <div className={styles.filters}>
+        <Select
+          id="event-filter-disease"
+          labelText={t("eventFilterDisease", "Enfermedad")}
+          value={diseaseFilter}
+          onChange={(event) => {
+            setDiseaseFilter(event.target.value);
+            setPage(1);
+          }}
+        >
+          <SelectItem value="" text={t("eventFilterAll", "Todos")} />
+          {diseases.map(([uuid, label]) => (
+            <SelectItem key={uuid} value={uuid} text={label} />
+          ))}
+        </Select>
+        <Select
+          id="event-filter-periodicity"
+          labelText={t("eventFilterPeriodicity", "Periodicidad")}
+          value={periodicityFilter}
+          onChange={(event) => {
+            setPeriodicityFilter(event.target.value);
+            setPage(1);
+          }}
+        >
+          <SelectItem value="" text={t("eventFilterAll", "Todos")} />
+          {Object.entries(periodicities).map(([value, label]) => (
+            <SelectItem key={value} value={value} text={label} />
+          ))}
+        </Select>
       </div>
       {loading ? (
         <InlineLoading description={t("loading", "Cargando")} />
@@ -303,7 +349,7 @@ export function EventsPanel({
           <TablePagination
             page={page}
             pageSize={pageSize}
-            totalItems={events.length}
+            totalItems={filteredEvents.length}
             onChange={({ page: nextPage, pageSize: nextSize }) => {
               setPage(nextSize === pageSize ? nextPage : 1);
               setPageSize(nextSize);

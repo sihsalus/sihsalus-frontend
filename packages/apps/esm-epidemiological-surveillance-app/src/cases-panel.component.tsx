@@ -85,7 +85,7 @@ export function CasesPanel({
           {t("newCase", "Nuevo caso")}
         </Button>
       </div>
-      <h3>{t("filters")}</h3>
+      <h3 className={styles.caseFiltersHeading}>{t("filters")}</h3>
       <div
         style={{
           display: "grid",

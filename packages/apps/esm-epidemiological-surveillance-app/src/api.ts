@@ -248,21 +248,32 @@ export async function updateEvent(
 export interface RestConcept {
   uuid: string;
   display: string;
+  conceptClass?: { name?: string };
 }
 
 export async function searchConcepts(
   query: string,
   signal?: AbortSignal,
 ): Promise<RestConcept[]> {
-  const response = await read<Results<RestConcept>>(
+  const matches: RestConcept[] = [];
+  let startIndex = 0;
+  // Filter by the canonical class name, not the translated concept display.
+  // Continue paging so other classes cannot hide matching diagnoses.
+  while (matches.length < 30) {
+    const response = await read<Results<RestConcept>>(
     `${restBaseUrl}/concept?${new URLSearchParams({
       q: query,
-      v: "custom:(uuid,display)",
+      v: "custom:(uuid,display,conceptClass:(name))",
       limit: "30",
+      startIndex: String(startIndex),
     })}`,
     signal,
   );
-  return response.results;
+    matches.push(...response.results.filter((concept) => concept.conceptClass?.name === "Diagnosis"));
+    if (!response.results.length || !response.links?.some((link) => link.rel === "next")) break;
+    startIndex += response.results.length;
+  }
+  return matches.slice(0, 30);
 }
 
 interface Results<T> {

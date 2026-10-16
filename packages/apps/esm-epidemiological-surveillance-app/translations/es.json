@@ -1,4 +1,7 @@
 {
+  "eventFilterDisease": "Enfermedad",
+  "eventFilterPeriodicity": "Periodicidad",
+  "eventFilterAll": "Todos",
   "filters": "Filtros",
   "temporalInformation": "Información temporal",
   "geographic": "Información geográfica",

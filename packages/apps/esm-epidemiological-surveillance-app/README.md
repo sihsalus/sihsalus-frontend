@@ -392,3 +392,11 @@ incluido el límite superior nulo del último grupo. Validación local PASSED:
 (6 pruebas), `yarn lint`, `yarn build` y
 `node ../../../node_modules/typescript/bin/tsc6 --noEmit`. Guardado integrado en
 DEV/QLTY NOT RUN; no se realizó despliegue.
+
+La pestaña Eventos permite filtrar por enfermedad y periodicidad. Ambos filtros
+se combinan sobre la lista cargada, admiten Todos y reinician la paginación;
+el total corresponde a los eventos filtrados.
+
+La búsqueda de conceptos al registrar o editar eventos solo ofrece conceptos cuya
+clase canónica es `Diagnosis`. Consulta las páginas siguientes de resultados cuando
+hay conceptos de otras clases y excluye aquellos cuya clase no está disponible.

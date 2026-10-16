@@ -9,6 +9,7 @@ import {
   references,
   safeError,
   searchPatients,
+  searchConcepts,
   getPatient,
   getSurveillanceCase,
   updateSurveillanceCase,
@@ -20,6 +21,22 @@ vi.mock("@openmrs/esm-framework", () => ({
   fhirBaseUrl: "/ws/fhir2/R4",
 }));
 describe("surveillance API", () => {
+  it("only lists Diagnosis concepts and searches subsequent pages", async () => {
+    vi.mocked(openmrsFetch)
+      .mockResolvedValueOnce({ data: { results: [
+        { uuid: "test", display: "Synthetic test", conceptClass: { name: "Test" } },
+        { uuid: "unknown", display: "Unknown class" },
+      ], links: [{ rel: "next", uri: "unused" }] } } as never)
+      .mockResolvedValueOnce({ data: { results: [
+        { uuid: "diagnosis", display: "Synthetic diagnosis", conceptClass: { name: "Diagnosis" } },
+        { uuid: "finding", display: "Synthetic finding", conceptClass: { name: "Finding" } },
+      ] } } as never);
+    const signal = new AbortController().signal;
+    expect(await searchConcepts("Synthetic", signal)).toEqual([
+      { uuid: "diagnosis", display: "Synthetic diagnosis", conceptClass: { name: "Diagnosis" } },
+    ]);
+    expect(openmrsFetch).toHaveBeenLastCalledWith(expect.stringContaining("startIndex=2"), expect.objectContaining({ signal }));
+  });
   it("updates all event attributes at the existing event URL", async () => {
     const event = { conceptUuid: "concept", periodicity: "INMEDIATA" as const, referenceRegulation: "NTS", validFrom: "2026-01-01", validTo: null };
     vi.mocked(openmrsFetch).mockResolvedValue({ data: event } as never);

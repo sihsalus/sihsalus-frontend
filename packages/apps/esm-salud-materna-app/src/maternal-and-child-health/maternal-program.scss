@@ -1,0 +1,68 @@
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.panel {
+  padding: layout.$spacing-05;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: layout.$spacing-05;
+  min-width: 0;
+}
+
+.overviewGrid,
+.recordGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: layout.$spacing-05;
+}
+
+.help {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
+  margin: layout.$spacing-03 0;
+}
+.sectionTitle {
+  @include type.type-style("heading-compact-02");
+}
+.recordHeading {
+  display: flex;
+  gap: layout.$spacing-03;
+  align-items: center;
+  margin-bottom: layout.$spacing-03;
+}
+.recordDates {
+  list-style: none;
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: 0;
+}
+.relatedLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+}
+.stage {
+  border: 1px solid $ui-03;
+  background: $ui-01;
+  padding: layout.$spacing-05;
+}
+.stageLink {
+  @include type.type-style("body-compact-01");
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: layout.$spacing-04;
+  border: 0;
+  border-top: 1px solid $ui-03;
+  color: $interactive-01;
+  background: $ui-01;
+  cursor: pointer;
+  &:hover {
+    background: $ui-02;
+  }
+  &:focus-visible {
+    outline: 2px solid $interactive-01;
+    outline-offset: 2px;
+  }
+}

@@ -16,7 +16,7 @@ import { credNutritionEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionFollowup } from '../../../../hooks/useNutritionFollowup';
 
-import styles from './nutrition-followup.scss';
+import styles from '../../../../ui/summary-card.scss';
 
 interface NutritionFollowupProps {
   patientUuid: string;
@@ -26,7 +26,7 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { mmnStatus, ironStatus, nutritionCounseling, lastFollowupDate, isLoading, error } =
+  const { nutritionClassification, evolution, referral, lastFollowupDate, isLoading, error } =
     useNutritionFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionFollowupForm');
   const headerTitle = t('cnFollowUpTitle', 'Seguimiento nutricional');
@@ -42,49 +42,49 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
-          {lastFollowupDate ? t('inProgress', 'En curso') : t('pending', 'Pending')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <div className={styles.headerActions}>
+          <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
+            {lastFollowupDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
+          </Tag>
+          {canEdit && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={() => handleAdd()}
+              iconDescription={t('add', 'Add')}
+              disabled={isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>
           <StructuredListBody>
             <StructuredListRow>
-              <StructuredListCell className={styles.label}>{t('cnMmnStatus', 'Suplementación MMN')}</StructuredListCell>
+              <StructuredListCell className={styles.label}>
+                {t('cnClassification', 'Clasificación nutricional')}
+              </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {mmnStatus ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+                {nutritionClassification ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>
               <StructuredListCell className={styles.label}>
-                {t('cnIronSupplement', 'Suplemento de Hierro')}
+                {t('cnRecordedEvolution', 'Evolución registrada')}
               </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {ironStatus ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+                {evolution ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>
               <StructuredListCell className={styles.label}>
-                {t('cnNutritionCounseling', 'Consejería nutricional')}
+                {t('cnRecordedReferral', 'Requiere referencia (registrado)')}
               </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {nutritionCounseling != null ? (
-                  nutritionCounseling
-                ) : (
-                  <span className={styles.noData}>{t('noData', 'Sin datos')}</span>
-                )}
+                {referral != null ? referral : <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>

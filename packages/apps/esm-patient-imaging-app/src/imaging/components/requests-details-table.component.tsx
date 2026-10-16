@@ -47,6 +47,7 @@ export interface RequestProcedureTableProps {
   isValidating?: boolean;
   requests?: Array<RequestProcedure> | null;
   showDeleteButton?: boolean;
+  showCreateButton?: boolean;
   patientUuid: string;
 }
 
@@ -55,6 +56,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({
   requests = [],
   patientUuid,
   showDeleteButton = true,
+  showCreateButton = true,
 }) => {
   const { t } = useTranslation();
   const { canWrite } = useImagingAccess();
@@ -193,17 +195,19 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
-          <div className={styles.buttons}>
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <AddIcon size={16} {...props} />}
-              iconDescription={t('add', 'Add')}
-              onClick={launchAddNewRequestWorkspace}
-              disabled={!canWrite}
-            >
-              <strong>{t('Add', 'Add')}</strong>
-            </Button>
-          </div>
+          {showCreateButton && (
+            <div className={styles.buttons}>
+              <Button
+                kind="ghost"
+                renderIcon={(props) => <AddIcon size={16} {...props} />}
+                iconDescription={t('add', 'Add')}
+                onClick={launchAddNewRequestWorkspace}
+                disabled={!canWrite}
+              >
+                <strong>{t('Add', 'Add')}</strong>
+              </Button>
+            </div>
+          )}
           <div className={styles.filterContainer}>
             <select
               id="status-filter"

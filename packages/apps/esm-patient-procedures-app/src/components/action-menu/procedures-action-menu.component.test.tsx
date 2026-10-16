@@ -59,7 +59,7 @@ describe('Procedures Action Menu', () => {
     const menuPanel = panel as HTMLElement;
 
     expect(within(menuPanel).getByText('Edit')).toBeInTheDocument();
-    expect(within(menuPanel).getByText('Delete')).toBeInTheDocument();
+    expect(within(menuPanel).getByText('Void')).toBeInTheDocument();
   });
 
   it('clicking Edit launches the procedures form workspace', async () => {
@@ -86,7 +86,7 @@ describe('Procedures Action Menu', () => {
     expect(panel).toBeTruthy();
     const menuPanel = panel as HTMLElement;
 
-    await user.click(within(menuPanel).getByText('Delete'));
+    await user.click(within(menuPanel).getByText('Void'));
 
     expect(mockShowModal).toHaveBeenCalledWith(
       'procedure-delete-confirmation-dialog',

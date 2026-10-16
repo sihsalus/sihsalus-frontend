@@ -31,7 +31,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
 import { useProcedures } from '../../procedures.resource';
@@ -67,7 +67,11 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
     [],
   );
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({ patientUuid: patient.id, page: 1 });
+  const currentPage = pagination.patientUuid === patient.id ? pagination.page : 1;
+  useEffect(() => {
+    setPagination({ patientUuid: patient.id, page: 1 });
+  }, [patient.id]);
   const startIndex = (currentPage - 1) * detailedViewPageSize;
 
   const { procedures, totalCount, error, isLoading, isValidating } = useProcedures(
@@ -203,7 +207,7 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
                 totalItems={totalCount}
                 pageNumber={currentPage}
                 pageSize={detailedViewPageSize}
-                onPageNumberChange={({ page }: { page: number }) => setCurrentPage(page)}
+                onPageNumberChange={({ page }: { page: number }) => setPagination({ patientUuid: patient.id, page })}
               />
             </>
           )}

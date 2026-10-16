@@ -1,6 +1,5 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 import { validate as isUuid } from 'uuid';
 
 type Obs = {
@@ -22,19 +21,27 @@ type ObsEncounter = {
 
 type EncounterResponse = {
   results: ObsEncounter[];
+  links: Array<{ rel: 'next' | 'prev'; uri: string }>;
+  totalCount: number;
 };
 
 export function useFilteredEncounter(
   patientUuid: string | null | undefined,
   encounterType: string | null | undefined,
   formUuid: string | null | undefined,
-): { prenatalEncounter: ObsEncounter | null; error: Error | null; isLoading: boolean; mutate: () => void } {
+): {
+  prenatalEncounter: ObsEncounter | null;
+  error: Error | null;
+  isLoading: boolean;
+  mutate: ReturnType<typeof useOpenmrsFetchAll<ObsEncounter>>['mutate'];
+} {
   const customRepresentation =
     'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,display,groupMembers:(uuid,display)))';
 
   const normalizedPatientUuid = patientUuid?.trim();
   const normalizedEncounterType = encounterType?.trim();
   const normalizedFormIdentifier = formUuid?.trim();
+  const filterByFormUuid = Boolean(normalizedFormIdentifier && isUuid(normalizedFormIdentifier));
 
   const url = useMemo(() => {
     if (!normalizedPatientUuid || !normalizedEncounterType || !normalizedFormIdentifier) return null;
@@ -55,21 +62,27 @@ export function useFilteredEncounter(
     return `${restBaseUrl}/encounter?${params}`;
   }, [normalizedPatientUuid, normalizedEncounterType, normalizedFormIdentifier]);
 
-  const fetcher = async (url: string): Promise<EncounterResponse> => {
-    const response = await openmrsFetch<EncounterResponse>(url);
-    return response.data;
-  };
-
-  const { data, error, isLoading, mutate } = useSWR<EncounterResponse, Error>(url, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
+  const { data, error, isLoading, mutate } = useOpenmrsFetchAll<ObsEncounter>(url ?? '', {
+    fetcher: async (pageUrl) => {
+      const response = await openmrsFetch<EncounterResponse>(pageUrl);
+      if (!Array.isArray(response.data?.results)) {
+        throw new Error('Invalid encounter search response');
+      }
+      // REST can order and filter an exact UUID. Names may span versions and
+      // require the complete history before selecting a matching encounter.
+      return filterByFormUuid ? { ...response, data: { ...response.data, links: [] } } : response;
+    },
+    swrInfiniteConfig: {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
   });
 
   const mostRecentPrenatalEncounter = useMemo(() => {
-    if (!normalizedFormIdentifier || !Array.isArray(data?.results)) return null;
+    if (!normalizedFormIdentifier || !Array.isArray(data)) return null;
 
     const formIdentifier = normalizedFormIdentifier.toLocaleLowerCase();
-    const validEncounters = data.results.filter((encounter) => {
+    const validEncounters = data.filter((encounter) => {
       const encounterTimestamp = Date.parse(encounter?.encounterDatetime);
       const matchesForm = [encounter?.form?.uuid, encounter?.form?.name, encounter?.form?.display].some(
         (identifier) => identifier?.trim().toLocaleLowerCase() === formIdentifier,
@@ -85,12 +98,12 @@ export function useFilteredEncounter(
         (first, second) => Date.parse(second.encounterDatetime) - Date.parse(first.encounterDatetime),
       )[0] ?? null
     );
-  }, [data?.results, normalizedFormIdentifier]);
+  }, [data, normalizedFormIdentifier]);
 
   return {
     prenatalEncounter: mostRecentPrenatalEncounter,
     error: error ?? null,
-    isLoading,
+    isLoading: Boolean(url) && !error && isLoading,
     mutate,
   };
 }

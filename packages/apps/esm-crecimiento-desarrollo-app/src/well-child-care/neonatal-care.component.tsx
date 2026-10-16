@@ -51,7 +51,7 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
         slotName: 'neonatal-alojamiento-conjunto-slot',
       },
       {
-        labelKey: 'breastfeedingCounseling',
+        labelKey: 'breastfeedingTab',
         icon: WatsonHealthCobbAngle,
         slotName: 'neonatal-counseling-slot',
       },

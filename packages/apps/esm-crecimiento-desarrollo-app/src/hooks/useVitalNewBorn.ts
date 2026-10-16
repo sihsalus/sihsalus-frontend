@@ -48,9 +48,10 @@ export function useNewbornVitalsMetadata(): NewbornVitalsMetadata {
 export function useVitalNewBorn(patientUuid: string) {
   const { conceptMetadata, isLoading: metadataLoading, error: metadataError } = useNewbornVitalsMetadata();
   const conceptUuids = conceptMetadata.map((concept) => concept.uuid).join(',');
-  const obsUrl = conceptUuids
-    ? `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuids}&v=custom:(uuid,concept:(uuid,display),value,obsDatetime)`
-    : null;
+  const obsUrl =
+    patientUuid && conceptUuids
+      ? `${restBaseUrl}/obs?patient=${patientUuid}&s=default&concepts=${conceptUuids}&v=custom:(uuid,concept:(uuid,display),value,obsDatetime)`
+      : null;
 
   const {
     data: observations,

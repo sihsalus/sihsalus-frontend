@@ -19,6 +19,7 @@ import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
 import DefaultQueueTable from '../queue-table/default-queue-table.component';
+import { getQueueEntryDateCriteria } from '../store/queue-entry-date';
 import { updateSelectedQueueStatus, updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 
@@ -109,6 +110,31 @@ describe('DefaultQueueTable', () => {
       error: undefined,
       isLoading: false,
     }));
+  });
+
+  it('passes the selected entry day to the native reader without changing service or status', () => {
+    mockUseServiceQueuesStore.mockReturnValue({
+      ...mockUseServiceQueuesStore(),
+      selectedQueueEntryDate: '2026-10-11',
+      selectedServiceUuid: 'synthetic-service',
+      selectedQueueStatusUuid: 'synthetic-status',
+    });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: [],
+      isLoading: false,
+      error: undefined,
+      isValidating: false,
+      totalCount: 0,
+      mutate: vi.fn(),
+    });
+    renderWithSwr(<DefaultQueueTable />);
+    expect(mockUseQueueEntries).toHaveBeenCalledWith({
+      service: 'synthetic-service',
+      status: 'synthetic-status',
+      location: null,
+      isEnded: false,
+      ...getQueueEntryDateCriteria('2026-10-11'),
+    });
   });
 
   it('renders an empty state view if data is unavailable', async () => {
@@ -312,65 +338,65 @@ describe('DefaultQueueTable', () => {
     });
   });
 
-  it.each([
-    'upss-hospitalizacion',
-    'upss-emergencia',
-  ])('shows a transfer from %s under Centro Obstetrico, using the receiving queue location', async (originLocationUuid) => {
-    mockUseServiceQueuesStore.mockReturnValue({
-      queueLocationSelectionInitialized: true,
-      selectedServiceUuid: null,
-      selectedQueueLocationUuid: 'upss-centro-obstetrico',
-      selectedQueueStatusUuid: null,
-      selectedAppointmentStatus: '',
-      selectedQueueRoomTimestamp: new Date(),
-      isPermanentProviderQueueRoom: false,
-    });
-    mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
-    mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
-    mockUseQueueEntries.mockReturnValue({
-      queueEntries: [
-        {
-          ...mockQueueEntries[0],
-          queue: {
-            ...mockQueueEntries[0].queue,
-            uuid: 'centro-obstetrico-queue',
-            location: { ...mockQueueEntries[0].queue.location, uuid: 'upss-centro-obstetrico' },
+  it.each(['upss-hospitalizacion', 'upss-emergencia'])(
+    'shows a transfer from %s under Centro Obstetrico, using the receiving queue location',
+    async (originLocationUuid) => {
+      mockUseServiceQueuesStore.mockReturnValue({
+        queueLocationSelectionInitialized: true,
+        selectedServiceUuid: null,
+        selectedQueueLocationUuid: 'upss-centro-obstetrico',
+        selectedQueueStatusUuid: null,
+        selectedAppointmentStatus: '',
+        selectedQueueRoomTimestamp: new Date(),
+        isPermanentProviderQueueRoom: false,
+      });
+      mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
+      mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
+      mockUseQueueEntries.mockReturnValue({
+        queueEntries: [
+          {
+            ...mockQueueEntries[0],
+            queue: {
+              ...mockQueueEntries[0].queue,
+              uuid: 'centro-obstetrico-queue',
+              location: { ...mockQueueEntries[0].queue.location, uuid: 'upss-centro-obstetrico' },
+            },
+            visit: {
+              ...mockQueueEntries[0].visit,
+              location: { uuid: originLocationUuid },
+            },
           },
-          visit: {
-            ...mockQueueEntries[0].visit,
-            location: { uuid: originLocationUuid },
+          {
+            ...mockQueueEntries[1],
+            queue: {
+              ...mockQueueEntries[1].queue,
+              location: { ...mockQueueEntries[1].queue.location, uuid: originLocationUuid },
+            },
+            visit: {
+              ...mockQueueEntries[1].visit,
+              location: { uuid: 'upss-centro-obstetrico' },
+            },
           },
-        },
-        {
-          ...mockQueueEntries[1],
-          queue: {
-            ...mockQueueEntries[1].queue,
-            location: { ...mockQueueEntries[1].queue.location, uuid: originLocationUuid },
-          },
-          visit: {
-            ...mockQueueEntries[1].visit,
-            location: { uuid: 'upss-centro-obstetrico' },
-          },
-        },
-      ],
-      isLoading: false,
-      error: undefined,
-      totalCount: 2,
-      isValidating: false,
-      mutate: vi.fn(),
-    });
+        ],
+        isLoading: false,
+        error: undefined,
+        totalCount: 2,
+        isValidating: false,
+        mutate: vi.fn(),
+      });
 
-    rendeDefaultQueueTable();
+      rendeDefaultQueueTable();
 
-    expect(await screen.findByRole('link', { name: /Brian Johnson/i })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Alice Johnson/i })).not.toBeInTheDocument();
-    expect(mockUseQueueEntries).toHaveBeenCalledWith({
-      service: null,
-      location: null,
-      isEnded: false,
-      status: null,
-    });
-  });
+      expect(await screen.findByRole('link', { name: /Brian Johnson/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Alice Johnson/i })).not.toBeInTheDocument();
+      expect(mockUseQueueEntries).toHaveBeenCalledWith({
+        service: null,
+        location: null,
+        isEnded: false,
+        status: null,
+      });
+    },
+  );
 
   it('clears a persisted status only after the available statuses finish loading', async () => {
     mockUseServiceQueuesStore.mockReturnValue({

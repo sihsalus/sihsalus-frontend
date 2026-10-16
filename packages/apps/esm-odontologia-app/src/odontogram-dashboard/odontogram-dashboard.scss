@@ -19,7 +19,7 @@
   color: var(--cds-text-secondary, #525252);
 
   &::after {
-    content: '';
+    content: "";
     display: block;
     width: 2rem;
     padding-top: 0.188rem;
@@ -163,24 +163,6 @@
     width: 95vw;
     max-width: 1280px;
   }
-}
-
-// Skeleton
-.skeletonWrapper {
-  padding: 1rem;
-}
-
-.skeletonHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.skeletonCanvas {
-  width: 100%;
-  height: 340px;
-  border-radius: 4px;
 }
 
 // Responsive: stack list above the preview on narrow screens

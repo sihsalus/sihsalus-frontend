@@ -44,6 +44,7 @@
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+  min-height: 0;
 }
 
 :global(.omrs-breakpoint-lt-desktop) .form {
@@ -56,6 +57,14 @@
 
 .grid {
   margin: layout.$spacing-05;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.desktop,
+.tablet {
+  flex-shrink: 0;
 }
 
 .row {

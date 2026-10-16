@@ -34,6 +34,10 @@
     "printItemCost": false,
     "printBalanceOnHand": false
   },
+  "@sihsalus/esm-patient-procedures-app": {
+    "bodySiteConceptUuid": "25b4e8e6-0781-5c04-bc76-888402f3f505",
+    "bodySiteConceptSourceType": "Concept set"
+  },
   "@sihsalus/esm-patient-orders-app": {
     "stockAvailability": {
       "enabled": true,
@@ -273,14 +277,15 @@
           "case-monitoring-encounter-link",
           "missed-follow-up-dashboard-link",
           "interconsultas-chart-dashboard-link",
-          "well-child-care-dashboard-group-link",
-          "maternal-and-child-health-dashboard-group-link",
+          "cred-dashboard-link",
+          "maternal-program-dashboard-link",
           "odontologia-dashboard-link",
           "psicologia-dashboard-link",
           "terapia-fisica-dashboard-link",
           "billing-summary-dashboard-link",
           "offline-tools-patient-chart-actions-dashboard-link"
-        ]
+        ],
+        "remove": ["well-child-care-dashboard-group-link", "maternal-and-child-health-dashboard-group-link"]
       }
     },
     "visitLocationTag": "Care UPSS",

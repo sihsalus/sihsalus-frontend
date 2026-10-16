@@ -270,7 +270,7 @@ describe('DefinicionView encounter types', () => {
     });
   });
 
-  it('renders resolved encounter-type names and the window tipo label', () => {
+  it('renders resolved encounter-type names and the tipo label', () => {
     mockUseResolvedEncounterTypes.mockReturnValue({
       data: [],
       displayMap: new Map([['enc-cred', 'CRED Neonato']]),
@@ -279,7 +279,7 @@ describe('DefinicionView encounter types', () => {
     });
 
     const definicion: DefinicionIndicadorForm = {
-      tipo: 'conteo_pacientes_ventana',
+      tipo: 'conteo_pacientes',
       evento: {
         encounter_type_uuids: ['enc-cred'],
         minimo_ocurrencias: 4,
@@ -288,7 +288,7 @@ describe('DefinicionView encounter types', () => {
     };
     render(<DefinicionView definicion={definicion} />);
 
-    expect(screen.getByText('Conteo de pacientes en ventana etaria')).toBeInTheDocument();
+    expect(screen.getByText('Conteo de pacientes')).toBeInTheDocument();
     expect(screen.getByText(/Tipos de encuentro:/)).toBeInTheDocument();
     expect(screen.getByText('CRED Neonato')).toBeInTheDocument();
     expect(screen.getByText(/min - \/ max 28 días/)).toBeInTheDocument();
@@ -303,7 +303,7 @@ describe('DefinicionView encounter types', () => {
     });
 
     const definicion: DefinicionIndicadorForm = {
-      tipo: 'conteo_pacientes_ventana',
+      tipo: 'conteo_pacientes',
       evento: { encounter_type_uuids: ['enc-unknown'] },
     };
     render(<DefinicionView definicion={definicion} />);

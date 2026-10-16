@@ -468,7 +468,175 @@ window.visitStyles = styles;`,
   }
 });
 
-test('results dashboard keeps its top gap when shared dashboard styles load later', async (t) => {
+test('clinical panels keep milestone details and native time controls readable beside an open form', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'clinical-panel-layout-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/apps/esm-crecimiento-desarrollo-app');
+  const config = loadConfig(workspace, 'rspack.config.js');
+  const outputPath = path.join(fixture, 'dist');
+  const owners = {
+    milestone:
+      'apps/esm-crecimiento-desarrollo-app/src/well-child-care/components/test-peruano/tped-reference-widget.scss',
+    dashboard: 'libs/esm-patient-common-lib/src/tabbed-dashboard/tabbed-dashboard.scss',
+    date: 'libs/esm-form-engine-lib/src/components/inputs/date/date.scss',
+  };
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    Object.entries(owners)
+      .map(([name, file]) => `import ${name} from ${JSON.stringify(path.join(repositoryRoot, 'packages', file))};`)
+      .join('\n') + '\nwindow.clinicalPanelStyles = { milestone, dashboard, date };',
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'styles.js',
+        publicPath: '',
+      },
+      module: config.module,
+      resolve: config.resolve,
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true, locale: 'es-PE' });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  await page.setContent('<main id="dashboard"></main><form id="form"></form>');
+  await page.addStyleTag({
+    path: require.resolve('@carbon/styles/css/styles.css'),
+  });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  const { milestone, dashboard, date } = await page.evaluate(() => window.clinicalPanelStyles);
+  const h = require('react').createElement;
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const { TimePicker } = require('@carbon/react');
+  await page.locator('#dashboard').evaluate(
+    (node, html) => {
+      node.innerHTML = html;
+    },
+    `<header class="${dashboard.desktopHeading}"><h4>Crecimiento y desarrollo</h4>` +
+      `<p class="${dashboard.description}">Revise la información del niño y registre su control.</p></header>` +
+      `<section class="${milestone.widget}"><header class="${milestone.widgetHeader}">` +
+      '<div><h3>Test Peruano de Evaluación del Desarrollo</h3></div>' +
+      `<div class="${milestone.ageSummary}"><span>Edad cronológica</span><strong>18 meses</strong></div></header>` +
+      `<div class="${milestone.toolbar}"><div class="cds--select"><label>Columna enfocada<select><option>18 meses</option></select></label></div></div>` +
+      `<section class="${milestone.detailPanel}"><h4>Sentado en el suelo, se para solo</h4>` +
+      `<dl id="details" class="${milestone.detailList}">` +
+      [
+        ['Línea del desarrollo', 'Control de cabeza y tronco'],
+        ['Edad del hito', '18 meses'],
+        ['Evidencia', 'Observado'],
+        ['Fuente', 'NTS 087, Anexo 9, página PDF 48'],
+      ]
+        .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
+        .join('') +
+      '</dl></section></section>',
+  );
+  await page.locator('#form').evaluate(
+    (node, html) => {
+      node.innerHTML = html;
+    },
+    renderToStaticMarkup(
+      h(
+        'div',
+        { className: date.datetime },
+        h(
+          'div',
+          { className: date.datePickerSpacing },
+          h('label', { htmlFor: 'session-date' }, 'Fecha y hora de la sesión'),
+          h('input', {
+            id: 'session-date',
+            type: 'date',
+            defaultValue: '2026-10-11',
+          }),
+        ),
+        h(
+          'div',
+          null,
+          h(TimePicker, {
+            id: 'session-time',
+            className: date.timeInput,
+            type: 'time',
+            labelText: 'Hora',
+            defaultValue: '15:04',
+            invalid: true,
+            invalidText: 'Revise la hora de la sesión.',
+          }),
+        ),
+      ),
+    ),
+  );
+  await page.addStyleTag({
+    content:
+      'body{margin:0}#dashboard,#form{margin:16px}#form label{display:block}#session-date{width:100%;height:40px}',
+  });
+  for (const [viewport, panelWidth] of [
+    [1440, 200],
+    [1440, 320],
+    [1440, 768],
+    [420, 388],
+  ]) {
+    await page.setViewportSize({ width: viewport, height: 1000 });
+    await page.locator('#dashboard').evaluate((node, width) => {
+      node.style.width = `${width}px`;
+    }, panelWidth);
+    await page.locator('#form').evaluate((node, width) => {
+      node.style.width = `${width}px`;
+    }, panelWidth);
+    const rows = await page.locator('#details > div').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          x: rect.x,
+          y: rect.y,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          overflow: node.scrollWidth > node.clientWidth,
+        };
+      }),
+    );
+    for (const [index, row] of rows.entries()) {
+      assert.ok(row.width >= 150 && !row.overflow, `detail ${index} readable at panel width ${panelWidth}`);
+      for (const other of rows.slice(index + 1)) {
+        assert.ok(
+          row.right <= other.x || other.right <= row.x || row.bottom <= other.y || other.bottom <= row.y,
+          'milestone labels and values do not overlap',
+        );
+      }
+    }
+    for (const id of ['dashboard', 'form']) {
+      assert.ok(
+        await page.locator(`#${id}`).evaluate((node) => node.scrollWidth <= node.clientWidth),
+        `${id} contains its content`,
+      );
+    }
+    await expect(page.locator('#dashboard h4').first()).toHaveCSS('text-transform', 'none');
+    await expect(page.locator('#dashboard header p')).toHaveCSS('text-transform', 'none');
+    const input = await page.locator('#session-time').boundingBox();
+    assert.ok(input.width >= 160, 'native time input has room for hours, minutes and locale-specific period');
+    await expect(page.locator('#session-time')).toHaveValue('15:04');
+    await expect(page.getByText('Revise la hora de la sesión.')).toBeVisible();
+    if (panelWidth <= 320) {
+      const calendar = await page.locator('#session-date').boundingBox();
+      assert.ok(input.y >= calendar.y + calendar.height, 'narrow forms stack date and time');
+    }
+
+  }
+});
+
+test('chart dashboards preserve results spacing and contain wide tables at mobile widths', async (t) => {
   const fixture = await mkdtemp(path.join(tmpdir(), 'results-dashboard-spacing-'));
   t.after(() => rm(fixture, { recursive: true, force: true }));
   const workspace = path.join(repositoryRoot, 'packages/apps/esm-patient-chart-app');
@@ -500,18 +668,62 @@ window.chartStyles = chart;`,
   const page = await context.newPage();
   await page.setContent(
     '<div data-extension-slot-name="patient-chart-test-results-dashboard-slot" id="results"></div>' +
-      '<div data-extension-slot-name="patient-chart-encounters-dashboard-slot" id="encounters"></div>',
+      '<div data-extension-slot-name="patient-chart-encounters-dashboard-slot" id="encounters"></div>' +
+      '<main id="host"><div id="dashboard"><div id="extension"><div id="wrapper"><div>' +
+      '<section class="cds--data-table-container"><div id="table-scroll" class="cds--data-table-content">' +
+      '<table class="cds--data-table"><thead><tr>' +
+      Array.from({ length: 9 }, (_, index) => `<th>Control prenatal ${index + 1}: fecha de atención</th>`).join('') +
+      '</tr></thead><tbody><tr>' +
+      Array.from({ length: 9 }, () => '<td>01/10/2026</td>').join('') +
+      '</tr></tbody></table></div></section></div></div></div></div></main>',
   );
+  await page.addStyleTag({ path: require.resolve('@carbon/styles/css/styles.css') });
   for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
     await page.addStyleTag({ path: path.join(outputPath, asset) });
   }
   await page.addScriptTag({ path: path.join(outputPath, 'styles.js') });
+  await page.addStyleTag({ content: 'body{margin:0}#host{overflow-x:auto}' });
   await page.evaluate(() => {
     document.getElementById('results').className = window.chartStyles.dashboard;
     document.getElementById('encounters').className = window.chartStyles.dashboard;
+    for (const [id, name] of Object.entries({
+      host: 'dashboardContainer',
+      dashboard: 'dashboard',
+      extension: 'extension',
+      wrapper: 'extensionWrapper',
+    })) {
+      document.getElementById(id).className = window.chartStyles[name];
+    }
   });
   await expect(page.locator('#results')).toHaveCSS('margin-top', '16px');
   await expect(page.locator('#encounters')).toHaveCSS('margin-top', '0px');
+
+  for (const width of [1280, 768, 420, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate((mobile) => {
+      document.body.classList.toggle('omrs-breakpoint-lt-tablet', mobile);
+    }, width < 672);
+    assert.ok(
+      await page.locator('#host').evaluate((host) => host.scrollWidth <= host.clientWidth),
+      `the chart host stays within its own width at ${width}px`,
+    );
+    assert.ok(
+      await page.locator('#extension').evaluate((extension) => {
+        const parent = extension.parentElement.getBoundingClientRect();
+        return extension.getBoundingClientRect().right <= parent.right + 1;
+      }),
+      `the extension stays within its dashboard at ${width}px`,
+    );
+    if (width < 672) {
+      assert.ok(
+        await page.locator('#table-scroll').evaluate((content) => {
+          content.scrollLeft = content.scrollWidth;
+          return content.scrollWidth > content.clientWidth && content.scrollLeft > 0;
+        }),
+        'all table columns remain accessible through the table’s own horizontal scroll',
+      );
+    }
+  }
 });
 
 test('workspace rail reserves desktop chart space without changing overlay or tablet layout', async (t) => {
@@ -621,6 +833,366 @@ test('workspace rail reserves desktop chart space without changing overlay or ta
   await expect(page.locator('#sideRail')).toHaveCSS('position', 'fixed');
   const bottomRail = await page.locator('#sideRail').boundingBox();
   assert.equal(bottomRail.y + bottomRail.height, 1024);
+});
+
+test('mobile workspace actions stay above the intrinsic action menu when labels wrap or change', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'mobile-workspace-menu-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/libs/esm-styleguide');
+  const config = loadConfig(workspace, 'rspack.config.cjs');
+  const outputPath = path.join(fixture, 'dist');
+  const source = (file) => JSON.stringify(path.join(workspace, 'src', file));
+  const stubs = path.join(fixture, 'context.jsx');
+  const windowFixture = path.join(fixture, 'window.jsx');
+  await writeFile(
+    stubs,
+    `import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Document } from '@carbon/react/icons';
+import HelpMenu from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-help-menu-app/src/help-menu/help.component.tsx'))};
+import HelpMenuPopup from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-help-menu-app/src/help-menu/help-popup.component.tsx'))};
+export { showModal } from ${source('modals')};
+export const reportError = error => { throw new Error(String(error)); };
+export const userCanLaunch = () => true;
+const modalRoots = new Map();
+export function getModalRegistration(name) {
+  if (name !== 'help-menu-modal') return null;
+  return { load: async () => ({
+    bootstrap: async () => {},
+    mount: async props => {
+      const root = createRoot(props.domElement);
+      modalRoots.set(props.domElement, root);
+      root.render(<HelpMenuPopup close={props.close} />);
+    },
+    unmount: async props => { modalRoots.get(props.domElement)?.unmount(); modalRoots.delete(props.domElement); },
+  }) };
+}
+import { ActionMenuButton2 } from ${source('workspaces2/action-menu2/action-menu-button2.component')};
+export const ComponentContext = React.createContext({});
+export const WorkspaceContext = React.createContext({});
+export const useWorkspace2Context = () => React.useContext(WorkspaceContext);
+export const isDesktop = layout => layout === 'small-desktop';
+export function useLayoutType() {
+  const read = () => innerWidth >= 1024 ? 'small-desktop' : 'phone';
+  const [layout, setLayout] = useState(read);
+  useEffect(() => { const update = () => setLayout(read()); addEventListener('resize', update);
+    return () => removeEventListener('resize', update); }, []);
+  return layout;
+}
+export const useSession = () => ({ authenticated: true, user: {} });
+export const useAssignedExtensions = () => [{ id: 'qa-help' }];
+export const userHasAccess = () => true;
+export const subscribeOpenmrsEvent = () => () => {};
+export const getCoreTranslation = key => key;
+export { Close as CloseIcon, UserAvatar as UserAvatarIcon } from '@carbon/react/icons';
+export const useOnClickOutside = () => React.useRef(null);
+export const ArrowRightIcon = () => null;
+export const closeWorkspaceGroup2 = () => {};
+export const launchWorkspace2 = () => {};
+const listeners = new Set();
+const group = { name: 'test-group', moduleName: 'test-app', overlay: false };
+let state = {
+  openedGroup: { groupName: group.name, props: {} },
+  openedWindows: [{ windowName: 'test-window', openedWorkspaces: [{ workspaceName: 'test-workspace', uuid: 'test' }] }],
+  registeredGroupsByName: { [group.name]: group },
+  registeredWindowsByName: { 'test-window': { name: 'test-window', group: group.name, icon: () => null } },
+  registeredWorkspacesByName: { 'test-workspace': { window: 'test-window' } },
+  workspaceTitleByWorkspaceName: { 'test-workspace': 'Antecedentes' },
+  setWorkspaceTitle() {}, setHasUnsavedChanges() {}, setWindowMaximized() {}, hideWindow() {},
+
+};
+export const useWorkspace2Store = () => useSyncExternalStore(
+  listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => state);
+export function updateFixture(options) {
+  const groupName = options.groupName ?? state.openedGroup?.groupName ?? group.name;
+  state = { ...state,
+    openedGroup: options.closed ? null : { groupName, props: {} },
+    registeredGroupsByName: { [groupName]: { ...group, name: groupName, overlay: options.overlay ?? false } },
+    openedWindows: [{ ...state.openedWindows[0], maximized: options.maximized ?? false,
+      props: { isRootWorkspace: options.root !== false } }],
+    registeredWindowsByName: { 'test-window': { ...state.registeredWindowsByName['test-window'],
+      group: groupName, showActionMenu: options.menu !== false } },
+  };
+  listeners.forEach(listener => listener());
+}
+export function ExtensionSlot({ name }) {
+  if (name === 'user-panel-slot') return <HelpMenu />;
+  if (name === 'user-panel-bottom-slot') return null;
+  if (name === 'help-menu-slot') return <a href="#qa-help">Ayuda de la fixture QA aislada</a>;
+  return <>{['Resumen de consulta', 'Formularios clínicos', 'Canasta de órdenes', 'Lista de tareas', 'Ver FUAs del paciente'].map(label =>
+    <div key={label}><ActionMenuButton2 label={label} icon={() => <Document size={16} />}
+      workspaceToLaunch={{ workspaceName: 'test-workspace' }} /></div>)}</>;
+}`,
+  );
+  await writeFile(
+    windowFixture,
+    `import React from 'react';
+import { Button, ButtonSet } from '@carbon/react';
+import { Workspace2 } from ${source('workspaces2/workspace2.component')};
+import { WorkspaceContext } from './context.jsx';
+import form from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-patient-conditions-app/src/conditions/conditions-form.scss'))};
+export default function Window({ showActionMenu, openedWindow }) {
+  return <WorkspaceContext.Provider value={{ workspaceName: 'test-workspace',
+    isRootWorkspace: openedWindow.props?.isRootWorkspace !== false, showActionMenu }}>
+    <Workspace2 title="Fixture QA local aislada"><form className={form.form} onSubmit={event => {
+      event.preventDefault(); window.saved = (window.saved ?? 0) + 1;
+    }}><div className={form.formContent} id="fields"><div style={{height:1200}}>Fixture de diseño local, sin pacientes ni conexión</div></div>
+      <footer className={form.formActions}><ButtonSet>
+        <Button kind="secondary" className={form.button}>Cancelar</Button>
+        <Button type="submit" className={form.button}>Guardar y cerrar</Button>
+      </ButtonSet></footer>
+    </form></Workspace2>
+  </WorkspaceContext.Provider>;
+}`,
+  );
+  await writeFile(
+    path.join(fixture, 'entry.js'),
+    `import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { Header, HeaderGlobalBar } from '@carbon/react';
+import UserMenuButton from ${JSON.stringify(path.join(repositoryRoot, 'packages/apps/esm-primary-navigation-app/src/components/navbar/user-menu-button.component.tsx'))};
+import ${source('_all.scss')};
+import { setupModals, showModal } from ${source('modals')};
+window.openHelpModal = () => showModal('help-menu-modal', { size: 'sm' });
+function NavigationFixture() {
+  const [active, setActive] = React.useState(false);
+  return React.createElement(Header, { 'aria-label': 'QA local aislada' },
+    React.createElement('span', { style: {color:'white',padding:16} }, 'QA local aislada'),
+    React.createElement(HeaderGlobalBar, {}, React.createElement(UserMenuButton, {
+      isActivePanel: () => active, togglePanel: () => setActive(value => !value), hidePanel: () => () => setActive(false),
+    })));
+}
+import { renderWorkspaceWindowsAndMenu } from ${source('workspaces2/workspace-windows-and-menu.component')};
+import { updateFixture } from './context.jsx';
+window.updateFixture = updateFixture;
+renderWorkspaceWindowsAndMenu(document.getElementById('omrs-workspaces-container'));
+createRoot(document.getElementById('omrs-top-nav-app-container')).render(React.createElement(NavigationFixture));
+setupModals(document.getElementById('omrs-modals-container'));`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.js'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'fixture.js',
+        publicPath: '',
+      },
+      module: {
+        rules: config.module.rules.map((rule) => ({
+          ...rule,
+          use: Array.isArray(rule.use)
+            ? rule.use.map((loader) =>
+                loader.loader === 'css-loader'
+                  ? {
+                      ...loader,
+                      options: {
+                        ...loader.options,
+                        modules: {
+                          ...loader.options.modules,
+                          auto: (resource) =>
+                            /\.module\.scss$|conditions-form\.scss$|help(?:-popup)?\.styles\.scss$|(?:navbar|user-menu-panel)\.scss$/.test(resource),
+                        },
+                      },
+                    }
+                  : loader,
+              )
+            : rule.use,
+        })),
+      },
+      resolve: {
+        ...config.resolve,
+        modules: [path.join(repositoryRoot, 'node_modules'), 'node_modules'],
+        alias: {
+          '@openmrs/esm-framework$': stubs,
+          '@openmrs/esm-extensions$': stubs,
+          '@openmrs/esm-error-handling$': stubs,
+          '../access$': stubs,
+          '@openmrs/esm-react-utils$': stubs,
+          '@openmrs/esm-api$': stubs,
+          '@openmrs/esm-emr-api$': stubs,
+          '@openmrs/esm-translations$': stubs,
+          './workspace2$': stubs,
+          '../workspace2$': stubs,
+          '../icons$': stubs,
+          '../../icons$': stubs,
+          './active-workspace-window.component$': windowFixture,
+        },
+      },
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({
+    offline: true,
+    viewport: { width: 420, height: 900 },
+  });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  page.setDefaultTimeout(5000);
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.setContent(
+    '<div id="omrs-top-nav-app-container">QA local aislada · barra móvil</div><div id="omrs-left-nav-container"></div>' +
+      '<div id="omrs-workspaces-container"></div><div id="omrs-apps-container"></div>' +
+      '<div id="omrs-modals-container" class="omrs-modals-container" style="visibility:hidden"></div>',
+  );
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addStyleTag({
+    content: 'body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}',
+  });
+  await page.evaluate(() => {
+    document.body.className = 'omrs-breakpoint-lt-desktop';
+  });
+  const originalBottomNavHeight = await page
+    .locator('html')
+    .evaluate((node) => getComputedStyle(node).getPropertyValue('--bottom-nav-height'));
+  await page.addScriptTag({ path: path.join(outputPath, 'fixture.js') });
+  const save = page.getByRole('button', { name: 'Guardar y cerrar' });
+  const rail = page.locator('aside > div');
+  const assertAccessible = async (description) => {
+    await expect(save).toBeInViewport({ ratio: 1 });
+    await expect(async () => {
+      const actions = await save.boundingBox();
+      const menu = await rail.boundingBox();
+      assert.ok(actions.y + actions.height <= menu.y + 1, `${description}: ${JSON.stringify({ actions, menu })}`);
+    }).toPass({ timeout: 5000 });
+    await save.click();
+  };
+  const help = page.getByRole('button', { name: 'Help menu', exact: true });
+  await expect(help).not.toBeInViewport();
+  const geometry = await rail.evaluate(node => [...node.querySelectorAll('button')].map(button => {
+    const rect = button.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(button.lastElementChild);
+    return { label: button.lastElementChild.textContent, left: rect.left, right: rect.right,
+      text: [...range.getClientRects()].map(r => ({ left: r.left, right: r.right })),
+      hit: button.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.bottom - 4)) };
+  }));
+  assert.deepEqual(geometry.map(action => action.label), [
+    'Resumen de consulta', 'Formularios clínicos', 'Canasta de órdenes', 'Lista de tareas', 'Ver FUAs del paciente',
+  ]);
+  for (const action of geometry) {
+    assert.ok(action.left >= 0 && action.right <= 420, JSON.stringify(action));
+    assert.ok(action.text.every(rect => rect.left >= action.left && rect.right <= action.right), JSON.stringify(action));
+    assert.ok(action.hit, `action is covered: ${action.label}`);
+  }
+  await page.getByRole('button', { name: 'Ver FUAs del paciente', exact: true }).click();
+  await page.getByRole('button', { name: 'My Account', exact: true }).click();
+  await expect(help).toBeVisible();
+  await help.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Help menu' })).toBeVisible();
+  await expect(dialog.getByRole('link', { name: 'Ayuda de la fixture QA aislada' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+  const dialogBox = await dialog.boundingBox();
+  assert.ok(dialogBox.x >= 0 && dialogBox.x + dialogBox.width <= 420 &&
+    dialogBox.y >= 0 && dialogBox.y + dialogBox.height <= 900, JSON.stringify(dialogBox));
+  await expect(page.locator('#omrs-modals-container')).toHaveClass(/cds--modal.*is-visible/);
+  await expect(page.locator('#omrs-modals-container')).toHaveCSS('opacity', '1');
+  await page.evaluate(() => window.openHelpModal());
+  await expect(page.locator('[role="dialog"]')).toHaveCount(2);
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+  // Carbon dismisses an open tooltip before the modal. The mobile Close icon
+  // appears under the pointer left by My Account, so exercise that priority explicitly.
+  await dialog.locator('.cds--modal-close').hover();
+  await expect(dialog.getByRole('tooltip')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog.getByRole('tooltip')).toHaveCount(0);
+  await expect(page.locator('[role="dialog"]')).toHaveCount(2);
+  await dialog.getByRole('heading', { name: 'Help menu' }).hover();
+  await expect(page.locator('[role="tooltip"][aria-hidden="false"]')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[role="dialog"]')).toHaveCount(1);
+  await expect(dialog).toBeVisible();
+  await expect(page.locator('#omrs-modals-container')).toHaveClass(/is-visible/);
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('#omrs-modals-container')).not.toHaveClass(/is-visible/);
+  await expect(help).toBeFocused();
+  await page.getByRole('button', { name: 'My Account', exact: true }).click();
+  await expect(help).not.toBeInViewport();
+  await expect(save).toBeInViewport({ ratio: 1 });
+  assert.equal(await save.evaluate(button => {
+    const rect = button.getBoundingClientRect();
+    return button.contains(document.elementFromPoint(rect.right - 4, rect.y + rect.height / 2));
+  }), true, 'help does not cover the workspace save action');
+  await assertAccessible('save stays above wrapped menu');
+  await page.locator('#fields').evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await assertAccessible('scrolling fields preserves accessible actions');
+  for (const options of [{ overlay: true }, { maximized: true }, { root: false }]) {
+    await page.evaluate((options) => window.updateFixture(options), options);
+    await assertAccessible('overlay, maximized and child workspaces reserve the actual menu');
+  }
+  await page.evaluate(() => {
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar';
+    window.updateFixture({});
+  });
+  await assertAccessible('RTL preserves accessible actions');
+  const initialHeight = (await rail.boundingBox()).height;
+  await page
+    .getByRole('button', {
+      name: 'Formularios clínicos',
+      exact: true,
+    })
+    .locator('span')
+    .last()
+    .evaluate((node) => {
+      node.textContent += ' y seguimiento de las tareas pendientes para el cierre de la consulta';
+    });
+  await expect(async () => assert.ok((await rail.boundingBox()).height > initialHeight)).toPass({ timeout: 5000 });
+  await assertAccessible('dynamic labels update the reservation');
+  await page.evaluate(() => window.updateFixture({ menu: false, groupName: 'second-group' }));
+  await expect(rail).toHaveCount(0);
+  await expect(page.locator('#omrs-workspaces-container > div')).toHaveCSS('--bottom-nav-height', '0px');
+  await save.click();
+  await page.evaluate(() => window.updateFixture({}));
+  await assertAccessible('reopening the menu restores its measured height');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(() => {
+    document.body.className = 'omrs-breakpoint-gt-tablet';
+  });
+  await expect(page.locator('#omrs-workspaces-container > div')).toHaveCSS('--bottom-nav-height', '0px');
+  await expect(rail).toHaveCSS('position', 'static');
+  await expect(help).not.toBeInViewport();
+  await save.click();
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => window.openHelpModal());
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Close', exact: true }).last()).toBeFocused();
+    await dialog.getByRole('heading', { name: 'Help menu' }).hover();
+    await expect(page.locator('[role="tooltip"][aria-hidden="false"]')).toHaveCount(0);
+    const box = await dialog.boundingBox();
+    assert.ok(box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height <= 1000, JSON.stringify(box));
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator('#omrs-modals-container')).not.toHaveClass(/is-visible/);
+  }
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => {
+      document.body.className = 'omrs-breakpoint-lt-desktop';
+    });
+    await assertAccessible('returning from desktop remeasures mobile and tablet menus');
+  }
+  assert.equal(await page.evaluate(() => window.saved), 12, 'all saves use ordinary pointer clicks');
+  await expect(page.locator('html')).toHaveCSS('--bottom-nav-height', originalBottomNavHeight);
+  assert.deepEqual(pageErrors, []);
 });
 
 before(async () => {
@@ -786,3 +1358,383 @@ for (const owner of styleOwners) {
     );
   });
 }
+
+test('clinical form selectors cover the previous workspace and keep their last row and footer reachable', async (t) => {
+  const fixture = await mkdtemp(path.join(tmpdir(), 'forms-selector-workspace-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const workspace = path.join(repositoryRoot, 'packages/libs/esm-styleguide');
+  const config = loadConfig(workspace, 'rspack.config.cjs');
+  const outputPath = path.join(fixture, 'dist');
+  const source = (file) => JSON.stringify(path.join(workspace, 'src', file));
+  const stubs = path.join(fixture, 'context.jsx');
+  await writeFile(
+    stubs,
+    `import React, { useEffect, useState } from 'react';
+export { Workspace2 } from ${source('workspaces2/workspace2.component')};
+export const WorkspaceContext = React.createContext({});
+export const useWorkspace2Context = () => React.useContext(WorkspaceContext);
+export const isDesktop = layout => layout === 'small-desktop';
+export function useLayoutType() {
+  const read = () => innerWidth >= 1024 ? 'small-desktop' : 'phone';
+  const [layout, setLayout] = useState(read);
+  useEffect(() => { const update = () => setLayout(read()); addEventListener('resize', update);
+    return () => removeEventListener('resize', update); }, []);
+  return layout;
+}
+export const getCoreTranslation = key => key;
+export const CloseIcon = () => null;
+export const ArrowRightIcon = () => null;
+export const ArrowLeftIcon = () => null;
+export const closeWorkspaceGroup2 = () => {};
+export const launchWorkspace = () => {};
+export const launchWorkspace2 = () => {};
+export const ResponsiveWrapper = ({children}) => <>{children}</>;
+export const formatDatetime = () => 'Hoy';
+const state = {
+  openedGroup: { groupName: 'clinical', props: {} },
+  openedWindows: [{ windowName: 'forms', openedWorkspaces: [
+    { workspaceName: 'previous', uuid: 'previous' }, { workspaceName: 'selector', uuid: 'selector' }] }],
+  registeredGroupsByName: { clinical: { name: 'clinical', persistence: 'closable' } },
+  registeredWindowsByName: { forms: { name: 'forms', group: 'clinical' } },
+  registeredWorkspacesByName: { previous: { window: 'forms' }, selector: { window: 'forms' } },
+  workspaceTitleByWorkspaceName: { previous: 'Previous workspace', selector: 'Clinical forms' },
+  setWorkspaceTitle() {}, setHasUnsavedChanges() {}, setWindowMaximized() {}, hideWindow() {},
+};
+export const useWorkspace2Store = () => state;`,
+  );
+  await writeFile(
+    path.join(fixture, 'entry.jsx'),
+    `import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { createInstance } from 'i18next';
+import { I18nextProvider, initReactI18next } from 'react-i18next';
+import { Workspace2, WorkspaceContext } from './context.jsx';
+import ${source('components/_general.scss')};
+import menu from ${source('workspaces2/workspace-windows-and-menu.module.scss')};
+import Selector from ${JSON.stringify(path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/forms-selector/forms-selector.workspace'))};
+const forms = Array.from({length:27}, (_, index) => ({ form: { uuid: 'form-'+index,
+  name: index === 26 ? 'Consejería, acuerdos y compromisos' : 'Formulario clínico '+index,
+  version:'1', published:true, retired:false, resources:[] }, associatedEncounters: [] }));
+const i18n = createInstance();
+i18n.use(initReactI18next).init({lng:'es', fallbackLng:false, resources:{es:{translation:{}}}, interpolation:{escapeValue:false}}).then(() => {
+createRoot(document.getElementById('fixture')).render(<I18nextProvider i18n={i18n}>
+<div className={menu.workspaceWindowsAndMenuContainer}><div className={menu.workspaceWindowsContainer}>
+<WorkspaceContext.Provider value={{workspaceName:'previous', isRootWorkspace:true, closeWorkspace:async()=>true, showActionMenu:false}}>
+<Workspace2 title="Previous workspace"><label>Previous consultation date<input aria-label="Previous consultation date" type="date" /></label></Workspace2>
+</WorkspaceContext.Provider>
+<WorkspaceContext.Provider value={{workspaceName:'selector', isRootWorkspace:false, closeWorkspace:async()=>true, showActionMenu:false}}>
+<Selector availableForms={forms} patientAge="18 meses" controlNumber={1} title="Clinical forms" patientUuid="synthetic-patient"
+closeWorkspace={()=>{}} closeWorkspaceWithSavedChanges={()=>{window.finished=(window.finished??0)+1}}
+onFormLaunch={(form, encounter, submitted)=>{(window.opened??=[]).push(form.uuid);submitted()}} />
+</WorkspaceContext.Provider>
+</div></div></I18nextProvider>);
+});`,
+  );
+  await compile(
+    {
+      context: workspace,
+      mode: config.mode,
+      entry: path.join(fixture, 'entry.jsx'),
+      output: {
+        ...config.output,
+        path: outputPath,
+        filename: 'fixture.js',
+        publicPath: '',
+      },
+      module: {
+        rules: config.module.rules.map((rule) => ({
+          ...rule,
+          use: Array.isArray(rule.use)
+            ? rule.use.map((loader) =>
+                loader.loader === 'css-loader'
+                  ? {
+                      ...loader,
+                      options: {
+                        ...loader.options,
+                        modules: {
+                          ...loader.options.modules,
+                          auto: (resource) => /\.module\.scss$|forms-(selector|list|table)\.scss$/.test(resource),
+                        },
+                      },
+                    }
+                  : loader,
+              )
+            : rule.use,
+        })),
+      },
+      resolve: {
+        ...config.resolve,
+        modules: [path.join(repositoryRoot, 'node_modules'), 'node_modules'],
+        alias: {
+          '@openmrs/esm-framework$': stubs,
+          '@openmrs/esm-react-utils$': stubs,
+          '@openmrs/esm-translations$': stubs,
+          './workspace2$': stubs,
+          '../icons$': stubs,
+        },
+      },
+      optimization: config.optimization,
+      plugins: config.plugins.filter((plugin) => plugin instanceof rspack.CssExtractRspackPlugin),
+      devtool: false,
+      performance: false,
+    },
+    rspack,
+  );
+  const context = await browser.newContext({ offline: true });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  page.setDefaultTimeout(5000);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setContent(
+    '<div id="omrs-top-nav-app-container"></div><div id="omrs-left-nav-container"></div><div id="omrs-workspaces-container"><div id="fixture" style="height:100%;position:relative"></div></div><div id="omrs-apps-container"></div>',
+  );
+  await page.addStyleTag({
+    path: require.resolve('@carbon/styles/css/styles.css'),
+  });
+  for (const asset of (await readdir(outputPath)).filter((file) => file.endsWith('.css'))) {
+    await page.addStyleTag({ path: path.join(outputPath, asset) });
+  }
+  await page.addStyleTag({
+    content: 'body{margin:0;--omrs-navbar-height:48px}*{box-sizing:border-box}',
+  });
+  await page.evaluate(() => {
+    document.body.className = 'omrs-breakpoint-gt-tablet';
+  });
+  await page.addScriptTag({ path: path.join(outputPath, 'fixture.js') });
+  for (const width of [1280, 768, 420]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate((width) => {
+      document.body.className = width >= 1024 ? 'omrs-breakpoint-gt-tablet' : 'omrs-breakpoint-lt-desktop';
+    }, width);
+    await expect(page.getByRole('banner', { name: 'workspaceHeader' })).toHaveCount(2);
+    const footer = page.getByRole('button', { name: 'Cerrar formularios' });
+    await expect
+      .poll(() =>
+        footer.evaluate((button) => button.closest('form').parentElement.parentElement.getBoundingClientRect().width),
+      )
+      .toBe(width >= 1024 ? 420 : width);
+    await expect(footer).toBeInViewport();
+    const before = await footer.boundingBox();
+    const last = page.getByRole('button', { name: 'Consejería, acuerdos y compromisos' });
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+    await last.click();
+    await last.focus();
+    await expect(last).toBeFocused();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Space');
+    assert.deepEqual(await page.evaluate(() => window.opened.slice(-3)), ['form-26', 'form-26', 'form-26']);
+    assert.deepEqual(await footer.boundingBox(), before, 'footer stays visible while the forms scroll');
+    await footer.focus();
+    await page.keyboard.press('Enter');
+    const previous = page.getByLabel('Previous consultation date');
+    const covered = await previous.evaluate((input) => {
+      const box = input.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return !hit || (hit !== input && !input.contains(hit));
+    });
+    assert.ok(covered, 'opaque native workspace covers previous consultation controls');
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight),
+      true,
+      'workspace owns scrolling',
+    );
+  }
+  assert.equal(await page.evaluate(() => window.finished), 3, 'footer activation works by keyboard');
+  assert.deepEqual(errors, []);
+});
+
+test('a saved close refreshes observations across independently bundled microfrontends', async (t) => {
+  const { readFile } = require('node:fs/promises');
+  const fixture = await mkdtemp(path.join(tmpdir(), 'sihsalus-swr-federation-'));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const shellConfig = getAppShellWebpackConfig();
+  const shellShared = shellConfig.plugins.find((plugin) => plugin.options?.shared).options.shared;
+  const appConfig = loadConfig(
+    path.join(repositoryRoot, 'packages/apps/esm-crecimiento-desarrollo-app'),
+    'rspack.config.js',
+  );
+  const appShared = appConfig.plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  const shared = (entries) =>
+    Object.fromEntries(
+      Object.entries(entries).filter(
+        ([key]) => key === 'react' || key === 'react-dom' || key === 'swr' || key.startsWith('swr/'),
+      ),
+    );
+  const outputPath = path.join(fixture, 'dist');
+  const helper = path.join(repositoryRoot, 'packages/libs/esm-patient-common-lib/src/visit/revalidation-utils.ts');
+  const framework = path.join(fixture, 'framework.js');
+  await writeFile(
+    framework,
+    "export const restBaseUrl='/ws/rest/v1'; export const fhirBaseUrl='/ws/fhir2/R4'; export function openmrsFetch(){throw Error('Unexpected clinical request');}",
+  );
+  await writeFile(
+    path.join(fixture, 'host.js'),
+    'window.initializeHost = () => { __webpack_public_path__ = "/openmrs/spa/"; return import("./host-bootstrap.js"); };',
+  );
+  await writeFile(
+    path.join(fixture, 'host-bootstrap.js'),
+    `
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { SWRConfig } from 'swr';
+    import { initCache } from 'swr/_internal';
+    const cache = new Map(); initCache(cache);
+    window.mountReaders = async () => {
+      await __webpack_init_sharing__('default');
+      for (const name of ['reader', 'saver']) {
+        await window[name].init(__webpack_share_scopes__.default);
+        const component = (await window[name].get('./start'))().default;
+        createRoot(document.getElementById(name)).render(React.createElement(SWRConfig,
+          {value:{provider:()=>cache,revalidateOnFocus:false,shouldRetryOnError:false}}, React.createElement(component)));
+      }
+    };
+    window.hostReady = true;
+  `,
+  );
+  await writeFile(
+    path.join(fixture, 'reader.js'),
+    `
+    import React from 'react'; import useSWR from 'swr';
+    import useSWRImmutable from 'swr/immutable'; import useSWRInfinite from 'swr/infinite';
+    const read = async (key) => {
+      window.reads ??= {}; window.reads[key] = (window.reads[key] ?? 0) + 1;
+      return window.saved ? ['saved-observation'] : [];
+    };
+    export default function Reader() {
+      const {data} = useSWR('/ws/rest/v1/obs?patient=synthetic-child&concept=stimulation&s=default', read);
+      const immutable = useSWRImmutable('/ws/rest/v1/obs?patient=synthetic-child&concept=counseling&s=default', read);
+      const other = useSWR('/ws/rest/v1/obs?patient=synthetic-child-other&concept=stimulation&s=default', read);
+      const metadata = useSWR('/ws/rest/v1/concept/stimulation', read);
+      const pages = useSWRInfinite(index => index < 2 ? '/ws/rest/v1/encounter?patient=synthetic-child&startIndex='+index : null,
+        async key => { await read(key); return [window.saved ? 'new-page' : 'old-page']; });
+      React.useEffect(()=>{void pages.setSize(2);},[pages.setSize]);
+      const output = (label,value) => React.createElement('output', {'aria-label':label,key:label}, value);
+      return React.createElement('div', null,
+        output('sessions',data ? data.length : 'loading'),
+        output('counseling',immutable.data ? immutable.data.length : 'loading'),
+        output('other patient',other.data ? other.data.length : 'loading'),
+        output('metadata',metadata.data ? metadata.data.length : 'loading'),
+        output('history',pages.data?.flat().join(',')));
+    }
+  `,
+  );
+  await writeFile(
+    path.join(fixture, 'saver.js'),
+    `
+    import React from 'react'; import {useSWRConfig} from 'swr';
+    import {invalidateVisitAndEncounterData} from ${JSON.stringify(helper)};
+    export default function Saver() {
+      const {mutate,cache}=useSWRConfig();
+      return React.createElement('button', {onClick:()=>{
+        window.saved=true; invalidateVisitAndEncounterData(mutate,'synthetic-child',cache);
+      }}, 'Confirmed synthetic save');
+    }
+  `,
+  );
+  await compile(
+    {
+      mode: 'production',
+      context: fixture,
+      entry: [path.join(fixture, 'host.js'), ...shellConfig.entry.filter((entry) => entry.endsWith('/swr-runtime.ts'))],
+      output: {
+        path: outputPath,
+        filename: 'host.js',
+        publicPath: shellConfig.output.publicPath,
+        uniqueName: 'swr-host',
+      },
+      module: shellConfig.module,
+      resolveLoader: { modules: [path.join(repositoryRoot, 'node_modules')] },
+      resolve: { modules: [path.join(repositoryRoot, 'node_modules')] },
+      plugins: [
+        ...shellConfig.plugins.filter((plugin) => plugin.constructor.name === 'InjectManifest'),
+        new webpack.container.ModuleFederationPlugin({
+          name: 'host',
+          shared: shared(shellShared),
+        }),
+      ],
+      devtool: false,
+      performance: false,
+    },
+    webpack,
+  );
+  for (const name of ['reader', 'saver']) {
+    await compile(
+      {
+        mode: 'production',
+        context: fixture,
+        entry: {},
+        output: {
+          path: outputPath,
+          filename: `${name}-main.js`,
+          publicPath: 'http://swr.test/openmrs/spa/',
+          uniqueName: `swr-${name}`,
+        },
+        module: appConfig.module,
+        resolve: {
+          ...appConfig.resolve,
+          modules: [path.join(repositoryRoot, 'node_modules')],
+          alias: { '@openmrs/esm-framework': framework },
+        },
+        plugins: [
+          new rspack.container.ModuleFederationPluginV1({
+            name,
+            filename: `${name}-remote.js`,
+            exposes: { './start': path.join(fixture, `${name}.js`) },
+            shared: shared(appShared),
+          }),
+        ],
+        devtool: false,
+        performance: false,
+      },
+      rspack,
+    );
+  }
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  t.after(() => context.close());
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin !== 'http://swr.test' || route.request().method() !== 'GET') return route.abort();
+    if (url.pathname === '/openmrs/spa/patient/synthetic-child/chart/WellChildCare')
+      return route.fulfill({
+        contentType: 'text/html',
+        body: '<div id="reader"></div><div id="saver"></div><script src="/openmrs/spa/host.js"></script><script src="/openmrs/spa/reader-remote.js"></script><script src="/openmrs/spa/saver-remote.js"></script><script>window.initializeHost();</script>',
+      });
+    const filename = path.basename(url.pathname);
+    if (url.pathname !== `/openmrs/spa/${filename}`) return route.fulfill({ status: 404, body: '' });
+    try {
+      return route.fulfill({
+        contentType: 'text/javascript',
+        body: await readFile(path.join(outputPath, filename)),
+      });
+    } catch {
+      return route.fulfill({ status: 404, body: '' });
+    }
+  });
+  await page.goto('http://swr.test/openmrs/spa/patient/synthetic-child/chart/WellChildCare');
+  await page.waitForFunction(() => window.hostReady);
+  await page.evaluate(() => window.mountReaders());
+  await expect(page.getByLabel('sessions')).toHaveText('0');
+  await expect(page.getByLabel('counseling')).toHaveText('0');
+  await expect(page.getByLabel('other patient')).toHaveText('0');
+  await expect(page.getByLabel('metadata')).toHaveText('0');
+  await expect(page.getByLabel('history')).toHaveText('old-page,old-page');
+  const before = await page.evaluate(() => window.reads);
+  await page.getByRole('button', { name: 'Confirmed synthetic save' }).click();
+  await expect(page.getByLabel('sessions')).toHaveText('1');
+  await expect(page.getByLabel('counseling')).toHaveText('1');
+  await expect(page.getByLabel('history')).toHaveText('new-page,new-page');
+  await expect(page.getByLabel('other patient')).toHaveText('0');
+  await expect(page.getByLabel('metadata')).toHaveText('0');
+  const after = await page.evaluate(() => window.reads);
+  for (const key of Object.keys(before).filter(
+    (key) => key.includes('synthetic-child-other') || key.includes('/concept/'),
+  )) {
+    assert.equal(after[key], before[key], `${key} is not revalidated`);
+  }
+  assert.deepEqual(errors, []);
+});

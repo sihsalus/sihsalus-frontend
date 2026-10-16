@@ -8,7 +8,7 @@ export default function CheckedInPatientsExtension() {
 
   return (
     <MetricsCard>
-      <MetricsCardHeader title={t('checkedInPatients', 'Checked in patients')} />
+      <MetricsCardHeader title={t('checkedInPatientsToday', 'Checked in patients today')} />
       <MetricsCardBody>
         <MetricsCardItem label={t('patients', 'Patients')} value={isLoading ? '--' : activeVisitsCount} />
       </MetricsCardBody>

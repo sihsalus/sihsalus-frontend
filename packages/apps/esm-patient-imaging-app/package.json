@@ -19,7 +19,7 @@
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/patient-imaging/playwright.config.ts",
     "verify": "turbo lint typescript coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -62,30 +62,30 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "@rspack/cli": "2.2.8",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.2",
+    "@swc/core": "1.16.13",
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.6",
     "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "1.x",
-    "dotenv": "^18.0.4",
+    "dotenv": "^18.0.7",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.0.2",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.x",
     "react-dom": "^18.x",
     "react-i18next": "^17.0.11",
-    "rxjs": "^6.6.7",
-    "sass": "^1.105.0",
+    "rxjs": "^7.8.2",
+    "sass": "^1.105.1",
     "swc-loader": "^0.2.3",
     "swr": "^2.x",
     "ts-node": "^10.9.2",
-    "turbo": "^2.11.4",
+    "turbo": "^2.11.7",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "8.3.4",
+    "vitest": "^5.0.3"
   },
   "author": "Wei Sadre (Uclouvain-ICTEAM)"
 }

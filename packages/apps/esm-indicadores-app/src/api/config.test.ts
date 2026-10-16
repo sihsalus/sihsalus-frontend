@@ -1,7 +1,7 @@
 import { getConfig } from '@openmrs/esm-framework';
 import { describe, expect, it, vi } from 'vitest';
 
-import { getReportesSqlApiPath, getReportesSqlResourcePath, isDemoDataEnabled } from './config';
+import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
 
 const mockedGetConfig = vi.mocked(getConfig);
 
@@ -64,35 +64,15 @@ describe('getReportesSqlApiPath', () => {
   });
 });
 
-describe('isDemoDataEnabled', () => {
-  it('is disabled by default', async () => {
-    mockedGetConfig.mockResolvedValue({});
-
-    await expect(isDemoDataEnabled()).resolves.toBe(false);
-  });
-
-  it('is enabled only by an explicit true value', async () => {
-    mockedGetConfig.mockResolvedValue({ enableDemoData: true });
-
-    await expect(isDemoDataEnabled()).resolves.toBe(true);
-  });
-
-  it('does not coerce truthy strings into demo mode', async () => {
-    mockedGetConfig.mockResolvedValue({ enableDemoData: 'true' } as never);
-
-    await expect(isDemoDataEnabled()).resolves.toBe(false);
-  });
-});
-
 describe('getReportesSqlResourcePath', () => {
   it('appends a resource path to the reportes-sql base', async () => {
     mockedGetConfig.mockResolvedValue({
       reportesSqlApiPath: '/services/reportes-sql',
     });
 
-    const result = await getReportesSqlResourcePath('indicadores/abc/preview-sql');
+    const result = await getReportesSqlResourcePath('indicadores/abc/versiones');
 
-    expect(result).toBe('/services/reportes-sql/indicadores/abc/preview-sql');
+    expect(result).toBe('/services/reportes-sql/indicadores/abc/versiones');
   });
 
   it('avoids double slash when base has no trailing slash', async () => {

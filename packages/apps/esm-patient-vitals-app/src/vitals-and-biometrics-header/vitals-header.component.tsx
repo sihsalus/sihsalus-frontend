@@ -51,7 +51,13 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
   const canEdit = userHasAccess('app:hoja.clinica.signosVitales.editar', session?.user);
   const config = useConfig<ConfigObject>();
   const { data: conceptUnits, conceptMetadata, conceptRangeMap, error: conceptsError } = useVitalsConceptMetadata();
-  const { data: vitals, isLoading, isValidating, error: vitalsError } = useVitalsAndBiometrics(patientUuid, 'both');
+  const {
+    data: vitals,
+    isLoading,
+    isValidating,
+    error: vitalsError,
+    getReferenceRange,
+  } = useVitalsAndBiometrics(patientUuid, 'both');
   const latestVitals = vitals?.[0];
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const toggleDetailsPanel = () => setShowDetailsPanel(!showDetailsPanel);
@@ -203,16 +209,19 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.from(conceptRangeMap.entries()).map(([uuid, metadata]) => (
-                          <tr key={uuid}>
-                            <td>{metadata.display}</td>
-                            <td>
-                              {metadata.lowNormal != null && metadata.hiNormal != null
-                                ? `${metadata.lowNormal} – ${metadata.hiNormal} ${metadata.units ?? ''}`
-                                : t('notAvailable', 'N/A')}
-                            </td>
-                          </tr>
-                        ))}
+                        {Array.from(conceptRangeMap.entries()).map(([uuid, metadata]) => {
+                          const range = getReferenceRange(uuid);
+                          return (
+                            <tr key={uuid}>
+                              <td>{metadata.display}</td>
+                              <td>
+                                {range?.lowNormal != null && range.hiNormal != null
+                                  ? `${range.lowNormal} – ${range.hiNormal} ${metadata.units ?? ''}`
+                                  : t('notAvailable', 'N/A')}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </ToggletipContent>

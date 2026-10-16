@@ -56,3 +56,11 @@ warning. The shared cache ownership and cleanup contract applies; keep one manag
 Offline download presence is checked through `areOfflineResourcesCached`, which rejects unowned or historical
 responses. [Shared ownership and cleanup rules](../../libs/esm-offline/README.md#download-ownership-and-verified-cleanup)
 apply to worker/consumer rollout and rollback.
+
+## Refresh after saving a form
+
+A confirmed saved close reuses the shared patient visit/encounter invalidation
+helper with the native SWR provider cache. It refreshes paginated encounter and
+observation readers, including dashboards behind an open form selector. The
+form-specific callback and visit context refresh remain intact. Refreshing does
+not submit another encounter or alter another patient's cached clinical data.

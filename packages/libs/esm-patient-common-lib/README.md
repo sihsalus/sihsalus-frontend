@@ -15,6 +15,22 @@ assembled SPA with a fresh browser context when changing shared imports.
 
 ## Antecedents
 
+`useLatestValidEncounter` requests one descending encounter when no form filter
+is needed or when REST can filter by a canonical form UUID. A form name can span
+versions, so this case uses `useOpenmrsFetchAll` and only selects a match after
+all pages have loaded. Partial or failed histories never authorize a new record.
+The two query shapes have separate cache keys; changing patient immediately hides
+the previous history. Refresh also follows any new pages introduced by a save.
+The observation representation includes `formFieldNamespace` and `formFieldPath`
+so consumers can distinguish fields that share a concept without assigning an
+unidentified historical value to a guessed clinical location.
+
+`useFilteredEncounter` applies the same native pagination contract to grouped
+observation tables: UUID-filtered queries request the latest record, while form
+names are resolved only after every page loads. Invalid or failed pages remain
+errors; changing patient hides the previous data and refresh traverses the whole
+history again. Callers must retain the returned encounter UUID when editing.
+
 `ConditionConceptSetForm` owns the concept-set form used by CRED and Maternal Health. App adapters supply their privilege guard, translation namespace and configured concept set; the form, fields, validation and styles have one implementation. Patient identity, historical dates, author attribution and uncertain-write protection remain shared.
 
 `src/antecedents/_condition-form.scss` supplies the shared workspace layout for
@@ -190,3 +206,90 @@ compatibility. Only `false` identifies an untouched current-time default;
 `true` identifies a selected or retained historical date. Consumers must preserve
 this marker when editing or persisting a draft. Missing markers conservatively
 retain legacy date behavior. This client-only field is not sent to OpenMRS.
+
+## Integrated clinical dashboards
+
+Dashboard headings and descriptions preserve the casing supplied by their
+translations. The shared header does not capitalize every word of clinical
+instructions. The local browser regression checks this alongside narrow-panel
+layouts used while a form is open.
+
+`TabbedDashboard` accepts stable tab IDs, controlled selection, header actions
+and React content in place of an extension slot. `mountActiveTabOnly` is opt-in;
+existing consumers keep their extension slots mounted. Native Carbon keyboard
+activation selects a section with the arrow keys; opt-in dashboards mount only
+that section and reset local selection when the patient changes.
+Removing a permitted tab falls back to the first available section. Clinical
+apps own their permission checks and program policy before mounting readers.
+
+`createClinicalDashboardLink` uses the existing enrollment reader and expression
+evaluator to give a program one direct sidebar entry with its established
+visibility policy. Loading or failed enrollment reads do not expose that entry.
+The standard extension-slot `remove` configuration hides replaced folders while
+their registered routes and lifecycles remain available.
+
+The explicit-patient workspace launcher does not inherit another patient's group
+or accept conflicting patient UUIDs. A pending visit prompt cannot open its form
+after the owning view unmounts or changes patient. It resolves the patient's
+workspace group again after the visit prompt so the new visit context is retained.
+
+## Mother–child history navigation
+
+`MotherChildRelationships` displays explicit EmrApi mother–child relationships
+in either direction. Its owner supplies the existing clinical read permission,
+the current patient's role in the relationship, and its translation namespace.
+It mounts no reader without that permission. Links use the related patient's
+name and UUID and open the native patient chart with its existing access guards.
+The resource `useMotherAndChildLinks` is also used by the maternal relationship
+editor; it loads every REST page without requiring an active inpatient visit.
+
+A failed or incomplete lookup never reports that the relationship is absent.
+Deployment acceptance must verify the canonical EmrApi metadata mapping, the
+frontend relationship type, both directions with synthetic patients, and backend
+permissions for the intended clinical profiles. There is no relationship REST
+fallback when that mapping is missing. This reader neither infers kinship from
+concepts or identifiers nor copies observations between patient charts; a family
+relationship alone does not identify a pregnancy or birth episode.
+
+### Clinical form selector layout
+
+`FormsSelectorWorkspace` is a Workspace2 view shared by the CRED and maternal
+selectors. Its native shell covers the previous workspace; the form list owns
+vertical scrolling while the Cancel/Close forms actions remain visible. Keep this
+component within the Workspace2 runtime context, including its patient-scoped
+parent window. The layout does not change encounter selection or submission.
+
+Cancel and Back restore the configured parent through `launchWorkspace2` with
+the selected patient UUID. The native runtime retains a compatible open parent
+and its patient/visit context; a newly opened parent also receives the patient.
+They must not open a second legacy workspace over the native window.
+
+Closing this selector invokes the consumer callback and closes the workspace. It
+does not save or sign a clinical record: each form owns its confirmed submission.
+CRED refreshes its history on close; the maternal selector supplies no separate
+completion action. Form rows use Carbon Link's supported `as="button"` rendering
+to preserve link styling while providing native focus, Enter and Space activation
+without submitting an ancestor form.
+
+### Revalidation after a confirmed encounter save
+
+The existing `invalidateVisitAndEncounterData` helper accepts the provider cache
+from `useSWRConfig`. FormEntry passes that cache when it closes after a save so
+patient encounter/history and observation readers refresh together, including
+REST pagination and the structured FHIR observation keys used by vitals.
+
+SWR 2.5.1 excludes infinite aggregates from key-filter mutations. The helper uses
+the public key filter and `swr/infinite` serialization API, clears only matching
+page data through `mutate`, and revalidates the existing aggregates so every
+loaded page is fetched. It does not access private cache fields or add widget
+subscriptions. Other patients and metadata are excluded; the existing current
+visit callback remains responsible for the active visit. These are cache reads,
+not another clinical save or inferred episode.
+
+### Duplicate active condition responses
+
+The condition REST writer maps Core's `Condition.activeDuplicate` field
+validation to a translated, actionable message. The server owns duplicate
+validation, including concurrent writes; the frontend does not deduplicate or
+remove clinical history. This requires the companion Core change for
+sihsalus/sihsalus#366. Older servers keep their existing persistence behavior.

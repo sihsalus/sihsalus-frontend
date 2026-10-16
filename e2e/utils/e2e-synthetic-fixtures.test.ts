@@ -1,6 +1,9 @@
+import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { type APIRequestContext, type APIResponse } from '@playwright/test';
 import { describe, expect, it, vi } from 'vitest';
-import { type FixtureJournal } from './e2e-fixture-journal';
+import { type FixtureJournal, PrivateFixtureJournal } from './e2e-fixture-journal';
 import { SyntheticFixtures } from './e2e-synthetic-fixtures';
 
 const location = '11111111-1111-4111-8111-111111111111';
@@ -77,7 +80,7 @@ class Backend {
   override?: (call: Call) => APIResponse | undefined;
   loseResponse?: 'patient' | 'visit';
   sequence = 0;
-  constructor(readonly journal: MemoryJournal) {}
+  constructor(readonly journal: Pick<MemoryJournal, 'records'>) {}
   uuid() {
     return `00000000-0000-4000-8000-${String(++this.sequence).padStart(12, '0')}`;
   }
@@ -212,6 +215,44 @@ function harness() {
 }
 
 describe('recoverable synthetic fixture foundation (mock backend only)', () => {
+  it('reopens durable identity state and discovers unjournaled clinical children after interruption', async () => {
+    const directory = mkdtempSync(path.join(realpathSync(tmpdir()), 'native-recovery-unit-'));
+    let journal = new PrivateFixtureJournal(directory);
+    try {
+      const backend = new Backend({ records: () => (journal.read() as TestState).patients });
+      const created = await new SyntheticFixtures(backend.api, journal, environment).create('outpatient');
+      const personUuid = (journal.read() as TestState).patients[0]?.personUuid;
+      if (!personUuid) throw new Error('Expected owned person');
+      // A test/browser POST may succeed without returning its UUID to the runner.
+      for (const resource of ['encounter', 'order', 'obs']) {
+        const uuid = backend.uuid();
+        backend.entities.set(`${resource}/${uuid}`, {
+          uuid,
+          voided: false,
+          ...(resource === 'obs' ? { person: { uuid: personUuid } } : { patient: { uuid: created.patientUuid } }),
+        });
+      }
+      const retained = journal.read();
+      journal.close(); // Simulate coordinated restart after confirming the old writer exited.
+      journal = new PrivateFixtureJournal(directory);
+      expect(journal.read()).toEqual(retained);
+      await new SyntheticFixtures(backend.api, journal, environment).cleanup();
+      expect(backend.deletes().map(({ url }) => url.pathname.split('/').at(-2))).toEqual([
+        'obs',
+        'order',
+        'encounter',
+        'visit',
+        'patient',
+      ]);
+      expect((journal.read() as TestState).patients[0]?.cleaned).toBe(true);
+      expect(backend.posts('patient')).toHaveLength(1);
+      expect(backend.posts('visit')).toHaveLength(1);
+    } finally {
+      journal.close();
+      rmSync(directory, { recursive: true });
+    }
+  });
+
   it('journals two distinct patients and visits, cleans them, and does not delete twice', async () => {
     const { fixtures, backend, journal } = harness();
     const first = await fixtures.create('outpatient');
@@ -283,19 +324,17 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
       };
     };
 
-    it.each([
-      { privileges: [] },
-      { privileges: [{ name: 'Unrelated Permission' }] },
-    ])('accepts a verified active System Developer without enumerating every privilege ($privileges)', async ({
-      privileges,
-    }) => {
-      const { fixtures, backend, journal } = harness();
-      withRoles(backend, [{ name: 'System Developer', retired: false }], privileges);
-      await fixtures.create('outpatient');
-      await fixtures.cleanup();
-      expect(backend.posts('patient')).toHaveLength(1);
-      expect(journal.records()[0]?.cleaned).toBe(true);
-    });
+    it.each([{ privileges: [] }, { privileges: [{ name: 'Unrelated Permission' }] }])(
+      'accepts a verified active System Developer without enumerating every privilege ($privileges)',
+      async ({ privileges }) => {
+        const { fixtures, backend, journal } = harness();
+        withRoles(backend, [{ name: 'System Developer', retired: false }], privileges);
+        await fixtures.create('outpatient');
+        await fixtures.cleanup();
+        expect(backend.posts('patient')).toHaveLength(1);
+        expect(journal.records()[0]?.cleaned).toBe(true);
+      },
+    );
 
     it.each([
       ['missing roles', undefined],
@@ -393,31 +432,31 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
     if (method === 'get') expect(backend.calls.some((call) => call.method === 'post')).toBe(false);
   });
 
-  it.each([
-    'patient',
-    'visit',
-  ] as const)('overrides context retries after a lost %s POST response and preserves explicit recovery', async (resource) => {
-    const { fixtures, backend, journal } = harness();
-    const postOnce = backend.api.post;
-    backend.api.post = vi.fn(async (url, options) => {
-      try {
-        return await postOnce(url, options);
-      } catch (error) {
-        if ((options?.maxRetries ?? 2) > 0) return postOnce(url, options);
-        throw error;
-      }
-    });
-    backend.loseResponse = resource;
+  it.each(['patient', 'visit'] as const)(
+    'overrides context retries after a lost %s POST response and preserves explicit recovery',
+    async (resource) => {
+      const { fixtures, backend, journal } = harness();
+      const postOnce = backend.api.post;
+      backend.api.post = vi.fn(async (url, options) => {
+        try {
+          return await postOnce(url, options);
+        } catch (error) {
+          if ((options?.maxRetries ?? 2) > 0) return postOnce(url, options);
+          throw error;
+        }
+      });
+      backend.loseResponse = resource;
 
-    await expect(fixtures.create('outpatient')).rejects.toThrow('FIXTURE_NETWORK_FAILURE_RETAIN_JOURNAL');
-    expect(backend.posts(resource)).toHaveLength(1);
-    expect(journal.records()[0]?.cleaned).not.toBe(true);
-    const resumed = new SyntheticFixtures(backend.api, journal, environment);
-    await resumed.create('outpatient');
-    expect(backend.posts(resource)).toHaveLength(1);
-    await resumed.cleanup();
-    expect(journal.records()[0]?.cleaned).toBe(true);
-  });
+      await expect(fixtures.create('outpatient')).rejects.toThrow('FIXTURE_NETWORK_FAILURE_RETAIN_JOURNAL');
+      expect(backend.posts(resource)).toHaveLength(1);
+      expect(journal.records()[0]?.cleaned).not.toBe(true);
+      const resumed = new SyntheticFixtures(backend.api, journal, environment);
+      await resumed.create('outpatient');
+      expect(backend.posts(resource)).toHaveLength(1);
+      await resumed.cleanup();
+      expect(journal.records()[0]?.cleaned).toBe(true);
+    },
+  );
 
   it('does not inherit DELETE retries or proceed to parents after a lost cleanup response', async () => {
     const { fixtures, backend, journal } = harness();
@@ -447,21 +486,21 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
     expect(journal.records()[0]?.cleaned).toBe(true);
   });
 
-  it.each([
-    'patient',
-    'visit',
-  ] as const)('recovers a lost %s response without duplicating a create', async (resource) => {
-    const { fixtures, backend, journal } = harness();
-    backend.loseResponse = resource;
-    const failed = fixtures.create('outpatient');
-    await expect(failed).rejects.toThrow('FIXTURE_NETWORK_FAILURE_RETAIN_JOURNAL');
-    await expect(failed).rejects.not.toThrow(/private backend/);
-    const resumed = new SyntheticFixtures(backend.api, journal, environment);
-    await resumed.create('outpatient');
-    expect(backend.posts(resource)).toHaveLength(1);
-    await resumed.cleanup();
-    expect(journal.records()[0]?.cleaned).toBe(true);
-  });
+  it.each(['patient', 'visit'] as const)(
+    'recovers a lost %s response without duplicating a create',
+    async (resource) => {
+      const { fixtures, backend, journal } = harness();
+      backend.loseResponse = resource;
+      const failed = fixtures.create('outpatient');
+      await expect(failed).rejects.toThrow('FIXTURE_NETWORK_FAILURE_RETAIN_JOURNAL');
+      await expect(failed).rejects.not.toThrow(/private backend/);
+      const resumed = new SyntheticFixtures(backend.api, journal, environment);
+      await resumed.create('outpatient');
+      expect(backend.posts(resource)).toHaveLength(1);
+      await resumed.cleanup();
+      expect(journal.records()[0]?.cleaned).toBe(true);
+    },
+  );
 
   it('does not repeat a rejected or unresolved patient POST', async () => {
     const { fixtures, backend, journal } = harness();
@@ -580,52 +619,52 @@ describe('recoverable synthetic fixture foundation (mock backend only)', () => {
     ).toBe(true);
   });
 
-  it.each([
-    'malformed',
-    'repeated',
-    'unowned',
-  ])('retains state without deletion on a %s dependency page', async (kind) => {
-    const { fixtures, backend, journal } = harness();
-    const created = await fixtures.create('outpatient');
-    backend.override = ({ url }) =>
-      url.pathname.endsWith('/order')
-        ? response(
-            200,
-            kind === 'malformed'
-              ? {}
-              : {
-                  results: [
-                    {
-                      uuid: backend.entities.get(`visit/${created.visitUuid}`)?.uuid,
-                      voided: false,
-                      patient: { uuid: kind === 'unowned' ? provider : created.patientUuid },
-                    },
-                  ],
-                  links: kind === 'repeated' ? [{ rel: 'next' }] : [],
-                },
-          )
-        : undefined;
-    await expect(fixtures.cleanup()).rejects.toThrow('FIXTURE_CLEANUP_FAILED_RETAIN_JOURNAL');
-    expect(backend.deletes()).toEqual([]);
-    expect(journal.records()[0]?.cleaned).not.toBe(true);
-  });
+  it.each(['malformed', 'repeated', 'unowned'])(
+    'retains state without deletion on a %s dependency page',
+    async (kind) => {
+      const { fixtures, backend, journal } = harness();
+      const created = await fixtures.create('outpatient');
+      backend.override = ({ url }) =>
+        url.pathname.endsWith('/order')
+          ? response(
+              200,
+              kind === 'malformed'
+                ? {}
+                : {
+                    results: [
+                      {
+                        uuid: backend.entities.get(`visit/${created.visitUuid}`)?.uuid,
+                        voided: false,
+                        patient: { uuid: kind === 'unowned' ? provider : created.patientUuid },
+                      },
+                    ],
+                    links: kind === 'repeated' ? [{ rel: 'next' }] : [],
+                  },
+            )
+          : undefined;
+      await expect(fixtures.cleanup()).rejects.toThrow('FIXTURE_CLEANUP_FAILED_RETAIN_JOURNAL');
+      expect(backend.deletes()).toEqual([]);
+      expect(journal.records()[0]?.cleaned).not.toBe(true);
+    },
+  );
 
-  it.each([
-    500, 204,
-  ])('does not void parents when a child DELETE returns %s without confirmed cleanup', async (status) => {
-    const { fixtures, backend, journal } = harness();
-    const created = await fixtures.create('outpatient');
-    const order = backend.uuid();
-    backend.entities.set(`order/${order}`, { uuid: order, voided: false, patient: { uuid: created.patientUuid } });
-    backend.override = ({ method, url }) =>
-      method === 'delete' && url.pathname.endsWith(`/order/${order}`) ? response(status) : undefined;
-    await expect(fixtures.cleanup()).rejects.toThrow('FIXTURE_CLEANUP_FAILED_RETAIN_JOURNAL');
-    expect(backend.deletes()).toHaveLength(1);
-    expect(journal.records()[0]?.cleaned).not.toBe(true);
-    backend.override = undefined;
-    await new SyntheticFixtures(backend.api, journal, environment).cleanup();
-    expect(journal.records()[0]?.cleaned).toBe(true);
-  });
+  it.each([500, 204])(
+    'does not void parents when a child DELETE returns %s without confirmed cleanup',
+    async (status) => {
+      const { fixtures, backend, journal } = harness();
+      const created = await fixtures.create('outpatient');
+      const order = backend.uuid();
+      backend.entities.set(`order/${order}`, { uuid: order, voided: false, patient: { uuid: created.patientUuid } });
+      backend.override = ({ method, url }) =>
+        method === 'delete' && url.pathname.endsWith(`/order/${order}`) ? response(status) : undefined;
+      await expect(fixtures.cleanup()).rejects.toThrow('FIXTURE_CLEANUP_FAILED_RETAIN_JOURNAL');
+      expect(backend.deletes()).toHaveLength(1);
+      expect(journal.records()[0]?.cleaned).not.toBe(true);
+      backend.override = undefined;
+      await new SyntheticFixtures(backend.api, journal, environment).cleanup();
+      expect(journal.records()[0]?.cleaned).toBe(true);
+    },
+  );
 
   it('does not accept the void state of a different resource UUID', async () => {
     const { fixtures, backend, journal } = harness();

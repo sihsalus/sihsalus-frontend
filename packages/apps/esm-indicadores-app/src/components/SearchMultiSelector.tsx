@@ -1,6 +1,6 @@
 import { Button, InlineLoading, Search, Tile } from '@carbon/react';
 import { getUserFacingErrorMessage, useDebounce } from '@openmrs/esm-framework';
-import { useEffect, useMemo, useState } from 'react';
+import { type FocusEvent, type KeyboardEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
@@ -20,6 +20,10 @@ interface SearchMultiSelectorProps<T> {
   itemLabel: (item: T) => string;
   onChange: (items: Array<T>) => void;
   onSearchChange: (query: string) => void;
+  /** When true, the option list is shown on focus even before typing. */
+  showResultsOnFocus?: boolean;
+  /** Called on focus; term-based callers use it to fetch a first page. */
+  onActivate?: () => void;
 }
 
 function SearchMultiSelector<T>({
@@ -36,9 +40,13 @@ function SearchMultiSelector<T>({
   itemLabel,
   onChange,
   onSearchChange,
+  showResultsOnFocus = false,
+  onActivate,
 }: SearchMultiSelectorProps<T>) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFocused, setFocused] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm);
 
   const normalizedQuery = (debouncedSearchTerm ?? '').trim();
@@ -52,9 +60,10 @@ function SearchMultiSelector<T>({
     return data.filter((item) => !selectedKeys.has(itemKey(item)));
   }, [data, itemKey, selectedItems]);
 
+  // Keep the current query so the results stay open after adding (allowing
+  // several selections in a row); the added item is filtered out below.
   const handleAdd = (item: T) => {
     onChange([...selectedItems, item]);
-    setSearchTerm('');
   };
 
   const handleRemove = (item: T) => {
@@ -62,38 +71,81 @@ function SearchMultiSelector<T>({
     onChange(selectedItems.filter((current) => itemKey(current) !== targetKey));
   };
 
+  // On focus the option list is revealed. Encounter types already carry the full
+  // list; term-based sources fetch their first page via `onActivate`. The list
+  // stays open after adding (for multiple selections) until dismissed.
+  const showResults = !dismissed && (normalizedQuery !== '' || (isFocused && showResultsOnFocus));
+
+  const handleFocus = () => {
+    setFocused(true);
+    setDismissed(false);
+    onActivate?.();
+  };
+
+  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setFocused(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      setDismissed(true);
+    }
+  };
+
   return (
-    <div className={styles.searchSelector}>
+    <div
+      className={styles.searchSelector}
+      role="group"
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+    >
+      <p className={styles.fieldLabel}>{label}</p>
       <Search
         size="md"
         labelText={label}
         placeholder={placeholder}
         value={searchTerm}
-        onChange={(event) => setSearchTerm(event.target.value)}
+        onChange={(event) => {
+          setSearchTerm(event.target.value);
+          setDismissed(false);
+        }}
       />
       {helperText ? <p className={styles.fieldHelp}>{helperText}</p> : null}
 
       {selectedItems.length ? (
-        <div className={styles.selectedItemsList}>
-          {selectedItems.map((item) => (
-            <span key={itemKey(item)} className={styles.selectedItemPill}>
-              <span>{itemLabel(item)}</span>
-              <button
-                type="button"
-                className={styles.pillRemoveButton}
-                onClick={() => handleRemove(item)}
-                aria-label={t('removeItem', 'Quitar {{label}}', { label: itemLabel(item) })}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+        <div className={styles.selectedItemsBlock}>
+          <div className={styles.selectedItemsList}>
+            {selectedItems.map((item) => (
+              <span key={itemKey(item)} className={styles.selectedItemPill}>
+                <span>{itemLabel(item)}</span>
+                <button
+                  type="button"
+                  className={styles.pillRemoveButton}
+                  onClick={() => handleRemove(item)}
+                  aria-label={t('removeItem', 'Quitar {{label}}', { label: itemLabel(item) })}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            kind="danger--ghost"
+            className={styles.clearSelectedButton}
+            onClick={() => onChange([])}
+          >
+            {t('clearSelected', 'Quitar todos')}
+          </Button>
         </div>
       ) : (
         <p className={styles.fieldHelp}>{emptyText}</p>
       )}
 
-      {normalizedQuery ? (
+      {showResults ? (
         <div className={styles.searchResultsPanel}>
           {isLoading ? (
             <InlineLoading description={t('searching', 'Buscando...')} />
@@ -106,20 +158,39 @@ function SearchMultiSelector<T>({
               )}
             </div>
           ) : filteredResults.length ? (
-            <div className={styles.searchResultsList} role="listbox" aria-label={label}>
+            <div className={styles.searchResultsList} role="list" aria-label={label}>
               {filteredResults.map((item) => (
-                <Tile key={itemKey(item)} className={styles.searchResultItem} role="option" aria-selected={false}>
+                <Tile
+                  key={itemKey(item)}
+                  className={styles.searchResultItem}
+                  role="listitem"
+                  // Keep focus on the search input so the panel is not unmounted
+                  // on blur before this row's click fires.
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleAdd(item)}
+                >
                   <div className={styles.searchResultContent}>
                     <span>{itemLabel(item)}</span>
-                    <Button size="sm" kind="ghost" onClick={() => handleAdd(item)}>
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleAdd(item);
+                      }}
+                    >
                       {t('add', 'Agregar')}
                     </Button>
                   </div>
                 </Tile>
               ))}
             </div>
-          ) : (
+          ) : normalizedQuery ? (
             <Tile className={styles.searchEmptyState}>{noResultsText}</Tile>
+          ) : (
+            <Tile className={styles.searchEmptyState}>
+              {t('searchPrompt', 'Escriba para buscar opciones.')}
+            </Tile>
           )}
         </div>
       ) : null}

@@ -10,6 +10,7 @@ vi.mock('@openmrs/esm-framework', async () => {
   const actual = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
   return {
     ...actual,
+    useOpenmrsFetchAll: (await import('../../../esm-react-utils/src/useOpenmrsFetchAll')).useOpenmrsFetchAll,
     openmrsFetch: vi.fn(),
     restBaseUrl: '/ws/rest/v1',
   };
@@ -46,8 +47,10 @@ function createEncounter(
   };
 }
 
-function createResponse(results: OpenmrsEncounter[]): FetchResponse<{ results: OpenmrsEncounter[] }> {
-  return { data: { results } } as FetchResponse<{ results: OpenmrsEncounter[] }>;
+function createResponse(results: OpenmrsEncounter[], next?: string): FetchResponse<{ results: OpenmrsEncounter[] }> {
+  return Object.assign(new Response(), {
+    data: { results, links: next ? [{ rel: 'next', uri: next }] : [] },
+  });
 }
 
 describe('useLatestValidEncounter', () => {
@@ -73,10 +76,11 @@ describe('useLatestValidEncounter', () => {
       patient: 'patient-uuid',
       encounterType: 'encounter-type-uuid',
       order: 'desc',
-      limit: '100',
+      limit: '1',
       startIndex: '0',
     });
     expect(parsedUrl.searchParams.get('v')).toContain('form:(uuid,name,display)');
+    expect(parsedUrl.searchParams.get('v')).toContain('obs:(uuid,obsDatetime,formFieldNamespace,formFieldPath,');
     expect(parsedUrl.searchParams.has('form')).toBe(false);
   });
 
@@ -199,6 +203,166 @@ describe('useLatestValidEncounter', () => {
     await waitFor(() => expect(result.current.error).toBe(fetchError));
     expect(result.current.encounter).toBeUndefined();
     expect(result.current.isLoading).toBe(false);
+  });
+
+  it('waits for the complete history to find a named form beyond the first 100 encounters', async () => {
+    let finish!: (response: ReturnType<typeof createResponse>) => void;
+    const laterPage = new Promise<ReturnType<typeof createResponse>>((resolve) => {
+      finish = resolve;
+    });
+    const unrelated = Array.from({ length: 100 }, (_, index) =>
+      createEncounter(`other-${index}`, '2026-09-01T10:00:00Z', {
+        uuid: 'other-form',
+        name: 'Other form',
+      }),
+    );
+    const match = createEncounter('historical-match', '2026-08-01T10:00:00Z', {
+      uuid: 'old-form-version',
+      name: 'Birth details',
+    });
+    mockOpenmrsFetch.mockImplementation(async (url) =>
+      String(url).includes('startIndex=100')
+        ? laterPage
+        : createResponse(unrelated, 'https://openmrs.test/ws/rest/v1/encounter?startIndex=100'),
+    );
+
+    const { result } = renderHook(
+      () => useLatestValidEncounter('patient-uuid', 'encounter-type-uuid', 'Birth details'),
+      { wrapper: swrWrapper },
+    );
+
+    await waitFor(() =>
+      expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('startIndex=100'))).toBe(true),
+    );
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.encounter).toBeUndefined();
+    await act(async () => finish(createResponse([match])));
+    await waitFor(() => expect(result.current.encounter?.uuid).toBe('historical-match'));
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('does not interpret a later page failure as missing history and recovers on refresh', async () => {
+    const failure = new Error('Synthetic second-page failure');
+    const match = createEncounter('historical-match', '2026-08-01T10:00:00Z', {
+      uuid: 'old-form-version',
+      name: 'Birth details',
+    });
+    let failed = true;
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      if (String(url).includes('startIndex=100')) {
+        if (failed) throw failure;
+        return createResponse([match]);
+      }
+      return createResponse([], 'https://openmrs.test/ws/rest/v1/encounter?startIndex=100');
+    });
+    const { result } = renderHook(
+      () => useLatestValidEncounter('patient-uuid', 'encounter-type-uuid', 'Birth details'),
+      { wrapper: swrWrapper },
+    );
+    await waitFor(() => expect(result.current.error).toBe(failure));
+    expect(result.current.encounter).toBeUndefined();
+    expect(result.current.isLoading).toBe(false);
+    failed = false;
+    await act(async () => {
+      await result.current.mutate();
+    });
+    await waitFor(() => expect(result.current.encounter?.uuid).toBe('historical-match'));
+    expect(result.current.error).toBeNull();
+  });
+
+  it('does not load older pages when the server already filtered and ordered a form UUID', async () => {
+    const formUuid = '28c37ff6-0079-4fa7-b803-5d547ac454e0';
+    const match = createEncounter('latest-match', '2026-08-01T10:00:00Z', {
+      uuid: formUuid,
+      name: 'Birth details',
+    });
+    mockOpenmrsFetch.mockResolvedValue(
+      createResponse([match], 'https://openmrs.test/ws/rest/v1/encounter?startIndex=1'),
+    );
+    const { result } = renderHook(() => useLatestValidEncounter('patient-uuid', 'encounter-type-uuid', formUuid), {
+      wrapper: swrWrapper,
+    });
+    await waitFor(() => expect(result.current.encounter?.uuid).toBe('latest-match'));
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not reuse a latest-only snapshot for a subsequent named-form search', async () => {
+    const match = createEncounter('historical-match', '2026-08-01T10:00:00Z', {
+      uuid: 'old-form',
+      name: 'Birth details',
+    });
+    mockOpenmrsFetch.mockImplementation(async (url) =>
+      String(url).includes('startIndex=100')
+        ? createResponse([match])
+        : createResponse(
+            [createEncounter('other', '2026-09-01T10:00:00Z')],
+            'https://openmrs.test/ws/rest/v1/encounter?startIndex=100',
+          ),
+    );
+    const { result, rerender } = renderHook(
+      ({ name }) => useLatestValidEncounter('patient-uuid', 'encounter-type-uuid', name),
+      {
+        wrapper: swrWrapper,
+        initialProps: { name: undefined as string | undefined },
+      },
+    );
+    await waitFor(() => expect(result.current.encounter?.uuid).toBe('other'));
+    rerender({ name: 'Birth details' });
+    await waitFor(() => expect(result.current.encounter?.uuid).toBe('historical-match'));
+  });
+
+  it('fetches newly added pages after a confirmed save is refreshed', async () => {
+    const match = createEncounter('historical-match', '2026-08-01T10:00:00Z', {
+      uuid: 'old-form',
+      name: 'Birth details',
+    });
+    let saved = false;
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      if (String(url).includes('startIndex=100')) return createResponse([match]);
+      return createResponse([], saved ? 'https://openmrs.test/ws/rest/v1/encounter?startIndex=100' : undefined);
+    });
+    const { result } = renderHook(
+      () => useLatestValidEncounter('patient-uuid', 'encounter-type-uuid', 'Birth details'),
+      { wrapper: swrWrapper },
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.encounter).toBeUndefined();
+    saved = true;
+    await act(async () => {
+      await result.current.mutate();
+    });
+    await waitFor(() => expect(result.current.encounter?.uuid).toBe('historical-match'));
+  });
+
+  it('hides a previous patient immediately and ignores their late history response', async () => {
+    let finish!: (response: ReturnType<typeof createResponse>) => void;
+    const previousPage = new Promise<ReturnType<typeof createResponse>>((resolve) => {
+      finish = resolve;
+    });
+    const match = createEncounter('old-patient-encounter', '2026-08-01T10:00:00Z', {
+      uuid: 'old-form',
+      name: 'Birth details',
+    });
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      if (String(url).includes('startIndex=100')) return previousPage;
+      if (String(url).includes('patient=second-patient')) return createResponse([]);
+      return createResponse([], 'https://openmrs.test/ws/rest/v1/encounter?patient=first-patient&startIndex=100');
+    });
+    const { result, rerender } = renderHook(
+      ({ patient }) => useLatestValidEncounter(patient, 'encounter-type-uuid', 'Birth details'),
+      {
+        wrapper: swrWrapper,
+        initialProps: { patient: 'first-patient' },
+      },
+    );
+    await waitFor(() =>
+      expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('startIndex=100'))).toBe(true),
+    );
+    rerender({ patient: 'second-patient' });
+    expect(result.current.encounter).toBeUndefined();
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => finish(createResponse([match])));
+    expect(result.current.encounter).toBeUndefined();
   });
 
   it('revalidates and exposes the refreshed encounter through mutate', async () => {

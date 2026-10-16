@@ -14,6 +14,7 @@ An interactive walkthrough system for O3 that provides guided tours and tutorial
 - **Configurable**: Customize tutorials through OpenMRS configuration system
 - **Smart Waiting**: Automatically waits for elements to load before proceeding
 - **Interactive Elements**: Support for clickable elements during tutorials
+- **Release Notes**: The Tutorials modal shows the configured release-notes link from the help-menu module when available.
 
 ## Available Tutorials
 

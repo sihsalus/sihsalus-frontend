@@ -1,0 +1,20 @@
+diff --git a/index.js b/index.js
+--- a/index.js
++++ b/index.js
+@@ -407,1 +407,16 @@ module.exports = class CachePolicy {
++        // max-stale must not override a zero lifetime imposed for security.
++        // In particular, a shared cache must revalidate Set-Cookie responses
++        // without explicit opt-in and responses marked proxy-revalidate.
++        if (
++            !this.storable() ||
++            this._rescc['no-cache'] ||
++            (this._isShared &&
++                (this._rescc['proxy-revalidate'] ||
++                    (this._resHeaders['set-cookie'] &&
++                        !this._rescc.public &&
++                        !this._rescc.immutable)))
++        ) {
++            return this._evaluateRequestMissResult(req);
++        }
++
+         // When presented with a request, a cache MUST NOT reuse a stored response, unless:

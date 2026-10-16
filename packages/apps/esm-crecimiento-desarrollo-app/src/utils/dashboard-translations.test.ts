@@ -2,6 +2,18 @@ import enTranslations from '../../translations/en.json';
 import esTranslations from '../../translations/es.json';
 
 const dashboardTranslationKeys = [
+  'credDashboardDescription',
+  'credIntegratedTabs',
+  'credOverviewTab',
+  'credAntecedentsTab',
+  'credControlTab',
+  'credGrowthTab',
+  'credDevelopmentTab',
+  'credImmunizationTab',
+  'credFollowupTab',
+  'credLoadingProgram',
+  'credProgramNotActive',
+  'credProgramNotActiveDescription',
   'earlyStimulation',
   'earlyStimulationTabs',
   'stimulationSessions',
@@ -14,6 +26,7 @@ const dashboardTranslationKeys = [
   'nutritionFollowUp',
   'neonatalCare',
   'neonatalCareTabs',
+  'breastfeedingTab',
   'wellChildCare',
   'wellChildCareTabs',
 ] as const;

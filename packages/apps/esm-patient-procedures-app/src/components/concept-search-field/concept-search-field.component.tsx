@@ -1,5 +1,6 @@
 import { InlineLoading, InlineNotification, Layer, Search, Tile } from '@carbon/react';
-import { ResponsiveWrapper } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, ResponsiveWrapper } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -71,7 +72,12 @@ export const ConceptSearchField = ({
           kind="error"
           lowContrast
           title={t('errorFetchingConcepts', 'Error fetching concepts')}
-          subtitle={field.error?.message}
+          subtitle={getCompatibleUserFacingErrorMessage(
+            field.error,
+            t('conceptSearchFailed', 'Could not load concepts. Try the search again.'),
+            { log: false },
+            getUserFacingErrorMessage,
+          )}
         />
       ) : (
         <ConceptSearchResults

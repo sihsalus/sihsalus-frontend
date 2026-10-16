@@ -1,12 +1,12 @@
 # Service Queues / Colas de atencion
 
-The `Service Queues` app is a frontend module that enables users to track a patient's progress as they move through a clinic. Users can see an overview of various clinic metrics such as:
+`Service Queues` tracks visits and waiting times by service. The overview shows:
 
 - The number of active visits.
 - The number of patients waiting for a particular service.
 - The average number of minutes spent by patients waiting for a service.
 
-The key component of the service queue app is the `Active Visits` table. It displays a tabular overview of the active visits ongoing in a facility and the wait time of patients. Users can add patients to the service queue by starting visits for them. They can also view information from the current active visits as well as the previous visit on each queue entry by clicking the table extension slot. Users can also change the priority and status of an entry in the queue from the UI, effectively moving a patient from one point in the queue to another. In order to indicate that a patient is currently attending service, click on the bell icon. In order to edit an entry, click the pencil icon.
+The `Active Visits` table shows each visit and its wait time. Starting a visit adds the patient to the queue. The table extension shows the current and previous visits. Staff can change an entry's priority or status, use the bell icon to mark a patient as receiving care, and use the pencil icon to edit an entry.
 
 Amend the following concepts in the configuration schema to get started using the module:
 
@@ -17,9 +17,7 @@ Amend the following concepts in the configuration schema to get started using th
 
 After configuring the concepts, add the services according to the facility setup by clicking the `Add new service` button.
 
-In order to configure rooms that provide different services, click the `Add new room` button. To view patients attending service in different rooms, click the `Queue screen` button.
-
-You should now be able to leverage the service queues module 🎉
+Use `Add new room` to configure rooms by service. `Queue screen` shows patients receiving care in each room.
 
 ## Terminologia SIH Salus
 
@@ -75,6 +73,11 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 
 ## Contratos de UI
 
+- El promedio de espera se presenta en minutos, con un máximo de un decimal y
+  el separador del idioma de la interfaz. El cero válido se conserva; los valores
+  ausentes o no válidos se muestran como `--`. El formato no altera el cálculo ni
+  la precisión del valor devuelto por el backend.
+
 - Las lecturas que verifican una transición, cierre o edición de una entrada
   exigen red con `cache: no-store`, incluida cada página de reconciliación. El
   worker de perfil offline instalado respeta esta opción y no sustituye un fallo
@@ -93,6 +96,41 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 - Si no hay camas, rooms o servicios configurados, el mensaje debe decir que falta configuracion de ubicacion/servicio, no lanzar error generico.
 - Las acciones de cambiar estado/prioridad deben fallar de forma visible si no hay conceptos configurados.
 - Los nombres de menu deben usar lenguaje final para usuarios clinicos, no nombres internos del paquete.
+
+### Fecha de ingreso a la cola
+
+La tabla general y la vista visual permiten elegir un día, usar `Hoy` o limpiar
+la fecha. Inicialmente muestran todas las fechas, incluidas entradas pendientes
+de días anteriores. La selección se conserva en `sessionStorage` y se comparte
+entre ambas vistas, junto a UPSS, servicio y estado. No se muestra en la tabla
+especializada de Emergencia ni en las pantallas de rooms o de una cola concreta.
+
+El filtro consulta `startedOnOrAfter` y `startedOnOrBefore` en el recurso nativo
+`queue-entry`: desde las 00:00 locales hasta el último milisegundo del día,
+serializados con zona horaria. Cada página pertenece a esa consulta; no se
+filtran fechas en el cliente. `startedAt` es el inicio vigente de la entrada de
+cola, que el backend puede actualizar durante una transición; no es la fecha
+de creación de la persona ni de la consulta. Se requiere Queue >=3.1.0-sihsalus.1 (incluye 3.1.0 estable y posteriores); el
+contrato se verificó en `3.1.0-sihsalus.1`, fuente `fb6de2acbf31b4dd50e518f74badf28163d6e67d`.
+
+El contador de espera y el promedio nativo de cola reciben el mismo día. UPSS
+filtra la lista y el conteo mediante la regla operativa del triaje compartido; el
+promedio se consulta por servicio (o todas las colas) y fecha, en todas las UPSS,
+como indica su etiqueta y explicación. No se envía `queue.location` como si fuera
+la UPSS operativa de triaje. El promedio sigue calculándose en el servidor sobre
+entradas finalizadas; no estima tiempos clínicos ni la espera todavía abierta. El contador de consultas ingresadas conserva su
+alcance explícito de hoy. El filtro no modifica el alcance de `Limpiar todas las
+entradas`, sus permisos ni su confirmación. Las mutaciones y transiciones de
+cola mantienen sus contratos.
+
+La aceptación en DEV/QLTY queda pendiente: usar entradas sintéticas de días
+adyacentes y cercanas a medianoche, comprobar tabla/vista visual/indicadores,
+mantener UPSS/servicio/estado, limpiar la fecha, simular vacío/error y retirar los
+datos propios. Las pruebas locales no acreditan persistencia ni permisos remotos.
+
+Capturas del control con componentes y CSS reales en un fixture local aislado,
+metadatos sintéticos y sin API clínica: [móvil](docs/images/queue-entry-date-mobile.png)
+y [escritorio](docs/images/queue-entry-date-desktop.png). No representan DEV/QLTY.
 
 ### Descripción de ambientes
 

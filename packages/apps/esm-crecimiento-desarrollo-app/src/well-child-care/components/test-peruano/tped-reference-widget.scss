@@ -2,6 +2,8 @@
 @use '@carbon/type';
 
 .widget {
+  container: tped-reference / inline-size;
+  min-width: 0;
   border: 1px solid var(--cds-border-subtle-01);
   background: var(--cds-layer-01);
   color: var(--cds-text-primary);
@@ -251,7 +253,7 @@
 
 .detailList {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   gap: layout.$spacing-05;
   margin: 0;
 
@@ -263,6 +265,7 @@
     @include type.type-style('label-01');
     color: var(--cds-text-secondary);
     margin-bottom: layout.$spacing-02;
+    overflow-wrap: anywhere;
   }
 
   dd {
@@ -284,7 +287,7 @@
   border: 0;
 }
 
-@media (max-width: 42rem) {
+@container tped-reference (max-width: 42rem) {
   .widgetHeader,
   .toolbar {
     align-items: stretch;
@@ -295,7 +298,7 @@
     text-align: left;
   }
 
-  .detailList {
-    grid-template-columns: 1fr;
+  .toolbar :global(.cds--select) {
+    min-width: 0;
   }
 }

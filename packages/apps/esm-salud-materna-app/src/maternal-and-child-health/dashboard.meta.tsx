@@ -7,6 +7,15 @@ export const prenatalDashboardMeta = {
   config: {},
 } as const;
 
+export const integratedMaternalDashboardMeta = {
+  icon: 'omrs-icon-mother',
+  slot: 'patient-chart-maternal-program-dashboard-slot',
+  title: 'Gestantes',
+  path: 'maternal-care-dashboard',
+  moduleName: '@sihsalus/esm-salud-materna-app',
+  config: {},
+} as const;
+
 export const labourAndDeliveryDashboardMeta = {
   icon: 'omrs-icon-hospital-bed',
   slot: 'patient-chart-labour-and-delivery-dashboard-slot',

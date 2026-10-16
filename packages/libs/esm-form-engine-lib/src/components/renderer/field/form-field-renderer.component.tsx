@@ -199,7 +199,7 @@ export const FormFieldRenderer = ({
       return;
     }
 
-    const { isDirty, isTouched } = getFieldState(field.id);
+    const { isDirty } = getFieldState(field.id);
     const { submission, unspecified } = field.meta;
     const { calculate, defaultValue } = field.questionOptions;
 
@@ -212,11 +212,9 @@ export const FormFieldRenderer = ({
     ) {
       valueAdapter.transformFieldValue(field, fieldValue, context);
     }
-
-    if (isDirty || isTouched) {
-      onAfterChange(fieldValue);
-    }
-  }, [context, field, fieldValue, getFieldState, onAfterChange, valueAdapter]);
+    // Input changes and value reuse already call onAfterChange. Replaying that
+    // handler on context updates feeds dependent-field updates back into it.
+  }, [context, field, fieldValue, getFieldState, valueAdapter]);
 
   useEffect(() => {
     if (!field) {
@@ -277,6 +275,11 @@ export const FormFieldRenderer = ({
           const controlledValue: unknown = value;
           const previousValue: unknown = historicalValue?.value;
           const handleControlledChange = (nextValue: FormFieldValue): void => {
+            // A controlled input can re-emit while its dependent calculations render.
+            if (Object.is(getValues(field.id), nextValue)) {
+              onBlur();
+              return;
+            }
             onChange(nextValue);
             onAfterChange(nextValue);
             onBlur();

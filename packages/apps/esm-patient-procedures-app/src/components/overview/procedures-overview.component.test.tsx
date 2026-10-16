@@ -6,7 +6,7 @@ import {
   useConfig,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockProceduresResponse, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import { describe, expect, it, vi } from 'vitest';
@@ -146,4 +146,24 @@ describe('ProceduresOverview', () => {
 
     expect(screen.getByRole('row', { name: /custom procedure/i })).toBeInTheDocument();
   });
+});
+
+it('starts from the first page when the open patient changes', async () => {
+  mockOpenmrsFetch.mockImplementation(async (url) => {
+    const params = new URL(url, 'https://example.test').searchParams;
+    const start = Number(params.get('startIndex'));
+    return {
+      data: { results: mockProceduresResponse.results.slice(start, start + 5), totalCount: 6, links: [] },
+    } as FetchResponse;
+  });
+  const view = renderWithSwr(<ProceduresOverview patientUuid={mockPatient.id} />);
+  await waitForLoadingToFinish();
+  await userEvent.click(screen.getByRole('button', { name: /next page/i }));
+  await screen.findByRole('row', { name: /mri brain/i });
+  view.rerender(<ProceduresOverview patientUuid="other-patient" />);
+  await waitFor(() =>
+    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => url.includes('patient=other-patient'))[0]?.[0]).toContain(
+      'startIndex=0',
+    ),
+  );
 });

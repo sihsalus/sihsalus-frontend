@@ -133,7 +133,7 @@ describe('QtyUOMSelector', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
-  it('should render Inline notification error when error ocuured while fetching item', () => {
+  it('shows a load error when fetching the stock item fails', () => {
     const errorMessage = 'error loading stock item';
     mockUseStockItem.mockReturnValue({ isLoading: false, error: new Error(errorMessage), item: mockStockItem });
 
@@ -143,25 +143,7 @@ describe('QtyUOMSelector', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('should render Inline notification error when error ocuured while fetching item', () => {
-    const errorMessage = 'error loading stock item';
-    mockUseStockItem.mockReturnValue({ isLoading: false, error: new Error(errorMessage), item: mockStockItem });
-
-    render(<QtyUomSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} />);
-
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    expect(screen.getByRole('status')).toBeInTheDocument();
-  });
-
-  it('should display error message when error prop is provided', () => {
-    const errorMessage = 'This is an error';
-
-    render(<QtyUomSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} error={errorMessage} />);
-
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
-  });
-
-  it('should display error message when error prop is provided', () => {
+  it('shows the validation error passed as a prop', () => {
     const errorMessage = 'This is an error';
 
     render(<QtyUomSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} error={errorMessage} />);

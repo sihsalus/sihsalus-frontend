@@ -25,7 +25,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConfig).mockReturnValue({
     formsList: { stimulationFollowupForm: 'synthetic-cred-form' },
-    CRED: { controlNumber: 'synthetic-control-number' },
+    concepts: { controlNumber: 'synthetic-control-number' },
   });
   readNextPage = async (resource) => response(resource === 'encounter' ? encounters.slice(1) : numbers.slice(1));
   vi.mocked(openmrsFetch).mockImplementation(async (input) => {

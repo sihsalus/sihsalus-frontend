@@ -19,7 +19,7 @@ interface ObstetricHistoryTableProps {
 }
 
 const ObstetricHistoryTable: React.FC<ObstetricHistoryTableProps> = ({ tableRows, isLoading: _isLoading = false }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const normalizedRows = tableRows.map((row, index) => ({
     id: row.id ?? `obstetric-row-${index}`,
     label: row.label ?? '',

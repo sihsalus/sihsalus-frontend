@@ -8,6 +8,11 @@ declare module "*.svg" {
   export default content;
 }
 
+declare module "*.svg?url" {
+  const src: string;
+  export default src;
+}
+
 declare namespace NodeJS {
   interface Require {
     context(

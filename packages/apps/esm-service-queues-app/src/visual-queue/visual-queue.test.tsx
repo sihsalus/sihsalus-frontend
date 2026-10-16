@@ -7,6 +7,7 @@ import { configSchema } from '../config-schema';
 import { serviceQueuesBasePath } from '../constants';
 import { useOperationalQueueEntries } from '../hooks/useOperationalQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
+import { getQueueEntryDateCriteria } from '../store/queue-entry-date';
 import { useServiceQueuesStore } from '../store/store';
 import { type Concept } from '../types';
 
@@ -152,6 +153,21 @@ describe('visual queue controls and data states', () => {
     });
   });
 
+  it('uses the shared entry date and includes it in the fullscreen scope', async () => {
+    vi.mocked(useServiceQueuesStore).mockReturnValue({ ...defaultFilters, selectedQueueEntryDate: '2026-10-11' });
+    const user = userEvent.setup();
+    render(<VisualQueue />);
+    expect(useOperationalQueueEntries).toHaveBeenLastCalledWith({
+      service: defaultFilters.selectedServiceUuid,
+      location: defaultFilters.selectedQueueLocationUuid,
+      status: null,
+      isEnded: false,
+      ...getQueueEntryDateCriteria('2026-10-11'),
+    });
+    await user.click(screen.getByRole('button', { name: 'Fullscreen' }));
+    expect(screen.getByText(/Queue entry:.*11.*Oct.*2026/)).toBeInTheDocument();
+  });
+
   it('expands only the board, preserves the entries and shows the selected scope until exiting', async () => {
     const user = userEvent.setup();
     render(<VisualQueue />);
@@ -163,7 +179,9 @@ describe('visual queue controls and data states', () => {
     expect(document.fullscreenElement).toBe(board);
     expect(requestFullscreen).toHaveBeenCalledTimes(1);
     expect(within(board).getAllByRole('article')).toEqual(cards);
-    expect(screen.getByText('UPSS: UPSS de prueba · Service: Servicio de prueba · Status: All')).toBeInTheDocument();
+    expect(
+      screen.getByText('UPSS: UPSS de prueba · Service: Servicio de prueba · Status: All · Queue entry: All dates'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Exit fullscreen' })).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Exit fullscreen' }));

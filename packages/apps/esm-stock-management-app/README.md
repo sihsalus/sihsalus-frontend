@@ -2,14 +2,14 @@
 
 ![OpenMRS CI](https://github.com/openmrs/openmrs-esm-stock-management/actions/workflows/node.js.yml/badge.svg)
 
-The OpenMRS ESM Stock Management app is designed to help healthcare facilities manage inventory of medical supplies, pharmaceuticals, and other stockable items directly within OpenMRS. It facilitates accurate tracking of stock levels, stock movements, and supply chain operations. It uses the [stock management backend module](https://github.com/openmrs/openmrs-module-stockmanagement).
+The OpenMRS ESM Stock Management app records stock items, balances, and movements across locations. It uses the [stock management backend module](https://github.com/openmrs/openmrs-module-stockmanagement).
 
 ## Key Features
 
 ### Core Operations
 
-- **Stock Management**: Comprehensive tracking of drugs, medical supplies, and commodities across multiple locations
-- **Stock Operations**: Complete workflow support including:
+- **Stock Management**: Tracks drugs, medical supplies, and commodities across locations
+- **Stock Operations**: Supports:
   - Stock receipts from suppliers with batch tracking
   - Stock issues to locations/patients with dispatch management
   - Transfers between locations
@@ -21,9 +21,9 @@ The OpenMRS ESM Stock Management app is designed to help healthcare facilities m
 
 ### Dashboard & Monitoring
 
-- **Real-time Metrics**: Live dashboard showing stock levels, alerts, and key performance indicators
-- **Smart Alerts**: Automated notifications for expiring stock (6-month forecasting), out-of-stock items, and disposal requirements
-- **Inventory Visibility**: Multi-location stock monitoring with historical movement tracking
+- **Metrics**: Dashboard showing stock levels, alerts, and key performance indicators
+- **Alerts**: Notifications for expiring stock (6-month forecasting), out-of-stock items, and disposal requirements
+- **Inventory Visibility**: Stock by location with movement history
 
 ### Advanced Management
 
@@ -34,7 +34,7 @@ The OpenMRS ESM Stock Management app is designed to help healthcare facilities m
 
 ### Reporting & Analytics
 
-- **Comprehensive Reports**: 15+ report types including:
+- **Reports**: 15+ report types including:
   - Stock forecasting and trend analysis
   - Movement history and transaction reports
   - Expiry forecasting and disposal tracking
@@ -51,10 +51,10 @@ The OpenMRS ESM Stock Management app is designed to help healthcare facilities m
 
 ### Technical Features
 
-- **Integration**: Deep integration with OpenMRS's drug, location, and encounter models
+- **Integration**: Uses OpenMRS drug, location, and encounter models
 - **Offline Support**: Operates in both online and offline modes
 - **Multi-language**: Support for 40+ languages with internationalization
-- **Responsive Design**: Optimized for desktop and tablet interfaces
+- **Responsive Design**: Desktop and tablet layouts
 
 ## Use Cases
 
@@ -159,7 +159,7 @@ Refer to the [OpenMRS frontend configuration guide](https://openmrs.atlassian.ne
 
 ## Documentation
 
-For full documentation, visit the [OpenMRS Wiki - Stock Module](https://openmrs.atlassian.net/wiki/x/zg2bAQ).
+See the [OpenMRS Wiki - Stock Module](https://openmrs.atlassian.net/wiki/x/zg2bAQ).
 
 ## License
 

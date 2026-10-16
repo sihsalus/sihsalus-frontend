@@ -4,6 +4,7 @@ import {
   openmrsFetch,
   showSnackbar,
   useConfig,
+  useOpenmrsFetchAll,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
@@ -142,6 +143,32 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
         backWorkspace: null,
       }),
     );
+  });
+
+  it('does not offer forms when a later history page fails', () => {
+    vi.mocked(useOpenmrsFetchAll).mockReturnValueOnce({
+      data: undefined,
+      error: new Error('Synthetic later page failure'),
+      isLoading: false,
+    } as ReturnType<typeof useOpenmrsFetchAll>);
+
+    render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} patientUuid="synthetic-mother" />);
+
+    expect(mockFormsSelectorWorkspace).not.toHaveBeenCalled();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('waits for all history pages before offering forms', () => {
+    vi.mocked(useOpenmrsFetchAll).mockReturnValueOnce({
+      data: undefined,
+      error: undefined,
+      isLoading: true,
+    } as ReturnType<typeof useOpenmrsFetchAll>);
+
+    render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} patientUuid="synthetic-mother" />);
+
+    expect(mockFormsSelectorWorkspace).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent(/cargando historial de formularios maternos/i);
   });
 
   it('launches form entry with the selected form uuid and encounter', async () => {

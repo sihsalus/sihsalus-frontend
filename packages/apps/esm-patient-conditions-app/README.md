@@ -48,6 +48,10 @@ reader and Workspace2 form as **Antecedentes** at `/chart/Antecedentes`.
 The table includes all antecedent types and clinical statuses by default, including
 past diagnoses, with one status filter and one registration action. Types and
 precise statuses remain visible; no records are reclassified or migrated.
+La tabla enfoca la fila seleccionada desde el buscador del chart únicamente
+cuando el UUID del paciente coincide. Si un filtro oculta esa fila, vuelve a
+mostrar todos los estados; si el registro ya no existe, muestra un aviso seguro.
+La selección es efímera y no incluye texto clínico ni modifica la URL.
 The independent dashboard keeps its original `patient-chart-conditions-dashboard-slot`;
 separate slot names preserve each module's registration and configuration ownership.
 Its dashboard wrapper mounts the optional `patient-chart-antecedents-slot` composition

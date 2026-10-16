@@ -20,18 +20,17 @@ import { useTranslation } from 'react-i18next';
 
 import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
 import MetaFormModal from '../components/MetaFormModal';
+import PageHeading from '../components/PageHeading';
 import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useAllIndicadores } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetaByIndicator, useUpsertMeta } from '../features/metas/hooks';
+import { MAX_META_YEAR, MIN_INDICATOR_YEAR, currentYear } from '../features/resultados/years';
 import styles from '../indicators-dashboard.module.scss';
-
-const MIN_YEAR = 2000;
-const MAX_YEAR = 2100;
 
 const MetasPage: React.FC = () => {
   const { t } = useTranslation();
-  const [selectedIndicatorId, setSelectedIndicatorId] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState(currentYear());
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<IndicadorMeta | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IndicadorMeta | null>(null);
@@ -46,7 +45,7 @@ const MetasPage: React.FC = () => {
     data: meta,
     isLoading: metaLoading,
     error: metaError,
-  } = useMetaByIndicator(selectedIndicatorId, selectedIndicatorId ? selectedYear : null);
+  } = useMetaByIndicator(selectedIndicatorId, selectedIndicatorId !== null ? selectedYear : null);
   const { upsertMeta } = useUpsertMeta();
   const { deleteMeta } = useDeleteMeta();
 
@@ -63,7 +62,7 @@ const MetasPage: React.FC = () => {
       meta
         ? [
             {
-              id: meta.id,
+              id: String(meta.id),
               indicador: meta.indicador_nombre,
               version: meta.version_numero,
               anio: meta.anio,
@@ -93,7 +92,7 @@ const MetasPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (payload: IndicadorMetaCreatePayload, indicatorId: string) => {
+  const handleSubmit = async (payload: IndicadorMetaCreatePayload, indicatorId: number) => {
     if (submitLockRef.current) {
       return;
     }
@@ -150,12 +149,10 @@ const MetasPage: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h2>{t('metasTitle', 'Metas')}</h2>
-          <p className={styles.subtitle}>
-            {t('metasSubtitle', 'Consulte y administre la meta anual de un indicador.')}
-          </p>
-        </div>
+        <PageHeading
+          title={t('metasTitle', 'Metas')}
+          subtitle={t('metasSubtitle', 'Consulte y administre la meta anual de un indicador.')}
+        />
         <div className={styles.headerActions}>
           <Button onClick={handleOpenCreate}>{t('newMeta', 'Nueva meta')}</Button>
         </div>
@@ -169,7 +166,7 @@ const MetasPage: React.FC = () => {
           itemToString={(item?: Indicador) => item?.nombre ?? ''}
           selectedItem={selectedIndicator}
           onChange={({ selectedItem }: { selectedItem: Indicador | null | undefined }) =>
-            setSelectedIndicatorId(selectedItem?.id ?? '')
+            setSelectedIndicatorId(selectedItem?.id ?? null)
           }
           placeholder={t('selectIndicator', 'Seleccione un indicador')}
           disabled={indicatorsLoading || Boolean(indicatorsError)}
@@ -177,12 +174,12 @@ const MetasPage: React.FC = () => {
         <NumberInput
           id="meta-filter-year"
           label={t('year', 'Año')}
-          min={MIN_YEAR}
-          max={MAX_YEAR}
+          min={MIN_INDICATOR_YEAR}
+          max={MAX_META_YEAR}
           value={selectedYear}
           onChange={(_event, { value }) => {
             const nextYear = Number(value);
-            if (Number.isInteger(nextYear) && nextYear >= MIN_YEAR && nextYear <= MAX_YEAR) {
+            if (Number.isInteger(nextYear) && nextYear >= MIN_INDICATOR_YEAR && nextYear <= MAX_META_YEAR) {
               setSelectedYear(nextYear);
             }
           }}
@@ -210,13 +207,13 @@ const MetasPage: React.FC = () => {
         </div>
       ) : null}
 
-      {!selectedIndicatorId && !indicatorsLoading && !indicatorsError ? (
+      {selectedIndicatorId === null && !indicatorsLoading && !indicatorsError ? (
         <Tile className={styles.empty}>
           {t('selectMetaLookup', 'Seleccione un indicador y un año para consultar su meta.')}
         </Tile>
       ) : null}
 
-      {selectedIndicatorId && !metaLoading && !metaError ? (
+      {selectedIndicatorId !== null && !metaLoading && !metaError ? (
         rows.length ? (
           <div className={`${styles.tableSurface} ${styles.metasTable}`}>
             <DataTable rows={rows} headers={headers}>
@@ -270,7 +267,7 @@ const MetasPage: React.FC = () => {
         <MetaFormModal
           isOpen
           initialMeta={editingMeta}
-          initialIndicatorId={selectedIndicatorId || undefined}
+          initialIndicatorId={selectedIndicatorId ?? undefined}
           isSubmitting={isSubmitting}
           onClose={handleCloseModal}
           onSubmit={handleSubmit}

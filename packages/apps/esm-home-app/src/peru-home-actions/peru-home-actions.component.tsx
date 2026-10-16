@@ -2,13 +2,13 @@ import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { Suspense, type PropsWithChildren } from 'react';
 import { useTranslation } from 'react-i18next';
-import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
-import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg';
-import careQueuesIllustration from '../../../../../assets/resources/illustrations/colas-de-atencion.svg';
-import dispensingIllustration from '../../../../../assets/resources/illustrations/farmacia.svg';
-import fuaIllustration from '../../../../../assets/resources/illustrations/fua-seguro-sis.svg';
-import laboratoryIllustration from '../../../../../assets/resources/illustrations/laboratorio.svg';
-import patientRegistrationIllustration from '../../../../../assets/resources/illustrations/registrar-paciente.svg';
+import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg?url';
+import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg?url';
+import careQueuesIllustration from '../../../../../assets/resources/illustrations/colas-de-atencion.svg?url';
+import dispensingIllustration from '../../../../../assets/resources/illustrations/farmacia.svg?url';
+import fuaIllustration from '../../../../../assets/resources/illustrations/fua-seguro-sis.svg?url';
+import laboratoryIllustration from '../../../../../assets/resources/illustrations/laboratorio.svg?url';
+import patientRegistrationIllustration from '../../../../../assets/resources/illustrations/registrar-paciente.svg?url';
 import styles from './peru-home-actions.scss';
 
 type Action = {

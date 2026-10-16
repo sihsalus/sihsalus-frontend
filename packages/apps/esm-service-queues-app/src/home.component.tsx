@@ -13,7 +13,7 @@ const Home: React.FC = () => {
 
   return (
     <>
-      <PatientQueueHeader showFilters />
+      <PatientQueueHeader showFilters showDateFilter={!emergencyUiActive} />
       <ExtensionSlot name="service-queues-emergency-header-slot" />
       <ExtensionSlot name="service-queues-emergency-alerts-slot" />
       <ExtensionSlot name="service-queues-emergency-priority-cards-slot" />

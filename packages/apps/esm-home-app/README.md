@@ -12,6 +12,8 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 - Presenta la página principal y el redireccionamiento inicial del usuario.
 - Organiza accesos rápidos, navegación lateral y contenidos de bienvenida.
+- Las ilustraciones SVG de accesos rápidos se importan con `?url` para conservar
+  su uso como `src` de imagen con el Rspack compartido de OpenMRS 10.
 - No gestiona procesos clínicos ni operativos especializados.
 - No reemplaza los módulos funcionales del dominio; solo actúa como landing del producto.
 - No debe implementar lógica de negocio de búsqueda, admisión, colas, citas ni historia clínica; debe delegar a los módulos dueños del flujo.

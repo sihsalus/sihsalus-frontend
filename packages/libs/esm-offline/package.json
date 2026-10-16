@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-offline",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "description": "Helper utilities for OpenMRS",
   "type": "module",
@@ -49,9 +49,9 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@openmrs/esm-api": "9.x",
-    "@openmrs/esm-globals": "9.x",
-    "@openmrs/esm-state": "9.x",
+    "@openmrs/esm-api": "10.x",
+    "@openmrs/esm-globals": "10.x",
+    "@openmrs/esm-state": "10.x",
     "rxjs": "6.x"
   },
   "dependencies": {
@@ -69,22 +69,22 @@
     "@openmrs/esm-state": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.2",
+    "@swc/core": "1.16.13",
     "@types/fhir": "0.0.31",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.5",
     "@types/uuid": "^9.0.1",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.3",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.23",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^20.14.6",
     "i18next": "^26.4.2",
     "rimraf": "^6.1.3",
-    "rxjs": "^6.5.3",
+    "rxjs": "^7.8.2",
     "single-spa": "^6.0.3",
-    "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "8.3.4",
+    "vitest": "^5.0.3"
   },
-  "stableVersion": "9.0.2"
+  "stableVersion": "10.0.0"
 }

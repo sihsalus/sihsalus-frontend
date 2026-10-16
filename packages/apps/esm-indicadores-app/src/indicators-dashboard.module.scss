@@ -1,10 +1,42 @@
 @use "@carbon/styles/scss/theme" as theme;
 
 .container {
-  padding: 1rem;
+  /* Tighter top/left so the page heading sits closer to the navbar and the
+   * left rail; keep room on the right/bottom for the content. */
+  padding: 0.5rem 1rem 1rem 0.5rem;
 }
 
-.moduleHeader,
+/*
+ * The shell renders the left rail as a fixed nav and publishes its width through
+ * `--sihsalus-left-nav-width` (16rem expanded, 0rem collapsed, unset when the
+ * rail is not active), so the module content must reserve that space itself.
+ * This wrapper spans every module route, so no screen (detail, create, edit)
+ * slides under the rail.
+ *
+ * Surfaces: the shell canvas is grey (`$ui-01`, the same value Carbon uses for
+ * `layer-01` and for the `field-01` inputs), so module cards must be white
+ * (`$background`) to stay visible and to let the grey Carbon fields contrast
+ * against them. These rules are nested under `.appShell` so they win over
+ * Carbon's own `.cds--tile` background regardless of stylesheet order.
+ */
+.appShell {
+  margin-inline-start: var(--sihsalus-left-nav-width, 0rem);
+  transition: margin-inline-start 300ms ease;
+
+  .formSectionCard,
+  .detailCard,
+  .section,
+  .infoTile,
+  .tableSurface,
+  .searchResultsPanel,
+  .historyItem,
+  .summaryCard,
+  .metaProgressCard,
+  .empty {
+    background-color: theme.$background;
+  }
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -15,18 +47,20 @@
   border-bottom: 1px solid theme.$border-subtle-00;
 }
 
-.moduleHeader {
-  margin-bottom: 1.5rem;
+.pageHeading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.pageTitle,
+.pagePictogram {
+  flex: none;
+}
+
+.header h1,
 .header h2,
 .sectionTitle {
   margin: 0;
-}
-
-.pageTitle {
-  font-size: 2rem;
   line-height: 1.15;
 }
 
@@ -58,16 +92,24 @@
   text-decoration: underline;
 }
 
-.headerActions,
-.tableActions,
-.filterSwitches {
+.headerActions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.filterSwitches {
-  margin-top: 0.25rem;
+.tableActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+/* Ghost buttons inside table rows carry extra padding; trim it so the three
+ * row actions stay on one line instead of wrapping into a ragged block. */
+.tableActions :global(.cds--btn--ghost) {
+  padding-inline: 0.5rem;
 }
 
 .contentSwitcherRow {
@@ -100,7 +142,7 @@
   border: 1px dashed theme.$border-subtle-01;
 }
 
-.formStack {
+.form {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -125,7 +167,6 @@
 
 .formSectionCard {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
   padding: 1.25rem;
   display: grid;
   gap: 1rem;
@@ -148,47 +189,53 @@
   color: theme.$text-primary;
 }
 
-.formGrid,
-.formColumns,
+/*
+ * The shell canvas and Carbon `field-01` share the same grey, so form controls
+ * placed directly on the canvas (Select, ComboBox, NumberInput) blend into the
+ * background and read as plain text. Following the module's surface convention
+ * (white `$background` cards on the grey canvas), the filter bar gets its own
+ * white surface so the grey fields stay visible.
+ */
 .filtersPanel {
   display: grid;
   gap: 1rem;
   align-items: start;
-}
-
-.formGrid,
-.filtersPanel {
+  padding: 1rem;
+  background-color: theme.$background;
+  border: 1px solid theme.$border-subtle-00;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.formColumns {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
-.formGrid > :first-child {
-  grid-column: 1 / -1;
-}
-
-.formGrid > .searchSelector,
-.formColumns > .searchSelector {
-  grid-column: 1 / -1;
-}
-
-.populationLayout {
+.formFieldGroup {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr);
   align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
 }
 
-.populationLayout > :first-child {
-  max-width: 20rem;
+.formFieldGroup > .searchSelector {
+  grid-column: 1 / -1;
+}
+
+.formFieldNarrow {
+  max-width: 28rem;
+}
+
+.ageGroup {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ageBlocks {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 }
 
 .ageBlock {
   border: 1px solid theme.$border-subtle-00;
   padding: 1rem;
-  background: theme.$layer-02;
 }
 
 .ageBlockHeader {
@@ -215,7 +262,6 @@
 .tableSurface {
   overflow-x: auto;
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .definitionList {
@@ -228,16 +274,37 @@
   gap: 0.5rem;
 }
 
+/* Carbon renders Search's `labelText` visually hidden; surface it so the field
+ * has a visible title instead of relying on the placeholder alone. Matches the
+ * module's hint/subtitle style (`.sectionHint` / `.fieldHelp`). */
+.fieldLabel {
+  margin: 0;
+  color: theme.$text-helper;
+  font-size: 0.875rem;
+}
+
 .fieldHelp {
   margin: 0;
   color: theme.$text-helper;
   font-size: 0.875rem;
 }
 
+.selectedItemsBlock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .selectedItemsList {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.clearSelectedButton {
+  flex: none;
 }
 
 .selectedItemPill {
@@ -263,17 +330,20 @@
 
 .searchResultsPanel {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .searchResultsList {
   display: grid;
   gap: 0.5rem;
   padding: 0.5rem;
+  /* Keep long result lists reachable without pushing the input out of view. */
+  max-height: 16rem;
+  overflow-y: auto;
 }
 
 .searchResultItem {
   padding: 0.75rem;
+  cursor: pointer;
 }
 
 .searchResultContent {
@@ -357,7 +427,6 @@
 
 .historyItem {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-01;
 }
 
 .historyDetails {
@@ -426,7 +495,6 @@
 
 .sqlBlock {
   border: 1px solid theme.$border-subtle-00;
-  background: theme.$layer-02;
   padding: 0.75rem 1rem;
 }
 
@@ -461,7 +529,6 @@
     padding: 0.5rem;
   }
 
-  .moduleHeader,
   .header,
   .sqlHeader {
     flex-direction: column;
@@ -472,12 +539,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .populationLayout {
+  .ageBlocks {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .ageBlockHeader {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -518,6 +585,136 @@
   background-color: theme.$link-primary;
   border-radius: 0.25rem;
   transition: width 0.3s ease;
+}
+
+.metaProgressBarLow {
+  background-color: theme.$support-error;
+}
+
+.metaProgressBarMedium {
+  background-color: theme.$support-warning;
+}
+
+.metaProgressBarHigh {
+  background-color: theme.$support-success;
+}
+
+/* Panel */
+/*
+ * Same canvas/field grey collision as `.filtersPanel`: this Select renders in
+ * the panel header directly on the shell canvas, so it needs a white surface
+ * for the grey Carbon field to stay visible.
+ */
+.panelYearSelect {
+  min-width: 8rem;
+  padding: 1rem;
+  background-color: theme.$background;
+  border: 1px solid theme.$border-subtle-00;
+}
+
+.summaryGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid theme.$border-subtle-00;
+}
+
+/*
+ * Cards in a grid row stretch to the tallest sibling, but their content flows
+ * from the top, so the trailing line (state message or coverage footer) would
+ * land at a different height depending on how many lines the indicator name
+ * wraps to. Pinning the last child to the bottom keeps it in the same place
+ * for short and long names alike.
+ */
+.summaryCard > :last-child {
+  margin-top: auto;
+}
+
+.summaryCardTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  /*
+   * Reserve three lines and clamp to three so a name that wraps to fewer (or
+   * more) lines does not shift the value below it. Without this, the "value /
+   * Sin meta" block lines up differently on every card.
+   */
+  min-height: calc(3 * 1.3em);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.summaryCardValues {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.summaryCardValue {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.summaryCardMeta {
+  color: theme.$text-secondary;
+  font-size: 0.875rem;
+}
+
+.summaryCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summaryStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: theme.$text-primary;
+}
+
+.summaryStatusDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.summaryStatusLow {
+  color: theme.$support-error;
+}
+
+.summaryStatusMedium {
+  color: theme.$support-warning;
+}
+
+.summaryStatusHigh {
+  color: theme.$support-success;
+}
+
+.summaryCardPercent {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.summaryCardCoverage {
+  margin: 0;
+  font-size: 0.75rem;
+  color: theme.$text-secondary;
 }
 
 /* Metas Table */

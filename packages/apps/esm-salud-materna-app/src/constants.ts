@@ -5,6 +5,7 @@ export const familyPlanningEditPrivilege = 'app:hoja.clinica.planificacionFamili
 export const cancerPreventionEditPrivilege = 'app:hoja.clinica.prevencionCancer.editar';
 
 export const maternalPatientChartPrivilege = 'app:hoja.clinica';
+export const addRelationshipsPrivilege = 'Add Relationships';
 export const maternalHealthPrivileges = [
   { view: 'app:hoja.clinica.controlPrenatal', edit: prenatalCareEditPrivilege },
   { view: 'app:hoja.clinica.partoPuerperio', edit: labourDeliveryEditPrivilege },

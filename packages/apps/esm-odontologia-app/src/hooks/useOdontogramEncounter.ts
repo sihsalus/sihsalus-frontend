@@ -1,4 +1,4 @@
-import { useConfig } from '@openmrs/esm-framework';
+import { useConfig, useEmrConfiguration, useSession, useVisit } from '@openmrs/esm-framework';
 import { useState } from 'react';
 
 import type { OdontogramConfig } from '../config-schema';
@@ -20,8 +20,13 @@ interface SaveOdontogramParams {
   baseEncounterUuid?: string | null;
 }
 
-export function useOdontogramEncounter() {
+export const odontogramContextErrorCode = 'ODONTOGRAM_CREATE_CONTEXT_UNAVAILABLE';
+
+export function useOdontogramEncounter(hookPatientUuid: string) {
   const config = useConfig<OdontogramConfig>();
+  const session = useSession();
+  const { activeVisit, isLoading: isLoadingVisit, error: visitError } = useVisit(hookPatientUuid);
+  const { emrConfiguration, isLoadingEmrConfiguration, errorFetchingEmrConfiguration } = useEmrConfiguration();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -30,6 +35,11 @@ export function useOdontogramEncounter() {
     setError(null);
 
     try {
+      if (!patientUuid || patientUuid !== hookPatientUuid) {
+        throw Object.assign(new Error('Odontogram patient context does not match'), {
+          code: odontogramContextErrorCode,
+        });
+      }
       const encounterTypeUuid =
         recordType === 'base' ? config.baseEncounterTypeUuid?.trim() : config.attentionEncounterTypeUuid?.trim();
 
@@ -54,10 +64,34 @@ export function useOdontogramEncounter() {
       if (encounterUuid) {
         // Reuse the existing obs uuids so the update edits values in place
         // instead of appending duplicate obs for the same concepts.
-        const existingObs = await fetchEncounterObs(encounterUuid);
-        response = await updateEncounter(encounterUuid, applyExistingObsUuids(payload, existingObs));
+        const existingObs = await fetchEncounterObs(encounterUuid, patientUuid);
+        response = await updateEncounter(encounterUuid, { obs: applyExistingObsUuids(payload, existingObs).obs });
       } else {
-        response = await saveEncounter(payload);
+        const providerUuid = session?.currentProvider?.uuid;
+        const locationUuid = session?.sessionLocation?.uuid;
+        const encounterRoleUuid = emrConfiguration?.clinicianEncounterRole?.uuid;
+        if (
+          isLoadingVisit ||
+          visitError ||
+          !activeVisit?.uuid ||
+          activeVisit.stopDatetime ||
+          activeVisit.patient?.uuid !== patientUuid ||
+          !providerUuid ||
+          !locationUuid ||
+          !encounterRoleUuid ||
+          isLoadingEmrConfiguration ||
+          errorFetchingEmrConfiguration
+        ) {
+          throw Object.assign(new Error('Odontogram creation context is unavailable'), {
+            code: odontogramContextErrorCode,
+          });
+        }
+        response = await saveEncounter({
+          ...payload,
+          visit: activeVisit.uuid,
+          location: locationUuid,
+          encounterProviders: [{ provider: providerUuid, encounterRole: encounterRoleUuid }],
+        });
       }
 
       return response.data;

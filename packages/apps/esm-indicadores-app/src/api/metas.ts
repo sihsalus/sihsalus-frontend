@@ -1,6 +1,6 @@
-import { getMetaByIndicatorMock } from '../mocks/indicators-data';
-import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
+import { fetchJson, mutateJson, toJsonBody } from './client';
 import { getReportesSqlResourcePath } from './config';
+import { assertShape, isIndicadorMeta } from './validate';
 import type { IndicadorMeta, IndicadorMetaCreatePayload, IndicadorMetaRecord } from './types';
 
 function ensureQuery(params: Record<string, string | number>) {
@@ -28,20 +28,22 @@ export function isMetaNotFoundError(error: unknown): boolean {
   return (candidate.status === 404 || candidate.response?.status === 404) && detail?.field === 'indicador_version_id';
 }
 
-export async function getMetaByIndicator(indicadorId: string, anio: number): Promise<IndicadorMeta> {
+export async function getMetaByIndicator(indicadorId: number, anio: number): Promise<IndicadorMeta> {
   const metasPath = await getReportesSqlResourcePath('metas');
-  return withMockFallback(
-    () => fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_id: indicadorId, anio })}`),
-    () => getMetaByIndicatorMock(indicadorId, anio),
-  );
+  const data = await fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_id: indicadorId, anio })}`);
+  return assertShape(data, isIndicadorMeta, 'metas');
 }
 
 export async function upsertMeta(payload: IndicadorMetaCreatePayload): Promise<IndicadorMetaRecord> {
   const metasPath = await getReportesSqlResourcePath('metas');
-  return mutateJson<IndicadorMetaRecord>(`${metasPath}/`, { method: 'PUT', ...toJsonBody(payload) });
+  const data = await mutateJson<IndicadorMetaRecord>(`${metasPath}/`, {
+    method: 'PUT',
+    ...toJsonBody(payload),
+  });
+  return assertShape(data, isIndicadorMeta, 'metas');
 }
 
-export async function deleteMeta(indicadorVersionId: string, anio: number): Promise<void> {
+export async function deleteMeta(indicadorVersionId: number, anio: number): Promise<void> {
   const metasPath = await getReportesSqlResourcePath('metas');
   await mutateJson<void>(`${metasPath}${ensureQuery({ indicador_version_id: indicadorVersionId, anio })}`, {
     method: 'DELETE',

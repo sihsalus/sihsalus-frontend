@@ -16,7 +16,7 @@ import { credEarlyStimulationEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
 
-import styles from './stimulation-followup.scss';
+import styles from '../../../../ui/summary-card.scss';
 
 interface StimulationFollowupProps {
   patientUuid: string;
@@ -49,21 +49,23 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={riskTagType} size="sm">
-          {riskLabel ?? t('noData', 'Sin datos')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <div className={styles.headerActions}>
+          <Tag type={riskTagType} size="sm">
+            {riskLabel ?? t('noData', 'Sin datos')}
+          </Tag>
+          {canEdit && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={() => handleAdd()}
+              iconDescription={t('add', 'Add')}
+              disabled={isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

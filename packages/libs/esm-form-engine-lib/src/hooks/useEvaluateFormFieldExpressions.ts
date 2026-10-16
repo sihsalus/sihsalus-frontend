@@ -4,7 +4,7 @@ import { type QuestionAnswerOption } from '../types/schema';
 import { isTrue } from '../utils/boolean-utils';
 import { updateFormSectionReferences } from '../utils/common-utils';
 import { evaluateExpression, type FormNode } from '../utils/expression-runner';
-import { evalConditionalRequired, evaluateConditionalAnswered, evaluateHide } from '../utils/form-helper';
+import { evaluateConditionalAnswered, evaluateHide, evaluateRequired } from '../utils/form-helper';
 import { isEmpty } from '../validators/form-validator';
 
 export const useEvaluateFormFieldExpressions = (
@@ -46,11 +46,7 @@ export const useEvaluateFormFieldExpressions = (
         field.isHidden = false;
       }
       // evaluate required
-      if (typeof field.required === 'object' && field.required.type === 'conditionalRequired') {
-        field.isRequired = evalConditionalRequired(field, formFields, formValues);
-      } else {
-        field.isRequired = isTrue(field.required as string);
-      }
+      field.isRequired = evaluateRequired(field, formFields, formValues, runnerContext, evaluateExpression);
       // evaluate disabled
       if (typeof field.disabled === 'object' && field.disabled.disableWhenExpression) {
         field.isDisabled =

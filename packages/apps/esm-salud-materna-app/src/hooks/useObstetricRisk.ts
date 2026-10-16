@@ -1,7 +1,6 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
@@ -9,6 +8,12 @@ import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
 import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 type RiskLevel = 'bajo' | 'alto' | 'muy-alto' | 'indeterminado';
+
+type RiskObservation = {
+  uuid: string;
+  obsDatetime?: string;
+  value?: { uuid?: string; display?: string };
+};
 
 interface ObstetricRiskResult {
   riskLevel: RiskLevel;
@@ -41,13 +46,13 @@ export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
   // Fetch risk classification (latest obs for Grupo de Riesgo)
   const classificationUrl = useMemo(() => {
     if (!patientUuid || !classificationConceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${classificationConceptUuid}&v=custom:(uuid,value:(uuid,display),obsDatetime)&limit=100`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${classificationConceptUuid}&s=default&v=custom:(uuid,value:(uuid,display),obsDatetime)`;
   }, [patientUuid, classificationConceptUuid]);
 
   // Fetch risk factors (all obs for Motivo derivación casa espera)
   const riskFactorsUrl = useMemo(() => {
     if (!patientUuid || !riskFactorsConceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${riskFactorsConceptUuid}&v=custom:(uuid,value:(uuid,display),obsDatetime)&sort=desc`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${riskFactorsConceptUuid}&s=default&v=custom:(uuid,value:(uuid,display),obsDatetime)`;
   }, [patientUuid, riskFactorsConceptUuid]);
 
   const {
@@ -55,29 +60,21 @@ export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
     isLoading: classLoading,
     error: classError,
     mutate: classificationMutate,
-  } = useSWR(classificationUrl, async (fetchUrl: string) => {
-    const response = await openmrsFetch(fetchUrl);
-    return response?.data;
-  });
+  } = useOpenmrsFetchAll<RiskObservation>(classificationUrl, { fetcher: openmrsFetch });
 
   const {
     data: factorsData,
     isLoading: factorsLoading,
     error: factorsError,
     mutate: factorsMutate,
-  } = useSWR(riskFactorsUrl, async (fetchUrl: string) => {
-    const response = await openmrsFetch(fetchUrl);
-    return response?.data;
-  });
+  } = useOpenmrsFetchAll<RiskObservation>(riskFactorsUrl, { fetcher: openmrsFetch });
 
   const result = useMemo(() => {
-    const obs = (classificationData?.results ?? [])
-      .filter((candidate: { obsDatetime?: string }) =>
-        isWithinPregnancyEpisode(candidate.obsDatetime, pregnancyStartDate),
-      )
+    const obs = (classificationData ?? [])
+      .filter((candidate) => isWithinPregnancyEpisode(candidate.obsDatetime, pregnancyStartDate))
       .sort(
-        (first: { obsDatetime: string }, second: { obsDatetime: string }) =>
-          new Date(second.obsDatetime).getTime() - new Date(first.obsDatetime).getTime(),
+        (first, second) =>
+          new Date(second.obsDatetime ?? 0).getTime() - new Date(first.obsDatetime ?? 0).getTime(),
       )[0];
     if (!obs) {
       return {
@@ -101,12 +98,10 @@ export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
     const lastEvaluationDate = obs.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null;
 
     // Parse risk factors from Motivo derivación obs
-    const riskFactors: string[] = (factorsData?.results ?? [])
-      .filter((factorObs: { obsDatetime?: string }) =>
-        isWithinPregnancyEpisode(factorObs.obsDatetime, pregnancyStartDate),
-      )
-      .map((factorObs: { value?: { display?: string } }) => factorObs.value?.display)
-      .filter(Boolean);
+    const riskFactors: string[] = (factorsData ?? [])
+      .filter((factorObs) => isWithinPregnancyEpisode(factorObs.obsDatetime, pregnancyStartDate))
+      .map((factorObs) => factorObs.value?.display)
+      .filter((value): value is string => Boolean(value));
 
     return { riskLevel, riskFactors, lastEvaluationDate };
   }, [

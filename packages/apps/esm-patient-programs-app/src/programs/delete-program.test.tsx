@@ -69,7 +69,7 @@ describe('DeleteProgramModal', () => {
 
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledTimes(1);
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledWith(testProps.programEnrollmentId);
-    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id, expect.any(Function));
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
       kind: 'success',

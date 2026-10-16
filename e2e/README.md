@@ -58,18 +58,15 @@ Usar los comandos del runner; no invocar Playwright directamente para eludir
 los controles de catálogo, cuarentena o preflight.
 
 ```sh
-# Suite clínica principal (compatible con el comando histórico)
-yarn test:e2e
-
 # Suites ejecutables por ID; los argumentos restantes pasan a Playwright
 yarn test:e2e:suite clinical --project=desktop
 yarn test:e2e:suite laboratory --headed
 
 # Worker y cola reales en Chromium con servidor local sintético
-yarn test:e2e:offline-local
+yarn test:e2e:suite offline-local
 
 # Gate opt-in de navegador/laptop offline contra DEV/QLTY
-yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
+yarn test:e2e:suite offline-laptop --project="Microsoft Edge Stable" --headed
 
 # Contratos unitarios fail-closed del gate, sin tocar backend
 yarn test:e2e:offline-laptop:unit
@@ -170,7 +167,7 @@ una integración real.
 ## Gate de laptops offline
 
 `e2e/offline-laptop` es una suite modular separada y deliberadamente no forma
-parte de `yarn test:e2e`: crea y anula datos sintéticos y requiere un DEV o QLTY
+parte de `yarn test:e2e:suite clinical`: crea y anula datos sintéticos y requiere un DEV o QLTY
 coordinado, metadatos aprobados y Chrome/Edge instalados. Al invocarla, el
 preflight falla si falta configuración, si el target y el origen no coinciden
 exactamente con la allowlist HTTPS de DEV/QLTY o si el SHA desplegado no
@@ -240,7 +237,13 @@ El [contrato de fixtures sintéticos](../docs/development/synthetic-fixtures.md)
 documenta el aprovisionamiento supervisado, el journal privado y la recuperación
 de cleanup parcial. Su nueva ubicación conserva los requisitos de autorización.
 
-Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
+Los dos specs mutantes de interconsultas usan el [fixture nativo supervisado](NATIVE_SYNTHETIC_FIXTURES.md):
+un paciente/visita y journal privado por intento, con cleanup por pertenencia.
+Exigen `E2E_NATIVE_SUPERVISED_TARGET` y rechazan CI antes de sus escrituras mientras
+no exista retención privada duradera. Los otros doce specs siguen seleccionables
+en CI; el gate completo de navegador queda bloqueado por esos dos casos.
+
+Los demás specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
 (`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y los validan en `beforeAll`, después
 del preflight, antes de usar un paciente. Así se pueden listar los specs sin
 credenciales ni pacientes; listar no ejecuta ni valida el flujo. Ambos UUID
@@ -252,9 +255,10 @@ prueba nada o que toque por accidente una historia no sintética.
 
 La aceptación del ácido ursodesoxicólico se mantiene: no se sustituye por otro
 medicamento disponible para hacer pasar el gate. La firma de nuevas órdenes y
-el aprovisionamiento/cleanup recuperable se revisan por separado; no se activan
-en esta recuperación de regresiones. Los recursos parciales de fixtures deben
-tener un journal privado, validación de pertenencia y recuperación antes de
+el aprovisionamiento/cleanup recuperable se revisan por separado. Solo los dos
+specs de interconsultas activan el fixture supervisado descrito arriba. Los recursos
+parciales de fixtures deben tener un journal privado, validación de pertenencia y
+recuperación antes de
 promover un nuevo harness mutante.
 
 El preparador recuperable `SyntheticFixtures` exige los privilegios configurados

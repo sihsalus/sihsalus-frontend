@@ -7,6 +7,22 @@ The one stop CLI for using the OpenMRS 3.0 Frontend app.
 This SIH Salus fork requires Node.js 24 or later; use the repository's supported
 Node 24 and Yarn versions for development and validation.
 
+## OpenMRS 10 tooling and shell packaging
+
+The framework workspaces, npm app shell, and this local CLI use OpenMRS 10.0.0.
+The CLI keeps the repository's CommonJS entry point and Rspack 2 integration;
+upstream 10.0.0 uses ESM and Rspack 1. Its OpenMRS 10 behavior is ported onto
+these local contracts rather than replacing them with an incompatible build.
+`openmrs develop` waits for each local module's first successful compilation
+before publishing its dynamic import map. Invalid or failed local builds stop
+startup instead of advertising an unavailable module.
+The app shell is patched with the repository's source-build configuration so the assembled SPA
+still includes the repository-owned service worker, branded manifest, and safe
+localized startup errors. Validate the patch with
+`node --test packages/tooling/scripts/build-app-shell.test.js`, then build and
+assemble the SPA. The upstream Rspack configuration alone does not emit this
+repository's required service worker.
+
 ## CLI startup contract
 
 The CommonJS entry point creates a parser with the
@@ -57,6 +73,11 @@ npx openmrs
 > For developers and implementers.
 
 Performs a debug build of the app shell and runs it against a given OpenMRS backend. Can be proxied to any network and used with any import map configuration.
+
+`--support-offline` defaults to `false`, so startup does not read a packaged
+service worker. When enabled, the CLI requires that worker and fails startup if
+it is missing. `yarn start` still validates and serves the separately assembled
+SPA in `dist/spa`, including its required service worker.
 
 Example:
 

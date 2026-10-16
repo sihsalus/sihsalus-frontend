@@ -1,6 +1,6 @@
 import { SelectItem, TimePicker, TimePickerSelect } from '@carbon/react';
 import { OpenmrsDatePicker, ResponsiveWrapper } from '@openmrs/esm-framework';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './date-time-field.scss';
 
@@ -45,6 +45,19 @@ export const DateTimeField = ({
   const { t } = useTranslation();
   const dateValue = value ?? null;
   const meridiem = getMeridiem(dateValue);
+  const timestamp = dateValue?.getTime();
+  const [timeText, setTimeText] = useState(() => formatTime(dateValue));
+  const timeInputRef = useRef<HTMLInputElement>(null);
+  const invalidTime = Boolean(dateValue) && !TIME_PATTERN.test(timeText);
+  const invalidTimeText = t('validProcedureTimeRequired', 'Enter a valid time in hh:mm format');
+
+  useEffect(() => {
+    timeInputRef.current?.setCustomValidity(invalidTime ? invalidTimeText : '');
+  }, [invalidTime, invalidTimeText]);
+
+  useEffect(() => {
+    setTimeText(formatTime(timestamp == null ? null : new Date(timestamp)));
+  }, [timestamp]);
 
   const handleDateChange = (next: Date | null | undefined) => {
     if (!next) {
@@ -62,6 +75,7 @@ export const DateTimeField = ({
 
   const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const raw = event.target.value;
+    setTimeText(raw);
     const match = TIME_PATTERN.exec(raw);
     if (!match) return;
     const base = dateValue ?? new Date();
@@ -100,7 +114,10 @@ export const DateTimeField = ({
         placeholder="hh:mm"
         pattern="(1[0-2]|0?[1-9]):[0-5][0-9]"
         maxLength={5}
-        defaultValue={formatTime(dateValue)}
+        value={timeText}
+        ref={timeInputRef}
+        invalid={invalidTime}
+        invalidText={invalidTimeText}
         onChange={handleTimeChange}
         disabled={!dateValue}
       >

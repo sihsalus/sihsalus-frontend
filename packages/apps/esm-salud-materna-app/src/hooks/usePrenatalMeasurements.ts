@@ -1,6 +1,5 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import {
@@ -21,10 +20,6 @@ interface PrenatalMeasurement {
   encounterUuid: string;
 }
 
-interface EncounterResponse {
-  results: MaternalEncounter[];
-}
-
 const representation =
   'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,concept:(uuid),value,groupMembers:(uuid,concept:(uuid),value,groupMembers:(uuid,concept:(uuid),value))))';
 
@@ -40,13 +35,10 @@ export function usePrenatalMeasurements(patientUuid: string) {
   const prenatalFormIdentifier = config.formsList.atencionPrenatal;
   const url =
     patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=${representation}&limit=100`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=${representation}`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<EncounterResponse, Error>(url, async (fetchUrl) => {
-    const response = await openmrsFetch<EncounterResponse>(fetchUrl);
-    return response.data;
-  });
+  const { data, error, isLoading, mutate } = useOpenmrsFetchAll<MaternalEncounter>(url, { fetcher: openmrsFetch });
 
   const measurements = useMemo<PrenatalMeasurement[]>(() => {
     if (!pregnancyStartDate) return [];
@@ -54,7 +46,7 @@ export function usePrenatalMeasurements(patientUuid: string) {
     const { gestationalAgeConceptUuid, uterineHeightConceptUuid, cervicalLengthConceptUuid } =
       config.prenatalMeasurements;
 
-    return (data?.results ?? [])
+    return (data ?? [])
       .filter(
         (encounter) =>
           encounterMatchesForm(encounter, prenatalFormIdentifier) &&
@@ -85,7 +77,7 @@ export function usePrenatalMeasurements(patientUuid: string) {
           (measurement.uterineHeight !== undefined || measurement.cervicalLength !== undefined),
       )
       .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime());
-  }, [config.prenatalMeasurements, data?.results, pregnancyStartDate, prenatalFormIdentifier]);
+  }, [config.prenatalMeasurements, data, pregnancyStartDate, prenatalFormIdentifier]);
 
   return {
     data: measurements,

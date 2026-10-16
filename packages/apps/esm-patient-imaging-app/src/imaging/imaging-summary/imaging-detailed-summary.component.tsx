@@ -1,7 +1,6 @@
-import { Button, DataTableSkeleton, InlineNotification } from '@carbon/react';
+import { Button, DataTableSkeleton, InlineNotification, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { AddIcon, launchWorkspace } from '@openmrs/esm-framework';
-import { CardHeader, type DefaultPatientWorkspaceProps, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import { useCallback } from 'react';
+import { type DefaultPatientWorkspaceProps, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
 import { useRequestsByPatient, useStudiesByPatient } from '../../api';
 import RequestProcedureTable from '../components/requests-details-table.component';
@@ -17,36 +16,13 @@ interface ImagingDetailedSummaryProps {
 export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedSummaryProps) {
   const { t } = useTranslation();
   const { canWrite, isOnline } = useImagingAccess();
-  const launchUploadStudiesWorkspace = useCallback(
-    () => launchWorkspace<DefaultPatientWorkspaceProps>(uploadStudiesFormWorkspace, { patientUuid }),
-    [patientUuid],
-  );
-  const launchLinkStudiesWorkspace = useCallback(
-    () => launchWorkspace<DefaultPatientWorkspaceProps>(linkStudiesFormWorkspace, { patientUuid }),
-    [patientUuid],
-  );
-  const launchAddRequestWorkspace = useCallback(
-    () => launchWorkspace<DefaultPatientWorkspaceProps>(addNewRequestWorkspace, { patientUuid }),
-    [patientUuid],
-  );
-  const headerTitle = t('managerStudies', 'Manage studies');
-
-  const {
-    data: studies,
-    error: studiesError,
-    isLoading: isLoadingPatientStudies,
-    isValidating: isValidatingStudies,
-  } = useStudiesByPatient(patientUuid);
-
-  const {
-    data: requests,
-    error: requestError,
-    isLoading: isLoadingRequests,
-    isValidating: isValidatingRequest,
-  } = useRequestsByPatient(patientUuid);
-
+  const studies = useStudiesByPatient(patientUuid);
+  const requests = useRequestsByPatient(patientUuid);
+  const launch = (workspace: string) => {
+    if (canWrite) launchWorkspace<DefaultPatientWorkspaceProps>(workspace, { patientUuid });
+  };
   return (
-    <div className={styles.summary}>
+    <section className={styles.summary} aria-label={t('Medical Imaging', 'Medical imaging')}>
       {!isOnline && (
         <InlineNotification
           kind="warning"
@@ -55,86 +31,84 @@ export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedS
           title={t('imagingOffline', 'Connect to the network to change imaging data or open images.')}
         />
       )}
-      <section>
-        <div className={styles.managementHeader}>
-          <CardHeader title={headerTitle}>
+      <Tabs key={patientUuid}>
+        <TabList aria-label={t('imagingSections', 'Imaging sections')}>
+          <Tab>{t('Studies', 'Studies')}</Tab>
+          <Tab>{t('requests', 'Requests')}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
             <div className={styles.actions}>
               <Button
                 kind="ghost"
-                renderIcon={(props) => <AddIcon size={16} {...props} />}
-                iconDescription={t('linkStudies', 'Studies')}
-                onClick={launchLinkStudiesWorkspace}
+                size="sm"
+                renderIcon={AddIcon}
+                onClick={() => launch(linkStudiesFormWorkspace)}
                 disabled={!canWrite}
               >
-                <strong>{t('linkStudie', 'Link studies')}</strong>
+                {t('linkStudie', 'Link studies')}
               </Button>
               <Button
                 kind="ghost"
-                renderIcon={(props) => <AddIcon size={16} {...props} />}
-                iconDescription={t('upload', 'Upload')}
-                onClick={launchUploadStudiesWorkspace}
+                size="sm"
+                renderIcon={AddIcon}
+                onClick={() => launch(uploadStudiesFormWorkspace)}
                 disabled={!canWrite}
               >
-                <strong>{t('upload', 'Upload')}</strong>
+                {t('uploadDicom', 'Upload DICOM')}
               </Button>
             </div>
-          </CardHeader>
-        </div>
-        {(() => {
-          const displayTextStudies = t('Studies', 'Studies');
-          const headerTitle = t('Studies', 'Studies');
-
-          if (isLoadingPatientStudies)
-            return <DataTableSkeleton data-testid="studies-loading" role="progressbar" zebra />;
-
-          if (studiesError) return <ErrorState error={studiesError} headerTitle={headerTitle} />;
-
-          if (studies?.length) {
-            return (
+            {studies.isLoading ? (
+              <DataTableSkeleton data-testid="studies-loading" role="progressbar" zebra />
+            ) : studies.error ? (
+              <ErrorState error={studies.error} headerTitle={t('Studies', 'Studies')} />
+            ) : studies.data?.length ? (
               <StudiesDetailTable
-                isValidating={isValidatingStudies}
-                studies={studies}
-                showDeleteButton={true}
+                isValidating={studies.isValidating}
+                studies={studies.data}
+                showDeleteButton
                 patientUuid={patientUuid}
               />
-            );
-          }
-          return (
-            <EmptyState
-              displayText={displayTextStudies}
-              headerTitle={headerTitle}
-              launchForm={canWrite ? launchUploadStudiesWorkspace : undefined}
-            />
-          );
-        })()}
-      </section>
-      <section>
-        {(() => {
-          const displayTextWorklist = t('requests', 'Requests');
-          const headerTitle = t('worklist', 'Worklist');
-
-          if (isLoadingRequests) return <DataTableSkeleton role="progressbar" zebra />;
-
-          if (requestError) return <ErrorState error={requestError} headerTitle={headerTitle} />;
-          if (requests?.length > 0) {
-            return (
-              <RequestProcedureTable
-                isValidating={isValidatingRequest}
-                requests={requests}
-                showDeleteButton={true}
-                patientUuid={patientUuid}
+            ) : (
+              <EmptyState displayText={t('Studies', 'Studies')} headerTitle={t('Studies', 'Studies')} />
+            )}
+          </TabPanel>
+          <TabPanel>
+            {requests.isLoading ? (
+              <DataTableSkeleton data-testid="requests-loading" role="progressbar" zebra />
+            ) : requests.error ? (
+              <ErrorState error={requests.error} headerTitle={t('requests', 'Requests')} />
+            ) : requests.data?.length ? (
+              <>
+                <div className={styles.actions}>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={AddIcon}
+                    onClick={() => launch(addNewRequestWorkspace)}
+                    disabled={!canWrite}
+                  >
+                    {t('Add', 'Add')}
+                  </Button>
+                </div>
+                <RequestProcedureTable
+                  isValidating={requests.isValidating}
+                  requests={requests.data}
+                  showDeleteButton
+                  showCreateButton={false}
+                  patientUuid={patientUuid}
+                />
+              </>
+            ) : (
+              <EmptyState
+                displayText={t('requests', 'Requests')}
+                headerTitle={t('requests', 'Requests')}
+                launchForm={canWrite ? () => launch(addNewRequestWorkspace) : undefined}
               />
-            );
-          }
-          return (
-            <EmptyState
-              displayText={displayTextWorklist}
-              headerTitle={headerTitle}
-              launchForm={canWrite ? launchAddRequestWorkspace : undefined}
-            />
-          );
-        })()}
-      </section>
-    </div>
+            )}
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </section>
   );
 }

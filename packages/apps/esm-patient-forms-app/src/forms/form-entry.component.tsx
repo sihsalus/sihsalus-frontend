@@ -84,7 +84,7 @@ const FormEntry: React.FC<FormEntryProps> = ({
   const htmlForm = toHtmlForm(form, htmlFormEntryForms);
   const isHtmlForm = htmlForm != null;
   const isOnline = useConnectivity();
-  const { mutate: globalMutate } = useSWRConfig();
+  const { mutate: globalMutate, cache } = useSWRConfig();
   const { t } = useTranslation();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const closeWorkspaceRef = useRef(closeWorkspace);
@@ -109,13 +109,13 @@ const FormEntry: React.FC<FormEntryProps> = ({
 
   const handleCloseWorkspaceWithSavedChanges = useCallback(() => {
     mutateVisitContextRef.current?.();
-    invalidateVisitAndEncounterData(globalMutate, patientUuid);
+    invalidateVisitAndEncounterData(globalMutate, patientUuid, cache);
     if (closeWorkspaceWithSavedChanges) {
       closeWorkspaceWithSavedChanges();
       return Promise.resolve(true);
     }
     return closeWorkspaceRef.current({ discardUnsavedChanges: true });
-  }, [closeWorkspaceWithSavedChanges, globalMutate, patientUuid]);
+  }, [cache, closeWorkspaceWithSavedChanges, globalMutate, patientUuid]);
 
   const handlePromptBeforeClosing = useCallback(
     (fn: () => boolean) => {

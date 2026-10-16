@@ -4,6 +4,7 @@ import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 
 import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
+import LinkNewbornToMother from './link-newborn-to-mother.component';
 
 const translationNamespace = '@sihsalus/esm-salud-materna-app';
 
@@ -22,7 +23,7 @@ export const LabourDelivery: React.FC<LabourDeliveryProps> = ({
   const tabs: TabConfig[] = useMemo(
     () => [
       {
-        labelKey: 'summaryOfLaborAndPostpartum',
+        labelKey: 'resumenPartoPuerperio',
         icon: Report,
         slotName: 'labour-delivery-summary-slot',
       },
@@ -45,13 +46,16 @@ export const LabourDelivery: React.FC<LabourDeliveryProps> = ({
   }
 
   return (
-    <TabbedDashboard
-      patient={patient}
-      patientUuid={patientUuid}
-      titleKey="labourAndDelivery"
-      tabs={tabs}
-      ariaLabelKey="labourAndDeliveryTabs"
-      translationNamespace={translationNamespace}
-    />
+    <>
+      <LinkNewbornToMother key={patientUuid} motherUuid={patientUuid} />
+      <TabbedDashboard
+        patient={patient}
+        patientUuid={patientUuid}
+        titleKey="maternalDeliveryTab"
+        tabs={tabs}
+        ariaLabelKey="labourAndDeliveryTabs"
+        translationNamespace={translationNamespace}
+      />
+    </>
   );
 };

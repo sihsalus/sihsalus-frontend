@@ -14,9 +14,6 @@ interface Workspace2Props {
   hasUnsavedChanges?: boolean;
 }
 
-/**
- * @experimental
- */
 export interface Workspace2DefinitionProps<
   WorkspaceProps extends object = object,
   WindowProps extends object = object,
@@ -72,7 +69,6 @@ export type Workspace2Definition<
  * its children as content within a workspace. When creating a workspace
  * component, `<Workspace2>` should be the top-level component returned,
  * wrapping all of the workspace content.
- * @experimental
  */
 export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsavedChanges = false }) => {
   const layout = useLayoutType();

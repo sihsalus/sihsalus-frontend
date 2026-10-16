@@ -5,7 +5,8 @@ import type {} from '@openmrs/esm-globals';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import React, { type ComponentType, type ErrorInfo, Suspense } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { SWRConfig, type SWRConfiguration } from 'swr';
+import { type Cache, SWRConfig, type SWRConfiguration } from 'swr';
+import { initCache } from 'swr/_internal';
 import { ComponentContext } from './ComponentContext';
 
 const defaultOpts = {
@@ -15,6 +16,12 @@ const defaultOpts = {
 };
 
 // Read more about the available config options here: https://swr.vercel.app/docs/api#configuration
+// Keep SWR state alive across independently mounted microfrontend roots.
+// Initialize it outside of any SWRConfig boundary so unmounting one root
+// cannot invalidate the state used by another root.
+const swrCache: Cache = new Map();
+initCache(swrCache);
+
 const defaultSwrConfig: SWRConfiguration = {
   // max number of retries after requests have failed
   errorRetryCount: 3,
@@ -53,7 +60,7 @@ export interface ComponentDecoratorOptions {
   featureName: string;
   disableTranslations?: boolean;
   strictMode?: boolean;
-  swrConfig?: Partial<Omit<SWRConfiguration, 'fetcher'>>;
+  swrConfig?: Partial<Omit<SWRConfiguration, 'fetcher' | 'provider'>>;
   throwErrorsToConsole?: boolean;
 }
 
@@ -131,7 +138,7 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         } else {
           const content = (
             <Suspense fallback={null}>
-              <SWRConfig value={swrConfig}>
+              <SWRConfig value={{ ...swrConfig, provider: () => swrCache }}>
                 <ComponentContext.Provider value={this.state.config}>
                   {opts.disableTranslations ? (
                     <Comp {...this.props} />

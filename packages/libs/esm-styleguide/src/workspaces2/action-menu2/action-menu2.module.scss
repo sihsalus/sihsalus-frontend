@@ -63,6 +63,7 @@ $actionPanelOffset: layout.$spacing-09;
 
     > div {
       flex: 1;
+      min-inline-size: 0;
       cursor: pointer;
     }
   }
@@ -72,9 +73,11 @@ $actionPanelOffset: layout.$spacing-09;
     align-items: center;
     width: 100%;
     flex: 1;
+    min-inline-size: 0;
 
     > div {
       flex: 1;
+      min-inline-size: 0;
     }
   }
 }

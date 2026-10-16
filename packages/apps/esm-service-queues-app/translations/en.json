@@ -447,5 +447,14 @@
   "waitingFor": "Waiting for",
   "waitTime": "Wait time",
   "weight": "Weight",
-  "years": "years"
+  "years": "years",
+  "queueEntryDate": "Queue entry date",
+  "allQueueEntryDates": "All dates",
+  "clearQueueEntryDate": "Clear date",
+  "checkedInPatientsToday": "Checked in patients today",
+  "queueMetricsUnavailable": "Queue metrics could not be loaded",
+  "visualQueueScopeWithDate": "UPSS: {{location}} · Service: {{service}} · Status: {{status}} · Queue entry: {{date}}",
+  "averageServiceWaitAllUpss": "Average service wait · all UPSS",
+  "averageQueueWaitAllUpss": "Average queue wait · all UPSS",
+  "averageWaitScope": "UPSS filters the list and waiting count. This average includes all UPSS."
 }

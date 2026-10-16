@@ -2,7 +2,7 @@ import { openmrsFetch } from '@openmrs/esm-framework';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
-import { getIndicadores, previewSql } from './indicadores';
+import { getIndicadores } from './indicadores';
 import type { SeriesResponse } from './types';
 import { calcularAhora, getResultados, getResultadosSeries, recalcularAnio } from './resultados';
 
@@ -17,48 +17,6 @@ function mockResourcePath(base: string) {
   mockedGetReportesSqlApiPath.mockResolvedValue(base);
   mockedGetReportesSqlResourcePath.mockImplementation(async (resource) => `${base}/${resource}`);
 }
-
-describe('previewSql routing', () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('calls openmrsFetch with /services/reportes-sql/indicadores/{id}/preview-sql', async () => {
-    mockResourcePath('/services/reportes-sql');
-    mockedOpenmrsFetch.mockResolvedValue({
-      data: { sql: 'SELECT 1', params: {}, periodo_inicio: '', periodo_fin: '', version_id: '', version_num: 1 },
-    } as never);
-
-    await previewSql('ind-abc');
-
-    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('/services/reportes-sql/indicadores/ind-abc/preview-sql');
-  });
-
-  it('appends versionId as query param when provided', async () => {
-    mockResourcePath('/services/reportes-sql');
-    mockedOpenmrsFetch.mockResolvedValue({
-      data: { sql: 'SELECT 1', params: {}, periodo_inicio: '', periodo_fin: '', version_id: '', version_num: 1 },
-    } as never);
-
-    await previewSql('ind-abc', 'v2');
-
-    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('versionId=v2');
-  });
-
-  it('does NOT use indicatorsApiPath for previewSql', async () => {
-    mockResourcePath('/services/reportes-sql');
-    mockedOpenmrsFetch.mockResolvedValue({
-      data: { sql: 'SELECT 1', params: {}, periodo_inicio: '', periodo_fin: '', version_id: '', version_num: 1 },
-    } as never);
-
-    await previewSql('ind-abc');
-
-    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
-    expect(calledUrl).not.toContain('/ws/module/indicators/api');
-  });
-});
 
 describe('getResultados routing', () => {
   afterEach(() => {
@@ -83,12 +41,12 @@ describe('getResultados routing', () => {
       data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
     } as never);
 
-    await getResultados({ page: 2, size: 25, indicador_id: 'ind-1' });
+    await getResultados({ page: 2, size: 25, indicador_id: 1 });
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
     expect(calledUrl).toContain('page=2');
     expect(calledUrl).toContain('size=25');
-    expect(calledUrl).toContain('indicador_id=ind-1');
+    expect(calledUrl).toContain('indicador_id=1');
   });
 
   it('does NOT use indicatorsApiPath for getResultados', async () => {
@@ -133,10 +91,49 @@ describe('getResultados routing', () => {
       data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
     } as never);
 
-    await getResultados({ page: 1, size: 10, version_id: 'v2' });
+    await getResultados({ page: 1, size: 10, version_id: 2 });
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('version_id=v2');
+    expect(calledUrl).toContain('version_id=2');
+  });
+
+  it('rejects a resultados row with a non-numeric valor', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        items: [
+          {
+            id: 1,
+            periodo_inicio: '2026-01-01',
+            periodo_fin: '2026-01-31',
+            valor: '12',
+            calculado_en: '2026-02-01T00:00:00.000Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        size: 10,
+        pages: 1,
+      },
+    } as never);
+
+    await expect(getResultados({ page: 1, size: 10 })).rejects.toThrow(/inesperada/);
+  });
+
+  it('rejects a series row with a non-numeric valor', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        items: [{ periodo_label: '2026-01', valor: '10', meses_disponibles: 1, anio: 2026 }],
+        indicador_id: 1,
+        anio: 2026,
+        granularity: 'mensual',
+      },
+    } as never);
+
+    await expect(
+      getResultadosSeries({ indicador_id: 1, anio: 2026, granularity: 'mensual' }),
+    ).rejects.toThrow(/inesperada/);
   });
 });
 
@@ -170,12 +167,19 @@ describe('calcularAhora routing', () => {
     expect(fetchOptions?.method).toBe('POST');
   });
 
-  it('propagates the backend error instead of returning a mock response on failure', async () => {
+  it('propagates the backend error on failure', async () => {
     mockResourcePath('/services/reportes-sql');
     const fetchError = new Error('Backend unavailable');
     mockedOpenmrsFetch.mockRejectedValue(fetchError);
 
     await expect(calcularAhora()).rejects.toBe(fetchError);
+  });
+
+  it('rejects a calcular-ahora payload without total/errores envelope', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({ data: { calculados: 1 } } as never);
+
+    await expect(calcularAhora()).rejects.toThrow(/inesperada/);
   });
 });
 
@@ -187,7 +191,7 @@ describe('getResultadosSeries routing', () => {
   it('preserves version numbers from the backend aggregate-series contract', async () => {
     mockResourcePath('/services/reportes-sql');
     const response: SeriesResponse = {
-      indicador_id: 'synthetic-indicator',
+      indicador_id: 1,
       anio: 2026,
       granularity: 'trimestral',
       items: [{ periodo_label: 'Q1', valor: 12, meses_disponibles: 3, anio: 2026, versiones: [1, 2] }],
@@ -201,10 +205,10 @@ describe('getResultadosSeries routing', () => {
   it('calls openmrsFetch with /services/reportes-sql/resultados/series', async () => {
     mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
-      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' },
+      data: { items: [], indicador_id: 1, anio: 2026, granularity: 'mensual' },
     } as never);
 
-    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' });
+    await getResultadosSeries({ indicador_id: 1, anio: 2026, granularity: 'mensual' });
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
     expect(calledUrl).toContain('/services/reportes-sql/resultados/series');
@@ -213,10 +217,10 @@ describe('getResultadosSeries routing', () => {
   it('serializes include_meta=true into the query string', async () => {
     mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
-      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' },
+      data: { items: [], indicador_id: 1, anio: 2026, granularity: 'mensual' },
     } as never);
 
-    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual', include_meta: true });
+    await getResultadosSeries({ indicador_id: 1, anio: 2026, granularity: 'mensual', include_meta: true });
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
     expect(calledUrl).toContain('include_meta=true');
@@ -225,10 +229,10 @@ describe('getResultadosSeries routing', () => {
   it('omits include_meta from query string when undefined', async () => {
     mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
-      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' },
+      data: { items: [], indicador_id: 1, anio: 2026, granularity: 'mensual' },
     } as never);
 
-    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' });
+    await getResultadosSeries({ indicador_id: 1, anio: 2026, granularity: 'mensual' });
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
     expect(calledUrl).not.toContain('include_meta');
@@ -237,13 +241,13 @@ describe('getResultadosSeries routing', () => {
   it('includes all expected query parameters', async () => {
     mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
-      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'trimestral' },
+      data: { items: [], indicador_id: 1, anio: 2026, granularity: 'trimestral' },
     } as never);
 
-    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'trimestral', include_meta: true });
+    await getResultadosSeries({ indicador_id: 1, anio: 2026, granularity: 'trimestral', include_meta: true });
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('indicador_id=ind-001');
+    expect(calledUrl).toContain('indicador_id=1');
     expect(calledUrl).toContain('anio=2026');
     expect(calledUrl).toContain('granularity=trimestral');
     expect(calledUrl).toContain('include_meta=true');
@@ -303,7 +307,7 @@ describe('recalcularAnio routing', () => {
     mockedOpenmrsFetch.mockResolvedValue({
       data: {
         anio: 2025,
-        indicador_id: 'ind-001',
+        indicador_id: 1,
         meses_procesados: 12,
         indicadores_considerados: 1,
         recalculados: 12,
@@ -312,18 +316,27 @@ describe('recalcularAnio routing', () => {
       },
     } as never);
 
-    await recalcularAnio({ anio: 2025, indicador_id: 'ind-001' });
+    await recalcularAnio({ anio: 2025, indicador_id: 1 });
 
     const fetchOptions = mockedOpenmrsFetch.mock.calls[0][1];
-    expect(fetchOptions?.body).toEqual({ anio: 2025, indicador_id: 'ind-001' });
+    expect(fetchOptions?.body).toEqual({ anio: 2025, indicador_id: 1 });
   });
 
-  it('propagates the backend error instead of returning a mock response on failure', async () => {
+  it('propagates the backend error on failure', async () => {
     mockResourcePath('/services/reportes-sql');
     const fetchError = new Error('Backend unavailable');
     mockedOpenmrsFetch.mockRejectedValue(fetchError);
 
     await expect(recalcularAnio({ anio: 2026 })).rejects.toBe(fetchError);
+  });
+
+  it('rejects a recalcular-anio envelope missing the processing counters', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { anio: 2026, indicador_id: null, recalculados: 0, errores: [], total: 0 },
+    } as never);
+
+    await expect(recalcularAnio({ anio: 2026 })).rejects.toThrow(/resultados\/recalcular-anio/);
   });
 });
 

@@ -6,7 +6,7 @@ import {
   useConfig,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockProceduresResponse, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import { describe, expect, it, vi } from 'vitest';
@@ -146,4 +146,24 @@ describe('ProceduresDetailedSummary', () => {
     await user.click(addButton);
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith('procedures-form-workspace', { formContext: 'creating' });
   });
+});
+
+it('restarts detailed pagination on the first request after the patient changes', async () => {
+  mockUseConfig.mockReturnValue({ ...getDefaultsFromConfigSchema(configSchema), detailedViewPageSize: 5 });
+  mockOpenmrsFetch.mockImplementation(async (url) => {
+    const start = Number(new URL(url, 'https://example.test').searchParams.get('startIndex'));
+    return {
+      data: { results: mockProceduresResponse.results.slice(start, start + 5), totalCount: 6, links: [] },
+    } as FetchResponse;
+  });
+  const view = renderWithSwr(<ProceduresDetailedSummary patient={mockFhirPatient} />);
+  await waitForLoadingToFinish();
+  await userEvent.click(screen.getByRole('button', { name: /next page/i }));
+  await screen.findByRole('row', { name: /mri brain/i });
+  view.rerender(<ProceduresDetailedSummary patient={{ ...mockFhirPatient, id: 'other-patient' }} />);
+  await waitFor(() =>
+    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => url.includes('patient=other-patient'))[0]?.[0]).toContain(
+      'startIndex=0',
+    ),
+  );
 });

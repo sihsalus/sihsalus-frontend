@@ -1,0 +1,71 @@
+import { InlineLoading, Select, SelectItem, Tile } from '@carbon/react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import IndicadorResumenCard from '../components/IndicadorResumenCard';
+import PageHeading from '../components/PageHeading';
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
+import { useAllIndicadores } from '../features/indicadores/hooks';
+import { currentYear, indicatorYearOptions } from '../features/resultados/years';
+import styles from '../indicators-dashboard.module.scss';
+
+const PanelPage: React.FC = () => {
+  const { t } = useTranslation();
+  const [anio, setAnio] = useState(currentYear());
+  const { data, isLoading, error } = useAllIndicadores();
+
+  const years = useMemo(() => indicatorYearOptions(), []);
+
+  const activos = useMemo(() => (data ?? []).filter((indicador) => indicador.activo), [data]);
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <PageHeading
+          title={t('panel', 'Panel')}
+          subtitle={t('panelSubtitle', 'Cumplimiento anual de los indicadores activos en un solo vistazo.')}
+        />
+        <div className={styles.headerActions}>
+          <Select
+            id="panel-anio"
+            className={styles.panelYearSelect}
+            labelText={t('year', 'Año')}
+            value={anio}
+            onChange={(event) => setAnio(Number(event.target.value))}
+            size="sm"
+          >
+            {years.map((year) => (
+              <SelectItem key={year} value={year} text={String(year)} />
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      {isLoading ? <InlineLoading description={t('loadingIndicators', 'Cargando indicadores...')} /> : null}
+      {error ? (
+        <div className={styles.errorBanner}>
+          {getUserFacingErrorMessage(
+            error,
+            t('indicatorsLoadFailed', 'No se pudieron cargar los indicadores.'),
+            indicatorsErrorMessageOptions(t),
+          )}
+        </div>
+      ) : null}
+
+      {!isLoading && !error ? (
+        activos.length ? (
+          <div className={styles.summaryGrid}>
+            {activos.map((indicador) => (
+              <IndicadorResumenCard key={indicador.id} indicador={indicador} anio={anio} />
+            ))}
+          </div>
+        ) : (
+          <Tile className={styles.empty}>{t('panelNoIndicators', 'No hay indicadores activos para mostrar.')}</Tile>
+        )
+      ) : null}
+    </div>
+  );
+};
+
+export default PanelPage;

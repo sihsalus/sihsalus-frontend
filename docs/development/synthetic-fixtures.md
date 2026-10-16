@@ -3,6 +3,9 @@
 Status: **draft; supervised adapters exist, browser CI remains blocked**.
 The [laboratory adapter](../../e2e/laboratory/README.md) reuses this foundation for one
 patient/visit pair per local test attempt, with private retained journals.
+The [native interconsultation fixture](../../e2e/NATIVE_SYNTHETIC_FIXTURES.md) also
+uses the foundation for two explicitly supervised desktop specs, retaining the
+same browser CI recovery boundary.
 The separate [supervised O3 Forms adapter](../../e2e/scripts/O3FORMS_SUPERVISED.md) provides
 an explicit opt-in CLI and retains the requirements below; it has not passed
 remote clinical acceptance. Importing these utilities does not run a remote
@@ -130,6 +133,6 @@ No current-SHA DEV/QLTY clinical validation is claimed by this foundation.
 The laboratory adapter requires explicit local supervision and rejects CI before
 requests because a runner's destruction would lose its local journal. The
 supervised O3 Forms adapter does not activate global setup/teardown or a browser
-CI suite. Neither adapter waives CONTRIBUTING or durable recovery requirements.
+CI suite. No adapter waives CONTRIBUTING or durable recovery requirements.
 Keep any activation or adapter PR in draft until an accountable owner has reviewed
 the activation contract above and the required environment-specific evidence.

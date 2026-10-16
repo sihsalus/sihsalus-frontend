@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOperationalQueueEntries } from '../hooks/useOperationalQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
+import { getQueueEntryDateCriteria } from '../store/queue-entry-date';
 import { updateSelectedQueueStatus, updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 import { useColumns } from './cells/columns.resource';
@@ -39,7 +40,8 @@ function DefaultQueueTable() {
 function QueueTableSection() {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid } = useServiceQueuesStore();
+  const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid, selectedQueueEntryDate } =
+    useServiceQueuesStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [triageFilter, setTriageFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const triageFilterOptions = useMemo(
@@ -57,8 +59,9 @@ function QueueTableSection() {
       location: selectedQueueLocationUuid,
       isEnded: false,
       status: selectedQueueStatusUuid,
+      ...getQueueEntryDateCriteria(selectedQueueEntryDate),
     };
-  }, [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid]);
+  }, [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid, selectedQueueEntryDate]);
 
   const { queueEntries, isLoading, error, isValidating } = useOperationalQueueEntries(searchCriteria);
   const {

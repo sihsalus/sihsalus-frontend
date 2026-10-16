@@ -13,7 +13,7 @@ export const configSchema = {
     _default: 5,
   },
   conditionConceptClassUuid: {
-    _type: Type.ConceptUuid,
+    _type: Type.UUID,
     _description: 'Concept class UUID for condition concepts',
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
   },
@@ -733,11 +733,6 @@ export const configSchema = {
     },
 
     // Additional Assessment Concepts
-    kawaidaUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Kawaida',
-      _default: 'f35aa4ba-9d04-4283-a4c8-ec8f2ee29da5',
-    },
     mamilasUuid: {
       _type: Type.ConceptUuid,
       _description: 'Mamilas',
@@ -953,6 +948,11 @@ export const configSchema = {
       mmnReceivingConceptUuid: 'c2010002-0000-4000-8000-000000000002',
       ironReceivingConceptUuid: 'c2010003-0000-4000-8000-000000000003',
       nutritionCounselingConceptUuid: 'c2010004-0000-4000-8000-000000000004',
+      feedingPracticeConceptUuid: 'f0000010-0000-4000-8000-000000000010',
+      feedingCounselingConceptUuid: 'f0000011-0000-4000-8000-000000000011',
+      caregiverAgreementsConceptUuid: 'f0000003-0000-4000-8000-000000000003',
+      nutritionEvolutionConceptUuid: 'f0000002-0000-4000-8000-000000000002',
+      nutritionReferralConceptUuid: 'f0000005-0000-4000-8000-000000000005',
     },
     nutritionClassificationConceptUuid: {
       _type: Type.ConceptUuid,
@@ -993,6 +993,31 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID de consejería nutricional brindada en CRED-002',
       _default: 'c2010004-0000-4000-8000-000000000004',
+    },
+    feedingPracticeConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Práctica alimentaria revisada en CRED-007',
+      _default: 'f0000010-0000-4000-8000-000000000010',
+    },
+    feedingCounselingConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Consejería alimentaria brindada en CRED-007',
+      _default: 'f0000011-0000-4000-8000-000000000011',
+    },
+    caregiverAgreementsConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Acuerdos con el cuidador en CRED-007',
+      _default: 'f0000003-0000-4000-8000-000000000003',
+    },
+    nutritionEvolutionConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Evolución registrada en CRED-008',
+      _default: 'f0000002-0000-4000-8000-000000000002',
+    },
+    nutritionReferralConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Requiere referencia, según registro CRED-008',
+      _default: 'f0000005-0000-4000-8000-000000000005',
     },
   },
 
@@ -1475,6 +1500,11 @@ export interface ConfigObject {
     mmnReceivingConceptUuid: string;
     ironReceivingConceptUuid: string;
     nutritionCounselingConceptUuid: string;
+    feedingPracticeConceptUuid: string;
+    feedingCounselingConceptUuid: string;
+    caregiverAgreementsConceptUuid: string;
+    nutritionEvolutionConceptUuid: string;
+    nutritionReferralConceptUuid: string;
   };
   earlyStimulation: {
     developmentEvalConceptUuid: string;

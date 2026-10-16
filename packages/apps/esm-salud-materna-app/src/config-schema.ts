@@ -5,6 +5,11 @@ import { Type } from '@openmrs/esm-framework';
 // ===============================
 
 export const configSchema = {
+  motherChildRelationshipTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Relationship type UUID used to link a mother to an existing newborn patient',
+    _default: 'e6be4def-dbc8-462a-8714-53da66903cb8',
+  },
   conditionPageSize: {
     _type: Type.Number,
     _description: 'The default page size for the conditions',
@@ -111,6 +116,7 @@ export const configSchema = {
       prenatalSupplementationForm: 'OBST-011-SUPLEMENTACIÓN GESTANTE',
       psychoprophylaxisForm: 'OBST-012-PSICOPROFILAXIS',
       maternalDischargeForm: 'OBST-007-EGRESO MATERNO',
+      maternalEpicrisisForm: 'HOSP-010-EPICRISIS OBSTÉTRICO-POSTPARTO',
       maternalReadmissionForm: 'OBST-008-REINGRESO MATERNO',
       obstetricsServiceForm: 'OBST-010-SERVICIO DE OBSTETRICIA',
       adolescentPregnancyCareForm: 'OBST-016-ATENCIÓN DIFERENCIADA GESTANTE ADOLESCENTE',
@@ -349,16 +355,17 @@ export const configSchema = {
     },
 
     // CRED Controls
-    // TODO: verify distinct concept UUIDs for each field; these defaults are copied from newborn vital signs.
+    // Use the same verified OCL external_id/OpenMRS UUIDs as the CRED module.
+    // The newborn vital signs UUID is a concept set, not a field concept.
     consultationTime: {
       _type: Type.ConceptUuid,
       _description: 'Hora de consulta CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
+      _default: '2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4',
     },
     controlNumber: {
       _type: Type.ConceptUuid,
       _description: 'Número de control CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
+      _default: 'ce8b07e8-712f-406a-b44d-2fa69167f5ea',
     },
   },
 
@@ -374,6 +381,42 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Número de partos a término (≥37 semanas de gestación)',
       _default: '8795c05b-f286-4d70-a1e6-69172e676f05',
+    },
+    partosUuid: {
+      _type: Type.ConceptUuid,
+      _description:
+        'Total de partos previos. Configurar solo con un concepto canónico que represente el total; el concepto de partos a término no es equivalente.',
+      _default: '',
+    },
+    partosVaginalesUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Número de partos vaginales en antecedentes obstétricos (OBST-001)',
+      _default: '985732d6-157e-49aa-9d28-556696c5c4fe',
+    },
+    cesareasUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Número de cesáreas en antecedentes obstétricos (OBST-001)',
+      _default: '78b32019-9881-4f5a-9c85-c9f954e53f9f',
+    },
+    nacidosVivosVivenUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Nacidos vivos que viven, registrado en OBST-001',
+      _default: '5c8e69b1-d048-400a-bb6c-2df83a16387c',
+    },
+    muertePrimeraSemanaUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Nacidos vivos fallecidos durante la primera semana, registrado en OBST-001',
+      _default: '382ca587-c452-481f-8c76-45e2702cd7f2',
+    },
+    muerteDespuesPrimeraSemanaUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Nacidos vivos fallecidos después de la primera semana, registrado en OBST-001',
+      _default: 'b3d7aba6-5a45-4260-8ffd-8fac9174fc85',
+    },
+    mayorPesoRnUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Mayor peso de recién nacido en gramos, registrado en OBST-001',
+      _default: 'dee42f1a-657e-4ab3-8a0a-b012500edea6',
     },
     partoPrematuroUuid: {
       _type: Type.ConceptUuid,
@@ -421,8 +464,8 @@ export const configSchema = {
     // Concept Sets
     perinatalConceptSetUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept set para el seguimiento del niño sano',
-      _default: '', // TODO: set real concept set UUID from OCL
+      _description: 'Concept set para antecedentes/riesgo perinatal en CRED',
+      _default: '9dce2946-9fda-4d62-b68e-d62711801189',
     },
 
     // Newborn Care Procedures
@@ -1380,6 +1423,7 @@ export interface AgeRange {
 }
 
 export interface ConfigObject {
+  motherChildRelationshipTypeUuid: string;
   conditionPageSize: number;
   conditionConceptClassUuid: string;
   conditionConceptSets: {
@@ -1450,6 +1494,7 @@ export interface ConfigObject {
     prenatalSupplementationForm: string;
     psychoprophylaxisForm: string;
     maternalDischargeForm: string;
+    maternalEpicrisisForm: string;
     maternalReadmissionForm: string;
     obstetricsServiceForm: string;
     adolescentPregnancyCareForm: string;

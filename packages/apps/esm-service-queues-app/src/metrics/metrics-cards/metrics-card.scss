@@ -1,7 +1,7 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@carbon/colors';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@carbon/colors";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .tileContainer {
   border: 1px solid $ui-03;
@@ -19,14 +19,14 @@
 
 .headerLabelContainer {
   display: flex;
-  height: layout.$spacing-07;
+  min-height: layout.$spacing-07;
   align-items: center;
 
   :global(.cds--dropdown__wrapper--inline) {
     gap: 0;
 
     label {
-      @include type.type-style('heading-compact-01');
+      @include type.type-style("heading-compact-01");
       color: $text-02;
       margin-right: layout.$spacing-03;
     }
@@ -49,7 +49,7 @@
 }
 
 .headerLabel {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   color: $text-02;
 }
 
@@ -66,13 +66,13 @@
 }
 
 .metricLabel {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: $text-02;
   margin-bottom: layout.$spacing-02;
 }
 
 .metricValue {
-  @include type.type-style('heading-04');
+  @include type.type-style("heading-04");
   color: $ui-05;
   margin: 0;
 }
@@ -95,7 +95,7 @@
 }
 
 // Overriding styles for RTL support
-html[dir='rtl'] {
+html[dir="rtl"] {
   .link {
     svg {
       margin-right: layout.$spacing-03;

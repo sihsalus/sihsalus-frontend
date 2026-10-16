@@ -3,7 +3,7 @@ import { type DefaultWorkspaceProps, getUserFacingErrorMessage, showSnackbar } f
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
+import { odontogramContextErrorCode, useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
 import { getOdontogramConfig } from '../odontogram/config/dentition';
@@ -44,7 +44,7 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
-  const { save, isSaving } = useOdontogramEncounter();
+  const { save, isSaving } = useOdontogramEncounter(patientUuid);
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
   const resetData = useOdontogramDataStore((s) => s.resetData);
   const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
@@ -102,7 +102,15 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
         subtitle: getUserFacingErrorMessage(
           err,
           t('odontogramSaveErrorSubtitle', 'Could not save odontogram. Please try again.'),
-          { logContext: 'Save odontogram workspace' },
+          {
+            logContext: 'Save odontogram workspace',
+            codeMessages: {
+              [odontogramContextErrorCode]: t(
+                'odontogramContextRequired',
+                'Start an active visit and verify your session provider and location before recording an odontogram. If the problem continues, contact support.',
+              ),
+            },
+          },
         ),
       });
     }

@@ -12,11 +12,13 @@ import {
   useServiceQueuesStore,
 } from '../store/store';
 import styles from './patient-queue-header.scss';
+import QueueEntryDateFilter from './queue-entry-date-filter.component';
 
 interface PatientQueueHeaderProps {
   title?: string | JSX.Element;
   showFilters?: boolean;
   showLocationDropdown?: boolean;
+  showDateFilter?: boolean;
   actions?: React.ReactNode;
 }
 
@@ -41,6 +43,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   title,
   showFilters,
   showLocationDropdown,
+  showDateFilter = false,
   actions,
 }) => {
   const { t } = useTranslation();
@@ -213,6 +216,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
           />
         )}
         {actions ? <div className={styles.actions}>{actions}</div> : null}
+        {showDateFilter && <QueueEntryDateFilter />}
       </div>
     </PageHeader>
   );

@@ -1,30 +1,6 @@
 @use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
-
-.popup {
-  position: fixed;
-  flex: auto;
-  bottom: layout.$spacing-07;
-  right: layout.$spacing-09;
-  width: 11rem;
-  z-index: 8000;
-  background-color: $ui-02;
-  gap: layout.$spacing-05;
-  padding: layout.$spacing-02;
-  margin: layout.$spacing-02;
-  box-shadow: 0 layout.$spacing-04 layout.$spacing-06 0 $ui-03;
-}
-
-.popup {
-  @include type.type-style('body-01');
-}
 
 .helpextension {
-  margin: layout.$spacing-04;
-  padding: layout.$spacing-01;
-  cursor: pointer;
-  text-align: left;
   display: flex;
   flex-direction: column;
   gap: layout.$spacing-05;

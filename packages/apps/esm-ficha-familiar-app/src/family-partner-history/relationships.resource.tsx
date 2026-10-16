@@ -21,6 +21,8 @@ interface ExtractedRelationship {
   uuid: string;
   display: string;
   relativeAge: number;
+  birthdate: string | null;
+  birthdateEstimated: boolean;
   name: string;
   dead: boolean;
   causeOfDeath: string;
@@ -55,6 +57,8 @@ export interface Relationship {
 interface Person {
   uuid: string;
   age: number;
+  birthdate?: string | null;
+  birthdateEstimated?: boolean;
   dead: boolean;
   display: string;
   causeOfDeath: string;
@@ -148,7 +152,7 @@ export function usePatientRelationships(patientUuid: string) {
   // `isPatient` distinguishes a Patient from a plain Person; the relationship type
   // `weight` carries the consanguinity degree (sihsalus-content convention).
   const customRepresentation =
-    'custom:(display,uuid,personA:(uuid,age,display,dead,causeOfDeath,isPatient),personB:(uuid,age,display,dead,causeOfDeath,isPatient),relationshipType:(uuid,display,description,aIsToB,bIsToA,weight))';
+    'custom:(display,uuid,personA:(uuid,age,birthdate,birthdateEstimated,display,dead,causeOfDeath,isPatient),personB:(uuid,age,birthdate,birthdateEstimated,display,dead,causeOfDeath,isPatient),relationshipType:(uuid,display,description,aIsToB,bIsToA,weight))';
 
   const relationshipsUrl = patientUuid
     ? `/ws/rest/v1/relationship?person=${patientUuid}&v=${customRepresentation}`
@@ -189,6 +193,8 @@ function extractRelationshipData(
       name: extractName(relative.display),
       display: relative.display,
       relativeAge: relative.age,
+      birthdate: relative.birthdate ?? null,
+      birthdateEstimated: relative.birthdateEstimated ?? false,
       dead: relative.dead,
       causeOfDeath: relative.causeOfDeath,
       relativeUuid: relative.uuid,

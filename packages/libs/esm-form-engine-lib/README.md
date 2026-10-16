@@ -53,6 +53,16 @@ render. Manual section toggles retain entered values; subsequent expand/collapse
 all actions still override the initial state. This fixes the local fork's prior
 behavior of always opening all sections, including optional outpatient history.
 
+### Date and time layout
+
+Date and time fields wrap to the available form width. Native time inputs retain
+enough room for the browser's locale-specific period and picker, including
+validation feedback. These scoped styles apply to all consumers of `DateField`;
+they do not change date values, timezone handling, schema validation or submission.
+The local `styles.browser.spec.js` regression covers narrow panels within a wide
+desktop viewport as well as mobile width; deployed-form acceptance remains a
+separate QLTY check.
+
 ### Numeric precision
 
 A number field rejects decimals when its schema sets `disallowDecimals` or its
@@ -102,6 +112,31 @@ custom datasources, workspace launchers and file actions render a descriptive
 placeholder. Concept and referenced-form reads use the existing authorized
 endpoints. This is a schema preview, not a simulation of clinical submission or
 patient-dependent calculations.
+
+### Observation field identity and encounter roles
+
+Observation initialization first matches the persisted field path and concept.
+The legacy concept fallback applies only to observations without a field path;
+it must never claim a value identified as belonging to a different field. This
+prevents empty conditional fields from voiding another field's observation when
+their published schema shares a concept. Existing UUIDs and original schemas
+remain unchanged; this safeguard does not resolve clinical terminology debt.
+
+Checkboxes and searchable multi-selects derive their selection from the current
+form value. Loading an existing encounter or resetting a form must update the
+display without submitting a change; removing one answer preserves the others.
+The input must not maintain a second copy of the persisted selection.
+
+Non-searchable checkbox groups display the same schema validation errors and
+warnings as searchable multi-selects using Carbon's group validation props.
+The visible group message describes each checkbox for keyboard and screen-reader
+users; errors take precedence over warnings, and clearing validation removes the
+association. Readonly groups retain Carbon's readonly validation behavior.
+Rendering this feedback does not change validation rules or submission handling.
+
+Encounter role suggestions read the complete active catalog and filter partial
+names locally. OpenMRS' `q` search can require an exact name. A failed or repeated
+page rejects the lookup rather than presenting an incomplete catalog.
 
 ## Documentation
 
@@ -268,3 +303,20 @@ Contributions are what makes the open-source community such an amazing place to 
 Distributed under the MPLv2 with Healthcare Disclaimer License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#top">Back to top</a>)</p>
+
+### Encounter role selection
+
+A catalog without the generic `Clinician` role has no implicit default role.
+The first catalog item may be `Unknown` or belong to another profession.
+Content can set `isSearchable: false` to show the existing role catalog without
+typing. CRED uses explicit nursing/medical role selection; the authenticated
+provider remains the default responsible professional and editing retains the
+stored provider and role. Encounter roles do not grant clinical privileges.
+
+When no default role exists and the encounter/program history is empty, custom
+dependencies may remain uninitialized. Submission still honors an explicitly
+selected encounter role; it neither dereferences missing dependencies nor assigns
+an implicit role. This addresses sihsalus/sihsalus#373 and #374. The helper
+regression reproduces the original failure and covers absence of a selected role.
+Manual save/reload of CRED physical examination and visual screening remains a
+QLTY acceptance check.

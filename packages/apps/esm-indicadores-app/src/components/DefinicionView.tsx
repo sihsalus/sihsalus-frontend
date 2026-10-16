@@ -79,9 +79,7 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion, resolved })
   const tipoLabel =
     definicion.tipo === 'conteo_atenciones'
       ? t('countEncounters', 'Conteo de atenciones')
-      : definicion.tipo === 'conteo_pacientes_ventana'
-        ? t('countPatientsWindow', 'Conteo de pacientes en ventana etaria')
-        : t('countPatients', 'Conteo de pacientes');
+      : t('countPatients', 'Conteo de pacientes');
 
   return (
     <div className={styles.definitionList}>

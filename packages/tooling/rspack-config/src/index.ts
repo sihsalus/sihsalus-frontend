@@ -97,6 +97,10 @@ const alwaysHostSharedDependencies = new Set([
   '@openmrs/esm-framework',
   '@openmrs/esm-framework/src/internal',
   'single-spa',
+  'swr',
+  'swr/infinite',
+  'swr/immutable',
+  'swr/_internal',
 ]);
 
 // These packages are re-exported by @openmrs/esm-framework/src/internal in the app shell.
@@ -158,7 +162,11 @@ function getInstalledVersion(depName: string): string | undefined {
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pkgUnknown: unknown = require(require.resolve(`${packageName}/package.json`, { paths: [process.cwd()] }));
+    const pkgUnknown: unknown = require(
+      require.resolve(`${packageName}/package.json`, {
+        paths: [process.cwd()],
+      }),
+    );
     const pkg = pkgUnknown as VersionedPackageJson;
     return typeof pkg.version === 'string' ? pkg.version : undefined;
   } catch {
@@ -275,6 +283,8 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
   const { name, version, peerDependencies, browser, main, types } = getPackageJson(root);
   // this typing is provably incorrect, but actually works
   const mode = (argv.mode || process.env.NODE_ENV || 'development') as OpenmrsRspackConfig['mode'];
+  const devServerPort = argv.port ? Number(argv.port) : undefined;
+  const devServerHost = argv.host || 'localhost';
   const filename = basename(browser || main);
   const outDir = dirname(browser || main);
   const srcFile = resolve(root, browser ? main : types);
@@ -364,7 +374,10 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
                 options: {
                   api: 'modern-compiler',
                   implementation: require.resolve('sass-embedded'),
-                  sassOptions: { quietDeps: true, loadPaths: [resolve(root, '..', '..', '..', 'node_modules')] },
+                  sassOptions: {
+                    quietDeps: true,
+                    loadPaths: [resolve(root, '..', '..', '..', 'node_modules')],
+                  },
                 },
               },
             ],
@@ -373,11 +386,15 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
         ),
         merge<RuleSetRule, Partial<RuleSetRule>>(
           {
-            test: /\.(png|jpe?g|gif|svg)$/i,
+            test: /\.(png|jpe?g|gif)$/i,
             type: 'asset/resource',
           },
           assetRuleConfig,
         ),
+        {
+          test: /\.svg$/i,
+          oneOf: [{ resourceQuery: /^\?url$/, type: 'asset/resource' }, { type: 'asset/source' }],
+        },
       ],
     },
     mode,
@@ -389,9 +406,6 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
     devServer: {
       headers: {
         'Access-Control-Allow-Origin': '*',
-      },
-      devMiddleware: {
-        writeToDisk: true,
       },
       static: [resolve(root, outDir)],
     },
@@ -473,45 +487,28 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
             throw new Error(msg);
           }
 
-          if (depName === 'swr') {
-            // SWR is annoying with Module Federation
-            // See: https://github.com/webpack/webpack/issues/16125 and https://github.com/vercel/swr/issues/2356
-            // Must match the app-shell host config which shares as 'swr/_internal'
-            obj['swr/_internal'] = {
-              requiredVersion: peerDependencies['swr'] ?? false,
-              strictVersion: false,
-              singleton: true,
-              import: 'swr/_internal',
-              shareKey: 'swr/_internal',
-              shareScope: 'default',
-              version: (require('swr/package.json') as VersionedPackageJson).version,
-            };
-          } else {
-            const sharedHostDependency = isProvidedByFrameworkInternal
-              ? '@openmrs/esm-framework/src/internal'
-              : depName;
-            const installedVersion = getInstalledVersion(sharedHostDependency);
-            const packageName = getPackageNameForDependency(depName);
-            obj[depName] = {
-              // Federation excludes prereleases from broad ranges (even >=0.0.0-0).
-              // Bind wildcard host contracts to the version used by this build.
-              requiredVersion:
-                versionSpec === '*' || (!versionSpec && alwaysHostSharedDependencies.has(depName))
-                  ? (installedVersion ?? versionSpec)
-                  : versionSpec,
-              strictVersion: false,
-              singleton: true,
-              import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,
-              ...(isProvidedByFrameworkInternal
-                ? { packageName: '@openmrs/esm-framework' }
-                : depName !== packageName
-                  ? { packageName }
-                  : {}),
-              shareKey: sharedHostDependency,
-              shareScope: 'default',
-              version: installedVersion,
-            };
-          }
+          const sharedHostDependency = isProvidedByFrameworkInternal ? '@openmrs/esm-framework/src/internal' : depName;
+          const installedVersion = getInstalledVersion(sharedHostDependency);
+          const packageName = getPackageNameForDependency(depName);
+          obj[depName] = {
+            // Federation excludes prereleases from broad ranges (even >=0.0.0-0).
+            // Bind wildcard host contracts to the version used by this build.
+            requiredVersion:
+              versionSpec === '*' || (!versionSpec && alwaysHostSharedDependencies.has(depName))
+                ? (installedVersion ?? versionSpec)
+                : versionSpec,
+            strictVersion: false,
+            singleton: true,
+            import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,
+            ...(isProvidedByFrameworkInternal
+              ? { packageName: '@openmrs/esm-framework' }
+              : depName !== packageName
+                ? { packageName }
+                : {}),
+            shareKey: sharedHostDependency,
+            shareScope: 'default',
+            version: installedVersion,
+          };
 
           return obj;
         }, {}),
@@ -559,6 +556,13 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
       },
       tsConfig: existsSync(resolve(root, 'tsconfig.json')) ? resolve(root, 'tsconfig.json') : undefined,
     },
+    ...(devServerPort !== undefined && {
+      lazyCompilation: {
+        imports: true,
+        entries: false,
+        serverUrl: `http://${devServerHost}:${devServerPort}`,
+      },
+    }),
     ...overrides,
   };
   return mergeWith(baseConfig, additionalConfig, mergeFunction);

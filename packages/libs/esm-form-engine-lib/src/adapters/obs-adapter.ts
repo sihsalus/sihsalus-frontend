@@ -99,7 +99,10 @@ export const ObsAdapter: FormFieldValueAdapter = {
       return handleAttachments(field, attachments);
     }
 
-    if (!isEmpty(value) && hasPreviousObsValueChanged(field, value)) {
+    if (!isEmpty(value) && isOpenmrsResourceLike(field.meta.initialValue?.omrsObject)) {
+      if (!hasPreviousObsValueChanged(field, value)) {
+        return null;
+      }
       return gracefullySetSubmission(field, editObs(field, value), undefined) ?? null;
     }
 
@@ -318,7 +321,7 @@ export function findObsByFormField(obsList: OpenmrsObs[], claimedObsIds: string[
 
   if (!obs.length) {
     const obsByConcept = obsList.filter(
-      (candidate) => getResourceUuid(candidate.concept) === field.questionOptions.concept,
+      (candidate) => !candidate.formFieldPath && getResourceUuid(candidate.concept) === field.questionOptions.concept,
     );
     return claimedObsIds.length
       ? obsByConcept.filter((candidate) => !claimedObsIds.includes(candidate.uuid))

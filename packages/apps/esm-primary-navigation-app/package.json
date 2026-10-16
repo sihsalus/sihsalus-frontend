@@ -18,7 +18,7 @@
     "analyze": "rspack --mode=production --env analyze=true",
     "typescript": "tsc",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "keywords": [
     "openmrs",
@@ -39,8 +39,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.89.0",
-    "@carbon/react": "^1.117.0",
+    "@carbon/icons-react": "^11.90.0",
+    "@carbon/react": "^1.118.0",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21"
@@ -65,8 +65,8 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.4",
-    "rxjs": "^6.5.3",
-    "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "rxjs": "^7.8.2",
+    "vite": "8.3.4",
+    "vitest": "^5.0.3"
   }
 }

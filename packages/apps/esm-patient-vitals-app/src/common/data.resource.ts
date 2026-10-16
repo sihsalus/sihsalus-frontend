@@ -219,6 +219,10 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     ],
   );
   const { ranges: patientReferenceRanges } = useReferenceRanges(patientUuid, referenceRangeConceptUuidList);
+  const getReferenceRange = useCallback(
+    (conceptUuid: string) => getPatientReferenceRange(conceptUuid, conceptMetadata, patientReferenceRanges),
+    [conceptMetadata, patientReferenceRanges],
+  );
 
   const getVitalsMapKey = useCallback(
     (conceptUuid: string): string | undefined => {
@@ -306,10 +310,7 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     },
     getObservationFields: ({ code, key, value }) => {
       const numericValue = typeof value === 'number' ? value : undefined;
-      const interpretation = assessValue(
-        numericValue,
-        getPatientReferenceRange(code, conceptMetadata, patientReferenceRanges),
-      );
+      const interpretation = assessValue(numericValue, getReferenceRange(code));
       return {
         [key]: value,
         [getInterpretationKey(key)]: interpretation,
@@ -329,7 +330,7 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     };
   }, [observationResult.mutate]);
 
-  return observationResult;
+  return { ...observationResult, getReferenceRange };
 }
 
 export interface VitalsEncounterContext {

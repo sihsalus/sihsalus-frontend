@@ -21,7 +21,7 @@ async function openOdontogramDashboard(page: Page) {
   await expect(page).not.toHaveURL(/\/login/);
   // El estado vacío reemplaza el layout maestro-detalle, así que se espera
   // cualquiera de las dos entradas posibles del módulo.
-  const emptyState = page.getByText(/No hay odontograma inicial registrado/i);
+  const emptyState = page.getByText(/No hay odontograma inicial para mostrar para este paciente/i);
   const attentionsHeading = page.getByRole('heading', { name: /Atenciones/i });
   await expect(emptyState.or(attentionsHeading).first()).toBeVisible({ timeout: 20_000 });
 }
@@ -72,7 +72,7 @@ test.describe('Odontograma - registro en atención odontológica', () => {
   test('el dashboard expone la lista de odontogramas del paciente', async ({ page }) => {
     await openOdontogramDashboard(page);
 
-    const emptyState = page.getByText(/No hay odontograma inicial registrado/i);
+    const emptyState = page.getByText(/No hay odontograma inicial para mostrar para este paciente/i);
     const recordList = page.getByRole('navigation', { name: /Lista de odontogramas/i });
 
     await expect(emptyState.or(recordList).first()).toBeVisible({ timeout: 15_000 });

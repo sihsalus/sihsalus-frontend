@@ -40,3 +40,7 @@ cierre de sesión, ubicación, errores tardíos y cuerpos inválidos con datos
 sintéticos. Estos cambios afectan a consumidores de la sesión compartida,
 incluidos login, navegación y guards de permisos. No sustituyen la invalidación
 de sesión del servidor ni la validación por rol en DEV/QLTY.
+
+El observable `getCurrentUser({ includeAuthStatus: false })` emite solo usuarios
+autenticados; una sesión cargada sin usuario no emite `undefined`. Los consumidores
+que necesiten observar el cierre de sesión deben usar `includeAuthStatus: true`.

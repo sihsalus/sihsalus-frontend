@@ -105,11 +105,14 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           isLowContrast: true,
         });
         closeWorkspace({ discardUnsavedChanges: true });
-      } catch (error) {
+      } catch {
         showSnackbar({
           kind: 'error',
           title: t('reactionSaveError', 'Error al registrar reacción'),
-          subtitle: (error as Error)?.message ?? t('unexpectedError', 'Ocurrió un error inesperado'),
+          subtitle: t(
+            'reactionSaveUnconfirmed',
+            'The adverse reaction could not be confirmed as saved. Review the history before trying again.',
+          ),
           isLowContrast: false,
         });
       } finally {
@@ -121,8 +124,9 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   return (
     <RequirePrivilege privilege={credImmunizationEditPrivilege}>
-      <Form className={styles.adverseReactionForm} onSubmit={handleSubmit}>
+      <Form className={styles.adverseReactionForm} onSubmit={handleSubmit} noValidate>
         <div style={{ padding: '1rem' }}>
+          <p>{t('requiredFieldsHint', 'Fields marked with * are required.')}</p>
           {error && (
             <InlineNotification
               kind="error"
@@ -135,7 +139,8 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
           <Select
             id="vaccine-select"
-            labelText={t('vaccine', 'Vacuna')}
+            labelText={`${t('vaccine', 'Vacuna')} *`}
+            required
             value={formData.vaccineName}
             onChange={(e) => handleInputChange('vaccineName', e.target.value)}
             className={styles.formField}
@@ -148,7 +153,8 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
           <TextArea
             id="reaction-description"
-            labelText={t('reactionDescription', 'Descripción de la reacción')}
+            labelText={`${t('reactionDescription', 'Descripción de la reacción')} *`}
+            required
             value={formData.reactionDescription}
             onChange={(e) => handleInputChange('reactionDescription', e.target.value)}
             rows={4}
@@ -158,7 +164,8 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
           <Select
             id="severity-select"
-            labelText={t('severity', 'Severidad')}
+            labelText={`${t('severity', 'Severidad')} *`}
+            required
             value={formData.severity}
             onChange={(e) => handleInputChange('severity', e.target.value)}
             className={styles.formField}
@@ -172,7 +179,8 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           <div className={styles.formField}>
             <OpenmrsDatePicker
               id="occurrence-date"
-              labelText={t('occurrenceDate', 'Fecha de ocurrencia del evento')}
+              labelText={`${t('occurrenceDate', 'Fecha de ocurrencia del evento')} *`}
+              isRequired
               maxDate={new Date()}
               value={formData.occurrenceDate}
               onChange={(date) => handleInputChange('occurrenceDate', date)}

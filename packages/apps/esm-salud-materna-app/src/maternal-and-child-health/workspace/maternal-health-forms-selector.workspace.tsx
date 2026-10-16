@@ -6,26 +6,19 @@ import {
   showSnackbar,
   type Session,
   useConfig,
+  useOpenmrsFetchAll,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
-import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
+import { ErrorState, FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
-import {
-  cancerPreventionEditPrivilege,
-  familyPlanningEditPrivilege,
-  labourDeliveryEditPrivilege,
-  maternalHealthPrivileges,
-  maternalPatientChartPrivilege,
-  postnatalCareEditPrivilege,
-  prenatalCareEditPrivilege,
-} from '../../constants';
+import { maternalHealthPrivileges, maternalPatientChartPrivilege } from '../../constants';
 import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
+import { maternalFormKeys, formLabels, formEditPrivileges, type MaternalFormKey } from '../maternal-forms';
 import { resolveMaternalForm } from '../../hooks/useMaternalFormLauncher';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
 import {
@@ -33,93 +26,6 @@ import {
   isWithinPregnancyEpisode,
   type MaternalEncounter,
 } from '../../utils/pregnancy-episode-utils';
-
-interface EncounterResponse {
-  results: MaternalEncounter[];
-}
-
-const maternalFormKeys = [
-  'maternalHistory',
-  'currentPregnancy',
-  'atencionPrenatal',
-  'prenatalSupplementationForm',
-  'screeningIndicatorsForm',
-  'psychoprophylaxisForm',
-  'birthPlanForm',
-  'deliveryOrAbortion',
-  'SummaryOfLaborAndPostpartum',
-  'obstetricMonitor',
-  'immediatePostpartumPeriod',
-  'postpartumControl',
-  'maternalDischargeForm',
-  'maternalReadmissionForm',
-  'obstetricsServiceForm',
-  'adolescentPregnancyCareForm',
-  'obstetricReferralForm',
-  'culturalBirthPreferencesForm',
-  'perinatalMentalHealthForm',
-  'maternalViolenceScreeningForm',
-  'familyPlanningCounselingForm',
-  'familyPlanningFollowupForm',
-  'cervicalCancerScreeningForm',
-  'breastCancerScreeningForm',
-] as const satisfies ReadonlyArray<keyof ConfigObject['formsList']>;
-
-type MaternalFormKey = (typeof maternalFormKeys)[number];
-
-const formLabels: Partial<Record<keyof ConfigObject['formsList'], string>> = {
-  maternalHistory: 'Antecedentes obstétricos',
-  currentPregnancy: 'Embarazo actual',
-  atencionPrenatal: 'Atención prenatal',
-  prenatalSupplementationForm: 'Suplementación gestante',
-  screeningIndicatorsForm: 'Tamizaje prenatal',
-  psychoprophylaxisForm: 'Psicoprofilaxis obstétrica',
-  birthPlanForm: 'Plan de parto',
-  deliveryOrAbortion: 'Parto o aborto',
-  SummaryOfLaborAndPostpartum: 'Resumen de parto y postparto',
-  obstetricMonitor: 'Monitorización obstétrica / partograma',
-  immediatePostpartumPeriod: 'Puerperio inmediato',
-  postpartumControl: 'Control de puerperio',
-  maternalDischargeForm: 'Egreso materno',
-  maternalReadmissionForm: 'Reingreso materno',
-  obstetricsServiceForm: 'Servicio de obstetricia',
-  adolescentPregnancyCareForm: 'Atención diferenciada de gestante adolescente',
-  obstetricReferralForm: 'Referencia/contrarreferencia obstétrica',
-  culturalBirthPreferencesForm: 'Pertinencia cultural y preferencia de parto',
-  perinatalMentalHealthForm: 'Salud mental perinatal',
-  maternalViolenceScreeningForm: 'Tamizaje de violencia gestante',
-  familyPlanningCounselingForm: 'Consejería y método anticonceptivo',
-  familyPlanningFollowupForm: 'Seguimiento de planificación familiar',
-  cervicalCancerScreeningForm: 'Tamizaje cervical',
-  breastCancerScreeningForm: 'Tamizaje de mama',
-};
-
-const formEditPrivileges: Record<MaternalFormKey, string> = {
-  maternalHistory: prenatalCareEditPrivilege,
-  currentPregnancy: prenatalCareEditPrivilege,
-  atencionPrenatal: prenatalCareEditPrivilege,
-  prenatalSupplementationForm: prenatalCareEditPrivilege,
-  screeningIndicatorsForm: prenatalCareEditPrivilege,
-  psychoprophylaxisForm: prenatalCareEditPrivilege,
-  birthPlanForm: prenatalCareEditPrivilege,
-  adolescentPregnancyCareForm: prenatalCareEditPrivilege,
-  perinatalMentalHealthForm: prenatalCareEditPrivilege,
-  maternalViolenceScreeningForm: prenatalCareEditPrivilege,
-  deliveryOrAbortion: labourDeliveryEditPrivilege,
-  SummaryOfLaborAndPostpartum: labourDeliveryEditPrivilege,
-  obstetricMonitor: labourDeliveryEditPrivilege,
-  obstetricsServiceForm: labourDeliveryEditPrivilege,
-  obstetricReferralForm: labourDeliveryEditPrivilege,
-  culturalBirthPreferencesForm: labourDeliveryEditPrivilege,
-  immediatePostpartumPeriod: postnatalCareEditPrivilege,
-  postpartumControl: postnatalCareEditPrivilege,
-  maternalDischargeForm: postnatalCareEditPrivilege,
-  maternalReadmissionForm: postnatalCareEditPrivilege,
-  familyPlanningCounselingForm: familyPlanningEditPrivilege,
-  familyPlanningFollowupForm: familyPlanningEditPrivilege,
-  cervicalCancerScreeningForm: cancerPreventionEditPrivilege,
-  breastCancerScreeningForm: cancerPreventionEditPrivilege,
-};
 
 function canEditMaternalForm(session: Session | null | undefined, editPrivilege: string) {
   const user = session?.user;
@@ -134,7 +40,7 @@ function canEditMaternalForm(session: Session | null | undefined, editPrivilege:
 }
 
 const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (props) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const workspaceProps = props.workspaceProps ?? {};
@@ -146,17 +52,16 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
     },
     [],
   );
-  const { pregnancyStartDate } = useCurrentPregnancy(patientUuid);
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
   const encounterUrl = patientUuid
-    ? `${restBaseUrl}/encounter?patient=${patientUuid}&limit=100&v=custom:(uuid,encounterDatetime,form:(uuid,name,display))`
+    ? `${restBaseUrl}/encounter?patient=${patientUuid}&v=custom:(uuid,encounterDatetime,form:(uuid,name,display))`
     : null;
-  const { data: encounterData, mutate: mutateMaternalEncounters } = useSWR<EncounterResponse, Error>(
-    encounterUrl,
-    async (url) => {
-      const response = await openmrsFetch<EncounterResponse>(url);
-      return response.data;
-    },
-  );
+  const {
+    data: encounterData,
+    error: encounterError,
+    isLoading: isEncounterLoading,
+    mutate: mutateMaternalEncounters,
+  } = useOpenmrsFetchAll<MaternalEncounter>(encounterUrl, { fetcher: openmrsFetch });
   const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
     void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
       options?.onWorkspaceClose?.();
@@ -199,7 +104,7 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
   const formsWithHistory = useMemo<Array<CompletedFormInfo>>(
     () =>
       availableForms.map((formInfo) => {
-        const matchingEncounters = (encounterData?.results ?? [])
+        const matchingEncounters = (encounterData ?? [])
           .filter(
             (encounter) =>
               encounterMatchesForm(encounter, formInfo.form.uuid) &&
@@ -222,7 +127,7 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
             : undefined,
         };
       }),
-    [availableForms, encounterData?.results, pregnancyStartDate],
+    [availableForms, encounterData, pregnancyStartDate],
   );
 
   const launchForm = useCallback(
@@ -277,6 +182,19 @@ const MaternalHealthFormsSelector: React.FC<DefaultPatientWorkspaceProps> = (pro
     },
     [config.formsList, mutateMaternalEncounters, session?.user?.uuid, t],
   );
+
+  if (pregnancyError || encounterError) {
+    return (
+      <ErrorState
+        error={pregnancyError ?? encounterError}
+        headerTitle={t('maternalHealthForms', 'Formularios de salud materna')}
+      />
+    );
+  }
+
+  if (isPregnancyLoading || isEncounterLoading) {
+    return <div role="status">{t('loadingMaternalForms', 'Cargando historial de formularios maternos...')}</div>;
+  }
 
   return (
     <FormsSelectorWorkspace

@@ -65,6 +65,33 @@ describe('ProgramsDetailedSummary', () => {
     });
   });
 
+  it.each([
+    [null, 'maternal-care-dashboard'],
+    ['2026-10-01', 'prenatal-care-dashboard'],
+  ])('routes the detailed enrollment row according to its completion date (%s)', async (dateCompleted, chartPath) => {
+    const enrollment = { ...mockEnrolledProgramsResponse[0], dateCompleted };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      programNavigationTargets: [
+        {
+          programUuid: enrollment.program.uuid,
+          chartPath: 'maternal-care-dashboard',
+          historicalChartPath: 'prenatal-care-dashboard',
+        },
+      ],
+    });
+    mockProgramsState({ enrollments: [enrollment] });
+
+    renderWithSwr(<ProgramsDetailedSummary patientUuid={mockPatient.id} />);
+    await waitForLoadingToFinish();
+
+    const row = screen.getByRole('row', { name: /HIV Care and Treatment/i });
+    expect(within(row).getByRole('link', { name: /go to/i })).toHaveAttribute(
+      'href',
+      `/openmrs/spa/patient/${mockPatient.id}/chart/${chartPath}`,
+    );
+  });
+
   it('renders an empty state view when the patient is not enrolled into any programs', async () => {
     mockProgramsState({ enrollments: [] });
 
@@ -108,7 +135,7 @@ describe('ProgramsDetailedSummary', () => {
 
     expect(screen.getByText(/Care Programs/i)).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /active programs/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /program name/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /date enrolled/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /go to/i })).toBeInTheDocument();

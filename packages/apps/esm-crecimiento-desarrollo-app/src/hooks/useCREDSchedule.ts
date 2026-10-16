@@ -1,9 +1,8 @@
 import { usePatient } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
-
-import { type CREDScheduledControl, generateCREDSchedule } from '../utils/cred-schedule-rules';
 import { getNextCREDControlRecommendation } from '../utils/cred-control-intervals';
+import { type CREDScheduledControl, generateCREDSchedule } from '../utils/cred-schedule-rules';
 
 import useAppointmentsCRED from './useAppointmentsCRED';
 import useEncountersCRED, { type CREDEncounter } from './useEncountersCRED';
@@ -28,6 +27,7 @@ export interface UseCREDScheduleResult {
   isLoading: boolean;
   error: Error | null;
   missingNeonatalDischarge?: boolean;
+  neonatalValidationMessage?: ReturnType<typeof useNeonatalDischarge>['validationMessage'];
 }
 
 type DatedCREDEncounter = CREDEncounter & { encounterDatetime: string };
@@ -297,5 +297,6 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     isLoading,
     error,
     missingNeonatalDischarge: neonatal.missingDischarge,
+    neonatalValidationMessage: neonatal.validationMessage,
   };
 }

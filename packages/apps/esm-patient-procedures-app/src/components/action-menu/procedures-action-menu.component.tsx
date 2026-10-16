@@ -48,7 +48,7 @@ export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActio
         <OverflowMenuItem
           className={styles.menuItem}
           id="deleteProcedure"
-          itemText={t('delete', 'Delete')}
+          itemText={t('delete', 'Void')}
           onClick={() => launchDeleteProcedureDialog(procedure.uuid)}
           isDelete
           hasDivider

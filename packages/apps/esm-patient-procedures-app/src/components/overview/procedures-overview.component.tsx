@@ -27,7 +27,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
 import { useProcedures } from '../../procedures.resource';
@@ -53,7 +53,11 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({ patientUuid: patientUuid, page: 1 });
+  const currentPage = pagination.patientUuid === patientUuid ? pagination.page : 1;
+  useEffect(() => {
+    setPagination({ patientUuid: patientUuid, page: 1 });
+  }, [patientUuid]);
   const startIndex = (currentPage - 1) * overviewPageSize;
 
   const { procedures, totalCount, error, isLoading, isValidating } = useProcedures(
@@ -148,7 +152,7 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
         </DataTable>
         <PatientChartPagination
           currentItems={tableRows?.length ?? 0}
-          onPageNumberChange={({ page }) => setCurrentPage(page)}
+          onPageNumberChange={({ page }) => setPagination({ patientUuid: patientUuid, page })}
           pageNumber={currentPage}
           pageSize={overviewPageSize}
           totalItems={totalCount}

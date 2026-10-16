@@ -56,15 +56,86 @@ Los peers de traducción siguen las versiones de runtime del monorepo:
 `i18next 26` y `react-i18next 17`. El parche existente del app-shell usa las
 versiones instaladas para esos singletons y para `react-router-dom`; las
 resoluciones del shell evitan compilar copias de las generaciones anteriores.
+Las bibliotecas `@openmrs/esm-*`, el app-shell, el CLI local `openmrs` y
+`@openmrs/rspack-config` usan 10.0.0. Los dos paquetes de tooling conservan
+CommonJS y Rspack 2 por los contratos del monorepo; upstream 10.0.0 usa ESM y
+Rspack 1. El fork porta la espera de compilación inicial, validación de
+import maps/rutas, SVG como fuente y compilación diferida del servidor local.
+El SVG sigue siendo texto para el registro de iconos y pictogramas; los imports
+con `?url` de Inicio y Herramientas offline emiten archivos para `<img src>`.
+El servidor de desarrollo sirve los módulos desde
+memoria como upstream 10.0.0; el build de producción sigue escribiendo en `dist`.
 
 Los consumidores con un peer comodín del framework usan la versión exacta
-instalada al generar Module Federation, incluida su etiqueta de prerelease.
-El evaluador de Webpack no acepta `9.0.3-pre.4728` con `>=0.0.0-0`. No sustituir
-el contrato por `requiredVersion: false` ni suprimir advertencias de consola.
+instalada al generar Module Federation. El app-shell 10.0.0 conserva un build
+Webpack controlado por el repositorio para generar el service worker clínico:
+su configuración Rspack de npm no emite ese artefacto. No sustituir el contrato
+por `requiredVersion: false` ni suprimir advertencias de consola.
 Las pruebas de build verifican los rangos con el evaluador del runtime y
 comprueban que los peers de los workspaces acepten las dependencias instaladas.
 
+El selector de fechas combina `react-aria-components` con los hooks de
+`@react-aria/datepicker`. Ambos deben resolver la misma implementación de
+`react-aria` y `react-stately`: sus hooks comparten estado interno por instancia
+del módulo. Al actualizar estos paquetes, usar `yarn dedupe react-aria
+react-stately @react-types/shared` para unificar las versiones compatibles del
+lockfile y ejecutar las pruebas de `esm-styleguide/src/datepicker`. Dos copias
+pueden compilar correctamente y fallar al renderizar los segmentos de fecha.
+
+## Parches temporales de dependencias
+
+`braces` 3.0.3 conserva el parche local para
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm):
+limita a 100 la profundidad de patrones anidados. Al 5 de octubre de 2026,
+3.0.3 sigue siendo la última versión publicada y el aviso no identifica una
+versión corregida. Dependabot puede seguir mostrando la alerta porque el parche
+Yarn conserva esa versión base. La excepción de auditoría no cierra ni descarta
+la alerta en GitHub.
+
+`http-cache-semantics` usa 4.3.0 con el guard local de `max-stale` conservado.
+Los consumidores `make-fetch-happen` y `cacheable-request` aceptan esta versión
+mediante sus rangos `^4.1.1` y `^4.2.0`. Upstream 4.3.0 corrige el manejo de
+`Vary` y agrega el estado de la respuesta; el diff publicado no cambia
+`max-stale`. Aunque el rango actualmente afectado por
+[GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp) termina
+en 4.2.0, eso no demuestra que 4.3.0 corrija esa lógica. El parche local impide que
+`max-stale` reutilice respuestas que requieren revalidación por `Set-Cookie`,
+`proxy-revalidate`, `no-cache` o una entrada no almacenable.
+
+`yarn security:audit` ejecuta la auditoría completa de dependencias directas y
+transitivas de severidad alta. Comprueba las resoluciones y el comportamiento
+instalado de ambos parches. Solo acepta el aviso exacto de `braces` 3.0.3;
+la excepción de `http-cache-semantics` 4.2.0 se retira. Cualquier otro aviso o
+error de auditoría falla, incluido un hallazgo de `http-cache-semantics`.
+Retirar los parches cuando existan versiones corregidas compatibles y las
+pruebas confirmen su comportamiento. Mantener las regresiones de profundidad,
+revalidación de caché y rechazo de hallazgos no revisados al actualizar.
+
+## Extracción de traducciones
+
+`yarn extract-translations` utiliza `i18next-cli` 1.75.3, compatible con Node 24.
+Las aplicaciones y el motor de formularios comparten
+`packages/tooling/scripts/i18next.config.mjs`; conservan catálogos planos en
+`translations/en.json` y `translations/es.json`. El shell asigna el namespace
+al cargar cada aplicación. La extracción ignora tests y conserva valores
+revisados, interpolaciones, plurales y claves dinámicas no detectables estáticamente.
+No usar `--sync-primary` ni `--sync-all` como parte de una extracción rutinaria.
+
+`esm-translations` conserva sus defaults tipados en `src/translations.ts` y usa
+el visitante AST del CLI para extraerlos. Se retiran `i18next-parser`, el lexer
+por expresiones regulares y la resolución de compatibilidad de `broccoli-plugin`.
+Las pruebas ejecutan la CLI real sobre copias sintéticas y comprueban que los
+catálogos mantengan el formato que consume el runtime.
+
 ## Cómo validar cambios a estos contratos
+
+`yarn validate:workspaces` también comprueba que los módulos que importan
+`fhirBaseUrl`, `useFhirFetchAll` o `useFhirPagination` del framework declaren
+FHIR2 en `routes.json`. La verificación inspecciona imports TypeScript para no
+confundir un servidor FHIR externo configurado por el módulo (como DYAKU) con
+FHIR2 de OpenMRS. La lista de tareas declara FHIR2 porque lee `PlanDefinition`
+para sus plantillas. Declarar la dependencia no valida por sí mismo los recursos
+ni los permisos del backend en DEV/QLTY.
 
 Ejecutar la instalación y los scripts según [desarrollo](README.md) y
 [pruebas](testing.md). No se requieren overrides de `YARN_NODE_LINKER`,

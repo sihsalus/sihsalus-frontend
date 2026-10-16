@@ -99,7 +99,7 @@ const InteractiveBuilder: React.FC<InteractiveBuilderProps> = ({
   const [activeQuestion, setActiveQuestion] = useState<ActiveQuestionDragData | null>(null);
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
-      distance: 10, // Enable sort function when dragging 10px 💡 here!!!.
+      distance: 10,
     },
   });
   const keyboardSensor = useSensor(KeyboardSensor);

@@ -2,6 +2,7 @@ import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@car
 import { getCoreTranslation, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import styles from './delete-program.scss';
 import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
 import { deleteProgramEnrollment } from './programs.resource';
@@ -14,13 +15,14 @@ interface DeleteProgramProps {
 
 const DeleteProgramModal: React.FC<DeleteProgramProps> = ({ closeDeleteModal, programEnrollmentId, patientUuid }) => {
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
       await deleteProgramEnrollment(programEnrollmentId);
-      await mutatePatientProgramEnrollments(patientUuid);
+      await mutatePatientProgramEnrollments(patientUuid, mutate);
       closeDeleteModal();
       showSnackbar({
         isLowContrast: true,
@@ -37,7 +39,7 @@ const DeleteProgramModal: React.FC<DeleteProgramProps> = ({ closeDeleteModal, pr
     } finally {
       setIsDeleting(false);
     }
-  }, [closeDeleteModal, patientUuid, programEnrollmentId, t]);
+  }, [closeDeleteModal, mutate, patientUuid, programEnrollmentId, t]);
 
   return (
     <div>

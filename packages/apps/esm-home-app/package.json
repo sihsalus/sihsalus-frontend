@@ -15,7 +15,7 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "typescript": "tsc",
     "verify": "turbo lint typescript test --color",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage --passWithNoTests"
   },
@@ -50,9 +50,9 @@
     "@openmrs/esm-framework": "workspace:*",
     "@typescript/native": "npm:typescript@7.0.2",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.3.0",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
-    "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "8.3.4",
+    "vitest": "^5.0.3"
   }
 }

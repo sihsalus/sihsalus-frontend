@@ -26,6 +26,7 @@ describe('Home Component', () => {
     // Assert that the expected components are rendered
     expect(screen.getByTestId('patient-queue-header')).toBeInTheDocument();
     expect(screen.getByTestId('clinic-metrics')).toBeInTheDocument();
+    expect(screen.getByLabelText('Queue entry date')).toBeInTheDocument();
 
     window.history.pushState({}, '', originalPathname || '/');
   });
@@ -39,6 +40,7 @@ describe('Home Component', () => {
 
     expect(screen.getByTestId('patient-queue-header')).toBeInTheDocument();
     expect(screen.queryByTestId('clinic-metrics')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Queue entry date')).not.toBeInTheDocument();
 
     window.history.pushState({}, '', originalPathname || '/');
   });

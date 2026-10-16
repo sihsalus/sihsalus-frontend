@@ -3,6 +3,7 @@ import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
+import { formatAverageWaitTime } from '../helpers/format-average-wait-time';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueServices from '../hooks/useQueueService';
 import { updateSelectedService, useServiceQueuesStore } from '../store/store';
@@ -22,7 +23,7 @@ export interface Service {
 type ServiceListItem = Service | Concept;
 
 function ClinicMetrics() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const layout = useLayoutType();
   const { selectedQueueLocationUuid, selectedServiceDisplay, selectedServiceUuid } = useServiceQueuesStore();
   const {
@@ -90,7 +91,7 @@ function ClinicMetrics() {
           label={t('minutes', 'Minutes')}
           headerLabel={t('averageWaitTime', 'Average wait time today')}
           service="waitTime"
-          value={waitTime ? waitTime.averageWaitTime : '--'}
+          value={formatAverageWaitTime(waitTime?.averageWaitTime, i18n.language)}
         />
       </div>
     </>

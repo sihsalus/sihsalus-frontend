@@ -29,7 +29,7 @@ export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
 
   const url = useMemo(() => {
     if (!patientUuid || !conceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)&limit=1&sort=desc`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)&limit=1&s=default`;
   }, [patientUuid, conceptUuid]);
 
   const {

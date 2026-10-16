@@ -1,4 +1,5 @@
 import { createGlobalStore, useStore } from '@openmrs/esm-framework';
+import { parseQueueEntryDate, serializeQueueEntryDate } from './queue-entry-date';
 
 export const ALL_APPOINTMENT_STATUSES = '';
 
@@ -23,6 +24,7 @@ export function getValueFromSessionStorage(key: string): string | null {
 }
 
 export interface ServiceQueuesState {
+  selectedQueueEntryDate?: string | null;
   selectedQueueLocationName?: string | null;
   selectedQueueLocationUuid?: string | null;
   queueLocationSelectionInitialized: boolean;
@@ -42,6 +44,7 @@ const persistedQueueLocationUuid = normalizeQueueFilterValue(rawPersistedQueueLo
 const persistedQueueLocationSelection = getValueFromSessionStorage(queueLocationSelectionKey);
 
 const initialServiceQueuesState: ServiceQueuesState = {
+  selectedQueueEntryDate: serializeQueueEntryDate(parseQueueEntryDate(getValueFromSessionStorage('queueEntryDate'))),
   selectedQueueLocationName: getValueFromSessionStorage('queueLocationName'),
   selectedQueueLocationUuid: persistedQueueLocationUuid,
   queueLocationSelectionInitialized:
@@ -59,6 +62,12 @@ const initialServiceQueuesState: ServiceQueuesState = {
 };
 
 const serviceQueuesStore = createGlobalStore<ServiceQueuesState>('serviceQueues', initialServiceQueuesState);
+
+export const updateSelectedQueueEntryDate = (date: Date | null | undefined) => {
+  const selectedQueueEntryDate = serializeQueueEntryDate(date);
+  updateValueInSessionStorage('queueEntryDate', selectedQueueEntryDate);
+  serviceQueuesStore.setState({ selectedQueueEntryDate });
+};
 
 export const updateSelectedService = (currentServiceUuid: string | null | undefined, currentServiceDisplay: string) => {
   const normalizedServiceUuid = normalizeQueueFilterValue(currentServiceUuid);

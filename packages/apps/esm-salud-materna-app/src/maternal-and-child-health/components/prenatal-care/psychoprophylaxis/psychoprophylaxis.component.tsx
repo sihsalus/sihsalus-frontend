@@ -1,4 +1,5 @@
 import { ProgressBar, Tag, Tile } from '@carbon/react';
+import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,9 +16,11 @@ interface PsychoprophylaxisProps {
  * 6 sesiones obligatorias a partir de la semana 20 de gestación.
  */
 const Psychoprophylaxis: React.FC<PsychoprophylaxisProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const { sessionsCompleted, totalSessions, percentage, isComplete, lastSessionDate, isLoading, error } =
     usePsychoprophylaxis(patientUuid);
+
+  if (error) return <ErrorState error={error} headerTitle={t('psychoprophylaxis')} />;
 
   if (isLoading) return <Tile className={styles.card}>{t('loading', 'Loading...')}</Tile>;
 

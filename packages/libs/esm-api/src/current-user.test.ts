@@ -500,6 +500,18 @@ describe('getCurrentUser', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it('does not emit an undefined user for a loaded logged-out session', () => {
+    sessionStore.setState({ loaded: true, session: { authenticated: false, sessionId: '' } });
+
+    const userHandler = vi.fn();
+    const sessionHandler = vi.fn();
+    subscriptions.push(getCurrentUser({ includeAuthStatus: false }).subscribe(userHandler));
+    subscriptions.push(getCurrentUser({ includeAuthStatus: true }).subscribe(sessionHandler));
+
+    expect(userHandler).not.toHaveBeenCalled();
+    expect(sessionHandler).toHaveBeenCalledWith({ authenticated: false, sessionId: '' });
+  });
+
   it('should emit updates when session changes', () => {
     return new Promise<void>((resolve) => {
       const mockUser1: LoggedInUser = {

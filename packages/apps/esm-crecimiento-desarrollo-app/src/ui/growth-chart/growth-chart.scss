@@ -76,8 +76,6 @@
 .tab {
   outline: 0;
   outline-offset: 0;
-  min-height: layout.$spacing-07 !important;
-  block-size: layout.$spacing-05 !important;
 
   &:active,
   &:focus {

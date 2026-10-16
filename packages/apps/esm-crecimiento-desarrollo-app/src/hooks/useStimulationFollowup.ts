@@ -1,9 +1,9 @@
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { latestObservationDate } from '../utils/latest-observation-date';
 
 interface StimulationFollowupResult {
   lastEvaluationResult: string | null;
@@ -22,7 +22,7 @@ const fetcher = async (url: string) => {
 
 function buildObsUrl(patientUuid: string, conceptUuid: string | undefined): string | null {
   if (!patientUuid || !conceptUuid) return null;
-  return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&sort=desc`;
+  return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&s=default`;
 }
 
 function extractDisplayValue(data: {
@@ -94,12 +94,11 @@ export function useStimulationFollowup(patientUuid: string): StimulationFollowup
       lastEvaluationResult = developmentClassification;
     }
 
-    const dates = [
+    const lastEvaluationDate = latestObservationDate([
       coordData?.results?.[0]?.obsDatetime,
       motorData?.results?.[0]?.obsDatetime,
       lackData?.results?.[0]?.obsDatetime,
-    ].filter(Boolean);
-    const lastEvaluationDate = dates.length > 0 ? dayjs(dates[0]).format('DD/MM/YYYY') : null;
+    ]);
 
     return { lastEvaluationResult, lastEvaluationDate, coordinationResult, motorResult, hasStimulationLack };
   }, [coordData, motorData, lackData]);

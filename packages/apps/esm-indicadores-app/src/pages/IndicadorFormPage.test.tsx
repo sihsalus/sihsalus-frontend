@@ -45,15 +45,15 @@ const mockCreateIndicador = vi.fn();
 const mockUpdateIndicador = vi.fn();
 
 const sampleIndicator = {
-  id: 'ind-001',
+  id: 1,
   nombre: 'Atenciones de control prenatal',
   descripcion: 'Gestantes atendidas con control prenatal.',
   activo: true,
   creado_en: '2026-01-15T10:00:00.000Z',
   versiones: [
     {
-      id: 'ver-001-1',
-      indicador_id: 'ind-001',
+      id: 11,
+      indicador_id: 1,
       version: 1,
       definicion: { tipo: 'conteo_atenciones' as const },
       creado_en: '2026-01-15T10:00:00.000Z',
@@ -71,7 +71,7 @@ function renderCreatePage() {
 
 function renderEditPage() {
   return renderWithSwr(
-    <MemoryRouter initialEntries={['/ind-001/edit']}>
+    <MemoryRouter initialEntries={['/1/edit']}>
       <IndicadorFormPage mode="edit" />
     </MemoryRouter>,
   );
@@ -133,7 +133,7 @@ describe('IndicadorFormPage — create mode', () => {
   });
 
   it('calls createIndicador on form submit with correct payload', async () => {
-    mockCreateIndicador.mockResolvedValue({ id: 'new-id-001', nombre: 'Nuevo Indicador' });
+    mockCreateIndicador.mockResolvedValue({ id: 1, nombre: 'Nuevo Indicador' });
 
     renderCreatePage();
 
@@ -160,7 +160,7 @@ describe('IndicadorFormPage — create mode', () => {
   });
 
   it('shows success notification and navigates after create', async () => {
-    mockCreateIndicador.mockResolvedValue({ id: 'new-id-002', nombre: 'Test' });
+    mockCreateIndicador.mockResolvedValue({ id: 2, nombre: 'Test' });
 
     renderCreatePage();
 
@@ -175,7 +175,7 @@ describe('IndicadorFormPage — create mode', () => {
     });
 
     expect(notifySuccess).toHaveBeenCalledWith('Indicador creado');
-    expect(mockNavigate).toHaveBeenCalledWith('/new-id-002');
+    expect(mockNavigate).toHaveBeenCalledWith('/2');
   });
 
   it('shows error notification when createIndicador fails', async () => {
@@ -204,7 +204,7 @@ describe('IndicadorFormPage — edit mode', () => {
     vi.clearAllMocks();
 
     vi.mocked(useNavigate).mockReturnValue(mockNavigate);
-    vi.mocked(useParams).mockReturnValue({ id: 'ind-001' });
+    vi.mocked(useParams).mockReturnValue({ id: '1' });
     vi.mocked(useCreateIndicador).mockReturnValue({ createIndicador: mockCreateIndicador });
     vi.mocked(useUpdateIndicador).mockReturnValue({ updateIndicador: mockUpdateIndicador });
     vi.mocked(useResolvedOrdenes).mockReturnValue({
@@ -314,7 +314,7 @@ describe('IndicadorFormPage — edit mode', () => {
       });
 
       expect(mockUpdateIndicador).toHaveBeenCalledTimes(1);
-      expect(mockUpdateIndicador).toHaveBeenCalledWith('ind-001', {
+      expect(mockUpdateIndicador).toHaveBeenCalledWith(1, {
         nombre: 'Atenciones de control prenatal',
         descripcion: 'Gestantes atendidas con control prenatal.',
       });
@@ -331,7 +331,7 @@ describe('IndicadorFormPage — edit mode', () => {
       });
 
       expect(notifySuccess).toHaveBeenCalledWith('Indicador actualizado');
-      expect(mockNavigate).toHaveBeenCalledWith('/ind-001');
+      expect(mockNavigate).toHaveBeenCalledWith('/1');
     });
 
     it('shows error notification when updateIndicador fails', async () => {

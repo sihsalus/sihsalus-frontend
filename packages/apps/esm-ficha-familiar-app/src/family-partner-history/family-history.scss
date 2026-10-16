@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .widgetContainer {
   background-color: colors.$white-0;
@@ -18,12 +18,18 @@
   text-align: center;
 }
 
+.relativeBirthdate {
+  @include type.type-style("body-compact-01");
+  color: colors.$gray-70;
+  margin-top: layout.$spacing-02;
+}
+
 .emptyStateContainer {
   margin: 2rem 0;
 }
 
 .content {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   color: colors.$gray-70;
   margin-top: layout.$layout-05;
   margin-bottom: layout.$spacing-03;
@@ -35,11 +41,11 @@
   text-transform: capitalize;
 
   h4 {
-    @include type.type-style('heading-compact-02');
+    @include type.type-style("heading-compact-02");
     color: colors.$gray-70;
 
     &:after {
-      content: '';
+      content: "";
       display: block;
       width: 2rem;
       padding-top: 3px;

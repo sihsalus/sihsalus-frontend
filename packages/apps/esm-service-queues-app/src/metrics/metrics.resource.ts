@@ -1,14 +1,23 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-import { type WaitTime } from '../types';
+import { type QueueEntrySearchCriteria, type WaitTime } from '../types';
 
 export { useActiveVisits } from '../active-visits/active-visits.resource';
 
-export function useAverageWaitTime(serviceUuid: string, statusUuid: string) {
-  const apiUrl = `${restBaseUrl}/queue-metrics?queue=${serviceUuid}&status=${statusUuid}`;
+export function useAverageWaitTime(
+  serviceUuid: string | null | undefined,
+  statusUuid: string,
+  criteria?: Pick<QueueEntrySearchCriteria, 'startedOnOrAfter' | 'startedOnOrBefore'>,
+) {
+  const searchParams = new URLSearchParams({ status: statusUuid, metric: 'averageWaitTime' });
+  if (serviceUuid) searchParams.set('service', serviceUuid);
+  for (const [key, value] of Object.entries(criteria ?? {})) {
+    if (value != null) searchParams.set(key, value.toString());
+  }
+  const apiUrl = `${restBaseUrl}/queue-entry-metrics?${searchParams.toString()}`;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: WaitTime }, Error>(
-    serviceUuid && statusUuid ? apiUrl : null,
+    statusUuid ? apiUrl : null,
     openmrsFetch,
   );
 

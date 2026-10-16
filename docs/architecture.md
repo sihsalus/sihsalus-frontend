@@ -13,7 +13,7 @@ packages/
     configs/                            # Shared Jest/Vitest/TS config helpers (including vitest-config.ts)
     openmrs/                            # CLI (openmrs develop, build, assemble)
     rspack-config/                      # Shared Rspack configuration
-  apps/                                 # 66 frontend modules (esm-*-app)
+  apps/                                 # 67 frontend modules (66 included in delivery)
   libs/
     esm-rbac/                           # @sihsalus/esm-rbac — Role-based access control
     esm-audit-logger/                   # @sihsalus/esm-audit-logger — Client-side PHI audit logging
@@ -28,11 +28,11 @@ packages/tooling/scripts/
 e2e/                                    # Playwright E2E tests
 ```
 
-> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch`).
+> **Note:** OpenMRS core packages use version 10.0.0. `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-10.0.0-source-build.patch`).
 
 ## Architecture
 
-- **Turborepo** orchestrates builds across 90 workspace packages with caching
+- **Turborepo** orchestrates builds across 91 workspace packages with caching
 - **Yarn 4 (Berry)** manages dependencies through `node_modules`, as configured in [`.yarnrc.yml`](../.yarnrc.yml). See the [configuration contracts](development/tooling-status.md).
 - **single-spa** orchestrates microfrontend modules at runtime via import maps
 - **Rspack** (Webpack-compatible) is the bundler; Module Federation enables shared deps
@@ -63,3 +63,62 @@ This repository includes frontend building blocks for security and compliance, b
 
 Consulta el [índice de módulos](modules.md) para localizar cada README junto a
 su código y los [contratos clínicos](clinical/README.md) antes de cambiar flujos.
+
+## Revisión de ablación del frontend, 2026-10-15
+
+La comparación usa `main` de SIH Salus `c122fa48965ce973cb38900bbcd464fe28d0c977`
+y el código de OpenMRS que corresponde al `gitHead` publicado de
+`@openmrs/esm-framework@10.0.0`:
+[`401e227eaf324ce8d2eb6332a411a6b8e5f86067`](https://github.com/openmrs/openmrs-esm-core/tree/401e227eaf324ce8d2eb6332a411a6b8e5f86067/packages/framework).
+Se compararon fuentes y contratos de las 18 bibliotecas forzadas a `workspace:*`.
+Todas tienen diferencias funcionales o contratos adicionales; ninguna se cambia
+por npm en esta revisión. El número de archivos distintos incluye formato y no
+es una medida de deuda ni demuestra por sí solo que un fork sea necesario.
+
+| Biblioteca (`esm-`)  | Diferencia que impide una sustitución directa                                             |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| api                  | Aliases de privilegios y protección frente a respuestas de sesión fuera de orden.         |
+| config               | Configuración de extensiones con carga diferida y estado de traducciones.                 |
+| dynamic-loading      | Integración del share scope y recuperación de import maps/rutas.                          |
+| emr-api              | Asociación de adjuntos a atención/campo y lectura de paciente con fuentes online/offline. |
+| error-handling       | Mensajes seguros y traducidos usados por los consumidores.                                |
+| expression-evaluator | Restricciones del evaluador y sus objetos globales.                                       |
+| extensions           | Contratos de permisos y comportamiento de modales/workspaces.                             |
+| feature-flags        | Recuperación de metadatos corruptos sin impedir el arranque.                              |
+| framework            | Exportación de contratos locales para detalles de notificaciones.                         |
+| globals              | Tipos de privilegios de modales/workspaces y configuración de ventanas.                   |
+| navigation           | Navegación dentro del mismo origen y recuperación del historial corrupto.                 |
+| offline              | Propiedad por usuario, bloqueos, checkpoints y limpieza verificada.                       |
+| react-utils          | Montaje de extensiones, permisos y hooks de acceso a datos compartidos.                   |
+| routes               | Propagación de privilegios, inicialización y overrides de rutas.                          |
+| state                | Registro compartido de stores cuando se carga más de una copia del módulo.                |
+| styleguide           | Permisos de componentes, fechas, notificaciones y presentación clínica.                   |
+| translations         | Defaults y claves locales consumidos por el shell y aplicaciones.                         |
+| utils                | Edad exacta, identidad, fechas, números y mensajes compartidos.                           |
+
+Dos pruebas aisladas ejecutaron las fuentes oficiales y locales con las mismas
+entradas sintéticas. Con metadatos inválidos en localStorage, `feature-flags`
+oficial lanzó `SyntaxError` y la versión local inició correctamente. Al evaluar
+`state` dos veces en el mismo contexto, la versión oficial creó stores separados;
+la local mantuvo la misma instancia y sus actualizaciones. Son pruebas acotadas,
+no aceptación clínica ni evidencia de un fallo en un ambiente desplegado.
+
+El registro npm también publica 11.0.0, cuyo `gitHead` es
+[`5473276ce7e70c460e15b43a27f500dc452e6aa4`](https://github.com/openmrs/openmrs-esm-core/tree/5473276ce7e70c460e15b43a27f500dc452e6aa4/packages/framework).
+Se repitieron esas dos pruebas con sus fuentes y persistieron ambas diferencias.
+No se afirma que las otras 16 bibliotecas hayan sido validadas contra 11.0.0.
+Además, 11.0.0 requiere bibliotecas hermanas 11 y declara peers i18next 25 /
+react-i18next 16; esta distribución usa 26 / 17. Su adopción requiere una migración
+coordinada y no se incorpora como reemplazo individual en esta ablación.
+
+Para retirar una biblioteca, primero identificar qué diferencias ya incorpora una
+versión oficial compatible y ejecutar sus contratos y consumidores sobre el
+sustituto. Extraer cada parche a otra biblioteca sin eliminar su necesidad solo
+trasladaría el mantenimiento. Los cambios de sesión, permisos, formularios y
+sincronización requieren además aceptación sintética coordinada.
+
+Banco de Sangre permanece como prototipo privado, fuera de los import maps,
+rutas y archivos de entrega. El ensamblador ya excluye workspaces privados,
+aunque exista un `dist` anterior; no se agrega un selector de despliegue.
+Su código y pruebas se conservan. La extracción de traducciones utiliza el CLI
+mantenido descrito en [configuración del repositorio](development/tooling-status.md#extracción-de-traducciones).

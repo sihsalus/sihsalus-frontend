@@ -67,6 +67,15 @@ test('shared singletons accept their installed versions in the federation runtim
   }
 });
 
+test('microfrontends consume the host SWR entry points without bundling separate caches', () => {
+  const shared = applicationConfig().plugins.find((plugin) => plugin._options?.shared)._options.shared;
+  for (const entry of ['swr', 'swr/infinite', 'swr/immutable', 'swr/_internal']) {
+    assert.equal(shared[entry].singleton, true, entry);
+    assert.equal(shared[entry].import, false, entry);
+    assert.equal(shared[entry].shareKey, entry, entry);
+  }
+});
+
 test('the shared patient library never consumes its own federated provider', () => {
   const library = path.join(root, 'packages/libs/esm-patient-common-lib');
   const { name } = JSON.parse(readFileSync(path.join(library, 'package.json'), 'utf8'));

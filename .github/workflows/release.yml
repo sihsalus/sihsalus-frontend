@@ -6,16 +6,16 @@ on:
     types: [completed]
     branches: [main, pre-release]
   push:
-    tags: ['sihsalus-v*']
+    tags: ["sihsalus-v*"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 env:
-  IBM_TELEMETRY_DISABLED: 'true'
-  TURBO_TELEMETRY_DISABLED: '1'
-  DO_NOT_TRACK: '1'
+  IBM_TELEMETRY_DISABLED: "true"
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
 
 jobs:
   build-and-push:
@@ -29,9 +29,6 @@ jobs:
       contents: write
       packages: write
       security-events: write
-    env:
-      HAS_DISTRO_DEPLOY_KEY: ${{ secrets.DISTRO_RELEASE_DEPLOY_KEY != '' }}
-      HAS_DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -162,7 +159,7 @@ jobs:
           format: sarif
           output: trivy-release-results.sarif
           severity: HIGH,CRITICAL
-          exit-code: '1'
+          exit-code: "1"
           ignore-unfixed: true
           vuln-type: os,library
           # SARIF includes every severity by default, which would make exit-code
@@ -209,65 +206,17 @@ jobs:
             fi
           done <<< "${IMAGE_TAGS}"
 
-      - name: Notify non-production frontend deployment
-        if: >
-          steps.source.outputs.branch == 'main' &&
-          env.HAS_DEPLOY_TOKEN == 'true'
-        uses: peter-evans/repository-dispatch@v4
-        with:
-          token: ${{ secrets.DEPLOY_TOKEN }}
-          repository: sihsalus/sihsalus
-          event-type: frontend-published
-          client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","digest":"${{ steps.build.outputs.digest }}","sha":"${{ steps.source.outputs.sha }}"}'
-
-      - name: Signal deployment with repository-scoped key
-        id: deploy_tag
-        if: >
-          steps.source.outputs.branch == 'main' &&
-          env.HAS_DEPLOY_TOKEN != 'true' &&
-          env.HAS_DISTRO_DEPLOY_KEY == 'true'
-        continue-on-error: true
+      - name: Record candidate for human deployment review
         env:
-          DEPLOY_KEY: ${{ secrets.DISTRO_RELEASE_DEPLOY_KEY }}
-          KNOWN_HOSTS: ${{ vars.DISTRO_GITHUB_KNOWN_HOSTS }}
           RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          set -euo pipefail
-
-          if [[ -z "${KNOWN_HOSTS}" ]]; then
-            echo "::error::DISTRO_GITHUB_KNOWN_HOSTS is not configured."
-            exit 2
-          fi
-
-          install -d -m 700 "${HOME}/.ssh"
-          printf '%s\n' "${DEPLOY_KEY}" >"${HOME}/.ssh/distro_release_key"
-          printf '%s\n' "${KNOWN_HOSTS}" >"${HOME}/.ssh/known_hosts"
-          chmod 600 "${HOME}/.ssh/distro_release_key" "${HOME}/.ssh/known_hosts"
-          ssh-keygen -y -f "${HOME}/.ssh/distro_release_key" >/dev/null
-
-          export GIT_SSH_COMMAND="ssh -i ${HOME}/.ssh/distro_release_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
-          checkout="${RUNNER_TEMP}/sihsalus-deploy-signal"
-          release_tag="frontend-release-${RELEASE_SHA}"
-
-          git clone --depth 1 --branch main --no-tags \
-            git@github.com:sihsalus/sihsalus.git "${checkout}"
-
-          if git -C "${checkout}" ls-remote --exit-code --tags origin "refs/tags/${release_tag}" >/dev/null 2>&1; then
-            echo "::notice::Deployment signal ${release_tag} already exists."
-            exit 0
-          fi
-
-          git -C "${checkout}" tag "${release_tag}"
-          git -C "${checkout}" push origin "refs/tags/${release_tag}"
-
-      - name: Record scheduled deployment fallback
-        if: >-
-          always() &&
-          steps.source.outputs.branch == 'main' &&
-          env.HAS_DEPLOY_TOKEN != 'true' &&
-          (env.HAS_DISTRO_DEPLOY_KEY != 'true' || steps.deploy_tag.outcome != 'success')
-        run: |
-          echo "::notice::The immediate deployment signal is unavailable; DEV and QLTY will discover this verified digest through the distro's scheduled poll."
+          {
+            echo '## Verified frontend artifact; deployment requires separate human approval'
+            echo "Commit: ${RELEASE_SHA}"
+            echo "Source: ghcr.io/sihsalus/sihsalus-frontend@${IMAGE_DIGEST}"
+            echo 'Follow the distro human review and release-manifest procedures. This workflow does not request or start a deployment.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create GitHub Release (on tags)
         if: steps.source.outputs.branch == 'tag'

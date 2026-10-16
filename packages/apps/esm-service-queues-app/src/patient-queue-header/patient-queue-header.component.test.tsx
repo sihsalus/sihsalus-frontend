@@ -35,6 +35,7 @@ vi.mock('../store/store', () => ({
   updateSelectedQueueLocationName: vi.fn(),
   updateSelectedQueueLocationUuid: vi.fn(),
   updateSelectedService: vi.fn(),
+  updateSelectedQueueEntryDate: vi.fn(),
   useServiceQueuesStore: vi.fn(),
 }));
 
@@ -88,6 +89,15 @@ describe('PatientQueueHeader service filter', () => {
     await user.click(serviceDropdown);
     await user.click(screen.getByRole('option', { name: 'All' }));
     expect(mockUpdateSelectedService).toHaveBeenLastCalledWith(null, 'All');
+  });
+
+  it('offers an optional queue-entry date only to consumers that enable it', () => {
+    const { rerender } = render(<PatientQueueHeader showFilters />);
+    expect(screen.queryByLabelText('Queue entry date')).not.toBeInTheDocument();
+
+    rerender(<PatientQueueHeader showFilters showDateFilter />);
+    expect(screen.getByLabelText('Queue entry date')).toHaveValue('');
+    expect(screen.getByText('All dates')).toBeInTheDocument();
   });
 
   it('shows unique services plus All when several queues are available', async () => {

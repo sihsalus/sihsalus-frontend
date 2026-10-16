@@ -1,7 +1,7 @@
 import { Button, DataTableSkeleton, ProgressBar, Tag } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
-import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../constants';
@@ -18,23 +18,44 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { delivered, total, percentage, isComplete, isLoading, error } = useSupplementationTracker(patientUuid);
+  const { hasRecords, delivered, total, percentage, isComplete, isLoading, error } =
+    useSupplementationTracker(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
   const headerTitle = t('mmnSupplementation', 'Suplementación MMN');
 
-  if (isLoading) {
-    return <DataTableSkeleton size="sm" rowCount={2} columnCount={2} />;
-  }
-
   if (error) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
+  }
+
+  if (isLoading) {
+    return (
+      <DataTableSkeleton
+        size="sm"
+        rowCount={2}
+        columnCount={2}
+        role="progressbar"
+        aria-label={t('loadingData', 'Loading data...')}
+      />
+    );
+  }
+
+  if (!hasRecords) {
+    return (
+      <EmptyState
+        displayText={t('mmnDeliveries', 'Entregas de micronutrientes')}
+        headerTitle={headerTitle}
+        launchForm={canEdit && !isFormLoading ? () => handleAdd() : undefined}
+      />
+    );
   }
 
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         <Tag type={isComplete ? 'green' : 'blue'} size="sm">
-          {isComplete ? t('complete', 'Completo') : t('inProgress', 'En curso')}
+          {isComplete
+            ? t('mmnDeliveryTargetReached', 'Meta de entregas alcanzada')
+            : t('mmnDeliveriesInProgress', 'Entregas en curso')}
         </Tag>
         {canEdit && (
           <Button
@@ -53,7 +74,10 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
         <div className={styles.progressRow}>
           <div className={styles.progressBarWrapper}>
             <ProgressBar
-              label={`${delivered}/${total} ${t('sachets', 'sobres')}`}
+              label={t('mmnDeliveryProgress', '{{delivered}} sobres entregados / meta configurada: {{total}}', {
+                delivered,
+                total,
+              })}
               value={percentage}
               size="small"
               status={isComplete ? 'finished' : 'active'}
@@ -61,7 +85,12 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
           </div>
           <span className={styles.percentageLabel}>{Math.round(percentage)}%</span>
         </div>
-        <p className={styles.helperText}>{t('mmnDescription', 'Directiva 068: 1 sobre diario desde los 6 meses')}</p>
+        <p className={styles.helperText}>
+          {t(
+            'mmnDescription',
+            'Las entregas no confirman el consumo. Confirme dosis y duración según edad y prescripción.',
+          )}
+        </p>
       </div>
     </div>
   );

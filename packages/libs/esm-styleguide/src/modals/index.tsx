@@ -90,6 +90,7 @@ function handleModalStateUpdate({ modalStack, modalContainer }: ModalState) {
   }
 
   if (modalStack.length) {
+    modalContainer.classList.add('is-visible');
     // ensure the container is visible
     if (!modalContainer.style.visibility) {
       addEventListener('keydown', handleEscKey);
@@ -131,6 +132,7 @@ function handleModalStateUpdate({ modalStack, modalContainer }: ModalState) {
       }
     });
   } else {
+    modalContainer.classList.remove('is-visible');
     modalContainer.style.removeProperty('visibility');
     document.body.style.overflow = original;
     removeEventListener('keydown', handleEscKey);
@@ -178,6 +180,7 @@ function handleEscKey(e: KeyboardEvent) {
  * Sets up the modals system. Should be called in the app shell during initialization.
  */
 export function setupModals(modalContainer: HTMLElement | null) {
+  modalContainer?.classList.add('cds--modal');
   modalStore.subscribe(handleModalStateUpdate);
 
   modalStore.setState({

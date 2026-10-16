@@ -1,6 +1,7 @@
 export * from './cards';
 export { type StyleguideConfigObject } from './config-schema';
 export * from './custom-overflow-menu';
+export * from './data-table-batch-actions';
 export * from './dashboard-extension';
 export * from './data-table-batch-actions';
 export * from './datepicker';

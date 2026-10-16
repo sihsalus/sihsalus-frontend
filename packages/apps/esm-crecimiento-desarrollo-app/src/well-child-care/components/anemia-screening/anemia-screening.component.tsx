@@ -89,13 +89,21 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>
-              <StructuredListCell className={styles.label}>{t('nextScreening', 'Próximo tamizaje')}</StructuredListCell>
+              <StructuredListCell className={styles.label}>
+                {t('nextScreening', 'Próximo tamizaje (orientativo)')}
+              </StructuredListCell>
               <StructuredListCell className={styles.value}>
                 {nextDueDate ?? <span className={styles.noData}>{t('pending', 'Pending')}</span>}
               </StructuredListCell>
             </StructuredListRow>
           </StructuredListBody>
         </StructuredListWrapper>
+        <p>
+          {t(
+            'anemiaScreeningDateHelp',
+            'Confirme la fecha con el profesional según prematuridad, resultado de hemoglobina y suplementación.',
+          )}
+        </p>
       </div>
     </div>
   );

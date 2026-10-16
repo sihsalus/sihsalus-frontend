@@ -248,10 +248,16 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
   return normalizeForm(form, fallbackDisplay);
 }
 
-export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFallbacks[formKey]) {
+export function useCREDFormLauncher(
+  formKey: CREDFormKey,
+  fallback = credFormFallbacks[formKey],
+  existingFormUuid?: string,
+) {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig<ConfigObject>();
-  const formIdentifier = getCREDFormIdentifier(config?.formsList, formKey, fallback);
+  // Editing must use the encounter's schema, even if the configured form has
+  // since been replaced. The form engine verifies this identity before saving.
+  const formIdentifier = existingFormUuid || getCREDFormIdentifier(config?.formsList, formKey, fallback);
   const fallbackDisplay = fallback?.display ?? formKey;
 
   const {
@@ -263,7 +269,7 @@ export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFal
   );
 
   const launchForm = useCallback(
-    (encounterUuid = '', handlePostResponse?: () => void) => {
+    (encounterUuid = '', handlePostResponse?: () => unknown) => {
       if (!formIdentifier) {
         showSnackbar({
           kind: 'warning',
@@ -288,7 +294,20 @@ export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFal
       launchWorkspace2(formEntryWorkspace, {
         form,
         encounterUuid,
-        handlePostResponse,
+        handlePostResponse: async () => {
+          try {
+            await handlePostResponse?.();
+          } catch {
+            showSnackbar({
+              kind: 'warning',
+              title: t('credSummaryRefreshFailed', 'No se pudo actualizar el resumen CRED'),
+              subtitle: t(
+                'credSummaryRefreshFailedSubtitle',
+                'La atención se guardó. Recargue la historia para ver los cambios; no vuelva a registrarla.',
+              ),
+            });
+          }
+        },
       });
     },
     [error, form, formIdentifier, t],

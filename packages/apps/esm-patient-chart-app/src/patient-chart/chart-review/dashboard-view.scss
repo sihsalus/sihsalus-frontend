@@ -16,7 +16,7 @@
   margin: 0 layout.$spacing-05;
 }
 
-.dashboard[data-extension-slot-name='patient-chart-test-results-dashboard-slot'] {
+.dashboard[data-extension-slot-name="patient-chart-test-results-dashboard-slot"] {
   margin-top: layout.$spacing-05;
 }
 
@@ -112,4 +112,8 @@
 
 :global(.omrs-breakpoint-lt-tablet) .dashboard > div {
   margin: layout.$spacing-01 0px;
+}
+
+:global(.omrs-breakpoint-lt-tablet) .extension {
+  max-width: 100%;
 }

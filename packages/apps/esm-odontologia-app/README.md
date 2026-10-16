@@ -30,7 +30,10 @@ y persistencia del módulo odontológico. Conserva el privilegio de consulta
 `app:hoja.clinica.odontologia` y el de edición; no concede permisos por acceder a
 CRED. Es una extensión en línea y no sustituye el formulario CRED-016 de inspección
 de cavidad bucal. La dentición sigue siendo una elección explícita del profesional.
-En modo de solo lectura, el estado vacío oculta la acción de registro.
+El estado vacío reutiliza `EmptyState` de patient-common-lib, con su ilustración
+y acción de registro estándar. En modo de solo lectura oculta esa acción.
+La carga del historial usa `DataTableSkeleton` de Carbon con nombre accesible;
+no muestra el editor ni ofrece registrar mientras la lectura está pendiente.
 
 Un error al leer el historial muestra el estado de error compartido, sin ofrecer
 un odontograma inicial como si la lectura hubiera devuelto cero registros. Si la
@@ -61,6 +64,20 @@ conceptos y tipos de encuentro configurados en `config-schema.ts`. Se mantienen
 los controles de acceso existentes; el dashboard requiere
 `app:hoja.clinica.odontologia.editar` para iniciar edición. Los errores de guardado
 conservan el borrador y usan la notificación segura existente.
+
+La creación de iniciales y evolutivos requiere una consulta activa del mismo
+paciente, el profesional y la ubicación de la sesión y el rol clínico configurado
+en EmrApi. Reutiliza `useVisit`, `useSession` y `useEmrConfiguration`; no infiere
+el profesional ni añade un UUID de rol alternativo. Si el contexto está pendiente,
+falla o está incompleto, no envía el encuentro y conserva el borrador con una ayuda
+traducida. El payload nuevo vincula explícitamente visita, ubicación y profesional.
+
+La edición verifica por GET el paciente y UUID del encuentro antes de reutilizar
+sus UUID de observaciones. Envía únicamente las observaciones: conserva la visita,
+fecha, formulario, tipo, ubicación y profesionales originales, incluso sin consulta
+activa actual. No reasigna un registro histórico a la sesión vigente. La prueba
+local cubre estos contratos; guardar/recargar/editar en QLTY sigue pendiente de la
+aceptación coordinada indicada abajo.
 
 ### Procedencia y validación pendiente
 

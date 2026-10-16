@@ -75,6 +75,8 @@ describe.each(['en', 'es'] as const)('CRED UI in a shared slot (%s)', (language)
     expect(screen.getByText(messages.anemiaScreening)).toBeVisible();
     expect(screen.getAllByText(messages.noData)).toHaveLength(2);
     expect(screen.getByText(messages.pending)).toBeVisible();
+    expect(screen.getByText(messages.nextScreening)).toBeVisible();
+    expect(screen.getByText(messages.anemiaScreeningDateHelp)).toBeVisible();
     expect(screen.getByRole('button', { name: messages.add })).toBeVisible();
   });
 

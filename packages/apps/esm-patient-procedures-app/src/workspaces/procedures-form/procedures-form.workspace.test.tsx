@@ -18,6 +18,7 @@ import {
   updateProcedure,
   useConceptSearch,
   useConceptSearchField,
+  useMutatePatientProcedures,
   useProcedureTypes,
 } from '../../procedures.resource';
 import type { Procedure } from '../../types';
@@ -171,6 +172,7 @@ const parseDateInputValue = (value: string) => {
 };
 
 beforeEach(() => {
+  vi.mocked(useMutatePatientProcedures).mockReturnValue(vi.fn());
   mockUseProcedureTypes.mockReturnValue({ procedureTypes: mockProcedureTypes, isLoading: false, error: undefined });
   mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false, error: undefined });
   mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as FetchResponse);
@@ -384,6 +386,28 @@ describe('ProceduresForm', () => {
     );
   });
 
+  it('requires a new selection after clearing the procedure type and submits the replacement UUID', async () => {
+    const user = userEvent.setup();
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false, error: undefined });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+    renderProceduresForm();
+    await fillRequiredFields(user);
+
+    const group = screen.getByRole('group', { name: /procedure type/i });
+    await user.click(within(group).getByRole('button', { name: /clear/i }));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+    expect(await screen.findByText('Procedure type is required')).toBeVisible();
+    expect(mockSaveProcedure).not.toHaveBeenCalled();
+
+    await user.click(within(group).getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: 'Endoscopy' }));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(expect.objectContaining({ procedureType: 'pt-uuid-2' })),
+    );
+    expect(mockSaveProcedure).toHaveBeenCalledTimes(1);
+  });
+
   it('closes the workspace after a successful save', async () => {
     const user = userEvent.setup();
 
@@ -532,6 +556,7 @@ describe('ProceduresForm', () => {
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
     await user.click(within(startGroup).getByLabelText(/^date$/i));
     await user.paste('2026-04-27');
+    await user.clear(within(startGroup).getByLabelText(/^time$/i));
     await user.type(within(startGroup).getByLabelText(/^time$/i), '02:30');
     await user.selectOptions(within(startGroup).getByLabelText(/am\/pm/i), 'PM');
 
@@ -557,6 +582,7 @@ describe('ProceduresForm', () => {
     await fillRequiredFields(user);
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    await user.clear(within(startGroup).getByLabelText(/^time$/i));
     await user.type(within(startGroup).getByLabelText(/^time$/i), '09:15');
 
     await user.click(screen.getByRole('button', { name: /save & close/i }));
@@ -582,8 +608,9 @@ describe('ProceduresForm', () => {
     await fillRequiredFields(user);
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
-    await screen.findByText(/error saving procedure/i);
-    expect(screen.getByText(/internal server error/i)).toBeInTheDocument();
+    await screen.findByText(/could not confirm procedure saving/i);
+    expect(screen.queryByText(/internal server error/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/check the procedure before trying again/i)).toBeInTheDocument();
   });
 
   it('clears exact start date and requires estimated date when toggled to unknown', async () => {
@@ -649,7 +676,7 @@ describe('ProceduresForm', () => {
     expect(screen.getAllByDisplayValue('Appendectomy').length).toBeGreaterThan(0);
     // Notes textarea is pre-populated
     expect(screen.getByDisplayValue('Test clinical notes')).toBeInTheDocument();
-    // Procedure type ComboBox is pre-selected via initialSelectedItem (driven by defaultValues)
+    // Procedure type ComboBox is controlled by the stored form value.
     const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
     expect(within(procedureTypeGroup).getByRole('combobox')).toHaveValue('Surgery');
   });
@@ -666,10 +693,12 @@ describe('ProceduresForm', () => {
     await waitFor(() =>
       expect(mockUpdateProcedure).toHaveBeenCalledWith(
         'existing-proc-uuid',
-        expect.objectContaining({ patient: mockPatient.id, procedureCoded: 'proc-concept-uuid-1' }),
+        expect.objectContaining({ procedureCoded: 'proc-concept-uuid-1' }),
       ),
     );
     expect(mockSaveProcedure).not.toHaveBeenCalled();
+    expect(mockUpdateProcedure.mock.calls[0][1]).not.toHaveProperty('patient');
+    expect(mockUpdateProcedure.mock.calls[0][1]).not.toHaveProperty('encounter');
   });
 
   it('shows a success snackbar after a successful edit', async () => {
@@ -870,6 +899,7 @@ describe('ProceduresForm', () => {
     const endGroup = screen.getByRole('group', { name: /end date and time/i });
     await user.click(within(endGroup).getByLabelText(/^date$/i));
     await user.paste('2026-04-28');
+    await user.clear(within(endGroup).getByLabelText(/^time$/i));
     await user.type(within(endGroup).getByLabelText(/^time$/i), '03:00');
     await user.selectOptions(within(endGroup).getByLabelText(/am\/pm/i), 'PM');
 
@@ -936,4 +966,75 @@ describe('ProceduresForm', () => {
     expect(screen.getByRole('combobox', { name: /duration unit/i })).toBeInTheDocument();
     expect(screen.getByText(/could not load duration unit options/i)).toBeInTheDocument();
   });
+});
+
+it('blocks editing a procedure belonging to another patient', () => {
+  render(
+    <ProceduresFormWorkspace
+      {...defaultProps}
+      workspaceProps={{
+        formContext: 'editing',
+        procedure: { ...mockExistingProcedure, patient: { uuid: 'other-patient', display: 'Other' } },
+      }}
+    />,
+  );
+  expect(
+    screen.getByText(
+      'This procedure does not match the open patient chart. Close it and reopen it from the correct chart.',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /save & close/i })).not.toBeInTheDocument();
+  expect(mockUpdateProcedure).not.toHaveBeenCalled();
+});
+
+it('blocks an editing workspace without a procedure rather than creating a new record', () => {
+  render(<ProceduresFormWorkspace {...defaultProps} workspaceProps={{ formContext: 'editing' }} />);
+  expect(screen.queryByRole('button', { name: /save & close/i })).not.toBeInTheDocument();
+  expect(mockSaveProcedure).not.toHaveBeenCalled();
+});
+
+it('closes a confirmed edit with a refresh warning rather than reporting a failed write', async () => {
+  vi.mocked(useMutatePatientProcedures).mockReturnValue(
+    vi.fn().mockRejectedValue(new Error('private refresh failure')),
+  );
+  mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false, error: undefined });
+  mockUpdateProcedure.mockResolvedValue({ status: 200 } as FetchResponse);
+  renderEditForm();
+  await userEvent.click(screen.getByRole('button', { name: /save & close/i }));
+  await waitFor(() =>
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warning', title: 'Procedure updated' }),
+    ),
+  );
+  expect(mockUpdateProcedure).toHaveBeenCalledTimes(1);
+  expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
+});
+
+it('blocks inconsistent creation context containing an existing procedure', () => {
+  render(
+    <ProceduresFormWorkspace
+      {...defaultProps}
+      workspaceProps={{
+        formContext: 'creating',
+        procedure: { ...mockExistingProcedure, patient: { uuid: 'other-patient', display: 'Other' } },
+      }}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: /save & close/i })).not.toBeInTheDocument();
+  expect(mockSaveProcedure).not.toHaveBeenCalled();
+  expect(mockUpdateProcedure).not.toHaveBeenCalled();
+});
+
+it('prevents an edit from saving the last valid hour while its visible time is empty', async () => {
+  mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false, error: undefined });
+  renderEditForm();
+  const startGroup = screen.getByRole('group', { name: /start date and time/i });
+  const input = within(startGroup).getByLabelText(/^time$/i);
+  await userEvent.clear(input);
+  await userEvent.click(screen.getByRole('button', { name: /save & close/i }));
+  expect(mockUpdateProcedure).not.toHaveBeenCalled();
+  expect(mockSaveProcedure).not.toHaveBeenCalled();
+  expect(input).toHaveValue('');
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+  expect(within(startGroup).getByText('Enter a valid time in hh:mm format')).toBeInTheDocument();
 });

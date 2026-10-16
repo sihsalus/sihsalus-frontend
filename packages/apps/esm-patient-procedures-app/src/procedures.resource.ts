@@ -24,8 +24,13 @@ export const buildConceptSourceUrl = (source: ConceptSource): string | null => {
 export const buildConceptSearchUrl = (query: string, source: ConceptSource): string => {
   const params = new URLSearchParams({ v: 'custom:(uuid,display)' });
   if (query) {
-    params.set('name', query);
-    params.set('searchType', 'fuzzy');
+    if (source.sourceType === 'Concept set') {
+      // REST memberOf searches filter text through q, not name/searchType.
+      params.set('q', query);
+    } else {
+      params.set('name', query);
+      params.set('searchType', 'fuzzy');
+    }
   }
   if (source.uuid && source.sourceType !== 'any') {
     params.set(sourceTypeToRestParam[source.sourceType], source.uuid);
@@ -71,7 +76,7 @@ export const saveProcedure = async (payload: RawProcedure) => {
   });
 };
 
-export const updateProcedure = async (procedureUuid: string, payload: RawProcedure) => {
+export const updateProcedure = async (procedureUuid: string, payload: Omit<RawProcedure, 'patient'>) => {
   return openmrsFetch(`${restBaseUrl}/procedure/${procedureUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -100,8 +105,9 @@ export const useProcedures = (patientUuid: string, startIndex = 0, limit = 100) 
   };
 };
 
-export const deleteProcedure = async (procedureId: string) => {
-  return await openmrsFetch(`${restBaseUrl}/procedure/${procedureId}`, {
+export const deleteProcedure = async (procedureId: string, reason: string) => {
+  const params = new URLSearchParams({ reason });
+  return await openmrsFetch(`${restBaseUrl}/procedure/${procedureId}?${params}`, {
     method: 'DELETE',
   });
 };

@@ -1,6 +1,7 @@
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
+import { odontogramContextErrorCode, useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import { adultConfig } from '../odontogram/config/adultConfig';
 import { childConfig } from '../odontogram/config/childConfig';
 import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
@@ -45,4 +46,22 @@ it('reads historical permanent data without replacing a parked primary draft', (
   expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
   expect(useOdontogramDataStore.getState().data).toEqual(draft);
   expect(save).not.toHaveBeenCalled();
+});
+
+it('keeps a primary draft open and offers safe context guidance when creation is rejected', async () => {
+  const error = Object.assign(new Error('Synthetic context unavailable'), { code: odontogramContextErrorCode });
+  save.mockRejectedValueOnce(error);
+  const initialData = createEmptyOdontogramData(childConfig);
+  initialData.observaciones = 'Unsubmitted synthetic draft';
+  render(<OdontogramWorkspace {...props} initialData={initialData} />);
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Guardar' }));
+  expect(getUserFacingErrorMessage).toHaveBeenCalledWith(
+    error,
+    expect.any(String),
+    expect.objectContaining({
+      codeMessages: { [odontogramContextErrorCode]: expect.stringContaining('active visit') },
+    }),
+  );
+  expect(props.closeWorkspace).not.toHaveBeenCalled();
+  expect(useOdontogramDataStore.getState().data).toEqual(initialData);
 });

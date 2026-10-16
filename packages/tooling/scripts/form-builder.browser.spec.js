@@ -102,3 +102,441 @@ test('bundled form editor retains JSON validation, completion, theme and search 
   assert.deepEqual(errors, []);
   assert.deepEqual(failedRequests, []);
 });
+
+const lib = path.join(root, 'packages/libs/esm-form-engine-lib/src');
+
+test('controlled selections settle with asynchronous calculated fields in a production renderer', async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'sihsalus-form-engine-browser-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  // Keep the renderer, RHF, Carbon controls, expressions and adapters native.
+  // Replace external services and registration only; this fixture has no API.
+  await writeFile(
+    path.join(directory, 'framework.js'),
+    `export * from '${path.join(root, 'packages/libs/esm-expression-evaluator/src')}';
+     const state = { loaded: true, config: {} };
+     export const getConfigStore = () => ({ subscribe: () => () => {}, getState: () => state,
+       getInitialState: () => state });
+     export const translateFrom = (_module, key, fallback) => fallback ?? key;
+     export const showSnackbar = () => {};
+     export const formatDate = () => '';
+     export const parseDate = value => new Date(value);
+     export const attachmentUrl = () => '';
+     export const getAttachmentByUuid = () => { throw Error('Unexpected attachment request'); };
+     export const openmrsFetch = () => { throw Error('Unexpected API request'); };
+     export const restBaseUrl = '/unavailable';
+     export const fhirBaseUrl = '/unavailable';
+     export const ChevronDownIcon = () => null;
+     export const ChevronUpIcon = () => null;`,
+  );
+  await writeFile(
+    path.join(directory, 'i18n.js'),
+    `const t = (key, fallback) => fallback ?? key;
+     export const useTranslation = () => ({ t });`,
+  );
+  await writeFile(
+    path.join(directory, 'registry.js'),
+    `import Dropdown from '${lib}/components/inputs/select/dropdown.component';
+     import NumberField from '${lib}/components/inputs/number/number.component';
+     import TextArea from '${lib}/components/inputs/text-area/text-area.component';
+     export const getRegisteredExpressionHelpers = () => ({});
+     export const getPreviewFieldControl = field => field.questionOptions.rendering === 'select'
+       ? Dropdown : field.questionOptions.rendering === 'textarea' ? TextArea : NumberField;
+     export const getFieldControlWithFallback = async field => getPreviewFieldControl(field);
+     export const getRegisteredControl = async () => NumberField;`,
+  );
+  await writeFile(
+    path.join(directory, 'factory.js'),
+    `const factory = {
+       registerForm: (_name, _subForm, context) => {
+         window.formContext = context;
+         // Stop a regression rather than leaving Chromium in an infinite loop.
+         if (++window.formUpdates > 60) throw Error('Form updates did not settle');
+       },
+       setIsFormDirty: () => {}, workspaceLayout: 'minimized', isFormExpanded: true,
+     };
+     export const useFormFactory = () => factory;`,
+  );
+  await writeFile(path.join(directory, 'processor.js'), 'export default () => null;');
+  await writeFile(
+    path.join(directory, 'entry.tsx'),
+    `import React from 'react';
+     import { createRoot } from 'react-dom/client';
+     import { ErrorBoundary } from 'react-error-boundary';
+     import { FormRenderer } from '${lib}/components/renderer/form/form-renderer.component';
+     import { ObsAdapter } from '${lib}/adapters/obs-adapter';
+     import { ControlAdapter } from '${lib}/adapters/control-adapter';
+     import { FieldValidator } from '${lib}/validators/form-validator';
+     const field = (id, label, rendering) => ({ id, label, type: 'obs',
+       questionOptions: { rendering, concept: 'synthetic-' + id },
+       validators: [{ type: 'form_field' }],
+       meta: { initialValue: { omrsObject: null, refinedValue: null }, submission: null } });
+     const calculated = new URLSearchParams(location.search).has('calculated');
+     const score = field('score', 'Score', 'number');
+     score.fieldDependents = new Set(['outcome']);
+     const outcome = field('outcome', 'Outcome', 'select');
+     outcome.questionOptions.answers = [
+       { concept: 'green', label: 'Green' }, { concept: 'yellow', label: 'Yellow' },
+       { concept: 'red', label: 'Red' },
+     ];
+     if (calculated) {
+       outcome.readonly = true;
+       outcome.questionOptions.calculate = { calculateExpression:
+         'isEmpty(score) ? undefined : (score <= 2 ? "green" : score <= 7 ? "yellow" : "red")' };
+     }
+     outcome.fieldDependents = new Set(['risk']);
+     const risk = field('risk', 'Risk', 'number');
+     risk.type = 'control';
+     risk.readonly = true;
+     risk.questionOptions.calculate = { calculateExpression:
+       'isEmpty(outcome) ? undefined : (outcome === "red" ? 2 : outcome === "yellow" ? 1 : 0)' };
+     risk.fieldDependents = new Set(['plan']);
+     const plan = field('plan', 'Plan', 'textarea');
+     plan.required = 'risk > 0';
+     plan.hide = { hideWhenExpression: 'isEmpty(risk) || risk === 0' };
+     const editing = new URLSearchParams(location.search).has('edit');
+     if (editing) outcome.meta.initialValue.omrsObject = { uuid: 'synthetic-observation', value: 'green' };
+     const fields = calculated ? [score, outcome, risk, plan] : [outcome, risk, plan];
+     const schema = { name: 'Synthetic outcome', pages: [{ label: 'Outcome',
+       sections: [{ label: 'Assessment', questions: fields }] }] };
+     const context = { isPreview: true, formJson: schema, formFields: fields,
+       formFieldAdapters: { obs: ObsAdapter, control: ControlAdapter },
+       formFieldValidators: { form_field: FieldValidator },
+       sessionMode: editing ? 'edit' : 'enter', layoutType: 'small-desktop',
+       patient: null, visit: null, sessionDate: new Date('2026-10-10T12:00:00Z'),
+       location: null, currentProvider: null, processor: { getHistoricalValue: () => null } };
+     window.formUpdates = 0;
+     createRoot(document.getElementById('root')).render(
+       <ErrorBoundary fallback={<p>Render error</p>} onError={error => { window.renderError = error.message; }}>
+         <FormRenderer processorContext={context}
+           initialValues={{ score: null, outcome: editing ? 'green' : null, risk: editing ? 0 : null, plan: null }}
+           isSubForm={false} setIsLoadingFormDependencies={() => {}} onDependencyError={() => {}} />
+       </ErrorBoundary>);`,
+  );
+  const workspace = path.join(root, 'packages/apps/esm-form-entry-react-app');
+  const previous = process.cwd();
+  let config;
+  try {
+    process.chdir(workspace);
+    config = require(path.join(workspace, 'rspack.config.js'))({}, { mode: 'production' });
+  } finally {
+    process.chdir(previous);
+  }
+  const replacements = [
+    [/^@openmrs\/esm-framework(?:\/src\/internal)?$/, 'framework.js'],
+    [/^react-i18next$/, 'i18n.js'],
+    [/registry\/registry$/, 'registry.js'],
+    [/provider\/form-factory-provider$/, 'factory.js'],
+    [/processor-factory\/form-processor-factory.component$/, 'processor.js'],
+  ];
+  const compiler = rspack({
+    mode: 'production',
+    context: workspace,
+    entry: path.join(directory, 'entry.tsx'),
+    output: { path: directory, filename: 'renderer.js', publicPath: '/' },
+    module: config.module,
+    resolve: {
+      ...config.resolve,
+      modules: [path.join(root, 'node_modules')],
+    },
+    plugins: replacements
+      .map(([pattern, file]) => new rspack.NormalModuleReplacementPlugin(pattern, path.join(directory, file)))
+      .concat(
+        new rspack.NormalModuleReplacementPlugin(
+          /^@openmrs\/esm-utils$/,
+          path.join(root, 'packages/libs/esm-utils/src/plain-number-input.ts'),
+        ),
+      ),
+    optimization: config.optimization,
+  });
+  try {
+    const stats = await new Promise((resolve, reject) => {
+      compiler.run((error, result) => (error ? reject(error) : resolve(result)));
+    });
+    assert.equal(stats.hasErrors(), false, stats.toString({ all: false, errors: true }));
+  } finally {
+    await new Promise((resolve, reject) => compiler.close((error) => (error ? reject(error) : resolve())));
+  }
+  const server = createServer(async (request, response) => {
+    const pathname = new URL(request.url, 'http://localhost').pathname;
+    if (pathname === '/') {
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.end('<meta charset="utf-8"><div id="root"></div><script src="/renderer.js"></script>');
+      return;
+    }
+    try {
+      assert.equal(path.basename(pathname), pathname.slice(1));
+      response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+      response.end(await readFile(path.join(directory, path.basename(pathname))));
+    } catch {
+      response.writeHead(404).end();
+    }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const browser = await chromium.launch();
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  const errors = [];
+  const requests = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  await page.route('**/*', (route) => {
+    if (new URL(route.request().url()).origin !== origin || route.request().method() !== 'GET') {
+      requests.push(route.request().url());
+      return route.abort();
+    }
+    return route.continue();
+  });
+  for (const mode of ['calculated', 'enter', 'edit']) {
+    const editing = mode === 'edit';
+    const calculated = mode === 'calculated';
+    await page.goto(`${origin}/${editing ? '?edit' : calculated ? '?calculated' : ''}`);
+    const outcome = page.getByRole('combobox', { name: 'Outcome' });
+    await expect(outcome).toBeVisible();
+    const selections = [
+      ['Yellow', 'yellow', '1', true],
+      ['Red', 'red', '2', true],
+      ['Green', 'green', '0', false],
+      ['Yellow', 'yellow', '1', true],
+    ];
+    for (const [label, value, risk, required] of editing
+      ? selections.filter(([label]) => label !== 'Green')
+      : selections) {
+      if (calculated) {
+        await page
+          .getByRole('spinbutton', { name: 'Score' })
+          .fill(value === 'yellow' ? '3' : value === 'red' ? '8' : '0');
+      } else {
+        await outcome.click();
+        await page.getByRole('option', { name: label, exact: true }).click();
+      }
+      await expect(outcome).toContainText(label);
+      await expect(page.locator('#risk')).toHaveValue(risk);
+      await expect(page.locator('#plan')).toBeVisible({ visible: required });
+      if (required) await expect(page.getByTestId('plan-label').getByTitle('Required')).toBeVisible();
+      const snapshot = await page.evaluate(() => ({
+        value: window.formContext.methods.getValues('outcome'),
+        observation: window.formContext.getFormField('outcome').meta.submission.newValue,
+        error: window.renderError,
+      }));
+      assert.equal(snapshot.value, value);
+      assert.equal(snapshot.observation.value, value);
+      if (editing) assert.equal(snapshot.observation.uuid, 'synthetic-observation');
+      assert.equal(snapshot.error, undefined);
+    }
+    const updates = await page.evaluate(() => window.formUpdates);
+    await page.waitForTimeout(100);
+    assert.equal(await page.evaluate(() => window.formUpdates), updates, 'dependent updates must settle');
+  }
+  assert.deepEqual(errors, []);
+  assert.deepEqual(requests, []);
+});
+
+test('procedure type remains selected through blur, option refresh and responsive remounts', async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'sihsalus-procedures-browser-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const workspace = path.join(root, 'packages/apps/esm-patient-procedures-app');
+  // Keep the workspace, RHF/Zod, Carbon and responsive wrapper native. Only
+  // external services, translations, workspace chrome and the unused date picker
+  // are replaced. Selecting an estimated year avoids exercising that stub.
+  await writeFile(
+    path.join(directory, 'framework.tsx'),
+    `import React from 'react';
+     export { ResponsiveWrapper } from '${root}/packages/libs/esm-styleguide/src/responsive-wrapper/responsive-wrapper.component';
+     export { useLayoutType } from '${root}/packages/libs/esm-react-utils/src/useLayoutType';
+     export const Workspace2 = ({children}) => <>{children}</>;
+     export const useConfig = () => ({});
+     export const showSnackbar = () => {};
+     export const getUserFacingErrorMessage = (_, fallback) => fallback;
+     export const OpenmrsDatePicker = ({id}) => <input id={id} type="date" />;`,
+  );
+  await writeFile(
+    path.join(directory, 'utils.ts'),
+    `export * from '${root}/packages/libs/esm-utils/src/plain-number-input';
+     export * from '${root}/packages/libs/esm-utils/src/user-facing-error-compat';`,
+  );
+  await writeFile(
+    path.join(directory, 'resource.tsx'),
+    `import React, {useEffect, useState} from 'react';
+     const types = [{uuid:'type-nursing',name:'Procedimiento de enfermería'}, {uuid:'type-other',name:'Otro'}];
+     const results = [{uuid:'procedure-qa',display:'Procedimiento QA'},
+       {uuid:'body-deltoid',display:'Deltoides'}, {uuid:'status-complete',display:'Completado'}];
+     export const useProcedureTypes = () => {
+       const [procedureTypes, setTypes] = useState(types);
+       useEffect(() => {
+         const refresh = () => setTypes(current => current.map(item => ({...item})));
+         addEventListener('refresh-options', refresh);
+         return () => removeEventListener('refresh-options', refresh);
+       }, []);
+       return {procedureTypes,isLoading:false};
+     };
+     export const useConceptSearch = () => ({searchResults:results,isSearching:false});
+     export const useConceptSearchField = () => {
+       const [searchTerm,setSearchTerm] = useState('');
+       return {searchTerm,setSearchTerm,searchResults:results.filter(x=>x.display.includes(searchTerm)),
+         isSearching:false,clear:()=>setSearchTerm('')};
+     };
+     export const useMutatePatientProcedures = () => async () => {};
+     export const saveProcedure = async body => {window.writes.push({method:'create',body});};
+     export const updateProcedure = async (uuid,body) => {window.writes.push({method:'edit',uuid,body});};`,
+  );
+  await writeFile(
+    path.join(directory, 'i18n.js'),
+    `export const useTranslation = () => ({t:(_,fallback)=>fallback});
+     export const I18nextProvider = ({children}) => children;`,
+  );
+  await writeFile(
+    path.join(directory, 'entry.tsx'),
+    `import React from 'react';
+     import {createRoot} from 'react-dom/client';
+     import Workspace from '${workspace}/src/workspaces/procedures-form/procedures-form.workspace';
+     window.writes=[];
+     const editing = new URLSearchParams(location.search).has('edit');
+     const procedure = editing ? {uuid:'procedure-existing',patient:{uuid:'patient-qa'},
+       procedureCoded:{uuid:'procedure-qa',display:'Procedimiento QA'},
+       procedureType:{uuid:'type-nursing',name:'Procedimiento de enfermería'},
+       bodySite:{uuid:'body-deltoid',display:'Deltoides'}, estimatedStartDate:'2023',
+       status:{uuid:'status-complete',display:'Completado'}} : undefined;
+     createRoot(document.getElementById('root')).render(<Workspace closeWorkspace={()=>{}}
+       groupProps={{patientUuid:'patient-qa'}} workspaceProps={{formContext:editing?'editing':'creating',procedure}}/>);`,
+  );
+  const previous = process.cwd();
+  let config;
+  try {
+    process.chdir(workspace);
+    config = require(path.join(workspace, 'rspack.config.js'))({}, { mode: 'production' });
+  } finally {
+    process.chdir(previous);
+  }
+  const compiler = rspack({
+    mode: 'production',
+    context: workspace,
+    entry: path.join(directory, 'entry.tsx'),
+    output: { path: directory, filename: 'fixture.js', publicPath: '/' },
+    module: config.module,
+    resolve: {
+      ...config.resolve,
+      modules: [path.join(root, 'node_modules')],
+      alias: {
+        ...config.resolve.alias,
+        '@openmrs/esm-framework$': path.join(directory, 'framework.tsx'),
+        '@openmrs/esm-react-utils$': path.join(root, 'packages/libs/esm-react-utils/src/useLayoutType.ts'),
+        '@openmrs/esm-utils$': path.join(directory, 'utils.ts'),
+        'react-i18next$': path.join(directory, 'i18n.js'),
+      },
+    },
+    optimization: { ...config.optimization, splitChunks: false, runtimeChunk: false },
+    plugins: [new rspack.NormalModuleReplacementPlugin(/procedures\.resource$/, path.join(directory, 'resource.tsx'))],
+  });
+  try {
+    const stats = await new Promise((resolve, reject) => {
+      compiler.run((error, result) => (error ? reject(error) : resolve(result)));
+    });
+    assert.equal(stats.hasErrors(), false, stats.toString({ all: false, errors: true }));
+  } finally {
+    await new Promise((resolve, reject) => compiler.close((error) => (error ? reject(error) : resolve())));
+  }
+  const server = createServer(async (request, response) => {
+    const pathname = new URL(request.url, 'http://localhost').pathname;
+    if (pathname === '/') {
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.end('<body class="omrs-breakpoint-gt-tablet"><div id="root"></div><script src="/fixture.js"></script>');
+      return;
+    }
+    try {
+      assert.equal(path.basename(pathname), pathname.slice(1));
+      response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+      response.end(await readFile(path.join(directory, path.basename(pathname))));
+    } catch {
+      response.writeHead(404).end();
+    }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const browser = await chromium.launch();
+  t.after(() => browser.close());
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const errors = [];
+  const requests = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  await page.route('**/*', (route) => {
+    if (new URL(route.request().url()).origin !== origin || route.request().method() !== 'GET') {
+      requests.push(route.request().url());
+      return route.abort();
+    }
+    return route.continue();
+  });
+  const choose = async (name, option) => {
+    await page.getByRole('combobox', { name, exact: true }).click();
+    await page.getByRole('option', { name: option, exact: true }).click();
+  };
+  for (const [editing, clearType] of [
+    [false, false],
+    [true, false],
+    [false, true],
+    [true, true],
+  ]) {
+    await page.goto(origin + (editing ? '/?edit' : '/'));
+    const type = page.getByRole('combobox', { name: 'Procedure type', exact: true });
+    if (!editing) {
+      await page.getByRole('searchbox', { name: 'Enter procedure', exact: true }).fill('Procedimiento');
+      await page.getByRole('option', { name: 'Procedimiento QA', exact: true }).click();
+      await choose('Procedure type', 'Procedimiento de enfermería');
+    }
+    // Keep the next interaction immediate: polling the label here can hide
+    // the observed blur race.
+    // Native browser blur was sufficient to empty RHF's type value
+    // while Carbon kept the visible label; DOM-only selection tests missed it.
+    await page.getByRole('searchbox', { name: 'Enter body site', exact: true }).fill(editing ? 'Delt' : 'Deltoides');
+    await page.getByRole('option', { name: 'Deltoides', exact: true }).click();
+    await expect(page.getByText('Procedure type is required', { exact: true })).toHaveCount(0);
+    if (!editing) {
+      await page.getByRole('tab', { name: 'No', exact: true }).click();
+      await page.locator('#estimatedYear').fill('2023');
+      await page.getByRole('option', { name: '2023', exact: true }).click();
+      await choose('Status', 'Completado');
+    }
+    if (editing || clearType) {
+      await page.evaluate(() => dispatchEvent(new Event('refresh-options')));
+    }
+    for (const width of [420, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate((width) => {
+        document.body.className =
+          width >= 1024 ? 'omrs-breakpoint-gt-tablet' : width < 600 ? 'omrs-breakpoint-lt-tablet' : '';
+        dispatchEvent(new Event('resize'));
+      }, width);
+      await expect(type).toHaveValue('Procedimiento de enfermería');
+    }
+    if (clearType) {
+      const group = page.getByRole('group', { name: /^Procedure type/ });
+      await group.getByRole('button', { name: /Clear/i }).click();
+      await page.getByRole('button', { name: 'Save & close', exact: true }).click();
+      await expect(page.getByText('Procedure type is required', { exact: true })).toBeVisible();
+      assert.equal(await page.evaluate(() => window.writes.length), 0, 'cleared type must block a write');
+      await choose('Procedure type', 'Otro');
+    }
+    await page.getByRole('button', { name: 'Save & close', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.writes.length)).toBe(1);
+    assert.deepEqual(await page.evaluate(() => window.writes[0]), {
+      method: editing ? 'edit' : 'create',
+      ...(editing ? { uuid: 'procedure-existing' } : {}),
+      body: {
+        procedureCoded: 'procedure-qa',
+        procedureType: clearType ? 'type-other' : 'type-nursing',
+        bodySite: 'body-deltoid',
+        startDateTime: null,
+        endDateTime: null,
+        status: 'status-complete',
+        notes: '',
+        estimatedStartDate: '2023',
+        duration: null,
+        durationUnit: null,
+        ...(editing ? {} : { patient: 'patient-qa' }),
+      },
+    });
+  }
+  assert.deepEqual(errors, []);
+  assert.deepEqual(requests, []);
+});

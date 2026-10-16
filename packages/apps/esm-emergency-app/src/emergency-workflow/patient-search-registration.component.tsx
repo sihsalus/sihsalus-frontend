@@ -1,15 +1,3 @@
-import type { z } from 'zod';
-/**
- * Patient Search and Quick Registration Component
- *
- * Streamlined interface for emergency patient registration:
- * - Smart search: name, HCE, or identity document
- * - Inline quick registration when patient not found
- * - Inline initial priority selector (Emergencia/Urgencia)
- * - Single "Enviar a cola de triaje" button
- * - NO modals - everything inline for speed
- */
-
 import {
   Button,
   ContentSwitcher,
@@ -47,6 +35,7 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import type { z } from 'zod';
 import type { Config } from '../config-schema';
 import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
 import { EmergencyNationalityField } from './components/emergency-nationality-field.component';
@@ -69,10 +58,6 @@ import {
 } from './patient-search-registration.validation';
 import type { SearchedPatient } from './types';
 import { usePatientSearch } from './usePatientSearch';
-
-// ============================================================================
-// COMPONENT PROPS
-// ============================================================================
 
 interface PatientSearchRegistrationProps {
   onPatientQueued: (
@@ -142,10 +127,6 @@ function getBirthdatePickerValue(value?: string) {
   const birthdate = value ? parsePatientBirthdate(value) : null;
   return birthdate ? (calendarDateToLocalDate(birthdate) ?? undefined) : undefined;
 }
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ onPatientQueued }) => {
   const { t } = useTranslation();
@@ -284,10 +265,6 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     };
   }, []);
 
-  // ============================================================================
-  // SEARCH LOGIC
-  // ============================================================================
-
   const handleClearSearch = useCallback(() => {
     setSearchTerm('');
     setSearchQuery('');
@@ -373,10 +350,6 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     },
     [setValue],
   );
-
-  // ============================================================================
-  // REGISTRATION LOGIC
-  // ============================================================================
 
   const onSubmitRegistration = useCallback(
     async (data: QuickRegistrationFormData) => {
@@ -555,10 +528,6 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     [t, config, identityDocumentTypes, allowedNationalityConceptUuids],
   );
 
-  // ============================================================================
-  // SUBMIT TO QUEUE
-  // ============================================================================
-
   const handleSendToQueue = useCallback(async () => {
     if (!readyPatient || !initialPriority) return;
     setIsSubmitting(true);
@@ -568,10 +537,6 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
       setIsSubmitting(false);
     }
   }, [readyPatient, initialPriority, onPatientQueued]);
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
 
   const maximumBirthdate = new Date();
   const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(getLocalCalendarDate(maximumBirthdate));

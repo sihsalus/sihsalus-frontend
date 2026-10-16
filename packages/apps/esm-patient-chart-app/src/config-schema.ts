@@ -54,6 +54,12 @@ const canonicalCoveragePersonAttributeMappings = [
 ] as const;
 
 export const esmPatientChartSchema = {
+  clinicalSearchEnabled: {
+    _type: Type.Boolean,
+    _default: false,
+    _description:
+      'Enable the chart-wide clinical search after all visible clinical sources have been indexed and validated.',
+  },
   defaultFacilityUrl: {
     _type: Type.String,
     _default: '',

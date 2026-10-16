@@ -14,17 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import { Edit } from '@carbon/react/icons';
+import { formatDate, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { formEntryWorkspace } from '../../types';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
-
-// Importar tipos desde el componente separado
 
 interface PatientObservationGroupTableProps {
   patientUuid: string;
@@ -40,29 +39,20 @@ interface ObservationGroupTableRowData {
   id: string;
   title: JSX.Element;
   date: JSX.Element;
-  actions: JSX.Element;
 }
 
-// Componente para mostrar el título del grupo
-const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => (
-  <div>
-    <div style={{ fontWeight: 'bold' }}>{group.title}</div>
-    <div style={{ fontSize: '0.875rem', color: '#6f6f6f' }}>
-      {group.count} item{group.count !== 1 ? 's' : ''}
+const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => {
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
+
+  return (
+    <div>
+      <div style={{ fontWeight: 'bold' }}>{group.title}</div>
+      <div style={{ fontSize: '0.875rem', color: '#6f6f6f' }}>{t('observationCount', { count: group.count })}</div>
     </div>
-  </div>
-);
+  );
+};
 
-// Componente para mostrar la fecha
 const GroupDateCell: React.FC<{ group: ObservationGroup }> = ({ group }) => <div>{group.date}</div>;
-
-// Componente para acciones (si necesitas agregar alguna)
-const GroupActionsCell: React.FC<{ group: ObservationGroup }> = () => (
-  <div>{/* Aquí puedes agregar acciones específicas por grupo si es necesario */}</div>
-);
-
-// Sub-tabla para mostrar los group members - ahora importada
-// const ObservationGroupDetails se importa desde archivo separado
 
 const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> = ({
   patientUuid,
@@ -73,7 +63,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   editPrivilege,
   formWorkspace,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
   const layout = useLayoutType();
   const desktopLayout = isDesktop(layout);
 
@@ -83,20 +73,15 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     error,
     mutate,
   } = useFilteredEncounter(patientUuid, encounterType, formUuid);
-  //TODO: MODIFY THIS TO SEND THE CURRENT DATA TO THE WORKSPACE , IT SHOULD BE EDITABLE
-  const launchForm = useCallback(() => {
-    try {
-      if (formWorkspace) {
-        launchWorkspace2(formEntryWorkspace, {
-          form: { uuid: formWorkspace },
-          encounterUuid: '',
-          handlePostResponse: () => void mutate(),
-        });
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
-    }
-  }, [formWorkspace, mutate]);
+  const { launchForm, isLoading: isFormLoading } = useMaternalFormIdentifierLauncher(
+    data?.form?.uuid || formWorkspace,
+    headerTitle,
+    patientUuid,
+  );
+  const handleLaunchForm = useCallback(() => {
+    if (isLoading || error) return;
+    launchForm(data?.uuid ?? '', () => void mutate());
+  }, [data?.uuid, error, isLoading, launchForm, mutate]);
 
   const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
@@ -134,32 +119,16 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
       });
   }, [data, parseDisplay]);
 
-  // Configuración de columnas para la tabla principal
   const columns = [
-    {
-      key: 'title',
-      header: t('observationGroup', 'Grupo de Observación'),
-      CellComponent: GroupTitleCell,
-    },
-    { key: 'date', header: t('date', 'Date'), CellComponent: GroupDateCell },
-    { key: 'actions', header: '', CellComponent: GroupActionsCell },
+    { key: 'title', header: t('observationGroup', 'Observation group') },
+    { key: 'date', header: t('observationDate', 'Date of care') },
   ];
 
-  // Preparar datos para la tabla
-  const rowData: ObservationGroupTableRowData[] = observationGroups?.map((group) => {
-    const row: ObservationGroupTableRowData = {
-      id: group.id,
-      title: <></>,
-      date: <></>,
-      actions: <></>,
-    };
-
-    for (const { key, CellComponent } of columns) {
-      row[key as keyof Omit<ObservationGroupTableRowData, 'id'>] = <CellComponent key={key} group={group} />;
-    }
-
-    return row;
-  });
+  const rowData: ObservationGroupTableRowData[] = observationGroups.map((group) => ({
+    id: group.id,
+    title: <GroupTitleCell group={group} />,
+    date: <GroupDateCell group={group} />,
+  }));
 
   // Estados de carga y error
   if (isLoading && (!data?.obs || data.obs.length === 0)) {
@@ -176,7 +145,11 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
         privilege={editPrivilege}
         fallback={<EmptyState headerTitle={headerTitle} displayText={displayText} />}
       >
-        <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={launchForm} />
+        <EmptyState
+          headerTitle={headerTitle}
+          displayText={displayText}
+          launchForm={formWorkspace && !isFormLoading ? handleLaunchForm : undefined}
+        />
       </RequirePrivilege>
     );
   }
@@ -189,9 +162,10 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
           <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
             <Button
               kind="ghost"
-              renderIcon={(props) => <AddIcon size={16} {...props} />}
-              onClick={launchForm}
-              aria-label={t('add', 'Add')}
+              renderIcon={Edit}
+              onClick={handleLaunchForm}
+              disabled={isLoading || isFormLoading}
+              aria-label={t('edit', 'Edit')}
             >
               {t('edit', 'Edit')}
             </Button>
@@ -206,25 +180,23 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
               <TableHead>
                 <TableRow>
                   <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                  {headers.map((header) => (
-                    <TableHeader
-                      key={header.key}
-                      {...getHeaderProps({
-                        header,
-                        className: header.key === 'actions' ? styles.actionsColumn : '',
-                      })}
-                    >
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row, i) => {
                   const group = observationGroups[i];
+                  const { key, ...rowProps } = getRowProps({ row });
                   return (
                     <React.Fragment key={row.id}>
-                      <TableExpandRow {...getRowProps({ row })}>
+                      <TableExpandRow key={key} {...rowProps}>
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>{cell?.value}</TableCell>
                         ))}

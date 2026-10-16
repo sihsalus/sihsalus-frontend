@@ -1,9 +1,10 @@
-import { Dropdown } from '@carbon/react';
+import { Dropdown, InlineNotification } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { useOperationalQueueEntries } from '../../hooks/useOperationalQueueEntries';
 import useQueueServices from '../../hooks/useQueueService';
+import { getQueueEntryDateCriteria } from '../../store/queue-entry-date';
 import { updateSelectedService, useServiceQueuesStore } from '../../store/store';
 import { type Concept } from '../../types';
 import { type Service } from '../metrics-container.component';
@@ -14,7 +15,7 @@ type ServiceListItem = Service | Concept;
 export default function WaitingPatientsExtension() {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const { selectedServiceUuid, selectedQueueLocationUuid } = useServiceQueuesStore();
+  const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueEntryDate } = useServiceQueuesStore();
   const { services } = useQueueServices();
   const {
     concepts: { defaultStatusConceptUuid },
@@ -28,11 +29,12 @@ export default function WaitingPatientsExtension() {
 
   const selectedService = services?.find((service) => service.uuid === selectedServiceUuid);
 
-  const { isLoading, queueEntries } = useOperationalQueueEntries({
+  const { isLoading, error, queueEntries } = useOperationalQueueEntries({
     service: selectedServiceUuid,
     location: selectedQueueLocationUuid,
     isEnded: false,
     status: defaultStatusConceptUuid,
+    ...getQueueEntryDateCriteria(selectedQueueEntryDate),
   });
 
   const urgentCount = queueEntries.filter((entry) => entry.priority?.display?.toLowerCase() === 'urgent').length;
@@ -61,9 +63,21 @@ export default function WaitingPatientsExtension() {
         />
       </MetricsCardHeader>
       <MetricsCardBody>
-        <MetricsCardItem label={t('patients', 'Patients')} value={isLoading ? '--' : queueEntries.length} />
-        <MetricsCardItem label={t('urgent', 'Urgent')} value={urgentCount > 0 ? urgentCount : null} color="red" small />
+        <MetricsCardItem label={t('patients', 'Patients')} value={isLoading || error ? '--' : queueEntries.length} />
+        <MetricsCardItem
+          label={t('urgent', 'Urgent')}
+          value={!isLoading && !error && urgentCount > 0 ? urgentCount : null}
+          color="red"
+          small
+        />
       </MetricsCardBody>
+      {error && (
+        <InlineNotification
+          kind="error"
+          hideCloseButton
+          title={t('queueMetricsUnavailable', 'Queue metrics could not be loaded')}
+        />
+      )}
     </MetricsCard>
   );
 }

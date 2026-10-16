@@ -11,7 +11,7 @@ import {
   useConnectivity,
   useLayoutType,
 } from '@openmrs/esm-framework';
-import { formatPersonName } from '@openmrs/esm-utils';
+import { formatDate, formatPersonName } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,7 @@ import useQueueStatuses from '../hooks/useQueueStatuses';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 import QueueDuration from '../queue-table/components/queue-duration.component';
 import { StatusSwitcher } from '../queue-table/default-queue-table.component';
+import { getQueueEntryDateCriteria, parseQueueEntryDate } from '../store/queue-entry-date';
 import { useServiceQueuesStore } from '../store/store';
 import { type Concept, type QueueEntry } from '../types';
 
@@ -108,7 +109,9 @@ const VisualQueue = () => {
     selectedQueueStatusUuid,
     selectedServiceDisplay,
     selectedServiceUuid,
+    selectedQueueEntryDate,
   } = useServiceQueuesStore();
+  const queueEntryDate = parseQueueEntryDate(selectedQueueEntryDate);
   const { statuses, isLoadingQueueStatuses, queueStatusesError } = useQueueStatuses();
   const {
     boardRef,
@@ -125,8 +128,9 @@ const VisualQueue = () => {
       location: selectedQueueLocationUuid,
       status: selectedQueueStatusUuid,
       isEnded: false,
+      ...getQueueEntryDateCriteria(selectedQueueEntryDate),
     }),
-    [selectedQueueLocationUuid, selectedQueueStatusUuid, selectedServiceUuid],
+    [selectedQueueLocationUuid, selectedQueueStatusUuid, selectedServiceUuid, selectedQueueEntryDate],
   );
   const { queueEntries, error, isLoading, isValidating, mutate } = useOperationalQueueEntries(searchCriteria);
   const columns = useMemo(
@@ -157,7 +161,7 @@ const VisualQueue = () => {
 
   return (
     <>
-      <PatientQueueHeader showFilters title={t('visualQueue', 'Visual queue')} />
+      <PatientQueueHeader showFilters showDateFilter title={t('visualQueue', 'Visual queue')} />
       <main className={styles.page}>
         <StatusSwitcher />
         <Layer className={styles.boardSection} ref={boardRef} role="region" aria-labelledby={`${boardId}-title`}>
@@ -172,17 +176,24 @@ const VisualQueue = () => {
               </p>
               {isFullscreen ? (
                 <p className={styles.filterSummary}>
-                  {t('visualQueueScope', 'UPSS: {{location}} · Service: {{service}} · Status: {{status}}', {
-                    location: selectedQueueLocationUuid
-                      ? (selectedQueueLocationName ?? t('unknown', 'Unknown'))
-                      : t('all', 'All'),
-                    service: selectedServiceUuid
-                      ? (selectedServiceDisplay ?? t('unknown', 'Unknown'))
-                      : t('all', 'All'),
-                    status: selectedQueueStatusUuid
-                      ? (selectedQueueStatusDisplay ?? t('unknown', 'Unknown'))
-                      : t('all', 'All'),
-                  })}
+                  {t(
+                    'visualQueueScopeWithDate',
+                    'UPSS: {{location}} · Service: {{service}} · Status: {{status}} · Queue entry: {{date}}',
+                    {
+                      date: queueEntryDate
+                        ? formatDate(queueEntryDate, { time: false, noToday: true })
+                        : t('allQueueEntryDates', 'All dates'),
+                      location: selectedQueueLocationUuid
+                        ? (selectedQueueLocationName ?? t('unknown', 'Unknown'))
+                        : t('all', 'All'),
+                      service: selectedServiceUuid
+                        ? (selectedServiceDisplay ?? t('unknown', 'Unknown'))
+                        : t('all', 'All'),
+                      status: selectedQueueStatusUuid
+                        ? (selectedQueueStatusDisplay ?? t('unknown', 'Unknown'))
+                        : t('all', 'All'),
+                    },
+                  )}
                 </p>
               ) : null}
             </div>

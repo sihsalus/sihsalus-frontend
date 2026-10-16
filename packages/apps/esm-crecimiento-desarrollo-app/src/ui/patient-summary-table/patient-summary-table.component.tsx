@@ -11,15 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
-import {
-  formatDate,
-  isOmrsDateStrict,
-  launchWorkspace,
-  parseDate,
-  useLayoutType,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { Edit } from '@carbon/react/icons';
+import { formatDate, isOmrsDateStrict, parseDate, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -47,12 +40,10 @@ function isDateLike(val: unknown): boolean {
   }
 }
 
-// Tipar la respuesta del dataHook
 interface DataHookResponse<T> {
   data: T[] | null;
   isLoading: boolean;
   error: Error | null;
-  mutate?: () => Promise<unknown>;
 }
 
 interface RowConfig {
@@ -60,6 +51,7 @@ interface RowConfig {
   label: string;
   dataKey: string;
   defaultValue?: string;
+  unit?: string;
 }
 
 interface PatientSummaryTableProps<T> {
@@ -68,7 +60,6 @@ interface PatientSummaryTableProps<T> {
   displayText: string;
   dataHook: (patientUuid: string) => DataHookResponse<T>;
   rowConfig: RowConfig[];
-  formWorkspace?: string;
   onFormLaunch?: (patientUuid: string) => void;
   pageSize?: number; // Tamaño inicial de página
 }
@@ -83,39 +74,28 @@ const PatientSummaryTable = <T,>({
   displayText,
   dataHook,
   rowConfig,
-  formWorkspace,
   onFormLaunch,
   pageSize = 10,
 }: PatientSummaryTableProps<T>): JSX.Element => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const isTablet = useLayoutType() === 'tablet';
-  const { data, isLoading, error, mutate } = dataHook(patientUuid);
+  const { data, isLoading, error } = dataHook(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
 
   const launchForm = useCallback(() => {
-    try {
-      if (!currentVisit) {
-        launchStartVisitPrompt();
-      } else {
-        if (formWorkspace) {
-          launchWorkspace<{ patientUuid: string }>(formWorkspace, { patientUuid });
-        } else if (onFormLaunch) {
-          onFormLaunch(patientUuid);
-        }
-        if (mutate) {
-          setTimeout(() => mutate(), 1000);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
+    if (isLoading || error || !onFormLaunch) return;
+    if (!currentVisit) {
+      launchStartVisitPrompt();
+    } else {
+      onFormLaunch(patientUuid);
     }
-  }, [patientUuid, currentVisit, formWorkspace, onFormLaunch, mutate]);
+  }, [patientUuid, currentVisit, onFormLaunch, isLoading, error]);
 
   const tableRows = useMemo(() => {
     if (!data || data.length === 0) return [];
 
     return data.flatMap((item, index) =>
-      rowConfig.map(({ id, label, dataKey, defaultValue = '--' }) => {
+      rowConfig.map(({ id, label, dataKey, defaultValue = '--', unit }) => {
         const rawValue = item[dataKey as keyof T];
         let value: string;
 
@@ -127,7 +107,10 @@ const PatientSummaryTable = <T,>({
           const strValue = String(rawValue);
           if (isDateLike(rawValue)) {
             try {
-              value = formatDate(parseDate(strValue), { mode: 'wide', time: true });
+              value = formatDate(parseDate(strValue), {
+                mode: 'wide',
+                time: true,
+              });
             } catch {
               value = strValue; // Fallback si falla el parseo
             }
@@ -136,6 +119,9 @@ const PatientSummaryTable = <T,>({
           }
         } else {
           value = defaultValue;
+        }
+        if (typeof rawValue === 'number' && unit) {
+          value = `${value} ${unit}`;
         }
 
         return {
@@ -149,12 +135,12 @@ const PatientSummaryTable = <T,>({
 
   const { results: paginatedData, goTo, currentPage } = usePagination(tableRows, pageSize);
 
-  if (isLoading && !data) {
-    return <DataTableSkeleton role="progressbar" aria-label={t('loadingData', 'Loading data')} />;
-  }
-
   if (error) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
+  }
+
+  if (isLoading && !data?.length) {
+    return <DataTableSkeleton role="progressbar" aria-label={t('loadingData', 'Loading data')} />;
   }
 
   if (data && data.length > 0) {
@@ -162,14 +148,15 @@ const PatientSummaryTable = <T,>({
       <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
         <CardHeader title={headerTitle}>
           {isLoading && <InlineLoading description={t('refreshing', 'Refreshing...')} status="active" />}
-          {(formWorkspace || onFormLaunch) && (
+          {onFormLaunch && (
             <Button
               kind="ghost"
-              renderIcon={(props) => <Add size={16} {...props} />}
+              renderIcon={(props) => <Edit size={16} {...props} />}
               onClick={launchForm}
-              aria-label={t('add')}
+              disabled={isLoading}
+              aria-label={t('edit')}
             >
-              {t('add')}
+              {t('edit')}
             </Button>
           )}
         </CardHeader>
@@ -188,7 +175,9 @@ const PatientSummaryTable = <T,>({
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {
-                      const { key, ...headerProps } = getHeaderProps({ header });
+                      const { key, ...headerProps } = getHeaderProps({
+                        header,
+                      });
 
                       return (
                         <TableHeader key={key ?? header.key} {...headerProps}>
@@ -228,7 +217,7 @@ const PatientSummaryTable = <T,>({
     <EmptyState
       displayText={displayText}
       headerTitle={headerTitle}
-      launchForm={formWorkspace || onFormLaunch ? launchForm : undefined}
+      launchForm={onFormLaunch ? launchForm : undefined}
     />
   );
 };

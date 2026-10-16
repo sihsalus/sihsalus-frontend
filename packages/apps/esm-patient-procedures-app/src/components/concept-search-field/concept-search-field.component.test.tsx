@@ -186,7 +186,8 @@ describe('Concept Search Field', () => {
     render(<ConceptSearchField {...defaultProps} field={field} />);
 
     expect(screen.getByText(/error fetching concepts/i)).toBeInTheDocument();
-    expect(screen.getByText(/network error/i)).toBeInTheDocument();
+    expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/could not load concepts/i)).toBeInTheDocument();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 

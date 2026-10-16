@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
+import { openmrsFetch, parseDate, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
 import { type ConfigObject, configSchema } from '../config-schema';
 import { type CREDEncounter, encounterMatchesFormIdentifier } from './useEncountersCRED';
@@ -8,11 +8,17 @@ interface BirthEncounter extends CREDEncounter {
   obs?: Array<{ voided?: boolean; concept: { uuid: string }; value?: string | { uuid: string } | null }>;
 }
 
+interface NeonatalDischargeResult {
+  dischargeDate?: Date;
+  missingDischarge: boolean;
+  validationMessage?: 'neonatalDischargeBeforeBirth' | 'neonatalDischargeInFuture' | 'neonatalDischargeInvalid';
+}
+
 export function getNeonatalDischarge(
   encounters: BirthEncounter[],
   birthDate: string | undefined,
   config: Pick<ConfigObject, 'formsList' | 'neonatalConcepts'>,
-) {
+): NeonatalDischargeResult {
   const latest = (form: string) =>
     encounters
       .filter(
@@ -46,14 +52,26 @@ export function getNeonatalDischarge(
   );
   const value = dischargeObs?.length === 1 ? dischargeObs[0].value : undefined;
   const date = typeof value === 'string' ? Date.parse(value) : Number.NaN;
-  const birth = birthDate ? Date.parse(birthDate) : Number.NaN;
-  const valid = Number.isFinite(date) && Number.isFinite(birth) && date >= birth && date <= Date.now();
-  return { dischargeDate: valid ? new Date(date) : undefined, missingDischarge: !valid };
+  const birth = birthDate ? parseDate(birthDate).getTime() : Number.NaN;
+  if (value === undefined || value === null || value === '') {
+    return { dischargeDate: undefined, missingDischarge: true };
+  }
+  const validationMessage =
+    !Number.isFinite(date) || !Number.isFinite(birth)
+      ? 'neonatalDischargeInvalid'
+      : date < birth
+        ? 'neonatalDischargeBeforeBirth'
+        : date > Date.now()
+          ? 'neonatalDischargeInFuture'
+          : undefined;
+  return validationMessage
+    ? { dischargeDate: undefined, missingDischarge: true, validationMessage }
+    : { dischargeDate: new Date(date), missingDischarge: false };
 }
 
 export function useNeonatalDischarge(patientUuid: string, birthDate: string | undefined, enabled: boolean) {
   const configured = useConfig<ConfigObject>();
-  const ageInDays = birthDate ? (Date.now() - Date.parse(birthDate)) / 86400000 : Number.NaN;
+  const ageInDays = birthDate ? (Date.now() - parseDate(birthDate).getTime()) / 86400000 : Number.NaN;
   const shouldLoad = enabled && ageInDays >= 0 && ageInDays < 29;
   const config = useMemo(
     () => ({

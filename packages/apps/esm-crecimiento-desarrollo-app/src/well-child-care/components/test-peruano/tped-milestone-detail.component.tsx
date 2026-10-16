@@ -40,11 +40,6 @@ const TpedMilestoneDetail: React.FC<TpedMilestoneDetailProps> = ({ milestone, se
         <Tag size="sm" type="cool-gray">
           {t(evidenceKey, evidenceDefault)}
         </Tag>
-        <Tag size="sm" type={milestone.conceptUuid ? 'green' : 'warm-gray'}>
-          {milestone.conceptUuid
-            ? t('tpedConceptMapped', 'Concepto mapeado')
-            : t('tpedConceptPending', 'Concepto pendiente')}
-        </Tag>
       </div>
 
       <h4>{milestone.title}</h4>

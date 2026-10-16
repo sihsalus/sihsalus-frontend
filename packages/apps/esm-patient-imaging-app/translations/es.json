@@ -213,5 +213,7 @@
   "uploadStuiesError": "Error al cargar estudios",
   "validStepTime": "Ingresa una hora válida entre 01:00 y 12:59",
   "viewerUnavailable": "Visor no disponible para este servidor de imágenes",
-  "worklist": "Lista de trabajo"
+  "worklist": "Lista de trabajo",
+  "imagingSections": "Secciones de imágenes",
+  "uploadDicom": "Subir DICOM"
 }

@@ -18,7 +18,7 @@
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/form-builder/playwright.config.ts",
     "verify": "turbo run lint typescript coverage --color",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "files": [
     "dist",
@@ -44,7 +44,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-form-builder/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.117.0",
+    "@carbon/react": "^1.118.0",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "ace-builds": "^1.44.0",
@@ -53,7 +53,7 @@
     "react-ace": "^15.0.0",
     "react-markdown": "^10.1.0",
     "react-mde": "^11.5.0",
-    "sass": "^1.105.0"
+    "sass": "^1.105.1"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -73,24 +73,24 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.2",
+    "@swc/core": "1.16.13",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.3.0",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.1.6",
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.4",
-    "rxjs": "^6.6.7",
-    "turbo": "^2.11.4",
-    "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "rxjs": "^7.8.2",
+    "turbo": "^2.11.7",
+    "vite": "8.3.4",
+    "vitest": "^5.0.3"
   },
   "lint-staged": {
     "*.{css,js,json,ts,tsx}": "node ../../tooling/scripts/run-biome.js check --write",

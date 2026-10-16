@@ -70,7 +70,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   dateOfBirth,
   isPercentiles,
 }) => {
-  const { t } = useTranslation('@sihsalus/esm-cred-app');
+  const { t, i18n } = useTranslation('@sihsalus/esm-cred-app');
 
   const isSchoolAge = differenceInMonths(new Date(), dateOfBirth) >= 60;
   const memoizedChartData = isSchoolAge ? schoolChartData : rawChartData;
@@ -273,6 +273,8 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   const options = useMemo(
     () =>
       buildGrowthChartOptions({
+        t,
+        locale: i18n.resolvedLanguage ?? i18n.language,
         chartTitle,
         colorScale,
         translatedXAxisLabel,
@@ -285,7 +287,17 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
             yAxisLabel: translatedYAxisLabel,
           }),
       }),
-    [chartTitle, colorScale, patientName, translatedXAxisLabel, translatedYAxisLabel, yDomain],
+    [
+      chartTitle,
+      colorScale,
+      patientName,
+      translatedXAxisLabel,
+      translatedYAxisLabel,
+      yDomain,
+      t,
+      i18n.resolvedLanguage,
+      i18n.language,
+    ],
   );
 
   if (!selectedCategoryValue || !dataSetEntry) {

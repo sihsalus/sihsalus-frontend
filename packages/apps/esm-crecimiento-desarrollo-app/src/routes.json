@@ -6,6 +6,25 @@
   },
   "extensions": [
     {
+      "name": "cred-dashboard-link",
+      "component": "integratedCredLink",
+      "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:hoja.clinica",
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-cred-dashboard-slot",
+        "path": "cred-dashboard",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "cred-dashboard",
+      "component": "integratedCredDashboard",
+      "slot": "patient-chart-cred-dashboard-slot",
+      "privileges": "app:hoja.clinica"
+    },
+    {
       "name": "growth-chart-overview-widget",
       "component": "growthChart",
       "slot": "patient-chart-summary-dashboard-slot",
@@ -125,13 +144,6 @@
       "slot": "neonatal-perinatal-slot",
       "order": 1,
       "privileges": "app:hoja.clinica.cred.antecedentes"
-    },
-    {
-      "name": "labour-history-chart",
-      "component": "neonatalRegisterChart",
-      "slot": "neonatal-perinatal-slot",
-      "order": 3,
-      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "detalles-nacimiento-chart",
@@ -459,6 +471,8 @@
     {
       "name": "patient-chart-well-child-care-forms",
       "group": "patient-chart",
+      "icon": "credFormActionButton",
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar",
       "order": 8,
       "width": "extra-wide",
       "canMaximize": true

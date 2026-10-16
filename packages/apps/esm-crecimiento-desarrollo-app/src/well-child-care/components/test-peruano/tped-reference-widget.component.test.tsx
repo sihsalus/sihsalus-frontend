@@ -46,7 +46,8 @@ describe('TpedReferenceWidget', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /A1.*Hito de 1 mes/i }));
     expect(screen.getByRole('heading', { name: /Movimientos asimétricos/i })).toBeInTheDocument();
-    expect(screen.getByText('Concepto pendiente')).toBeInTheDocument();
+    expect(screen.queryByText('Concepto pendiente')).not.toBeInTheDocument();
+    expect(screen.getByText('Fuente')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('combobox', { name: /Columna enfocada/i }), { target: { value: '6' } });
     fireEvent.click(screen.getByRole('button', { name: /A5.*Continúa en 6 meses/i }));

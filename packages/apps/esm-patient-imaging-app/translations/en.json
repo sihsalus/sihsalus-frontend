@@ -210,5 +210,7 @@
   "uploadStuiesError": "Upload stuies error",
   "validStepTime": "Enter a valid time from 01:00 to 12:59",
   "viewerUnavailable": "Viewer unavailable for this imaging server",
-  "worklist": "Worklist"
+  "worklist": "Worklist",
+  "imagingSections": "Imaging sections",
+  "uploadDicom": "Upload DICOM"
 }

@@ -169,7 +169,7 @@ describe('parseDefinicion combined', () => {
 describe('parseDefinicion encounter types', () => {
   function makeDefinicionWithEncounterTypes(uuids: Array<string>): DefinicionIndicadorForm {
     return {
-      tipo: 'conteo_pacientes_ventana',
+      tipo: 'conteo_pacientes',
       evento: { encounter_type_uuids: uuids, minimo_ocurrencias: 4 },
       poblacion: { max_dias: 28 },
     };
@@ -184,7 +184,7 @@ describe('parseDefinicion encounter types', () => {
 
     const result = parseDefinicion(definicion, { encounterTypes });
 
-    expect(result.tipo).toBe('conteo_pacientes_ventana');
+    expect(result.tipo).toBe('conteo_pacientes');
     expect(result.minimoOcurrencias).toBe('4');
     expect(result.maxDias).toBe('28');
     expect(result.selectedEncounterTypes).toEqual([

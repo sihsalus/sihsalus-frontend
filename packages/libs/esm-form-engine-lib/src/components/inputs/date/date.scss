@@ -1,4 +1,5 @@
 @use '@carbon/colors';
+@use '@carbon/layout';
 
 .datePickerWarn {
   font-size: 0.75rem;
@@ -20,14 +21,31 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  gap: layout.$spacing-05;
+
+  > div {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
 
   > .datePickerSpacing {
-    margin-right: 1rem;
+    flex: 1 1 18.5rem;
   }
 }
 
 .timeInput {
-  width: auto;
+  inline-size: 12rem;
+  max-inline-size: 100%;
+
+  // Carbon sizes its text-time input for HH:MM. The native time control also
+  // needs room for the browser's locale-specific period and picker affordance.
+  :global(.cds--time-picker),
+  :global(.cds--time-picker__input),
+  :global(.cds--time-picker__input-field) {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+
   :hover {
     cursor: text;
   }

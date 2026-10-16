@@ -1,6 +1,6 @@
 import { useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { render, screen, within } from '@testing-library/react';
+import { clearClinicalSearchTarget, launchPatientWorkspace, selectClinicalSearchTarget } from '@openmrs/esm-patient-common-lib';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
 import { type Condition, useConditions } from './conditions.resource';
@@ -429,4 +429,56 @@ it('shows partial onset dates without inventing a day or month', () => {
   expect(within(table).getByRole('cell', { name: '2020' })).toBeInTheDocument();
   expect(within(table).getByRole('cell', { name: 'Feb — 2021' })).toBeInTheDocument();
   expect(within(table).queryByRole('cell', { name: /01.*2020|01.*2021/i })).not.toBeInTheDocument();
+});
+
+it('focuses only the selected record for this patient after loading the full conditions table', () => {
+  const target = { kind: 'condition' as const, patientUuid: fhirMockPatient.id, resourceId: 'synthetic-target' };
+  mockUseConditions.mockReturnValue({
+    conditions: [
+      {
+        id: 'synthetic-target',
+        conceptId: 'synthetic-concept',
+        display: 'Synthetic selected antecedent',
+        clinicalStatus: 'Active',
+        antecedentType: 'other',
+        source: {
+          uuid: 'synthetic-target',
+          patient: { uuid: fhirMockPatient.id },
+          clinicalStatus: 'ACTIVE',
+          condition: { coded: { uuid: 'synthetic-concept', display: 'Synthetic selected antecedent' } },
+          voided: false,
+        },
+      },
+    ],
+    error: null,
+    isLoading: false,
+    isValidating: false,
+    mutate: vi.fn(),
+  });
+
+  selectClinicalSearchTarget({ ...target, patientUuid: 'another-patient' });
+  const { rerender } = render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
+  const row = screen.getByRole('row', { name: /synthetic selected antecedent/i });
+  expect(row).not.toHaveFocus();
+
+  act(() => selectClinicalSearchTarget(target));
+  rerender(<ConditionsDetailedSummary patient={fhirMockPatient} />);
+  expect(row).toHaveFocus();
+  clearClinicalSearchTarget(target);
+});
+
+it('reports when the selected clinical record disappeared before navigation', () => {
+  const target = { kind: 'condition' as const, patientUuid: fhirMockPatient.id, resourceId: 'missing-condition' };
+  mockUseConditions.mockReturnValue({
+    conditions: [],
+    error: null,
+    isLoading: false,
+    isValidating: false,
+    mutate: vi.fn(),
+  });
+
+  selectClinicalSearchTarget(target);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
+  expect(screen.getByRole('status')).toHaveTextContent('This clinical record is no longer available.');
+  clearClinicalSearchTarget(target);
 });

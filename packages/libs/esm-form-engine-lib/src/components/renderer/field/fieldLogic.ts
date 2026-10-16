@@ -10,7 +10,7 @@ import {
 } from '../../../utils/common-utils';
 import { reportError } from '../../../utils/error-utils';
 import { evaluateAsyncExpression, evaluateExpression } from '../../../utils/expression-runner';
-import { evalConditionalRequired, evaluateDisabled, evaluateHide, findFieldSection } from '../../../utils/form-helper';
+import { evaluateDisabled, evaluateHide, evaluateRequired, findFieldSection } from '../../../utils/form-helper';
 import { isEmpty } from '../../../validators/form-validator';
 
 type FormValues = Record<string, unknown>;
@@ -80,6 +80,7 @@ function evaluateFieldDependents(field: FormField, values: FormValues, context: 
           },
         )
           .then((result) => {
+            const previousValue = context.methods.getValues(dependent.id);
             setValue(dependent.id, result);
 
             const { errors, warnings } = validateFieldValue(dependent, result, context.formFieldValidators, {
@@ -100,6 +101,9 @@ function evaluateFieldDependents(field: FormField, values: FormValues, context: 
             }
 
             updateFormField(dependent);
+            if (!Object.is(previousValue, result)) {
+              handleFieldLogic(dependent, context);
+            }
           })
           .catch((error: unknown) => {
             reportError(toError(error), 'Error evaluating calculate expression');
@@ -154,9 +158,13 @@ function evaluateFieldDependents(field: FormField, values: FormValues, context: 
         );
       }
 
-      if (typeof dependent.required === 'object' && dependent.required.type === 'conditionalRequired') {
-        dependent.isRequired = evalConditionalRequired(dependent, formFields, values);
-      }
+      dependent.isRequired = evaluateRequired(
+        dependent,
+        formFields,
+        values,
+        { mode: sessionMode, patient, visit },
+        evaluateExpression,
+      );
 
       if (dependent.validators?.some((validator) => validator.type === 'conditionalAnswered')) {
         const fieldValidatorConfig = dependent.validators.find((validator) => validator.type === 'conditionalAnswered');

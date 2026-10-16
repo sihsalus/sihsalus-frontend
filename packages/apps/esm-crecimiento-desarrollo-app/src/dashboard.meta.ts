@@ -1,5 +1,14 @@
 const moduleName = '@sihsalus/esm-cred-app';
 
+export const integratedCredDashboardMeta = {
+  icon: 'omrs-icon-baby',
+  slot: 'patient-chart-cred-dashboard-slot',
+  title: 'CRED',
+  path: 'cred-dashboard',
+  moduleName,
+  config: {},
+} as const;
+
 export const neonatalCareDashboardMeta = {
   icon: 'omrs-icon-baby',
   slot: 'patient-chart-neonatal-care-dashboard-slot',

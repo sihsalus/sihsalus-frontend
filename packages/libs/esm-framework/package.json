@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-framework",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "type": "module",
   "module": "dist/index.js",
@@ -61,7 +61,7 @@
   "dependencies": {
     "@openmrs/esm-api": "workspace:*",
     "@openmrs/esm-config": "workspace:*",
-    "@openmrs/esm-context": "9.0.3-pre.4728",
+    "@openmrs/esm-context": "10.0.0",
     "@openmrs/esm-dynamic-loading": "workspace:*",
     "@openmrs/esm-emr-api": "workspace:*",
     "@openmrs/esm-error-handling": "workspace:*",
@@ -91,22 +91,22 @@
   "devDependencies": {
     "@openmrs/typedoc-plugin-file-categories": "10.0.0",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.2",
+    "@swc/core": "1.16.13",
     "@types/fhir": "0.0.31",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.3",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.23",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^20.14.6",
     "rimraf": "^6.1.3",
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.13.1",
     "typedoc-plugin-no-inherit": "^1.6.1",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "8.3.4",
+    "vitest": "^5.0.3"
   },
-  "stableVersion": "9.0.2"
+  "stableVersion": "10.0.0"
 }

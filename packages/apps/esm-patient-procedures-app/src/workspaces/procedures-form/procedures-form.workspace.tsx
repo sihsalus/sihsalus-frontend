@@ -1,3 +1,4 @@
+import { Button, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Workspace2 } from '@openmrs/esm-framework';
 import type { PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
@@ -104,14 +105,32 @@ const ProceduresFormWorkspace: React.FC<PatientWorkspace2DefinitionProps<Procedu
       }
       hasUnsavedChanges={methods.formState.isDirty}
     >
-      <FormProvider {...methods}>
-        <ProceduresForm
-          closeWorkspace={closeWorkspaceHandler}
-          closeWorkspaceAfterSave={closeWorkspaceAfterSaveHandler}
-          patientUuid={patientUuid}
-          procedure={procedure}
-        />
-      </FormProvider>
+      {!patientUuid ||
+      (formContext === 'editing' ? !procedure?.uuid || procedure.patient?.uuid !== patientUuid : Boolean(procedure)) ? (
+        <>
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            title={t(
+              'procedureContextMismatch',
+              'This procedure does not match the open patient chart. Close it and reopen it from the correct chart.',
+            )}
+          />
+          <Button kind="secondary" onClick={closeWorkspaceHandler}>
+            {t('cancel', 'Cancel')}
+          </Button>
+        </>
+      ) : (
+        <FormProvider {...methods}>
+          <ProceduresForm
+            closeWorkspace={closeWorkspaceHandler}
+            closeWorkspaceAfterSave={closeWorkspaceAfterSaveHandler}
+            patientUuid={patientUuid}
+            procedure={procedure}
+          />
+        </FormProvider>
+      )}
     </Workspace2>
   );
 };

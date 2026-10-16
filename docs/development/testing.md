@@ -13,12 +13,14 @@ que su validación esté aprobada en esta rama.
 ```bash
 yarn test                                   # Run all unit tests
 yarn turbo run test --filter='@sihsalus/*' # Test SIH Salus packages only
-yarn test:e2e                               # Run Playwright E2E tests
+yarn test:e2e:suite clinical                # Run the clinical Playwright E2E suite
 yarn test:styles                            # Check compiled CSS/SCSS in Chromium, without a backend
 ```
 
 Run `yarn playwright install chromium` before the first local `yarn test:styles`.
-This command builds the shared Rspack configuration and checks its CSS/SCSS rules
+This command builds the shared Rspack configuration and the native state library
+with its dependencies, so the modal fixture also works in a clean checkout.
+It checks the CSS/SCSS rules
 through Imágenes, Stock and Onboarding, plus the styleguide's CSS extraction
 and the source-built app shell's Webpack rules.
 It verifies default imports, scoped classes and computed styles using temporary

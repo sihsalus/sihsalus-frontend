@@ -42,6 +42,7 @@ describe('MetricsHeader', () => {
       selectedAppointmentStatus: '',
       selectedQueueRoomTimestamp: new Date(),
       isPermanentProviderQueueRoom: false,
+      selectedQueueEntryDate: '2026-10-11',
     });
   });
 

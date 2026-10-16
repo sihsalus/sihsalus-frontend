@@ -68,6 +68,11 @@
   }
 }
 
+.searchTarget:focus {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: -2px;
+}
+
 .emptyState {
   display: flex;
   flex-wrap: wrap;

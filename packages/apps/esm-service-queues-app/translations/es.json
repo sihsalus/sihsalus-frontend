@@ -449,5 +449,14 @@
   "waitingFor": "En espera para",
   "waitTime": "Tiempo de espera",
   "weight": "Peso",
-  "years": "años"
+  "years": "años",
+  "queueEntryDate": "Fecha de ingreso a la cola",
+  "allQueueEntryDates": "Todas las fechas",
+  "clearQueueEntryDate": "Limpiar fecha",
+  "checkedInPatientsToday": "Pacientes ingresados hoy",
+  "queueMetricsUnavailable": "No se pudieron cargar los indicadores de cola",
+  "visualQueueScopeWithDate": "UPSS: {{location}} · Servicio: {{service}} · Estado: {{status}} · Ingreso a la cola: {{date}}",
+  "averageServiceWaitAllUpss": "Promedio de espera del servicio · todas las UPSS",
+  "averageQueueWaitAllUpss": "Promedio de espera de todas las colas · todas las UPSS",
+  "averageWaitScope": "UPSS filtra la lista y el conteo de espera. Este promedio abarca todas las UPSS."
 }

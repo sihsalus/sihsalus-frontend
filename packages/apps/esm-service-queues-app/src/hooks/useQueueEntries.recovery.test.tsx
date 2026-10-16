@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { type PropsWithChildren } from 'react';
 import { SWRConfig } from 'swr';
 import { mockQueueEntries } from 'test-utils';
-
+import { getQueueEntryDateCriteria } from '../store/queue-entry-date';
 import { useQueueEntries } from './useQueueEntries';
 import { useQueues } from './useQueues';
 
@@ -31,6 +31,57 @@ function createWrapper() {
 
 beforeEach(() => {
   mockFetch.mockReset();
+});
+
+it('requeries the server by entry day, loads all pages, and separates empty and failed dates', async () => {
+  mockFetch.mockImplementation(async (url) => {
+    const query = new URL(String(url), 'http://localhost').searchParams;
+    if (!query.has('startedOnOrAfter')) return page([firstEntry]) as never;
+    if (query.get('startIndex')) return page([secondEntry]) as never;
+    // The native next link retains its search criteria.
+    const next = new URL(String(url), 'http://localhost');
+    next.searchParams.set('startIndex', '1');
+    return page([firstEntry], next.href) as never;
+  });
+  const { result, rerender } = renderHook(
+    ({ date }: { date: string | null }) =>
+      useQueueEntries({
+        service: 'synthetic-service',
+        status: 'synthetic-waiting',
+        isEnded: false,
+        ...getQueueEntryDateCriteria(date),
+      }),
+    { initialProps: { date: null as string | null }, wrapper: createWrapper() },
+  );
+  await waitFor(() => expect(result.current.queueEntries).toEqual([firstEntry]));
+  rerender({ date: '2026-10-11' });
+  await waitFor(() => expect(result.current.queueEntries).toEqual([firstEntry, secondEntry]));
+  const selectedDateRequests = mockFetch.mock.calls.filter(([url]) => String(url).includes('startedOnOrAfter'));
+  expect(selectedDateRequests).toHaveLength(2);
+  for (const [url, options] of selectedDateRequests) {
+    const query = new URL(String(url), 'http://localhost').searchParams;
+    expect(query.get('startedOnOrAfter')).toBe(getQueueEntryDateCriteria('2026-10-11').startedOnOrAfter);
+    expect(query.get('startedOnOrBefore')).toBe(getQueueEntryDateCriteria('2026-10-11').startedOnOrBefore);
+    expect(query.get('service')).toBe('synthetic-service');
+    expect(query.get('status')).toBe('synthetic-waiting');
+    expect(query.get('isEnded')).toBe('false');
+    expect(options).toEqual(expect.objectContaining({ cache: 'no-store' }));
+  }
+  mockFetch.mockResolvedValue(page([]) as never);
+  rerender({ date: '2026-10-12' });
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  expect(result.current.queueEntries).toEqual([]);
+  expect(result.current.error).toBeUndefined();
+  mockFetch.mockRejectedValue(new Error('Synthetic date query failure'));
+  rerender({ date: '2026-10-13' });
+  await waitFor(() => expect(result.current.error).toBeDefined());
+  expect(result.current.queueEntries).toEqual([]);
+  mockFetch.mockResolvedValue(page([firstEntry]) as never);
+  rerender({ date: null });
+  await waitFor(() => expect(result.current.queueEntries).toEqual([firstEntry]));
+  const lastQuery = new URL(String(mockFetch.mock.calls.at(-1)[0]), 'http://localhost').searchParams;
+  expect(lastQuery.has('startedOnOrAfter')).toBe(false);
+  expect(lastQuery.has('startedOnOrBefore')).toBe(false);
 });
 
 it('keeps the first load pending until every page succeeds, without displaying a partial queue', async () => {

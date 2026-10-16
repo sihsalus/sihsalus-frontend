@@ -19,6 +19,10 @@ import {
 } from './config-schema';
 
 describe('patient chart configuration defaults', () => {
+  it('keeps the incomplete chart-wide clinical search disabled', () => {
+    expect(esmPatientChartSchema.clinicalSearchEnabled._default).toBe(false);
+  });
+
   it('uses the SIHSALUS visit persistence token attribute', () => {
     expect(esmPatientChartSchema.visitPersistenceTokenAttributeTypeUuid._default).toBe(
       'eb8b793b-f259-451d-9c09-53aa0ffd0d3f',

@@ -1,22 +1,14 @@
-import type { FetchResponse, FHIRResource } from '@openmrs/esm-framework';
-import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import type { FetchResponse } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
+import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
-import useSWRInfinite from 'swr/infinite';
 
 import type { ConfigObject } from '../config-schema';
-import type {
-  FHIRSearchBundleResponse,
-  MappedInterpretation,
-  PatientPrenatalAntecedents,
-  PrenatalResponse,
-} from '../types';
-import { assessValue, getReferenceRangesForConcept } from '../utils';
+import type { PatientPrenatalAntecedents } from '../types';
 import { toEncounterDateTime } from '../utils/date-utils';
 
-// Constants
-const DEFAULT_PAGE_SIZE = 100;
-const SWR_KEY_NEEDLE = Symbol('prenatalAntecedents');
+import { encounterMatchesForm, getObservationValue, type MaternalEncounter } from '../utils/pregnancy-episode-utils';
+import { obstetricHistoryFields } from '../maternal-and-child-health/obstetric-history-fields';
 
 // Enhanced Types
 interface ConceptMetadata {
@@ -45,20 +37,6 @@ interface PrenatalHookOptions {
   enabled?: boolean;
   refreshInterval?: number;
 }
-
-interface PrenatalSwrKey {
-  swrKeyNeedle: typeof SWR_KEY_NEEDLE;
-  patientUuid: string;
-  conceptUuids: string;
-  page: number;
-  pageSize: number;
-  prevPageData: FHIRSearchBundleResponse | null;
-}
-
-type PrenatalFetchResponse = FetchResponse<PrenatalResponse>;
-
-// Utility Functions
-const createInterpretationKey = (header: string): string => `${header}RenderInterpretation`;
 
 const isValidUuid = (uuid: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -197,258 +175,70 @@ export function usePrenatalConceptMetadata() {
  * @param options Opciones de configuración del hook
  * @returns Datos de antecedentes prenatales con paginación mejorada
  */
+const representation =
+  'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,concept:(uuid),value,groupMembers:(uuid,concept:(uuid),value,groupMembers:(uuid,concept:(uuid),value))))';
+
 export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHookOptions = {}) {
-  const { pageSize = DEFAULT_PAGE_SIZE, enabled = true, refreshInterval } = options;
-  const { madreGestante } = useConfig<ConfigObject>();
-  const { conceptMetadata, isReady: metadataReady } = usePrenatalConceptMetadata();
-  const cacheManager = useRef(PrenatalCacheManager.getInstance());
+  const { formsList, madreGestante } = useConfig<ConfigObject>();
+  const enabled = options.enabled !== false;
+  const identifier = formsList.maternalHistory?.trim();
+  const url =
+    patientUuid && enabled && identifier ? `${restBaseUrl}/encounter?patient=${patientUuid}&v=${representation}` : null;
+  const { data, error, isLoading, isValidating, mutate } = useOpenmrsFetchAll<MaternalEncounter>(url, {
+    fetcher: openmrsFetch,
+    swrInfiniteConfig: { refreshInterval: options.refreshInterval, revalidateOnFocus: false },
+  });
 
-  // Validación de entrada
-  const isValidInput = useMemo(() => {
-    return Boolean(patientUuid && isValidUuid(patientUuid) && madreGestante && enabled && metadataReady);
-  }, [patientUuid, madreGestante, enabled, metadataReady]);
-
-  // Conceptos prenatales con validación
-  const prenatalConcepts = useMemo(() => {
-    if (!madreGestante) return [];
-
-    const concepts = [
-      madreGestante.gravidezUuid,
-      madreGestante.partoAlTerminoUuid,
-      madreGestante.partoPrematuroUuid,
-      madreGestante.partoAbortoUuid,
-      madreGestante.partoNacidoVivoUuid,
-      madreGestante.partoNacidoMuertoUuid,
-    ].filter((uuid) => uuid && isValidUuid(uuid));
-
-    return concepts;
-  }, [madreGestante]);
-
-  const conceptUuids = useMemo(() => prenatalConcepts.join(','), [prenatalConcepts]);
-
-  // Función para obtener páginas con mejor manejo de errores
-  const getPage = useCallback(
-    (page: number, prevPageData: FHIRSearchBundleResponse | null): PrenatalSwrKey | null => {
-      if (!isValidInput) return null;
-
-      return {
-        swrKeyNeedle: SWR_KEY_NEEDLE,
-        patientUuid,
-        conceptUuids,
-        page,
-        pageSize,
-        prevPageData,
-      };
-    },
-    [conceptUuids, pageSize, patientUuid, isValidInput],
-  );
-
-  // Hook SWR con configuración mejorada
-  const { data, isLoading, isValidating, setSize, error, size, mutate } = useSWRInfinite<PrenatalFetchResponse, Error>(
-    getPage,
-    handleFetch,
-    {
-      refreshInterval,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      onError: (error) => {
-        console.error('Error fetching prenatal antecedents:', error);
-      },
-    },
-  );
-
-  // Registro del mutador en el cache manager
   useEffect(() => {
-    if (isValidInput) {
-      const manager = cacheManager.current;
+    if (url) {
+      const manager = PrenatalCacheManager.getInstance();
       manager.register(patientUuid, mutate);
-      return () => {
-        manager.unregister(patientUuid);
-      };
+      return () => manager.unregister(patientUuid);
     }
-  }, [mutate, patientUuid, isValidInput]);
+  }, [patientUuid, mutate, url]);
 
-  // Mapeador de claves de conceptos prenatales optimizado
-  const getPrenatalMapKey = useCallback(
-    (conceptUuid: string): string => {
-      if (!madreGestante) return '';
-
-      const keyMap: Record<string, string> = {
-        [madreGestante.gravidezUuid]: 'gravidez',
-        [madreGestante.partoAlTerminoUuid]: 'partoAlTermino',
-        [madreGestante.partoPrematuroUuid]: 'partoPrematuro',
-        [madreGestante.partoAbortoUuid]: 'partoAborto',
-        [madreGestante.partoNacidoVivoUuid]: 'partoNacidoVivo',
-        [madreGestante.partoNacidoMuertoUuid]: 'partoNacidoMuerto',
-      };
-
-      return keyMap[conceptUuid] || '';
-    },
-    [madreGestante],
-  );
-
-  // Procesamiento optimizado de observaciones. Un fallo de mapeo debe llegar al
-  // `error` del hook: devolver [] con error null mostraría "sin registros" para
-  // una paciente que sí tiene registros.
-  const { data: formattedObs, processingError } = useMemo<{
-    data: PatientPrenatalAntecedents[];
-    processingError: Error | null;
-  }>(() => {
-    if (!data?.[0]?.data?.entry || !conceptMetadata) {
-      return { data: [], processingError: null };
-    }
-
+  const result = useMemo(() => {
+    if (!data) return { records: [], processingError: null };
     try {
-      const prenatalHashTable = data[0].data.entry
-        .map((entry) => entry.resource)
-        .filter(Boolean)
-        .map(mapPrenatalProperties(conceptMetadata))
-        .filter((obs) => obs.value !== undefined && obs.value !== null)
-        .reduce((hashTable, vitalSign) => {
-          const recordedDate = new Date(vitalSign.recordedDate).toISOString();
-          const mapKey = getPrenatalMapKey(vitalSign.code);
-
-          if (!mapKey) return hashTable;
-
-          const existingRecord = hashTable.get(recordedDate) || {};
-
-          hashTable.set(recordedDate, {
-            ...existingRecord,
-            [mapKey]: vitalSign.value,
-            [createInterpretationKey(mapKey)]: vitalSign.interpretation,
-          });
-
-          return hashTable;
-        }, new Map<string, Partial<PatientPrenatalAntecedents>>());
-
+      const fields = obstetricHistoryFields;
+      const records = data
+        .filter((encounter) => encounterMatchesForm(encounter, identifier))
+        .map((encounter): PatientPrenatalAntecedents => {
+          if (!encounter.uuid || !Number.isFinite(Date.parse(encounter.encounterDatetime))) {
+            throw new Error('Invalid obstetric encounter metadata');
+          }
+          const record: PatientPrenatalAntecedents = { id: encounter.uuid, date: encounter.encounterDatetime };
+          for (const { key, conceptKey } of fields) {
+            const value = getObservationValue(encounter.obs, madreGestante[conceptKey]);
+            if (value === undefined || value === null || value === '') continue;
+            // OpenMRS numeric values are authoritative. Do not manufacture zeros,
+            // infer totals or combine fields from different encounters.
+            if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+              throw new Error('Invalid numeric obstetric observation');
+            }
+            record[key] = value;
+          }
+          return record;
+        })
+        .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+      return { records, processingError: null };
+    } catch (caught) {
       return {
-        data: Array.from(prenatalHashTable.entries())
-          .map(([date, vitalSigns], index) => ({
-            id: `${patientUuid}-${index}`,
-            date,
-            madreGestante,
-            conceptMetadata,
-            ...vitalSigns,
-          }))
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-        processingError: null,
-      };
-    } catch (caughtError) {
-      console.error('Error processing prenatal observations:', caughtError);
-      return {
-        data: [],
-        processingError: caughtError instanceof Error ? caughtError : new Error(String(caughtError)),
+        records: [],
+        processingError: caught instanceof Error ? caught : new Error('Invalid obstetric history'),
       };
     }
-  }, [data, conceptMetadata, getPrenatalMapKey, madreGestante, patientUuid]);
-
-  const hasMore = useMemo(() => {
-    return data?.length
-      ? !!data[data.length - 1].data?.link?.some((link: { relation?: string }) => link.relation === 'next')
-      : false;
-  }, [data]);
+  }, [data, identifier, madreGestante]);
 
   return {
-    data: isValidInput ? formattedObs : [],
-    isLoading: isLoading && isValidInput,
-    error: error
-      ? new PrenatalHookError('Failed to fetch prenatal antecedents', 'ANTECEDENTS_FETCH_ERROR', error)
-      : processingError
-        ? new PrenatalHookError(
-            'Failed to process prenatal antecedents',
-            'ANTECEDENTS_PROCESSING_ERROR',
-            processingError,
-          )
-        : null,
-    hasMore,
+    data: result.records,
+    isLoading,
     isValidating,
-    loadingNewData: isValidating,
-    setPage: setSize,
-    currentPage: size,
-    totalResults: data?.[0]?.data?.total ?? 0,
+    error:
+      error ??
+      result.processingError ??
+      (enabled && !identifier ? new Error('Maternal history form is not configured') : null),
     mutate,
-    isEmpty: formattedObs.length === 0 && !isLoading && !processingError,
-    isReady: isValidInput && !isLoading,
-  };
-}
-
-// Funciones de utilidad mejoradas
-
-/**
- * Fetcher optimizado con mejor manejo de errores y validaciones
- */
-async function handleFetch({
-  patientUuid,
-  conceptUuids,
-  page,
-  prevPageData,
-}: PrenatalSwrKey): Promise<PrenatalFetchResponse | null> {
-  try {
-    // Verificar si hay más páginas disponibles
-    if (prevPageData && !prevPageData?.data?.link?.some((link) => link.relation === 'next')) {
-      return null;
-    }
-
-    // Validar parámetros
-    if (!patientUuid || !isValidUuid(patientUuid)) {
-      throw new PrenatalHookError('Invalid patient UUID', 'INVALID_UUID');
-    }
-
-    if (!conceptUuids) {
-      throw new PrenatalHookError('No concept UUIDs provided', 'MISSING_CONCEPTS');
-    }
-
-    const url = `${fhirBaseUrl}/Observation`;
-    const urlSearchParams = new URLSearchParams({
-      'subject:Patient': patientUuid,
-      code: conceptUuids,
-      _summary: 'data',
-      _sort: '-date',
-      _count: DEFAULT_PAGE_SIZE.toString(),
-    });
-
-    if (page > 0) {
-      urlSearchParams.append('_getpagesoffset', (page * DEFAULT_PAGE_SIZE).toString());
-    }
-
-    return await openmrsFetch<PrenatalResponse>(`${url}?${urlSearchParams.toString()}`);
-  } catch (error) {
-    throw new PrenatalHookError('Failed to fetch prenatal data', 'FETCH_ERROR', error);
-  }
-}
-
-/**
- * Mapeador mejorado con mejor manejo de tipos
- */
-function mapPrenatalProperties(conceptMetadata: ConceptMetadata[]) {
-  return (resource: FHIRResource['resource']): MappedInterpretation => {
-    try {
-      const code = resource?.code?.coding?.[0]?.code;
-      const value = resource?.valueQuantity?.value;
-      const effectiveDateTime = resource?.effectiveDateTime;
-
-      // Convertir string de fecha a Date si es necesario
-      const recordedDate = effectiveDateTime
-        ? typeof effectiveDateTime === 'string'
-          ? new Date(effectiveDateTime)
-          : effectiveDateTime
-        : new Date();
-
-      return {
-        code,
-        interpretation: assessValue(value, getReferenceRangesForConcept(code, conceptMetadata)),
-        recordedDate,
-        value,
-      };
-    } catch (error) {
-      console.warn('Error mapping prenatal properties:', error);
-      return {
-        code: resource?.code?.coding?.[0]?.code || '',
-        interpretation: null,
-        recordedDate: new Date(),
-        value: null,
-      };
-    }
   };
 }
 

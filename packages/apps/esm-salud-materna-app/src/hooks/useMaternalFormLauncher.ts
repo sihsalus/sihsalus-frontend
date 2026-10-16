@@ -1,4 +1,5 @@
-import { launchWorkspace2, openmrsFetch, restBaseUrl, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, showSnackbar, useConfig, usePatient } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
@@ -63,14 +64,21 @@ export async function resolveMaternalForm(identifier: string, fallbackDisplay: s
   return normalizeForm(matchingForms[0], fallbackDisplay);
 }
 
-export function useMaternalFormLauncher(formKey: MaternalFormKey, fallbackDisplay: string) {
+export function useMaternalFormLauncher(formKey: MaternalFormKey, fallbackDisplay: string, patientUuid?: string) {
   const config = useConfig<ConfigObject>();
   const formIdentifier = config?.formsList?.[formKey]?.trim();
-  return useMaternalFormIdentifierLauncher(formIdentifier, fallbackDisplay);
+  return useMaternalFormIdentifierLauncher(formIdentifier, fallbackDisplay, patientUuid);
 }
 
-export function useMaternalFormIdentifierLauncher(formIdentifier: string | undefined, fallbackDisplay: string) {
-  const { t } = useTranslation();
+export function useMaternalFormIdentifierLauncher(
+  formIdentifier: string | undefined,
+  fallbackDisplay: string,
+  requestedPatientUuid?: string,
+) {
+  const { t } = useTranslation('@sihsalus/esm-salud-materna-app');
+  const { patientUuid: chartPatientUuid } = usePatient();
+  const patientUuid = requestedPatientUuid ?? chartPatientUuid ?? '';
+  const launchWorkspace = useLaunchWorkspaceRequiringVisit(patientUuid, formEntryWorkspace);
   const normalizedFormIdentifier = formIdentifier?.trim() || undefined;
   const {
     data: form,
@@ -120,9 +128,10 @@ export function useMaternalFormIdentifierLauncher(formIdentifier: string | undef
         return;
       }
 
-      launchWorkspace2(formEntryWorkspace, { form, encounterUuid, handlePostResponse });
+      if (!patientUuid) return;
+      launchWorkspace({ patientUuid, form, encounterUuid, handlePostResponse });
     },
-    [error, form, isLoading, normalizedFormIdentifier, t],
+    [error, form, isLoading, normalizedFormIdentifier, t, patientUuid, launchWorkspace],
   );
 
   return {

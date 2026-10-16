@@ -1,7 +1,6 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
@@ -39,13 +38,13 @@ export function usePsychoprophylaxis(patientUuid: string): PsychoprophylaxisResu
     return `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime)`;
   }, [patientUuid, encounterTypeUuid]);
 
-  const { data, isLoading, error, mutate } = useSWR(url, async (fetchUrl: string) => {
-    const response = await openmrsFetch(fetchUrl);
-    return response?.data;
+  const { data, isLoading, error, mutate } = useOpenmrsFetchAll<{ uuid: string; encounterDatetime: string }>(url, {
+    fetcher: openmrsFetch,
+    swrInfiniteConfig: { keepPreviousData: false },
   });
 
   const result = useMemo(() => {
-    const encounters = (data?.results ?? []).filter((encounter: { encounterDatetime?: string }) =>
+    const encounters = (data ?? []).filter((encounter) =>
       isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate),
     );
     const sessionsCompleted = encounters.length;

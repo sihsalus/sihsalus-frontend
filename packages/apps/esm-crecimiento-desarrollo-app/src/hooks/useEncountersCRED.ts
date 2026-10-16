@@ -153,7 +153,7 @@ export function attachCREDControlNumbers(
 export default function useEncountersCRED(patientUuid: string): UseEncountersResponse {
   const config = useConfig<ConfigObject>();
   const formIdentifiers = useMemo(() => getConfiguredCREDFormIdentifiers(config), [config]);
-  const controlNumberConceptUuid = config.CRED?.controlNumber?.trim();
+  const controlNumberConceptUuid = config.concepts?.controlNumber?.trim();
   const searchParams = new URLSearchParams({
     patient: patientUuid,
     v: 'custom:(uuid,encounterDatetime,encounterType:(uuid,display),visit:(uuid),form:(uuid,name,display))',

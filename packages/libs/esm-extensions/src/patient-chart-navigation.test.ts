@@ -90,9 +90,14 @@ afterEach(() => {
 
 describe('SIH Salus patient chart navigation policy', () => {
   it('configures each visible registered item exactly once without changing visibility or routes', () => {
-    expect(Object.keys(slotConfig)).toEqual(['order']);
+    expect(Object.keys(slotConfig)).toEqual(['order', 'remove']);
     expect(new Set(configuredOrder).size).toBe(configuredOrder.length);
-    expect([...configuredOrder].sort()).toEqual(visibleExtensions.map(({ name }) => name).sort());
+    expect([...configuredOrder].sort()).toEqual(
+      visibleExtensions
+        .filter(({ name }) => !slotConfig.remove?.includes(name))
+        .map(({ name }) => name)
+        .sort(),
+    );
   });
 
   it('places vitals after the summary and keeps appointments with the current-care entries', () => {
@@ -110,10 +115,11 @@ describe('SIH Salus patient chart navigation policy', () => {
     ]);
   });
 
-  it('preserves hidden routing markers and existing clinical folders', () => {
+  it('preserves metadata and hidden routing markers for every assigned entry', () => {
     const assigned = getAssignedExtensions(chartSlot);
-    expect(assigned).toHaveLength(chartExtensions.length);
-    for (const { name, meta } of chartExtensions) {
+    const expected = chartExtensions.filter(({ name }) => !slotConfig.remove?.includes(name));
+    expect(assigned).toHaveLength(expected.length);
+    for (const { name, meta } of expected) {
       expect(assigned.find(({ id }) => id === name)?.meta).toEqual(meta);
     }
     for (const { name } of chartExtensions.filter(({ component }) => component === 'hiddenDashboardMarker')) {
@@ -153,5 +159,14 @@ describe('SIH Salus patient chart navigation policy', () => {
     expect(names()).toContain(summaryId);
     expect(names()).toContain('offline-tools-patient-chart-actions-dashboard-link');
     expect(names()).not.toContain(appointmentsId);
+  });
+
+  it('shows one direct entry for each program while retaining legacy route registrations', () => {
+    expect(names()).toContain('cred-dashboard-link');
+    expect(names()).toContain('maternal-program-dashboard-link');
+    expect(names()).not.toContain('well-child-care-dashboard-group-link');
+    expect(names()).not.toContain('maternal-and-child-health-dashboard-group-link');
+    expect(chartExtensions.some(({ name }) => name === 'well-child-care-dashboard-route')).toBe(true);
+    expect(chartExtensions.some(({ name }) => name === 'prenatal-care-dashboard-route')).toBe(true);
   });
 });

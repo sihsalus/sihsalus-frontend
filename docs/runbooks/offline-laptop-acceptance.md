@@ -157,14 +157,14 @@ headed so the operator can confirm the correct installed browser opens:
 
 ```sh
 # Primary browser
-yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
+yarn test:e2e:suite offline-laptop --project="Microsoft Edge Stable" --headed
 
 # Fallback browser, when locally supported
-yarn test:e2e:offline-laptop --project="Google Chrome Stable" --headed
+yarn test:e2e:suite offline-laptop --project="Google Chrome Stable" --headed
 ```
 
-Running `yarn test:e2e:offline-laptop --headed` requires both branded browsers
-and executes both projects serially. The normal `yarn test:e2e` command does
+Running `yarn test:e2e:suite offline-laptop --headed` requires both branded browsers
+and executes both projects serially. The clinical `yarn test:e2e:suite clinical` command does
 not discover this state-changing gate.
 
 For each project the gate must prove all of the following without soft skips or
@@ -223,7 +223,7 @@ delete or reconcile any non-synthetic record.
 
 ## Local browser regressions and additional clinical workflows
 
-`yarn test:e2e:offline-local` builds the repository service worker and runs Chromium against a server bound only to
+`yarn test:e2e:suite offline-local` builds the repository service worker and runs Chromium against a server bound only to
 `127.0.0.1:4183`. It reads no environment credentials, uses a fresh browser context per case, and contacts no deployed
 backend. The harness verifies owned reads after reload, network-only failure with a warm cache, another account's
 cache denial, cleanup refusal with pending items, and preservation of the shell after verified removal. Four synthetic

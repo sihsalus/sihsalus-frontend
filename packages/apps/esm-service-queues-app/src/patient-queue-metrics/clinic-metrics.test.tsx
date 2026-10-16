@@ -69,4 +69,11 @@ describe('Clinic metrics', () => {
       getDefaultsFromConfigSchema(configSchema).concepts.defaultStatusConceptUuid,
     );
   });
+
+  it('rounds average minutes in the clinic dashboard', () => {
+    mockUseAverageWaitTime.mockReturnValue({ waitTime: { averageWaitTime: '8712.685714285713' } } as never);
+    render(<ClinicMetrics />);
+    expect(screen.getByText('8,712.7')).toBeInTheDocument();
+    expect(screen.queryByText('8712.685714285713')).not.toBeInTheDocument();
+  });
 });

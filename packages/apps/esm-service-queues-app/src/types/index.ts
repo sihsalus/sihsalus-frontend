@@ -513,6 +513,8 @@ export interface QueueEntry {
 }
 
 export interface QueueEntrySearchCriteria {
+  startedOnOrAfter?: string;
+  startedOnOrBefore?: string;
   queue?: Array<string> | string | null;
   location?: Array<string> | string | null;
   service?: Array<string> | string | null;

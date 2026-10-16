@@ -1,6 +1,6 @@
 import { Link, ModalBody, ModalHeader } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { navigate, useAppContext, useConfig } from '@openmrs/esm-framework';
+import { ExtensionSlot, navigate, useAppContext, useConfig } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../config-schema';
@@ -59,8 +59,9 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
     <React.Fragment>
       <ModalHeader closeModal={onClose} title={t('tutorial', 'Tutorial')}>
         <p className={styles.description}>
-          {t('modalDescription', 'Find walkthroughs and video tutorials on some of the core features of OpenMRS.')}
+          {t('modalDescription', 'Explore guides for the main features of SIHSALUS.')}
         </p>
+        <ExtensionSlot name="tutorial-modal-release-notes-slot" />
       </ModalHeader>
       <ModalBody className={styles.tutorialModal}>
         <ul>

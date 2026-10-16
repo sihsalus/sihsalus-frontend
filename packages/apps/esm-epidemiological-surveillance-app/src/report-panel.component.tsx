@@ -252,22 +252,11 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             />
           ))}
         </Select>
-        <Select
-          id="report-zone-level"
-          labelText={t("reportZoneLevel")}
-          value={zoneLevel}
-          onChange={(event) => {
-            setZoneLevel(event.target.value as ReportZoneLevel);
-            setAddress("");
-          }}
-        >
-          <SelectItem value="DISTRITO" text={t("reportDistrict")} />
-          <SelectItem value="CENTRO_POBLADO" text={t("reportCenter")} />
-        </Select>
         <ReportAddressFilter
-          key={zoneLevel}
-          level={zoneLevel}
-          onChange={setAddress}
+          onChange={(address, level) => {
+            setAddress(address);
+            setZoneLevel(level);
+          }}
         />
       </div>
       {from > to || to > today ? (

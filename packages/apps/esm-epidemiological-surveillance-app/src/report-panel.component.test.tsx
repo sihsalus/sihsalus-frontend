@@ -94,75 +94,56 @@ describe("report screen", () => {
       screen.getByRole("img", { name: "Endemic channel" }),
     ).toBeInTheDocument();
   });
-  it("sends selected diagnosis and zone and clears an address when parents change", async () => {
+  it("filters at every geographic level and clears descendants", async () => {
+    vi.mocked(addressChildren).mockImplementation(async (level) => {
+      const items = {
+        departments: [{ uuid: "dep", display: "Test department" }],
+        provinces: [{ uuid: "province", display: "Test province" }],
+        districts: [{ uuid: "district", display: "Test district" }],
+        "populated-centers": [{ uuid: "center", display: "Test center" }],
+      };
+      return items[level];
+    });
     vi.mocked(getReport).mockRejectedValue(
       new SurveillanceApiError("SERVICE_UNAVAILABLE", 503),
     );
     render(<ReportPanel catalogue={catalogue} />);
-    await screen.findByRole("option", { name: "Synthetic province" });
-    fireEvent.change(screen.getByLabelText("Province"), {
-      target: { value: "province" },
-    });
-    await screen.findByRole("option", { name: "Synthetic district" });
-    fireEvent.change(screen.getByLabelText("District"), {
-      target: { value: "district" },
-    });
-    await screen.findByRole("option", { name: "Synthetic center" });
-    fireEvent.change(screen.getByLabelText("Populated center"), {
-      target: { value: "center" },
-    });
-    fireEvent.change(screen.getByLabelText("Included cases"), {
-      target: { value: "TODOS" },
-    });
-    await waitFor(() =>
-      expect(getReport).toHaveBeenLastCalledWith(
-        "event",
-        expect.any(String),
-        expect.any(String),
-        "semana",
-        expect.any(AbortSignal),
-        {
-          zoneLevel: "CENTRO_POBLADO",
-          diagnosisType: "TODOS",
-          address: "center",
-        },
-      ),
-    );
-    fireEvent.change(screen.getByLabelText("Province"), {
-      target: { value: "province2" },
-    });
-    await waitFor(() =>
-      expect(getReport).toHaveBeenLastCalledWith(
-        "event",
-        expect.any(String),
-        expect.any(String),
-        "semana",
-        expect.any(AbortSignal),
-        { zoneLevel: "CENTRO_POBLADO", diagnosisType: "TODOS", address: "" },
-      ),
-    );
-    fireEvent.change(screen.getByLabelText("Geographic level"), {
-      target: { value: "DISTRITO" },
-    });
-    await screen.findByRole("option", { name: "Synthetic province" });
-    fireEvent.change(screen.getByLabelText("Province"), {
-      target: { value: "province" },
-    });
-    await screen.findByRole("option", { name: "Synthetic district" });
-    fireEvent.change(screen.getByLabelText("District"), {
-      target: { value: "district" },
-    });
-    await waitFor(() =>
-      expect(getReport).toHaveBeenLastCalledWith(
-        "event",
-        expect.any(String),
-        expect.any(String),
-        "semana",
-        expect.any(AbortSignal),
-        { zoneLevel: "DISTRITO", diagnosisType: "TODOS", address: "district" },
-      ),
-    );
-    expect(screen.queryByLabelText("Populated center")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Geographic level")).not.toBeInTheDocument();
+    const check = async (zoneLevel: string, address: string) =>
+      waitFor(() => {
+        expect(getReport).toHaveBeenLastCalledWith(
+          "event",
+          expect.any(String),
+          expect.any(String),
+          "semana",
+          expect.any(AbortSignal),
+          expect.objectContaining({ zoneLevel, address }),
+        );
+      });
+    await check("CENTRO_POBLADO", "");
+    for (const [label, option, value, zone] of [
+      ["Department", "Test department", "dep", "DEPARTAMENTO"],
+      ["Province", "Test province", "province", "PROVINCIA"],
+      ["District", "Test district", "district", "DISTRITO"],
+      ["Populated center", "Test center", "center", "CENTRO_POBLADO"],
+    ]) {
+      await screen.findByRole("option", { name: option });
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+      await check(zone, value);
+    }
+    for (const [label, zone, address] of [
+      ["Populated center", "DISTRITO", "district"],
+      ["District", "PROVINCIA", "province"],
+      ["Province", "DEPARTAMENTO", "dep"],
+      ["Department", "CENTRO_POBLADO", ""],
+    ]) {
+      fireEvent.change(screen.getByLabelText(label), { target: { value: "" } });
+      await check(zone, address);
+    }
+    expect(screen.getByLabelText("Province")).toBeDisabled();
+    expect(screen.getByLabelText("District")).toHaveValue("");
+    expect(screen.getByLabelText("Populated center")).toHaveValue("");
+    expect(addressChildren).toHaveBeenCalledWith("provinces", "dep");
   });
   it("renders an actionable error without raw backend details", async () => {
     vi.mocked(getReport).mockRejectedValue(

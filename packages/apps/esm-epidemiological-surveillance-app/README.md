@@ -169,7 +169,7 @@ catálogo. Una fecha ausente, inválida o futura se muestra como edad no disponi
 
 “Lugar probable de infección” busca directamente por nombre de centro poblado,
 distrito o provincia, o por código de centro poblado. Todas las opciones muestran
-Provincia → Distrito → Centro poblado (código). Usa el contrato AJAX de Address Hierarchy
+Departamento → Provincia → Distrito → Centro poblado (código). Usa el contrato AJAX de Address Hierarchy
 que utiliza patient-registration, sin importar componentes de otro microfrontend:
 `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form`,
 con `addressField=stateProvince|countyDistrict|cityVillage`, `parentUuid`,
@@ -190,13 +190,13 @@ respuestas de búsquedas anteriores y permite reintentar tras un error. Una refe
 precargada sin ruta se muestra como selección anterior, sin inventar su nombre.
 
 Curva por inicio de síntomas y canal endémico desde `period_case_count` del OMOD.
-Filtros: `diagnosisType=CONFIRMADO|PROBABLE|TODOS` (predeterminado `CONFIRMADO`),
-`zoneLevel=DISTRITO|CENTRO_POBLADO` (predeterminado `CENTRO_POBLADO`) y `address`
-opcional, UUID de Address Hierarchy del nivel elegido. Provincia y distrito permiten
-buscar una zona; sin seleccionar una zona del nivel elegido se incluyen **todas** las
-zonas de ese nivel, no solo las de la provincia usada para buscar. Cambiar de nivel o
-provincia limpia la selección anterior. `TODOS` excluye descartados. La respuesta
-incluye los filtros aplicados; los títulos de los gráficos reflejan el diagnóstico.
+Filtros: `diagnosisType=CONFIRMADO|PROBABLE|TODOS` (predeterminado `CONFIRMADO`).
+El selector Departamento → Provincia → Distrito → Centro poblado envía
+`zoneLevel=DEPARTAMENTO|PROVINCIA|DISTRITO|CENTRO_POBLADO` y `address` según
+el nivel más específico seleccionado. Sin departamento incluye todas las zonas;
+sin provincia incluye todo el departamento; sin distrito, toda la provincia;
+sin centro poblado, todo el distrito. Cambiar un padre limpia sus descendientes.
+`TODOS` excluye descartados. La respuesta incluye los filtros aplicados; los títulos de los gráficos reflejan el diagnóstico.
 
 El histórico suma las zonas y diagnósticos de cada año antes de calcular cuartiles,
 sin fabricar ceros para años sin filas ni clasificar períodos incompletos como zonas
@@ -224,11 +224,11 @@ Se muestra fecha de generación del reporte y aviso sin conexión. La caché com
 
 Las pestañas se presentan como Información demográfica e Información geográfica.
 Información temporal identifica sus fechas como Inicio de síntomas desde/hasta.
-Información demográfica reutiliza los filtros de nivel geográfico y jerarquía
-del reporte temporal: filtra el lugar probable de infección mediante `zoneLevel`
-y `address` en `/reports/demographics`. Provincia y distrito sirven para buscar
-la dirección del nivel elegido; sin seleccionar esa dirección se incluyen todas
-las zonas. Requiere actualizar también el OMOD.
+Información demográfica reutiliza la jerarquía territorial del reporte temporal,
+sin selector de nivel geográfico. Filtra el lugar probable de infección mediante
+`zoneLevel` y `address` en `/reports/demographics`, incluyendo todos los descendientes
+del nivel más específico seleccionado.
+Requiere actualizar también el OMOD.
 
 Las etiquetas de periodos proceden del calendario epidemiológico del servidor:
 diario `DD/MM/AAAA`, semanal `AAAA-SXX`, mensual `AAAA-MM`, trimestral `AAAA-QX`,
@@ -400,3 +400,13 @@ el total corresponde a los eventos filtrados.
 La búsqueda de conceptos al registrar o editar eventos solo ofrece conceptos cuya
 clase canónica es `Diagnosis`. Consulta las páginas siguientes de resultados cuando
 hay conceptos de otras clases y excluye aquellos cuya clase no está disponible.
+
+Actualización territorial: requiere publicar OMOD y ESM juntos. El endpoint
+`/addresses/departments` usa `ADDRESS_1` y las provincias se consultan por su
+departamento padre. La ubicación de infección y la residencia del paciente muestran
+Departamento antes de Provincia; las copias históricas de residencia no se modifican.
+
+Validación territorial local (15/10/2026): PASSED, 118 pruebas Vitest y una
+comprobación HMR con yarn test; TypeScript, lint y build correctos. Backend:
+mvn package PASSED, 120 pruebas API y 6 REST. Verificación integrada DEV/QLTY
+NOT RUN; no se realizó despliegue.

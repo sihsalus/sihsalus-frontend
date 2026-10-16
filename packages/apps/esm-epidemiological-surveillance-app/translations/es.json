@@ -1,4 +1,6 @@
 {
+  "reportDepartment": "Departamento",
+  "reportAllLocations": "Todos",
   "eventFilterDisease": "Enfermedad",
   "eventFilterPeriodicity": "Periodicidad",
   "eventFilterAll": "Todos",
@@ -130,7 +132,7 @@
   "patientAgeYears": "años",
   "infectionSearchAll": "Código del centro poblado o nombre de centro poblado, distrito o provincia",
   "infectionTypeMore": "Escribe al menos 3 letras, o el código del centro poblado (al menos 6 dígitos).",
-  "infectionHierarchyHelp": "Busca por código o nombre. Selecciona Provincia → Distrito → Centro poblado (código); se guarda únicamente el centro poblado.",
+  "infectionHierarchyHelp": "Busca por código o nombre. Selecciona Departamento → Provincia → Distrito → Centro poblado (código); se guarda únicamente el centro poblado.",
   "infectionChange": "Cambiar lugar",
   "infectionNoResults": "No se encontraron lugares. Prueba con otro nombre.",
   "infectionSearch": {

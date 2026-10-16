@@ -44,9 +44,9 @@ describe("surveillance API", () => {
     expect(openmrsFetch).toHaveBeenLastCalledWith("/ws/rest/v1/sihsalusepidemiologicalsurveillance/events/synthetic%2Fevent", expect.objectContaining({ method: "PUT", body: event }));
   });
   it("loads the patient's preferred residence for case details", async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue({ data: { uuid: "synthetic-patient", person: { preferredAddress: { stateProvince: "Provincia", countyDistrict: "Distrito", cityVillage: "Centro" } } } } as never);
-    expect((await getPatient("synthetic-patient")).residence).toBe("Provincia → Distrito → Centro");
-    expect(openmrsFetch).toHaveBeenLastCalledWith(expect.stringContaining("preferredAddress:(stateProvince,countyDistrict,cityVillage)"), expect.any(Object));
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { uuid: "synthetic-patient", person: { preferredAddress: { address1: "Departamento", stateProvince: "Provincia", countyDistrict: "Distrito", cityVillage: "Centro" } } } } as never);
+    expect((await getPatient("synthetic-patient")).residence).toBe("Departamento → Provincia → Distrito → Centro");
+    expect(openmrsFetch).toHaveBeenLastCalledWith(expect.stringContaining("preferredAddress:(address1,stateProvince,countyDistrict,cityVillage)"), expect.any(Object));
   });
   it("reads and updates an existing case without creating a new case", async () => {
     const draft = { patientUuid: "p", encounterUuid: "e", providerUuid: "provider", locationUuid: "location", diagnosisUuid: "diagnosis", diagnosisType: "PROBABLE" as const };

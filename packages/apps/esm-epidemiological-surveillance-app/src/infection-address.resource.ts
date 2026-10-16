@@ -76,13 +76,19 @@ export async function searchInfectionAddresses(
       centers.map((entry) => {
         const district = entry.parent;
         const province = district?.parent;
-        if (!district?.name || !province?.name || !entry.userGeneratedId)
+        const department = province?.parent;
+        if (
+          !department?.name ||
+          !district?.name ||
+          !province?.name ||
+          !entry.userGeneratedId
+        )
           throw new SurveillanceApiError("ADDRESS_METADATA_INCOMPLETE", 0);
         return [
           entry.uuid,
           {
             uuid: entry.uuid,
-            display: `${province.name} → ${district.name} → ${entry.name} (${entry.userGeneratedId})`,
+            display: `${department.name} → ${province.name} → ${district.name} → ${entry.name} (${entry.userGeneratedId})`,
           },
         ] as const;
       }),

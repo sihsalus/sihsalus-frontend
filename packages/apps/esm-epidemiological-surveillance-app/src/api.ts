@@ -178,7 +178,7 @@ export const closeSurveillanceCase = async (uuid: string): Promise<SurveillanceC
   catch (error) { throw safeError(error); }
 };
 
-export const addressChildren = (level: "provinces" | "districts" | "populated-centers", parent?: string) =>
+export const addressChildren = (level: "departments" | "provinces" | "districts" | "populated-centers", parent?: string) =>
   read<{ results: NamedReference[] }>(`${apiBase}/addresses/${level}${parent ? `?parent=${encodeURIComponent(parent)}` : ""}`).then((result) => result.results);
 
 export const getReport = (
@@ -291,7 +291,7 @@ interface RestPatient {
     display?: string;
     gender?: string;
     birthdate?: string;
-    preferredAddress?: { display?: string; stateProvince?: string; countyDistrict?: string; cityVillage?: string };
+    preferredAddress?: { address1?: string; display?: string; stateProvince?: string; countyDistrict?: string; cityVillage?: string };
   };
 }
 interface RestEncounter {
@@ -333,7 +333,7 @@ function patientResource(patient: RestPatient): FhirResource {
     ),
     gender: patient.person?.gender,
     birthDate: patient.person?.birthdate,
-    residence: patient.person?.preferredAddress ? [patient.person.preferredAddress.stateProvince || "—", patient.person.preferredAddress.countyDistrict || "—", patient.person.preferredAddress.cityVillage || "—"].join(" → ") : undefined,
+    residence: patient.person?.preferredAddress ? [patient.person.preferredAddress.address1 || "—", patient.person.preferredAddress.stateProvince || "—", patient.person.preferredAddress.countyDistrict || "—", patient.person.preferredAddress.cityVillage || "—"].join(" → ") : undefined,
   };
 }
 
@@ -425,7 +425,7 @@ export async function getPatient(
 ): Promise<FhirResource> {
   return patientResource(
     await read<RestPatient>(
-      `${restBaseUrl}/patient/${encodeURIComponent(uuid)}?v=custom:(uuid,display,identifiers:(identifier,identifierType:(uuid,name)),person:(display,gender,birthdate,preferredAddress:(stateProvince,countyDistrict,cityVillage)))`,
+      `${restBaseUrl}/patient/${encodeURIComponent(uuid)}?v=custom:(uuid,display,identifiers:(identifier,identifierType:(uuid,name)),person:(display,gender,birthdate,preferredAddress:(address1,stateProvince,countyDistrict,cityVillage)))`,
       signal,
     ),
   );

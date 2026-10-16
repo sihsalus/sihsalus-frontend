@@ -5,7 +5,11 @@ vi.mock("@openmrs/esm-framework", () => ({
   openmrsFetch: vi.fn(),
   restBaseUrl: "/ws/rest/v1",
 }));
-const province = { uuid: "p", name: "Province" };
+const province = {
+  uuid: "p",
+  name: "Province",
+  parent: { uuid: "dep", name: "Department" },
+};
 const district = { uuid: "d", name: "District", parent: province };
 const center = {
   uuid: "c",
@@ -33,7 +37,10 @@ it.each(["Center", "District", "Province"])(
       return { data } as never;
     });
     expect(await searchInfectionAddresses(term)).toEqual([
-      { uuid: "c", display: "Province → District → Center (1601010001)" },
+      {
+        uuid: "c",
+        display: "Department → Province → District → Center (1601010001)",
+      },
     ]);
   },
 );
@@ -42,7 +49,10 @@ it("finds by center code using its district code and retains leading zeros", asy
     data: [{ ...center, userGeneratedId: "0101010001" }, center],
   } as never);
   expect(await searchInfectionAddresses("0101010001")).toEqual([
-    { uuid: "c", display: "Province → District → Center (0101010001)" },
+    {
+      uuid: "c",
+      display: "Department → Province → District → Center (0101010001)",
+    },
   ]);
   expect(openmrsFetch).toHaveBeenLastCalledWith(
     expect.stringContaining("userGeneratedIdForParent=010101"),

@@ -17,7 +17,7 @@ export interface DemographicReport {
   row: DemographicDimension;
   column: DemographicDimension;
   period: string;
-  zoneLevel?: "DISTRITO" | "CENTRO_POBLADO";
+  zoneLevel?: import("./types").ReportZoneLevel;
   address?: string | null;
   from: string;
   to: string;

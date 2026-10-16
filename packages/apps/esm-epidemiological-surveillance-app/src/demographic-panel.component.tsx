@@ -186,23 +186,13 @@ export function DemographicPanel({ catalogue }: { catalogue: Catalogue }) {
             />
           ))}
         </Select>
-        <Select
-          id="demographic-zone-level"
-          labelText={t("reportZoneLevel")}
-          value={zoneLevel}
-          onChange={(e) => {
-            setZoneLevel(e.target.value as ReportZoneLevel);
-            setAddress("");
-          }}
-        >
-          <SelectItem value="DISTRITO" text={t("reportDistrict")} />
-          <SelectItem value="CENTRO_POBLADO" text={t("reportCenter")} />
-        </Select>
         <ReportAddressFilter
-          key={zoneLevel}
           idPrefix="demographic"
-          level={zoneLevel}
-          onChange={setAddress}
+
+          onChange={(address, level) => {
+            setAddress(address);
+            setZoneLevel(level);
+          }}
         />
         {(["row", "column"] as const).map((axis) => (
           <Select

@@ -1,4 +1,6 @@
 {
+  "reportDepartment": "Department",
+  "reportAllLocations": "All",
   "eventFilterDisease": "Disease",
   "eventFilterPeriodicity": "Periodicity",
   "eventFilterAll": "All",
@@ -130,7 +132,7 @@
   "patientAgeYears": "years",
   "infectionSearchAll": "Populated-center code or name of center, district or province",
   "infectionTypeMore": "Enter at least 3 letters, or the populated-center code (at least 6 digits).",
-  "infectionHierarchyHelp": "Search by code or name. Select Province → District → Populated center (code); only the populated center is saved.",
+  "infectionHierarchyHelp": "Search by code or name. Select Department → Province → District → Populated center (code); only the populated center is saved.",
   "infectionChange": "Change place",
   "infectionNoResults": "No places found. Try another name.",
   "infectionSearch": {

@@ -6,30 +6,49 @@ import { moduleName } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
 import type { NamedReference, ReportZoneLevel } from "./types";
 
+const levels = [
+  "departments",
+  "provinces",
+  "districts",
+  "populated-centers",
+] as const;
+const zones: ReportZoneLevel[] = [
+  "DEPARTAMENTO",
+  "PROVINCIA",
+  "DISTRITO",
+  "CENTRO_POBLADO",
+];
+const labels = [
+  "reportDepartment",
+  "reportProvince",
+  "reportDistrict",
+  "reportCenter",
+];
+
 export function ReportAddressFilter({
-  level,
   idPrefix = "report",
   onChange,
 }: {
-  level: ReportZoneLevel;
   idPrefix?: string;
-  onChange: (address: string) => void;
+  onChange: (address: string, level: ReportZoneLevel) => void;
 }) {
   const { t } = useTranslation(moduleName);
-  const [province, setProvince] = useState("");
-  const [district, setDistrict] = useState("");
-  const [center, setCenter] = useState("");
-  const [options, setOptions] = useState<NamedReference[][]>([[], [], []]);
+  const [selected, setSelected] = useState(["", "", "", ""]);
+  const [options, setOptions] = useState<NamedReference[][]>([[], [], [], []]);
   const [error, setError] = useState<unknown>();
   const [loading, setLoading] = useState(false);
+  const [department, province, district] = selected;
   useEffect(() => {
     let active = true;
     setError(undefined);
     setLoading(true);
     void Promise.all([
-      addressChildren("provinces"),
+      addressChildren("departments"),
+      department
+        ? addressChildren("provinces", department)
+        : Promise.resolve([]),
       province ? addressChildren("districts", province) : Promise.resolve([]),
-      level === "CENTRO_POBLADO" && district
+      district
         ? addressChildren("populated-centers", district)
         : Promise.resolve([]),
     ])
@@ -38,7 +57,7 @@ export function ReportAddressFilter({
       })
       .catch((failure) => {
         if (active) {
-          setOptions([[], [], []]);
+          setOptions([[], [], [], []]);
           setError(failure);
         }
       })
@@ -48,68 +67,40 @@ export function ReportAddressFilter({
     return () => {
       active = false;
     };
-  }, [province, district, level]);
+  }, [department, province, district]);
   return (
     <>
-      <Select
-        id={`${idPrefix}-province`}
-        labelText={t("reportProvince")}
-        value={province}
-        disabled={loading}
-        onChange={(event) => {
-          setProvince(event.target.value);
-          setDistrict("");
-          setCenter("");
-          setOptions([options[0], [], []]);
-          onChange("");
-        }}
-      >
-        <SelectItem value="" text={t("reportChooseProvince")} />
-        {options[0].map((item) => (
-          <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
-        ))}
-      </Select>
-      <Select
-        id={`${idPrefix}-district`}
-        labelText={t("reportDistrict")}
-        value={district}
-        disabled={!province || loading}
-        onChange={(event) => {
-          setDistrict(event.target.value);
-          setCenter("");
-          setOptions([options[0], options[1], []]);
-          onChange(level === "DISTRITO" ? event.target.value : "");
-        }}
-      >
-        <SelectItem
-          value=""
-          text={
-            level === "DISTRITO"
-              ? t("reportAllDistricts")
-              : t("reportChooseDistrict")
-          }
-        />
-        {options[1].map((item) => (
-          <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
-        ))}
-      </Select>
-      {level === "CENTRO_POBLADO" && (
+      {levels.map((level, index) => (
         <Select
-          id={`${idPrefix}-center`}
-          labelText={t("reportCenter")}
-          value={center}
-          disabled={!district || loading}
+          key={level}
+          id={idPrefix + "-" + level}
+          labelText={t(labels[index])}
+          value={selected[index]}
+          disabled={loading || (index > 0 && !selected[index - 1])}
           onChange={(event) => {
-            setCenter(event.target.value);
-            onChange(event.target.value);
+            const next = selected.map((value, i) =>
+              i < index ? value : i === index ? event.target.value : "",
+            );
+            setSelected(next);
+            setOptions((current) =>
+              current.map((items, i) => (i > index ? [] : items)),
+            );
+            const deepest = next.reduce(
+              (last, value, i) => (value ? i : last),
+              -1,
+            );
+            onChange(
+              deepest < 0 ? "" : next[deepest],
+              deepest < 0 ? "CENTRO_POBLADO" : zones[deepest],
+            );
           }}
         >
-          <SelectItem value="" text={t("reportAllCenters")} />
-          {options[2].map((item) => (
+          <SelectItem value="" text={t("reportAllLocations")} />
+          {options[index].map((item) => (
             <SelectItem key={item.uuid} value={item.uuid} text={item.display} />
           ))}
         </Select>
-      )}
+      ))}
       {loading && <InlineLoading description={t("loading")} />}
       {error ? <ErrorNotification error={error} /> : null}
     </>

@@ -128,7 +128,8 @@ export interface SurveillanceCase extends SurveillanceCaseDraft {
   diagnosisDisplay?: string;
 }
 export type ReportDiagnosis = "CONFIRMADO" | "PROBABLE" | "TODOS";
-export type ReportZoneLevel = "DISTRITO" | "CENTRO_POBLADO";
+export type ReportZoneLevel =
+  "DEPARTAMENTO" | "PROVINCIA" | "DISTRITO" | "CENTRO_POBLADO";
 export interface ReportFilters {
   zoneLevel: ReportZoneLevel;
   diagnosisType: ReportDiagnosis;

@@ -86,7 +86,10 @@ const mount = (mode: "view" | "edit" = "view", onSaved = vi.fn()) =>
   );
 
 it("loads all case data and residence in a read-only modal", async () => {
-  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, laboratoryObservationUuid: "synthetic-positive" });
+  vi.mocked(getSurveillanceCase).mockResolvedValue({
+    ...record,
+    laboratoryObservationUuid: "synthetic-positive",
+  });
   mount();
   expect(await screen.findByText("Dirección sintética")).toBeInTheDocument();
   expect(screen.getByText("TEST-DNI")).toBeInTheDocument();
@@ -96,7 +99,9 @@ it("loads all case data and residence in a read-only modal", async () => {
   expect(
     screen.getByText("01/09/2026 · Atención sintética"),
   ).toBeInTheDocument();
-  expect(screen.queryByText("caseDetails.fields.testOrderUuid")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("caseDetails.fields.testOrderUuid"),
+  ).not.toBeInTheDocument();
   expect(screen.getByText("Prueba sintética · Positivo")).toBeInTheDocument();
   expect(
     screen.getByText("Provincia → Distrito → Centro poblado"),
@@ -116,6 +121,41 @@ it("loads all case data and residence in a read-only modal", async () => {
     screen.queryByRole("button", { name: "Guardar" }),
   ).not.toBeInTheDocument();
 });
+it("formats immutable case details without required markers when editing", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({
+    ...record,
+    patientGivenNames: "Nombre Segundo",
+    patientPaternalSurname: "Paterno",
+    patientMaternalSurname: "Materno",
+    encounterDate: "2026-09-01 23:00:31.0",
+  });
+  mount("edit");
+  expect(
+    await screen.findByText("Paterno Materno Nombre Segundo"),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("01/09/2026 23:00 · Atención sintética"),
+  ).toBeInTheDocument();
+  for (const label of [
+    "casesTable.patient",
+    "caseDetails.fields.encounterUuid",
+    "caseDetails.fields.providerUuid",
+    "caseDetails.fields.locationUuid",
+    "caseDetails.fields.diagnosisUuid",
+  ]) {
+    expect(screen.getByText(label).closest("dt")).not.toHaveTextContent(
+      "requiredField",
+    );
+    expect(screen.getByText(label).closest("dt")).not.toHaveTextContent("*");
+  }
+  expect(
+    screen.getByLabelText("caseDetails.fields.diagnosisType"),
+  ).toBeDisabled();
+  expect(
+    screen.queryByText("requiredField", { exact: false }),
+  ).not.toBeInTheDocument();
+});
+
 it("edits epidemiological fields without sending demographic or response fields", async () => {
   const saved = vi.fn();
   mount("edit", saved);
@@ -140,8 +180,17 @@ it("edits epidemiological fields without sending demographic or response fields"
     }),
   );
   const payload = vi.mocked(updateSurveillanceCase).mock.calls[0][1];
-  expect(screen.getByLabelText("caseDetails.fields.investigationDate")).toBeDisabled();
-  for (const field of ["patientGivenNames", "patientPaternalSurname", "patientMaternalSurname", "patientSex", "patientAge", "patientResidence"])
+  expect(
+    screen.getByLabelText("caseDetails.fields.investigationDate"),
+  ).toBeDisabled();
+  for (const field of [
+    "patientGivenNames",
+    "patientPaternalSurname",
+    "patientMaternalSurname",
+    "patientSex",
+    "patientAge",
+    "patientResidence",
+  ])
     expect(payload).not.toHaveProperty(field);
   expect(payload).not.toHaveProperty("uuid");
   expect(payload).not.toHaveProperty("diagnosisDisplay");
@@ -205,11 +254,37 @@ it("preserves edited values after a rejected save", async () => {
 });
 
 it("keeps editable case fields in registration order and marks only non-null fields", async () => {
-  render(<CaseModal uuid="case" mode="edit" catalogue={catalogue} onClose={vi.fn()} onSaved={vi.fn()} />);
+  render(
+    <CaseModal
+      uuid="case"
+      mode="edit"
+      catalogue={catalogue}
+      onClose={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
   await screen.findByLabelText(/caseDetails.fields.diagnosisType/);
-  const fields = Array.from(document.querySelectorAll("fieldset input, fieldset select"))
-    .map((item) => item.id).filter((id) => id.startsWith("edit-"));
-  expect(fields).toEqual(["edit-origin", "edit-onsetDate", "edit-laboratory", "edit-diagnosisType", "edit-vaccinationStatus", "edit-pregnant", "edit-surveillanceType", "edit-investigationDate", "edit-notificationDate", "edit-deathDate"]);
-  expect(screen.getByLabelText(/caseDetails.fields.diagnosisType/)).toHaveAccessibleName(/requiredField/);
-  expect(screen.getByLabelText("caseDetails.fields.origin")).toBeInTheDocument();
+  const fields = Array.from(
+    document.querySelectorAll("fieldset input, fieldset select"),
+  )
+    .map((item) => item.id)
+    .filter((id) => id.startsWith("edit-"));
+  expect(fields).toEqual([
+    "edit-origin",
+    "edit-onsetDate",
+    "edit-laboratory",
+    "edit-diagnosisType",
+    "edit-vaccinationStatus",
+    "edit-pregnant",
+    "edit-surveillanceType",
+    "edit-investigationDate",
+    "edit-notificationDate",
+    "edit-deathDate",
+  ]);
+  expect(
+    screen.getByLabelText(/caseDetails.fields.diagnosisType/),
+  ).toHaveAccessibleName("caseDetails.fields.diagnosisType");
+  expect(
+    screen.getByLabelText("caseDetails.fields.origin"),
+  ).toBeInTheDocument();
 });

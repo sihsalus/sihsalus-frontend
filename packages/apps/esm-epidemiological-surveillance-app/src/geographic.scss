@@ -1,0 +1,136 @@
+.filters {
+  align-items: end;
+}
+
+.csvUpload {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+
+  p {
+    margin: 0 0 0.5rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+  }
+
+  input[type="file"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0.75rem;
+    background: #ffffff;
+    border: 1px solid #c6c6c6;
+    font: inherit;
+
+    &::file-selector-button {
+      margin-right: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #0f62fe;
+      background: #ffffff;
+      color: #0f62fe;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #0f62fe;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.map {
+  position: relative;
+  background: #e9eff2;
+  border: 1px solid #8d8d8d;
+  min-height: 300px;
+  > svg {
+    display: block;
+    width: 100%;
+    touch-action: none;
+  }
+}
+.marker {
+  display: block;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  &:focus-visible {
+    outline: 2px solid #0f62fe;
+    outline-offset: -2px;
+  }
+}
+.legends {
+  position: absolute;
+  bottom: 1.7rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: #161616;
+  padding: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  max-width: calc(100% - 1rem);
+  pointer-events: none;
+}
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.attribution {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 0.2rem;
+  background: white;
+  font-size: 0.75rem;
+}
+.pieLayout {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.pie {
+  width: min(320px, 100%);
+  height: auto;
+}
+.pieLegend {
+  list-style: none;
+  padding: 0;
+  flex: 1;
+  min-width: 240px;
+}
+.swatch {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+  border: 1px solid #525252;
+}
+@media (max-width: 640px) {
+  .map > svg {
+    min-height: 420px;
+  }
+  .legends {
+    gap: 0.5rem;
+    font-size: 0.65rem;
+  }
+}

@@ -351,7 +351,11 @@
     "INVALID_REPORT_ADDRESS": "Select a zone that matches the chosen geographic level.",
     "EVENT_ALREADY_EXISTS": "A notifiable event with this identifier already exists.",
     "EVENT_CONCEPT_ALREADY_EXISTS": "A notifiable event for this disease or concept already exists.",
-    "EVENT_CONCEPT_IMMUTABLE": "The clinical concept of an existing notifiable event cannot be changed."
+    "EVENT_CONCEPT_IMMUTABLE": "The clinical concept of an existing notifiable event cannot be changed.",
+    "INVALID_RISK_LEVELS": "Check the risk level minimums.",
+    "INVALID_COORDINATES_CSV": "Invalid CSV: check the header, duplicate codes and numeric coordinates (latitude −90 to 90; longitude −180 to 180).",
+    "UNKNOWN_CENTER_CODE": "The CSV contains unknown or ambiguous populated center codes. No coordinates were saved.",
+    "INVALID_GEOGRAPHIC_RANGE": "Select ordered dates within the same calendar year, no later than today."
   },
   "events": "Events",
   "newEvent": "New event",
@@ -422,5 +426,60 @@
     "invalidLaboratory": "Select a valid laboratory result from this encounter.",
     "laboratoryRequired": "Select the laboratory result supporting this classification.",
     "laboratoryConflict": "The classification does not match the laboratory result."
+  },
+  "geo": {
+    "mapTitle": "Geographic distribution of foci",
+    "referenceYear": "Reference year for focus classification",
+    "invalidRange": "Select ordered dates within the same calendar year, no later than today.",
+    "configureCoordinates": "Upload populated center coordinates",
+    "configureRisk": "Configure risk levels",
+    "riskLegend": "Risk level",
+    "classificationLegend": "Focus classification",
+    "risk": {
+      "VERY_HIGH": "Very high",
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "classes": {
+      "ACTIVE": "Active",
+      "RESIDUAL": "Residual non-active",
+      "ELIMINATED": "Eliminated",
+      "UNCLASSIFIED": "Unclassified"
+    },
+    "origins": {
+      "AUTOCTONO": "Autochthonous",
+      "IMPORTADO_NACIONAL": "National imported",
+      "IMPORTADO_INTERNACIONAL": "International imported",
+      "RECAIDA": "Relapse",
+      "RECRUDESCENCIA": "Recrudescence",
+      "INDUCIDO": "Induced",
+      "INTRODUCIDO": "Introduced",
+      "UNKNOWN": "Unknown"
+    },
+    "riskHelp": "Enter the minimum case count for each level. Low starts at 1; each maximum is derived from the next minimum.",
+    "invalidRisk": "Minimums must be increasing integers greater than 1.",
+    "csvHelp": "UTF-8 CSV with header address_hierarchy_entry_id,latitude,longitude. IDs are populated center territorial codes from the reference file. Included centers are updated; other centers are preserved.",
+    "csvFile": "Populated center CSV file",
+    "riskSaved": "Risk levels saved.",
+    "coordinatesSaved": "Coordinates saved for {{count}} populated centers.",
+    "coordinatesPending": "Pending territorial catalog matches: {{count}}. Their coordinates are saved and will be used when a unique match exists.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Show all foci",
+    "west": "West",
+    "east": "East",
+    "north": "North",
+    "south": "South",
+    "tileError": "The base map could not load. Foci and the table remain available.",
+    "includedCases": "Included cases according to the filter, by probable place of infection and symptom onset. Classification uses the history of the selected case types through the reference year, including dates outside the selected interval.",
+    "empty": "No confirmed cases match these filters.",
+    "unmapped": "{{count}} cases have no coordinates: included in the table and chart, but not on the map.",
+    "unknownOrigin": "Foci with unknown origins in the last four years and no recent autochthonous cases remain unclassified.",
+    "tableTitle": "Populated center × Origin",
+    "total": "Total",
+    "pieTitle": "Cases and percentages by populated center",
+    "hideZero": "Hide columns without cases",
+    "offline": "Offline. Information may be outdated and the base map may be unavailable."
   }
 }

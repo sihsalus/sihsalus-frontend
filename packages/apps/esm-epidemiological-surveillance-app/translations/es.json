@@ -351,7 +351,11 @@
     "INVALID_REPORT_ADDRESS": "Selecciona una zona que corresponda al nivel geográfico elegido.",
     "EVENT_ALREADY_EXISTS": "Ya existe un evento notificable con este identificador.",
     "EVENT_CONCEPT_ALREADY_EXISTS": "Ya existe un evento notificable para esta enfermedad o concepto.",
-    "EVENT_CONCEPT_IMMUTABLE": "No se puede cambiar el concepto clínico de un evento ya registrado."
+    "EVENT_CONCEPT_IMMUTABLE": "No se puede cambiar el concepto clínico de un evento ya registrado.",
+    "INVALID_RISK_LEVELS": "Revise los mínimos de los niveles de riesgo.",
+    "INVALID_COORDINATES_CSV": "CSV inválido: revise el encabezado, los códigos duplicados y las coordenadas numéricas (latitud −90 a 90; longitud −180 a 180).",
+    "UNKNOWN_CENTER_CODE": "El CSV contiene códigos de centro poblado inexistentes o ambiguos en el catálogo territorial. No se guardaron coordenadas.",
+    "INVALID_GEOGRAPHIC_RANGE": "Seleccione fechas ordenadas dentro del mismo año calendario, sin superar hoy."
   },
   "events": "Eventos",
   "newEvent": "Nuevo evento",
@@ -422,5 +426,60 @@
     "invalidLaboratory": "Selecciona un resultado de laboratorio válido de esta atención.",
     "laboratoryRequired": "Selecciona el resultado de laboratorio que sustenta esta clasificación.",
     "laboratoryConflict": "La clasificación no corresponde al resultado de laboratorio."
+  },
+  "geo": {
+    "mapTitle": "Distribución geográfica de focos",
+    "referenceYear": "Año de referencia para la clasificación del foco",
+    "invalidRange": "Seleccione fechas ordenadas dentro del mismo año calendario, sin superar hoy.",
+    "configureCoordinates": "Cargar coordenadas de centros poblados",
+    "configureRisk": "Configurar niveles de riesgo",
+    "riskLegend": "Nivel de riesgo",
+    "classificationLegend": "Clasificación del foco",
+    "risk": {
+      "VERY_HIGH": "Muy Alto",
+      "HIGH": "Alto",
+      "MEDIUM": "Mediano",
+      "LOW": "Bajo"
+    },
+    "classes": {
+      "ACTIVE": "Activo",
+      "RESIDUAL": "Residual no activo",
+      "ELIMINATED": "Eliminado",
+      "UNCLASSIFIED": "Sin clasificación"
+    },
+    "origins": {
+      "AUTOCTONO": "Autóctono",
+      "IMPORTADO_NACIONAL": "Importado nacional",
+      "IMPORTADO_INTERNACIONAL": "Importado internacional",
+      "RECAIDA": "Recaída",
+      "RECRUDESCENCIA": "Recrudescencia",
+      "INDUCIDO": "Inducido",
+      "INTRODUCIDO": "Introducido",
+      "UNKNOWN": "Sin dato"
+    },
+    "riskHelp": "Indique el mínimo de casos de cada nivel. Bajo comienza en 1; el máximo de cada nivel se calcula a partir del mínimo siguiente.",
+    "invalidRisk": "Los mínimos deben ser enteros crecientes mayores que 1.",
+    "csvHelp": "CSV UTF-8 con encabezado address_hierarchy_entry_id,latitude,longitude. El ID corresponde al código territorial del centro poblado del archivo de referencia. Se actualizan los centros incluidos y se conservan los demás.",
+    "csvFile": "Archivo CSV de centros poblados",
+    "riskSaved": "Niveles de riesgo guardados.",
+    "coordinatesSaved": "Coordenadas guardadas: {{count}} centros poblados.",
+    "coordinatesPending": "Pendientes de correspondencia en el catálogo territorial: {{count}}. Sus coordenadas están guardadas y se usarán cuando exista una correspondencia única.",
+    "zoomIn": "Acercar mapa",
+    "zoomOut": "Alejar mapa",
+    "fit": "Mostrar todos los focos",
+    "west": "Oeste",
+    "east": "Este",
+    "north": "Norte",
+    "south": "Sur",
+    "tileError": "No se pudo cargar el mapa base. Los focos y la tabla siguen disponibles.",
+    "includedCases": "Casos incluidos según el filtro, por lugar probable de infección e inicio de síntomas. La clasificación usa el historial de los tipos de caso seleccionados hasta el año de referencia, incluso fuera del intervalo seleccionado.",
+    "empty": "No hay casos confirmados para los filtros seleccionados.",
+    "unmapped": "{{count}} casos sin coordenadas: se incluyen en la tabla y el gráfico, pero no en el mapa.",
+    "unknownOrigin": "Los focos con origen desconocido en los últimos cuatro años y sin autóctonos recientes quedan sin clasificación.",
+    "tableTitle": "Centro poblado × Origen",
+    "total": "Total",
+    "pieTitle": "Casos y porcentajes por centro poblado",
+    "hideZero": "Ocultar columnas sin casos",
+    "offline": "Sin conexión. La información puede no estar actualizada y el mapa base puede no estar disponible."
   }
 }

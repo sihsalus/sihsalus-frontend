@@ -28,8 +28,10 @@ const labels = [
 export function ReportAddressFilter({
   idPrefix = "report",
   onChange,
+  includeCenter = true,
 }: {
   idPrefix?: string;
+  includeCenter?: boolean;
   onChange: (address: string, level: ReportZoneLevel) => void;
 }) {
   const { t } = useTranslation(moduleName);
@@ -48,7 +50,7 @@ export function ReportAddressFilter({
         ? addressChildren("provinces", department)
         : Promise.resolve([]),
       province ? addressChildren("districts", province) : Promise.resolve([]),
-      district
+      district && includeCenter
         ? addressChildren("populated-centers", district)
         : Promise.resolve([]),
     ])
@@ -67,10 +69,10 @@ export function ReportAddressFilter({
     return () => {
       active = false;
     };
-  }, [department, province, district]);
+  }, [department, province, district, includeCenter]);
   return (
     <>
-      {levels.map((level, index) => (
+      {levels.slice(0, includeCenter ? 4 : 3).map((level, index) => (
         <Select
           key={level}
           id={idPrefix + "-" + level}

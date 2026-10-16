@@ -27,6 +27,8 @@ import { EventsPanel } from "./events-panel.component";
 import { ReportPanel } from "./report-panel.component";
 import { DemographicPanel } from "./demographic-panel.component";
 import { AgeGroupsPanel } from "./age-groups.component";
+import { GeographicPanel } from "./geographic-panel.component";
+import { GeographicSettings } from "./geographic-settings.component";
 import { reloadSurveillancePage } from "./reload-surveillance";
 import type { Catalogue } from "./types";
 import styles from "./dashboard.scss";
@@ -49,6 +51,7 @@ function SessionDashboard() {
   const [retry, setRetry] = useState(0);
   const [formKey, setFormKey] = useState(0);
   const [showCaseForm, setShowCaseForm] = useState(false);
+  const [geographicRevision, setGeographicRevision] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and session identity must invalidate the catalogue even when authentication stays true.
   useEffect(() => {
     const abort = new AbortController();
@@ -143,7 +146,14 @@ function SessionDashboard() {
                 <DemographicPanel catalogue={catalogue} />
               </RequirePrivilege>
             </TabPanel>
-            <TabPanel />
+            <TabPanel>
+              <RequirePrivilege privilege={reportPrivilege}>
+                <GeographicPanel
+                  key={geographicRevision}
+                  catalogue={catalogue}
+                />
+              </RequirePrivilege>
+            </TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={managePrivilege}>
                 <EventsPanel
@@ -154,7 +164,15 @@ function SessionDashboard() {
             </TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={managePrivilege}>
-                <AgeGroupsPanel onSaved={reloadSurveillancePage} />
+                <section
+                  className={styles.configurationGrid}
+                  aria-label={t("configuration")}
+                >
+                  <AgeGroupsPanel onSaved={reloadSurveillancePage} />
+                  <GeographicSettings
+                    onSaved={() => setGeographicRevision((value) => value + 1)}
+                  />
+                </section>
               </RequirePrivilege>
             </TabPanel>
           </TabPanels>

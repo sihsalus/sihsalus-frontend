@@ -9,7 +9,7 @@ import {
   RequiredFieldLabel,
   requiredCaseFields,
 } from "./required-field-label.component";
-import { displayDate } from "./date-display";
+import { displayDate, displayDateTime } from "./date-display";
 import {
   Button,
   InlineLoading,
@@ -219,9 +219,9 @@ export function CaseModal({
       setBusy(false);
     }
   };
-  const fieldLabel = (key: string) => (
+  const fieldLabel = (key: string, editable = true) => (
     <RequiredFieldLabel
-      required={mode === "edit" && requiredCaseFields.has(key)}
+      required={canEdit && editable && requiredCaseFields.has(key)}
     >
       {t(`caseDetails.fields.${key}`)}
     </RequiredFieldLabel>
@@ -264,7 +264,7 @@ export function CaseModal({
         key={key}
         id={`edit-${key}`}
         {...fieldProps(key)}
-        labelText={fieldLabel(key)}
+        labelText={fieldLabel(key, key !== "diagnosisType")}
         disabled={key === "diagnosisType"}
         value={String(value[key as keyof SurveillanceCase] ?? "")}
         onChange={(event) =>
@@ -317,10 +317,14 @@ export function CaseModal({
             {detail("dni", t("casesTable.dni"), value.patientIdentifier)}
             {detail(
               "name",
-              <RequiredFieldLabel required={mode === "edit"}>
-                {t("casesTable.patient")}
-              </RequiredFieldLabel>,
-              value.patientDisplay,
+              t("casesTable.patient"),
+              [
+                value.patientPaternalSurname,
+                value.patientMaternalSurname,
+                value.patientGivenNames,
+              ]
+                .filter(Boolean)
+                .join(" ") || value.patientDisplay,
             )}
             {detail(
               "sex",
@@ -335,24 +339,24 @@ export function CaseModal({
             )}
             {detail(
               "encounter",
-              fieldLabel("encounterUuid"),
-              [displayDate(value.encounterDate), value.encounterDisplay]
+              fieldLabel("encounterUuid", false),
+              [displayDateTime(value.encounterDate), value.encounterDisplay]
                 .filter(Boolean)
                 .join(" · "),
             )}
             {detail(
               "provider",
-              fieldLabel("providerUuid"),
+              fieldLabel("providerUuid", false),
               value.providerDisplay,
             )}
             {detail(
               "location",
-              fieldLabel("locationUuid"),
+              fieldLabel("locationUuid", false),
               value.locationDisplay,
             )}
             {detail(
               "diagnosisEncounter",
-              fieldLabel("diagnosisUuid"),
+              fieldLabel("diagnosisUuid", false),
               value.diagnosisDisplay,
             )}
           </dl>

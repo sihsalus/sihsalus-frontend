@@ -3,9 +3,11 @@ import {
   InlineLoading,
   InlineNotification,
   TextInput,
-  Tile,
+  Modal,
 } from "@carbon/react";
 import { useEffect, useState } from "react";
+import { UserMultiple } from "@carbon/react/icons";
+import { ConfigurationTile } from "./configuration-tile.component";
 import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
 import { getAgeGroups, saveAgeGroups } from "./demographic.resource";
@@ -77,13 +79,28 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
     }
   };
   return (
-    <section className={styles.form} aria-label={t("configuration")}>
-      <Button kind="tertiary" onClick={() => setOpen(!open)}>
+    <>
+      <ConfigurationTile
+        icon={<UserMultiple size={32} />}
+        onClick={() => setOpen(true)}
+      >
         {t("configureAgeGroups")}
-      </Button>
+      </ConfigurationTile>
       {open && (
-        <Tile>
-          <h3>{t("configureAgeGroups")}</h3>
+        <Modal
+          open
+          modalHeading={t("configureAgeGroups")}
+          primaryButtonText={t("saveAgeGroups")}
+          secondaryButtonText={t("cancel")}
+          primaryButtonDisabled={!draft || busy}
+          onRequestSubmit={save}
+          onRequestClose={() => {
+            if (!busy) setOpen(false);
+          }}
+          onSecondarySubmit={() => {
+            if (!busy) setOpen(false);
+          }}
+        >
           <p>{t("ageGroupsCoverage")}</p>
           {error && (
             <>
@@ -141,13 +158,10 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
                   title={t("ageGroupsInvalid")}
                 />
               )}
-              <Button disabled={!draft || busy} onClick={save}>
-                {t("saveAgeGroups")}
-              </Button>
             </>
           )}
-        </Tile>
+        </Modal>
       )}
-    </section>
+    </>
   );
 }

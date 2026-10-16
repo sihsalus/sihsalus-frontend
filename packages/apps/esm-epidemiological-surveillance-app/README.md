@@ -8,16 +8,16 @@ Terminología: visita = consulta; encounter = atención.
 
 Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación/defunción. No se incorpora React Form Engine en este cambio.
 
-Cubre el registro, la información temporal y la distribución demográfica (RF-22),
-con usabilidad RNF-04, RNF-05 y RNF-06. NOTI/Excel, mapas y clasificación automática
-de focos no se incluyen en este cambio.
+Cubre el registro, la información temporal, la distribución demográfica (RF-22)
+y la información geográfica de focos (RF-18/RF-19 de la tesis), con usabilidad
+RNF-04, RNF-05 y RNF-06. NOTI/Excel no se incluye.
 
 ### Pestañas, demografía y configuración
 
 Pestañas: **Casos**, **Información temporal** (antes Indicadores), **Indicadores**,
 **Demográfico**, **Geográfico**, **Eventos** y **Configuración**. Por indicación del
-usuario, Indicadores y Geográfico quedan vacías: no calculan indicadores numéricos
-ni muestran mapas. Casos e Información temporal identifican sus controles con
+usuario, Indicadores queda vacía. Geográfico presenta el mapa, la tabla por origen
+y el gráfico por centro poblado. Casos e Información temporal identifican sus controles con
 el título Filtros. Nuevo caso usa el mismo botón primario con icono de Nuevo evento.
 
 Demográfico cruza Fila y Columna: edad, sexo, enfermedad, grupo etario, etnia,
@@ -39,6 +39,83 @@ infantes 0–1, niños 2–11, adolescentes 12–17, jóvenes 18–29, adultos 3
 mayores desde 60. Al editar un máximo se calcula el mínimo siguiente. Se exige
 cobertura desde 0, sin huecos ni solapamientos y con el último grupo sin máximo.
 Cambiar los grupos reclasifica los reportes, sin modificar la edad guardada en casos.
+
+### Información geográfica (RF-18/RF-19)
+
+Filtros: enfermedad, inicio de síntomas desde/hasta (mismo año calendario), Casos
+incluidos (confirmados por defecto, probables o ambos; nunca descartados), año
+de referencia derivado y no editable, departamento, provincia y distrito.
+`GET /reports/geography` acepta `diagnosisType=CONFIRMADO|PROBABLE|TODOS` y entrega agregados por centro de
+infección, sin identificadores de pacientes. El conteo de riesgo, la tabla
+Centro poblado × Origen y el pastel usan el intervalo y los tipos de caso seleccionados.
+La clasificación usa el historial de esos mismos tipos hasta el año de referencia.
+El filtro requiere actualizar frontend y OMOD juntos. Solo los
+centros con casos y coordenadas aparecen en el mapa; los demás permanecen en
+la tabla y el pastel, con aviso del número de casos sin coordenadas.
+
+La clasificación considera los tipos de caso seleccionados registrados de esa
+enfermedad y centro hasta el año de referencia: autóctonos ese año → activo;
+último autóctono entre 1 y 3 años antes → residual no activo; sin autóctonos
+en esos cuatro años → eliminado. Introducidos se tratan como otros orígenes
+no autóctonos, según aclaración del usuario. Un origen histórico desconocido
+impide afirmar eliminado y se muestra sin clasificación. La ausencia de casos
+se refiere al historial registrado, no acredita cobertura histórica completa.
+
+Las leyendas de riesgo (rojo/naranja/amarillo/verde) y clasificación
+(círculo/triángulo/cuadrado) se ubican abajo a la derecha; siempre queda una
+activa. Solo riesgo usa círculos; solo clasificación usa rojo. El mapa permite
+desplazamiento, zoom y ajuste a los focos, con teselas OpenStreetMap y atribución.
+El mapa base requiere red; no se precargan mapas para uso offline ni se envían
+casos al proveedor. La tabla y el gráfico siguen disponibles si fallan las teselas.
+
+Configuración abre modales con Cancelar/Guardar para grupos etarios, coordenadas
+y riesgo. `PUT /configuration/coordinates` recibe `{csv}` con el formato exacto
+del archivo `epidemiologysurveillance/centros_poblados_maynas.csv`:
+`address_hierarchy_entry_id,latitude,longitude`. Aunque el encabezado dice ID,
+sus valores son códigos territoriales `user_generated_id`; el servidor los
+resuelve al ID interno de Address Hierarchy. Conserva ceros iniciales, rechaza
+códigos duplicados y coordenadas no finitas o fuera de latitud ±90 y longitud
+±180 antes de escribir. Los códigos desconocidos o ambiguos se guardan pendientes,
+sin inventar centros poblados. La respuesta informa `imported`, `matched` y
+`pending`; la pantalla conserva el resultado tras guardar. Las coordenadas se
+asocian al consultar el mapa cuando existe una correspondencia única en el
+catálogo. La importación es transaccional, actualiza los centros incluidos y
+conserva los demás. Los códigos admiten hasta 255 caracteres numéricos, según
+la columna `surveillance_coordinate_codes.center_code`, sin truncamiento.
+
+`GET/PUT /configuration/risk-levels` almacena tres mínimos enteros crecientes
+(Mediano, Alto, Muy Alto), por defecto `[10,20,50]`. Bajo empieza en 1; los máximos
+se derivan del nivel siguiente, sin huecos ni solapamientos. El límite técnico
+es el entero Java de 32 bits; no se añaden campos de texto libre ni truncamientos.
+Guardar requiere el privilegio de administración; consultar el mapa requiere
+el de indicadores, tanto en frontend como en backend.
+
+Actualizar OMOD y ESM juntos: la migración `liquibase-geography.xml` crea las
+tablas de coordenadas y riesgo; `liquibase-coordinate-codes.xml` agrega la
+persistencia por código territorial, compatible con coordenadas ya cargadas.
+No modifica casos ni la clasificación usada por
+las alertas existentes. Sin estos endpoints se presenta un error seguro y reintento.
+
+Validación local de geografía (15/10/2026): `mvn package` **PASSED** (126 pruebas
+API y 7 REST); `yarn.cmd workspace @sihsalus/esm-epidemiological-surveillance-app
+test` **PASSED** (126 pruebas Vitest y una prueba HMR); `lint`, `build` y
+`node ../../../node_modules/typescript/bin/tsc6 --noEmit` **PASSED**.
+`PLAYWRIGHT_CHANNEL=msedge node --test tooling/geographic-layout.check.cjs`
+**PASSED**, leyendas y atribución dentro del mapa a 1280, 768 y 375 px, con
+teselas y centros sintéticos. Incluye revisión de capturas; no acredita el mapa
+base en red ni un entorno integrado. Pruebas de persistencia usan H2 y las de
+migración ejecutan Liquibase dos veces. Smoke clínico DEV/QLTY/MariaDB **NOT RUN**
+(sin sesión de prueba coordinada); no se realizó despliegue.
+
+Corrección de importación CSV: el archivo de ejemplo contiene 694 filas válidas;
+41 códigos no aparecen en el catálogo territorial del repositorio. Ahora se
+persisten todos y se informa cuántos quedan pendientes, sin recargar la página
+y perder el aviso. Validación: CSV completo aceptado por el validador Java;
+`mvn package` con formateadores desactivados, 126 pruebas API y 7 REST PASSED;
+126 pruebas Vitest y HMR, TypeScript, lint y build PASSED. La prueba H2 comprueba
+que un código pendiente se resuelve al agregarlo al catálogo y no se asocia si
+existen duplicados. La comprobación con el catálogo de la instancia desplegada
+queda pendiente; requiere actualizar el OMOD para ejecutar la nueva migración.
 
 Demográfico requiere el privilegio de indicadores; Configuración requiere el de
 configuración. Los endpoints también verifican los permisos. Se requiere el OMOD

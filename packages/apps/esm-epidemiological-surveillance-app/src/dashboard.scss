@@ -1,3 +1,53 @@
+.configurationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 11rem));
+  gap: 1rem;
+  padding-block: 1.5rem;
+}
+
+.configurationTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 11rem;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  background: #f4f4f4;
+  color: #525252;
+  font: inherit;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+
+  &:hover {
+    background: #e8e8e8;
+    border-color: #c6c6c6;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0f62fe;
+    outline-offset: 2px;
+  }
+
+  &:active {
+    background: #e0e0e0;
+  }
+}
+
+.configurationIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.configurationFeedback {
+  grid-column: 1 / -1;
+}
+
 .container {
   display: flex;
   flex-direction: column;

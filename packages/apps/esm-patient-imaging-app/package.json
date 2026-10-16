@@ -19,7 +19,7 @@
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/patient-imaging/playwright.config.ts",
     "verify": "turbo lint typescript coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -72,7 +72,7 @@
     "dayjs": "1.x",
     "dotenv": "^18.0.7",
     "i18next": "^26.4.2",
-    "i18next-parser": "^9.0.2",
+    "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.x",
     "react-dom": "^18.x",

@@ -17,7 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next-cli extract --config ../../tooling/scripts/i18next.config.mjs"
   },
   "files": [
     "dist",
@@ -70,5 +70,6 @@
     "style-loader": "4.0.0",
     "swc-loader": "0.2.7",
     "vitest": "5.0.3"
-  }
+  },
+  "private": true
 }

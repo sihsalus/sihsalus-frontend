@@ -113,20 +113,19 @@ revalidación de caché y rechazo de hallazgos no revisados al actualizar.
 
 ## Extracción de traducciones
 
-La resolución `i18next-parser/broccoli-plugin` usa la versión publicada 6.0.0
-solo para ese consumidor. Retira la compatibilidad con el antiguo builder
-Broccoli basado en `read()` y su cadena de directorios temporales. El repositorio
-usa la CLI ESM de `i18next-parser` y su `BaseLexer` personalizado, no ese builder.
-Node 24 admite la dependencia ESM; la extracción debe conservar los catálogos
-revisados y las variables de interpolación.
+`yarn extract-translations` utiliza `i18next-cli` 1.75.3, compatible con Node 24.
+Las aplicaciones y el motor de formularios comparten
+`packages/tooling/scripts/i18next.config.mjs`; conservan catálogos planos en
+`translations/en.json` y `translations/es.json`. El shell asigna el namespace
+al cargar cada aplicación. La extracción ignora tests y conserva valores
+revisados, interpolaciones, plurales y claves dinámicas no detectables estáticamente.
+No usar `--sync-primary` ni `--sync-all` como parte de una extracción rutinaria.
 
-`i18next-parser` está archivado y todavía declara `broccoli-plugin` 4. La
-resolución evita mantener un parche de código local o cambiar los catálogos
-durante esta actualización. Los mantenedores del frontend deben retirarla al
-migrar a `i18next-cli`, el reemplazo recomendado por upstream, junto con la
-configuración y el lexer personalizado. Las pruebas de extracción cubren la
-CLI de aplicaciones y el lexer del framework; la prueba de dependencias impide
-reintroducir la cadena retirada.
+`esm-translations` conserva sus defaults tipados en `src/translations.ts` y usa
+el visitante AST del CLI para extraerlos. Se retiran `i18next-parser`, el lexer
+por expresiones regulares y la resolución de compatibilidad de `broccoli-plugin`.
+Las pruebas ejecutan la CLI real sobre copias sintéticas y comprueban que los
+catálogos mantengan el formato que consume el runtime.
 
 ## Cómo validar cambios a estos contratos
 

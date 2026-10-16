@@ -11,8 +11,10 @@ are used to generate the `CoreTranslationKey` type, which allows Typescript to t
 developers whether a key is in the core translations or not. The values are used by
 the `getCoreTranslation` function, so no default needs to be provided.
 
-A custom i18next-parser lexer is defined so that the `extract-translations` script
-pulls translation strings directly out of this `translations.ts` file.
+`yarn extract-translations` uses `i18next-cli` and its AST visitor to read string
+defaults from `src/translations.ts`. No separate lexer or regular-expression
+parser is maintained. Existing catalog values and keys are preserved; extraction
+does not overwrite reviewed translations or prune dynamically used entries.
 
 The app shell uses the core `connectionStatusTitle`, `connectionOffline`, and
 `connectionOnline` keys for browser connectivity events. Their English and

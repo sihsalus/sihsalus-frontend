@@ -13,7 +13,6 @@ const protectedDependencies = [
   { name: 'browserslist', minimumSafeVersion: '4.28.7' },
   { name: 'fast-uri', minimumSafeVersion: '3.1.8' },
   { name: 'flatted', minimumSafeVersion: '3.4.2' },
-  { name: 'js-yaml', minimumSafeVersion: '4.3.2' },
   { name: 'nanoid', minimumSafeVersion: '3.3.18' },
   { name: 'shell-quote', minimumSafeVersion: '1.8.4' },
   { name: 'sigstore', minimumSafeVersion: '4.1.1' },
@@ -70,7 +69,15 @@ test('known vulnerable transitive dependencies stay above their patched versions
 });
 
 test('translation tooling does not reinstall the obsolete temporary-directory dependency chain', () => {
-  for (const name of ['quick-temp', 'underscore.string', 'sprintf-js']) {
+  for (const name of [
+    'i18next-parser',
+    'broccoli-plugin',
+    'walk-sync',
+    'js-yaml',
+    'quick-temp',
+    'underscore.string',
+    'sprintf-js',
+  ]) {
     assert.deepEqual(getLockedVersions(name), [], `${name} must remain absent from yarn.lock`);
     assert.throws(() => require.resolve(name), { code: 'MODULE_NOT_FOUND' });
   }
@@ -108,7 +115,7 @@ test('brace-expansion stays patched and compatible with every minimatch API gene
   assert.deepEqual(esmBraceExpand.default('{e,f}'), ['e', 'f']);
 
   for (const { owner, hasEsmBuild } of [
-    { owner: 'walk-sync', hasEsmBuild: false },
+    { owner: 'glob', hasEsmBuild: false },
     { owner: 'filelist', hasEsmBuild: false },
     { owner: '@swc/cli', hasEsmBuild: true },
   ]) {

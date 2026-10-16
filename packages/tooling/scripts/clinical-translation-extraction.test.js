@@ -96,24 +96,25 @@ test('medication catalog extraction uses the catalogs loaded by the app and pres
   const fixture = mkdtempSync(path.join(os.tmpdir(), 'sihsalus-i18n-'));
   try {
     mkdirSync(path.join(fixture, 'translations'));
+    mkdirSync(path.join(fixture, 'src'));
     for (const locale of ['en', 'es']) {
       writeFileSync(path.join(fixture, 'translations', `${locale}.json`), JSON.stringify(readCatalog(app, locale)));
     }
 
     const component = path.join(appsRoot, app, 'src/add-drug-order/drug-search/missing-catalog-item.component.tsx');
-    writeFileSync(path.join(fixture, 'catalog-request.tsx'), readFileSync(component));
+    writeFileSync(path.join(fixture, 'src/catalog-request.tsx'), readFileSync(component));
     execFileSync(
       process.execPath,
       [
-        path.join(repositoryRoot, 'node_modules/i18next-parser/bin/cli.js'),
-        'catalog-request.tsx',
+        path.join(repositoryRoot, 'node_modules/i18next-cli/dist/esm/cli.js'),
+        'extract',
         '--config',
-        path.join(repositoryRoot, 'packages/tooling/scripts/i18next-parser.config.js'),
+        path.join(repositoryRoot, 'packages/tooling/scripts/i18next.config.mjs'),
       ],
       { cwd: fixture, stdio: 'pipe', timeout: 30000 },
     );
 
-    assert.deepEqual(readdirSync(fixture).sort(), ['catalog-request.tsx', 'translations']);
+    assert.deepEqual(readdirSync(fixture).sort(), ['src', 'translations']);
     assert.deepEqual(readdirSync(path.join(fixture, 'translations')).sort(), ['en.json', 'es.json']);
     for (const locale of ['en', 'es']) {
       const extracted = JSON.parse(readFileSync(path.join(fixture, 'translations', `${locale}.json`), 'utf8'));
@@ -126,25 +127,26 @@ test('medication catalog extraction uses the catalogs loaded by the app and pres
   }
 });
 
-test('core translation extraction keeps the custom object lexer and existing translations working', () => {
+test('core translation extraction preserves object defaults and reviewed translations without a custom lexer', () => {
   const fixture = mkdtempSync(path.join(os.tmpdir(), 'sihsalus-core-i18n-'));
   try {
     mkdirSync(path.join(fixture, 'translations'));
+    mkdirSync(path.join(fixture, 'src'));
     writeFileSync(
       path.join(fixture, 'translations', 'en.json'),
       JSON.stringify({ connectionOffline: 'Previously reviewed offline message' }),
     );
     writeFileSync(
-      path.join(fixture, 'translations.ts'),
+      path.join(fixture, 'src/translations.ts'),
       readFileSync(path.join(repositoryRoot, 'packages/libs/esm-translations/src/translations.ts')),
     );
     execFileSync(
       process.execPath,
       [
-        path.join(repositoryRoot, 'node_modules/i18next-parser/bin/cli.js'),
-        'translations.ts',
+        path.join(repositoryRoot, 'node_modules/i18next-cli/dist/esm/cli.js'),
+        'extract',
         '--config',
-        path.join(repositoryRoot, 'packages/libs/esm-translations/i18next-parser.config.mjs'),
+        path.join(repositoryRoot, 'packages/libs/esm-translations/i18next.config.mjs'),
       ],
       { cwd: fixture, stdio: 'pipe', timeout: 30000 },
     );
@@ -154,6 +156,63 @@ test('core translation extraction keeps the custom object lexer and existing tra
     assert.equal(extracted.address1, 'Address line 1');
     assert.equal(extracted.closeAllOpenedWorkspaces, 'Discard changes in {{count}} workspaces');
     assert.deepEqual(readdirSync(path.join(fixture, 'translations')), ['en.json']);
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
+  }
+});
+
+test('CLI extraction preserves flat catalogs, reviewed plurals and dynamic keys while ignoring tests', () => {
+  const fixture = mkdtempSync(path.join(os.tmpdir(), 'sihsalus-cli-i18n-'));
+  try {
+    mkdirSync(path.join(fixture, 'src'));
+    mkdirSync(path.join(fixture, 'translations'));
+    const reviewed = {
+      en: {
+        greeting: 'Hello {{name}}',
+        items_one: '{{count}} item',
+        items_other: '{{count}} items',
+        dynamicValue: 'Keep me',
+      },
+      es: {
+        greeting: 'Hola {{name}}',
+        items_one: '{{count}} elemento',
+        items_other: '{{count}} elementos',
+        dynamicValue: 'Conservar',
+      },
+    };
+    for (const locale of ['en', 'es']) {
+      writeFileSync(path.join(fixture, 'translations', `${locale}.json`), JSON.stringify(reviewed[locale]));
+    }
+    writeFileSync(
+      path.join(fixture, 'src/component.tsx'),
+      `
+      import { useTranslation, Trans } from 'react-i18next';
+      const { t } = useTranslation('@sihsalus/synthetic-app');
+      t('greeting', { defaultValue: 'Unreviewed {{name}}', name: 'Synthetic' });
+      t('items', { count: 2, defaultValue_one: '{{count}} item', defaultValue_other: '{{count}} items' });
+      t('newLabel', 'New label');
+      const element = <Trans i18nKey="jsxLabel">A new label</Trans>;
+    `,
+    );
+    writeFileSync(path.join(fixture, 'src/component.test.tsx'), `t('testOnly', 'Do not extract');`);
+    execFileSync(
+      process.execPath,
+      [
+        path.join(repositoryRoot, 'node_modules/i18next-cli/dist/esm/cli.js'),
+        'extract',
+        '--config',
+        path.join(repositoryRoot, 'packages/tooling/scripts/i18next.config.mjs'),
+      ],
+      { cwd: fixture, stdio: 'pipe', timeout: 30000 },
+    );
+    for (const locale of ['en', 'es']) {
+      const extracted = JSON.parse(readFileSync(path.join(fixture, 'translations', `${locale}.json`)));
+      for (const [key, value] of Object.entries(reviewed[locale])) assert.equal(extracted[key], value);
+      assert.equal(extracted.testOnly, undefined);
+      assert.equal(extracted['@sihsalus/synthetic-app'], undefined);
+      assert.ok(Object.hasOwn(extracted, 'newLabel'));
+      assert.ok(Object.hasOwn(extracted, 'jsxLabel'));
+    }
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }

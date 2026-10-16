@@ -1,5 +1,5 @@
 import type { Condition } from '@openmrs/esm-patient-common-lib';
-import { useConfig, useSession } from '@openmrs/esm-framework';
+import { useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -90,6 +90,12 @@ function renderForm(overrides: { condition?: Condition; formContext?: 'creating'
 describe('ConditionsForm (Salud Materna)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(usePatient).mockReturnValue({
+      patient: { resourceType: 'Patient', id: patientUuid, birthDate: '2020-01-01' },
+      patientUuid,
+      isLoading: false,
+      error: null,
+    });
     mockUseSession.mockReturnValue({
       currentProvider: { uuid: 'provider-1' },
       user: { uuid: 'user-1' },

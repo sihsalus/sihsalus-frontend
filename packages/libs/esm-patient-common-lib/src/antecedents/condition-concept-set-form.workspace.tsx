@@ -1,20 +1,20 @@
 import { Button, ButtonSet, DataTableSkeleton, Form, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Workspace2 } from '@openmrs/esm-framework';
-import { isActiveConditionStatus, isSupportedConditionStatus } from './condition-status';
-import { isConditionForPatient } from './conditions-model';
-import { useConditionFormLifecycle } from './use-condition-form-lifecycle';
-import type { PatientWorkspace2DefinitionProps } from '../workspaces';
+import { usePatient, Workspace2 } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
 import React, { useMemo, useState } from 'react';
-import { FormProvider, type SubmitHandler, useForm, type UseFormReturn } from 'react-hook-form';
+import { FormProvider, type SubmitHandler, type UseFormReturn, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-
-import type { Condition } from './conditions.types';
-import { usePatientConditions } from './conditions.resource';
-import styles from './condition-concept-set-form.scss';
+import type { PatientWorkspace2DefinitionProps } from '../workspaces';
 import ConditionsWidget from './condition-concept-set-fields.component';
+import styles from './condition-concept-set-form.scss';
+import { isActiveConditionStatus, isSupportedConditionStatus } from './condition-status';
+import { usePatientConditions } from './conditions.resource';
+import type { Condition } from './conditions.types';
+import { isConditionForPatient } from './conditions-model';
+import { useConditionFormLifecycle } from './use-condition-form-lifecycle';
 
 interface ConditionFormPayload {
   condition?: Condition;
@@ -47,6 +47,7 @@ export const createConditionConceptSetSchema = (
   formContext: 'creating' | 'editing',
   t: TFunction,
   originalCondition?: Condition,
+  patientBirthDate?: string,
 ) => {
   const isCreating = formContext === 'creating';
 
@@ -71,6 +72,18 @@ export const createConditionConceptSetSchema = (
         }),
     })
     .superRefine((data, ctx) => {
+      if (
+        originalCondition?.antecedentType !== 'family' &&
+        data.onsetDateTime &&
+        patientBirthDate &&
+        dayjs(data.onsetDateTime).isBefore(dayjs(patientBirthDate), 'day')
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['onsetDateTime'],
+          message: t('onsetDateCannotBeBeforeBirthDate', "Onset date cannot be earlier than the patient's birth date"),
+        });
+      }
       if (
         (data.abatementDateTime || originalCondition?.abatementDateTime) &&
         isActiveConditionStatus(data.clinicalStatus)
@@ -142,6 +155,8 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
 }) => {
   const patientUuid = workspaceProps?.patientUuid ?? '';
   const { t } = useTranslation(translationNamespace);
+  const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
+  const birthDate = patient?.id === patientUuid ? patient.birthDate : undefined;
   const { conditions, isLoading, error: loadingError } = usePatientConditions(patientUuid);
   const [creationMessage, setCreationMessage] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
@@ -170,7 +185,7 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
   const methods: UseFormReturn<ConditionsFormSchema> = useForm<ConditionsFormSchema>({
     mode: 'all',
     resolver: (values, context, options) =>
-      zodResolver(createConditionConceptSetSchema(formContext, t, originalCondition ?? matchingCondition))(
+      zodResolver(createConditionConceptSetSchema(formContext, t, originalCondition ?? matchingCondition, birthDate))(
         values,
         context,
         options,
@@ -219,10 +234,12 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
       children
     );
 
-  if (isEditing && isLoading && !isSubmittingForm && !isSaved && !isUncertain)
+  if ((isPatientLoading || (isEditing && isLoading)) && !isSubmittingForm && !isSaved && !isUncertain)
     return renderWorkspace(<DataTableSkeleton role="progressbar" />);
   if (
     unsupportedClinicalStatus ||
+    patientError ||
+    patient?.id !== patientUuid ||
     !patientUuid ||
     (isEditing &&
       !isSubmittingForm &&
@@ -258,6 +275,7 @@ const ConditionsFormContent: React.FC<LegacyConditionFormProps & FormOptions & {
             isEditing={isEditing}
             isSubmittingForm={isSubmittingForm || isSaved || isUncertain}
             patientUuid={patientUuid}
+            patientBirthDate={birthDate}
             setCreationMessage={setCreationMessage}
             setUpdateMessage={setUpdateMessage}
             setIsSubmittingForm={setIsSubmittingForm}

@@ -1,5 +1,5 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import useSWR, { type ScopedMutator } from 'swr';
 
 import type { ConfigObject } from '../../../config-schema';
 
@@ -116,11 +116,22 @@ function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
+export function getAdverseReactionsUrl(patientUuid: string, config: ConfigObject) {
+  return patientUuid && config.encounterTypes.vaccinationAdministration
+    ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${config.encounterTypes.vaccinationAdministration}&v=custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,concept:(uuid,display),value:(uuid,display)))`
+    : null;
+}
+
+export function refreshAdverseReactions(patientUuid: string, config: ConfigObject, mutate: ScopedMutator) {
+  const url = getAdverseReactionsUrl(patientUuid, config);
+  if (!url) return Promise.reject(new Error('Adverse reaction query unavailable'));
+  // Revalidation alone can resolve with stale data after a failed fetch. Await the
+  // actual request so a confirmed save and a failed table refresh stay distinct.
+  return mutate(url, () => openmrsFetch(url), { revalidate: false });
+}
+
 export function useAdverseReactions(patientUuid: string, config: ConfigObject) {
-  const url =
-    patientUuid && config.encounterTypes.vaccinationAdministration
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${config.encounterTypes.vaccinationAdministration}&v=custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,concept:(uuid,display),value:(uuid,display)))`
-      : null;
+  const url = getAdverseReactionsUrl(patientUuid, config);
 
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<{ results: Array<EncounterResponse> }>, Error>(
     url,

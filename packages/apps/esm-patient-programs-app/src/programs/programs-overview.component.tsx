@@ -20,6 +20,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -47,7 +49,9 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
   const programsCount = 5;
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const hideAddProgramButton = config?.hideAddProgramButton ?? false;
+  const session = useSession();
+  const canAdd = userHasAccess(['app:hoja.clinica.programas.editar', 'Add Patient Programs'], session?.user);
+  const hideAddProgramButton = !canAdd || (config?.hideAddProgramButton ?? false);
   const programNavigationTargets = config?.programNavigationTargets ?? [];
   const displayText = t('programEnrollmentsLower', 'program enrollments');
   const headerTitle = t('carePrograms', 'Care Programs');
@@ -222,7 +226,13 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchProgramsForm} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={hideAddProgramButton ? undefined : launchProgramsForm}
+    />
+  );
 };
 
 export default ProgramsOverview;

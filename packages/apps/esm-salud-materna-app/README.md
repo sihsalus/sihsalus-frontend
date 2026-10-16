@@ -205,3 +205,8 @@ para validar las aserciones de comportamiento.
 ## 🏥 Características Principales
 
 - **SIH SALUS Library**: Componentes UI y servicios comunes optimizados para el flujo de trabajo peruano
+
+El formulario compartido de antecedentes personales valida el inicio contra el
+día de nacimiento del paciente y espera su demografía antes de guardar. Los
+antecedentes familiares históricos conservan su excepción. La captura obstétrica
+en formularios AMPATH no cambia.

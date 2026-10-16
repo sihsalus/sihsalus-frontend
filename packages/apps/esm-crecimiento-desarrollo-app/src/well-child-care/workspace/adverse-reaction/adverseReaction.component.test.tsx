@@ -1,17 +1,22 @@
-import { showSnackbar, useConfig, useVisit } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showSnackbar, useConfig, useVisit } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { saveAdverseReaction } from './adverse-reaction.resource';
+import { configSchema } from '../../../config-schema';
+import { refreshAdverseReactions, saveAdverseReaction } from './adverse-reaction.resource';
 import AdverseReactionFormWorkspace from './adverseReaction.component';
 
-vi.mock('./adverse-reaction.resource', () => ({ saveAdverseReaction: vi.fn() }));
+vi.mock('./adverse-reaction.resource', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./adverse-reaction.resource')>()),
+  saveAdverseReaction: vi.fn(),
+  refreshAdverseReactions: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('@sihsalus/esm-rbac', () => ({ RequirePrivilege: ({ children }) => children }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key, fallback) => fallback }) }));
 
 const closeWorkspace = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(useConfig).mockReturnValue({});
+  vi.mocked(useConfig).mockReturnValue(getDefaultsFromConfigSchema(configSchema));
   vi.mocked(useVisit).mockReturnValue({
     activeVisit: { uuid: 'synthetic-visit', location: { uuid: 'synthetic-location' } },
   } as ReturnType<typeof useVisit>);
@@ -66,6 +71,7 @@ it('saves after the four required fields are completed', async () => {
     ),
   );
   expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
+  expect(refreshAdverseReactions).toHaveBeenCalledOnce();
 });
 
 it('keeps the form open and hides backend details after a failed save', async () => {
@@ -84,4 +90,5 @@ it('keeps the form open and hides backend details after a failed save', async ()
   );
   expect(closeWorkspace).not.toHaveBeenCalled();
   expect(screen.getByLabelText(/Descripción de la reacción/)).toHaveValue('Synthetic reaction');
+  expect(refreshAdverseReactions).not.toHaveBeenCalled();
 });

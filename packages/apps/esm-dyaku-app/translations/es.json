@@ -10,7 +10,7 @@
   "dyakuPatientsSubtitle": "Lista de pacientes registrados en el sistema FHIR del MINSA",
   "dyakuPatientsTitle": "Pacientes FHIR - Dyaku MINSA",
   "email": "Correo electrónico",
-  "errorLoadingPatients": "Error al cargar los pacientes: {{error}}",
+  "errorLoadingPatients": "No se pudieron consultar los pacientes. Intente nuevamente. Si el problema continúa, contacte a soporte.",
   "failed": "Fallidos",
   "female": "Femenino",
   "firstName": "Primer Nombre",
@@ -47,5 +47,14 @@
   "syncSuccessMessage_one": "Se sincronizaron {{count}} pacientes exitosamente.",
   "syncSuccessMessage_many": "Se sincronizaron {{count}} pacientes exitosamente.",
   "syncSuccessMessage_other": "Se sincronizaron {{count}} pacientes exitosamente.",
-  "syncWarning": "Los pacientes existentes serán actualizados, y los nuevos serán creados automáticamente."
+  "syncWarning": "Los pacientes existentes serán actualizados, y los nuevos serán creados automáticamente.",
+  "syncDuplicateInBatch": "Importación bloqueada: la identidad está repetida en el lote o ya se está procesando. Revise los registros de origen.",
+  "syncIdentityAmbiguous": "Importación bloqueada: no se pudo identificar un único paciente local por DNI y tipo de documento. Revise los registros existentes.",
+  "syncIdentityInvalid": "Importación bloqueada: se requiere un único DNI explícito de ocho dígitos, sin modificar, y un paciente activo. Revise el registro de origen.",
+  "syncImportFailed": "No se pudo completar la importación del paciente. Revise el registro local y contacte a soporte antes de reintentar.",
+  "syncLocalLookupFailed": "Importación bloqueada: no se pudo completar la búsqueda de identidad local. Verifique la conexión y su acceso antes de reintentar.",
+  "syncMetadataInvalid": "Importación bloqueada: no se pudo verificar la configuración de identificadores o ubicación. Contacte a soporte.",
+  "syncPatientDataInvalid": "Importación bloqueada: los datos demográficos de origen están incompletos o son inválidos. Revise nombre, fecha de nacimiento y sexo.",
+  "syncRemoteResponseInvalid": "No se pudo verificar la respuesta de pacientes del origen. No se inició la importación. Contacte a soporte.",
+  "syncWriteUnconfirmed": "No se pudo confirmar el guardado del paciente. Revise el registro local antes de reintentar."
 }

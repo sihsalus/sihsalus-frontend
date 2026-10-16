@@ -25,6 +25,8 @@ import {
 import { ErrorNotification } from "./error-notification.component";
 import { EventsPanel } from "./events-panel.component";
 import { ReportPanel } from "./report-panel.component";
+import { EndemicSettings } from "./endemic-settings.component";
+import { dateInZone } from "./case-form.utils";
 import { DemographicPanel } from "./demographic-panel.component";
 import { AgeGroupsPanel } from "./age-groups.component";
 import { GeographicPanel } from "./geographic-panel.component";
@@ -52,6 +54,7 @@ function SessionDashboard() {
   const [formKey, setFormKey] = useState(0);
   const [showCaseForm, setShowCaseForm] = useState(false);
   const [geographicRevision, setGeographicRevision] = useState(0);
+  const [temporalRevision, setTemporalRevision] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and session identity must invalidate the catalogue even when authentication stays true.
   useEffect(() => {
     const abort = new AbortController();
@@ -137,19 +140,27 @@ function SessionDashboard() {
             </TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={reportPrivilege}>
-                <ReportPanel catalogue={catalogue} />
+                <ReportPanel
+                  key={temporalRevision}
+                  catalogue={catalogue}
+                  locationUuid={session?.sessionLocation?.uuid}
+                />
               </RequirePrivilege>
             </TabPanel>
             <TabPanel />
             <TabPanel>
               <RequirePrivilege privilege={reportPrivilege}>
-                <DemographicPanel catalogue={catalogue} />
+                <DemographicPanel
+                  catalogue={catalogue}
+                  locationUuid={session?.sessionLocation?.uuid}
+                />
               </RequirePrivilege>
             </TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={reportPrivilege}>
                 <GeographicPanel
                   key={geographicRevision}
+                  locationUuid={session?.sessionLocation?.uuid}
                   catalogue={catalogue}
                 />
               </RequirePrivilege>
@@ -169,6 +180,12 @@ function SessionDashboard() {
                   aria-label={t("configuration")}
                 >
                   <AgeGroupsPanel onSaved={reloadSurveillancePage} />
+                  <EndemicSettings
+                    currentYear={Number(
+                      dateInZone(catalogue.catalog.timezone).slice(0, 4),
+                    )}
+                    onSaved={() => setTemporalRevision((value) => value + 1)}
+                  />
                   <GeographicSettings
                     onSaved={() => setGeographicRevision((value) => value + 1)}
                   />

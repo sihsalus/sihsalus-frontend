@@ -137,7 +137,7 @@ it("rejects cross-year windows and invalid risk boundaries", () => {
 it("renders the center by origin table and percentages including centers without coordinates", async () => {
   render(<GeographicPanel catalogue={catalogue} />);
   await screen.findByRole("table");
-  expect(screen.getByText("district selector")).toBeInTheDocument();
+  expect(screen.getByText("center selector")).toBeInTheDocument();
   expect(screen.getByLabelText("geo.referenceYear")).toBeDisabled();
   expect(
     screen.getByText("Synthetic center A: 3 (75.0%)", { selector: "li" }),

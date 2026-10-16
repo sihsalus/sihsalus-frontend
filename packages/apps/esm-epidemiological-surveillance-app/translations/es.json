@@ -237,7 +237,7 @@
     "providerUuid": "Profesional que registra",
     "locationUuid": "Localidad del caso",
     "eventUuid": "Enfermedad",
-    "status": "Estado del caso",
+    "status": "Clasificación del diagnóstico",
     "severity": "Gravedad",
     "origin": "Origen",
     "species": "Especie",
@@ -324,7 +324,7 @@
     "CLINICAL_CONCEPT_UNAVAILABLE": "Falta un concepto requerido para este registro o está retirado. Solicita revisar el contenido clínico de OpenMRS.",
     "CLINICAL_DATATYPE_MISMATCH": "Una pregunta clínica tiene un tipo incompatible. Solicita revisar el concepto en OpenMRS.",
     "EVENT_NOT_FOUND": "El evento notificable no existe. Actualiza la lista de eventos.",
-    "EVENT_RETIRED": "El evento fue retirado y no admite nuevos registros.",
+    "EVENT_RETIRED": "El evento está inactivo y no admite nuevos casos.",
     "ICD10_MAPPING_UNAVAILABLE": "El diagnóstico no tiene un código CIE-10 inequívoco. Solicita la revisión del catálogo.",
     "INVALID_CLASSIFICATION": "Selecciona una clasificación disponible para esta enfermedad.",
     "INVALID_EVENT": "Selecciona una enfermedad del catálogo de vigilancia.",
@@ -349,13 +349,15 @@
     "INVALID_ZONE_LEVEL": "Selecciona distrito o centro poblado para consultar los indicadores.",
     "INVALID_DIAGNOSIS_TYPE": "Selecciona confirmados, probables o ambos tipos de caso.",
     "INVALID_REPORT_ADDRESS": "Selecciona una zona que corresponda al nivel geográfico elegido.",
-    "EVENT_ALREADY_EXISTS": "Ya existe un evento notificable con este identificador.",
+    "EVENT_ALREADY_EXISTS": "Ya existe un evento notificable para esta enfermedad.",
     "EVENT_CONCEPT_ALREADY_EXISTS": "Ya existe un evento notificable para esta enfermedad o concepto.",
     "EVENT_CONCEPT_IMMUTABLE": "No se puede cambiar el concepto clínico de un evento ya registrado.",
     "INVALID_RISK_LEVELS": "Revise los mínimos de los niveles de riesgo.",
     "INVALID_COORDINATES_CSV": "CSV inválido: revise el encabezado, los códigos duplicados y las coordenadas numéricas (latitud −90 a 90; longitud −180 a 180).",
     "UNKNOWN_CENTER_CODE": "El CSV contiene códigos de centro poblado inexistentes o ambiguos en el catálogo territorial. No se guardaron coordenadas.",
-    "INVALID_GEOGRAPHIC_RANGE": "Seleccione fechas ordenadas dentro del mismo año calendario, sin superar hoy."
+    "INVALID_GEOGRAPHIC_RANGE": "Seleccione fechas ordenadas dentro del mismo año calendario, sin superar hoy.",
+    "OUTSIDE_CURRENT_YEAR": "Selecciona fechas que pertenezcan al año calendario en curso",
+    "INVALID_ENDEMIC_SETTINGS": "Ingresa cantidades enteras positivas. El mínimo no debe superar los años históricos y estos deben ser menores que el año actual."
   },
   "events": "Eventos",
   "newEvent": "Nuevo evento",
@@ -406,7 +408,7 @@
   "noDiagnosesInEncounterTitle": "Atención sin diagnósticos",
   "noDiagnosesInEncounter": "La atención seleccionada no tiene diagnósticos asociados para vigilancia epidemiológica.",
   "statuses": {
-    "SUSPECTED": "Sospechoso",
+    "SUSPECTED": "Probable",
     "CONFIRMED": "Confirmado",
     "DISCARDED": "Descartado"
   },
@@ -481,5 +483,24 @@
     "pieTitle": "Casos y porcentajes por centro poblado",
     "hideZero": "Ocultar columnas sin casos",
     "offline": "Sin conexión. La información puede no estar actualizada y el mapa base puede no estar disponible."
-  }
+  },
+  "endemic": {
+    "configure": "Configurar canal endémico",
+    "historicalYears": "Años históricos previos al año actual",
+    "minimumYears": "Mínimo de años históricos para historia suficiente",
+    "settingsHelp": "Define cuántos años anteriores se consideran y cuántos deben tener datos por periodo para calcular los cuartiles. Valores iniciales: 5 y 3.",
+    "saved": "Configuración del canal endémico guardada.",
+    "compareYears": "Años a comparar",
+    "yearLegend": "Años del canal endémico",
+    "axes": {
+      "dia": "Fechas",
+      "semana": "Semanas epidemiológicas",
+      "mes": "Meses",
+      "trimestre": "Trimestres",
+      "semestre": "Semestres"
+    }
+  },
+  "eventState": "Estado",
+  "eventActive": "Activo",
+  "eventInactive": "Inactivo"
 }

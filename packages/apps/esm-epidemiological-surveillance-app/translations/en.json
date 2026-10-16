@@ -237,7 +237,7 @@
     "providerUuid": "Registering professional",
     "locationUuid": "Case locality",
     "eventUuid": "Disease",
-    "status": "Case status",
+    "status": "Diagnosis classification",
     "severity": "Severity",
     "origin": "Origin",
     "species": "Species",
@@ -324,7 +324,7 @@
     "CLINICAL_CONCEPT_UNAVAILABLE": "A concept required for this record is missing or retired. Ask an administrator to check the OpenMRS clinical content.",
     "CLINICAL_DATATYPE_MISMATCH": "A clinical question has an incompatible datatype. Ask an administrator to check the OpenMRS concept.",
     "EVENT_NOT_FOUND": "The notifiable event does not exist. Refresh the event list.",
-    "EVENT_RETIRED": "The event is retired and cannot receive new records.",
+    "EVENT_RETIRED": "The event is inactive and cannot receive new cases.",
     "ICD10_MAPPING_UNAVAILABLE": "The diagnosis has no unambiguous ICD-10 mapping. Ask the administrator to verify the catalogue.",
     "INVALID_CLASSIFICATION": "Choose a classification available for this disease.",
     "INVALID_EVENT": "Choose a disease from the surveillance catalogue.",
@@ -349,13 +349,15 @@
     "INVALID_ZONE_LEVEL": "Select district or populated center to view indicators.",
     "INVALID_DIAGNOSIS_TYPE": "Select confirmed cases, probable cases, or both.",
     "INVALID_REPORT_ADDRESS": "Select a zone that matches the chosen geographic level.",
-    "EVENT_ALREADY_EXISTS": "A notifiable event with this identifier already exists.",
+    "EVENT_ALREADY_EXISTS": "A notifiable event already exists for this disease.",
     "EVENT_CONCEPT_ALREADY_EXISTS": "A notifiable event for this disease or concept already exists.",
     "EVENT_CONCEPT_IMMUTABLE": "The clinical concept of an existing notifiable event cannot be changed.",
     "INVALID_RISK_LEVELS": "Check the risk level minimums.",
     "INVALID_COORDINATES_CSV": "Invalid CSV: check the header, duplicate codes and numeric coordinates (latitude −90 to 90; longitude −180 to 180).",
     "UNKNOWN_CENTER_CODE": "The CSV contains unknown or ambiguous populated center codes. No coordinates were saved.",
-    "INVALID_GEOGRAPHIC_RANGE": "Select ordered dates within the same calendar year, no later than today."
+    "INVALID_GEOGRAPHIC_RANGE": "Select ordered dates within the same calendar year, no later than today.",
+    "OUTSIDE_CURRENT_YEAR": "Select dates within the current calendar year.",
+    "INVALID_ENDEMIC_SETTINGS": "Enter positive whole numbers. The minimum cannot exceed the historical years, which must be less than the current year."
   },
   "events": "Events",
   "newEvent": "New event",
@@ -406,7 +408,7 @@
   "noDiagnosesInEncounterTitle": "Care encounter without diagnoses",
   "noDiagnosesInEncounter": "The selected care encounter has no associated diagnoses for epidemiological surveillance.",
   "statuses": {
-    "SUSPECTED": "Suspected",
+    "SUSPECTED": "Probable",
     "CONFIRMED": "Confirmed",
     "DISCARDED": "Discarded"
   },
@@ -481,5 +483,24 @@
     "pieTitle": "Cases and percentages by populated center",
     "hideZero": "Hide columns without cases",
     "offline": "Offline. Information may be outdated and the base map may be unavailable."
-  }
+  },
+  "endemic": {
+    "configure": "Configure endemic channel",
+    "historicalYears": "Historical years before the current year",
+    "minimumYears": "Minimum historical years for sufficient history",
+    "settingsHelp": "Set how many previous years to consider and how many must have data per period to calculate quartiles. Initial values: 5 and 3.",
+    "saved": "Endemic channel settings saved.",
+    "compareYears": "Years to compare",
+    "yearLegend": "Endemic channel years",
+    "axes": {
+      "dia": "Dates",
+      "semana": "Epidemiological weeks",
+      "mes": "Months",
+      "trimestre": "Quarters",
+      "semestre": "Half-years"
+    }
+  },
+  "eventState": "Status",
+  "eventActive": "Active",
+  "eventInactive": "Inactive"
 }

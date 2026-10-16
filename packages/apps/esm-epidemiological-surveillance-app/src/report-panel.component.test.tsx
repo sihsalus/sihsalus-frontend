@@ -56,6 +56,7 @@ describe("report screen", () => {
       zoneLevel: "CENTRO_POBLADO",
       address: null,
       total: 0,
+      historicalYears: [2025, 2024],
       curve: [{ date: "2026-01-01", cases: 0 }],
       channel: [
         {
@@ -92,6 +93,11 @@ describe("report screen", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Endemic channel" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: "Years to compare" }));
+    fireEvent.click(await screen.findByText("2025"));
+    expect(
+      await screen.findByRole("list", { name: "Endemic channel years" }),
     ).toBeInTheDocument();
   });
   it("filters at every geographic level and clears descendants", async () => {
@@ -156,5 +162,21 @@ describe("report screen", () => {
     expect(
       screen.queryByRole("img", { name: "Endemic channel" }),
     ).not.toBeInTheDocument();
+  });
+  it("explains that temporal dates must be in the current calendar year", async () => {
+    vi.mocked(getReport).mockRejectedValue(
+      new SurveillanceApiError("SERVICE_UNAVAILABLE", 503),
+    );
+    render(<ReportPanel catalogue={catalogue} />);
+    const previousYear = new Date().getFullYear() - 1;
+    fireEvent.change(screen.getByLabelText("Symptom onset from"), {
+      target: { value: `01/01/${previousYear}` },
+    });
+    expect(
+      await screen.findByText("Select dates within the current calendar year."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Could not complete the operation"),
+    ).toBeInTheDocument();
   });
 });

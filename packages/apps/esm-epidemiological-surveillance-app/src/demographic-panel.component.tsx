@@ -39,7 +39,13 @@ export function visibleDemographicAxes(
   };
 }
 
-export function DemographicPanel({ catalogue }: { catalogue: Catalogue }) {
+export function DemographicPanel({
+  catalogue,
+  locationUuid,
+}: {
+  catalogue: Catalogue;
+  locationUuid?: string;
+}) {
   const { t } = useTranslation(moduleName);
   const online = useConnectivity();
   const today = dateInZone(catalogue.catalog.timezone);
@@ -187,6 +193,7 @@ export function DemographicPanel({ catalogue }: { catalogue: Catalogue }) {
           ))}
         </Select>
         <ReportAddressFilter
+          locationUuid={locationUuid}
           idPrefix="demographic"
 
           onChange={(address, level) => {

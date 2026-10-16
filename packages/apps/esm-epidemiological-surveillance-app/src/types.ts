@@ -41,7 +41,8 @@ export interface SurveillanceEvent {
   conceptDisplay?: string;
   periodicity: "SEMANAL" | "INMEDIATA" | "DIARIA";
   referenceRegulation: string;
-  validFrom: string;
+  active?: boolean;
+  validFrom?: string;
   validTo?: string | null;
 }
 export interface EncounterDiagnosis {
@@ -136,6 +137,7 @@ export interface ReportFilters {
   address?: string;
 }
 export interface Report {
+  historicalYears?: number[];
   generatedAt: string;
   eventUuid: string;
   from: string;
@@ -148,6 +150,7 @@ export interface Report {
   total: number;
   curve: { date: string; cases: number }[];
   channel: {
+    historicalCases?: Record<string, number>;
     date: string;
     year: number;
     number: number;

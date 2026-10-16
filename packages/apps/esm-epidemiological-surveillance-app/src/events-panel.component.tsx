@@ -1,11 +1,5 @@
-import {
-  isCalendarDate,
-  serverFieldErrors,
-  type FieldErrors,
-} from "./field-validation";
-import { DateInput } from "./date-input.component";
+import { serverFieldErrors, type FieldErrors } from "./field-validation";
 import { RequiredFieldLabel } from "./required-field-label.component";
-import { displayDate } from "./date-display";
 import { Add, Edit } from "@carbon/react/icons";
 import {
   Button,
@@ -40,8 +34,6 @@ import type { Catalogue, SurveillanceEvent } from "./types";
 import styles from "./dashboard.scss";
 import { TablePagination } from "./table-pagination.component";
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 export function EventsPanel({
   catalogue: _catalogue,
   onEventsChanged,
@@ -64,8 +56,7 @@ export function EventsPanel({
   const [periodicity, setPeriodicity] =
     useState<SurveillanceEvent["periodicity"]>("SEMANAL");
   const [referenceRegulation, setReferenceRegulation] = useState("");
-  const [validFrom, setValidFrom] = useState(today());
-  const [validTo, setValidTo] = useState("");
+  const [active, setActive] = useState(true);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<unknown>();
   const [attempted, setAttempted] = useState(false);
@@ -75,11 +66,6 @@ export function EventsPanel({
   if (!referenceRegulation.trim()) localErrors.referenceRegulation = "required";
   else if (referenceRegulation.trim().length > 100)
     localErrors.referenceRegulation = "referenceLength";
-  if (!validFrom) localErrors.validFrom = "required";
-  else if (!isCalendarDate(validFrom)) localErrors.validFrom = "dateFormat";
-  if (validTo && !isCalendarDate(validTo)) localErrors.validTo = "dateFormat";
-  else if (validTo && isCalendarDate(validFrom) && validTo < validFrom)
-    localErrors.validTo = "endBeforeStart";
   const fieldErrors = { ...remoteErrors, ...(attempted ? localErrors : {}) };
   const fieldProps = (field: string) => ({
     invalid: !!fieldErrors[field],
@@ -91,7 +77,6 @@ export function EventsPanel({
     setRemoteErrors((current) => {
       const next = { ...current };
       delete next[field];
-      if (field === "validFrom") delete next.validTo;
       return next;
     });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,6 +85,14 @@ export function EventsPanel({
       getEvents(true)
         .then((result) => {
           setEvents(result);
+          setDiseaseFilter((current) =>
+            result.some(
+              (event) =>
+                event.conceptUuid === current && event.active !== false,
+            )
+              ? current
+              : "",
+          );
           setPage(1);
         })
         .catch(setError)
@@ -131,8 +124,7 @@ export function EventsPanel({
         conceptUuid: concept.uuid,
         periodicity,
         referenceRegulation: referenceRegulation.trim(),
-        validFrom,
-        validTo: validTo || null,
+        active,
       };
       if (editing) await updateEvent(editing.uuid, payload);
       else await saveEvent(payload);
@@ -161,8 +153,7 @@ export function EventsPanel({
       key: "reference",
       header: t("eventsTable.reference", "Norma de referencia"),
     },
-    { key: "from", header: t("eventsTable.from", "Vigente desde") },
-    { key: "to", header: t("eventsTable.to", "Vigente hasta") },
+    { key: "active", header: t("eventState", "Estado") },
   ];
   const periodicities = {
     INMEDIATA: t("periodicityValues.inmediata", "Inmediata"),
@@ -171,10 +162,12 @@ export function EventsPanel({
   };
   const diseases = Array.from(
     new Map(
-      events.map((event) => [
-        event.conceptUuid,
-        event.conceptDisplay ?? event.conceptUuid,
-      ]),
+      events
+        .filter((event) => event.active !== false)
+        .map((event) => [
+          event.conceptUuid,
+          event.conceptDisplay ?? event.conceptUuid,
+        ]),
     ).entries(),
   );
   const filteredEvents = events.filter(
@@ -187,8 +180,10 @@ export function EventsPanel({
     concept: event.conceptDisplay ?? event.conceptUuid,
     periodicity: periodicities[event.periodicity] ?? event.periodicity,
     reference: event.referenceRegulation,
-    from: displayDate(event.validFrom),
-    to: displayDate(event.validTo) || "—",
+    active:
+      event.active !== false
+        ? t("eventActive", "Activo")
+        : t("eventInactive", "Inactivo"),
   }));
   return (
     <section aria-label={t("events", "Eventos")} className={styles.form}>
@@ -203,15 +198,14 @@ export function EventsPanel({
             setConcept(null);
             setPeriodicity("SEMANAL");
             setReferenceRegulation("");
-            setValidFrom(today());
-            setValidTo("");
+            setActive(true);
             setFormError(undefined);
             setAttempted(false);
             setRemoteErrors({});
             setOpen(true);
           }}
         >
-          {t("newEvent", "Nueva versión de evento")}
+          {t("newEvent", "Nuevo evento")}
         </Button>
       </div>
       <h3>{t("filters", "Filtros")}</h3>
@@ -240,9 +234,11 @@ export function EventsPanel({
           }}
         >
           <SelectItem value="" text={t("eventFilterAll", "Todos")} />
-          {Object.entries(periodicities).map(([value, label]) => (
-            <SelectItem key={value} value={value} text={label} />
-          ))}
+          {Object.entries(periodicities)
+            .filter(([value]) => value !== "DIARIA")
+            .map(([value, label]) => (
+              <SelectItem key={value} value={value} text={label} />
+            ))}
         </Select>
       </div>
       {loading ? (
@@ -317,10 +313,7 @@ export function EventsPanel({
                                 setReferenceRegulation(
                                   event.referenceRegulation,
                                 );
-                                setValidFrom(
-                                  event.validFrom?.slice(0, 10) ?? "",
-                                );
-                                setValidTo(event.validTo?.slice(0, 10) ?? "");
+                                setActive(event.active !== false);
                                 setFormError(undefined);
                                 setAttempted(false);
                                 setRemoteErrors({});
@@ -363,7 +356,7 @@ export function EventsPanel({
           modalHeading={
             editing
               ? t("editEvent", "Editar evento notificable")
-              : t("newEvent", "Nueva versión de evento notificable")
+              : t("newEvent", "Nuevo evento")
           }
           primaryButtonText={t("save", "Guardar")}
           secondaryButtonText={t("cancel", "Cancelar")}
@@ -442,32 +435,24 @@ export function EventsPanel({
                 clearField("referenceRegulation");
               }}
             />
-            <DateInput
-              id="event-valid-from"
-              {...fieldProps("validFrom")}
-              type="date"
+            <Select
+              id="event-active"
               labelText={
                 <RequiredFieldLabel>
-                  {t("validFrom", "Vigente desde")}
+                  {t("eventState", "Estado")}
                 </RequiredFieldLabel>
               }
-              value={validFrom}
-              onChange={(event) => {
-                setValidFrom(event.target.value);
-                clearField("validFrom");
-              }}
-            />
-            <DateInput
-              id="event-valid-to"
-              {...fieldProps("validTo")}
-              type="date"
-              labelText={t("validTo", "Vigente hasta (opcional)")}
-              value={validTo}
-              onChange={(event) => {
-                setValidTo(event.target.value);
-                clearField("validTo");
-              }}
-            />
+              required
+              value={active ? "active" : "inactive"}
+              disabled={busy}
+              onChange={(event) => setActive(event.target.value === "active")}
+            >
+              <SelectItem value="active" text={t("eventActive", "Activo")} />
+              <SelectItem
+                value="inactive"
+                text={t("eventInactive", "Inactivo")}
+              />
+            </Select>
           </div>
         </Modal>
       )}

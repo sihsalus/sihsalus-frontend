@@ -739,7 +739,11 @@ export function CaseForm({
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
             {m.statuses.map((s) => (
-              <SelectItem key={s.key} value={s.key} text={s.label} />
+              <SelectItem
+                key={s.key}
+                value={s.key}
+                text={t(`statuses.${s.key}`, s.label)}
+              />
             ))}
           </Select>
           <FieldError message={fieldProps("status").invalidText} />
@@ -836,13 +840,15 @@ export function CaseForm({
                     <dd>
                       {key.endsWith("Date")
                         ? displayDate(request[key])
-                        : key === "vaccinationStatus"
-                          ? t(`vaccinationValues.${request[key]}`)
-                          : key === "surveillanceType"
-                            ? t(`surveillanceValues.${request[key]}`)
-                            : ([...m.statuses, ...m.origins].find(
-                                (item) => item.key === request[key],
-                              )?.label ?? request[key])}
+                        : key === "status"
+                          ? t(`statuses.${request[key]}`)
+                          : key === "vaccinationStatus"
+                            ? t(`vaccinationValues.${request[key]}`)
+                            : key === "surveillanceType"
+                              ? t(`surveillanceValues.${request[key]}`)
+                              : ([...m.statuses, ...m.origins].find(
+                                  (item) => item.key === request[key],
+                                )?.label ?? request[key])}
                     </dd>
                   </div>
                 ))}

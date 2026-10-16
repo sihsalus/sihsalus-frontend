@@ -1,16 +1,16 @@
 import { DateInput } from "./date-input.component";
-import { displayDate } from "./date-display";
 import {
   InlineLoading,
   InlineNotification,
   Select,
   SelectItem,
   Tile,
+  MultiSelect,
 } from "@carbon/react";
 import { useConfig, useConnectivity } from "@openmrs/esm-framework";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getReport } from "./api";
+import { getReport, SurveillanceApiError } from "./api";
 import { dateInZone } from "./case-form.utils";
 import type { Config } from "./config-schema";
 import { moduleName } from "./constants";
@@ -22,110 +22,17 @@ import type {
   ReportZoneLevel,
 } from "./types";
 import { ReportAddressFilter } from "./report-address-filter.component";
+import { EndemicChart } from "./endemic-chart.component";
+import { demographicPeriodLabel } from "./demographic-period";
 import styles from "./dashboard.scss";
 
-function SeriesChart({ report }: { report: Report }) {
-  const { t } = useTranslation(moduleName);
-  const titleId = useId();
-  const values = report.channel;
-  const width = 800;
-  const height = 240;
-  const pad = 28;
-  const maximum = Math.max(
-    1,
-    ...values.map((point) => point.cases),
-    ...report.channel.map((point) => point.q3 ?? 0),
-  );
-  const x = (index: number) =>
-    pad + (index * (width - 2 * pad)) / Math.max(1, values.length - 1);
-  const y = (value: number) =>
-    height - pad - (value * (height - 2 * pad)) / maximum;
-  const line = (points: (number | null)[]) => {
-    let started = false;
-    return points
-      .map((value, index) => {
-        if (value === null) {
-          started = false;
-          return "";
-        }
-        const command = started ? "L" : "M";
-        started = true;
-        return `${command}${x(index)},${y(value)}`;
-      })
-      .join(" ");
-  };
-  return (
-    <figure className={styles.chart}>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-labelledby={titleId}
-      >
-        <title id={titleId}>{t("endemicChannel", "Endemic channel")}</title>
-        <line
-          x1={pad}
-          y1={pad}
-          x2={pad}
-          y2={height - pad}
-          stroke="currentColor"
-        />
-        <line
-          x1={pad}
-          y1={height - pad}
-          x2={width - pad}
-          y2={height - pad}
-          stroke="currentColor"
-        />
-        <text x={2} y={pad}>
-          {maximum}
-        </text>
-        <text x={6} y={height - pad}>
-          0
-        </text>
-        {(["q1", "q2", "q3"] as const).map((key, index) => (
-          <path
-            key={key}
-            d={line(report.channel.map((point) => point[key]))}
-            fill="none"
-            stroke={["#198038", "#b28600", "#da1e28"][index]}
-            strokeWidth="2"
-            strokeDasharray={["3 3", "8 3", "12 3"][index]}
-          />
-        ))}
-        <path
-          d={line(values.map((point) => point.cases))}
-          fill="none"
-          stroke="#0f62fe"
-          strokeWidth="3"
-        />
-        {values.map((point, index) => (
-          <circle
-            key={point.date}
-            cx={x(index)}
-            cy={y(point.cases)}
-            r="3"
-            fill="#0f62fe"
-          >
-            <title>
-              {displayDate(point.date)}: {point.cases}
-            </title>
-          </circle>
-        ))}
-        <text x={pad} y={height - 3}>
-          {displayDate(values[0]?.date)}
-        </text>
-        <text x={width - pad} y={height - 3} textAnchor="end">
-          {displayDate(values.at(-1)?.date)}
-        </text>
-      </svg>
-      <figcaption>
-        {t(`reportDiagnoses.${report.diagnosisType}`)}
-        {" · Q1 (25%) · Q2 (50%) · Q3 (75%)"}
-      </figcaption>
-    </figure>
-  );
-}
-export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
+export function ReportPanel({
+  catalogue,
+  locationUuid,
+}: {
+  catalogue: Catalogue;
+  locationUuid?: string;
+}) {
   const { t } = useTranslation(moduleName);
   const online = useConnectivity();
   const config = useConfig<Config>();
@@ -139,6 +46,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
     [
       defaultStart.toISOString().slice(0, 10),
       catalogue.catalog.surveillanceStartDate,
+      `${today.slice(0, 4)}-01-01`,
     ]
       .sort()
       .at(-1) ?? today,
@@ -152,13 +60,27 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
   const [diagnosisType, setDiagnosisType] =
     useState<ReportDiagnosis>("CONFIRMADO");
   const [address, setAddress] = useState("");
+  const [compareYears, setCompareYears] = useState<number[]>([]);
+  const outsideYear = [from, to].some(
+    (date) =>
+      /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      date.slice(0, 4) !== today.slice(0, 4),
+  );
+  const selectedYears = compareYears.filter((year) =>
+    report?.historicalYears?.includes(year),
+  );
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reconnect must refresh the same selected report from the server.
   useEffect(() => {
     const abort = new AbortController();
     setReport(undefined);
     setError(undefined);
     setLoading(false);
-    if (!event || !from || !to || from > to || to > today) return;
+    if (!event || !from || !to) return;
+    if (outsideYear) {
+      setError(new SurveillanceApiError("OUTSIDE_CURRENT_YEAR", 422));
+      return;
+    }
+    if (from > to || to > today) return;
     setLoading(true);
     void getReport(event, from, to, period, abort.signal, {
       zoneLevel,
@@ -185,6 +107,7 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
     zoneLevel,
     diagnosisType,
     address,
+    outsideYear,
   ]);
   return (
     <section className={styles.form} aria-label={t("temporalInformation")}>
@@ -252,14 +175,24 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             />
           ))}
         </Select>
+        <MultiSelect
+          id="report-years"
+          titleText={t("endemic.compareYears")}
+          label={t("selectOption")}
+          items={report?.historicalYears ?? []}
+          selectedItems={selectedYears}
+          itemToString={(item) => (item == null ? "" : String(item))}
+          onChange={({ selectedItems }) => setCompareYears(selectedItems ?? [])}
+        />
         <ReportAddressFilter
+          locationUuid={locationUuid}
           onChange={(address, level) => {
             setAddress(address);
             setZoneLevel(level);
           }}
         />
       </div>
-      {from > to || to > today ? (
+      {!outsideYear && (from > to || to > today) ? (
         <InlineNotification
           kind="error"
           hideCloseButton
@@ -305,7 +238,11 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
             </p>
           )}
           <h3>{t("endemicChannel", "Endemic channel")}</h3>
-          <SeriesChart report={report} />
+          <EndemicChart
+            report={report}
+            years={selectedYears}
+            calendar={catalogue.catalog}
+          />
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <caption>{t("channelDetail", "Endemic channel detail")}</caption>
@@ -329,7 +266,13 @@ export function ReportPanel({ catalogue }: { catalogue: Catalogue }) {
               <tbody>
                 {report.channel.map((point) => (
                   <tr key={point.date}>
-                    <td>{displayDate(point.date)}</td>
+                    <td>
+                      {demographicPeriodLabel(
+                        { key: point.date, label: point.date },
+                        report.period,
+                        catalogue.catalog,
+                      )}
+                    </td>
                     <td>{point.cases}</td>
                     <td>{point.q1 ?? "—"}</td>
                     <td>{point.q2 ?? "—"}</td>

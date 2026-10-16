@@ -58,11 +58,14 @@ it("combines disease and periodicity filters and restores all events", async () 
       uuid: "b",
       conceptUuid: "malaria",
       conceptDisplay: "Malaria",
-      periodicity: "DIARIA",
+      periodicity: "INMEDIATA",
     },
   ]);
   render(<EventsPanel />);
   const table = await screen.findByRole("table");
+  expect(
+    screen.queryByRole("option", { name: "Diaria" }),
+  ).not.toBeInTheDocument();
   expect(within(table).getAllByRole("row")).toHaveLength(3);
   fireEvent.change(screen.getByLabelText("Enfermedad"), {
     target: { value: "dengue" },
@@ -70,7 +73,7 @@ it("combines disease and periodicity filters and restores all events", async () 
   expect(within(table).getByText("Dengue")).toBeInTheDocument();
   expect(within(table).queryByText("Malaria")).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Periodicidad"), {
-    target: { value: "DIARIA" },
+    target: { value: "INMEDIATA" },
   });
   expect(within(table).queryByText("Dengue")).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Enfermedad"), {
@@ -91,7 +94,7 @@ it("edits every event attribute and refreshes the catalogue", async () => {
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
   ).toHaveValue("Dengue");
   expect(screen.getByLabelText(/Norma de referencia/i)).toHaveValue("NTS");
-  expect(screen.getByLabelText(/Vigente desde/i)).toHaveValue("01/01/2026");
+  expect(screen.getByLabelText(/^Estado/)).toHaveValue("active");
   fireEvent.change(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
     { target: { value: "Malaria" } },
@@ -106,11 +109,8 @@ it("edits every event attribute and refreshes the catalogue", async () => {
   fireEvent.change(screen.getByLabelText(/Norma de referencia/i), {
     target: { value: "NTS actualizada" },
   });
-  fireEvent.change(screen.getByLabelText(/Vigente desde/i), {
-    target: { value: "2026-02-01" },
-  });
-  fireEvent.change(screen.getByLabelText(/Vigente hasta/i), {
-    target: { value: "2026-12-31" },
+  fireEvent.change(screen.getByLabelText(/^Estado/), {
+    target: { value: "inactive" },
   });
   fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
   await waitFor(() =>
@@ -118,8 +118,7 @@ it("edits every event attribute and refreshes the catalogue", async () => {
       conceptUuid: "concept-2",
       periodicity: "INMEDIATA",
       referenceRegulation: "NTS actualizada",
-      validFrom: "2026-02-01",
-      validTo: "2026-12-31",
+      active: false,
     }),
   );
   expect(saveEvent).not.toHaveBeenCalled();
@@ -138,26 +137,26 @@ it("cancels edits without saving and resets the creation form", async () => {
   );
   fireEvent.click(screen.getByRole("button", { name: /Cancelar|Cancel/i }));
   expect(updateEvent).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByText(/Nueva versión|New event/i));
+  fireEvent.click(screen.getByText(/Nuevo evento|New event/i));
   expect(
     within(screen.getByRole("dialog")).getByLabelText(/Periodicidad/),
   ).toHaveValue("SEMANAL");
   expect(screen.getByLabelText(/Norma de referencia/i)).toHaveValue("");
 });
 
-it("allows clearing the end date", async () => {
+it("reactivates an inactive event", async () => {
   const event = (await getEvents())[0];
-  vi.mocked(getEvents).mockResolvedValue([{ ...event, validTo: "2026-12-31" }]);
+  vi.mocked(getEvents).mockResolvedValue([{ ...event, active: false }]);
   render(<EventsPanel />);
   fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
-  fireEvent.change(screen.getByLabelText(/Vigente hasta/i), {
-    target: { value: "" },
+  fireEvent.change(screen.getByLabelText(/^Estado/), {
+    target: { value: "active" },
   });
   fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
   await waitFor(() =>
     expect(updateEvent).toHaveBeenCalledWith(
       "event-1",
-      expect.objectContaining({ validTo: null }),
+      expect.objectContaining({ active: true }),
     ),
   );
 });
@@ -180,15 +179,19 @@ it("keeps edits after a rejected save and allows retrying", async () => {
   await waitFor(() => expect(onEventsChanged).toHaveBeenCalledOnce());
 });
 
-it("rejects an end date before the start without sending an update", async () => {
+it("keeps inactive events editable but excludes them from the disease filter", async () => {
+  const event = (await getEvents())[0];
+  vi.mocked(getEvents).mockResolvedValue([{ ...event, active: false }]);
   render(<EventsPanel />);
-  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
-  fireEvent.change(screen.getByLabelText(/Vigente hasta/i), {
-    target: { value: "2025-12-31" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
-  await screen.findByText("validation.endBeforeStart");
-  expect(updateEvent).not.toHaveBeenCalled();
+  await screen.findByRole("button", { name: "Editar" });
+  expect(
+    within(screen.getByLabelText("Enfermedad")).queryByRole("option", {
+      name: "Dengue",
+    }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "Inactivo" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+  expect(screen.queryByLabelText(/Vigente/i)).not.toBeInTheDocument();
 });
 
 it("shows translated event attributes in a Carbon table", async () => {
@@ -201,8 +204,7 @@ it("shows translated event attributes in a Carbon table", async () => {
     "Enfermedad (Concepto)",
     "Periodicidad",
     "Norma de referencia",
-    "Vigente desde",
-    "Vigente hasta",
+    "Estado",
   ]) {
     expect(screen.getByRole("columnheader", { name })).toBeInTheDocument();
   }
@@ -240,10 +242,10 @@ it("paginates events and opens the selected event on the second page", async () 
   expect(screen.getByText("Evento 1", { selector: "td" })).toBeInTheDocument();
 });
 
-it("creates an event version with regulation and validity", async () => {
+it("creates an active event with regulation", async () => {
   render(<EventsPanel />);
   await screen.findByText("Dengue", { selector: "td" });
-  fireEvent.click(screen.getByText(/Nueva versión|New event/i));
+  fireEvent.click(screen.getByText(/Nuevo evento|New event/i));
   expect(
     within(screen.getByRole("dialog")).getByRole("option", { name: "Semanal" }),
   ).toBeInTheDocument();
@@ -253,7 +255,9 @@ it("creates an event version with regulation and validity", async () => {
     }),
   ).toBeInTheDocument();
   expect(
-    within(screen.getByRole("dialog")).queryByRole("option", { name: "Diaria" }),
+    within(screen.getByRole("dialog")).queryByRole("option", {
+      name: "Diaria",
+    }),
   ).not.toBeInTheDocument();
   fireEvent.change(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
@@ -264,9 +268,6 @@ it("creates an event version with regulation and validity", async () => {
   fireEvent.change(screen.getByLabelText(/Norma de referencia/i), {
     target: { value: "NTS 228" },
   });
-  fireEvent.change(screen.getByLabelText(/Vigente desde/i), {
-    target: { value: "2026-02-01" },
-  });
   fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
   await waitFor(() =>
     expect(saveEvent).toHaveBeenCalledWith(
@@ -274,7 +275,7 @@ it("creates an event version with regulation and validity", async () => {
         conceptUuid: "concept-2",
         periodicity: "SEMANAL",
         referenceRegulation: "NTS 228",
-        validFrom: "2026-02-01",
+        active: true,
       }),
     ),
   );
@@ -302,14 +303,14 @@ it("shows only the violated reference condition below its input", async () => {
 it("places a server condition under its corresponding field", async () => {
   vi.mocked(updateEvent).mockRejectedValueOnce({
     code: "INVALID_EVENT",
-    fields: ["validTo"],
-    fieldErrors: { validTo: "endBeforeStart" },
+    fields: ["referenceRegulation"],
+    fieldErrors: { referenceRegulation: "referenceLength" },
   });
   render(<EventsPanel />);
   fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   fireEvent.click(screen.getByRole("button", { name: /Guardar|Save/i }));
-  await screen.findByText("validation.endBeforeStart");
-  expect(screen.getByLabelText(/Vigente hasta/i)).toHaveAttribute(
+  await screen.findByText("validation.referenceLength");
+  expect(screen.getByLabelText(/Norma de referencia/i)).toHaveAttribute(
     "aria-invalid",
     "true",
   );

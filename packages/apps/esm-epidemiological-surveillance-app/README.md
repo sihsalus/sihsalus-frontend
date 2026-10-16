@@ -14,6 +14,18 @@ RNF-04, RNF-05 y RNF-06. NOTI/Excel no se incluye.
 
 ### Pestañas, demografía y configuración
 
+Las pestañas de Información temporal, demográfica y geográfica inicializan los
+filtros territoriales con `sessionLocation` de la sesión autenticada. Consultan
+la dirección REST de Location (`address1`, `stateProvince`, `countyDistrict`,
+`cityVillage`) y completan campos ausentes desde su ubicación padre. Resuelven
+los nombres dentro de cada padre del catálogo territorial, sin elegir entradas
+ambiguas. Si faltan datos, conservan únicamente los niveles reconocidos; el usuario
+puede cambiarlos. Las respuestas tardías no sobrescriben selecciones manuales.
+Información geográfica incluye también Centro poblado. El pastel queda centrado
+con su leyenda debajo. Eventos ofrece Inmediata y Semanal en el filtro de periodicidad.
+El registro presenta Clasificación del diagnóstico y Probable; conserva el código
+interno `SUSPECTED` para mantener el contrato existente.
+
 Pestañas: **Casos**, **Información temporal** (antes Indicadores), **Indicadores**,
 **Demográfico**, **Geográfico**, **Eventos** y **Configuración**. Por indicación del
 usuario, Indicadores queda vacía. Geográfico presenta el mapa, la tabla por origen
@@ -132,8 +144,10 @@ Las tablas de Casos y Eventos muestran 10 filas por página, con opciones de 20 
 los resultados de la API; al filtrar o recargar los registros vuelve a la primera página.
 
 Cada fila de Eventos ofrece **Editar evento notificable**. El formulario precarga
-la enfermedad, periodicidad, norma de referencia y fechas de vigencia y permite
-modificar todos esos atributos, incluida la eliminación de la fecha final.
+la enfermedad, periodicidad, norma de referencia y estado (Activo o Inactivo).
+Solo existe un evento por enfermedad. Los inactivos permanecen en la tabla para
+editarlos y reactivarlos, pero se excluyen de los filtros de enfermedad y de los
+diagnósticos válidos al registrar nuevos casos.
 Guarda mediante `PUT /events/{uuid}` con el privilegio de administración existente;
 requiere el OMOD con esa ruta. Conserva UUID y auditoría de creación. El nombre y
 plazo de notificación se derivan del concepto y periodicidad. Al guardar recarga
@@ -297,6 +311,42 @@ Se muestra fecha de generación del reporte y aviso sin conexión. La caché com
 
 ## Desarrollo y validación
 
+### Canal endémico: configuración y comparación histórica (16/10/2026)
+
+Información temporal exige fechas del año calendario actual en la zona horaria
+del catálogo. `OUTSIDE_CURRENT_YEAR` muestra el mensaje específico solicitado;
+la validación de cobertura mantiene su significado independiente.
+Configuración → Configurar canal endémico persiste `[años históricos, mínimo]`
+en `/configuration/endemic-channel` (valores iniciales 5 y 3). Ambos son enteros
+positivos, el mínimo no supera los años considerados y estos son menores que el
+año actual, evitando años anteriores a 1. Requiere privilegio de administración.
+El guardado actualiza Información temporal. Esta configuración se aplica al
+reporte del canal; no cambia las reglas de alertas del registro de casos.
+
+El reporte entrega `historicalYears` y `channel[].historicalCases`, agregados con
+los mismos filtros de enfermedad, territorio y diagnóstico. Años a comparar usa
+selección múltiple y solo cambia las líneas visibles, sin alterar los cuartiles.
+Los periodos históricos sin casos registrados muestran cero en las comparaciones,
+sin aumentar la muestra estadística usada para determinar historia suficiente.
+Los periodos inexistentes (como el 29 de febrero en años no bisiestos) quedan ausentes.
+El histórico se ancla a los años previos al año calendario consultado;
+las semanas conservan su numeración epidemiológica y los días se alinean por mes
+y día (sin inventar el 29 de febrero en años no bisiestos).
+
+Cada periodo tiene una etiqueta sin año (DD/MM, SXX, MM, TX o semestre), los ejes tienen
+títulos y el gráfico admite desplazamiento horizontal para rangos extensos.
+Requiere actualizar ESM y OMOD junto con `liquibase-endemic-config.xml`.
+Validación integrada DEV/QLTY: NOT RUN, sin sesión de prueba coordinada.
+
+Validación local de este cambio: `yarn workspace
+@sihsalus/esm-epidemiological-surveillance-app test` PASSED (133 pruebas y una
+comprobación HMR); `lint`, `build` y `node
+../../../node_modules/typescript/bin/tsc6 --noEmit` PASSED.
+`PLAYWRIGHT_CHANNEL=msedge node --test tooling/endemic-layout.check.cjs` PASSED:
+cinco periodicidades a 1280 y 375 px, con datos sintéticos. Backend:
+`mvn -o -pl api,omod -am compiler:compile compiler:testCompile surefire:test`
+PASSED (129 pruebas API y 7 REST), incluyendo migración y persistencia.
+
 ### Correcciones de información y formularios (14/10/2026)
 
 Las pestañas se presentan como Información demográfica e Información geográfica.
@@ -316,7 +366,7 @@ el formato completo antes de interpretar una fecha escrita parcialmente.
 Los campos respaldados por columnas no nulas llevan `(obligatorio)` y asterisco
 rojo en registro y edición. La referencia es `liquibase-surveillance-case.xml`:
 paciente, atención, profesional, localidad, diagnóstico y clasificación en casos;
-enfermedad, periodicidad, norma y vigencia inicial en eventos. Los campos derivados
+enfermedad, periodicidad, norma y estado en eventos. Los campos derivados
 conservan su bloqueo. La edición sigue el orden del registro: origen, infección,
 inicio de síntomas, laboratorio, clasificación, vacunación, gestación, vigilancia
 y fechas de investigación, notificación y defunción.
@@ -427,7 +477,8 @@ QA DEV/QLTY pendiente: catálogo/privilegios reales; sospechoso, positivo confir
 
 ### Rangos, canal y errores por campo (14/10/2026)
 
-Información temporal y demográfica permiten rangos mayores a dos años. Se mantienen
+Información demográfica permite rangos mayores a dos años. Información temporal
+se limita al año calendario actual desde la actualización del 16/10/2026. Se mantienen
 el orden de las fechas, el límite de hoy y la cobertura del reporte temporal.
 Información temporal muestra únicamente el canal endémico y su tabla; el periodo
 diario permite consultar la evolución diaria. Los selectores de fecha ocupan el

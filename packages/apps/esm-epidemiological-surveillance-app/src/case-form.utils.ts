@@ -1,25 +1,74 @@
 import { caseDateErrors } from "./field-validation";
-import type { CaseRequest, Catalogue, FhirResource, ClinicalCatalog, SurveillanceCaseDraft } from "./types";
+import type {
+  CaseRequest,
+  Catalogue,
+  FhirResource,
+  ClinicalCatalog,
+  SurveillanceCaseDraft,
+} from "./types";
 
-export function toSurveillanceCaseDraft(request: CaseRequest, diagnosisUuid: string): SurveillanceCaseDraft {
-  const status = { SUSPECTED: "PROBABLE", CONFIRMED: "CONFIRMADO", DISCARDED: "DESCARTADO" }[request.status];
-  if (!status || !diagnosisUuid) throw new Error("A diagnosis and classification are required.");
-  const origin = ({ AUTOCHTHONOUS: "AUTOCTONO", IMPORTED_NATIONAL: "IMPORTADO_NACIONAL", IMPORTED_INTERNATIONAL: "IMPORTADO_INTERNACIONAL" } as Record<string, string>)[request.origin] ?? request.origin;
-  return { pregnant: request.pregnant, patientUuid: request.patientUuid, encounterUuid: request.sourceEncounterUuid, providerUuid: request.providerUuid, locationUuid: request.locationUuid, diagnosisUuid, laboratoryObservationUuid: request.laboratoryResultUuid, origin, onsetDate: request.onsetDate, infectionAddressUuid: request.infectionAddressUuid, diagnosisType: status as SurveillanceCaseDraft["diagnosisType"], vaccinationStatus: request.vaccinationStatus, investigationDate: request.investigationDate, notificationDate: request.notificationDate, deathDate: request.deathDate, surveillanceType: request.surveillanceType };
+export function toSurveillanceCaseDraft(
+  request: CaseRequest,
+  diagnosisUuid: string,
+): SurveillanceCaseDraft {
+  const status = {
+    SUSPECTED: "PROBABLE",
+    CONFIRMED: "CONFIRMADO",
+    DISCARDED: "DESCARTADO",
+  }[request.status];
+  if (!status || !diagnosisUuid)
+    throw new Error("A diagnosis and classification are required.");
+  const origin =
+    (
+      {
+        AUTOCHTHONOUS: "AUTOCTONO",
+        IMPORTED_NATIONAL: "IMPORTADO_NACIONAL",
+        IMPORTED_INTERNATIONAL: "IMPORTADO_INTERNACIONAL",
+      } as Record<string, string>
+    )[request.origin] ?? request.origin;
+  return {
+    pregnant: request.pregnant,
+    patientUuid: request.patientUuid,
+    encounterUuid: request.sourceEncounterUuid,
+    providerUuid: request.providerUuid,
+    locationUuid: request.locationUuid,
+    diagnosisUuid,
+    laboratoryObservationUuid: request.laboratoryResultUuid,
+    origin,
+    onsetDate: request.onsetDate,
+    infectionAddressUuid: request.infectionAddressUuid,
+    diagnosisType: status as SurveillanceCaseDraft["diagnosisType"],
+    vaccinationStatus: request.vaccinationStatus,
+    investigationDate: request.investigationDate,
+    notificationDate: request.notificationDate,
+    deathDate: request.deathDate,
+    surveillanceType: request.surveillanceType,
+  };
 }
 
 export function pregnancyEligible(sex?: string, age?: number): boolean {
-  return (sex === "F" || sex === "female") && age !== undefined && age >= 10 && age <= 55;
+  return (
+    (sex === "F" || sex === "female") &&
+    age !== undefined &&
+    age >= 10 &&
+    age <= 55
+  );
 }
 
-export function encounterDate(source: FhirResource | undefined, timezone: string): string | undefined {
+export function encounterDate(
+  source: FhirResource | undefined,
+  timezone: string,
+): string | undefined {
   const start = source?.period?.start;
   if (!start || !Number.isFinite(Date.parse(start))) return undefined;
   return start.length === 10 ? start : dateInZone(timezone, new Date(start));
 }
 
 export function invalidCaseDates(
-  request: Pick<SurveillanceCaseDraft, "investigationDate" | "notificationDate" | "onsetDate" | "deathDate">,
+  request: Pick<
+    SurveillanceCaseDraft,
+    "investigationDate" | "notificationDate" | "onsetDate" | "deathDate"
+  >,
   today: string,
 ): string[] {
   return Object.keys(caseDateErrors(request, today));
@@ -34,11 +83,24 @@ export function patientName(patient: FhirResource): string {
     ""
   );
 }
-export function patientAge(birthDate: string | undefined, today: string): number | undefined {
+export function patientAge(
+  birthDate: string | undefined,
+  today: string,
+): number | undefined {
   const birth = birthDate?.slice(0, 10);
-  if (!birth || !/^\d{4}-\d{2}-\d{2}$/.test(birth) || !Number.isFinite(Date.parse(birth)) ||
-      new Date(birth).toISOString().slice(0, 10) !== birth || birth > today) return undefined;
-  return Number(today.slice(0, 4)) - Number(birth.slice(0, 4)) - (today.slice(5) < birth.slice(5) ? 1 : 0);
+  if (
+    !birth ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(birth) ||
+    !Number.isFinite(Date.parse(birth)) ||
+    new Date(birth).toISOString().slice(0, 10) !== birth ||
+    birth > today
+  )
+    return undefined;
+  return (
+    Number(today.slice(0, 4)) -
+    Number(birth.slice(0, 4)) -
+    (today.slice(5) < birth.slice(5) ? 1 : 0)
+  );
 }
 export function patientDni(patient: FhirResource): string {
   const dniObj =
@@ -67,7 +129,10 @@ export function findDiagnosisMapping(
       (d) => d.diagnosisConceptUuid === diagnosisUuid,
     );
     if (mapping) {
-      const event = events.find((e) => e.uuid === disease.eventUuid);
+      const event = events.find(
+        (e) => e.uuid === disease.eventUuid && e.active !== false,
+      );
+      if (!event) continue;
       return {
         eventUuid: disease.eventUuid,
         eventName: event?.conceptDisplay ?? event?.conceptUuid,
@@ -77,7 +142,9 @@ export function findDiagnosisMapping(
       };
     }
   }
-  const directEvent = events.find((e) => e.conceptUuid === diagnosisUuid);
+  const directEvent = events.find(
+    (e) => e.conceptUuid === diagnosisUuid && e.active !== false,
+  );
   if (directEvent) {
     const disease = m.diseases.find((d) => d.eventUuid === directEvent.uuid);
     return {
@@ -124,10 +191,16 @@ export function prefill(
   const eventUuids = new Set<string>();
   if (eventObs.length === 1)
     for (const event of catalogue.events)
-      if (valueConcepts(eventObs[0]).includes(event.conceptUuid))
+      if (
+        event.active !== false &&
+        valueConcepts(eventObs[0]).includes(event.conceptUuid)
+      )
         eventUuids.add(event.uuid);
   for (const disease of m.diseases)
     if (
+      catalogue.events.some(
+        (event) => event.uuid === disease.eventUuid && event.active !== false,
+      ) &&
       disease.diagnoses.some((mapping) =>
         diagnoses.includes(mapping.diagnosisConceptUuid),
       )
@@ -168,7 +241,8 @@ export function validateCase(
   source?: FhirResource,
 ): string[] {
   const fields: string[] = invalidCaseDates(request, dateInZone(m.timezone));
-  if (source && request.investigationDate !== encounterDate(source, m.timezone)) fields.push("investigationDate");
+  if (source && request.investigationDate !== encounterDate(source, m.timezone))
+    fields.push("investigationDate");
   const requiredKeys = [
     "patientUuid",
     "sourceEncounterUuid",

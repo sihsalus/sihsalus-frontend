@@ -53,7 +53,13 @@ export function geographicCenterLabel(
   return parts.slice(hiddenLevels[zoneLevel]).join(" → ");
 }
 
-export function GeographicPanel({ catalogue }: { catalogue: Catalogue }) {
+export function GeographicPanel({
+  catalogue,
+  locationUuid,
+}: {
+  catalogue: Catalogue;
+  locationUuid?: string;
+}) {
   const { t } = useTranslation(moduleName);
   const today = dateInZone(catalogue.catalog.timezone);
   const online = useConnectivity();
@@ -169,8 +175,9 @@ export function GeographicPanel({ catalogue }: { catalogue: Catalogue }) {
           value={valid ? from.slice(0, 4) : ""}
         />
         <ReportAddressFilter
+          locationUuid={locationUuid}
           idPrefix="geo"
-          includeCenter={false}
+          includeCenter
           onChange={(value, level) => {
             setAddress(value);
             setZoneLevel(level);

@@ -4,6 +4,10 @@ Microfrontend base para construir los flujos de Banco de Sangre. Incluye Inicio,
 
 ## Límites actuales
 
+- El prototipo es un workspace privado y queda excluido del ensamblado de entrega
+  por el mecanismo existente de `generate-assemble-config` y `assemble-importmap`,
+  incluso si existe un `dist` de una compilación anterior. Se conserva el código
+  y sus pruebas para desarrollo. No se retiran datos ni permisos del backend.
 - La configuración institucional `config/frontend.json` deshabilita el módulo
   (`enabled: false`) y retira sus enlaces de `app-menu-slot` y
   `homepage-dashboard-slot` mediante `extensionSlots.remove`. Así tampoco se
@@ -34,7 +38,9 @@ El backend continúa siendo la autoridad para autorización y persistencia. No s
 
 ## Desarrollo integrado con OpenMRS
 
-Después de preparar el SPA según el README principal:
+Para probar el prototipo en un checkout de desarrollo aislado, quitar
+temporalmente `private: true` de su `package.json`, preparar el SPA según el README
+principal y ejecutar:
 
 ```bash
 SIHSALUS_DEV_APPS=esm-blood-bank-app yarn start
@@ -45,6 +51,7 @@ y retirar las dos exclusiones de `extensionSlots.remove` descritas arriba. Despu
 hay que volver a ensamblar el SPA. Estas opciones controlan disponibilidad; no
 crean ni conceden privilegios. El usuario de pruebas sigue necesitando
 `app:home.bancoSangre` y los privilegios específicos de cada sección.
+La entrega habitual conserva `private: true` y `enabled: false`.
 Tras cambiar `src/routes.json`, vuelve a ejecutar `yarn assemble` y reinicia `yarn start` para registrar el nuevo slot. Prueba la barra compartida en `http://localhost:8080/openmrs/spa/blood-bank` con un usuario de pruebas autorizado.
 
 El cliente HMR de la versión local de Rspack falla al cargar este ESM (`setLogLevel`). Por ahora, `rspack.config.js` desactiva solo ese cliente para Banco de Sangre: el servidor recompila los cambios, pero debes recargar el navegador manualmente. Reinicia `yarn start` después de cambiar esta configuración.

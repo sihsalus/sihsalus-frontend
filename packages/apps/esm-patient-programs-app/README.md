@@ -32,3 +32,13 @@ Create and edit reject enrollment dates before the patient's birth calendar
 date and set the date picker's lower bound accordingly. Enrollment on the
 birth date remains valid. The matching PatientProgramValidator correction in
 OpenMRS Core enforces this rule for API clients as well (sihsalus/sihsalus#365).
+
+### Enrollment action permissions
+
+The empty state and populated table apply the same create permission and
+`hideAddProgramButton` setting. Create, edit and void actions require
+`app:hoja.clinica.programas.editar` together with `Add Patient Programs`,
+`Edit Patient Programs` or `Delete Patient Programs`, respectively. Route guards
+and backend authorization remain in force. Content already declares
+`SIH SALUS Hoja Clinica Programas editar`; assigning it to the CRED test account
+requires an authorized administrator. A frontend release alone does not grant it.

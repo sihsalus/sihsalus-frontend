@@ -19,6 +19,8 @@ import {
   formatDatetime,
   useConfig,
   useLayoutType,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
@@ -37,7 +39,9 @@ interface ProgramsDetailedSummaryProps {
 const ProgramsDetailedSummary: React.FC<ProgramsDetailedSummaryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const hideAddProgramButton = config?.hideAddProgramButton ?? false;
+  const session = useSession();
+  const canAdd = userHasAccess(['app:hoja.clinica.programas.editar', 'Add Patient Programs'], session?.user);
+  const hideAddProgramButton = !canAdd || (config?.hideAddProgramButton ?? false);
   const programNavigationTargets = config?.programNavigationTargets ?? [];
   const showProgramStatusField = config?.showProgramStatusField ?? false;
   const layout = useLayoutType();
@@ -206,7 +210,13 @@ const ProgramsDetailedSummary: React.FC<ProgramsDetailedSummaryProps> = ({ patie
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchProgramsForm} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={hideAddProgramButton ? undefined : launchProgramsForm}
+    />
+  );
 };
 
 export default ProgramsDetailedSummary;

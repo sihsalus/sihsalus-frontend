@@ -1,13 +1,14 @@
 import { Button, ButtonSet, Form, InlineNotification, Select, SelectItem, TextArea } from '@carbon/react';
 import { OpenmrsDatePicker, showSnackbar, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import { credImmunizationEditPrivilege } from '../../../constants';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
 
-import { saveAdverseReaction } from './adverse-reaction.resource';
+import { refreshAdverseReactions, saveAdverseReaction } from './adverse-reaction.resource';
 import styles from './adverse-reaction-form.scss';
 
 interface AdverseReaction {
@@ -48,6 +49,9 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const submitting = useRef(false);
+  const { mutate } = useSWRConfig();
 
   const handleInputChange = useCallback((field: keyof AdverseReaction, value: string | boolean | Date | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -82,11 +86,13 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     async (event: React.FormEvent) => {
       event.preventDefault();
 
-      if (!validateForm()) {
+      if (submitting.current || isSaved || !validateForm()) {
         return;
       }
 
       setIsSubmitting(true);
+      submitting.current = true;
+      let saved = false;
       try {
         await saveAdverseReaction({
           patientUuid,
@@ -98,14 +104,29 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           config,
         });
 
+        saved = true;
+        setIsSaved(true);
+        let refreshed = true;
+        try {
+          await refreshAdverseReactions(patientUuid, config, mutate);
+        } catch {
+          refreshed = false;
+        }
+
         showSnackbar({
-          kind: 'success',
+          kind: refreshed ? 'success' : 'warning',
           title: t('reactionSaved', 'Reacción registrada'),
-          subtitle: t('reactionSavedSubtitle', 'La reacción adversa ha sido registrada exitosamente'),
+          subtitle: refreshed
+            ? t('reactionSavedSubtitle', 'La reacción adversa ha sido registrada exitosamente')
+            : t(
+                'reactionSavedRefreshFailed',
+                'The reaction was saved. Reload the table to see it; do not register it again.',
+              ),
           isLowContrast: true,
         });
-        closeWorkspace({ discardUnsavedChanges: true });
+        await closeWorkspace({ discardUnsavedChanges: true });
       } catch {
+        if (saved) return;
         showSnackbar({
           kind: 'error',
           title: t('reactionSaveError', 'Error al registrar reacción'),
@@ -117,9 +138,10 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         });
       } finally {
         setIsSubmitting(false);
+        submitting.current = false;
       }
     },
-    [closeWorkspace, config, formData, locationUuid, patientUuid, validateForm, t],
+    [closeWorkspace, config, formData, isSaved, locationUuid, mutate, patientUuid, validateForm, t],
   );
 
   return (
@@ -192,7 +214,7 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           <Button kind="secondary" onClick={() => closeWorkspace()}>
             {t('cancel', 'Cancel')}
           </Button>
-          <Button kind="primary" type="submit" disabled={isSubmitting}>
+          <Button kind="primary" type="submit" disabled={isSubmitting || isSaved}>
             {t('registerReaction', 'Registrar Reacción')}
           </Button>
         </ButtonSet>

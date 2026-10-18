@@ -293,3 +293,9 @@ validation to a translated, actionable message. The server owns duplicate
 validation, including concurrent writes; the frontend does not deduplicate or
 remove clinical history. This requires the companion Core change for
 sihsalus/sihsalus#366. Older servers keep their existing persistence behavior.
+
+The concept-set antecedent form waits for demographics belonging to its patient
+before enabling a save. Its date picker and submit validation reject personal
+onset dates before the patient's birth calendar day, including edits; the birth
+day itself is valid. Existing family antecedents retain their exception. Missing
+birth dates do not invent a lower bound. CRED and Maternal Health share this rule.

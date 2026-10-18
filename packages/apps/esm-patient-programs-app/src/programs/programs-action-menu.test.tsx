@@ -1,4 +1,4 @@
-import { showModal, useLayoutType } from '@openmrs/esm-framework';
+import { showModal, useLayoutType, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -32,6 +32,24 @@ const renderProgramActionsMenu = () => {
 describe('ProgramActionsMenu', () => {
   beforeEach(() => {
     mockUseLayoutType.mockReturnValue('small-desktop'); // or 'large-desktop' or 'tablet'
+  });
+
+  it('does not show actions without editing privileges', () => {
+    vi.mocked(userHasAccess).mockReturnValue(false);
+    renderProgramActionsMenu();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it.each(['Edit', 'Delete'])('only offers the authorized %s action', async (action) => {
+    vi.mocked(userHasAccess).mockImplementation((privileges) => privileges.includes(`${action} Patient Programs`));
+    renderProgramActionsMenu();
+    await userEvent.setup().click(screen.getByRole('button'));
+    // Carbon's floating-menu position is not laid out in happy-dom. Exercise
+    // the permitted action, while asserting the denied item is not mounted.
+    expect(screen.getByText(action)).toBeInTheDocument();
+    expect(screen.queryByText(action === 'Edit' ? 'Delete' : 'Edit')).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByText(action));
+    expect(action === 'Edit' ? mockLaunchPatientWorkspace : mockShowModal).toHaveBeenCalled();
   });
 
   it('renders an overflow menu with edit and delete actions', async () => {
@@ -76,4 +94,8 @@ describe('ProgramActionsMenu', () => {
       size: 'sm',
     });
   });
+});
+
+beforeEach(() => {
+  vi.mocked(userHasAccess).mockReturnValue(true);
 });

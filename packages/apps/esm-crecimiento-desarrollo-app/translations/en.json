@@ -715,5 +715,7 @@
   "neonatalDischargeBeforeBirth": "The newborn discharge is earlier than the date of birth. Correct the discharge in Birth Data or review the patient’s date of birth.",
   "neonatalDischargeInFuture": "The newborn discharge is in the future. Correct the date and time in Birth Data.",
   "neonatalDischargeInvalid": "The newborn discharge or date of birth is invalid. Review Birth Data and the patient’s date of birth.",
-  "conditionActiveDuplicate": "This condition is already active. Update the existing record or resolve it before recording another episode."
+  "conditionActiveDuplicate": "This condition is already active. Update the existing record or resolve it before recording another episode.",
+  "onsetDateCannotBeBeforeBirthDate": "Onset date cannot be earlier than the patient's birth date",
+  "reactionSavedRefreshFailed": "The reaction was saved. Reload the table to see it; do not register it again."
 }

@@ -51,6 +51,7 @@ interface ConditionsWidgetProps {
   isEditing?: boolean;
   isSubmittingForm: boolean;
   patientUuid: string;
+  patientBirthDate?: string;
   setCreationMessage?: (message: string) => void;
   setUpdateMessage?: (message: string) => void;
   setIsSubmittingForm: Dispatch<boolean>;
@@ -80,6 +81,7 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
       isEditing,
       isSubmittingForm,
       patientUuid,
+      patientBirthDate,
       setCreationMessage,
       setUpdateMessage,
       setIsSubmittingForm,
@@ -461,6 +463,13 @@ const ConditionsWidget = React.forwardRef<ConditionsWidgetHandle, ConditionsWidg
                     )}
                     data-testid={`${inputId}-onsetDate`}
                     maxDate={new Date()}
+                    minDate={
+                      conditionToEdit?.antecedentType !== 'family' &&
+                      patientBirthDate &&
+                      dayjs(patientBirthDate).isValid()
+                        ? dayjs(patientBirthDate).startOf('day').toDate()
+                        : undefined
+                    }
                     labelText={t('onsetDate', 'Onset date')}
                     invalid={Boolean(fieldState?.error?.message)}
                     invalidText={fieldState?.error?.message}

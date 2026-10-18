@@ -433,3 +433,20 @@ decisión del responsable funcional del 13/10/2026. Un error de guardado conserv
 la entrada y muestra un mensaje traducido sin detalles internos del servidor.
 Las pruebas cubren los campos incompletos, guardado confirmado y error. La
 aceptación visual y persistencia con rol CRED en QLTY siguen pendientes.
+
+## Correcciones de reportes QLTY del 16/10/2026
+
+El formulario compartido de antecedentes obtiene la demografía del paciente
+antes de habilitar el guardado y rechaza fechas de inicio anteriores al día
+de nacimiento; acepta el mismo día. Los antecedentes familiares existentes
+conservan su excepción temporal. No modifica condiciones históricas por sí solo.
+
+Después de guardar una reacción adversa se revalida la consulta del paciente
+en el proveedor SWR de la pantalla. Otros pacientes conservan su caché. Un fallo
+de recarga tras una escritura confirmada muestra un aviso de registro guardado
+y no habilita un segundo envío. Esta corrección de #392 no resuelve los
+encuentros históricos sin proveedor descritos en #376/#377.
+
+Las reglas de alta y hospitalización de #389/#390 pertenecen al formulario de
+content; la precisión decimal de talla (#391) depende de su concepto canónico.
+Las pruebas locales no acreditan publicación ni aceptación clínica en QLTY.

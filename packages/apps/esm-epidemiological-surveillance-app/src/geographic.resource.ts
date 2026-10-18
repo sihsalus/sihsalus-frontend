@@ -1,3 +1,7 @@
+import type {
+  DemographicDimension,
+  DemographicReport,
+} from "./demographic.types";
 import { openmrsFetch } from "@openmrs/esm-framework";
 import { apiBase, read, safeError } from "./api";
 
@@ -12,7 +16,13 @@ export interface GeographicFocus {
   risk: "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH";
   origins: Record<string, number>;
 }
+export type GeographicColumn =
+  Exclude<DemographicDimension, "disease"> | "origin";
 export interface GeographicReport {
+  table?: Omit<DemographicReport, "row" | "column"> & {
+    row: "center";
+    column: GeographicColumn;
+  };
   from: string;
   to: string;
   referenceYear: number;

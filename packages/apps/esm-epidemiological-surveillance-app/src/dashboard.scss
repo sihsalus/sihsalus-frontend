@@ -45,6 +45,7 @@
 }
 
 .configurationFeedback {
+  order: -1;
   grid-column: 1 / -1;
 }
 
@@ -292,4 +293,46 @@
 .fieldError,
 .form :global(.cds--form-requirement) {
   color: #da1e28;
+}
+
+.endemicControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.zoneLegend {
+  @extend .historyLegend;
+  padding-left: 0;
+  span {
+    height: 1rem;
+    border: 1px solid #8d8d8d;
+  }
+}
+
+.container table {
+  thead th,
+  thead td,
+  thead :global(.cds--table-header-label),
+  thead :global(.cds--table-sort) {
+    font-size: var(--surveillance-header-size, 14px);
+    text-align: var(--surveillance-header-align, left);
+  }
+  tbody th,
+  tbody td,
+  tfoot th,
+  tfoot td {
+    font-size: var(--surveillance-body-size, 14px);
+    text-align: var(--surveillance-body-align, left);
+  }
+  thead :global(.cds--table-header-label) {
+    width: 100%;
+  }
+}
+.tableSettingsFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  min-width: 0;
 }

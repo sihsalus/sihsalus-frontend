@@ -1,3 +1,6 @@
+import { demographicDimensions } from "./demographic.types";
+import { demographicPeriodLabel } from "./demographic-period";
+import { ReportExport } from "./report-export.component";
 import {
   Button,
   Checkbox,
@@ -19,6 +22,7 @@ import {
   geographicOrigins,
   getGeography,
   type GeographicReport,
+  type GeographicColumn,
 } from "./geographic.resource";
 import { ReportAddressFilter } from "./report-address-filter.component";
 import type { Catalogue, ReportZoneLevel } from "./types";
@@ -74,6 +78,8 @@ export function GeographicPanel({
   const [loading, setLoading] = useState(false);
   const [retry, setRetry] = useState(0);
   const [hideZero, setHideZero] = useState(false);
+  const [column, setColumn] = useState<GeographicColumn>("origin");
+  const [period, setPeriod] = useState("mes");
   const valid = validGeographicRange(from, to, today);
   const query = JSON.stringify({
     event,
@@ -82,6 +88,8 @@ export function GeographicPanel({
     address,
     zoneLevel,
     diagnosisType,
+    column,
+    period: column === "period" ? period : "mes",
   });
   // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit retry and connectivity changes refresh this query.
   useEffect(() => {
@@ -94,18 +102,23 @@ export function GeographicPanel({
     const filters = JSON.parse(query);
     void getGeography(filters, abort.signal)
       .then((value) => {
-        if (!abort.signal.aborted)
-          setReport({
-            ...value,
-            foci: value.foci.map((focus) => ({
-              ...focus,
-              label: geographicCenterLabel(
-                focus.label,
-                filters.address,
-                filters.zoneLevel,
-              ),
-            })),
-          });
+        if (abort.signal.aborted) return;
+        if (
+          filters.column !== "origin" &&
+          value.table?.column !== filters.column
+        )
+          throw new Error("Missing geographic breakdown");
+        setReport({
+          ...value,
+          foci: value.foci.map((focus) => ({
+            ...focus,
+            label: geographicCenterLabel(
+              focus.label,
+              filters.address,
+              filters.zoneLevel,
+            ),
+          })),
+        });
       })
       .catch((reason) => {
         if (!abort.signal.aborted) setError(reason);
@@ -115,9 +128,49 @@ export function GeographicPanel({
       });
     return () => abort.abort();
   }, [query, valid, event, retry, online]);
-  const columns = geographicOrigins.filter(
-    (origin) => !hideZero || report?.foci.some((f) => f.origins[origin]),
+  const table = report?.table;
+  const cells = new Map(
+    table?.rows.map((row, index) => [Number(row.key), table.values[index]]),
   );
+  const allColumns =
+    table?.columns ??
+    geographicOrigins.map((key) => ({ key, label: t(`geo.origins.${key}`) }));
+  const count = (centerId: number, index: number) =>
+    table
+      ? (cells.get(centerId)?.[index] ?? 0)
+      : (report?.foci.find((focus) => focus.centerId === centerId)?.origins[
+          allColumns[index].key
+        ] ?? 0);
+  const columns = allColumns
+    .map((_, index) => index)
+    .filter(
+      (index) =>
+        !hideZero ||
+        report?.foci.some((focus) => count(focus.centerId, index) > 0),
+    );
+  const columnLabel = (index: number) => {
+    const item = allColumns[index];
+    const dimension = table?.column ?? "origin";
+    if (dimension === "origin") return t(`geo.origins.${item.key}`);
+    if (item.key === "UNKNOWN") return t("demographic.unknown");
+    if (dimension === "period")
+      return demographicPeriodLabel(
+        item,
+        table?.period ?? period,
+        catalogue.catalog,
+      );
+    if (dimension === "sex" || dimension === "pregnancy")
+      return t(`demographic.values.${item.key}`);
+    if (dimension === "ageGroup") {
+      const group = table?.ageGroups.find((group) => group.key === item.key);
+      return `${t(`ageGroups.${item.key}`)} (${group?.minAge ?? ""}\u2013${group?.maxAge ?? "\u221e"})`;
+    }
+    return item.label;
+  };
+  const tableTitle =
+    column === "origin"
+      ? t("geo.tableTitle")
+      : `${t("reportCenter")} / ${t(`demographic.dimensions.${column}`)}`;
   return (
     <section className={styles.form} aria-label={t("geographic")}>
       <h3>{t("filters")}</h3>
@@ -168,6 +221,51 @@ export function GeographicPanel({
             />
           ))}
         </Select>
+        <Select
+          id="geo-column"
+          labelText={t("demographic.column")}
+          value={column}
+          onChange={(event) =>
+            setColumn(event.target.value as GeographicColumn)
+          }
+        >
+          {[
+            ...demographicDimensions.filter((value) => value !== "disease"),
+            "origin",
+          ].map((value) => (
+            <SelectItem
+              key={value}
+              value={value}
+              text={
+                value === "origin"
+                  ? t("fields.origin")
+                  : t(`demographic.dimensions.${value}`)
+              }
+            />
+          ))}
+        </Select>
+        {column === "period" && (
+          <Select
+            id="geo-period"
+            labelText={t("demographic.periodType")}
+            value={period}
+            onChange={(event) => setPeriod(event.target.value)}
+          >
+            {["dia", "semana", "mes", "trimestre", "semestre", "anio"].map(
+              (value) => (
+                <SelectItem
+                  key={value}
+                  value={value}
+                  text={
+                    value === "anio"
+                      ? t("demographic.annual")
+                      : t(`periods.${value}`)
+                  }
+                />
+              ),
+            )}
+          </Select>
+        )}
         <TextInput
           id="geo-year"
           labelText={t("geo.referenceYear")}
@@ -203,7 +301,6 @@ export function GeographicPanel({
       )}
       {report && (
         <>
-          <h3>{t("geo.mapTitle")}</h3>
           <p>{t("geo.includedCases")}</p>
           <GeographicMap key={query + retry} report={report} />
           {report.total === 0 && <p>{t("geo.empty")}</p>}
@@ -215,58 +312,71 @@ export function GeographicPanel({
           {report.foci.some((f) => f.classification === "UNCLASSIFIED") && (
             <p>{t("geo.unknownOrigin")}</p>
           )}
-          <h3>{t("geo.tableTitle")}</h3>
+          {column === "ethnicity" && <p>{t("demographic.ethnicitySource")}</p>}
           <Checkbox
             id="geo-hide-zero"
             labelText={t("geo.hideZero")}
             checked={hideZero}
             onChange={(_, { checked }) => setHideZero(checked)}
           />
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <caption>{t("geo.tableTitle")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("reportCenter")}</th>
-                  {columns.map((origin) => (
-                    <th scope="col" key={origin}>
-                      {t(`geo.origins.${origin}`)}
-                    </th>
-                  ))}
-                  <th scope="col">{t("geo.total")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.foci.map((focus) => (
-                  <tr key={focus.centerId}>
-                    <th scope="row">
-                      {focus.label || t("demographic.unknown")}
-                    </th>
+          <ReportExport
+            kind="table"
+            name="informacion-geografica"
+            title={tableTitle}
+          >
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <caption>{tableTitle}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("reportCenter")}</th>
                     {columns.map((origin) => (
-                      <td key={origin}>{focus.origins[origin] ?? 0}</td>
+                      <th scope="col" key={origin}>
+                        {columnLabel(origin)}
+                      </th>
                     ))}
-                    <td>{focus.total}</td>
+                    <th scope="col">{t("geo.total")}</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <th scope="row">{t("geo.total")}</th>
-                  {columns.map((origin) => (
-                    <td key={origin}>
-                      {report.foci.reduce(
-                        (sum, f) => sum + (f.origins[origin] ?? 0),
-                        0,
-                      )}
-                    </td>
+                </thead>
+                <tbody>
+                  {report.foci.map((focus) => (
+                    <tr key={focus.centerId}>
+                      <th scope="row">
+                        {focus.label || t("demographic.unknown")}
+                      </th>
+                      {columns.map((origin) => (
+                        <td key={origin}>{count(focus.centerId, origin)}</td>
+                      ))}
+                      <td>{focus.total}</td>
+                    </tr>
                   ))}
-                  <td>{report.total}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <h3>{t("geo.pieTitle")}</h3>
-          {report.total > 0 && <CenterPie report={report} />}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row">{t("geo.total")}</th>
+                    {columns.map((origin) => (
+                      <td key={origin}>
+                        {report.foci.reduce(
+                          (sum, f) => sum + count(f.centerId, origin),
+                          0,
+                        )}
+                      </td>
+                    ))}
+                    <td>{report.total}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </ReportExport>
+          {report.total > 0 && (
+            <ReportExport
+              kind="image"
+              name="distribucion-centros"
+              title={t("geo.pieTitle")}
+            >
+              <CenterPie report={report} />
+            </ReportExport>
+          )}
         </>
       )}
     </section>

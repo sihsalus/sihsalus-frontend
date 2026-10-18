@@ -1,4 +1,30 @@
 {
+  "export": {
+    "open": "Exportar",
+    "table": "Exportar tabla",
+    "image": "Exportar imagen",
+    "xlsx": "Exportar Excel (.xlsx)",
+    "csv": "Exportar CSV (.csv)",
+    "png": "Exportar PNG (.png)",
+    "jpg": "Exportar JPG (.jpg)",
+    "preparing": "Preparando archivo…",
+    "failed": "No se pudo exportar el archivo",
+    "retry": "Vuelva a intentar la exportación.",
+    "imageRetry": "Compruebe la conexión y vuelva a intentarlo. El mapa requiere que todas las teselas estén disponibles."
+  },
+  "tableSettings": {
+    "saved": "Apariencia de las tablas guardada.",
+    "title": "Configurar apariencia de las tablas",
+    "help": "Los cambios se aplican al guardar y se conservan para tu usuario en este navegador.",
+    "header": "Encabezado (primera fila)",
+    "body": "Resto de filas",
+    "size": "Tamaño de letra",
+    "align": "Alineación del texto",
+    "left": "Alinear a la izquierda",
+    "center": "Centrar",
+    "right": "Alinear a la derecha",
+    "storageFailed": "No se pudo guardar la apariencia de las tablas en este navegador. Intenta nuevamente."
+  },
   "reportDepartment": "Departamento",
   "reportAllLocations": "Todos",
   "eventFilterDisease": "Enfermedad",
@@ -32,7 +58,7 @@
     "periodType": "Tipo de periodo",
     "annual": "Anual",
     "compareDiseases": "Enfermedades a comparar",
-    "hideZero": "Ocultar filas y columnas con todos sus valores iguales a 0",
+    "hideZero": "Ocultar filas y columnas sin casos",
     "selectVariables": "Selecciona una enfermedad o las enfermedades a comparar y dos variables distintas.",
     "unknown": "Sin dato",
     "basis": "Conteo de casos por fecha de inicio de síntomas. Edad, sexo y gestación corresponden a los datos conservados en el caso. Los descartados no se incluyen.",
@@ -170,6 +196,7 @@
   "noSelectedCases": "No hay casos que coincidan con los filtros seleccionados.",
   "epidemiologicalSurveillance": "Vigilancia epidemiológica",
   "surveillanceDescription": "Registra casos y consulta información epidemiológica.",
+  "currentEpidemiologicalWeek": "Semana epidemiológica actual",
   "cases": "Casos",
   "indicators": "Indicadores",
   "registerCase": "Registrar caso",
@@ -257,6 +284,7 @@
     "semestre": "Semestral"
   },
   "columns": {
+    "period": "Periodo",
     "date": "Inicio del periodo",
     "cases": "Casos",
     "q1": "Q1",
@@ -431,7 +459,7 @@
   },
   "geo": {
     "mapTitle": "Distribución geográfica de focos",
-    "referenceYear": "Año de referencia para la clasificación del foco",
+    "referenceYear": "Año para clasificar foco",
     "invalidRange": "Seleccione fechas ordenadas dentro del mismo año calendario, sin superar hoy.",
     "configureCoordinates": "Cargar coordenadas de centros poblados",
     "configureRisk": "Configurar niveles de riesgo",
@@ -485,6 +513,14 @@
     "offline": "Sin conexión. La información puede no estar actualizada y el mapa base puede no estar disponible."
   },
   "endemic": {
+    "showZones": "Mostrar zonas del canal endémico",
+    "zoneLegend": "Zonas del canal endémico",
+    "zones": {
+      "success": "Éxito (hasta Q1)",
+      "safety": "Seguridad (Q1–Q2)",
+      "alert": "Alerta (Q2–Q3)",
+      "epidemic": "Epidemia (sobre Q3)"
+    },
     "configure": "Configurar canal endémico",
     "historicalYears": "Años históricos previos al año actual",
     "minimumYears": "Mínimo de años históricos para historia suficiente",

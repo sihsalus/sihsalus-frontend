@@ -1,3 +1,4 @@
+import { ReportExport } from "./report-export.component";
 import { DateInput } from "./date-input.component";
 import {
   InlineLoading,
@@ -22,8 +23,8 @@ import type {
   ReportZoneLevel,
 } from "./types";
 import { ReportAddressFilter } from "./report-address-filter.component";
-import { EndemicChart } from "./endemic-chart.component";
-import { demographicPeriodLabel } from "./demographic-period";
+import { EndemicChart, endemicAxisLabel } from "./endemic-chart.component";
+import { displayDate } from "./date-display";
 import styles from "./dashboard.scss";
 
 export function ReportPanel({
@@ -237,57 +238,66 @@ export function ReportPanel({
               {t("noSelectedCases", "No cases match the selected filters.")}
             </p>
           )}
-          <h3>{t("endemicChannel", "Endemic channel")}</h3>
           <EndemicChart
             report={report}
             years={selectedYears}
             calendar={catalogue.catalog}
           />
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <caption>{t("channelDetail", "Endemic channel detail")}</caption>
-              <thead>
-                <tr>
-                  {[
-                    "date",
-                    "cases",
-                    "q1",
-                    "q2",
-                    "q3",
-                    "historyYears",
-                    "zone",
-                  ].map((key) => (
-                    <th key={key} scope="col">
-                      {t(`columns.${key}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {report.channel.map((point) => (
-                  <tr key={point.date}>
-                    <td>
-                      {demographicPeriodLabel(
-                        { key: point.date, label: point.date },
-                        report.period,
-                        catalogue.catalog,
-                      )}
-                    </td>
-                    <td>{point.cases}</td>
-                    <td>{point.q1 ?? "—"}</td>
-                    <td>{point.q2 ?? "—"}</td>
-                    <td>{point.q3 ?? "—"}</td>
-                    <td>{point.sampleSize}</td>
-                    <td>
-                      <span className={styles.zone} data-zone={point.zone}>
-                        {t(`zones.${point.zone}`)}
-                      </span>
-                    </td>
+          <ReportExport
+            kind="table"
+            name="informacion-temporal"
+            title={t("channelDetail")}
+          >
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <caption>
+                  {t("channelDetail", "Endemic channel detail")}
+                </caption>
+                <thead>
+                  <tr>
+                    {[
+                      "period",
+                      "date",
+                      "cases",
+                      "q1",
+                      "q2",
+                      "q3",
+                      "historyYears",
+                      "zone",
+                    ].map((key) => (
+                      <th key={key} scope="col">
+                        {t(`columns.${key}`)}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {report.channel.map((point) => (
+                    <tr key={point.date}>
+                      <td>
+                        {endemicAxisLabel(
+                          point.date,
+                          report.period,
+                          catalogue.catalog,
+                        )}
+                      </td>
+                      <td>{displayDate(point.date)}</td>
+                      <td>{point.cases}</td>
+                      <td>{point.q1 ?? "—"}</td>
+                      <td>{point.q2 ?? "—"}</td>
+                      <td>{point.q3 ?? "—"}</td>
+                      <td>{point.sampleSize}</td>
+                      <td>
+                        <span className={styles.zone} data-zone={point.zone}>
+                          {t(`zones.${point.zone}`)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ReportExport>
         </>
       )}
     </section>

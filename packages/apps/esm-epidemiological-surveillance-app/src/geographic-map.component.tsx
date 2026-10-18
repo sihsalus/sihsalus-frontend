@@ -1,3 +1,4 @@
+import { ReportExport } from "./report-export.component";
 import { Button, Checkbox } from "@carbon/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -179,125 +180,134 @@ export function GeographicMap({ report }: { report: GeographicReport }) {
         ))}
       </div>
       {tileError && <p role="status">{t("geo.tileError")}</p>}
-      <div className={styles.map}>
-        <svg
-          viewBox="0 0 800 480"
-          role="img"
-          aria-label={t("geo.mapTitle")}
-          onPointerDown={(e) => {
-            if (
-              e.target === e.currentTarget ||
-              (e.target as Element).tagName === "image"
-            ) {
+      <ReportExport
+        kind="image"
+        name="mapa-epidemiologico"
+        title={t("geo.mapTitle")}
+      >
+        <div className={styles.map}>
+          <svg
+            viewBox="0 0 800 480"
+            role="img"
+            aria-label={t("geo.mapTitle")}
+            onPointerDown={(e) => {
+              if (
+                e.target === e.currentTarget ||
+                (e.target as Element).tagName === "image"
+              ) {
+                drag.current = { x: e.clientX, y: e.clientY };
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }
+            }}
+            onPointerMove={(e) => {
+              if (!drag.current) return;
+              const scale = 800 / e.currentTarget.getBoundingClientRect().width;
+              pan(
+                (drag.current.x - e.clientX) * scale,
+                (drag.current.y - e.clientY) * scale,
+              );
               drag.current = { x: e.clientX, y: e.clientY };
-              e.currentTarget.setPointerCapture(e.pointerId);
-            }
-          }}
-          onPointerMove={(e) => {
-            if (!drag.current) return;
-            const scale = 800 / e.currentTarget.getBoundingClientRect().width;
-            pan(
-              (drag.current.x - e.clientX) * scale,
-              (drag.current.y - e.clientY) * scale,
-            );
-            drag.current = { x: e.clientX, y: e.clientY };
-          }}
-          onPointerUp={() => {
-            drag.current = undefined;
-          }}
-          onPointerCancel={() => {
-            drag.current = undefined;
-          }}
-        >
-          <title>{t("geo.mapTitle")}</title>
-          {tiles.map((tile) => (
-            <image
-              key={`${viewport.zoom}/${tile.x}/${tile.y}`}
-              x={tile.x * 256 - left}
-              y={tile.y * 256 - top}
-              width="256"
-              height="256"
-              href={`https://tile.openstreetmap.org/${viewport.zoom}/${tile.x}/${tile.y}.png`}
-              onError={() => setTileError(true)}
-            />
-          ))}
-          {report.foci.map((focus) => {
-            if (focus.latitude == null || focus.longitude == null) return null;
-            const point = project(focus.latitude, focus.longitude);
-            const x = point.x * size - left,
-              y = point.y * size - top;
-            if (x < -12 || x > 812 || y < -12 || y > 492) return null;
-            return (
-              <g key={focus.centerId} transform={`translate(${x},${y})`}>
-                <title>{`${focus.label}: ${focus.total} · ${t(`geo.classes.${focus.classification}`)} · ${t(`geo.risk.${focus.risk}`)}`}</title>
-                <foreignObject x="-12" y="-12" width="24" height="24">
-                  <button
-                    type="button"
-                    className={styles.marker}
-                    aria-label={`${focus.label}: ${focus.total}`}
-                    onClick={() => setSelected(focus)}
-                  >
-                    <FocusSymbol
-                      classification={
-                        classification ? focus.classification : "ACTIVE"
-                      }
-                      color={risk ? riskColors[focus.risk] : "#da1e28"}
-                    />
-                  </button>
-                </foreignObject>
-              </g>
-            );
-          })}
-        </svg>
-        <div className={styles.legends}>
-          {risk && (
-            <div>
-              <strong>{t("geo.riskLegend")}</strong>
-              {(["VERY_HIGH", "HIGH", "MEDIUM", "LOW"] as const).map((key) => (
-                <div className={styles.legendRow} key={key}>
-                  <FocusSymbol
-                    classification="ACTIVE"
-                    color={riskColors[key]}
-                  />
-                  <span>
-                    {t(`geo.risk.${key}`)}: {ranges[key]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          {classification && (
-            <div>
-              <strong>{t("geo.classificationLegend")}</strong>
-              {(
-                [
-                  "ACTIVE",
-                  "RESIDUAL",
-                  "ELIMINATED",
-                  ...(report.foci.some(
-                    (f) => f.classification === "UNCLASSIFIED",
-                  )
-                    ? ["UNCLASSIFIED" as const]
-                    : []),
-                ] as const
-              ).map((key) => (
-                <div className={styles.legendRow} key={key}>
-                  <FocusSymbol classification={key} color="#da1e28" />
-                  <span>{t(`geo.classes.${key}`)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+            }}
+            onPointerUp={() => {
+              drag.current = undefined;
+            }}
+            onPointerCancel={() => {
+              drag.current = undefined;
+            }}
+          >
+            <title>{t("geo.mapTitle")}</title>
+            {tiles.map((tile) => (
+              <image
+                key={`${viewport.zoom}/${tile.x}/${tile.y}`}
+                x={tile.x * 256 - left}
+                y={tile.y * 256 - top}
+                width="256"
+                height="256"
+                href={`https://tile.openstreetmap.org/${viewport.zoom}/${tile.x}/${tile.y}.png`}
+                onError={() => setTileError(true)}
+              />
+            ))}
+            {report.foci.map((focus) => {
+              if (focus.latitude == null || focus.longitude == null)
+                return null;
+              const point = project(focus.latitude, focus.longitude);
+              const x = point.x * size - left,
+                y = point.y * size - top;
+              if (x < -12 || x > 812 || y < -12 || y > 492) return null;
+              return (
+                <g key={focus.centerId} transform={`translate(${x},${y})`}>
+                  <title>{`${focus.label}: ${focus.total} · ${t(`geo.classes.${focus.classification}`)} · ${t(`geo.risk.${focus.risk}`)}`}</title>
+                  <foreignObject x="-12" y="-12" width="24" height="24">
+                    <button
+                      type="button"
+                      className={styles.marker}
+                      aria-label={`${focus.label}: ${focus.total}`}
+                      onClick={() => setSelected(focus)}
+                    >
+                      <FocusSymbol
+                        classification={
+                          classification ? focus.classification : "ACTIVE"
+                        }
+                        color={risk ? riskColors[focus.risk] : "#da1e28"}
+                      />
+                    </button>
+                  </foreignObject>
+                </g>
+              );
+            })}
+          </svg>
+          <div className={styles.legends}>
+            {risk && (
+              <div>
+                <strong>{t("geo.riskLegend")}</strong>
+                {(["VERY_HIGH", "HIGH", "MEDIUM", "LOW"] as const).map(
+                  (key) => (
+                    <div className={styles.legendRow} key={key}>
+                      <FocusSymbol
+                        classification="ACTIVE"
+                        color={riskColors[key]}
+                      />
+                      <span>
+                        {t(`geo.risk.${key}`)}: {ranges[key]}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+            {classification && (
+              <div>
+                <strong>{t("geo.classificationLegend")}</strong>
+                {(
+                  [
+                    "ACTIVE",
+                    "RESIDUAL",
+                    "ELIMINATED",
+                    ...(report.foci.some(
+                      (f) => f.classification === "UNCLASSIFIED",
+                    )
+                      ? ["UNCLASSIFIED" as const]
+                      : []),
+                  ] as const
+                ).map((key) => (
+                  <div className={styles.legendRow} key={key}>
+                    <FocusSymbol classification={key} color="#da1e28" />
+                    <span>{t(`geo.classes.${key}`)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <a
+            className={styles.attribution}
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noreferrer"
+          >
+            © OpenStreetMap contributors
+          </a>
         </div>
-        <a
-          className={styles.attribution}
-          href="https://www.openstreetmap.org/copyright"
-          target="_blank"
-          rel="noreferrer"
-        >
-          © OpenStreetMap contributors
-        </a>
-      </div>
+      </ReportExport>
       {selected && (
         <div role="status">
           <strong>{selected.label}</strong> · {selected.total} ·{" "}

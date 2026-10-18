@@ -1,3 +1,4 @@
+import { ReportExport } from "./report-export.component";
 import { DateInput } from "./date-input.component";
 import {
   Button,
@@ -307,53 +308,59 @@ export function DemographicPanel({
           )}
           {report.total === 0 && <p>{t("noSelectedCases")}</p>}
           {visible.rows.length > 0 && visible.columns.length > 0 && (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <caption>
-                  {t("demographic.title")}:{" "}
-                  {t(`demographic.dimensions.${report.row}`)} ×{" "}
-                  {t(`demographic.dimensions.${report.column}`)}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">
-                      {t(`demographic.dimensions.${report.row}`)} /{" "}
-                      {t(`demographic.dimensions.${report.column}`)}
-                    </th>
-                    {visible.columns.map((i) => (
-                      <th scope="col" key={report.columns[i].key}>
-                        {label(report.column, report.columns[i])}
+            <ReportExport
+              kind="table"
+              name="informacion-demografica"
+              title={`${t("demographic.title")}: ${t(`demographic.dimensions.${report.row}`)} / ${t(`demographic.dimensions.${report.column}`)}`}
+            >
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <caption>
+                    {t("demographic.title")}:{" "}
+                    {t(`demographic.dimensions.${report.row}`)} ×{" "}
+                    {t(`demographic.dimensions.${report.column}`)}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">
+                        {t(`demographic.dimensions.${report.row}`)} /{" "}
+                        {t(`demographic.dimensions.${report.column}`)}
                       </th>
+                      {visible.columns.map((i) => (
+                        <th scope="col" key={report.columns[i].key}>
+                          {label(report.column, report.columns[i])}
+                        </th>
+                      ))}
+                      <th scope="col">{t("demographic.total")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visible.rows.map((i) => (
+                      <tr key={report.rows[i].key}>
+                        <th scope="row">{label(report.row, report.rows[i])}</th>
+                        {visible.columns.map((j) => (
+                          <td key={report.columns[j].key}>
+                            {report.values[i][j]}
+                          </td>
+                        ))}
+                        <td>{report.rowTotals[i]}</td>
+                      </tr>
                     ))}
-                    <th scope="col">{t("demographic.total")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.rows.map((i) => (
-                    <tr key={report.rows[i].key}>
-                      <th scope="row">{label(report.row, report.rows[i])}</th>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th scope="row">{t("demographic.total")}</th>
                       {visible.columns.map((j) => (
                         <td key={report.columns[j].key}>
-                          {report.values[i][j]}
+                          {report.columnTotals[j]}
                         </td>
                       ))}
-                      <td>{report.rowTotals[i]}</td>
+                      <td>{report.total}</td>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row">{t("demographic.total")}</th>
-                    {visible.columns.map((j) => (
-                      <td key={report.columns[j].key}>
-                        {report.columnTotals[j]}
-                      </td>
-                    ))}
-                    <td>{report.total}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </tfoot>
+                </table>
+              </div>
+            </ReportExport>
           )}
         </>
       )}

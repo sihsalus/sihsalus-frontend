@@ -1,4 +1,30 @@
 {
+  "export": {
+    "open": "Export",
+    "table": "Export table",
+    "image": "Export image",
+    "xlsx": "Export Excel (.xlsx)",
+    "csv": "Export CSV (.csv)",
+    "png": "Export PNG (.png)",
+    "jpg": "Export JPG (.jpg)",
+    "preparing": "Preparing file…",
+    "failed": "Could not export the file",
+    "retry": "Try exporting again.",
+    "imageRetry": "Check your connection and try again. The map requires all tiles to be available."
+  },
+  "tableSettings": {
+    "saved": "Table appearance saved.",
+    "title": "Configure table appearance",
+    "help": "Changes apply when saved and are stored for your user in this browser.",
+    "header": "Header (first row)",
+    "body": "Remaining rows",
+    "size": "Font size",
+    "align": "Text alignment",
+    "left": "Align left",
+    "center": "Center",
+    "right": "Align right",
+    "storageFailed": "Could not save table appearance in this browser. Try again."
+  },
   "reportDepartment": "Department",
   "reportAllLocations": "All",
   "eventFilterDisease": "Disease",
@@ -32,7 +58,7 @@
     "periodType": "Period type",
     "annual": "Annual",
     "compareDiseases": "Diseases to compare",
-    "hideZero": "Hide rows and columns whose values are all 0",
+    "hideZero": "Hide rows and columns without cases",
     "selectVariables": "Select a disease or diseases to compare and two different variables.",
     "unknown": "Unknown",
     "basis": "Case counts by symptom onset date. Age, sex and pregnancy use the values preserved in each case. Discarded cases are excluded.",
@@ -170,6 +196,7 @@
   "noSelectedCases": "No cases match the selected filters.",
   "epidemiologicalSurveillance": "Epidemiological Surveillance",
   "surveillanceDescription": "Register cases and review epidemiological information.",
+  "currentEpidemiologicalWeek": "Current epidemiological week",
   "cases": "Cases",
   "indicators": "Indicators",
   "registerCase": "Register case",
@@ -257,6 +284,7 @@
     "semestre": "Half-yearly"
   },
   "columns": {
+    "period": "Period",
     "date": "Period start",
     "cases": "Cases",
     "q1": "Q1",
@@ -431,7 +459,7 @@
   },
   "geo": {
     "mapTitle": "Geographic distribution of foci",
-    "referenceYear": "Reference year for focus classification",
+    "referenceYear": "Year for focus classification",
     "invalidRange": "Select ordered dates within the same calendar year, no later than today.",
     "configureCoordinates": "Upload populated center coordinates",
     "configureRisk": "Configure risk levels",
@@ -485,6 +513,14 @@
     "offline": "Offline. Information may be outdated and the base map may be unavailable."
   },
   "endemic": {
+    "showZones": "Show endemic channel zones",
+    "zoneLegend": "Endemic channel zones",
+    "zones": {
+      "success": "Success (up to Q1)",
+      "safety": "Safety (Q1–Q2)",
+      "alert": "Alert (Q2–Q3)",
+      "epidemic": "Epidemic (above Q3)"
+    },
     "configure": "Configure endemic channel",
     "historicalYears": "Historical years before the current year",
     "minimumYears": "Minimum historical years for sufficient history",

@@ -28,7 +28,7 @@ test("endemic periods remain readable and scroll inside the chart on narrow scre
           builder.onLoad({ filter: /\.scss$/ }, () => ({
             loader: "js",
             contents:
-              'export default {endemicChart:"endemicChart",chartScroll:"chartScroll",historyLegend:"historyLegend"}',
+              'export default {endemicChart:"endemicChart",chartScroll:"chartScroll",historyLegend:"historyLegend",zoneLegend:"zoneLegend",endemicControls:"endemicControls"}',
           }));
         },
       },

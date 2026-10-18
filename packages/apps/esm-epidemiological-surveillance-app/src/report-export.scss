@@ -1,0 +1,27 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+
+  h3 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  > :last-child {
+    flex-shrink: 0;
+  }
+}
+
+// Keep the table's accessible name without repeating its visible heading.
+.content caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

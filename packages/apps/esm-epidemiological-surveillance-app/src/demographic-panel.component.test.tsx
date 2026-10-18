@@ -219,7 +219,7 @@ it("hides only all-zero rows and columns without changing totals", async () => {
   render(<DemographicPanel catalogue={catalogue} />);
   await screen.findByText("Infants (0–1)");
   fireEvent.click(
-    screen.getByLabelText("Hide rows and columns whose values are all 0"),
+    screen.getByLabelText("Hide rows and columns without cases"),
   );
   expect(screen.queryByText("Infants (0–1)")).not.toBeInTheDocument();
   expect(screen.getByText("Children (2–11)")).toBeInTheDocument();

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { GeographicMap } from "./geographic-map.component";
 import {
@@ -94,6 +100,91 @@ beforeEach(() => {
   vi.mocked(getGeography).mockResolvedValue(report);
   vi.mocked(getRiskThresholds).mockResolvedValue([10, 20, 50]);
   vi.mocked(saveRiskThresholds).mockResolvedValue([10, 20, 50]);
+});
+it("selects geographic columns without disease and renders the breakdown by center", async () => {
+  render(<GeographicPanel catalogue={catalogue} />);
+  await screen.findByRole("table");
+  const selector = screen.getByLabelText("demographic.column");
+  expect(
+    within(selector)
+      .getAllByRole("option")
+      .map((option) => (option as HTMLOptionElement).value),
+  ).toEqual([
+    "age",
+    "sex",
+    "ageGroup",
+    "ethnicity",
+    "pregnancy",
+    "period",
+    "origin",
+  ]);
+  expect(selector).toHaveValue("origin");
+  vi.mocked(getGeography).mockResolvedValue({
+    ...report,
+    table: {
+      row: "center",
+      column: "sex",
+      period: "mes",
+      from: report.from,
+      to: report.to,
+      generatedAt: report.from,
+      rows: [
+        { key: "2", label: "2" },
+        { key: "1", label: "1" },
+      ],
+      columns: [
+        { key: "F", label: "F" },
+        { key: "M", label: "M" },
+        { key: "UNKNOWN", label: "UNKNOWN" },
+      ],
+      values: [
+        [1, 0, 0],
+        [1, 2, 0],
+      ],
+      rowTotals: [1, 3],
+      columnTotals: [2, 2, 0],
+      total: 4,
+      excludedWithoutOnset: 0,
+      ageGroups: [],
+    },
+  });
+  fireEvent.change(selector, { target: { value: "sex" } });
+  await screen.findByRole("columnheader", { name: "demographic.values.F" });
+  const rows = within(screen.getByRole("table")).getAllByRole("row");
+  expect(
+    within(rows[1])
+      .getAllByRole("cell")
+      .map((cell) => cell.textContent),
+  ).toEqual(["1", "2", "0", "3"]);
+  expect(
+    within(rows[2])
+      .getAllByRole("cell")
+      .map((cell) => cell.textContent),
+  ).toEqual(["1", "0", "0", "1"]);
+  fireEvent.click(screen.getByLabelText("geo.hideZero"));
+  expect(
+    screen.queryByRole("columnheader", { name: "demographic.unknown" }),
+  ).not.toBeInTheDocument();
+  expect(getGeography).toHaveBeenLastCalledWith(
+    expect.objectContaining({ column: "sex" }),
+    expect.any(AbortSignal),
+  );
+});
+it("offers period types and rejects a response without the requested breakdown", async () => {
+  render(<GeographicPanel catalogue={catalogue} />);
+  await screen.findByRole("table");
+  fireEvent.change(screen.getByLabelText("demographic.column"), {
+    target: { value: "period" },
+  });
+  const period = screen.getByLabelText("demographic.periodType");
+  expect(within(period).getAllByRole("option")).toHaveLength(6);
+  fireEvent.change(period, { target: { value: "semana" } });
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  expect(getGeography).toHaveBeenLastCalledWith(
+    expect.objectContaining({ column: "period", period: "semana" }),
+    expect.any(AbortSignal),
+  );
 });
 it("keeps at least one legend and uses the specified fallback color and shape", () => {
   render(<GeographicMap report={report} />);

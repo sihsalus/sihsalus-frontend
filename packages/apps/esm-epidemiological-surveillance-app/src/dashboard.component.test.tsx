@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import Dashboard from "./dashboard.component";
@@ -79,6 +85,35 @@ beforeEach(() => {
     reportPrivilege,
   ];
   vi.mocked(getCatalogue).mockReset().mockResolvedValue(catalogue);
+});
+it("shows the local epidemiological week under the subtitle and refreshes across the year boundary", async () => {
+  vi.setSystemTime(new Date("2026-01-04T04:59:00Z"));
+  vi.mocked(getCatalogue).mockResolvedValue({
+    ...catalogue,
+    catalog: {
+      ...catalogue.catalog,
+      timezone: "America/Lima",
+      firstDayOfWeek: "SUNDAY",
+      minimalDaysInFirstWeek: 4,
+    },
+  });
+  const view = render(<Dashboard />);
+  try {
+    const label = await screen.findByText("Current epidemiological week: S53");
+    expect(label.previousElementSibling).toHaveTextContent(
+      "Register cases and review epidemiological information.",
+    );
+    vi.setSystemTime(new Date("2026-01-04T05:00:00Z"));
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(
+      screen.getByText("Current epidemiological week: S01"),
+    ).toBeInTheDocument();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
 });
 it("requires both case privileges before mounting clinical components", async () => {
   state.privileges = [caseRegisterPrivilege];

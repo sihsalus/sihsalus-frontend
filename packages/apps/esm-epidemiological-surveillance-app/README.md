@@ -10,9 +10,59 @@ Registro en **tres pasos**: paciente/atención existente; todos los campos del c
 
 Cubre el registro, la información temporal, la distribución demográfica (RF-22)
 y la información geográfica de focos (RF-18/RF-19 de la tesis), con usabilidad
-RNF-04, RNF-05 y RNF-06. NOTI/Excel no se incluye.
+RNF-04, RNF-05 y RNF-06. La exportación de consolidados cubre RF-14; NOTI no se incluye.
+
+### Exportación de Información (RF-14)
+
+Cada tabla, gráfico y mapa presenta un botón **Exportar** a la derecha de su
+título. Al abrirlo aparecen todos los formatos disponibles para ese elemento:
+Excel/CSV para tablas y PNG/JPG para gráficos y mapas. El menú usa Carbon y
+mantiene las opciones ocultas hasta abrirlo. Validación del ajuste: 149 pruebas
+Vitest, comprobación HMR, TypeScript, lint y build PASSED.
+
+Las tablas de Información temporal, demográfica y geográfica ofrecen Excel
+(`.xlsx`) y CSV (`.csv`). Exportan las filas del consolidado mostrado, con
+encabezados, totales, etiquetas traducidas y columnas visibles, respetando los
+filtros y la opción de ocultar ceros. Excel conserva los conteos como números;
+CSV usa UTF-8 con BOM, comillas y protección de etiquetas que podrían
+interpretarse como fórmulas.
+
+El canal endémico, el mapa y el gráfico por centro poblado ofrecen PNG y JPG.
+Incluyen las leyendas visibles; el canal incluye todo el ancho aunque tenga
+desplazamiento horizontal. El mapa conserva el encuadre, los símbolos y la
+atribución de OpenStreetMap. Sus teselas requieren conexión y acceso CORS:
+si alguna no se puede incorporar, se muestra un error y no se descarga una
+imagen incompleta. JPG usa fondo blanco. Los controles indican la preparación
+y bloquean clics repetidos; cualquier error permite volver a intentar.
+
+La generación ocurre en el navegador con los consolidados ya autorizados,
+sin nuevas consultas de pacientes ni cambios de permisos o endpoints. ExcelJS
+y html-to-image se cargan al exportar. No requiere actualizar el OMOD.
+
+Validación local RF-14 (17/10/2026): 148 pruebas Vitest y una comprobación HMR
+PASSED; `node ../../../node_modules/typescript/bin/tsc6 --noEmit`, `yarn.cmd
+workspace @sihsalus/esm-epidemiological-surveillance-app lint` y `build` PASSED.
+Build advierte un chunk de ExcelJS de 910 KiB, cargado bajo demanda.
+`yarn.cmd install --immutable --mode=skip-build` PASSED. `yarn.cmd security:audit`
+BLOCKED por el contrato de React Router: el paquete declara 7.18.2 y el validador
+exige 7.18.4; esa declaración no se modifica en RF-14. `yarn.cmd prettier --check`
+sobre este README FAILED por formato; no se reformatea el documento completo
+para conservar sus cambios locales. `git diff --check` PASSED.
+`node --test tooling/report-export.check.cjs` PASSED en Edge sin interfaz,
+con teselas sintéticas: formatos PNG/JPG, ancho completo, colores de marcadores,
+leyendas y error de red. Las pruebas XLSX reabren el archivo generado y comprueban
+tipos numéricos y texto literal; CSV cubre acentos, comillas, saltos de línea y
+fórmulas. Smoke integrado DEV/QLTY y teselas reales NOT RUN, sin sesión coordinada.
 
 ### Pestañas, demografía y configuración
+
+Debajo del subtítulo se muestra `Semana epidemiológica actual: Snn` al cargar
+el catálogo. Usa la zona horaria, el primer día de semana y el mínimo de días
+de la primera semana configurados; se actualiza cada minuto y al volver a la
+ventana. Validación local: TypeScript, lint y build PASSED; prueba de cambio de
+semana y año PASSED. La suite completa tuvo un fallo en gestación del formulario
+de casos (152/153); la repetición aislada de formulario y dashboard pasó (17/17),
+sin modificar el formulario. Smoke integrado NOT RUN.
 
 Las pestañas de Información temporal, demográfica y geográfica inicializan los
 filtros territoriales con `sessionLocation` de la sesión autenticada. Consultan
@@ -53,6 +103,27 @@ cobertura desde 0, sin huecos ni solapamientos y con el último grupo sin máxim
 Cambiar los grupos reclasifica los reportes, sin modificar la edad guardada en casos.
 
 ### Información geográfica (RF-18/RF-19)
+
+El selector **Columna** cruza cada centro poblado con Edad, Sexo, Grupo etario,
+Etnia, Gestación, Periodo u Origen (valor inicial); excluye Enfermedad. Periodo
+permite día, semana epidemiológica, mes, trimestre, semestre y año. Reutiliza
+los grupos etarios configurados y las etiquetas de demografía; la etnia procede
+del atributo vigente del paciente. Ocultar columnas sin casos y Excel/CSV se
+aplican al cruce seleccionado. Mapa, clasificación, riesgo y pastel conservan
+los totales por centro poblado.
+
+Requiere actualizar OMOD y ESM juntos. `GET /reports/geography` incorpora
+`column` (por defecto `origin`) y `period` (por defecto `mes`), y devuelve `table`
+con ejes, matriz y totales agregados. Sin el nuevo backend, Origen mantiene la
+compatibilidad; otras columnas muestran un error seguro en lugar de datos de
+Origen bajo encabezados incorrectos. No añade migraciones ni privilegios.
+
+Validación local del selector (17/10/2026): `mvn -B clean package` PASSED;
+`yarn.cmd workspace @sihsalus/esm-epidemiological-surveillance-app test` PASSED
+(152 pruebas y una comprobación HMR); `lint`, `build` y
+`node ../../../node_modules/typescript/bin/tsc6 --noEmit` PASSED. Build mantiene
+la advertencia de tamaño del chunk ExcelJS. Smoke integrado DEV/QLTY NOT RUN,
+sin sesión coordinada; no se realizó despliegue.
 
 Filtros: enfermedad, inicio de síntomas desde/hasta (mismo año calendario), Casos
 incluidos (confirmados por defecto, probables o ambos; nunca descartados), año
@@ -538,3 +609,21 @@ Validación territorial local (15/10/2026): PASSED, 118 pruebas Vitest y una
 comprobación HMR con yarn test; TypeScript, lint y build correctos. Backend:
 mvn package PASSED, 120 pruebas API y 6 REST. Verificación integrada DEV/QLTY
 NOT RUN; no se realizó despliegue.
+
+El canal temporal muestra bandas de éxito (0–Q1), seguridad (Q1–Q2),
+alerta (Q2–Q3) y epidemia (sobre Q3 hasta el techo visible). Leyenda y
+sombreados se muestran u ocultan juntos con Mostrar zonas del canal endémico; las curvas de casos permanecen
+encima. Los periodos sin cuartiles quedan sin sombreado. No cambia el
+cálculo del servidor.
+
+El eje de Casos incluye marcas enteras uniformes desde cero, con pasos de la
+serie 1, 2, 5, 10, 20, 50… y hasta seis intervalos. El máximo considera casos,
+Q3 y los años históricos seleccionados, conserva un margen del 10 % y se
+redondea al múltiplo del paso siguiente. Las líneas horizontales tenues quedan
+sobre las bandas y debajo de las curvas; permanecen al ocultar las zonas y se
+incluyen en PNG/JPG. No cambia los valores del reporte ni sus cálculos clínicos.
+
+Configuración incluye Apariencia de las tablas: tamaño (12 a 24 px) y
+alineación independientes para encabezados y resto de filas. Se abre desde un botón con icono en un modal con Cancelar y Guardar. Se aplica al
+guardar a las tablas del módulo y persiste por usuario en este navegador,
+sin cambiar la configuración compartida del servidor.

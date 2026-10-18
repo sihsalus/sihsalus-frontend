@@ -87,6 +87,19 @@ describe("report screen", () => {
       expect.any(AbortSignal),
       { zoneLevel: "CENTRO_POBLADO", diagnosisType: "CONFIRMADO", address: "" },
     );
+    expect(
+      screen.getByRole("columnheader", { name: "Period" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: en.columns.date }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("S53", { selector: "td" })).toBeInTheDocument();
+    expect(
+      screen.getByText("01/01/2026", { selector: "td" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("2025-S53", { selector: "td" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Insufficient history")).toBeInTheDocument();
     expect(
       screen.queryByRole("img", { name: "Epidemic curve" }),

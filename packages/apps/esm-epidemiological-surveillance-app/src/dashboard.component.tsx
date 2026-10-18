@@ -27,10 +27,12 @@ import { EventsPanel } from "./events-panel.component";
 import { ReportPanel } from "./report-panel.component";
 import { EndemicSettings } from "./endemic-settings.component";
 import { dateInZone } from "./case-form.utils";
+import { demographicPeriodLabel } from "./demographic-period";
 import { DemographicPanel } from "./demographic-panel.component";
 import { AgeGroupsPanel } from "./age-groups.component";
 import { GeographicPanel } from "./geographic-panel.component";
 import { GeographicSettings } from "./geographic-settings.component";
+import { TableSettings, useTableAppearance } from "./table-settings.component";
 import { reloadSurveillancePage } from "./reload-surveillance";
 import type { Catalogue } from "./types";
 import styles from "./dashboard.scss";
@@ -48,6 +50,7 @@ export default function Dashboard() {
 function SessionDashboard() {
   const { t } = useTranslation(moduleName);
   const session = useSession();
+  const tableAppearance = useTableAppearance(session?.user?.uuid);
   const [catalogue, setCatalogue] = useState<Catalogue>();
   const [error, setError] = useState<unknown>();
   const [retry, setRetry] = useState(0);
@@ -71,7 +74,7 @@ function SessionDashboard() {
     return () => abort.abort();
   }, [session?.authenticated, session?.user?.uuid, retry]);
   return (
-    <main className={styles.container}>
+    <main className={styles.container} style={tableAppearance.style}>
       <h1>
         {t("epidemiologicalSurveillance", "Epidemiological Surveillance")}
       </h1>
@@ -81,6 +84,7 @@ function SessionDashboard() {
           "Register cases and review epidemiological information.",
         )}
       </p>
+      {catalogue && <CurrentEpidemiologicalWeek calendar={catalogue.catalog} />}
       {error ? (
         <>
           <ErrorNotification error={error} />
@@ -179,6 +183,7 @@ function SessionDashboard() {
                   className={styles.configurationGrid}
                   aria-label={t("configuration")}
                 >
+                  <TableSettings {...tableAppearance} />
                   <AgeGroupsPanel onSaved={reloadSurveillancePage} />
                   <EndemicSettings
                     currentYear={Number(
@@ -196,5 +201,34 @@ function SessionDashboard() {
         </Tabs>
       )}
     </main>
+  );
+}
+
+function CurrentEpidemiologicalWeek({
+  calendar,
+}: {
+  calendar: Catalogue["catalog"];
+}) {
+  const { t } = useTranslation(moduleName);
+  const [today, setToday] = useState(() => dateInZone(calendar.timezone));
+  useEffect(() => {
+    const refresh = () => setToday(dateInZone(calendar.timezone));
+    refresh();
+    const timer = window.setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [calendar.timezone]);
+  const week = demographicPeriodLabel(
+    { key: today, label: today },
+    "semana",
+    calendar,
+  ).replace(/^\d{4}-/, "");
+  return (
+    <p>
+      {t("currentEpidemiologicalWeek", "Current epidemiological week")}: {week}
+    </p>
   );
 }

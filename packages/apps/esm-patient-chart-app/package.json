@@ -42,7 +42,7 @@
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
@@ -65,10 +65,10 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@rspack/cli": "2.2.8",
+    "@rspack/cli": "2.2.9",
     "@types/uuid": "^9.0.4",
     "@typescript/native": "npm:typescript@7.0.2",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "openmrs": "workspace:*",
     "vite": "8.3.4",
     "vitest": "^5.0.5"

@@ -73,7 +73,7 @@ export const configSchema = {
     },
     defaultLocationUuid: {
       _type: Type.String,
-      _description: 'UUID de la ubicación por defecto (fallback cuando no se puede obtener dinámicamente)',
+      _description: 'UUID de ubicación a verificar si el tipo de identificador exige ubicación; se omite para NOT_USED',
       _default: '8d6c993e-c2cc-11de-8d13-0010c6dffd0f',
     },
     emailAttributeTypeUuid: {

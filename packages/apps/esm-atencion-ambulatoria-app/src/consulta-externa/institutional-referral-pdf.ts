@@ -1,5 +1,6 @@
 import type { PDFFont, PDFPage, RGB } from 'pdf-lib';
 import type { OutpatientVisitSummary } from './outpatient-visit-summary.resource';
+import { OutpatientPdfUnsupportedCharacterError } from './outpatient-visit-summary-pdf';
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
@@ -43,34 +44,59 @@ interface PdfState {
 function safeText(value: string, font: PDFFont): string {
   return [...value]
     .map((character) => {
+      if (character === '\n' || character === '\r' || character === '\t') return character;
       try {
         font.encodeText(character);
         return character;
       } catch {
-        return '?';
+        throw new OutpatientPdfUnsupportedCharacterError();
       }
     })
     .join('');
 }
 
-function wrapText(value: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  return value.split(/\r?\n/).flatMap((paragraph) => {
-    const words = safeText(paragraph, font).trim().split(/\s+/).filter(Boolean);
-    if (!words.length) return [''];
-    const lines: string[] = [];
-    let line = '';
-    for (const word of words) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (line && font.widthOfTextAtSize(candidate, size) > maxWidth) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = candidate;
-      }
+function splitLongWord(word: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const segments: string[] = [];
+  let segment = '';
+  for (const character of word) {
+    const candidate = `${segment}${character}`;
+    if (segment && font.widthOfTextAtSize(candidate, size) > maxWidth) {
+      segments.push(segment);
+      segment = character;
+    } else {
+      segment = candidate;
     }
-    if (line) lines.push(line);
-    return lines;
-  });
+  }
+  if (segment) segments.push(segment);
+  return segments;
+}
+
+function wrapText(value: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  return safeText(value, font)
+    .split(/\r\n?|\n/)
+    .flatMap((paragraph) => {
+      const words = paragraph
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .flatMap((word) =>
+          font.widthOfTextAtSize(word, size) > maxWidth ? splitLongWord(word, font, size, maxWidth) : [word],
+        );
+      if (!words.length) return [''];
+      const lines: string[] = [];
+      let line = '';
+      for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (line && font.widthOfTextAtSize(candidate, size) > maxWidth) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = candidate;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    });
 }
 
 function addPage(state: PdfState): void {
@@ -103,44 +129,71 @@ function drawSectionHeader(state: PdfState, title: string): void {
   state.y -= 18;
 }
 
-function drawField(state: PdfState, label: string, value: string | null | undefined, minHeight = 15): void {
-  const displayValue = value?.trim() || '—';
-  const labelText = `${label}:`;
-  const labelWidth = Math.min(state.bold.widthOfTextAtSize(labelText, BODY_SIZE) + 8, CONTENT_WIDTH * 0.36);
-  const lines = wrapText(displayValue, state.regular, BODY_SIZE, CONTENT_WIDTH - labelWidth - 10);
-  const height = Math.max(minHeight, lines.length * LINE_HEIGHT + 5);
-  ensureSpace(state, height);
-  state.page.drawRectangle({
-    x: MARGIN,
-    y: state.y - height,
-    width: CONTENT_WIDTH,
-    height,
-    borderColor: state.line,
-    borderWidth: 0.5,
+function drawFields(state: PdfState, fields: Array<[string, string | null | undefined]>, minHeight: number): void {
+  const columnWidth = CONTENT_WIDTH / fields.length;
+  const columns = fields.map(([label, value]) => {
+    const labelText = safeText(`${label}:`, state.bold);
+    const labelWidth = Math.min(state.bold.widthOfTextAtSize(labelText, BODY_SIZE) + 8, columnWidth * 0.36);
+    return {
+      labelWidth,
+      labels: wrapText(labelText, state.bold, BODY_SIZE, labelWidth - 8),
+      values: wrapText(value?.trim() || '—', state.regular, BODY_SIZE, columnWidth - labelWidth - 10),
+    };
   });
-  state.page.drawLine({
-    start: { x: MARGIN + labelWidth, y: state.y },
-    end: { x: MARGIN + labelWidth, y: state.y - height },
-    thickness: 0.5,
-    color: state.line,
-  });
-  state.page.drawText(safeText(labelText, state.bold), {
-    x: MARGIN + 4,
-    y: state.y - 10,
-    size: BODY_SIZE,
-    font: state.bold,
-    color: state.text,
-  });
-  lines.forEach((line, index) => {
-    state.page.drawText(line, {
-      x: MARGIN + labelWidth + 5,
-      y: state.y - 10 - index * LINE_HEIGHT,
-      size: BODY_SIZE,
-      font: state.regular,
-      color: state.text,
+  const labelLines = Math.max(...columns.map((column) => column.labels.length));
+  const valueLines = Math.max(...columns.map((column) => column.values.length));
+  let offset = 0;
+  while (offset < valueLines) {
+    ensureSpace(state, Math.max(minHeight, labelLines * LINE_HEIGHT + 5));
+    const capacity = Math.floor((state.y - (MARGIN + 18) - 5) / LINE_HEIGHT);
+    const lineCount = Math.max(labelLines, Math.min(valueLines - offset, capacity));
+    const height = Math.max(minHeight, lineCount * LINE_HEIGHT + 5);
+    state.page.drawRectangle({
+      x: MARGIN,
+      y: state.y - height,
+      width: CONTENT_WIDTH,
+      height,
+      borderColor: state.line,
+      borderWidth: 0.5,
     });
-  });
-  state.y -= height;
+    columns.forEach((column, columnIndex) => {
+      const x = MARGIN + columnIndex * columnWidth;
+      for (const divider of [columnIndex ? x : null, x + column.labelWidth]) {
+        if (divider === null) continue;
+        state.page.drawLine({
+          start: { x: divider, y: state.y },
+          end: { x: divider, y: state.y - height },
+          thickness: 0.5,
+          color: state.line,
+        });
+      }
+      // Repeat labels on continuation pages so each fragment retains its context.
+      column.labels.forEach((line, lineIndex) => {
+        state.page.drawText(line, {
+          x: x + 4,
+          y: state.y - 10 - lineIndex * LINE_HEIGHT,
+          size: BODY_SIZE,
+          font: state.bold,
+          color: state.text,
+        });
+      });
+      column.values.slice(offset, offset + lineCount).forEach((line, lineIndex) => {
+        state.page.drawText(line, {
+          x: x + column.labelWidth + 5,
+          y: state.y - 10 - lineIndex * LINE_HEIGHT,
+          size: BODY_SIZE,
+          font: state.regular,
+          color: state.text,
+        });
+      });
+    });
+    state.y -= height;
+    offset += lineCount;
+  }
+}
+
+function drawField(state: PdfState, label: string, value: string | null | undefined, minHeight = 15): void {
+  drawFields(state, [[label, value]], minHeight);
 }
 
 function drawTwoFields(
@@ -148,44 +201,7 @@ function drawTwoFields(
   left: [string, string | null | undefined],
   right: [string, string | null | undefined],
 ): void {
-  const height = 17;
-  ensureSpace(state, height);
-  const columnWidth = CONTENT_WIDTH / 2;
-  state.page.drawRectangle({
-    x: MARGIN,
-    y: state.y - height,
-    width: CONTENT_WIDTH,
-    height,
-    borderColor: state.line,
-    borderWidth: 0.5,
-  });
-  state.page.drawLine({
-    start: { x: MARGIN + columnWidth, y: state.y },
-    end: { x: MARGIN + columnWidth, y: state.y - height },
-    thickness: 0.5,
-    color: state.line,
-  });
-  [left, right].forEach(([label, value], index) => {
-    const x = MARGIN + index * columnWidth + 4;
-    const prefix = `${label}: `;
-    state.page.drawText(safeText(prefix, state.bold), {
-      x,
-      y: state.y - 11,
-      size: BODY_SIZE,
-      font: state.bold,
-      color: state.text,
-    });
-    const available = columnWidth - state.bold.widthOfTextAtSize(prefix, BODY_SIZE) - 10;
-    const shown = wrapText(value?.trim() || '—', state.regular, BODY_SIZE, available)[0] ?? '—';
-    state.page.drawText(shown, {
-      x: x + state.bold.widthOfTextAtSize(prefix, BODY_SIZE),
-      y: state.y - 11,
-      size: BODY_SIZE,
-      font: state.regular,
-      color: state.text,
-    });
-  });
-  state.y -= height;
+  drawFields(state, [left, right], 17);
 }
 
 function drawManualBlocks(state: PdfState): void {

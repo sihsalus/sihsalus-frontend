@@ -218,6 +218,19 @@ ambiguos bloquea la descarga. Los registros históricos sin UPS siguen visibles;
 no se rellenan ni migran automáticamente. La especialidad y prioridad conservan
 su significado independiente.
 
+El PDF conserva el texto completo de los campos, incluidas ambas columnas, y
+distribuye los valores largos entre páginas con sus etiquetas repetidas. Las
+palabras sin espacios también se ajustan al ancho disponible. Si la fuente no
+puede representar un carácter, se bloquea la descarga con un aviso seguro en vez
+de sustituirlo o eliminarlo; el registro clínico permanece intacto. Si cambia el
+paciente, la referencia o el contexto utilizado para componerla, o se desmonta
+la acción, se descarta cualquier descarga pendiente del contexto anterior.
+
+Esta corrección pertenece únicamente al frontend y mantiene la firma y el sello
+manuales. La aceptación en QLTY sigue pendiente: comprobar con datos sintéticos
+texto largo, caracteres no admitidos y navegación durante la generación, además
+de revisar el documento descargado antes de entregarlo.
+
 Pendiente de aceptación: guardar, recargar e imprimir con roles sintéticos y
 comparar ambos servicios, las asociaciones con paciente/visita y el catálogo
 instalado. El lanzador y la composición clínica siguen limitados a visitas

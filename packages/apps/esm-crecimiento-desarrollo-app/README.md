@@ -38,11 +38,51 @@ el recorrido bilateral con pacientes sintéticos.
 **Abrir formularios del control** reutiliza el workspace y la comprobación de
 consulta activa existentes. **Consultas anteriores** conserva el permiso de
 visitas y abre el historial del mismo paciente sin cambiar la consulta activa.
-El orden del enlace lateral pertenece a `config/frontend.json`. Las rutas,
+El orden de los enlaces laterales pertenece a `config/frontend.json`. Las rutas,
 componentes y privilegios de los cinco dashboards anteriores se conservan para
-enlaces directos. La atención inmediata y hospitalaria neonatal permanece en su
-pantalla original, accesible desde **Ver atención neonatal** con su permiso
-propio; no es un paso obligatorio del control ambulatorio.
+enlaces directos. **Atención neonatal** aparece junto a Crecimiento y desarrollo,
+reutiliza `neonatal-care-dashboard` y conserva en el enlace los permisos de
+curso de vida y lectura neonatal y la inscripción activa a Control de Niño Sano.
+También se conserva **Ver atención neonatal** desde Antecedentes y nacimiento.
+La atención inmediata y hospitalaria neonatal permanece en su pantalla propia;
+no es un paso obligatorio del control ambulatorio.
+
+La pantalla neonatal usa `TabbedDashboard`: Signos vitales, Balance de líquidos,
+Registro perinatal, Atención inmediata, Evaluación cefalocaudal, Alojamiento
+conjunto y Lactancia. Solo monta la pestaña activa y reinicia la selección al
+cambiar de paciente. El balance ocupa `neonatal-fluid-balance-slot`; el widget
+deja de pertenecer a `neonatal-vitals-slot`. Las configuraciones externas que
+reordenen ese widget deben usar el nuevo slot.
+
+Control y examen ofrece **Ver atención odontológica y odontograma**, que abre
+la ruta odontológica existente para el mismo paciente. Requiere conexión y
+permiso odontológico; reutiliza el módulo responsable de captura e historial.
+La tarjeta de antecedentes ya está disponible en Antecedentes y nacimiento.
+
+### Estado de recuperación de funciones anteriores
+
+| Función anterior                                | Estado y destino                                                                                                                                                                  |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Atención neonatal                               | Pantalla existente recuperada en la navegación; siete pestañas y permisos conservados.                                                                                            |
+| Balance de líquidos                             | Historial en pestaña propia. Completa todas las páginas de observaciones antes de mostrar las filas; un fallo permite reintentar y no se presenta como historial vacío.           |
+| Captura React del balance                       | Pendiente: el formulario eliminado en `eb735b973` es recuperable, pero sus unidades y período deben verificarse antes de reactivar escritura. No se habilitó un formulario nuevo. |
+| Antropometría neonatal                          | Ya usa el workspace compartido de signos vitales; se conserva esa implementación.                                                                                                 |
+| Nutrición y estimulación                        | Conservadas en Crecimiento y nutrición, Desarrollo y Seguimiento.                                                                                                                 |
+| Odontograma en Servicios adicionales            | Acceso recuperado desde Control y examen al módulo odontológico existente.                                                                                                        |
+| Órdenes médicas, evolución y epicrisis antiguas | Referencias de configuración sin lanzador CRED; pendiente confirmar su propietario en el flujo asistencial correspondiente.                                                       |
+| TPED y TEPSI React anteriores                   | No se reactivan los prototipos retirados. Se conservan referencia e históricos; cualquier captura adicional requiere evaluar los formularios actuales y su contrato.              |
+
+El export local de content
+`10_SIHSALUS_sihsalus_concepts_2026-09-09-1.zip` identifica
+`urineGramsUuid` como cantidad de orina en gramos y
+`vomitGramsMLUuid` (`db881ca6-26ff-46df-aac5-3f9a0efd67d4`) como
+**Densidad del vómito**, unidad `gr/ml`. Las antiguas etiquetas de volumen no
+demuestran equivalencia. Este hallazgo corresponde al catálogo versionado, no
+a una comprobación del backend desplegado. Antes de recuperar captura se debe
+resolver peso/volumen/densidad y período puntual/turno/24 horas, comprobar los
+conceptos instalados y adaptar el guardado a consulta, proveedor, UPSS y fecha.
+No se modifican conceptos ni observaciones históricas con esta recuperación de
+navegación.
 
 QA pendiente en QLTY: recorrido de las siete pestañas con datos sintéticos,
 perfiles de lectura/edición restringidos, revocación, cambio de paciente, creación

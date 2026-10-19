@@ -79,7 +79,7 @@
     "express": "^4.22.0",
     "express-rate-limit": "8.7.1",
     "fake-indexeddb": "^4.0.2",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.3",
     "http-proxy-middleware": "3.0.7",
     "husky": "^9.1.7",
     "i18next-cli": "1.75.3",

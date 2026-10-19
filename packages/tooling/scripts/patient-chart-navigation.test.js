@@ -44,3 +44,9 @@ test('navigation integration-test cache tracks the root configuration and all so
   assert.ok(turbo.tasks.test.inputs.includes('$TURBO_ROOT$/config/frontend.json'));
   assert.ok(turbo.tasks.test.inputs.includes('$TURBO_ROOT$/packages/apps/*/src/routes.json'));
 });
+
+test('neonatal care stays adjacent to growth and development in the canonical chart order', () => {
+  const credPosition = slotConfig.order.indexOf('cred-dashboard-link');
+  assert.notEqual(credPosition, -1);
+  assert.equal(slotConfig.order[credPosition + 1], 'neonatal-care-dashboard-route');
+});

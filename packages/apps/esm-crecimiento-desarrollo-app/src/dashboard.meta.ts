@@ -12,7 +12,7 @@ export const integratedCredDashboardMeta = {
 export const neonatalCareDashboardMeta = {
   icon: 'omrs-icon-baby',
   slot: 'patient-chart-neonatal-care-dashboard-slot',
-  title: 'Curso de Vida del Niño',
+  title: 'neonatalCare',
   path: 'neonatal-care-dashboard',
   moduleName,
   config: {},

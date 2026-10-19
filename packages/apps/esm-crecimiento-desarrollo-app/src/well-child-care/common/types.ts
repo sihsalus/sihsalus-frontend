@@ -42,9 +42,9 @@ export interface PatientVitalsAndBiometrics {
   stoolCount?: number; // Número de deposiciones por día
   stoolGrams?: number; // Peso de deposiciones en gramos
   urineCount?: number; // Número de micciones por día
-  urineGrams?: number; // Volumen de orina en gramos/mL
+  urineGrams?: number; // Peso de orina en gramos
   vomitCount?: number; // Número de episodios de vómito por día
-  vomitGramsML?: number; // Volumen de vómito en gramos/mL
+  vomitGramsML?: number; // Densidad del vómito en gramos/mL
 
   bmi?: number | null;
   respiratoryRate?: number;

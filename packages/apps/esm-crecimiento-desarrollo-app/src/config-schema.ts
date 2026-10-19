@@ -430,7 +430,7 @@ export const configSchema = {
     },
     urineGramsUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Urine output in grams/mL',
+      _description: 'Weight of urine output in grams',
       _default: '4a275a66-ea18-4ee6-a967-c2bc4a2ff607',
     },
     vomitCountUuid: {
@@ -440,7 +440,7 @@ export const configSchema = {
     },
     vomitGramsMLUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Vomit output in grams/mL',
+      _description: 'Vomit density in grams/mL',
       _default: 'db881ca6-26ff-46df-aac5-3f9a0efd67d4',
     },
 

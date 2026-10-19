@@ -169,7 +169,7 @@
     {
       "name": "newborn-balance-overview-chart",
       "component": "newbornBalanceOverviewChart",
-      "slot": "neonatal-vitals-slot",
+      "slot": "neonatal-fluid-balance-slot",
       "order": 2,
       "privileges": "app:hoja.clinica.cred.neonatal"
     },
@@ -344,7 +344,7 @@
     },
     {
       "name": "neonatal-care-dashboard-route",
-      "component": "hiddenDashboardMarker",
+      "component": "neonatalCareSidebarLink",
       "slot": "patient-chart-dashboard-slot",
       "privileges": "app:hoja.clinica.cred.neonatal",
       "meta": {
@@ -353,8 +353,7 @@
         "columns": 1,
         "columnSpan": 1,
         "layoutMode": "anchored"
-      },
-      "order": 100
+      }
     },
     {
       "name": "child-immunization-schedule-dashboard-route",

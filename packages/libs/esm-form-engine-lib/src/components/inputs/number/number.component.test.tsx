@@ -14,11 +14,18 @@ vi.mock('../../../provider/form-provider', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (value: string) => value,
+    t: (key: string, fallback?: string) => (key === 'incrementNumber' || key === 'decrementNumber' ? `${key}!` : fallback ?? key),
   }),
 }));
 
 describe('NumberField', () => {
+  it('translates the stepper button labels', () => {
+    renderNumberField();
+
+    expect(screen.getByRole('button', { name: 'incrementNumber!' })).toHaveAttribute('title', 'incrementNumber!');
+    expect(screen.getByRole('button', { name: 'decrementNumber!' })).toHaveAttribute('title', 'decrementNumber!');
+  });
+
   it('blocks invalid keys and paste values for non-negative integer fields', () => {
     renderNumberField({
       field: createNumberField({

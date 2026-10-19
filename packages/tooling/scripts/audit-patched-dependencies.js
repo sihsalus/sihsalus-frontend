@@ -9,7 +9,7 @@ const patched = {
     version: "3.0.3",
     advisory: 1240992,
     url: "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
-    ranges: ["npm:~3.0.2", "npm:^3.0.3"],
+    ranges: ["npm:^3.0.3"],
     patch: "braces-npm-3.0.3-582c14023c.patch",
   },
   "http-cache-semantics": {

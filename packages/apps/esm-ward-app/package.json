@@ -42,8 +42,8 @@
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
     "lodash-es": "^4.17.15",
-    "react-hook-form": "^7.89.0",
-    "zod": "^4.6.5"
+    "react-hook-form": "^7.90.0",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@rspack/cli": "2.2.8",
+    "@rspack/cli": "2.2.9",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
     "vite": "8.3.4",

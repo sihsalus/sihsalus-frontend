@@ -29,7 +29,7 @@ exigiría mantener argumentos o rutas adicionales en sus consumidores.
 
 ## Rspack y servidor de desarrollo
 
-El compilador y la CLI usan Rspack 2.2.8; `@rspack/dev-server` 2.2.1 requiere
+El compilador y la CLI usan Rspack 2.2.9; `@rspack/dev-server` 2.2.1 requiere
 un compilador de la misma generación. Actualizar las declaraciones de los
 workspaces, la plantilla y las resoluciones juntos: una resolución de Rspack 1
 con un servidor 2 puede compilar sin errores y fallar en el navegador al iniciar
@@ -74,6 +74,12 @@ por `requiredVersion: false` ni suprimir advertencias de consola.
 Las pruebas de build verifican los rangos con el evaluador del runtime y
 comprueban que los peers de los workspaces acepten las dependencias instaladas.
 
+Las actualizaciones de dependencias deben alinear también las resoluciones
+fijadas en la raíz. El shell y los módulos comparten i18next 26.4.7; Rspack,
+Sass, DOMPurify y UUID mantienen las versiones de la actualización en sus
+overrides. Una declaración nueva en un workspace no actualiza una resolución
+que siga fijando la versión anterior.
+
 El selector de fechas combina `react-aria-components` con los hooks de
 `@react-aria/datepicker`. Ambos deben resolver la misma implementación de
 `react-aria` y `react-stately`: sus hooks comparten estado interno por instancia
@@ -110,6 +116,10 @@ error de auditoría falla, incluido un hallazgo de `http-cache-semantics`.
 Retirar los parches cuando existan versiones corregidas compatibles y las
 pruebas confirmen su comportamiento. Mantener las regresiones de profundidad,
 revalidación de caché y rechazo de hallazgos no revisados al actualizar.
+El árbol actualizado conserva únicamente el rango `braces@npm:^3.0.3`;
+se retiran el override y la expectativa del rango sin consumidores
+`npm:~3.0.2`. El parche y las comprobaciones de comportamiento permanecen
+activos, y un rango nuevo sigue requiriendo revisión explícita.
 
 ## Extracción de traducciones
 

@@ -9,13 +9,16 @@ import {
   type VisitReturnType,
 } from '@openmrs/esm-framework';
 import { usePatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit, mockPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
+import type { FHIRImmunizationResource } from '../types/fhir-immunization-domain';
+import { mapFromAmpathImmunizationEncounters } from './ampath-form-immunization-mapper';
+import { mapFromFHIRImmunizationBundle } from './immunization-mapper';
 import ImmunizationsDetailedSummary from './immunizations-detailed-summary.component';
 
 vi.mock('../hooks/useImmunizations', async () => ({
@@ -281,6 +284,117 @@ describe('ImmunizationsDetailedSummary', () => {
     expect(screen.getByText(/polio/i)).toBeInTheDocument();
     expect(screen.getByText(new RegExp(`last dose on ${formattedDate}, Primary Series`, 'i'))).toBeInTheDocument();
   });
+
+  it.each(['fhir', 'ampath-form'] as const)(
+    'shows the highest recorded dose for matching dates from %s, independently of response order',
+    async (source) => {
+      const date = '2026-10-16T00:00:00.000Z';
+      const doseNumbers = [1, 3, 2];
+      const fullConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
+      const concepts = fullConfig.ampathFormPersistence.concepts;
+      const data =
+        source === 'fhir'
+          ? mapFromFHIRImmunizationBundle(
+              doseNumbers.map(
+                (doseNumber): FHIRImmunizationResource => ({
+                  resourceType: 'Immunization',
+                  id: `synthetic-dose-${doseNumber}`,
+                  status: 'completed',
+                  vaccineCode: { coding: [{ code: 'synthetic-vaccine', display: 'Synthetic vaccine' }] },
+                  patient: { type: 'Patient', reference: `Patient/${mockPatient.id}` },
+                  encounter: null,
+                  occurrenceDateTime: date,
+                  protocolApplied: [{ doseNumberPositiveInt: doseNumber }],
+                }),
+              ),
+            )
+          : mapFromAmpathImmunizationEncounters(
+              doseNumbers.map((doseNumber) => ({
+                uuid: `synthetic-dose-${doseNumber}`,
+                encounterDatetime: date,
+                obs: [
+                  {
+                    concept: { uuid: concepts.vaccineUuid },
+                    value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' },
+                  },
+                  { concept: { uuid: concepts.vaccinationDate }, value: date },
+                  { concept: { uuid: concepts.doseNumber }, value: doseNumber },
+                ],
+              })),
+              fullConfig,
+            );
+      const mappedDoseNumbers = data[0].existingDoses.map((dose) => dose.doseNumber);
+      mockUseImmunizations.mockReturnValue({
+        data,
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      expect(screen.getByText(/last dose on .*, Dose 3$/i)).toBeInTheDocument();
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Expand current row' }));
+      const detail = screen.getByRole('table', { name: 'immunization dose sequence' });
+      expect(within(detail).getAllByRole('row')).toHaveLength(4);
+      for (const doseNumber of doseNumbers) {
+        expect(within(detail).getByRole('cell', { name: String(doseNumber) })).toBeInTheDocument();
+      }
+      expect(data[0].existingDoses.map((dose) => dose.doseNumber)).toEqual(mappedDoseNumbers);
+    },
+  );
+
+  it.each([
+    { doses: [1, 5], dates: ['2026-10-16', '2026-10-16'], expectedDose: 5 },
+    { doses: [5, 1], dates: ['2026-10-16', '2026-10-16'], expectedDose: 5 },
+    { doses: [1, 1, 1], dates: ['2026-10-16', '2026-10-16', '2026-10-16'], expectedDose: 1 },
+    { doses: [undefined, 1, 3], dates: ['2026-10-16', '2026-10-16', '2026-10-16'], expectedDose: 3 },
+    { doses: [2.5, 1, 2], dates: ['2026-10-16', '2026-10-16', '2026-10-16'], expectedDose: 2 },
+    { doses: [3, 1], dates: ['2026-10-15', '2026-10-16'], expectedDose: 1 },
+    {
+      doses: [1, 3],
+      dates: ['2026-10-16T08:00:00-05:00', '2026-10-16T13:00:00Z'],
+      expectedDose: 3,
+    },
+    {
+      doses: [3, 1],
+      dates: ['2026-10-16T08:00:00-05:00', '2026-10-16T09:00:00-05:00'],
+      expectedDose: 1,
+    },
+  ])(
+    'uses recorded dose $expectedDose for dates $dates and doses $doses, never record count',
+    async ({ doses, dates, expectedDose }) => {
+      mockUseImmunizations.mockReturnValue({
+        data: [
+          {
+            vaccineUuid: 'synthetic-vaccine',
+            vaccineName: 'Synthetic vaccine',
+            existingDoses: doses.map((doseNumber, index) => ({
+              ...mockImmunizationData[0].existingDoses[0],
+              immunizationObsUuid: `synthetic-dose-${index}`,
+              occurrenceDateTime: dates[index],
+              doseNumber,
+            })),
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      expect(screen.getByText(new RegExp(`last dose on .*, Dose ${expectedDose}$`, 'i'))).toBeInTheDocument();
+    },
+  );
 
   it('shows loading indicator when data is loading', async () => {
     mockUseImmunizations.mockReturnValueOnce({

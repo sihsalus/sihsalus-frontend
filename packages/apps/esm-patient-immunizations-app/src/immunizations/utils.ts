@@ -24,13 +24,14 @@ const toTime = (value?: string | null): number => {
 
 const toDoseNumber = (value?: number | string | null): number => {
   const doseNumber = value == null || value === '' ? Number.NaN : Number(value);
-  return Number.isNaN(doseNumber) ? Number.NEGATIVE_INFINITY : doseNumber;
+  return Number.isInteger(doseNumber) && doseNumber > 0 ? doseNumber : Number.NEGATIVE_INFINITY;
 };
 
 /**
  * Sorts doses from the most recent to the oldest. Doses recorded on the same
- * date are ordered by dose number, highest first, so the latest dose of a
- * series is listed first; doses without a dose number go last within a date.
+ * instant are ordered by their recorded positive integer dose number, highest
+ * first; missing or invalid dose numbers go last within that instant.
+ * Never infer a dose number from the number or order of records.
  */
 export const latestFirst = (a: ExistingDoses, b: ExistingDoses): number => {
   const timeA = toTime(a?.occurrenceDateTime);

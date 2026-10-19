@@ -48,6 +48,19 @@ describe('latestFirst', () => {
     expect(sorted.map((item) => item.immunizationObsUuid)).toEqual(['dose-2', 'dose-1', 'no-dose']);
   });
 
+  it.each([0, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'places invalid dose number %s after valid recorded doses of the same date',
+    (doseNumber) => {
+      const sorted = [
+        dose({ immunizationObsUuid: 'invalid', doseNumber }),
+        dose({ immunizationObsUuid: 'valid', doseNumber: 1 }),
+        dose({ immunizationObsUuid: 'missing', doseNumber: undefined }),
+      ].sort(latestFirst);
+
+      expect(sorted.map((item) => item.immunizationObsUuid)).toEqual(['valid', 'invalid', 'missing']);
+    },
+  );
+
   it('places doses without a valid date last', () => {
     const sorted = [
       dose({ immunizationObsUuid: 'undated', occurrenceDateTime: '', doseNumber: 9 }),

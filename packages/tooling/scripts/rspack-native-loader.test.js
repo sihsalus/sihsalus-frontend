@@ -47,7 +47,7 @@ function applicationRule() {
 
 test('shared singletons accept their installed versions in the federation runtime', () => {
   const shellRequire = Module.createRequire(require.resolve('@openmrs/esm-app-shell/package.json'));
-  const { parseRange, satisfy } = shellRequire('webpack/lib/util/semver');
+  const { parseRange, satisfy } = shellRequire('webpack/lib/sharing/semver');
   const plugin = applicationConfig().plugins.find((plugin) => plugin._options?.shared);
   const shared = plugin._options.shared;
   for (const name of [

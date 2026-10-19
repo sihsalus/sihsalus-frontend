@@ -68,7 +68,7 @@ const defaultProps: AddNewProcedureStepWorkspaceProps = {
 
 function fillRequiredFields() {
   fireEvent.change(screen.getByLabelText('AetTitle'), { target: { value: 'SYNTHETIC_AE' } });
-  fireEvent.change(screen.getByLabelText('scheduledReferringPhysician'), { target: { value: 'Synthetic clinician' } });
+  fireEvent.change(screen.getByLabelText('Performing physician'), { target: { value: 'Synthetic clinician' } });
   fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Synthetic procedure' } });
   fireEvent.change(screen.getByTestId('stepStartDate'), { target: { value: '2030-09-04' } });
   fireEvent.change(screen.getByTestId('stepStartTime'), { target: { value: '12:30' } });
@@ -141,7 +141,7 @@ describe('AddNewProcedureStepWorkspace', () => {
   });
 
   it.each([
-    ['scheduledReferringPhysician', 65],
+    ['Performing physician', 65],
     ['Description', 65],
     ['stationName', 17],
     ['procedureStepLocation', 17],

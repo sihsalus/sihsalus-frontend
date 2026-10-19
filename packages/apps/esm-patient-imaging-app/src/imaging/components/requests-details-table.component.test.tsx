@@ -204,6 +204,24 @@ describe('RequestProcedureTable', () => {
     expect(screen.getByText('Unique completed request')).toBeInTheDocument();
   });
 
+  it('shows and filters legacy and current in-progress statuses as one status', async () => {
+    const framework = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+    vi.mocked(usePagination).mockImplementation(framework.usePagination);
+    const requests = [
+      { ...mockRequests[0], id: 1, status: 'progress', requestDescription: 'Legacy progress request' },
+      { ...mockRequests[0], id: 2, status: 'in progress', requestDescription: 'Current progress request' },
+      { ...mockRequests[0], id: 3, status: 'scheduled', requestDescription: 'Scheduled request' },
+      { ...mockRequests[0], id: 4, status: 'In Progress', requestDescription: 'Mixed case progress request' },
+    ];
+    render(<RequestProcedureTable requests={requests} patientUuid={patientUuid} />);
+    expect(screen.getAllByText('in progress', { selector: 'td span' })).toHaveLength(3);
+    fireEvent.change(screen.getByLabelText('Status filter'), { target: { value: 'progress' } });
+    expect(screen.getByText('Legacy progress request')).toBeInTheDocument();
+    expect(screen.getByText('Current progress request')).toBeInTheDocument();
+    expect(screen.getByText('Mixed case progress request')).toBeInTheDocument();
+    expect(screen.queryByText('Scheduled request')).not.toBeInTheDocument();
+  });
+
   it('honors the caller request to hide deletion controls', () => {
     render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} showDeleteButton={false} />);
     expect(screen.queryByRole('button', { name: 'Remove requst' })).not.toBeInTheDocument();

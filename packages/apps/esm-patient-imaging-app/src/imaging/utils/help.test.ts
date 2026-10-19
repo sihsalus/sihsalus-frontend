@@ -4,6 +4,7 @@ import {
   buildOhifViewerUrl,
   generateAccessionNumber,
   getOrthancPublicRoot,
+  normalizeRequestStatus,
   toDicomDate,
   toDicomTimeString,
 } from './help';
@@ -88,5 +89,20 @@ describe('explicit imaging server mapping', () => {
     expect(buildLocalInstancePreviewUrl(7, 'instance&other=1')).toBe(
       'https://synthetic.example/openmrs/ws/rest/v1/imaging/previewinstance?orthancInstanceUID=instance%26other%3D1&studyId=7',
     );
+  });
+});
+
+describe('normalizeRequestStatus', () => {
+  it.each([
+    ['progress', 'progress'],
+    ['in progress', 'progress'],
+    [' In Progress ', 'progress'],
+    ['completed', 'completed'],
+    ['SCHEDULED', 'scheduled'],
+    ['', ''],
+    [null, ''],
+    [undefined, ''],
+  ])('maps %s to %s', (status, expected) => {
+    expect(normalizeRequestStatus(status)).toBe(expected);
   });
 });

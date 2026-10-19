@@ -81,6 +81,10 @@ demuestran equivalencia. Este hallazgo corresponde al catálogo versionado, no
 a una comprobación del backend desplegado. Antes de recuperar captura se debe
 resolver peso/volumen/densidad y período puntual/turno/24 horas, comprobar los
 conceptos instalados y adaptar el guardado a consulta, proveedor, UPSS y fecha.
+Los encabezados del historial identifican peso de orina y densidad del vómito;
+las unidades se obtienen de la metadata sin duplicarlas en las traducciones.
+Este ajuste no convierte valores ni certifica la unidad con que se capturaron
+los registros antiguos.
 No se modifican conceptos ni observaciones históricas con esta recuperación de
 navegación.
 

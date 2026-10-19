@@ -1,5 +1,7 @@
 import { useConfig } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import en from '../../../../../translations/en.json';
+import es from '../../../../../translations/es.json';
 import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useBalance, useVitalsConceptMetadata } from '../../../common';
 import NewbornBalanceOverview from './balance-overview.component';
@@ -16,12 +18,13 @@ vi.mock('../../../../ui/clinical-data/clinical-data-overview.component', () => (
 }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (_key: string, fallback?: string) => fallback ?? _key,
+    t: (key: string, fallback?: string) => translations[key] ?? fallback ?? key,
   }),
 }));
 
 const setPage = vi.fn().mockResolvedValue([]);
 const mutate = vi.fn().mockResolvedValue([]);
+let translations: Record<string, string> = es;
 const row = {
   id: 'synthetic-encounter',
   date: '2026-10-01T12:00:00Z',
@@ -43,6 +46,7 @@ const balanceResult: ReturnType<typeof useBalance> = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  translations = es;
   setPage.mockResolvedValue([]);
   mutate.mockResolvedValue([]);
   vi.mocked(useConfig).mockReturnValue({ concepts: {} });
@@ -50,6 +54,44 @@ beforeEach(() => {
     data: new Map(),
   } as ReturnType<typeof useVitalsConceptMetadata>);
   vi.mocked(useBalance).mockReturnValue(balanceResult as ReturnType<typeof useBalance>);
+});
+
+it.each([
+  {
+    language: 'es',
+    labels: es,
+    expected: ['Peso de deposiciones (gr)', 'Peso de orina (gr)', 'Densidad del vómito (gr/ml)'],
+  },
+  {
+    language: 'en',
+    labels: en,
+    expected: ['Stool Weight (gr)', 'Urine Weight (gr)', 'Vomit Density (gr/ml)'],
+  },
+])('identifies historical quantities and metadata units in $language', ({ labels, expected }) => {
+  translations = labels;
+  vi.mocked(useConfig).mockReturnValue({
+    concepts: {
+      stoolGramsUuid: 'synthetic-stool-weight',
+      urineGramsUuid: 'synthetic-urine-weight',
+      vomitGramsMLUuid: 'synthetic-vomit-density',
+    },
+  });
+  vi.mocked(useVitalsConceptMetadata).mockReturnValue({
+    data: new Map([
+      ['synthetic-stool-weight', 'gr'],
+      ['synthetic-urine-weight', 'gr'],
+      ['synthetic-vomit-density', 'gr/ml'],
+    ]),
+  } as ReturnType<typeof useVitalsConceptMetadata>);
+  render(<NewbornBalanceOverview patientUuid="synthetic-child" />);
+  const overviewProps = vi.mocked(ClinicalDataOverview).mock.lastCall?.[0];
+  const quantityKeys = ['stoolGrams', 'urineGrams', 'vomitGramsML'];
+  expect(
+    overviewProps?.tableHeaders.filter(({ key }) => quantityKeys.includes(key)).map(({ header }) => header),
+  ).toEqual(expected);
+  expect(
+    overviewProps?.chartConfig?.vitalSigns.filter(({ id }) => quantityKeys.includes(id)).map(({ title }) => title),
+  ).toEqual(expected);
 });
 
 it('loads remaining observation pages before exposing a partial encounter or graph', () => {

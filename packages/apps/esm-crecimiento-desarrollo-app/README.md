@@ -61,16 +61,16 @@ La tarjeta de antecedentes ya está disponible en Antecedentes y nacimiento.
 
 ### Estado de recuperación de funciones anteriores
 
-| Función anterior                                | Estado y destino                                                                                                                                                                  |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Atención neonatal                               | Pantalla existente recuperada en la navegación; siete pestañas y permisos conservados.                                                                                            |
-| Balance de líquidos                             | Historial en pestaña propia. Completa todas las páginas de observaciones antes de mostrar las filas; un fallo permite reintentar y no se presenta como historial vacío.           |
-| Captura React del balance                       | Pendiente: el formulario eliminado en `eb735b973` es recuperable, pero sus unidades y período deben verificarse antes de reactivar escritura. No se habilitó un formulario nuevo. |
-| Antropometría neonatal                          | Ya usa el workspace compartido de signos vitales; se conserva esa implementación.                                                                                                 |
-| Nutrición y estimulación                        | Conservadas en Crecimiento y nutrición, Desarrollo y Seguimiento.                                                                                                                 |
-| Odontograma en Servicios adicionales            | Acceso recuperado desde Control y examen al módulo odontológico existente.                                                                                                        |
-| Órdenes médicas, evolución y epicrisis antiguas | Referencias de configuración sin lanzador CRED; pendiente confirmar su propietario en el flujo asistencial correspondiente.                                                       |
-| TPED y TEPSI React anteriores                   | No se reactivan los prototipos retirados. Se conservan referencia e históricos; cualquier captura adicional requiere evaluar los formularios actuales y su contrato.              |
+| Función anterior                                | Estado y destino                                                                                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Atención neonatal                               | Pantalla existente recuperada en la navegación; siete pestañas y permisos conservados.                                                                                                      |
+| Balance de líquidos                             | Historial en pestaña propia. Completa todas las páginas de observaciones antes de mostrar las filas; un fallo permite reintentar y no se presenta como historial vacío.                     |
+| Captura React del balance                       | Pendiente: sustituir la captura eliminada en `eb735b973` con la propuesta por evento/intervalo descrita debajo; requiere conceptos correctos y validación clínica. Escritura no habilitada. |
+| Antropometría neonatal                          | Ya usa el workspace compartido de signos vitales; se conserva esa implementación.                                                                                                           |
+| Nutrición y estimulación                        | Conservadas en Crecimiento y nutrición, Desarrollo y Seguimiento.                                                                                                                           |
+| Odontograma en Servicios adicionales            | Acceso recuperado desde Control y examen al módulo odontológico existente.                                                                                                                  |
+| Órdenes médicas, evolución y epicrisis antiguas | Referencias de configuración sin lanzador CRED; pendiente confirmar su propietario en el flujo asistencial correspondiente.                                                                 |
+| TPED y TEPSI React anteriores                   | No se reactivan los prototipos retirados. Se conservan referencia e históricos; cualquier captura adicional requiere evaluar los formularios actuales y su contrato.                        |
 
 El export local de content
 `10_SIHSALUS_sihsalus_concepts_2026-09-09-1.zip` identifica
@@ -78,9 +78,9 @@ El export local de content
 `vomitGramsMLUuid` (`db881ca6-26ff-46df-aac5-3f9a0efd67d4`) como
 **Densidad del vómito**, unidad `gr/ml`. Las antiguas etiquetas de volumen no
 demuestran equivalencia. Este hallazgo corresponde al catálogo versionado, no
-a una comprobación del backend desplegado. Antes de recuperar captura se debe
-resolver peso/volumen/densidad y período puntual/turno/24 horas, comprobar los
-conceptos instalados y adaptar el guardado a consulta, proveedor, UPSS y fecha.
+a una comprobación del backend desplegado. La propuesta siguiente resuelve las
+unidades y el período de captura; aún requiere comprobar conceptos instalados,
+revisión clínica y adaptar el guardado a consulta, proveedor, UPSS y fecha.
 Los encabezados del historial identifican peso de orina y densidad del vómito;
 las unidades se obtienen de la metadata sin duplicarlas en las traducciones.
 Este ajuste no convierte valores ni certifica la unidad con que se capturaron
@@ -88,14 +88,75 @@ los registros antiguos.
 No se modifican conceptos ni observaciones históricas con esta recuperación de
 navegación.
 
-La siguiente etapa de captura mantiene un workspace React propio. Primero se
-deben resolver la magnitud de vómitos y el período del registro. Luego se
-verifican el tipo de atención y los conceptos instalados, se vincula el guardado
+La siguiente etapa de captura mantiene un workspace React propio. Se
+verifican el tipo de atención y los conceptos instalados y se vincula el guardado
 con paciente, consulta, proveedor, ubicación y fecha, y se evita atribuirlo al
 formulario genérico de signos vitales. La recuperación debe conservar ceros,
 distinguir campos vacíos, validar números según cada concepto y bloquear envíos
 duplicados. La aceptación requiere guardar, recargar y reabrir el mismo registro
 con datos sintéticos y comprobar permisos, cambio de paciente y fallos de red.
+
+### Propuesta de captura revisada con fuentes clínicas — 19/10/2026
+
+El formulario antiguo contenía seis campos de eliminaciones. Para calcular un
+balance se necesitan también aportes y un período identificado. La propuesta
+para SIH Salus es registrar cada evento o intervalo una vez y calcular resúmenes
+por turno y por 24 horas. El horario de corte debe configurarse por servicio.
+La guía neonatal de [RCH sobre manejo de fluidos](https://www.rch.org.au/rchcpg/hospital_clinical_guideline_index/Neonatal_and_Infant_Intravenous_Fluid_Management/)
+documenta volúmenes administrados por hora, revisión diaria y diuresis según
+volumen, peso y duración. Su corte a las 06:00 es una práctica institucional
+que no se incorpora como regla universal.
+
+| Dato              | Registro propuesto                                                                                                                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tiempo            | Fecha/hora del evento; inicio y fin para cantidades recogidas durante un intervalo. Los acumulados son resultados, sin volver a sumarlos como eventos.                                                                                     |
+| Ingresos          | Volumen realmente administrado en mL, tipo y vía: leche/alimentación enteral, soluciones IV, medicación y lavados, nutrición parenteral y hemoderivados. Evitar contar un mismo aporte en dos categorías.                                  |
+| Lactancia directa | Registrar la toma y su evaluación. El volumen queda sin cuantificar cuando no se midió; no asignar mL por duración ni sustituirlo por cero.                                                                                                |
+| Orina             | Volumen en mL con método de medición. El pesaje de pañal conserva peso seco, húmedo y diferencia en g; cualquier volumen derivado se identifica como estimación. Un pañal mixto no se atribuye íntegramente a diuresis.                    |
+| Vómitos           | Número de episodios, volumen en mL cuando sea cuantificable y características. Distinguir medido, estimado y no cuantificable. No pedir densidad en la nueva captura.                                                                      |
+| Deposiciones      | Número, color y consistencia. Peso en g si se midió; volumen de pérdidas líquidas o estoma cuando sea medible. No convertir automáticamente gramos de heces en mL.                                                                         |
+| Otras pérdidas    | Volumen en mL y origen: drenajes, aspirado eliminado, estomas y sangre extraída, cuando corresponda. Diferenciar aspirado devuelto para no contabilizarlo como pérdida neta.                                                               |
+| Resumen           | Aportes y pérdidas cuantificados, balance en mL y cobertura del período. Diuresis en mL/kg/h únicamente con volumen urinario, peso de cálculo en kg identificado y duración conocida. Conservar la procedencia y fecha del peso utilizado. |
+
+El [manual SIP de CLAP/OPS alojado por MINSA](https://bvs.minsa.gob.pe/local/MINSA/4992.pdf),
+sección Pérdidas, página 96, describe orina en mL desde el registro anterior,
+deposiciones por número y vómitos por volumen estimado y características; también
+distingue orina perdida sin medir. Se consultó el texto indexado de esa sección:
+la descarga directa del PDF no estuvo disponible. Se usa como referencia de
+registro, no como prueba de vigencia normativa.
+
+El [material de enfermería de Worcestershire NHS, página 47](https://apps.worcsacute.nhs.uk/KeyDocumentPortal/Home/DownloadFile/3393)
+describe la estimación urinaria por diferencia de peso del pañal, usando
+aproximadamente 1 g por 1 mL. En el software se propone conservar ambas magnitudes
+y el método; esta estimación no justifica convertir observaciones históricas ni
+extrapolarla a heces, pañales mixtos o vómitos.
+
+Las pérdidas insensibles se mostrarían separadas como estimaciones con método,
+período y autor; no se aplica una fórmula universal ni se presentan como medidas.
+La [guía neonatal de CAHS, revisada en mayo de 2024](https://www.health.wa.gov.au/-/media/HSPs/CAHS/Documents/Health-Professionals/Neonatology-guidelines/Fluid-Balance-and-Elimination.pdf)
+describe su dependencia de prematuridad, edad y entorno térmico. El balance de
+volúmenes registrados debe indicar si tiene datos sin cuantificar. Su signo por
+sí solo no determina normalidad ni una indicación de tratamiento.
+
+Para la atención habitual del recién nacido, los conteos y las características
+siguen siendo útiles: [RCH distingue el registro de orina, deposiciones y vómitos](https://www.rch.org.au/rchcpg/hospital_clinical_guideline_index/Ward_management_of_a_neonate/).
+El control cuantitativo se organiza dentro de Atención neonatal según el contexto
+asistencial; no se convierte en requisito de todo control CRED.
+
+El catálogo local también contiene `d5a412ea-144e-4771-9520-06d67db74d3f`
+(orina, con nombres en mL/cc, sin unidad en extras) y
+`6d0c0e45-dc24-4fb2-b1e9-c01267423d1c` (cantidad de vómito, con nombre
+inglés en gr/ml, sin unidad en extras). Son candidatos para auditoría, no mapeos
+aprobados. La captura requiere conceptos de volumen inequívocos en mL y
+persistencia de intervalo/método antes de habilitar cálculos. Los conceptos de
+peso y densidad antiguos conservan su identidad y sus observaciones.
+
+Esta sección documenta una propuesta de implementación basada en las fuentes;
+no acredita aprobación clínica ni crea indicaciones terapéuticas. Antes de
+habilitar escritura y cálculos se debe validar el contrato con enfermería y
+neonatología y comprobarlo en el backend. En esta revisión solo se actualiza la
+documentación; las pruebas y el código de la recuperación anterior siguen
+identificados por su SHA en la tabla siguiente.
 
 ### Validación local de recuperación — 19/10/2026
 

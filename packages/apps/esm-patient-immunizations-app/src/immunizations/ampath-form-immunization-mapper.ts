@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import type { ImmunizationConfigObject } from '../config-schema';
 import type { ExistingDoses, ImmunizationFormData, ImmunizationGrouped } from '../types';
 import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
+import { readImmunizationStatus, requireWritableImmunizationStatus } from './utils';
 
 type ObsValue = string | number | boolean | { uuid?: string; display?: string; name?: string } | null | undefined;
 
@@ -146,7 +147,7 @@ export function mapToAmpathImmunizationEncounterPayload(
     },
     {
       concept: concepts.status,
-      value: immunization.status ?? 'completed',
+      value: requireWritableImmunizationStatus(immunization.status),
     },
     {
       concept: concepts.programContext,
@@ -154,7 +155,7 @@ export function mapToAmpathImmunizationEncounterPayload(
     },
   ];
 
-  if (immunization.status !== 'not-done') {
+  if (immunization.status === 'completed') {
     obs.push({ concept: concepts.vaccinationDate, value: toOpenmrsDateObsValue(immunization.vaccinationDate) });
   }
 
@@ -258,7 +259,7 @@ export function mapFromAmpathImmunizationEncounters(
           expirationDate: getStringValue(encounter, concepts.expirationDate),
           nextDoseDate: getStringValue(encounter, concepts.nextDoseDate),
           note: note ? [{ text: note }] : [],
-          status: status === 'not-done' ? 'not-done' : 'completed',
+          status: readImmunizationStatus(status),
           statusReason: getStringValue(encounter, concepts.statusReason),
           programContext: programContext || 'routine',
         } as ExistingDoses,

@@ -45,7 +45,7 @@ import {
 } from '../vaccine-scheduling-builder/vaccination-schedule.resource';
 import SequenceTable from './components/immunizations-sequence-table.component';
 import styles from './immunizations-detailed-summary.scss';
-import { immunizationFormSub, latestFirst, linkConfiguredSequences } from './utils';
+import { getLatestCompletedDose, immunizationFormSub, linkConfiguredSequences } from './utils';
 
 interface ImmunizationsDetailedSummaryProps {
   patientUuid: string;
@@ -87,11 +87,8 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const sortedImmunizations = useMemo(() => {
     return consolidatedImmunizations.slice().sort((a, b) => {
       const latestTime = (imm: ImmunizationGrouped) => {
-        if (!imm.existingDoses?.length) return 0;
-        const latest = imm.existingDoses.reduce((prev, cur) =>
-          new Date(cur.occurrenceDateTime) > new Date(prev.occurrenceDateTime) ? cur : prev,
-        );
-        return new Date(latest.occurrenceDateTime).getTime();
+        const latest = getLatestCompletedDose(imm.existingDoses);
+        return latest ? new Date(latest.occurrenceDateTime).getTime() : 0;
       };
       return latestTime(b) - latestTime(a);
     });
@@ -112,8 +109,7 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const tableRows = useMemo(
     () =>
       sortedImmunizations?.map((immunization) => {
-        const sortedDoses = immunization.existingDoses ? [...immunization.existingDoses].sort(latestFirst) : [];
-        const latestDose = sortedDoses?.[0];
+        const latestDose = getLatestCompletedDose(immunization.existingDoses);
 
         const hasDoses = !!latestDose;
         const hasSequences = immunization.sequences?.length > 0;

@@ -98,5 +98,7 @@
   "vaccineBatchInformation": "Informacion del lote de vacuna",
   "vaccineRequired": "La vacuna es obligatoria",
   "viewingScheduleVersion": "viendo v{{version}}",
-  "registrationTimeAtSave": "La fecha y hora del registro se asignan al guardar y se conservan separadas de la fecha de administración."
+  "registrationTimeAtSave": "La fecha y hora del registro se asignan al guardar y se conservan separadas de la fecha de administración.",
+  "unverifiedStatus": "Estado no verificado",
+  "immunizationStatusRequired": "Seleccione un estado de administración antes de guardar"
 }

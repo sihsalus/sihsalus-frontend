@@ -102,7 +102,21 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         doseNumber: z.union([z.coerce.number<number>().int().min(1), z.null()]).optional(),
         // FHIR supports not-done immunizations; MINSA workflows need this for
         // missed, deferred or contraindicated doses without deleting the event.
-        status: z.enum(['completed', 'not-done']).default('completed'),
+        status: z
+          .enum(['completed', 'not-done'], {
+            error: t('immunizationStatusRequired', 'Select an administration status before saving'),
+          })
+          .nullable()
+          .transform((status, ctx) => {
+            if (status === null) {
+              ctx.addIssue({
+                code: 'custom',
+                message: t('immunizationStatusRequired', 'Select an administration status before saving'),
+              });
+              return z.NEVER;
+            }
+            return status;
+          }),
         statusReason: z.string().trim().max(255).optional(),
         programContext: z.enum(['routine', 'catch-up', 'campaign', 'special']).default('routine'),
         note: z.string().trim().max(255).optional(),
@@ -169,7 +183,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       return group.existingDoses.some(
         (dose) =>
           dose.doseNumber != null &&
-          dose.status !== 'not-done' &&
+          dose.status === 'completed' &&
           Number(dose.doseNumber) === Number(doseNumber) &&
           dose.immunizationObsUuid !== immunizationToEditMeta?.immunizationObsUuid,
       );
@@ -234,7 +248,12 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           vaccineUuid: props.vaccineUuid,
           vaccinationDate: vaccinationDateOrNow,
           doseNumber: props.doseNumber,
-          status: props.status === 'not-done' ? 'not-done' : 'completed',
+          status:
+            props.status === 'completed' || props.status === 'not-done'
+              ? props.status
+              : props.immunizationId
+                ? null
+                : 'completed',
           statusReason: props.statusReason,
           // Older records do not have the SIH.SALUS MINSA context extension;
           // treat them as routine so editing remains backward compatible.
@@ -544,10 +563,14 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                   render={({ field: { onChange, value } }) => (
                     <Dropdown
                       id="immunizationStatus"
+                      invalid={!!errors.status}
+                      invalidText={errors.status?.message}
                       itemToString={(item) =>
                         item === 'not-done'
                           ? t('notAdministered', 'No aplicada / diferida')
-                          : t('administered', 'Aplicada')
+                          : item === 'completed'
+                            ? t('administered', 'Aplicada')
+                            : ''
                       }
                       items={['completed', 'not-done']}
                       label={t('selectStatus', 'Seleccione estado')}
@@ -557,7 +580,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                           setValue('vaccinationDate', new Date(), { shouldValidate: true });
                         }
                       }}
-                      selectedItem={value}
+                      selectedItem={value ?? null}
                       titleText={`${t('immunizationStatus', 'Estado de aplicación')} *`}
                       aria-required
                     />

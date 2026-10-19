@@ -99,7 +99,9 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
     status:
       dose.status === 'not-done'
         ? `${t('notAdministered', 'No aplicada / diferida')}${dose.statusReason ? `: ${dose.statusReason}` : ''}`
-        : t('administered', 'Aplicada'),
+        : dose.status === 'completed'
+          ? t('administered', 'Aplicada')
+          : t('unverifiedStatus', 'Unverified status'),
     vaccinationDate:
       dose?.occurrenceDateTime &&
       formatDate(new Date(dose.occurrenceDateTime), {

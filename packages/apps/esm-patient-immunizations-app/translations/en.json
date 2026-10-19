@@ -97,5 +97,7 @@
   "vaccineBatchInformation": "Vaccine Batch Information",
   "vaccineRequired": "Vaccine is required",
   "viewingScheduleVersion": "viendo v{{version}}",
-  "registrationTimeAtSave": "The record date and time are assigned when you save, separately from the administration date."
+  "registrationTimeAtSave": "The record date and time are assigned when you save, separately from the administration date.",
+  "unverifiedStatus": "Unverified status",
+  "immunizationStatusRequired": "Select an administration status before saving"
 }

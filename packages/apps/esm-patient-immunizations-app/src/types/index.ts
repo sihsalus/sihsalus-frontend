@@ -1,3 +1,6 @@
+export type WritableImmunizationStatus = 'completed' | 'not-done';
+export type ImmunizationRecordStatus = WritableImmunizationStatus | 'unverified';
+
 export interface Immunization {
   sequences?: Array<Sequence>;
   existingDoses: Array<ExistingDoses>;
@@ -11,7 +14,7 @@ export interface Immunization {
   occurrenceDateTime?: string;
   lotNumber?: string;
   doseNumber?: number;
-  status?: 'completed' | 'not-done';
+  status?: ImmunizationRecordStatus;
   statusReason?: string;
 }
 
@@ -34,14 +37,15 @@ export interface ImmunizationFormState {
   nextDoseDate: string;
   manufacturer: string;
   programContext?: string;
-  status?: 'completed' | 'not-done';
+  status?: ImmunizationRecordStatus;
   statusReason?: string;
   visitId?: string;
   locationId?: string;
   providers?: string[];
 }
 
-export interface ImmunizationFormData extends ImmunizationFormState {
+export interface ImmunizationFormData extends Omit<ImmunizationFormState, 'status'> {
+  status: WritableImmunizationStatus;
   patientUuid: string;
   vaccineName: string;
 }
@@ -66,6 +70,6 @@ export interface ExistingDoses {
   occurrenceDateTime: string;
   doseNumber: number;
   programContext?: string;
-  status?: 'completed' | 'not-done';
+  status?: ImmunizationRecordStatus;
   statusReason?: string;
 }

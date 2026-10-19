@@ -13,6 +13,8 @@ import dayjs from 'dayjs';
 import { mockCurrentVisit, mockFhirPatient, mockPatient, mockSessionDataResponse } from 'test-utils';
 import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
+import { useImmunizations } from '../hooks/useImmunizations';
+import { resolveAmpathImmunizationForm } from './ampath-form-immunization-config';
 import { FHIR_NEXT_DOSE_DATE_EXTENSION_URL } from './immunization-mapper';
 import {
   getImmunizationSaveErrorDetails,
@@ -21,8 +23,6 @@ import {
 } from './immunizations.resource';
 import ImmunizationsForm from './immunizations-form.workspace';
 import { immunizationFormSub } from './utils';
-import { useImmunizations } from '../hooks/useImmunizations';
-import { resolveAmpathImmunizationForm } from './ampath-form-immunization-config';
 
 const mockCloseWorkspace = vi.fn();
 const mockGetImmunizationSaveErrorDetails = getImmunizationSaveErrorDetails as Mock;
@@ -451,6 +451,7 @@ describe('Immunizations Form', () => {
       persistenceSource: 'ampath-form',
       vaccineUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       immunizationId: 'historical-encounter',
+      status: 'completed',
       vaccinationDate: '2025-01-02',
       doseNumber: 1,
       note: '',
@@ -493,7 +494,7 @@ describe('Immunizations Form', () => {
     mockUseSession.mockReturnValue(mockSessionDataResponse.data);
   });
 
-  it.each(['completed', 'not-done'] as const)(
+  it.each(['completed', 'not-done', 'unverified', undefined] as const)(
     'keeps a recorded dose selectable and warns only for administration (%s)',
     async (status) => {
       const config = createTestImmunizationConfig({ ampathEnabled: true });
@@ -536,12 +537,71 @@ describe('Immunizations Form', () => {
     },
   );
 
+  it.each([
+    { persistenceSource: 'fhir', status: 'unverified' },
+    { persistenceSource: 'ampath-form', status: 'unverified' },
+    { persistenceSource: 'fhir', status: undefined },
+  ] as const)(
+    'requires an explicit administration status before updating a $persistenceSource record with status $status',
+    async ({ persistenceSource, status }) => {
+      const user = userEvent.setup();
+      const config = createTestImmunizationConfig({ ampathEnabled: true });
+      mockUseConfig.mockReturnValue(config);
+      mockSavePatientImmunization.mockResolvedValue({});
+      immunizationFormSub.next({
+        persistenceSource,
+        vaccineUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        immunizationId: 'unverified-record',
+        status,
+        vaccinationDate: '2024-01-03',
+        doseNumber: 1,
+        note: '',
+        expirationDate: '',
+        lotNumber: '',
+        nextDoseDate: '',
+        manufacturer: '',
+        visitId: 'historical-visit',
+        locationId: 'historical-location',
+      });
+
+      render(<ImmunizationsForm {...testProps} />);
+
+      const statusDropdown = screen.getByRole('combobox', { name: /Estado de aplicación/i });
+      await waitFor(() => expect(statusDropdown).toHaveTextContent(/select status|seleccione estado/i));
+      expect(statusDropdown).not.toHaveTextContent('Aplicada');
+      const saveButton = screen.getByRole('button', { name: /Save/i });
+      await user.click(saveButton);
+
+      expect(await screen.findByText('Select an administration status before saving')).toBeVisible();
+      expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+      expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+      expect(mockCloseWorkspace).not.toHaveBeenCalled();
+
+      await selectOption(statusDropdown, 'Aplicada');
+      await user.click(saveButton);
+
+      if (persistenceSource === 'ampath-form') {
+        await waitFor(() => expect(mockSavePatientImmunizationViaAmpathForm).toHaveBeenCalledTimes(1));
+        expect(mockSavePatientImmunizationViaAmpathForm.mock.calls[0][0].obs).toContainEqual({
+          concept: config.ampathFormPersistence.concepts.status,
+          value: 'completed',
+        });
+        expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+      } else {
+        await waitFor(() => expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1));
+        expect(mockSavePatientImmunization.mock.calls[0][0].status).toBe('completed');
+        expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+      }
+    },
+  );
+
   it('should support editing immunizations', async () => {
     const user = userEvent.setup();
     // setup and render the form
     const immunizationToEdit = {
       vaccineUuid: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       immunizationId: '0a6ca2bb-a317-49d8-bd6b-dabb658840d2',
+      status: 'completed' as const,
       vaccinationDate: toStoredDateTime('2024-01-03'),
       doseNumber: 2,
       expirationDate: '2024-05-19',
@@ -691,6 +751,7 @@ describe('Immunizations Form', () => {
     const immunizationWithExpiration = {
       vaccineUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       immunizationId: 'test-immunization-with-expiration',
+      status: 'completed' as const,
       vaccinationDate: toStoredDateTime('2024-12-25'),
       doseNumber: 1,
       expirationDate: '2025-12-31',
@@ -739,6 +800,7 @@ describe('Immunizations Form', () => {
     const immunizationToEdit = {
       vaccineUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       immunizationId: 'existing-immunization-id',
+      status: 'completed' as const,
       vaccinationDate: toStoredDateTime('2024-06-15'),
       doseNumber: 1,
       expirationDate: '2026-06-15',

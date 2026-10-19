@@ -6,10 +6,61 @@ import {
   mapToAmpathImmunizationEncounterPayload,
   mergeImmunizationGroups,
 } from './ampath-form-immunization-mapper';
+import { mapToFHIRImmunizationResource } from './immunization-mapper';
 
 const config = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
 describe('AMPATH immunization form mapper', () => {
+  it.each([undefined, 'unverified', 'unknown'])(
+    'rejects status %s in both transports before constructing a writable payload',
+    (status) => {
+      const immunization: ImmunizationFormData = {
+        patientUuid: 'synthetic-patient',
+        vaccineUuid: 'synthetic-vaccine',
+        vaccineName: 'Synthetic vaccine',
+        vaccinationDate: '2026-05-28',
+        doseNumber: 1,
+        status: 'completed',
+        note: '',
+        expirationDate: '',
+        lotNumber: '',
+        nextDoseDate: '',
+        manufacturer: '',
+      };
+      // Simulate an untrusted runtime value beyond the writable TypeScript union.
+      Reflect.set(immunization, 'status', status);
+      expect(() => mapToAmpathImmunizationEncounterPayload(immunization, config)).toThrow(/explicit.*status/i);
+      expect(() => mapToFHIRImmunizationResource(immunization, 'visit', 'location', 'provider')).toThrow(
+        /explicit.*status/i,
+      );
+    },
+  );
+
+  it('retains a historical encounter with the old appetite observation as unverified', () => {
+    const encounter = {
+      uuid: 'synthetic-historical-encounter',
+      encounterDatetime: '2026-05-28T10:30:00.000Z',
+      obs: [
+        {
+          concept: { uuid: config.ampathFormPersistence.concepts.vaccineUuid },
+          value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' },
+        },
+        { concept: { uuid: config.ampathFormPersistence.concepts.doseNumber }, value: 1 },
+        { concept: { uuid: 'f0000182-0000-4000-8000-000000000182' }, value: 'not-done' },
+      ],
+    };
+    const original = JSON.stringify(encounter);
+    const groups = mapFromAmpathImmunizationEncounters([encounter], config);
+    expect(groups[0].existingDoses).toEqual([
+      expect.objectContaining({
+        immunizationObsUuid: encounter.uuid,
+        doseNumber: 1,
+        status: 'unverified',
+      }),
+    ]);
+    expect(JSON.stringify(encounter)).toBe(original);
+  });
+
   it('maps the custom vaccination UI model to an OpenMRS encounter payload', () => {
     const immunization: ImmunizationFormData = {
       patientUuid: 'patient-uuid',

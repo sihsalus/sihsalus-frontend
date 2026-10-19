@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import type { ImmunizationConfigObject } from '../config-schema';
 import type { ExistingDoses, ImmunizationFormData, ImmunizationGrouped } from '../types';
 import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
+import { latestFirst } from './utils';
 
 type ObsValue = string | number | boolean | { uuid?: string; display?: string; name?: string } | null | undefined;
 
@@ -33,10 +34,19 @@ export interface AmpathImmunizationEncounterPayload {
   encounterDatetime: string;
   visit?: string;
   location?: string;
+  encounterProviders?: Array<{
+    provider: string;
+    encounterRole: string;
+  }>;
   obs: Array<{
     concept: string;
     value: string | number;
   }>;
+}
+
+export interface AmpathImmunizationEncounterProvider {
+  providerUuid?: string;
+  encounterRoleUuid: string;
 }
 
 function getObsByConcept(encounter: AmpathImmunizationEncounter, conceptUuid: string) {
@@ -73,7 +83,7 @@ function getNumberValue(encounter: AmpathImmunizationEncounter, conceptUuid: str
 function toDateString(value?: string | null): string {
   return value ? dayjs(value).startOf('day').toDate().toISOString() : '';
 }
-//DEUDA TECNICA, ESTE ARCHIVO CREO QUE TIENE QUE VLOLAR
+
 function toOpenmrsDateObsValue(value: string): string {
   const dateOnlyValue = value.match(/^(\d{4}-\d{2}-\d{2})$/)?.[1];
   if (dateOnlyValue) {
@@ -94,6 +104,7 @@ export function mapToAmpathImmunizationEncounterPayload(
   config: ImmunizationConfigObject,
   visitUuid?: string,
   locationUuid?: string,
+  encounterProvider?: AmpathImmunizationEncounterProvider,
 ): AmpathImmunizationEncounterPayload {
   const persistence = getAmpathImmunizationFormPersistence(config);
   const concepts = persistence.concepts;
@@ -166,6 +177,15 @@ export function mapToAmpathImmunizationEncounterPayload(
     encounterDatetime: immunization.vaccinationDate,
     ...(visitUuid ? { visit: visitUuid } : {}),
     ...(locationUuid ? { location: locationUuid } : {}),
+    // FHIR2 reuses this encounter and only reads it when a provider has the
+    // "Unknown" role, so new encounters carry the current provider with it.
+    ...(encounterProvider?.providerUuid
+      ? {
+          encounterProviders: [
+            { provider: encounterProvider.providerUuid, encounterRole: encounterProvider.encounterRoleUuid },
+          ],
+        }
+      : {}),
     obs,
   };
 }
@@ -241,9 +261,7 @@ export function mapFromAmpathImmunizationEncounters(
 
   return Object.values(grouped).map((group) => ({
     ...group,
-    existingDoses: group.existingDoses
-      .slice()
-      .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+    existingDoses: group.existingDoses.slice().sort(latestFirst),
   }));
 }
 
@@ -271,9 +289,7 @@ export function mergeImmunizationGroups(
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
-      existingDoses: group.existingDoses
-        .slice()
-        .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+      existingDoses: group.existingDoses.slice().sort(latestFirst),
     }))
     .sort((a, b) =>
       (b.existingDoses?.[0]?.occurrenceDateTime ?? '').localeCompare(a.existingDoses?.[0]?.occurrenceDateTime ?? ''),

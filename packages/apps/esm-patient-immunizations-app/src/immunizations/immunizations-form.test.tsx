@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { mockCurrentVisit, mockFhirPatient, mockPatient, mockSessionDataResponse } from 'test-utils';
 import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
+import { ensureImmunizationEncounterProvider } from './immunization-encounter-provider.resource';
 import { FHIR_NEXT_DOSE_DATE_EXTENSION_URL } from './immunization-mapper';
 import {
   getImmunizationSaveErrorDetails,
@@ -27,6 +28,7 @@ const mockCloseWorkspace = vi.fn();
 const mockGetImmunizationSaveErrorDetails = getImmunizationSaveErrorDetails as Mock;
 const mockSavePatientImmunization = savePatientImmunization as Mock;
 const mockSavePatientImmunizationViaAmpathForm = savePatientImmunizationViaAmpathForm as Mock;
+const mockEnsureImmunizationEncounterProvider = vi.mocked(ensureImmunizationEncounterProvider);
 const mockMutate = vi.fn();
 const mockUseConfig = vi.mocked<() => ImmunizationConfigObject>(useConfig);
 const mockUseSession = vi.mocked(useSession);
@@ -71,7 +73,14 @@ vi.mock('../hooks/useImmunizations', () => ({
     data: [],
     isLoading: false,
     mutate: mockMutate,
+    repairableEncounterUuid: null,
+    repairEncounterProvider: null,
   })),
+}));
+
+vi.mock('./immunization-encounter-provider.resource', async () => ({
+  ...(await vi.importActual('./immunization-encounter-provider.resource')),
+  ensureImmunizationEncounterProvider: vi.fn(),
 }));
 
 vi.mock('./immunizations.resource', () => ({
@@ -113,10 +122,14 @@ describe('Immunizations Form', () => {
       isLoading: false,
       isValidating: false,
       mutate: mockMutate,
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
     mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: false }));
     mockGetImmunizationSaveErrorDetails.mockReturnValue({ type: 'unknown' });
     mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({});
+    mockEnsureImmunizationEncounterProvider.mockResolvedValue(null);
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
   });
@@ -153,6 +166,8 @@ describe('Immunizations Form', () => {
       isLoading: false,
       isValidating: false,
       mutate: mockMutate,
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
     render(<ImmunizationsForm {...testProps} />);
     expect(await screen.findByText('Vaccination history unavailable')).toBeVisible();
@@ -183,6 +198,105 @@ describe('Immunizations Form', () => {
     expect(mockCloseWorkspace).not.toHaveBeenCalled();
     expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
     expect(screen.getByRole('combobox', { name: /Immunization/i })).toHaveTextContent('Hepatitis B vaccination');
+  });
+
+  it('adds the provider role to the visit vaccination encounter before creating a FHIR immunization', async () => {
+    const user = userEvent.setup();
+    const callOrder: Array<string> = [];
+    mockEnsureImmunizationEncounterProvider.mockImplementation(async () => {
+      callOrder.push('ensure');
+      return 'encounter-uuid';
+    });
+    mockSavePatientImmunization.mockImplementation(async () => {
+      callOrder.push('save');
+      return { status: 201, ok: true, data: { id: 'new-id' } };
+    });
+    render(<ImmunizationsForm {...testProps} />);
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    await waitFor(() => expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1));
+    expect(mockEnsureImmunizationEncounterProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patientUuid: mockPatient.uuid,
+        visitUuid: mockCurrentVisit.uuid,
+        encounterTypeUuid: defaultImmunizationConfig.ampathFormPersistence.encounterTypeUuid,
+        providerUuid: mockSessionDataResponse.data.currentProvider.uuid,
+        encounterRoleUuid: defaultImmunizationConfig.unknownEncounterRoleUuid,
+      }),
+    );
+    expect(callOrder).toEqual(['ensure', 'save']);
+  });
+
+  it('reports a failed encounter preflight without saving anything', async () => {
+    const user = userEvent.setup();
+    mockEnsureImmunizationEncounterProvider.mockRejectedValue(new Error('network'));
+    render(<ImmunizationsForm {...testProps} />);
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Error saving vaccination',
+          subtitle: 'Could not prepare the vaccination encounter. Nothing was saved.',
+        }),
+      ),
+    );
+    expect(showSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        subtitle: 'The vaccination could not be confirmed as saved. Review the history before trying again.',
+      }),
+    );
+    expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+    expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('does not touch encounter providers when editing an existing FHIR immunization', async () => {
+    const user = userEvent.setup();
+    immunizationFormSub.next({
+      vaccineUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      immunizationId: 'existing-immunization-id',
+      vaccinationDate: toStoredDateTime('2024-06-15'),
+      doseNumber: 1,
+      expirationDate: null,
+      manufacturer: '',
+      lotNumber: '',
+      note: '',
+      nextDoseDate: null,
+      visitId: 'visit-uuid',
+      locationId: 'location-uuid',
+    });
+    mockSavePatientImmunization.mockResolvedValue({ status: 200, ok: true, data: { id: 'existing-immunization-id' } });
+    render(<ImmunizationsForm {...testProps} />);
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    await waitFor(() => expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1));
+    expect(mockEnsureImmunizationEncounterProvider).not.toHaveBeenCalled();
+  });
+
+  it('refuses to save through FHIR when the session has no provider record', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({ ...mockSessionDataResponse.data, currentProvider: undefined });
+    render(<ImmunizationsForm {...testProps} />);
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle:
+            'Your user account has no provider record. Ask support to assign one before recording vaccinations.',
+        }),
+      ),
+    );
+    expect(mockEnsureImmunizationEncounterProvider).not.toHaveBeenCalled();
+    expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+    expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
   });
 
   it('should render ImmunizationsForm component', async () => {
@@ -366,6 +480,12 @@ describe('Immunizations Form', () => {
           form: config.ampathFormPersistence.formUuid,
           visit: mockCurrentVisit.uuid,
           location: mockCurrentVisit.location.uuid,
+          encounterProviders: [
+            {
+              provider: mockSessionDataResponse.data.currentProvider.uuid,
+              encounterRole: config.unknownEncounterRoleUuid,
+            },
+          ],
           obs: expect.arrayContaining([
             { concept: concepts.vaccineUuid, value: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
             { concept: concepts.doseNumber, value: 1 },

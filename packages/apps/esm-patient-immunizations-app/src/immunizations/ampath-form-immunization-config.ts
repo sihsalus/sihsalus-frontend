@@ -1,5 +1,8 @@
 import type { ImmunizationConfigObject } from '../config-schema';
 
+/** OpenMRS "Unknown" encounter role, required by FHIR2 on immunization encounters. */
+export const defaultUnknownEncounterRoleUuid = 'a0b03050-c99b-11e0-9572-0800200c9a66';
+
 export const defaultAmpathImmunizationFormPersistence: ImmunizationConfigObject['ampathFormPersistence'] = {
   enabled: true,
   encounterTypeUuid: '29c02aff-9a93-46c9-bf6f-48b552fcb1fa',

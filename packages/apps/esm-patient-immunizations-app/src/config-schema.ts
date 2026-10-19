@@ -1,5 +1,8 @@
 import { Type } from '@openmrs/esm-framework';
-import { defaultAmpathImmunizationFormPersistence } from './immunizations/ampath-form-immunization-config';
+import {
+  defaultAmpathImmunizationFormPersistence,
+  defaultUnknownEncounterRoleUuid,
+} from './immunizations/ampath-form-immunization-config';
 import { defaultFhirImmunizationConceptMappings } from './immunizations/fhir-immunization-config';
 import { type FhirImmunizationConceptMappings } from './types/fhir-immunization-domain';
 
@@ -45,6 +48,12 @@ export const configSchema = {
     _description:
       'AMPATH form/encounter contract used by the custom vaccination UI to persist vaccine events as OpenMRS obs.',
     _default: defaultAmpathImmunizationFormPersistence,
+  },
+  unknownEncounterRoleUuid: {
+    _type: Type.UUID,
+    _default: defaultUnknownEncounterRoleUuid,
+    _description:
+      'UUID of the encounter role FHIR2 requires on vaccination encounters. It must equal the FHIR2 global property fhir2.administeringEncounterRoleUuid, which selects the administering encounter role and defaults to the "Unknown" role. FHIR2 only reads and writes Immunization resources whose vaccination encounter (ampathFormPersistence.encounterTypeUuid) has a provider with this role, so the frontend adds the current provider with this role before saving and offers to repair encounters that lack it.',
   },
   supplementalVaccines: {
     _type: Type.Array,
@@ -378,6 +387,7 @@ export interface ImmunizationConfigObject {
   };
   immunizationConceptSet: string;
   fhirConceptMappings: Partial<FhirImmunizationConceptMappings>;
+  unknownEncounterRoleUuid?: string;
   ampathFormPersistence?: {
     enabled: boolean;
     encounterTypeUuid: string;

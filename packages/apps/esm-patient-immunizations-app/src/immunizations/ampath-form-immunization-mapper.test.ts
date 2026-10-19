@@ -50,6 +50,58 @@ describe('AMPATH immunization form mapper', () => {
     );
   });
 
+  it('adds the session provider with the Unknown role to new encounters', () => {
+    const immunization: ImmunizationFormData = {
+      patientUuid: 'patient-uuid',
+      vaccineName: 'BCG',
+      vaccineUuid: 'vaccine-uuid',
+      vaccinationDate: '2026-05-28T00:00:00.000Z',
+      doseNumber: 1,
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    };
+
+    const withProvider = mapToAmpathImmunizationEncounterPayload(immunization, config, 'visit-uuid', 'location-uuid', {
+      providerUuid: 'provider-uuid',
+      encounterRoleUuid: config.unknownEncounterRoleUuid,
+    });
+    expect(withProvider.encounterProviders).toEqual([
+      { provider: 'provider-uuid', encounterRole: config.unknownEncounterRoleUuid },
+    ]);
+
+    const withoutProvider = mapToAmpathImmunizationEncounterPayload(immunization, config, 'visit-uuid', 'location-uuid', {
+      providerUuid: undefined,
+      encounterRoleUuid: config.unknownEncounterRoleUuid,
+    });
+    expect(withoutProvider).not.toHaveProperty('encounterProviders');
+    expect(mapToAmpathImmunizationEncounterPayload(immunization, config)).not.toHaveProperty('encounterProviders');
+  });
+
+  it('lists the highest dose first when several doses share the same date', () => {
+    const encounterFor = (uuid: string, doseNumber: number) => ({
+      uuid,
+      encounterDatetime: '2026-10-16T10:00:00.000Z',
+      obs: [
+        {
+          concept: { uuid: config.ampathFormPersistence.concepts.vaccineUuid },
+          value: { uuid: 'vaccine-uuid', display: 'Pentavalente' },
+        },
+        { concept: { uuid: config.ampathFormPersistence.concepts.vaccinationDate }, value: '2026-10-16T00:00:00.000Z' },
+        { concept: { uuid: config.ampathFormPersistence.concepts.doseNumber }, value: doseNumber },
+      ],
+    });
+
+    const groups = mapFromAmpathImmunizationEncounters(
+      [encounterFor('dose-1', 1), encounterFor('dose-3', 3), encounterFor('dose-2', 2)],
+      config,
+    );
+
+    expect(groups[0].existingDoses.map((dose) => dose.doseNumber)).toEqual([3, 2, 1]);
+  });
+
   it('maps OpenMRS AMPATH form encounters back to grouped immunizations', () => {
     const groups = mapFromAmpathImmunizationEncounters(
       [

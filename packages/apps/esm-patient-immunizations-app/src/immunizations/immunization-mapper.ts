@@ -5,6 +5,7 @@ import {
   type FHIRImmunizationResource,
   type Reference,
 } from '../types/fhir-immunization-domain';
+import { latestFirst } from './utils';
 
 export const FHIR_NEXT_DOSE_DATE_EXTENSION_URL = 'http://hl7.eu/fhir/StructureDefinition/immunization-nextDoseDate';
 export const FHIR_MINSA_PROGRAM_CONTEXT_EXTENSION_URL =
@@ -102,9 +103,7 @@ export const mapFromFHIRImmunizationBundle = (
     return {
       vaccineName: codeWithoutSystem?.display,
       vaccineUuid: codeWithoutSystem?.code,
-      existingDoses: existingDoses
-        .slice()
-        .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+      existingDoses: existingDoses.slice().sort(latestFirst),
     };
   });
 

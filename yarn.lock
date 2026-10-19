@@ -4680,7 +4680,7 @@ __metadata:
     i18next: "npm:^26.4.7"
     lodash-es: "npm:^4.17.21"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^7.8.2"
@@ -6835,7 +6835,7 @@ __metadata:
     openmrs: "workspace:*"
     pdf-lib: "npm:^1.17.1"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
     react-router-dom: "npm:7.18.4"
@@ -6920,7 +6920,7 @@ __metadata:
     "@swc/core": "npm:1.16.18"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     babel-preset-minify: "npm:^0.5.2"
     classnames: "npm:^2.5.1"
@@ -6936,7 +6936,7 @@ __metadata:
     openmrs: "npm:*"
     pinst: "npm:^3.0.0"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
@@ -6972,12 +6972,12 @@ __metadata:
     "@sihsalus/esm-rbac": "workspace:*"
     "@testing-library/react": "npm:^16.3.3"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     css-loader: "npm:7.1.5"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^16.0.0"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -7011,12 +7011,12 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -7048,7 +7048,7 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     dayjs: "npm:^1.11.23"
@@ -7059,7 +7059,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     turbo: "npm:^2.11.9"
@@ -7088,7 +7088,7 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
     dotenv: "npm:^18.0.8"
@@ -7097,7 +7097,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
@@ -7142,7 +7142,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
@@ -7184,7 +7184,7 @@ __metadata:
     fuzzy: "npm:^0.1.3"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
@@ -7209,7 +7209,7 @@ __metadata:
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
@@ -7218,7 +7218,7 @@ __metadata:
     i18next-cli: "npm:1.75.3"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     react-to-print: "npm:^2.14.13"
@@ -7313,7 +7313,7 @@ __metadata:
     "@swc-node/loader": "npm:^1.7.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@types/testing-library__jest-dom": "npm:^5.14.9"
     "@typescript/native": "npm:typescript@7.0.2"
     concurrently: "npm:^6.5.1"
@@ -7324,7 +7324,7 @@ __metadata:
     openmrs: "npm:*"
     playwright: "npm:^1.64.1"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
@@ -7368,7 +7368,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
@@ -7409,7 +7409,7 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.2"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     ace-builds: "npm:^1.45.0"
     ajv: "npm:^8.20.0"
@@ -7419,7 +7419,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-ace: "npm:^15.0.0"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-error-boundary: "npm:^6.1.6"
     react-i18next: "npm:^17.0.11"
     react-markdown: "npm:^10.1.0"
@@ -7467,7 +7467,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-error-boundary: "npm:^6.1.6"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
@@ -7586,7 +7586,7 @@ __metadata:
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
@@ -7635,7 +7635,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-ace: "npm:^15.0.0"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     rxjs: "npm:^7.8.2"
     swr: "npm:2.5.1"
@@ -7663,12 +7663,12 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -7728,14 +7728,14 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
     file-saver: "npm:^2.0.5"
     i18next-cli: "npm:1.75.3"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     react-to-print: "npm:^3.1.1"
@@ -7765,7 +7765,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
@@ -7823,7 +7823,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -8072,7 +8072,7 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.2.14"
-    "@types/react-dom": "npm:^18.2.6"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
     dotenv: "npm:^18.0.8"
@@ -8080,7 +8080,7 @@ __metadata:
     i18next-cli: "npm:1.75.3"
     openmrs: "npm:*"
     react: "npm:^18.x"
-    react-dom: "npm:^18.x"
+    react-dom: "npm:^19.x"
     react-hook-form: "npm:^7.x"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
@@ -8495,7 +8495,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -8527,7 +8527,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     sass: "npm:^1.105.2"
@@ -8641,7 +8641,7 @@ __metadata:
     i18next: "npm:^26.4.7"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
     react-router-dom: "npm:7.18.4"
@@ -8762,7 +8762,7 @@ __metadata:
     "@swc/core": "npm:1.16.18"
     "@types/file-saver": "npm:^2.0.5"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
     dompurify: "npm:3.4.17"
@@ -8773,7 +8773,7 @@ __metadata:
     openmrs: "npm:*"
     parse5: "npm:8.0.1"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-hook-form: "npm:^7.90.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
@@ -8832,7 +8832,7 @@ __metadata:
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     sass: "npm:^1.105.2"
@@ -8862,7 +8862,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     sass: "npm:^1.105.2"
@@ -8893,7 +8893,7 @@ __metadata:
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.16.18"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
     dotenv: "npm:^18.0.8"
@@ -8902,7 +8902,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     react-i18next: "npm:^17.0.11"
     react-joyride: "npm:^2.8.2"
     react-router-dom: "npm:7.18.4"
@@ -8961,7 +8961,7 @@ __metadata:
     "@testing-library/user-event": "npm:^14.6.8"
     "@types/fhir": "npm:0.0.31"
     "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
+    "@types/react-dom": "npm:^19.3.0"
     "@types/webpack-env": "npm:^1.18.8"
     "@typescript/native": "npm:typescript@7.0.2"
     "@vitest/coverage-v8": "npm:^5.0.5"
@@ -8985,7 +8985,7 @@ __metadata:
     prettier: "npm:^3.9.10"
     react: "npm:^18.3.1"
     react-doctor: "npm:^0.9.18"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^19.3.1"
     swc-loader: "npm:0.2.7"
     turbo: "npm:2.11.9"
     typescript: "npm:@typescript/typescript6@6.0.2"
@@ -10140,12 +10140,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^18.2.6, @types/react-dom@npm:^18.3.0":
-  version: 18.3.7
-  resolution: "@types/react-dom@npm:18.3.7"
+"@types/react-dom@npm:^19.3.0":
+  version: 19.3.0
+  resolution: "@types/react-dom@npm:19.3.0"
   peerDependencies:
-    "@types/react": ^18.0.0
-  checksum: 10c0/8bd309e2c3d1604a28a736a24f96cbadf6c05d5288cfef8883b74f4054c961b6b3a5e997fd5686e492be903c8f3380dba5ec017eff3906b1256529cd2d39603e
+    "@types/react": ^19.3.0
+  checksum: 10c0/ce0066d28b62bc6afdd17ca84756b8fbe0f6ffc0c8b1e60739abc30e81510da2edbc1007e6ab3d974d30f5a8c25bb0f7de8d7ce09736c909fe84c0f9aed0b946
   languageName: node
   linkType: hard
 
@@ -20112,7 +20112,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18.3.1, react-dom@npm:^18.x":
+"react-dom@npm:^18.3.1":
   version: 18.3.1
   resolution: "react-dom@npm:18.3.1"
   dependencies:
@@ -20121,6 +20121,17 @@ __metadata:
   peerDependencies:
     react: ^18.3.1
   checksum: 10c0/a752496c1941f958f2e8ac56239172296fcddce1365ce45222d04a1947e0cc5547df3e8447f855a81d6d39f008d7c32eab43db3712077f09e3f67c4874973e85
+  languageName: node
+  linkType: hard
+
+"react-dom@npm:^19.3.1, react-dom@npm:^19.x":
+  version: 19.3.1
+  resolution: "react-dom@npm:19.3.1"
+  dependencies:
+    scheduler: "npm:^0.28.0"
+  peerDependencies:
+    react: ^19.3.1
+  checksum: 10c0/382700916313b2ebc46acee80642f300bb8601eac6a9e7fefade5b8b30e66b05bf3aaa56a3c964589fcd578d27b486e847470c2697d879264e766661ff49fac7
   languageName: node
   linkType: hard
 
@@ -21373,6 +21384,13 @@ __metadata:
   dependencies:
     loose-envify: "npm:^1.1.0"
   checksum: 10c0/26383305e249651d4c58e6705d5f8425f153211aef95f15161c151f7b8de885f24751b377e4a0b3dd42cce09aad3f87a61dab7636859c0d89b7daf1a1e2a5c78
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.28.0":
+  version: 0.28.0
+  resolution: "scheduler@npm:0.28.0"
+  checksum: 10c0/783c8e5ce89d41273a02ed6dc0e3d24bd60e05c9e8f7e3adfc6c82e7c69935500d90e343f1ee26d592fc7504e8a2532573c6368def3e93bfe812391fa53efaf4
   languageName: node
   linkType: hard
 

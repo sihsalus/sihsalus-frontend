@@ -53,8 +53,8 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
       { key: 'modality', header: t('modality', 'Modality'), isSortable: true, isVisible: true },
       { key: 'aetTitle', header: t('aetTitle', 'Aet Title'), isSortable: true },
       {
-        key: 'scheduledReferringPhysician',
-        header: t('scheduledReferringPhysician', 'Scheduled referring physician'),
+        key: 'scheduledPerformingPhysician',
+        header: t('scheduledPerformingPhysician', 'Scheduled performing physician'),
         isSortable: true,
         isVisible: true,
       },
@@ -71,6 +71,8 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
   const statusText = useMemo(() => {
     return {
       completed: t('procedureStepStatusCompleted', 'completed'),
+      'in progress': t('requestStatusInProgress', 'in progress'),
+      rejected: t('stepStatusRejected', 'Rejected'),
       scheduled: t('procedureStepStatusScheduled', 'scheduled'),
     };
   }, [t]);
@@ -87,11 +89,11 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
       ),
     },
     aetTitle: step.aetTitle,
-    scheduledReferringPhysician: {
-      sortKey: step.scheduledReferringPhysician,
+    scheduledPerformingPhysician: {
+      sortKey: step.scheduledPerformingPhysician,
       content: (
         <div>
-          <span>{step.scheduledReferringPhysician}</span>
+          <span>{step.scheduledPerformingPhysician}</span>
         </div>
       ),
     },

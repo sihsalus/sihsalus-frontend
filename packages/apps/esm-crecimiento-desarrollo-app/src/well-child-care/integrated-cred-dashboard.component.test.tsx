@@ -3,6 +3,7 @@ import {
   formatDate,
   navigate,
   UserHasAccess,
+  useConnectivity,
   usePatient,
   userHasAccess,
   useSession,
@@ -134,6 +135,7 @@ function setPrivileges(privileges: string[], authenticated = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(useConnectivity).mockReturnValue(true);
   setPrivileges([credCourseLifePrivilege, ...allFamilies]);
   vi.mocked(usePatient).mockReturnValue({
     patient,
@@ -203,7 +205,9 @@ it('opens neonatal history with its own read permission without mounting patholo
   expect(screen.getByText('Nacimiento: synthetic-child')).toBeVisible();
   expect(ChildMedicalHistory).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Ver atención neonatal' }));
-  expect(navigate).toHaveBeenCalledWith({ to: '/openmrs/spa/patient/synthetic-child/chart/neonatal-care-dashboard' });
+  expect(navigate).toHaveBeenCalledWith({
+    to: '/openmrs/spa/patient/synthetic-child/chart/neonatal-care-dashboard',
+  });
 });
 
 it.each([
@@ -322,7 +326,38 @@ it('uses the existing visit-guarded launcher and preserves the current patient i
   expect(useLaunchWorkspaceRequiringVisit).toHaveBeenCalledWith(patient.id, 'wellchild-control-form');
   expect(launchControl).toHaveBeenCalledWith({ patientUuid: patient.id });
   fireEvent.click(screen.getByRole('button', { name: 'Consultas anteriores' }));
-  expect(navigate).toHaveBeenCalledWith({ to: '/openmrs/spa/patient/synthetic-child/chart/Visits' });
+  expect(navigate).toHaveBeenCalledWith({
+    to: '/openmrs/spa/patient/synthetic-child/chart/Visits',
+  });
+});
+
+it('opens the existing odontogram for the same patient with dental permission and connectivity', () => {
+  setPrivileges([credCourseLifePrivilege, credWellChildPrivilege, 'app:hoja.clinica.odontologia']);
+  const { rerender } = render(<IntegratedCredDashboard />);
+  fireEvent.click(screen.getByRole('tab', { name: 'Control y examen' }));
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: 'Ver atención odontológica y odontograma',
+    }),
+  );
+  expect(navigate).toHaveBeenCalledWith({
+    to: '/openmrs/spa/patient/synthetic-child/chart/atencion-odontologica',
+  });
+  vi.mocked(useConnectivity).mockReturnValue(false);
+  rerender(<IntegratedCredDashboard />);
+  expect(
+    screen.queryByRole('button', {
+      name: 'Ver atención odontológica y odontograma',
+    }),
+  ).not.toBeInTheDocument();
+  vi.mocked(useConnectivity).mockReturnValue(true);
+  setPrivileges([credCourseLifePrivilege, credWellChildPrivilege]);
+  rerender(<IntegratedCredDashboard />);
+  expect(
+    screen.queryByRole('button', {
+      name: 'Ver atención odontológica y odontograma',
+    }),
+  ).not.toBeInTheDocument();
 });
 
 it('does not render a previous patient under a different patient UUID', () => {

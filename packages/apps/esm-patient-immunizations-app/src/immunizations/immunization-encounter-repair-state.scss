@@ -1,0 +1,12 @@
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.widgetCard {
+  border: 1px solid $ui-03;
+  background-color: $ui-02;
+}
+
+.notification {
+  max-width: none;
+  margin: layout.$spacing-05;
+}

@@ -17,15 +17,34 @@ export const linkConfiguredSequences = (
   });
 };
 
-export const latestFirst = (a: ExistingDoses, b: ExistingDoses) => {
-  const dateDifference = new Date(b.occurrenceDateTime).getTime() - new Date(a.occurrenceDateTime).getTime();
-  if (dateDifference !== 0) {
-    return dateDifference;
+const toTime = (value?: string | null): number => {
+  const time = value ? new Date(value).getTime() : Number.NaN;
+  return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time;
+};
+
+const toDoseNumber = (value?: number | string | null): number => {
+  const doseNumber = value == null || value === '' ? Number.NaN : Number(value);
+  return Number.isInteger(doseNumber) && doseNumber > 0 ? doseNumber : Number.NEGATIVE_INFINITY;
+};
+
+/**
+ * Sorts doses from the most recent to the oldest. Doses recorded on the same
+ * instant are ordered by their recorded positive integer dose number, highest
+ * first; missing or invalid dose numbers go last within that instant.
+ * Never infer a dose number from the number or order of records.
+ */
+export const latestFirst = (a: ExistingDoses, b: ExistingDoses): number => {
+  const timeA = toTime(a?.occurrenceDateTime);
+  const timeB = toTime(b?.occurrenceDateTime);
+  if (timeA !== timeB) {
+    return timeB > timeA ? 1 : -1;
   }
 
-  // Date-only records can share an occurrence time. Use the recorded sequence
-  // to break that tie, never the API response order or the number of records.
-  const recordedDoseNumber = (dose: ExistingDoses) =>
-    Number.isInteger(dose.doseNumber) && dose.doseNumber > 0 ? dose.doseNumber : 0;
-  return recordedDoseNumber(b) - recordedDoseNumber(a);
+  const doseA = toDoseNumber(a?.doseNumber);
+  const doseB = toDoseNumber(b?.doseNumber);
+  if (doseA !== doseB) {
+    return doseB > doseA ? 1 : -1;
+  }
+
+  return 0;
 };

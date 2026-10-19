@@ -1270,7 +1270,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             'companionRequiredForMinor',
             'Seleccione o registre un acompañante adulto antes de iniciar la consulta del menor.',
           ),
-          kind: 'error',
+          kind: 'warning',
           isLowContrast: false,
         });
         return;

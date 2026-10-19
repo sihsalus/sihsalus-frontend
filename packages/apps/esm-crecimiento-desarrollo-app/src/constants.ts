@@ -12,6 +12,8 @@ export const credImmunizationEditPrivilege = 'app:hoja.clinica.cred.inmunizacion
 export const credNeonatalPrivilege = 'app:hoja.clinica.cred.neonatal';
 export const credNeonatalEditPrivilege = 'app:hoja.clinica.cred.neonatal.editar';
 
+export const neonatalFluidBalanceSlot = 'neonatal-fluid-balance-slot';
+
 export const credEarlyStimulationPrivilege = 'app:hoja.clinica.cred.estimulacionTemprana';
 export const credEarlyStimulationEditPrivilege = 'app:hoja.clinica.cred.estimulacionTemprana.editar';
 

@@ -41,6 +41,10 @@ import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization
 import { mapToAmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 import { DoseInput } from './components/dose-input.component';
 import { getFhirImmunizationConceptMappings } from './fhir-immunization-config';
+import {
+  ensureImmunizationEncounterProvider,
+  getUnknownEncounterRoleUuid,
+} from './immunization-encounter-provider.resource';
 import { mapToFHIRImmunizationResource } from './immunization-mapper';
 import {
   getImmunizationSaveErrorDetails,
@@ -58,6 +62,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const ampathPersistence = getAmpathImmunizationFormPersistence(config);
   const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const currentUser = useSession();
+  const providerUuid = currentUser?.currentProvider?.uuid;
+  const unknownEncounterRoleUuid = getUnknownEncounterRoleUuid(config);
   const activeVisitLocationUuid = visitContext?.location?.uuid;
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation('@sihsalus/esm-patient-immunizations-app');
@@ -315,6 +321,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           nextDoseDate,
         } = data;
         const abortController = new AbortController();
+        const isNewImmunization = !immunizationToEditMeta?.immunizationObsUuid;
+        const visitUuid = immunizationToEditMeta?.visitUuid || visitContext?.uuid;
 
         const immunization: ImmunizationFormData = {
           patientUuid,
@@ -338,8 +346,9 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
             mapToAmpathImmunizationEncounterPayload(
               immunization,
               config,
-              immunizationToEditMeta?.visitUuid || visitContext?.uuid,
+              visitUuid,
               locationUuid,
+              isNewImmunization ? { providerUuid, encounterRoleUuid: unknownEncounterRoleUuid } : undefined,
             ),
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
@@ -347,12 +356,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
 
         const saveViaFhir = () =>
           savePatientImmunization(
-            mapToFHIRImmunizationResource(
-              immunization,
-              immunizationToEditMeta?.visitUuid || visitContext?.uuid,
-              locationUuid,
-              currentUser?.currentProvider?.uuid,
-            ),
+            mapToFHIRImmunizationResource(immunization, visitUuid, locationUuid, providerUuid),
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
           );
@@ -360,6 +364,45 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         if (immunizationToEditMeta?.persistenceSource === 'ampath-form') {
           await saveViaAmpathForm();
         } else {
+          if (!providerUuid) {
+            showSnackbar({
+              title: t('errorSaving', 'Error saving vaccination'),
+              subtitle: t(
+                'providerRequiredForVaccination',
+                'Your user account has no provider record. Ask support to assign one before recording vaccinations.',
+              ),
+              kind: 'error',
+              isLowContrast: false,
+            });
+            return;
+          }
+          if (isNewImmunization) {
+            // FHIR2 reuses the visit's latest vaccination encounter and cannot
+            // read it back unless a provider holds the "Unknown" role. This
+            // runs before anything is sent, so a failure here means nothing
+            // was saved.
+            try {
+              await ensureImmunizationEncounterProvider({
+                patientUuid,
+                visitUuid,
+                encounterTypeUuid: ampathPersistence.encounterTypeUuid,
+                providerUuid,
+                encounterRoleUuid: unknownEncounterRoleUuid,
+                signal: abortController.signal,
+              });
+            } catch {
+              showSnackbar({
+                title: t('errorSaving', 'Error saving vaccination'),
+                subtitle: t(
+                  'encounterProviderPreflightFailed',
+                  'Could not prepare the vaccination encounter. Nothing was saved.',
+                ),
+                kind: 'error',
+                isLowContrast: false,
+              });
+              return;
+            }
+          }
           try {
             await saveViaFhir();
           } catch (err) {
@@ -405,7 +448,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       patientUuid,
       immunizationsError,
       isLoadingImmunizations,
-      currentUser?.currentProvider?.uuid,
+      providerUuid,
+      unknownEncounterRoleUuid,
       visitContext?.uuid,
       immunizationToEditMeta,
       immunizationsConceptSet,
@@ -415,6 +459,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       mutate,
       fhirConceptMappings,
       ampathPersistence.enabled,
+      ampathPersistence.encounterTypeUuid,
       config,
     ],
   );

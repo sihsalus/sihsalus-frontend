@@ -765,6 +765,32 @@ describe('Visit form', () => {
     });
   });
 
+  it('warns instead of erroring when a minor is submitted without a companion', async () => {
+    const user = userEvent.setup();
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: {
+        ...mockFhirPatient,
+        birthDate: dayjs().subtract(1, 'year').format('YYYY-MM-DD'),
+      },
+      patientUuid: mockPatient.id,
+    });
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith({
+      title: 'Acompañante obligatorio',
+      subtitle: 'Seleccione o registre un acompañante adulto antes de iniciar la consulta del menor.',
+      kind: 'warning',
+      isLowContrast: false,
+    });
+  });
+
   it('does not expose companion registration without its dedicated frontend privilege', () => {
     mockUserHasAccess.mockImplementation(
       (privilege) =>

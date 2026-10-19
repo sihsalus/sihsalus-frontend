@@ -1,12 +1,14 @@
 import {
   getDefaultsFromConfigSchema,
+  openmrsFetch,
   useConfig,
   useFhirFetchAll,
   useOpenmrsFetchAll,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   mockImmunizationData,
   mockPatient,
@@ -26,6 +28,7 @@ const testProps = {
 };
 
 const mockUseFhirFetchAll = useFhirFetchAll as Mock;
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as Mock;
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUseSession = vi.mocked(useSession);
@@ -174,6 +177,53 @@ describe('ImmunizationOverview', () => {
 
     expect(screen.queryByText(/Error 501/i)).not.toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Polio vaccination, oral/i })).toBeInTheDocument();
+  });
+
+  it('repairs the vaccination encounter named by the FHIR2 provider role diagnostics', async () => {
+    const user = userEvent.setup();
+    const encounterUuid = '0d1c9f3a-5a42-4a33-9c6e-1b2f6d8c9e01';
+    const mutate = vi.fn();
+    mockUseSession.mockReturnValue({
+      ...sessionWithEditPrivilege,
+      currentProvider: { uuid: 'provider-uuid' },
+    } as unknown as ReturnType<typeof useSession>);
+    mockUseFhirFetchAll.mockReturnValue({
+      data: null,
+      error: {
+        status: 400,
+        responseBody: {
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              diagnostics: `The Immunization resource is required to be attached to an OpenMRS encounter involving a single encounter provider with the role 'Unknown'. This is not the case for immunization 'obs-uuid' attached to encounter '${encounterUuid}'.`,
+            },
+          ],
+        },
+      },
+      isLoading: false,
+      isValidating: false,
+      mutate,
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    renderWithSwr(<ImmunizationsOverview {...testProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByText(/a vaccination encounter lacks the provider role/i)).toBeInTheDocument();
+    expect(screen.queryByText(/obs-uuid/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /repair/i }));
+
+    await waitFor(() =>
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+        `/ws/rest/v1/encounter/${encounterUuid}/encounterprovider`,
+        expect.objectContaining({
+          method: 'POST',
+          body: { provider: 'provider-uuid', encounterRole: immunizationConfig.unknownEncounterRoleUuid },
+        }),
+      ),
+    );
+    await waitFor(() => expect(mutate).toHaveBeenCalled());
   });
 
   it('does not offer to record immunizations when the user lacks the edit privilege', async () => {

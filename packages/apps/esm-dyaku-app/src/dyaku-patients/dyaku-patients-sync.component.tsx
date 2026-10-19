@@ -1,7 +1,7 @@
 import { Button, InlineLoading, InlineNotification, Modal, ProgressBar } from '@carbon/react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type SyncResult, useDyakuSync } from './dyaku-patients.resource';
+import { type SyncResult, getDyakuSyncErrorCode, useDyakuSync } from './dyaku-patients.resource';
 import styles from './dyaku-patients-sync.scss';
 
 interface DyakuPatientsSyncProps {
@@ -62,7 +62,7 @@ const DyakuPatientsSync: React.FC<DyakuPatientsSyncProps> = ({ onSyncComplete })
           success: false,
           synchronized: 0,
           failed: 0,
-          errors: [error instanceof Error ? error.message : String(error)],
+          errors: [getDyakuSyncErrorCode(error)],
         });
       } finally {
         setIsSyncing(false);
@@ -179,8 +179,8 @@ const DyakuPatientsSync: React.FC<DyakuPatientsSyncProps> = ({ onSyncComplete })
                 <div className={styles.syncErrors}>
                   <h4>{t('syncErrors', 'Errores:')}</h4>
                   <ul>
-                    {syncResult.errors.map((error, index) => (
-                      <li key={index}>{error}</li>
+                    {[...new Set(syncResult.errors)].map((error) => (
+                      <li key={error}>{t(error)}</li>
                     ))}
                   </ul>
                 </div>

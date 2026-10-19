@@ -137,6 +137,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -165,6 +167,8 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -177,6 +181,83 @@ describe('ImmunizationsDetailedSummary', () => {
     expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
+  it('offers to repair the vaccination encounter when FHIR2 reports a missing provider role', async () => {
+    const user = userEvent.setup();
+    const repairEncounterProvider = vi.fn().mockResolvedValue(undefined);
+    mockUseImmunizations.mockReturnValue({
+      data: [],
+      error: { status: 400, message: 'private diagnostics' },
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      repairableEncounterUuid: 'encounter-uuid',
+      repairEncounterProvider,
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('heading', { name: /immunizations/i })).toBeInTheDocument();
+    expect(screen.getByText(/a vaccination encounter lacks the provider role/i)).toBeInTheDocument();
+    expect(screen.queryByText(/private diagnostics/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/there was a problem displaying this information/i)).not.toBeInTheDocument();
+    const repairButton = screen.getByRole('button', { name: /repair/i });
+    expect(document.activeElement).not.toBe(repairButton);
+    await user.click(repairButton);
+    expect(repairEncounterProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains the missing provider role without a repair button when the user has no provider', async () => {
+    mockUseImmunizations.mockReturnValue({
+      data: [],
+      error: { status: 400 },
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      repairableEncounterUuid: 'encounter-uuid',
+      repairEncounterProvider: null,
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByText(/a vaccination encounter lacks the provider role/i)).toBeInTheDocument();
+    expect(screen.getByText(/your user account has no provider record/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /repair/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the latest dose when several doses share the vaccination date', async () => {
+    const sameDayDose = (immunizationObsUuid: string, doseNumber: number) => ({
+      ...mockImmunizationData[0].existingDoses[0],
+      immunizationObsUuid,
+      doseNumber,
+      occurrenceDateTime: '2026-10-16T00:00:00.000Z',
+    });
+    mockUseImmunizations.mockReturnValue({
+      data: [
+        {
+          vaccineUuid: 'pentavalente-uuid',
+          vaccineName: 'Pentavalente',
+          existingDoses: [sameDayDose('d1', 1), sameDayDose('d2', 2), sameDayDose('d3', 3)],
+        },
+      ],
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByText(/last dose on .*, Dose 3/i)).toBeInTheDocument();
+  });
+
   it('displays immunization records in a table when data is available', async () => {
     mockUseImmunizations.mockReturnValueOnce({
       data: mockImmunizationData,
@@ -184,6 +265,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -240,12 +323,15 @@ describe('ImmunizationsDetailedSummary', () => {
               })),
               fullConfig,
             );
+      const mappedDoseNumbers = data[0].existingDoses.map((dose) => dose.doseNumber);
       mockUseImmunizations.mockReturnValue({
         data,
         isLoading: false,
         error: null,
         isValidating: false,
         mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
       });
 
       renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -258,7 +344,7 @@ describe('ImmunizationsDetailedSummary', () => {
       for (const doseNumber of doseNumbers) {
         expect(within(detail).getByRole('cell', { name: String(doseNumber) })).toBeInTheDocument();
       }
-      expect(data[0].existingDoses.map((dose) => dose.doseNumber)).toEqual(doseNumbers);
+      expect(data[0].existingDoses.map((dose) => dose.doseNumber)).toEqual(mappedDoseNumbers);
     },
   );
 
@@ -299,6 +385,8 @@ describe('ImmunizationsDetailedSummary', () => {
         error: null,
         isValidating: false,
         mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
       });
 
       renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -315,6 +403,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -343,6 +433,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(
@@ -375,6 +467,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(
@@ -434,6 +528,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -470,6 +566,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -509,6 +607,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -546,6 +646,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -575,6 +677,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -595,6 +699,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);

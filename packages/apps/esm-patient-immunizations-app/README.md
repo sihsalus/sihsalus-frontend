@@ -33,8 +33,8 @@ Contratos de frontend:
 - Si una vacuna de la NTS no existe en content/backend, debe estar deshabilitada o documentada como pendiente, no simulada silenciosamente.
 - En «Vacunación reciente», la fecha/hora de aplicación determina el registro
   mostrado. Si varios registros de una vacuna tienen exactamente la misma
-  fecha/hora, se muestra el mayor número de dosis registrado, conservando la
-  etiqueta de secuencia configurada cuando exista. El número procede de FHIR
+  fecha/hora, se muestra el mayor número de dosis entero positivo registrado,
+  conservando la etiqueta de secuencia configurada cuando exista. El número procede de FHIR
   `protocolApplied.doseNumberPositiveInt` o de la observación configurada de
   Ampath; nunca se calcula contando registros. Este desempate no determina la
   hora real de aplicación ni valida la pertinencia clínica de las dosis.
@@ -89,8 +89,28 @@ y [ImmunizationObsGroupHelper](https://github.com/openmrs/openmrs-module-fhir2/b
 La referencia FHIR `Encounter/<visitUuid>` es parte de ese contrato; no debe
 sustituirse por un UUID de atención REST.
 
-Esta corrección modifica únicamente frontend: no reasigna profesionales o roles,
-no repara registros históricos ni modifica backend/content. El responsable de
-backend debe revisar el contrato y los registros afectados en una tarea separada.
-Las pruebas locales de interfaz no acreditan el guardado/lectura real de esos
-reportes. Queda pendiente aceptación en QLTY con paciente sintético y rol CRED.
+Mitigación frontend (sin cambios de backend/content):
+
+- Antes de crear una vacuna por FHIR, el formulario consulta por REST
+  (`GET /encounter?patient=...&visit=...&encounterType=...`) la última atención
+  del tipo `ampathFormPersistence.encounterTypeUuid` de la consulta y, si no
+  tiene un proveedor con el rol `unknownEncounterRoleUuid` (default
+  `a0b03050-c99b-11e0-9572-0800200c9a66`, "Unknown"), lo agrega con el
+  profesional de la sesión (`POST /encounter/<uuid>/encounterprovider`).
+  `unknownEncounterRoleUuid` debe coincidir con la propiedad global de FHIR2
+  `fhir2.administeringEncounterRoleUuid`, que selecciona el rol de atención
+  administrador y por defecto es el rol "Unknown". Si la
+  sesión no tiene profesional asociado, no guarda y muestra un error; si esa
+  consulta previa falla, tampoco guarda y lo indica. Esa consulta REST solo ve
+  atenciones no anuladas, mientras que FHIR2 considera todas las de la
+  consulta, por lo que una última atención de vacunación anulada no se repara.
+- El fallback AMPATH crea la atención con `encounterProviders` usando ese rol.
+- Si la lectura FHIR falla con el diagnóstico de FHIR2 sobre el rol de atención
+  faltante (cualquiera sea el nombre del rol), el resumen y la vista detallada
+  muestran un estado de error específico con el botón
+  "Reparar" (solo con profesional en sesión), que agrega el rol a la atención
+  indicada y recarga el historial.
+- En el resumen, las dosis con la misma fecha se ordenan por número de dosis
+  descendente, de modo que "Vacunación reciente" muestra la última dosis (#393).
+
+Queda pendiente aceptación en QLTY con paciente sintético y rol CRED.

@@ -37,6 +37,7 @@ import {
   requestCount,
   requestDeleteConfirmationDialog,
 } from '../constants';
+import { normalizeRequestStatus } from '../utils/help';
 import { useImagingAccess } from '../utils/use-imaging-access';
 import { usePaginationBounds } from '../utils/use-pagination-bounds';
 import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
@@ -80,7 +81,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({
   };
 
   const filteredRequests = (requests ?? []).filter((item) => {
-    const statusMatch = statusFilter === 'all' || (item.status ?? '').toLowerCase() === statusFilter;
+    const statusMatch = statusFilter === 'all' || normalizeRequestStatus(item.status) === statusFilter;
     const priorityMatch = priorityFilter === 'all' || (item.priority ?? '').toLowerCase() === priorityFilter;
     return statusMatch && priorityMatch;
   });
@@ -119,10 +120,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({
   const tableRows = results?.map((request, _id) => ({
     id: String(request.id),
     status: {
-      sortKey: statusText[request.status],
+      sortKey: statusText[normalizeRequestStatus(request.status)],
       content: (
         <div>
-          <span>{statusText[request.status]}</span>
+          <span>{statusText[normalizeRequestStatus(request.status)]}</span>
         </div>
       ),
     },

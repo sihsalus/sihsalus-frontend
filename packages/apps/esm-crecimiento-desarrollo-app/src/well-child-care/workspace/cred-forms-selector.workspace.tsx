@@ -21,6 +21,7 @@ import useEncountersCRED, {
   findCREDFormEncounterForControl,
 } from '../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
+import CaregiverScreening from '../components/caregiver-screening.component';
 import { buildCREDFormWorkspaceProps } from '../../utils/cred-form-launch-utils';
 
 interface CREDFormsSelectorWorkspaceProps extends DefaultPatientWorkspaceProps {
@@ -199,6 +200,11 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         <InlineLoading description={t('loadingData', 'Cargando datos...')} />
       ) : null}
       <div hidden={isLoading || Boolean(historyError)} style={{ height: '100%' }}>
+        <CaregiverScreening
+          patientUuid={patientUuid}
+          birthDate={patientBirthDate ?? patient?.birthDate}
+          referenceDate={consultationDatetime}
+        />
         <FormsSelectorWorkspace
           availableForms={formsWithHistory}
           patientAge={patientAge}

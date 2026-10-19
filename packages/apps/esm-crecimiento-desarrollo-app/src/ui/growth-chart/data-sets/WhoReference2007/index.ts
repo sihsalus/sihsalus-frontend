@@ -18,7 +18,7 @@ function dataset(rows: LMSReference[], yAxisLabel: string): ChartData[string]['d
       chartLabel: DataSetLabels.y_5_19,
       xAxisLabel: TimeUnitCodes.months,
       yAxisLabel,
-      range: { start: 61, end: 228 },
+      range: { start: 60, end: 228 },
     },
   };
 }

@@ -100,7 +100,7 @@ import {
   useMutateAppointments,
 } from './appointments-form.resource';
 import styles from './appointments-form.scss';
-import { filterProvidersBySchedulingCategory } from './provider-scheduling-category';
+import { assessProviderSchedulingCategory, filterProvidersBySchedulingCategory } from './provider-scheduling-category';
 
 const preventInvalidIntegerKey =
   (constraints: PlainNumberInputConstraints) => (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -656,6 +656,12 @@ const AppointmentsForm: React.FC<
   const isAppointmentLocationLocked = isExternalConsultationProviderCreating;
   const selectedProviderUuid = watch('provider');
   const selectedProvider = providers.providers?.find(({ uuid }) => uuid === selectedProviderUuid);
+  const providerCategoryAssessment = assessProviderSchedulingCategory({
+    mode: providerSchedulingCategoryValidation.mode,
+    providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
+    provider: selectedProvider,
+    service: selectedService,
+  });
   const eligibleProviders = filterProvidersBySchedulingCategory({
     mode: providerSchedulingCategoryValidation.mode,
     providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
@@ -1568,7 +1574,10 @@ const AppointmentsForm: React.FC<
                   const nextValue = !isProviderAssignmentEnabled;
                   setIsProviderAssignmentEnabled(nextValue);
                   if (!nextValue) {
-                    setValue('provider', '', { shouldDirty: true, shouldValidate: isSubmitted });
+                    setValue('provider', '', {
+                      shouldDirty: true,
+                      shouldValidate: isSubmitted,
+                    });
                   }
                 }}
                 role="switch"
@@ -1626,6 +1635,26 @@ const AppointmentsForm: React.FC<
                   'noProvidersForServiceMessage',
                   'No healthcare providers are enabled for the selected service. Verify the service or contact an administrator.',
                 )}
+              />
+            ) : null}
+            {isProviderAssignmentEnabled && providerCategoryAssessment.shouldWarn ? (
+              <InlineNotification
+                className={styles.providerNotice}
+                hideCloseButton
+                kind="warning"
+                lowContrast
+                title={t('providerSchedulingCategoryWarningTitle', 'Scheduling category not confirmed')}
+                subtitle={
+                  providerCategoryAssessment.reason === 'configuration-missing'
+                    ? t(
+                        'providerSchedulingCategoryConfigurationMissing',
+                        'The provider category could not be validated because its attribute is not configured.',
+                      )
+                    : t(
+                        'providerSchedulingCategoryWarning',
+                        'The selected provider is not enabled for this service scheduling category. You can continue while the hospital completes the catalog.',
+                      )
+                }
               />
             ) : null}
             {isProviderAssignmentEnabled && isDifferentProviderSelected ? (

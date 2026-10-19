@@ -18,20 +18,6 @@ import { mapFromFHIRImmunizationBundle } from '../immunizations/immunization-map
 import { getImmunizationSaveErrorDetails } from '../immunizations/immunizations.resource';
 import { type FHIRImmunizationResource } from '../types/fhir-immunization-domain';
 
-function isUnsupportedFhirImmunizationError(error: unknown): boolean {
-  if (!error) {
-    return false;
-  }
-
-  const candidate = error as { status?: number; response?: { status?: number }; message?: string };
-  return (
-    candidate.status === 501 ||
-    candidate.response?.status === 501 ||
-    candidate.message?.includes('501') ||
-    candidate.message?.toLowerCase().includes('not implemented')
-  );
-}
-
 export function useImmunizations(patientUuid: string) {
   const config = useConfig<ImmunizationConfigObject>();
   const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
@@ -39,7 +25,7 @@ export function useImmunizations(patientUuid: string) {
   const immunizationsUrl = `${fhirBaseUrl}/Immunization?patient=${patientUuid}`;
   const ampathImmunizationsUrl =
     patientUuid && ampathPersistence.enabled
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${ampathPersistence.encounterTypeUuid}&form=${ampathPersistence.formUuid}&v=custom:(uuid,encounterDatetime,visit:(uuid),location:(uuid),obs:(uuid,concept:(uuid,display),value:(uuid,display,name)))&limit=100`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${ampathPersistence.encounterTypeUuid}&v=custom:(uuid,encounterDatetime,visit:(uuid),location:(uuid),obs:(uuid,concept:(uuid,display),value:(uuid,display,name)))&limit=100`
       : null;
 
   const { data, error, isLoading, isValidating, mutate } = useFhirFetchAll<FHIRImmunizationResource>(immunizationsUrl);
@@ -52,17 +38,20 @@ export function useImmunizations(patientUuid: string) {
   } = useOpenmrsFetchAll<AmpathImmunizationEncounter>(ampathImmunizationsUrl, { partialData: true });
 
   const errorDetails = getImmunizationSaveErrorDetails(error, fhirConceptMappings);
-  const shouldUseAmpathFallback =
-    ampathPersistence.enabled &&
-    isUnsupportedFhirImmunizationError(error) &&
-    errorDetails.type !== 'missing-fhir-mapping';
+  const shouldUseAmpathFallback = ampathPersistence.enabled && errorDetails.type === 'fhir-setup';
   const fhirImmunizations = data && !shouldUseAmpathFallback ? mapFromFHIRImmunizationBundle(data) : [];
-  const ampathImmunizations = mapFromAmpathImmunizationEncounters(ampathData, config);
+  let ampathImmunizations: ReturnType<typeof mapFromAmpathImmunizationEncounters> = [];
+  let mappingError: unknown;
+  try {
+    ampathImmunizations = mapFromAmpathImmunizationEncounters(ampathData, config);
+  } catch (error) {
+    mappingError = error;
+  }
   const existingImmunizations = mergeImmunizationGroups(fhirImmunizations, ampathImmunizations);
 
   return {
     data: existingImmunizations,
-    error: (shouldUseAmpathFallback ? null : error) ?? ampathError,
+    error: (shouldUseAmpathFallback ? null : error) ?? ampathError ?? mappingError,
     isLoading: isLoading || isLoadingAmpath,
     isValidating: isValidating || isValidatingAmpath,
     mutate: async () => {

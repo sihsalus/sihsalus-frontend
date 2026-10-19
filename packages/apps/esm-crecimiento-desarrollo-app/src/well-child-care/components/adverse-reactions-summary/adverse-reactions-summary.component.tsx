@@ -44,7 +44,7 @@ const AdverseReactionsSummary: React.FC = () => {
   }, [patientUuid]);
 
   const tableHeaders = [
-    { key: 'occurrenceDate', header: t('occurrenceDate', 'Fecha de ocurrencia') },
+    { key: 'occurrenceDate', header: t('esaviRecordedDate', 'Fecha registrada') },
     { key: 'vaccineName', header: t('vaccine', 'Vacuna') },
     { key: 'severity', header: t('severity', 'Severidad') },
     { key: 'reactionDescription', header: t('reactionDescription', 'Descripción de la reacción') },

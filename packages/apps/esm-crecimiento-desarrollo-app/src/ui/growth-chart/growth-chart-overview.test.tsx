@@ -64,10 +64,38 @@ describe('GrowthChartOverview', () => {
     expect(props).toBeDefined();
     const points = props?.data as Array<{ date: number; value: number; isPatientMeasurement?: boolean }>;
     expect(
-      points.filter((point) => !point.isPatientMeasurement).every((point) => point.date >= 61 && point.date <= 228),
+      points.filter((point) => !point.isPatientMeasurement).every((point) => point.date >= 60 && point.date <= 228),
     ).toBe(true);
     expect(points.find((point) => point.isPatientMeasurement)?.value).toBeCloseTo(24 / 1.2 ** 2, 6);
   });
+
+  it.each([60, 60.5, 60.99, 61])(
+    'plots measurements at %s WHO months without excluding the current control',
+    (ageInMonths) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const birth = new Date(2021, 0, 1);
+      const measured = new Date(birth.getTime() + ageInMonths * 30.4375 * 86400000);
+      vi.setSystemTime(measured);
+      mockUseBiometrics.mockReturnValue({
+        data: [
+          {
+            eventDate: measured,
+            encounterReference: 'Encounter/synthetic',
+            dataValues: { weight: '20', height: '110' },
+          },
+        ],
+        isLoading: false,
+        error: null,
+      } as ReturnType<typeof useBiometrics>);
+      render(<GrowthChartOverview patient={{ ...patient, birthDate: '2021-01-01' }} patientUuid="patient-1" />);
+      const points = vi.mocked(LineChart).mock.calls.at(-1)?.[0]?.data as Array<{
+        date: number;
+        isPatientMeasurement?: boolean;
+      }>;
+      expect(points.find((point) => point.isPatientMeasurement)?.date).toBeCloseTo(ageInMonths, 5);
+      expect(points.filter((point) => !point.isPatientMeasurement).every((point) => point.date >= 60)).toBe(true);
+    },
+  );
 
   it('preserves the calendar birth date for age and growth references west of UTC', () => {
     vi.useFakeTimers({ toFake: ['Date'] });

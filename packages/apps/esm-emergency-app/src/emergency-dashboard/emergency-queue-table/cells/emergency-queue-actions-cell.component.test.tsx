@@ -81,8 +81,30 @@ describe('EmergencyQueueActionsCell', () => {
       WORKSPACES.TRIAGE_VITALS_FORM,
       expect.objectContaining({
         encounterTypeUuid: triageEncounterTypeUuid,
+        expectedVisitTypeUuid: config.emergencyVisitTypeUuid,
         locationUuid: config.emergencyLocationUuid,
         onVitalsSaved: expect.any(Function),
+        profile: 'emergency-triage',
+      }),
+      null,
+      { patientUuid: queueEntry.patient.uuid },
+    );
+  });
+
+  it('uses the canonical emergency triage default with the emergency profile and UPSS', async () => {
+    const user = userEvent.setup();
+    const defaults = getDefaultsFromConfigSchema(configSchema) as Config;
+    mockUseConfig.mockReturnValue({ ...config, triageEncounter: defaults.triageEncounter });
+
+    render(<EmergencyQueueActionsCell queueEntry={queueEntry} />);
+    await user.click(screen.getByRole('button', { name: /triaje/i }));
+
+    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+      WORKSPACES.TRIAGE_VITALS_FORM,
+      expect.objectContaining({
+        encounterTypeUuid: '978deb64-358e-4c78-bbb0-04cea73df805',
+        expectedVisitTypeUuid: defaults.emergencyVisitTypeUuid,
+        locationUuid: defaults.emergencyLocationUuid,
         profile: 'emergency-triage',
       }),
       null,

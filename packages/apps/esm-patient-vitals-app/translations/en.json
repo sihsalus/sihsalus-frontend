@@ -83,6 +83,8 @@
   "notAvailable": "Not available",
   "notes": "Notes",
   "noVisitLocation": "Could not determine the active visit UPSS.",
+  "emergencyTriageVisitRequired": "Open the active emergency visit in the emergency UPSS before recording triage. Check the emergency workspace configuration if the problem persists.",
+  "vitalsProviderRequired": "The responsible professional could not be identified. Check your clinical profile before saving.",
   "other": "Other",
   "outOfDateVitals": "<0>These vitals are <1>out of date</1></0>",
   "overOneWeekOldVitals": "<0>These vitals are <1>over one week old</1></0>",

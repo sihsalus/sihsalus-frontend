@@ -125,6 +125,7 @@ describe('ServePatientModal', () => {
         WORKSPACES.TRIAGE_VITALS_FORM,
         expect.objectContaining({
           encounterTypeUuid: triageEncounterTypeUuid,
+          expectedVisitTypeUuid: config.emergencyVisitTypeUuid,
           locationUuid: config.emergencyLocationUuid,
           onVitalsSaved: expect.any(Function),
           profile: 'emergency-triage',

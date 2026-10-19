@@ -579,7 +579,7 @@
   "scheduledControls": "Citas programadas",
   "schoolGrowthChartUnavailable": "Curva de crecimiento escolar no disponible",
   "schoolGrowthChartUnavailableSubtitle": "No se muestran curvas de 0 a 5 años para este paciente. Falta implementar las referencias de IMC/edad y talla/edad de 5 a 19 años.",
-  "schoolGrowthReference": "Referencia OMS 2007: 61 a 228 meses. El IMC requiere peso y talla de la misma atención.",
+  "schoolGrowthReference": "Referencia OMS 2007 / AnthroPlus: 60 a 228 meses. El IMC requiere peso y talla de la misma atención.",
   "screeningIndicators": "Historial de tamizajes",
   "screeningTypesRecorded": "{{completed}}/{{total}} tipos con registro",
   "searchConditions": "Buscar condiciones",
@@ -725,5 +725,18 @@
   "neonatalDischargeInvalid": "La fecha de alta del recién nacido o la de nacimiento no es válida. Revise Datos del Nacimiento y la fecha de nacimiento del paciente.",
   "conditionActiveDuplicate": "Esta condición ya está activa. Actualice el registro existente o resuélvalo antes de registrar otro episodio.",
   "onsetDateCannotBeBeforeBirthDate": "La fecha de inicio no puede ser anterior a la fecha de nacimiento del paciente",
-  "reactionSavedRefreshFailed": "La reacción quedó registrada. Recargue la tabla para verla; no vuelva a registrarla."
+  "reactionSavedRefreshFailed": "La reacción quedó registrada. Recargue la tabla para verla; no vuelva a registrarla.",
+  "caregiverScreeningTitle": "Salud mental de la madre, padre o cuidador",
+  "caregiverScreeningHelp": "Verifique el tamizaje del adulto al mes y a los 12 meses del niño, y anualmente de los 2 a los 4 años, o antes si hay riesgo. Confirme quién es el cuidador evaluado y registre PHQ-9, AUDIT-C y la evaluación de violencia en su propia historia clínica. El vínculo de madre no identifica por sí solo al cuidador presente.",
+  "caregiverOpenSearch": "Buscar la historia del adulto identificado",
+  "esaviProviderRequired": "La sesión debe estar vinculada a un profesional clínico para registrar el evento.",
+  "esaviClinicalRecordHelp": "Este registro clínico no sustituye la notificación oficial de ESAVI.",
+  "childMentalHealthFormLabel": "Salud mental del niño: PPSC/PSC-17 (según edad)",
+  "esaviReportDate": "Fecha del reporte",
+  "esaviReportTime": "Hora del reporte (24 horas)",
+  "esaviReportDateRequired": "Debe seleccionar la fecha del reporte",
+  "esaviReportTimeRequired": "Ingrese la hora del reporte en formato de 24 horas (HH:mm).",
+  "esaviReportOutsideVisit": "La fecha y hora del reporte debe estar dentro de la visita abierta y no puede ser futura.",
+  "esaviRecordedDate": "Fecha registrada",
+  "esaviNarrativeTimingHelp": "Indique en la descripción cuándo inició el evento y la cronología de los síntomas. La fecha del reporte se registra por separado."
 }

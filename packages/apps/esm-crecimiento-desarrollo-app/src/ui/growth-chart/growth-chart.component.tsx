@@ -17,6 +17,7 @@ import {
   type GrowthChartInterpretationCode,
   type GrowthChartInterpretationSeverity,
   type GrowthChartPoint,
+  getAgeValues,
   getGrowthChartInterpretation,
   getMeasurementXValue,
   getMeasurementValue,
@@ -72,7 +73,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
 }) => {
   const { t, i18n } = useTranslation('@sihsalus/esm-cred-app');
 
-  const isSchoolAge = differenceInMonths(new Date(), dateOfBirth) >= 60;
+  const isSchoolAge = (getAgeValues(new Date(), dateOfBirth)?.whoMonths ?? -1) >= 60;
   const memoizedChartData = isSchoolAge ? schoolChartData : rawChartData;
   const { chartDataForGender } = useChartDataForGender(gender, memoizedChartData);
   const currentDate = useMemo(() => new Date(), []);
@@ -416,7 +417,7 @@ function determineStartIndex(
   dataset: string | undefined,
   metadataRangeStart: number,
 ) {
-  const adjustIndex = dataset === DataSetLabels.y_5_19 ? 61 : dataset === DataSetLabels.y_2_5 ? 24 : 0;
+  const adjustIndex = dataset === DataSetLabels.y_5_19 ? metadataRangeStart : dataset === DataSetLabels.y_2_5 ? 24 : 0;
   return isWeightForLengthHeightCategory(category) ? metadataRangeStart : adjustIndex;
 }
 

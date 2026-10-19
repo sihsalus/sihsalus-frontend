@@ -68,6 +68,18 @@ la cola. Las pruebas locales no sustituyen esa validación del backend desplegad
 - Dependencias compartidas para estado, navegación y errores.
 - Registro de pacientes, Patient Search y Libro de Atenciones para continuidad administrativa.
 
+El tipo predeterminado de las nuevas clasificaciones es **Triaje de Emergencia**
+(`978deb64-358e-4c78-bbb0-04cea73df805`), provisionado por content. Los dos
+launchers conservan el perfil `emergency-triage` y la UPSS de emergencia; el
+workspace compartido de vitales atribuye al proveedor de sesión con el rol
+`bd16c32b-6784-45e6-9504-df1cfe0b62e5`. Ambos launchers transmiten
+`emergencyVisitTypeUuid` como `expectedVisitTypeUuid` y `emergencyLocationUuid`;
+el formulario impide guardar o encolar si la visita activa no tiene ese tipo y
+esa UPSS, o si falta dicho contexto. Una configuración explícita puede elegir
+otro tipo. El triaje ambulatorio conserva su contrato separado. No se reclasifican
+encuentros históricos mixtos como triajes de emergencia por su UUID ni se
+reescriben durante una lectura.
+
 ## Recuperación al abrir una atención
 
 El inicio desde la cola confirma primero el estado en el servidor y espera el

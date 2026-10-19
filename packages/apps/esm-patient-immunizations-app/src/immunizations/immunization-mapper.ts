@@ -79,6 +79,8 @@ export const mapFromFHIRImmunizationBundle = (
       .map((entry) => entry.resource);
   }
 
+  // Invalidated FHIR records are not administered doses in the active history.
+  immunizations = immunizations.filter((item) => item.status !== 'entered-in-error');
   if (!immunizations.length) {
     return [];
   }

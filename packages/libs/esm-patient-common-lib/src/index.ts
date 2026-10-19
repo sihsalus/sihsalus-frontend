@@ -96,3 +96,5 @@ export * from './useAllowedFileExtensions';
 export * from './useSystemVisitSetting';
 export * from './visit';
 export * from './workspaces';
+
+export { resolvePublishedForm, type PublishedFormOptions } from './forms-selector/resolve-published-form';

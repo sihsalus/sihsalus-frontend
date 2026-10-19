@@ -450,3 +450,53 @@ encuentros históricos sin proveedor descritos en #376/#377.
 Las reglas de alta y hospitalización de #389/#390 pertenecen al formulario de
 content; la precisión decimal de talla (#391) depende de su concepto canónico.
 Las pruebas locales no acreditan publicación ni aceptación clínica en QLTY.
+
+### Alineación de sujetos CRED, referencias y registro ESAVI — 19/10/2026
+
+El selector reserva PPSC/PSC-17 infantil para edades de 3 a 11 años, según
+NTS 238, 6.6.5. También excluye edades menores cuando una matriz externa antigua
+incluye el formulario. La captura de content debe seguir identificando PPSC a
+3–5 años y PSC-17 a 6–11; el frontend no sustituye sus fichas oficiales.
+
+La evaluación del cuidador se presenta como una actividad distinta al mes, a los
+12 meses y anualmente de 2 a 4 años, o antes por riesgo (NTS 238, 6.6.4).
+La guía permite abrir la búsqueda nativa del adulto y reutiliza el vínculo
+materno explícito cuando el usuario tiene los permisos existentes. El profesional
+confirma quién fue evaluado; una madre vinculada no identifica automáticamente
+al cuidador. No se abre un cuestionario adulto bajo el paciente infantil ni se
+copia su resultado. Esta orientación no afirma cumplimiento del tamizaje ni
+provisiona un formulario adulto nuevo; ese contrato clínico sigue requiriendo
+coordinación con el módulo responsable.
+
+Las cuatro referencias escolares incorporan el mes 60 publicado por la
+implementación oficial OMS AnthroPlus; se preservan las filas 61–228 del XLSX
+anterior. Selección, trazado e interpolación usan el mismo dominio de edad.
+No se inventan parámetros ni se extrapola la fila 61 hacia atrás; procedencia,
+SHA del origen y pruebas de los límites están en el README de las referencias.
+La interpretación continúa siendo referencial, sin nuevas observaciones derivadas.
+
+El guardado ESAVI resuelve el formulario con `resolvePublishedForm` de la
+biblioteca común: UUID verificado o coincidencia exacta única, nombre y versión
+configurados, publicado y no retirado. Una respuesta ambigua o incompleta bloquea
+el envío. La configuración predeterminada requiere INMU-002 1.0.0 y el rol
+`e967b2f3-62d8-49df-a37a-e8467f29bc88`, **Responsable del registro de ESAVI**;
+content debe distribuir ese rol antes de habilitar el escritor actualizado.
+No se infiere la profesión ni se cambia la política de acceso.
+
+El POST lleva la visita abierta del paciente, su ubicación y el profesional
+`session.currentProvider.uuid` con ese rol. Una sesión sin profesional o una
+visita cerrada, ausente o de otro paciente conserva la entrada sin enviar.
+El mensaje de pantalla distingue el registro clínico de la notificación oficial.
+La aceptación de sujetos, referencias y atribución requiere revisión clínica y
+ensayos sintéticos de guardar, recargar y reabrir en QLTY; los tests locales no
+acreditan esa aceptación ni un despliegue.
+
+La captura nueva ESAVI registra explícitamente **fecha y hora del reporte**,
+conforme a `INMU-002.fechaReporte`; usa el patrón DatePicker/TimePicker existente
+y verifica el instante completo contra el inicio de la visita y la fecha actual.
+Una hora vacía permanece vacía. El inicio del evento se documenta expresamente
+en la narrativa de síntomas, hasta contar con un concepto canónico específico.
+No se transforma una fecha de ocurrencia elegida en la fecha actual. Las lecturas
+históricas conservan el `encounterDatetime` almacenado y muestran **Fecha
+registrada**, pues versiones previas lo etiquetaban como ocurrencia sin
+distinguirlo del reporte. No se reatribuyen ni reescriben esos datos.

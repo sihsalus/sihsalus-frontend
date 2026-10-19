@@ -1,5 +1,6 @@
 import {
   deleteSynchronizationItem,
+  getDefaultsFromConfigSchema,
   getSynchronizationItem,
   omrsOfflineCachingStrategyHttpHeaderName,
   openmrsFetch,
@@ -9,6 +10,8 @@ import {
   setupOfflineSync,
 } from '@openmrs/esm-framework';
 import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
+
+import { type ConfigObject, configSchema } from '../config-schema';
 
 import {
   buildVitalsEncounter,
@@ -235,6 +238,44 @@ describe('vitals offline persistence', () => {
         { concept: 'pulse-concept-uuid', value: 80 },
       ],
     });
+  });
+
+  it('keeps the canonical chart type and responsible professional in the durable offline encounter', async () => {
+    const config = getDefaultsFromConfigSchema(configSchema) as ConfigObject;
+    const encounter = buildVitalsEncounter({
+      concepts: config.concepts,
+      encounterDatetime: new Date('2026-08-24T17:45:00.000Z'),
+      encounterRoleUuid: config.vitals.encounterRoleUuid,
+      encounterTypeUuid: config.vitals.encounterTypeUuid,
+      encounterUuid,
+      locationUuid: 'synthetic-location-uuid',
+      patientUuid: 'synthetic-patient-uuid',
+      providerUuid,
+      visitUuid: 'synthetic-visit-uuid',
+      vitals: { pulse: 80 },
+    });
+    mockOpenmrsFetch.mockRejectedValue(new TypeError('Synthetic offline connection'));
+
+    await expect(
+      persistVitalsEncounter(encounter, {
+        abortController: new AbortController(),
+        displayName: 'Synthetic chart vitals',
+      }),
+    ).resolves.toEqual({ status: 'queued', encounterUuid });
+
+    expect(queuedContent?.encounter).toMatchObject({
+      uuid: encounterUuid,
+      encounterType: '20d4a603-8472-484c-b2bf-b45bdecf6b4f',
+      encounterProviders: [
+        {
+          provider: providerUuid,
+          encounterRole: 'bebe2266-abbb-4f3c-b28b-a5b47406fff5',
+        },
+      ],
+      visit: 'synthetic-visit-uuid',
+      obs: [{ concept: config.concepts.pulseUuid, value: 80 }],
+    });
+    expect(mockOpenmrsFetch.mock.calls.some(isEncounterPost)).toBe(false);
   });
 
   it('queues before checking the patient or posting, then removes the row only after an exact response', async () => {

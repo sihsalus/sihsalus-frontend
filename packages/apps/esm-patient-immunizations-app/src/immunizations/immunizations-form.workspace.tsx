@@ -37,7 +37,7 @@ import {
   scheduleEntriesToSequenceDefinitions,
   useVaccinationSchedule,
 } from '../vaccine-scheduling-builder/vaccination-schedule.resource';
-import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
+import { getAmpathImmunizationFormPersistence, resolveAmpathImmunizationForm } from './ampath-form-immunization-config';
 import { mapToAmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 import { DoseInput } from './components/dose-input.component';
 import { getFhirImmunizationConceptMappings } from './fhir-immunization-config';
@@ -169,6 +169,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       return group.existingDoses.some(
         (dose) =>
           dose.doseNumber != null &&
+          dose.status !== 'not-done' &&
           Number(dose.doseNumber) === Number(doseNumber) &&
           dose.immunizationObsUuid !== immunizationToEditMeta?.immunizationObsUuid,
       );
@@ -188,15 +189,21 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   }, [activeScheduleSequenceDefinitions, doseNumber, vaccineUuid]);
 
   const minsaAgeWarning = useMemo(() => {
-    if (!selectedSequence || !vaccinationDate || !patient.birthDate) return null;
+    if (!selectedSequence || !vaccinationDate || !patient.birthDate || immunizationStatus === 'not-done') return null;
 
     // Age limits are warnings, not blockers. MINSA allows rescue schedules,
     // campaigns and special indications that still need clinical validation.
     const ageInDays = dayjs(vaccinationDate).startOf('day').diff(dayjs(patient.birthDate).startOf('day'), 'day');
     const minAge = selectedSequence.minAgeInDays;
+    const minAgeInMonths = selectedSequence.minAgeInMonths;
     const maxAge = selectedSequence.maxAgeInDays;
 
-    if (typeof minAge === 'number' && ageInDays < minAge) {
+    const beforeMinimumMonth =
+      typeof minAgeInMonths === 'number' &&
+      dayjs(vaccinationDate)
+        .startOf('day')
+        .isBefore(dayjs(patient.birthDate).startOf('day').add(minAgeInMonths, 'month'));
+    if (beforeMinimumMonth || (typeof minAge === 'number' && ageInDays < minAge)) {
       return t(
         'minsaMinimumAgeWarning',
         'La fecha seleccionada está antes de la edad recomendada por MINSA para esta dosis{{label}}.',
@@ -217,7 +224,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
     }
 
     return null;
-  }, [patient.birthDate, selectedSequence, t, vaccinationDate]);
+  }, [immunizationStatus, patient.birthDate, selectedSequence, t, vaccinationDate]);
 
   useEffect(() => {
     const sub = immunizationFormSub.subscribe((props) => {
@@ -280,20 +287,24 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
     }
   }, [activeScheduleSequenceDefinitions, doseNumber, setValue, vaccinationDate, vaccineUuid]);
 
-  const existingDoseNumbers = useMemo(() => {
-    const immunization = existingImmunizations?.find((candidate) => candidate.vaccineUuid === vaccineUuid);
-    return immunization?.existingDoses.map((dose) => dose.doseNumber) ?? [];
-  }, [existingImmunizations, vaccineUuid]);
-
   const onSubmit = useCallback(
     async (data: ImmunizationFormInputData) => {
       if (isLoadingImmunizations || immunizationsError) {
         return;
       }
-      if (!locationUuid) {
+      if (!locationUuid || (!immunizationToEditMeta?.immunizationObsUuid && !visitContext?.uuid)) {
         showSnackbar({
           title: t('errorSaving', 'Error saving vaccination'),
           subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+      if (!immunizationToEditMeta?.immunizationObsUuid && !currentUser?.currentProvider?.uuid) {
+        showSnackbar({
+          title: t('errorSaving', 'Error saving vaccination'),
+          subtitle: t('clinicalProviderRequired', 'A linked clinical provider is required to record an immunization.'),
           kind: 'error',
           isLowContrast: false,
         });
@@ -316,12 +327,18 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         } = data;
         const abortController = new AbortController();
 
+        const recordedAt = new Date().toISOString();
         const immunization: ImmunizationFormData = {
           patientUuid,
           immunizationId: immunizationToEditMeta?.immunizationObsUuid,
           vaccineName: immunizationsConceptSet.answers.find((answer) => answer.uuid === vaccineUuid)?.display ?? '',
           vaccineUuid: vaccineUuid,
-          vaccinationDate: dayjs(vaccinationDate).startOf('day').toDate().toISOString(),
+          vaccinationDate:
+            status === 'not-done'
+              ? immunizationToEditMeta?.immunizationObsUuid
+                ? dayjs(vaccinationDate).toISOString()
+                : recordedAt
+              : dayjs(vaccinationDate).startOf('day').toDate().toISOString(),
           doseNumber,
           status,
           statusReason,
@@ -333,17 +350,31 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           manufacturer,
         };
 
-        const saveViaAmpathForm = () =>
-          savePatientImmunizationViaAmpathForm(
+        const saveViaAmpathForm = async () => {
+          // New events resolve the published REST Form. Updates retain their
+          // original Form by omitting it from the encounter update payload.
+          const form = immunizationToEditMeta?.immunizationObsUuid
+            ? undefined
+            : await resolveAmpathImmunizationForm(config);
+          return savePatientImmunizationViaAmpathForm(
             mapToAmpathImmunizationEncounterPayload(
               immunization,
               config,
-              immunizationToEditMeta?.visitUuid || visitContext?.uuid,
-              locationUuid,
+              form
+                ? {
+                    formUuid: form.uuid,
+                    visitUuid: visitContext.uuid,
+                    locationUuid,
+                    providerUuid: currentUser.currentProvider.uuid,
+                    recordedAt,
+                  }
+                : undefined,
             ),
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
+            Object.values(ampathPersistence.concepts),
           );
+        };
 
         const saveViaFhir = () =>
           savePatientImmunization(
@@ -415,6 +446,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       mutate,
       fhirConceptMappings,
       ampathPersistence.enabled,
+      ampathPersistence.concepts,
       config,
     ],
   );
@@ -437,24 +469,34 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                   )}
                 />
               ) : null}
-              <ResponsiveWrapper>
-                <Controller
-                  name="vaccinationDate"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <OpenmrsDatePicker
-                      {...field}
-                      className={styles.datePicker}
-                      id="vaccinationDate"
-                      invalid={Boolean(fieldState?.error?.message)}
-                      invalidText={fieldState?.error?.message}
-                      labelText={`${t('vaccinationDate', 'Vaccination date')} *`}
-                      isRequired
-                      maxDate={new Date()}
-                    />
+              {immunizationStatus !== 'not-done' ? (
+                <ResponsiveWrapper>
+                  <Controller
+                    name="vaccinationDate"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <OpenmrsDatePicker
+                        {...field}
+                        className={styles.datePicker}
+                        id="vaccinationDate"
+                        invalid={Boolean(fieldState?.error?.message)}
+                        invalidText={fieldState?.error?.message}
+                        labelText={`${t('vaccinationDate', 'Vaccination date')} *`}
+                        isRequired
+                        maxDate={new Date()}
+                      />
+                    )}
+                  />
+                </ResponsiveWrapper>
+              ) : null}
+              {!immunizationToEditMeta?.immunizationObsUuid ? (
+                <p>
+                  {t(
+                    'registrationTimeAtSave',
+                    'The record date and time are assigned when you save, separately from the administration date.',
                   )}
-                />
-              </ResponsiveWrapper>
+                </p>
+              ) : null}
               <ResponsiveWrapper>
                 <Controller
                   name="vaccineUuid"
@@ -489,7 +531,6 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                         sequences={activeScheduleSequenceDefinitions}
                         field={field}
                         fieldState={fieldState}
-                        existingDoseNumbers={existingDoseNumbers}
                         warningMessage={duplicateDoseWarning}
                       />
                     )}
@@ -510,7 +551,12 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                       }
                       items={['completed', 'not-done']}
                       label={t('selectStatus', 'Seleccione estado')}
-                      onChange={(val) => onChange(val.selectedItem)}
+                      onChange={(val) => {
+                        onChange(val.selectedItem);
+                        if (val.selectedItem === 'not-done' && !immunizationToEditMeta?.immunizationObsUuid) {
+                          setValue('vaccinationDate', new Date(), { shouldValidate: true });
+                        }
+                      }}
                       selectedItem={value}
                       titleText={`${t('immunizationStatus', 'Estado de aplicación')} *`}
                       aria-required

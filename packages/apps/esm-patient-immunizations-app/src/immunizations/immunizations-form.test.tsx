@@ -22,6 +22,7 @@ import {
 import ImmunizationsForm from './immunizations-form.workspace';
 import { immunizationFormSub } from './utils';
 import { useImmunizations } from '../hooks/useImmunizations';
+import { resolveAmpathImmunizationForm } from './ampath-form-immunization-config';
 
 const mockCloseWorkspace = vi.fn();
 const mockGetImmunizationSaveErrorDetails = getImmunizationSaveErrorDetails as Mock;
@@ -32,6 +33,7 @@ const mockUseConfig = vi.mocked<() => ImmunizationConfigObject>(useConfig);
 const mockUseSession = vi.mocked(useSession);
 const mockToOmrsIsoString = vi.mocked(toOmrsIsoString);
 const mockToDateObjectStrict = vi.mocked(toDateObjectStrict);
+const mockResolveAmpathImmunizationForm = vi.mocked(resolveAmpathImmunizationForm);
 const defaultImmunizationConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
 vi.mock('../hooks/useImmunizationsConceptSet', () => ({
@@ -74,6 +76,11 @@ vi.mock('../hooks/useImmunizations', () => ({
   })),
 }));
 
+vi.mock('./ampath-form-immunization-config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./ampath-form-immunization-config')>()),
+  resolveAmpathImmunizationForm: vi.fn(),
+}));
+
 vi.mock('./immunizations.resource', () => ({
   getImmunizationSaveErrorDetails: vi.fn(() => ({ type: 'unknown' })),
   savePatientImmunization: vi.fn(),
@@ -107,6 +114,7 @@ describe('Immunizations Form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
     vi.mocked(useImmunizations).mockReturnValue({
       data: [],
       error: undefined,
@@ -117,6 +125,14 @@ describe('Immunizations Form', () => {
     mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: false }));
     mockGetImmunizationSaveErrorDetails.mockReturnValue({ type: 'unknown' });
     mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({});
+    mockResolveAmpathImmunizationForm.mockResolvedValue({
+      uuid: '06b94846-f1db-3851-8448-2a97dba81478',
+      name: 'INMU-001-REGISTRO DE VACUNACIÓN',
+      version: '1.1.0',
+      published: true,
+      retired: false,
+      resources: [],
+    });
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
   });
@@ -363,7 +379,7 @@ describe('Immunizations Form', () => {
         expect.objectContaining({
           patient: mockPatient.uuid,
           encounterType: config.ampathFormPersistence.encounterTypeUuid,
-          form: config.ampathFormPersistence.formUuid,
+          form: '06b94846-f1db-3851-8448-2a97dba81478',
           visit: mockCurrentVisit.uuid,
           location: mockCurrentVisit.location.uuid,
           obs: expect.arrayContaining([
@@ -375,9 +391,150 @@ describe('Immunizations Form', () => {
         }),
         undefined,
         expect.anything(),
+        Object.values(config.ampathFormPersistence.concepts),
       );
     });
   });
+
+  it('keeps an unavailable Form from triggering any fallback write', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: true }));
+    mockSavePatientImmunization.mockRejectedValue({ status: 501 });
+    mockGetImmunizationSaveErrorDetails.mockReturnValueOnce({ type: 'fhir-setup' });
+    mockResolveAmpathImmunizationForm.mockRejectedValueOnce(new Error('No unique published Form'));
+    render(<ImmunizationsForm {...testProps} />);
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+    await waitFor(() => expect(mockResolveAmpathImmunizationForm).toHaveBeenCalled());
+    expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox', { name: /Immunization/i })).toHaveTextContent('Hepatitis B vaccination');
+  });
+
+  it.each([
+    ['2025-02-27', true],
+    ['2025-02-28', false],
+  ])('uses calendar months for the age warning on %s', async (vaccinationDate, warns) => {
+    const config = createTestImmunizationConfig({ ampathEnabled: false });
+    config.sequenceDefinitions = [
+      {
+        vaccineConceptUuid: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        sequences: [{ sequenceNumber: 1, sequenceLabel: 'Dose-1', minAgeInMonths: 2 }],
+      },
+    ];
+    mockUseConfig.mockReturnValue(config);
+    immunizationFormSub.next({
+      vaccineUuid: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      vaccinationDate,
+      doseNumber: 1,
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    });
+    render(
+      <ImmunizationsForm
+        {...testProps}
+        groupProps={{
+          ...testProps.groupProps,
+          patient: { ...mockFhirPatient, id: mockPatient.uuid, birthDate: '2024-12-31' },
+        }}
+      />,
+    );
+    await waitFor(() => expect(Boolean(screen.queryByText(/antes de la edad recomendada/))).toBe(warns));
+  });
+
+  it('keeps the Form and provider unchanged when updating a historical REST encounter', async () => {
+    const user = userEvent.setup();
+    immunizationFormSub.next({
+      persistenceSource: 'ampath-form',
+      vaccineUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      immunizationId: 'historical-encounter',
+      vaccinationDate: '2025-01-02',
+      doseNumber: 1,
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+      visitId: 'historical-visit',
+      locationId: 'historical-location',
+    });
+    render(<ImmunizationsForm {...testProps} />);
+    await user.type(screen.getByRole('textbox', { name: /note/i }), 'Synthetic correction');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+    await waitFor(() => expect(mockSavePatientImmunizationViaAmpathForm).toHaveBeenCalled());
+    const payload = mockSavePatientImmunizationViaAmpathForm.mock.calls[0][0];
+    expect(payload).not.toHaveProperty('visit');
+    expect(payload).not.toHaveProperty('location');
+    expect(payload).not.toHaveProperty('encounterDatetime');
+    expect(payload).not.toHaveProperty('form');
+    expect(payload).not.toHaveProperty('encounterProviders');
+    expect(mockResolveAmpathImmunizationForm).not.toHaveBeenCalled();
+    expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+  });
+
+  it('requires an identified provider before creating an immunization', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({ ...mockSessionDataResponse.data, currentProvider: null });
+    render(<ImmunizationsForm {...testProps} />);
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subtitle: 'A linked clinical provider is required to record an immunization.',
+        }),
+      ),
+    );
+    expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+    expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+  });
+
+  it.each(['completed', 'not-done'] as const)(
+    'keeps a recorded dose selectable and warns only for administration (%s)',
+    async (status) => {
+      const config = createTestImmunizationConfig({ ampathEnabled: true });
+      config.sequenceDefinitions = [
+        {
+          vaccineConceptUuid: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          sequences: [{ sequenceNumber: 1, sequenceLabel: 'Dose-1' }],
+        },
+      ];
+      mockUseConfig.mockReturnValue(config);
+      vi.mocked(useImmunizations).mockReturnValue({
+        data: [
+          {
+            vaccineUuid: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            vaccineName: 'BCG',
+            existingDoses: [
+              {
+                immunizationObsUuid: 'prior-dose',
+                doseNumber: 1,
+                status,
+                expirationDate: '',
+                note: [],
+                nextDoseDate: '',
+                lotNumber: '',
+                manufacturer: '',
+                occurrenceDateTime: '2025-01-02',
+              },
+            ],
+          },
+        ],
+        error: undefined,
+        isLoading: false,
+        isValidating: false,
+        mutate: mockMutate,
+      });
+      render(<ImmunizationsForm {...testProps} />);
+      await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Bacillus Calmette–Guérin vaccine');
+      expect(screen.getByRole('combobox', { name: /Sequence/i })).toBeEnabled();
+      expect(Boolean(screen.queryByText(/already been recorded for this vaccine/))).toBe(status === 'completed');
+    },
+  );
 
   it('should support editing immunizations', async () => {
     const user = userEvent.setup();

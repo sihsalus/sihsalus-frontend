@@ -64,7 +64,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.64.1",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.16.13",
     "@types/lodash-es": "^4.17.12",
@@ -88,7 +88,7 @@
     "rxjs": "^7.8.2",
     "sass": "^1.105.1",
     "swr": "^2.5.1",
-    "turbo": "^2.11.7",
+    "turbo": "^2.11.9",
     "vite": "8.3.4",
     "vitest": "^5.0.5"
   }

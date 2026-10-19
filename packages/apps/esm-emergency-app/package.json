@@ -43,10 +43,10 @@
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.89.0",
+    "react-hook-form": "^7.90.0",
     "swr": "^2.5.1",
-    "uuid": "^14.0.2",
-    "zod": "^4.6.5"
+    "uuid": "^14.0.3",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

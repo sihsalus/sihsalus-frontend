@@ -40,7 +40,7 @@
   "dependencies": {
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21"
   },
@@ -59,7 +59,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@rspack/cli": "2.2.8",
+    "@rspack/cli": "2.2.9",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "vite": "8.3.4",

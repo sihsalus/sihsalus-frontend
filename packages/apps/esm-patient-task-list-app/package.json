@@ -39,8 +39,8 @@
     "@carbon/react": "^1.118.0",
     "@hookform/resolvers": "^5.9.1",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "react-hook-form": "^7.89.0",
-    "zod": "^4.6.5"
+    "react-hook-form": "^7.90.0",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -55,7 +55,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@rspack/cli": "2.2.8",
+    "@rspack/cli": "2.2.9",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "vite": "8.3.4",

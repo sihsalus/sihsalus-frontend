@@ -55,7 +55,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.64.1",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.16.18",
     "@types/react": "^18.3.21",

@@ -30,6 +30,7 @@ import { immunizationEditPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
 import ImmunizationEncounterRepairState from './immunization-encounter-repair-state.component';
 import styles from './immunizations-overview.scss';
+import { getLatestCompletedDose } from './utils';
 
 export interface ImmunizationsOverviewProps {
   basePath: string;
@@ -71,18 +72,20 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: 
   ];
 
   const tableRows = useMemo(() => {
-    return paginatedImmunizations?.map((immunization, index) => ({
-      ...immunization,
-      id: `${index}`,
-      vaccineName: immunization.vaccineName,
-      vaccinationDate:
-        immunization.existingDoses.length > 0
-          ? formatDate(parseDate(immunization.existingDoses[0].occurrenceDateTime), {
+    return paginatedImmunizations?.map((immunization, index) => {
+      const latestDose = getLatestCompletedDose(immunization.existingDoses);
+      return {
+        ...immunization,
+        id: `${index}`,
+        vaccineName: immunization.vaccineName,
+        vaccinationDate: latestDose
+          ? formatDate(parseDate(latestDose.occurrenceDateTime), {
               day: false,
               time: false,
             })
           : '--',
-    }));
+      };
+    });
   }, [paginatedImmunizations]);
 
   const content = isLoading ? (

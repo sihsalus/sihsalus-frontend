@@ -953,7 +953,7 @@ describe('AppointmentForm', () => {
     'off',
     'warn',
     'strict',
-  ] as const)('only lists providers enabled for the selected service category in %s mode', async (mode) => {
+  ] as const)('applies %s category validation to the provider selector', async (mode) => {
     const user = userEvent.setup();
     const providerAttributeTypeUuid = '3961cbdd-3240-4b70-99ca-5f63af488b15';
     const categoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
@@ -1010,8 +1010,88 @@ describe('AppointmentForm', () => {
     await selectLocationAndService(user);
     await enableResponsibleProvider(user);
     expect(screen.getByRole('option', { name: mockProviders.data[0].display })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: mockProviders.data[1].display })).not.toBeInTheDocument();
+    if (mode === 'strict') {
+      expect(screen.queryByRole('option', { name: mockProviders.data[1].display })).not.toBeInTheDocument();
+    } else {
+      expect(screen.getByRole('option', { name: mockProviders.data[1].display })).toBeInTheDocument();
+    }
   });
+
+  it.each(['off', 'warn', 'strict'] as const)(
+    'saves a profession-only service with its selected provider in %s mode',
+    async (mode) => {
+      const user = userEvent.setup();
+      mockUseConfig.mockReturnValue({
+        ...getDefaultsFromConfigSchema(configSchema),
+        appointmentTypes: ['Scheduled', 'WalkIn'],
+        providerSchedulingCategoryValidation: {
+          mode,
+          providerAttributeTypeUuid: providerCategoryAttributeUuid,
+        },
+      });
+      mockOpenmrsFetch.mockResolvedValue({
+        data: [{ ...mockUseAppointmentServiceData[0], speciality: {} }],
+      } as unknown as FetchResponse);
+      mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+      renderWithSwr(<AppointmentForm {...defaultProps} />);
+      await waitForLoadingToFinish();
+      await fillRequiredAppointmentFields(user);
+      expect(screen.queryByText('Scheduling category not confirmed')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+      await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledOnce());
+      expect(mockSaveAppointment.mock.calls[0][0].providers).toEqual([{ uuid: mockProviders.data[0].uuid }]);
+    },
+  );
+
+  it.each(['off', 'warn', 'strict'] as const)(
+    'handles an existing provider without a matching category in %s mode',
+    async (mode) => {
+      const user = userEvent.setup();
+      const appointment = makeEditableAppointment();
+      const legacyProvider = {
+        ...mockProviders.data[0],
+        uuid: appointment.providers[0].uuid,
+        attributes: [],
+      };
+      mockUseProviders.mockReturnValue({
+        providers: [legacyProvider],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+      });
+      mockUseConfig.mockReturnValue({
+        ...getDefaultsFromConfigSchema(configSchema),
+        appointmentTypes: ['Scheduled', 'WalkIn'],
+        providerSchedulingCategoryValidation: {
+          mode,
+          providerAttributeTypeUuid: providerCategoryAttributeUuid,
+        },
+      });
+      mockOpenmrsFetch.mockResolvedValue({
+        data: [{ ...appointment.service, location: appointment.location }],
+      } as unknown as FetchResponse);
+      mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+      renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+      await waitForLoadingToFinish();
+      if (mode === 'warn') {
+        expect(screen.getByText('Scheduling category not confirmed')).toBeInTheDocument();
+      } else {
+        expect(screen.queryByText('Scheduling category not confirmed')).not.toBeInTheDocument();
+      }
+      await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+      if (mode === 'strict') {
+        expect(await screen.findAllByText(/El personal de salud no está habilitado/)).not.toHaveLength(0);
+        expect(mockSaveAppointment).not.toHaveBeenCalled();
+      } else {
+        await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledOnce());
+        expect(mockSaveAppointment.mock.calls[0][0].providers).toEqual([{ uuid: legacyProvider.uuid }]);
+      }
+    },
+  );
 
   it('schedules an all-day appointment using the full selected day', async () => {
     const user = userEvent.setup();

@@ -31,11 +31,11 @@ describe('WHO 2007 school references', () => {
   });
 
   it('interpolates between monthly LMS rows without extrapolating outside the reference', () => {
-    expect(calculateLMSZScore(boys, 61.5, (boys[0].m + boys[1].m) / 2, true)).toBeCloseTo(0, 10);
-    for (const age of [60, 60.99, 228.01, 300, Number.NaN]) expect(calculateLMSZScore(boys, age, 16, true)).toBeNull();
+    expect(calculateLMSZScore(boys, 61.5, (boys[1].m + boys[2].m) / 2, true)).toBeCloseTo(0, 10);
+    for (const age of [59.99, 228.01, 300, Number.NaN]) expect(calculateLMSZScore(boys, age, 16, true)).toBeNull();
     for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY])
       expect(calculateLMSZScore(boys, 72, value, true)).toBeNull();
-    expect(calculateLMSZScore(boys, 228, boys[167].m, true)).toBeCloseTo(0, 10);
+    expect(calculateLMSZScore(boys, 228, boys[168].m, true)).toBeCloseTo(0, 10);
   });
 
   it.each([
@@ -50,18 +50,31 @@ describe('WHO 2007 school references', () => {
     [2.1, 'obesity'],
   ])('classifies school BMI z=%s using WHO school cutoffs', (z, code) => {
     const dataset = schoolChartData.bfa_b.datasets[DataSetLabels.y_5_19];
-    const row = boys[0];
+    const row = boys[1];
     expect(
       getGrowthChartInterpretation({
         category: 'bfa_b',
         xValue: 61,
         measurementValue: measurementAtZ(row, z),
-        startIndex: 61,
+        startIndex: 60,
         zScoreDatasetValues: dataset.zScoreDatasetValues,
         lmsReferences: boys,
       })?.code,
     ).toBe(code);
   });
+
+  it.each([60, 60.01, 60.5, 60.99, 61])(
+    'uses supplied WHO AnthroPlus rows throughout the fifth birthday transition: %s',
+    (age) => {
+      const lower = boys[Math.floor(age) - 60];
+      const upper = boys[Math.ceil(age) - 60];
+      const median = lower.m + (upper.m - lower.m) * (age - Math.floor(age));
+      expect(calculateLMSZScore(boys, age, median, true)).toBeCloseTo(0, 10);
+      expect(
+        calculateLMSZScore(height, age, height[0].m + (height[1].m - height[0].m) * (age - 60), false),
+      ).not.toBeNull();
+    },
+  );
 
   it('requires a shared encounter and valid weight and height for BMI', () => {
     const entry = {

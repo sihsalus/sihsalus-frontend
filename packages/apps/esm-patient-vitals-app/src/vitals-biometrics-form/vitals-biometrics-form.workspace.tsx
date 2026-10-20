@@ -181,6 +181,8 @@ export interface VitalsBiometricsSavedPayload {
 
 interface VitalsBiometricsWorkspaceOverrides extends ConditionalFieldOverrides {
   encounterTypeUuid?: string;
+  encounterRoleUuid?: string;
+  expectedVisitTypeUuid?: string;
   locationUuid?: string;
   patientUuid?: string;
   onVitalsSaved?: (payload: VitalsBiometricsSavedPayload) => Promise<void> | void;
@@ -415,6 +417,11 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const fieldOverrides: ConditionalFieldOverrides = workspaceOverrides;
   const workspaceProfile = workspaceOverrides.profile ?? 'default';
   const encounterTypeUuid = workspaceOverrides.encounterTypeUuid ?? config.vitals.encounterTypeUuid;
+  const encounterRoleUuid =
+    workspaceOverrides.encounterRoleUuid ??
+    (workspaceProfile === 'emergency-triage'
+      ? config.vitals.emergencyTriageEncounterRoleUuid
+      : config.vitals.encounterRoleUuid);
   const showGlasgowComaScale =
     !fieldOverrides.hideFields?.includes('glasgowComaScale') &&
     config.vitals.glasgowComaScale.enabled &&
@@ -638,12 +645,44 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       }
 
       const locationUuid = workspaceOverrides.locationUuid ?? currentVisit.location?.uuid;
+      if (
+        workspaceProfile === 'emergency-triage' &&
+        (!workspaceOverrides.expectedVisitTypeUuid ||
+          !workspaceOverrides.locationUuid ||
+          currentVisit.visitType?.uuid !== workspaceOverrides.expectedVisitTypeUuid ||
+          currentVisit.location?.uuid !== workspaceOverrides.locationUuid)
+      ) {
+        showSnackbar({
+          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t(
+            'emergencyTriageVisitRequired',
+            'Open the active emergency visit in the emergency UPSS before recording triage. Check the emergency workspace configuration if the problem persists.',
+          ),
+        });
+        return;
+      }
+
       if (!locationUuid) {
         showSnackbar({
           title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
           kind: 'error',
           isLowContrast: false,
           subtitle: t('noVisitLocation', 'Could not determine the active visit UPSS.'),
+        });
+        return;
+      }
+
+      if (!session?.currentProvider?.uuid || !encounterRoleUuid?.trim()) {
+        showSnackbar({
+          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t(
+            'vitalsProviderRequired',
+            'The responsible professional could not be identified. Check your clinical profile before saving.',
+          ),
         });
         return;
       }
@@ -655,7 +694,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         const encounter = buildVitalsEncounter({
           concepts: config.concepts,
           encounterDatetime: new Date(),
-          encounterRoleUuid: config.vitals.encounterRoleUuid,
+          encounterRoleUuid,
           encounterTypeUuid,
           locationUuid,
           patientUuid,
@@ -767,11 +806,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
-      config.vitals.encounterRoleUuid,
       currentVisit?.location?.uuid,
       currentVisit?.stopDatetime,
       currentVisit?.uuid,
+      currentVisit?.visitType?.uuid,
       encounterTypeUuid,
+      encounterRoleUuid,
       getGlasgowScore,
       getPatientReferenceRange,
       patientUuid,
@@ -780,6 +820,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       showMuac,
       t,
       workspaceOverrides,
+      workspaceProfile,
     ],
   );
 

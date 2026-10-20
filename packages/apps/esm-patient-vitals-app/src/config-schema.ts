@@ -92,13 +92,19 @@ export const configSchema = {
     },
     encounterTypeUuid: {
       _type: Type.UUID,
-      _default: '67a71486-1a54-468f-ac3e-7091a9a79584',
+      _default: '20d4a603-8472-484c-b2bf-b45bdecf6b4f',
+      _description: 'Encounter type for new longitudinal vitals and anthropometry records from the patient chart.',
     },
     encounterRoleUuid: {
       _type: Type.UUID,
-      _default: 'a0b03050-c99b-11e0-9572-0800200c9a66',
+      _default: 'bebe2266-abbb-4f3c-b28b-a5b47406fff5',
       _description:
-        'Encounter role used when attributing the session provider to a vitals encounter. Defaults to the OpenMRS "Unknown" encounter role.',
+        'Encounter role attributing the professional responsible for recording longitudinal vitals and anthropometry.',
+    },
+    emergencyTriageEncounterRoleUuid: {
+      _type: Type.UUID,
+      _default: 'bd16c32b-6784-45e6-9504-df1cfe0b62e5',
+      _description: 'Provider role for the emergency-triage workspace profile, independent of longitudinal vitals.',
     },
     vitalsOverdueThresholdHours: {
       _type: Type.Number,
@@ -356,6 +362,7 @@ export interface ConfigObject {
     useFormEngine: boolean;
     encounterTypeUuid: string;
     encounterRoleUuid: string;
+    emergencyTriageEncounterRoleUuid: string;
     vitalsOverdueThresholdHours: number;
     logo: {
       src: string;

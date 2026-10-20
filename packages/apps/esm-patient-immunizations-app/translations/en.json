@@ -1,4 +1,5 @@
 {
+  "clinicalProviderRequired": "A linked clinical provider is required to record an immunization.",
   "requiredFieldsHint": "Fields marked with * are required.",
   "vaccinationServiceUnavailable": "Vaccination is unavailable. Contact support before trying again.",
   "vaccinationSaveUnconfirmed": "The vaccination could not be confirmed as saved. Review the history before trying again.",
@@ -95,6 +96,7 @@
   "unknownVaccinationSaveError": "Unknown error while saving vaccination.",
   "unknownVaccine": "Unknown vaccine",
   "vaccination": "Vaccination",
+  "vaccinationDateRequired": "Enter the administration date for an administered vaccination.",
   "vaccinationDate": "Vaccination date",
   "vaccinationDateCannotBeBeforeBirthDate": "Vaccination date cannot precede birth date",
   "vaccinationDateCannotBeInTheFuture": "Vaccination date cannot be in the future",
@@ -104,5 +106,8 @@
   "vaccine": "Vaccine",
   "vaccineBatchInformation": "Vaccine Batch Information",
   "vaccineRequired": "Vaccine is required",
-  "viewingScheduleVersion": "viendo v{{version}}"
+  "viewingScheduleVersion": "viendo v{{version}}",
+  "registrationTimeAtSave": "The record date and time are assigned when you save, separately from the administration date.",
+  "unverifiedStatus": "Unverified status",
+  "immunizationStatusRequired": "Select an administration status before saving"
 }

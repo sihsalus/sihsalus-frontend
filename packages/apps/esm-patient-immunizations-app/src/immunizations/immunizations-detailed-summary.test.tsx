@@ -84,6 +84,7 @@ const mockImmunizationData = [
     existingDoses: [
       {
         immunizationObsUuid: '1',
+        status: 'completed' as const,
         occurrenceDateTime: '2018-11-20T00:00:00.000Z',
         doseNumber: 1,
         note: [],
@@ -285,6 +286,91 @@ describe('ImmunizationsDetailedSummary', () => {
     expect(screen.getByText(new RegExp(`last dose on ${formattedDate}, Primary Series`, 'i'))).toBeInTheDocument();
   });
 
+  it.each(['unverified', 'not-done', undefined] as const)(
+    'keeps the previous completed dose as the latest application when a later record has status %s',
+    async (status) => {
+      const completedDose = mockImmunizationData[0].existingDoses[0];
+      const laterDate = '2024-06-15T00:00:00.000Z';
+      mockUseImmunizations.mockReturnValue({
+        data: [
+          {
+            ...mockImmunizationData[0],
+            existingDoses: [
+              {
+                ...completedDose,
+                immunizationObsUuid: 'unconfirmed',
+                status,
+                occurrenceDateTime: laterDate,
+                doseNumber: 2,
+              },
+              completedDose,
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      const completedDate = formatDate(parseDate(completedDose.occurrenceDateTime), {
+        mode: 'standard',
+        noToday: true,
+        time: false,
+      });
+      const laterFormattedDate = formatDate(parseDate(laterDate), { mode: 'standard', noToday: true, time: false });
+      const summary = screen.getByRole('table', { name: 'immunizations summary' });
+      expect(within(summary).getByText(`Last dose on ${completedDate}, Primary Series`)).toBeInTheDocument();
+      expect(
+        within(summary).queryByText(new RegExp(`Last dose on ${laterFormattedDate}`, 'i')),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['unverified', 'not-done', undefined] as const)(
+    'keeps a record with status %s accessible without presenting a confirmed application',
+    async (status) => {
+      const user = userEvent.setup();
+      mockUseImmunizations.mockReturnValue({
+        data: [
+          {
+            ...mockImmunizationData[0],
+            existingDoses: [{ ...mockImmunizationData[0].existingDoses[0], status }],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      const summary = screen.getByRole('table', { name: 'immunizations summary' });
+      expect(within(summary).getByText('Polio')).toBeInTheDocument();
+      expect(within(summary).queryByText(/Last dose on/i)).not.toBeInTheDocument();
+      const vaccineRow = within(summary).getByRole('row', { name: /Polio/ });
+      await user.click(within(vaccineRow).getByRole('button', { expanded: false }));
+
+      const history = screen.getByRole('table', { name: 'immunization dose sequence' });
+      expect(
+        within(history).getByText(
+          status === 'not-done' ? /not administered|no aplicada/i : /unverified|sin verificar/i,
+        ),
+      ).toBeInTheDocument();
+      expect(within(history).queryByText(/^administered$|^aplicada$/i)).not.toBeInTheDocument();
+      expect(within(history).getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    },
+  );
+
   it.each(['fhir', 'ampath-form'] as const)(
     'shows the highest recorded dose for matching dates from %s, independently of response order',
     async (source) => {
@@ -318,6 +404,7 @@ describe('ImmunizationsDetailedSummary', () => {
                     value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' },
                   },
                   { concept: { uuid: concepts.vaccinationDate }, value: date },
+                  { concept: { uuid: concepts.status }, value: 'completed' },
                   { concept: { uuid: concepts.doseNumber }, value: doseNumber },
                 ],
               })),
@@ -492,6 +579,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '1',
+            status: 'completed' as const,
             occurrenceDateTime: '2018-11-20T00:00:00.000Z',
             doseNumber: 1,
             note: [],
@@ -509,6 +597,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '2',
+            status: 'completed' as const,
             occurrenceDateTime: '2020-05-15T00:00:00.000Z',
             doseNumber: 1,
             note: [],
@@ -548,6 +637,7 @@ describe('ImmunizationsDetailedSummary', () => {
       existingDoses: [
         {
           immunizationObsUuid: `${index}`,
+          status: 'completed' as const,
           occurrenceDateTime: `2020-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
           doseNumber: 1,
           note: [],
@@ -588,6 +678,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '1',
+            status: 'completed' as const,
             occurrenceDateTime: '2018-11-20T00:00:00.000Z',
             doseNumber: 1,
             note: [],
@@ -627,6 +718,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '1',
+            status: 'completed' as const,
             occurrenceDateTime: '2023-12-25T14:30:00.000Z',
             doseNumber: 1,
             note: [],

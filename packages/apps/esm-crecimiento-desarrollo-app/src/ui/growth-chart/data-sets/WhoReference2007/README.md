@@ -2,8 +2,9 @@
 
 Source: World Health Organization, retrieved 2026-09-23. The four JSON files retain
 only Month, L, M and S from the first worksheet of the official expanded tables.
-Each contains the 168 consecutive monthly rows from 61 through 228. No rows were
-invented for the interval between the fifth birthday and month 61.
+The 168 consecutive monthly rows from 61 through 228 remain unchanged. Each file
+now also includes month 60 from WHO’s official AnthroPlus implementation; the
+application does not extrapolate the printed tables backwards.
 
 | JSON             | Official spreadsheet                                                                                                                                                                   | SHA-256 of downloaded XLSX                                         |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -29,3 +30,23 @@ This is a read-only interpretation of a chart. Structured z-score/classification
 observations, their canonical concepts, backend validation and clinical acceptance
 remain tracked in [issue #58](https://github.com/sihsalus/sihsalus-frontend.tasktree/issues/58).
 The existing preschool reference data and calculations are unchanged.
+
+## Month 60 from the official WHO AnthroPlus implementation
+
+Retrieved 2026-10-19 at WHO commit
+[`7cfcdb39026e9a55de55732bc3cf14c82261bcf7`](https://github.com/WorldHealthOrganization/anthroplus/tree/7cfcdb39026e9a55de55732bc3cf14c82261bcf7).
+Only the month-60 row for each sex was added, with its original L, M and S values.
+The existing LMS interpolation now operates between supplied rows 60 and 61.
+WHO’s [release notes](https://github.com/WorldHealthOrganization/anthroplus/blob/7cfcdb39026e9a55de55732bc3cf14c82261bcf7/NEWS.md)
+state that version 1.0.0 added support for observations aged 60 months and above.
+The monthly XLSX downloads above omit this row; changing only the age threshold
+would still leave measurements between 60 and 61 months unrepresented.
+
+| Source                                                                                                                                                          | SHA-256 of the downloaded source                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [BMI](https://raw.githubusercontent.com/WorldHealthOrganization/anthroplus/7cfcdb39026e9a55de55732bc3cf14c82261bcf7/data-raw/growthstandards/bfawho2007.txt)    | `70ef3260df08e48ce560c28cff4e733db78fb952cbd881eba63c9d3a15f38a6a` |
+| [Height](https://raw.githubusercontent.com/WorldHealthOrganization/anthroplus/7cfcdb39026e9a55de55732bc3cf14c82261bcf7/data-raw/growthstandards/hfawho2007.txt) | `9ac02aa4908f8ec3c6ba2362a4c7e1356043408b2873548ca22eedc016c235ad` |
+
+Age selection and plotting both use exact age in WHO months (days / 30.4375).
+This chart remains a reference display requiring domain review; it writes no
+z-score, diagnosis or classification observation.

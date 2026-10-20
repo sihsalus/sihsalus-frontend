@@ -1,4 +1,5 @@
 {
+  "clinicalProviderRequired": "Se requiere un profesional clínico vinculado a la sesión para registrar una inmunización.",
   "requiredFieldsHint": "Los campos marcados con * son obligatorios.",
   "vaccinationServiceUnavailable": "El registro de vacunas no está disponible. Contacte a soporte antes de volver a intentarlo.",
   "vaccinationSaveUnconfirmed": "No se pudo confirmar el guardado de la vacuna. Revise el historial antes de volver a intentarlo.",
@@ -96,6 +97,7 @@
   "unknownVaccinationSaveError": "Error desconocido al guardar la vacunación.",
   "unknownVaccine": "Vacuna desconocida",
   "vaccination": "Vacunación",
+  "vaccinationDateRequired": "Ingrese la fecha de administración de la vacuna aplicada.",
   "vaccinationDate": "Fecha de vacunación",
   "vaccinationDateCannotBeBeforeBirthDate": "La fecha de vacunacion no puede ser anterior a la fecha de nacimiento",
   "vaccinationDateCannotBeInTheFuture": "La fecha de vacunacion no puede ser futura",
@@ -105,5 +107,8 @@
   "vaccine": "Vacuna",
   "vaccineBatchInformation": "Informacion del lote de vacuna",
   "vaccineRequired": "La vacuna es obligatoria",
-  "viewingScheduleVersion": "viendo v{{version}}"
+  "viewingScheduleVersion": "viendo v{{version}}",
+  "registrationTimeAtSave": "La fecha y hora del registro se asignan al guardar y se conservan separadas de la fecha de administración.",
+  "unverifiedStatus": "Estado no verificado",
+  "immunizationStatusRequired": "Seleccione un estado de administración antes de guardar"
 }

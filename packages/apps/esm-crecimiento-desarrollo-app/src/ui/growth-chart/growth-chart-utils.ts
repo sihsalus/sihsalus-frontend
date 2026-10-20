@@ -157,7 +157,7 @@ export function isMeasurementUsableForDataset(
 
   switch (dataset) {
     case DataSetLabels.y_5_19:
-      return ageValues.whoMonths >= 61 && ageValues.whoMonths <= 228;
+      return ageValues.whoMonths >= 60 && ageValues.whoMonths <= 228;
     case DataSetLabels.w_0_13:
       return ageValues.weeks >= 0 && ageValues.weeks <= 13;
     case DataSetLabels.y_0_2:
@@ -243,7 +243,7 @@ function selectMeasurementAxisDataset(
   );
 }
 
-function getAgeValues(date: Date | string, dateOfBirth: Date) {
+export function getAgeValues(date: Date | string, dateOfBirth: Date) {
   const measurementDate = new Date(date);
   const diff = measurementDate.getTime() - dateOfBirth.getTime();
 

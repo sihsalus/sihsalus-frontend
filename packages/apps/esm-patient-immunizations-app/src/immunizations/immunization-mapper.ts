@@ -5,7 +5,7 @@ import {
   type FHIRImmunizationResource,
   type Reference,
 } from '../types/fhir-immunization-domain';
-import { latestFirst } from './utils';
+import { latestFirst, readImmunizationStatus, requireWritableImmunizationStatus } from './utils';
 
 export const FHIR_NEXT_DOSE_DATE_EXTENSION_URL = 'http://hl7.eu/fhir/StructureDefinition/immunization-nextDoseDate';
 export const FHIR_MINSA_PROGRAM_CONTEXT_EXTENSION_URL =
@@ -47,7 +47,7 @@ const mapToImmunizationDoseFromResource = (immunizationResource: FHIRImmunizatio
     occurrenceDateTime,
     expirationDate,
     programContext,
-    status: immunizationResource.status === 'not-done' ? 'not-done' : 'completed',
+    status: readImmunizationStatus(immunizationResource.status),
     statusReason: immunizationResource.statusReason?.text,
     visitUuid: fromReference(immunizationResource.encounter) ?? undefined,
     locationUuid: fromReference(immunizationResource.location ?? null) ?? undefined,
@@ -80,6 +80,8 @@ export const mapFromFHIRImmunizationBundle = (
       .map((entry) => entry.resource);
   }
 
+  // Invalidated FHIR records are not administered doses in the active history.
+  immunizations = immunizations.filter((item) => item.status !== 'entered-in-error');
   if (!immunizations.length) {
     return [];
   }
@@ -137,7 +139,7 @@ export const mapToFHIRImmunizationResource = (
 ): FHIRImmunizationResource => {
   const resource: FHIRImmunizationResource = {
     resourceType: 'Immunization',
-    status: immunizationFormData.status ?? 'completed',
+    status: requireWritableImmunizationStatus(immunizationFormData.status),
     id: immunizationFormData.immunizationId,
     vaccineCode: {
       coding: [

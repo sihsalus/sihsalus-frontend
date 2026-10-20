@@ -192,8 +192,11 @@ export const configSchema = {
 
   adverseReactionReporting: {
     _type: Type.Object,
-    _description: 'Configuration for ESAVI/adverse vaccine reaction reporting as a normal OpenMRS encounter.',
+    _description: 'Clinical ESAVI recording with explicit visit and session provider; not official notification.',
     _default: {
+      formName: 'INMU-002-REPORTE ESAVI',
+      formVersion: '1.0.0',
+      encounterRoleUuid: 'e967b2f3-62d8-49df-a37a-e8467f29bc88',
       vaccineNameConceptUuid: 'f0000017-0000-4000-8000-000000000017',
       severityConceptUuid: 'f0000019-0000-4000-8000-000000000019',
       reactionDescriptionConceptUuid: 'f0000002-0000-4000-8000-000000000002',
@@ -1415,6 +1418,9 @@ export interface ConfigObject {
     adverseReactionForm: string;
   };
   adverseReactionReporting: {
+    formName: string;
+    formVersion: string;
+    encounterRoleUuid: string;
     vaccineNameConceptUuid: string;
     severityConceptUuid: string;
     reactionDescriptionConceptUuid: string;

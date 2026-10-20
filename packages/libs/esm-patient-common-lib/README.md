@@ -299,3 +299,12 @@ before enabling a save. Its date picker and submit validation reject personal
 onset dates before the patient's birth calendar day, including edits; the birth
 day itself is valid. Existing family antecedents retain their exception. Missing
 birth dates do not invent a lower bound. CRED and Maternal Health share this rule.
+
+## Published REST forms
+
+`resolvePublishedForm` shares the strict REST Form resolver formerly maintained by
+CRED. It verifies an explicit UUID or a unique exact search match, published and
+retired flags, and optional exact name/version. An incomplete search fails closed.
+It never substitutes a different schema for historical editing. The form engine's
+local JSON registry loader serves a different contract and does not verify REST
+metadata. CRED and immunization consumers retain their own clinical defaults.

@@ -6,6 +6,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Immunization } from '../types';
 import styles from './immunization-history-card.scss';
+import { getLatestCompletedDose } from './utils';
 
 interface ImmunizationHistoryCardProps {
   error?: Error | null;
@@ -50,7 +51,7 @@ const ImmunizationHistoryCard: React.FC<ImmunizationHistoryCardProps> = ({ error
 
   const tableRows = useMemo(() => {
     return (sortedImmunizations || []).map((immunization) => {
-      const latestDose = immunization.existingDoses?.[immunization.existingDoses.length - 1];
+      const latestDose = getLatestCompletedDose(immunization.existingDoses);
       return {
         id: immunization.vaccineUuid,
         vaccine: immunization.vaccineName,
@@ -58,6 +59,13 @@ const ImmunizationHistoryCard: React.FC<ImmunizationHistoryCardProps> = ({ error
         doses: immunization.existingDoses.map((dose) => (
           <div key={dose.immunizationObsUuid} className={styles.doseCell}>
             <div className={styles.doseLabel}>{t('doseNumber', 'Dose {{number}}', { number: dose.doseNumber })}</div>
+            {dose.status !== 'completed' && (
+              <div>
+                {dose.status === 'not-done'
+                  ? t('notAdministered', 'No aplicada / diferida')
+                  : t('unverifiedStatus', 'Unverified status')}
+              </div>
+            )}
             {dose.occurrenceDateTime && (
               <div className={styles.doseDate}>
                 {formatDate(parseDate(dose.occurrenceDateTime), {

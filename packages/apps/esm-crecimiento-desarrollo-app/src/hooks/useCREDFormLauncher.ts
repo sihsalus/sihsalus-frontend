@@ -1,26 +1,17 @@
-import { launchWorkspace2, openmrsFetch, restBaseUrl, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
-import { type Form, type FormEncounterResource, formEntryWorkspace } from '../types';
+import { resolvePublishedForm } from '@openmrs/esm-patient-common-lib';
+import { type Form, formEntryWorkspace } from '../types';
 
 type CREDFormKey = keyof ConfigObject['formsList'];
 
 type CREDFormFallback = {
   display: string;
   identifier: string;
-};
-
-type OpenmrsFormResponse = Partial<Omit<Form, 'resources'>> & {
-  uuid: string;
-  resources?: Array<FormEncounterResource>;
-};
-
-type OpenmrsFormSearchResponse = {
-  results?: Array<OpenmrsFormResponse>;
-  links?: Array<{ rel?: string }>;
 };
 
 export const childNutritionFormFallbacks = {
@@ -198,10 +189,6 @@ const credFormFallbacks = {
   ...neonatalFormFallbacks,
 } as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
 
-const formRepresentation =
-  '(uuid,name,display,version,published,retired,resources:(uuid,name,dataType,valueReference))';
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export function getCREDFormIdentifier(
   formsList: Partial<ConfigObject['formsList']> | undefined,
   formKey: CREDFormKey,
@@ -211,41 +198,11 @@ export function getCREDFormIdentifier(
   return configuredIdentifier || fallback?.identifier;
 }
 
-export async function resolveCREDForm(identifier: string, fallbackDisplay: string): Promise<Form> {
-  const normalizedIdentifier = identifier.trim();
-
-  if (!normalizedIdentifier) {
-    throw new Error('CRED form identifier is empty');
-  }
-
-  if (uuidPattern.test(normalizedIdentifier)) {
-    const response = await openmrsFetch<OpenmrsFormResponse>(
-      `${restBaseUrl}/form/${normalizedIdentifier}?v=custom:${formRepresentation}`,
-      { cache: 'no-store' },
-    );
-    if (!isPublishedForm(response.data) || normalizeKey(response.data.uuid) !== normalizeKey(normalizedIdentifier)) {
-      throw new Error('The configured CRED form is unavailable');
-    }
-    return normalizeForm(response.data, fallbackDisplay);
-  }
-
-  const searchParams = new URLSearchParams();
-  searchParams.set('q', normalizedIdentifier);
-  searchParams.set('v', `custom:${formRepresentation}`);
-
-  const response = await openmrsFetch<OpenmrsFormSearchResponse>(`${restBaseUrl}/form?${searchParams.toString()}`, {
-    cache: 'no-store',
+export function resolveCREDForm(identifier: string, fallbackDisplay: string): Promise<Form> {
+  return resolvePublishedForm(identifier, {
+    fallbackDisplay,
+    formCategory: 'CRED',
   });
-  if (!Array.isArray(response.data?.results) || response.data.links?.some(({ rel }) => rel === 'next')) {
-    throw new Error('The configured CRED form search could not be verified');
-  }
-  const form = findBestFormMatch(response.data.results ?? [], normalizedIdentifier);
-
-  if (!form?.uuid) {
-    throw new Error(`No published CRED form found for "${normalizedIdentifier}"`);
-  }
-
-  return normalizeForm(form, fallbackDisplay);
 }
 
 export function useCREDFormLauncher(
@@ -319,38 +276,5 @@ export function useCREDFormLauncher(
     formIdentifier,
     isLoading: Boolean(formIdentifier && isLoading),
     launchForm,
-  };
-}
-
-function normalizeKey(value?: string) {
-  return value?.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
-}
-
-function findBestFormMatch(forms: Array<OpenmrsFormResponse>, identifier: string) {
-  const normalizedIdentifier = normalizeKey(identifier);
-  const matches = forms.filter(
-    (form) =>
-      isPublishedForm(form) &&
-      [form.uuid, form.name, form.display].some((value) => normalizeKey(value) === normalizedIdentifier),
-  );
-  return matches.length === 1 ? matches[0] : undefined;
-}
-
-function isPublishedForm(form: OpenmrsFormResponse | undefined): boolean {
-  return Boolean(form?.uuid && form.published === true && form.retired === false);
-}
-
-function normalizeForm(form: OpenmrsFormResponse, fallbackDisplay: string): Form {
-  const display = form.display ?? form.name ?? fallbackDisplay;
-
-  return {
-    uuid: form.uuid,
-    name: form.name ?? display,
-    display,
-    version: form.version ?? '1.0',
-    published: form.published ?? true,
-    retired: form.retired ?? false,
-    resources: form.resources ?? [],
-    formCategory: form.formCategory ?? 'CRED',
   };
 }

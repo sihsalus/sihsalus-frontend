@@ -22,9 +22,19 @@ introduce clinical thresholds or approve the ranges supplied by the backend.
   its HTTP `Date` header to atomically canonicalize only that datetime before
   the first POST. A missing or contradictory authority leaves the item queued
   and unattempted.
-- The session provider is attributed only when both provider and configured
-  encounter-role UUIDs are available. The visit location always wins over the
+- New chart records use encounter type `20d4a603-8472-484c-b2bf-b45bdecf6b4f`
+  and provider role `bebe2266-abbb-4f3c-b28b-a5b47406fff5`, provisioned by the
+  [content contract](https://github.com/sihsalus/sihsalus-content/blob/main/docs/contracts/chart-vitals-encounter-contract.md).
+  A session provider and a configured role are required before queueing a new
+  record. The `emergency-triage` profile uses its separate configured role
+  `bd16c32b-6784-45e6-9504-df1cfe0b62e5`; callers may pass explicit encounter
+  type and role overrides. The visit location always wins over the
   login location unless a workspace supplies an explicit clinical override.
+- The `emergency-triage` caller must supply its configured `expectedVisitTypeUuid`
+  and `locationUuid`. Before queueing, the active visit must match that type and
+  UPSS; missing context, an ambulatory visit, or another UPSS blocks submission
+  with an actionable error. Both emergency launchers supply these values from
+  the emergency app configuration; the shared form has no duplicate UUID defaults.
 - A fresh network-only patient read blocks writes for a deceased patient.
   Synchronization repeats that guard and receives the queue cancellation
   signal.
@@ -82,6 +92,14 @@ to hide a failed item.
 
 ## Known limits
 
+- Historical observations remain readable by concept, including encounters
+  using the mixed `Triaje` type and `Unknown` role. Existing queued intents retain
+  their original type and provider attribution; changing defaults does not
+  rewrite history or pending clinical payloads.
+- Appointment outpatient triage still uses its historical encounter type through
+  a workspace override. Its classification, location and role contract needs a
+  separate domain decision; it must not be remapped to emergency triage merely
+  because it shares the measurement component.
 - The existing automated offline-laptop gate does not yet exercise vitals or
   triage; coordinated DEV/QLTY validation must use a synthetic patient.
 - An ambiguous attempted write that cannot be matched exactly requires manual

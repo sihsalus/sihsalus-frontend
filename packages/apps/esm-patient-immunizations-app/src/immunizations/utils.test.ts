@@ -1,5 +1,5 @@
 import type { ExistingDoses } from '../types';
-import { latestFirst } from './utils';
+import { latestFirst, getLatestCompletedDose } from './utils';
 
 const dose = (overrides: Partial<ExistingDoses>): ExistingDoses =>
   ({
@@ -70,3 +70,13 @@ describe('latestFirst', () => {
     expect(sorted.map((item) => item.immunizationObsUuid)).toEqual(['dated', 'undated']);
   });
 });
+
+it.each(['', 'invalid-date'])(
+  'keeps undated completed events out of the latest administration summary (%s)',
+  (occurrenceDateTime) => {
+    const dated = dose({ status: 'completed', doseNumber: 1 });
+    const undated = dose({ status: 'completed', occurrenceDateTime, doseNumber: 12 });
+    expect(getLatestCompletedDose([undated, dated])).toBe(dated);
+    expect(getLatestCompletedDose([undated])).toBeUndefined();
+  },
+);

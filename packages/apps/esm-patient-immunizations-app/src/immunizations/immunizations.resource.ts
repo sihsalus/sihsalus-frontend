@@ -5,6 +5,7 @@ import {
   type FhirImmunizationConceptMappings,
 } from '../types/fhir-immunization-domain';
 import type { AmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
+import { reconcileAmpathImmunizationObs, type AmpathImmunizationEncounter } from './ampath-form-immunization-mapper';
 
 type FhirConceptMappings = Partial<FhirImmunizationConceptMappings> | undefined;
 
@@ -136,19 +137,32 @@ export function savePatientImmunization(
   });
 }
 
-export function savePatientImmunizationViaAmpathForm(
+export async function savePatientImmunizationViaAmpathForm(
   patientImmunization: AmpathImmunizationEncounterPayload,
   encounterUuid: string,
   abortController: AbortController,
+  managedConcepts: string[] = [],
 ) {
   const endpoint = encounterUuid ? `${restBaseUrl}/encounter/${encounterUuid}` : `${restBaseUrl}/encounter`;
+  let body: AmpathImmunizationEncounterPayload | Pick<AmpathImmunizationEncounterPayload, 'obs'> = patientImmunization;
+  if (encounterUuid) {
+    const { data } = await openmrsFetch<AmpathImmunizationEncounter>(
+      `${endpoint}?v=custom:(uuid,patient:(uuid),obs:(uuid,concept:(uuid)))`,
+      { signal: abortController.signal, cache: 'no-store' },
+    );
+    if (data?.uuid !== encounterUuid || data.patient?.uuid !== patientImmunization.patient || !Array.isArray(data.obs))
+      throw new Error('The immunization encounter could not be verified');
+    body = {
+      obs: reconcileAmpathImmunizationObs(patientImmunization.obs, data.obs, managedConcepts),
+    };
+  }
 
   return openmrsFetch(endpoint, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
-    body: patientImmunization,
+    body,
     signal: abortController.signal,
   });
 }

@@ -6,10 +6,61 @@ import {
   mapToAmpathImmunizationEncounterPayload,
   mergeImmunizationGroups,
 } from './ampath-form-immunization-mapper';
+import { mapToFHIRImmunizationResource } from './immunization-mapper';
 
 const config = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
 describe('AMPATH immunization form mapper', () => {
+  it.each([undefined, 'unverified', 'unknown'])(
+    'rejects status %s in both transports before constructing a writable payload',
+    (status) => {
+      const immunization: ImmunizationFormData = {
+        patientUuid: 'synthetic-patient',
+        vaccineUuid: 'synthetic-vaccine',
+        vaccineName: 'Synthetic vaccine',
+        vaccinationDate: '2026-05-28',
+        doseNumber: 1,
+        status: 'completed',
+        note: '',
+        expirationDate: '',
+        lotNumber: '',
+        nextDoseDate: '',
+        manufacturer: '',
+      };
+      // Simulate an untrusted runtime value beyond the writable TypeScript union.
+      Reflect.set(immunization, 'status', status);
+      expect(() => mapToAmpathImmunizationEncounterPayload(immunization, config)).toThrow(/explicit.*status/i);
+      expect(() => mapToFHIRImmunizationResource(immunization, 'visit', 'location', 'provider')).toThrow(
+        /explicit.*status/i,
+      );
+    },
+  );
+
+  it('retains a historical encounter with the old appetite observation as unverified', () => {
+    const encounter = {
+      uuid: 'synthetic-historical-encounter',
+      encounterDatetime: '2026-05-28T10:30:00.000Z',
+      obs: [
+        {
+          concept: { uuid: config.ampathFormPersistence.concepts.vaccineUuid },
+          value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' },
+        },
+        { concept: { uuid: config.ampathFormPersistence.concepts.doseNumber }, value: 1 },
+        { concept: { uuid: 'f0000182-0000-4000-8000-000000000182' }, value: 'not-done' },
+      ],
+    };
+    const original = JSON.stringify(encounter);
+    const groups = mapFromAmpathImmunizationEncounters([encounter], config);
+    expect(groups[0].existingDoses).toEqual([
+      expect.objectContaining({
+        immunizationObsUuid: encounter.uuid,
+        doseNumber: 1,
+        status: 'unverified',
+      }),
+    ]);
+    expect(JSON.stringify(encounter)).toBe(original);
+  });
+
   it('maps the custom vaccination UI model to an OpenMRS encounter payload', () => {
     const immunization: ImmunizationFormData = {
       patientUuid: 'patient-uuid',
@@ -28,15 +79,25 @@ describe('AMPATH immunization form mapper', () => {
       manufacturer: 'MINSA',
     };
 
-    const payload = mapToAmpathImmunizationEncounterPayload(immunization, config, 'visit-uuid', 'location-uuid');
+    const payload = mapToAmpathImmunizationEncounterPayload(immunization, config, {
+      visitUuid: 'visit-uuid',
+      locationUuid: 'location-uuid',
+      formUuid: 'persisted-form-uuid',
+      providerUuid: 'provider-uuid',
+      recordedAt: '2026-05-28T15:30:00.000Z',
+    });
 
     expect(payload).toMatchObject({
       patient: 'patient-uuid',
       encounterType: config.ampathFormPersistence.encounterTypeUuid,
-      form: config.ampathFormPersistence.formUuid,
+      form: 'persisted-form-uuid',
+      encounterProviders: [
+        { provider: 'provider-uuid', encounterRole: config.ampathFormPersistence.encounterRoleUuid },
+        { provider: 'provider-uuid', encounterRole: config.unknownEncounterRoleUuid },
+      ],
       visit: 'visit-uuid',
       location: 'location-uuid',
-      encounterDatetime: '2026-05-28T00:00:00.000Z',
+      encounterDatetime: '2026-05-28T15:30:00.000Z',
     });
     expect(payload.obs).toEqual(
       expect.arrayContaining([
@@ -46,38 +107,110 @@ describe('AMPATH immunization form mapper', () => {
         { concept: config.ampathFormPersistence.concepts.lotNumber, value: 'LOT-1' },
         { concept: config.ampathFormPersistence.concepts.expirationDate, value: '2026-12-31' },
         { concept: config.ampathFormPersistence.concepts.nextDoseDate, value: '2026-06-28' },
+        { concept: 'af2ec074-87e5-4651-8e7f-5578bd111cf9', value: 'completed' },
+        { concept: '5c45d979-90aa-4f27-94de-0fc76c3e4d7d', value: 'routine' },
       ]),
     );
+    const update = mapToAmpathImmunizationEncounterPayload(immunization, config);
+    expect(update).not.toHaveProperty('form');
+    expect(update).not.toHaveProperty('encounterProviders');
+    expect(update).not.toHaveProperty('encounterDatetime');
+    expect(update).not.toHaveProperty('visit');
+    expect(update).not.toHaveProperty('location');
   });
 
-  it('adds the session provider with the Unknown role to new encounters', () => {
-    const immunization: ImmunizationFormData = {
-      patientUuid: 'patient-uuid',
-      vaccineName: 'BCG',
-      vaccineUuid: 'vaccine-uuid',
-      vaccinationDate: '2026-05-28T00:00:00.000Z',
+  it('preserves an historical administration date separately from the current visit registration time', () => {
+    const immunization = {
+      patientUuid: 'synthetic-patient',
+      vaccineUuid: 'vaccine',
+      vaccineName: 'Synthetic vaccine',
+      vaccinationDate: '2026-05-01T00:00:00.000Z',
       doseNumber: 1,
+      status: 'completed' as const,
       note: '',
       expirationDate: '',
       lotNumber: '',
       nextDoseDate: '',
       manufacturer: '',
     };
+    const context = {
+      formUuid: 'form',
+      visitUuid: 'current-visit',
+      locationUuid: 'location',
+      providerUuid: 'provider',
+      recordedAt: '2026-05-28T16:30:00.000Z',
+    };
+    const payload = mapToAmpathImmunizationEncounterPayload(immunization, config, context);
+    // Synthetic visit starts today at 10:00 Peru time; midnight would be outside it.
+    expect(new Date(payload.encounterDatetime).getTime()).toBeGreaterThan(new Date('2026-05-28T15:00:00Z').getTime());
+    expect(payload.obs).toContainEqual({ concept: 'f1410000-0000-4000-8000-000000001410', value: '2026-05-01' });
+    const deferred = mapToAmpathImmunizationEncounterPayload({ ...immunization, status: 'not-done' }, config, context);
+    expect(deferred.obs.some((obs) => 'concept' in obs && obs.concept === 'f1410000-0000-4000-8000-000000001410')).toBe(
+      false,
+    );
+    expect(deferred.encounterDatetime).toBe(context.recordedAt);
+  });
 
-    const withProvider = mapToAmpathImmunizationEncounterPayload(immunization, config, 'visit-uuid', 'location-uuid', {
-      providerUuid: 'provider-uuid',
-      encounterRoleUuid: config.unknownEncounterRoleUuid,
+  it('deduplicates matching registration and FHIR provider roles without changing edits', () => {
+    const matchingConfig = { ...config, unknownEncounterRoleUuid: config.ampathFormPersistence.encounterRoleUuid };
+    const immunization: ImmunizationFormData = {
+      patientUuid: 'synthetic-patient',
+      vaccineUuid: 'synthetic-vaccine',
+      vaccineName: 'Synthetic vaccine',
+      vaccinationDate: '2026-05-28',
+      doseNumber: 1,
+      status: 'completed',
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    };
+    const payload = mapToAmpathImmunizationEncounterPayload(immunization, matchingConfig, {
+      formUuid: 'synthetic-form',
+      visitUuid: 'synthetic-visit',
+      locationUuid: 'synthetic-location',
+      providerUuid: 'synthetic-provider',
+      recordedAt: '2026-05-28T15:30:00Z',
     });
-    expect(withProvider.encounterProviders).toEqual([
-      { provider: 'provider-uuid', encounterRole: config.unknownEncounterRoleUuid },
+    expect(payload.encounterProviders).toEqual([
+      { provider: 'synthetic-provider', encounterRole: matchingConfig.unknownEncounterRoleUuid },
     ]);
+    expect(mapToAmpathImmunizationEncounterPayload(immunization, matchingConfig)).not.toHaveProperty(
+      'encounterProviders',
+    );
+  });
 
-    const withoutProvider = mapToAmpathImmunizationEncounterPayload(immunization, config, 'visit-uuid', 'location-uuid', {
-      providerUuid: undefined,
-      encounterRoleUuid: config.unknownEncounterRoleUuid,
-    });
-    expect(withoutProvider).not.toHaveProperty('encounterProviders');
-    expect(mapToAmpathImmunizationEncounterPayload(immunization, config)).not.toHaveProperty('encounterProviders');
+  it.each([
+    { form: { name: config.ampathFormPersistence.formName, version: '1.1.0' }, expected: '' },
+    { form: undefined, expected: '' },
+    { form: { name: 'Unverified form', version: '1.0.0' }, expected: '' },
+    { form: { name: config.ampathFormPersistence.formName, version: '1.0.0' }, expected: '2026-05-28T15:30:00Z' },
+  ])('uses encounter dates only for the verified historical administration contract: $form', ({ form, expected }) => {
+    const concepts = config.ampathFormPersistence.concepts;
+    const encounter = {
+      uuid: 'synthetic-encounter',
+      form,
+      encounterDatetime: '2026-05-28T15:30:00Z',
+      obs: [
+        { concept: { uuid: concepts.vaccineUuid }, value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' } },
+        { concept: { uuid: concepts.status }, value: 'completed' },
+      ],
+    };
+    const [group] = mapFromAmpathImmunizationEncounters([encounter], config);
+    expect(group.existingDoses[0]).toMatchObject({ status: 'completed', occurrenceDateTime: expected });
+    const dated = {
+      ...encounter,
+      obs: [...encounter.obs, { concept: { uuid: concepts.vaccinationDate }, value: '2026-05-01' }],
+    };
+    expect(mapFromAmpathImmunizationEncounters([dated], config)[0].existingDoses[0].occurrenceDateTime).toBe(
+      '2026-05-01',
+    );
+    const deferred = {
+      ...encounter,
+      obs: encounter.obs.map((obs) => (obs.concept.uuid === concepts.status ? { ...obs, value: 'not-done' } : obs)),
+    };
+    expect(mapFromAmpathImmunizationEncounters([deferred], config)[0].existingDoses[0].occurrenceDateTime).toBe('');
   });
 
   it('lists the highest dose first when several doses share the same date', () => {
@@ -120,8 +253,9 @@ describe('AMPATH immunization form mapper', () => {
               value: '2026-05-28T00:00:00.000Z',
             },
             { concept: { uuid: config.ampathFormPersistence.concepts.doseNumber }, value: 1 },
-            { concept: { uuid: config.ampathFormPersistence.concepts.status }, value: 'completed' },
-            { concept: { uuid: config.ampathFormPersistence.concepts.programContext }, value: 'routine' },
+            { concept: { uuid: 'af2ec074-87e5-4651-8e7f-5578bd111cf9' }, value: 'not-done' },
+            { concept: { uuid: '9dab3f0d-b9da-45c3-beea-5ec3182e53be' }, value: 'Diferida por evaluación clínica' },
+            { concept: { uuid: '5c45d979-90aa-4f27-94de-0fc76c3e4d7d' }, value: 'special' },
           ],
         },
       ],
@@ -138,7 +272,10 @@ describe('AMPATH immunization form mapper', () => {
           immunizationObsUuid: 'encounter-uuid',
           locationUuid: 'historical-location-uuid',
           doseNumber: 1,
-          occurrenceDateTime: '2026-05-28T00:00:00.000Z',
+          occurrenceDateTime: '',
+          status: 'not-done',
+          statusReason: 'Diferida por evaluación clínica',
+          programContext: 'special',
         },
       ],
     });

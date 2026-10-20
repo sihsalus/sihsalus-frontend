@@ -28,6 +28,7 @@ import React, { type ComponentProps, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { immunizationEditPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
+import ImmunizationEncounterRepairState from './immunization-encounter-repair-state.component';
 import styles from './immunizations-overview.scss';
 import { getLatestCompletedDose } from './utils';
 
@@ -47,7 +48,14 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: 
   const urlLabel = t('seeAll', 'See all');
   const pageUrl = globalThis.spaBase + basePath + '/immunizations';
 
-  const { data: immunizations, error, isLoading, isValidating } = useImmunizations(patientUuid);
+  const {
+    data: immunizations,
+    error,
+    isLoading,
+    isValidating,
+    repairableEncounterUuid,
+    repairEncounterProvider,
+  } = useImmunizations(patientUuid);
   const { results: paginatedImmunizations, goTo, currentPage } = usePagination(immunizations ?? [], immunizationsCount);
 
   const launchImmunizationsForm = React.useCallback(() => launchWorkspace2('vacunacion-form-workspace'), []);
@@ -82,6 +90,8 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: 
 
   const content = isLoading ? (
     <DataTableSkeleton role="progressbar" />
+  ) : error && repairableEncounterUuid ? (
+    <ImmunizationEncounterRepairState headerTitle={headerTitle} onRepair={repairEncounterProvider} />
   ) : error ? (
     <ErrorState error={error} headerTitle={headerTitle} />
   ) : immunizations?.length ? (

@@ -5,7 +5,9 @@ import {
   useConfig,
   useFhirFetchAll,
   useOpenmrsFetchAll,
+  useSession,
 } from '@openmrs/esm-framework';
+import { useCallback, useMemo } from 'react';
 import { type ImmunizationConfigObject } from '../config-schema';
 import { getAmpathImmunizationFormPersistence } from '../immunizations/ampath-form-immunization-config';
 import {
@@ -14,18 +16,26 @@ import {
   mergeImmunizationGroups,
 } from '../immunizations/ampath-form-immunization-mapper';
 import { getFhirImmunizationConceptMappings } from '../immunizations/fhir-immunization-config';
+import {
+  addEncounterProvider,
+  getRepairableEncounterUuid,
+  getUnknownEncounterRoleUuid,
+} from '../immunizations/immunization-encounter-provider.resource';
 import { mapFromFHIRImmunizationBundle } from '../immunizations/immunization-mapper';
 import { getImmunizationSaveErrorDetails } from '../immunizations/immunizations.resource';
 import { type FHIRImmunizationResource } from '../types/fhir-immunization-domain';
 
 export function useImmunizations(patientUuid: string) {
   const config = useConfig<ImmunizationConfigObject>();
+  const session = useSession();
+  const providerUuid = session?.currentProvider?.uuid;
+  const unknownEncounterRoleUuid = getUnknownEncounterRoleUuid(config);
   const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const ampathPersistence = getAmpathImmunizationFormPersistence(config);
   const immunizationsUrl = `${fhirBaseUrl}/Immunization?patient=${patientUuid}`;
   const ampathImmunizationsUrl =
     patientUuid && ampathPersistence.enabled
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${ampathPersistence.encounterTypeUuid}&v=custom:(uuid,encounterDatetime,visit:(uuid),location:(uuid),obs:(uuid,concept:(uuid,display),value:(uuid,display,name)))&limit=100`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${ampathPersistence.encounterTypeUuid}&v=custom:(uuid,encounterDatetime,form:(name,version),visit:(uuid),location:(uuid),obs:(uuid,concept:(uuid,display),value:(uuid,display,name)))&limit=100`
       : null;
 
   const { data, error, isLoading, isValidating, mutate } = useFhirFetchAll<FHIRImmunizationResource>(immunizationsUrl);
@@ -49,14 +59,33 @@ export function useImmunizations(patientUuid: string) {
   }
   const existingImmunizations = mergeImmunizationGroups(fhirImmunizations, ampathImmunizations);
 
+  const mutateAll = useCallback(async () => {
+    await Promise.all([mutate(), mutateAmpath()]);
+  }, [mutate, mutateAmpath]);
+
+  // FHIR2 refuses the whole list when one vaccination encounter has no
+  // provider with the "Unknown" role; its diagnostics name that encounter.
+  const repairableEncounterUuid = useMemo(
+    () => (shouldUseAmpathFallback ? null : getRepairableEncounterUuid(error)),
+    [error, shouldUseAmpathFallback],
+  );
+
+  const repairEncounterProvider = useCallback(async () => {
+    if (!repairableEncounterUuid || !providerUuid) {
+      return;
+    }
+    await addEncounterProvider(repairableEncounterUuid, providerUuid, unknownEncounterRoleUuid);
+    await mutateAll();
+  }, [mutateAll, providerUuid, repairableEncounterUuid, unknownEncounterRoleUuid]);
+
   return {
     data: existingImmunizations,
     error: (shouldUseAmpathFallback ? null : error) ?? ampathError ?? mappingError,
     isLoading: isLoading || isLoadingAmpath,
     isValidating: isValidating || isValidatingAmpath,
-    mutate: async () => {
-      await Promise.all([mutate(), mutateAmpath()]);
-    },
+    mutate: mutateAll,
+    repairableEncounterUuid,
+    repairEncounterProvider: repairableEncounterUuid && providerUuid ? repairEncounterProvider : null,
   };
 }
 

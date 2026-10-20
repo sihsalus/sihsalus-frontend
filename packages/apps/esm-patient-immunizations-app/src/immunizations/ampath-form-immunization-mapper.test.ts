@@ -91,7 +91,10 @@ describe('AMPATH immunization form mapper', () => {
       patient: 'patient-uuid',
       encounterType: config.ampathFormPersistence.encounterTypeUuid,
       form: 'persisted-form-uuid',
-      encounterProviders: [{ provider: 'provider-uuid', encounterRole: '738ba7c1-354f-47f8-b6d4-9d705ce05731' }],
+      encounterProviders: [
+        { provider: 'provider-uuid', encounterRole: config.ampathFormPersistence.encounterRoleUuid },
+        { provider: 'provider-uuid', encounterRole: config.unknownEncounterRoleUuid },
+      ],
       visit: 'visit-uuid',
       location: 'location-uuid',
       encounterDatetime: '2026-05-28T15:30:00.000Z',
@@ -148,6 +151,90 @@ describe('AMPATH immunization form mapper', () => {
     expect(deferred.encounterDatetime).toBe(context.recordedAt);
   });
 
+  it('deduplicates matching registration and FHIR provider roles without changing edits', () => {
+    const matchingConfig = { ...config, unknownEncounterRoleUuid: config.ampathFormPersistence.encounterRoleUuid };
+    const immunization: ImmunizationFormData = {
+      patientUuid: 'synthetic-patient',
+      vaccineUuid: 'synthetic-vaccine',
+      vaccineName: 'Synthetic vaccine',
+      vaccinationDate: '2026-05-28',
+      doseNumber: 1,
+      status: 'completed',
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    };
+    const payload = mapToAmpathImmunizationEncounterPayload(immunization, matchingConfig, {
+      formUuid: 'synthetic-form',
+      visitUuid: 'synthetic-visit',
+      locationUuid: 'synthetic-location',
+      providerUuid: 'synthetic-provider',
+      recordedAt: '2026-05-28T15:30:00Z',
+    });
+    expect(payload.encounterProviders).toEqual([
+      { provider: 'synthetic-provider', encounterRole: matchingConfig.unknownEncounterRoleUuid },
+    ]);
+    expect(mapToAmpathImmunizationEncounterPayload(immunization, matchingConfig)).not.toHaveProperty(
+      'encounterProviders',
+    );
+  });
+
+  it.each([
+    { form: { name: config.ampathFormPersistence.formName, version: '1.1.0' }, expected: '' },
+    { form: undefined, expected: '' },
+    { form: { name: 'Unverified form', version: '1.0.0' }, expected: '' },
+    { form: { name: config.ampathFormPersistence.formName, version: '1.0.0' }, expected: '2026-05-28T15:30:00Z' },
+  ])('uses encounter dates only for the verified historical administration contract: $form', ({ form, expected }) => {
+    const concepts = config.ampathFormPersistence.concepts;
+    const encounter = {
+      uuid: 'synthetic-encounter',
+      form,
+      encounterDatetime: '2026-05-28T15:30:00Z',
+      obs: [
+        { concept: { uuid: concepts.vaccineUuid }, value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' } },
+        { concept: { uuid: concepts.status }, value: 'completed' },
+      ],
+    };
+    const [group] = mapFromAmpathImmunizationEncounters([encounter], config);
+    expect(group.existingDoses[0]).toMatchObject({ status: 'completed', occurrenceDateTime: expected });
+    const dated = {
+      ...encounter,
+      obs: [...encounter.obs, { concept: { uuid: concepts.vaccinationDate }, value: '2026-05-01' }],
+    };
+    expect(mapFromAmpathImmunizationEncounters([dated], config)[0].existingDoses[0].occurrenceDateTime).toBe(
+      '2026-05-01',
+    );
+    const deferred = {
+      ...encounter,
+      obs: encounter.obs.map((obs) => (obs.concept.uuid === concepts.status ? { ...obs, value: 'not-done' } : obs)),
+    };
+    expect(mapFromAmpathImmunizationEncounters([deferred], config)[0].existingDoses[0].occurrenceDateTime).toBe('');
+  });
+
+  it('lists the highest dose first when several doses share the same date', () => {
+    const encounterFor = (uuid: string, doseNumber: number) => ({
+      uuid,
+      encounterDatetime: '2026-10-16T10:00:00.000Z',
+      obs: [
+        {
+          concept: { uuid: config.ampathFormPersistence.concepts.vaccineUuid },
+          value: { uuid: 'vaccine-uuid', display: 'Pentavalente' },
+        },
+        { concept: { uuid: config.ampathFormPersistence.concepts.vaccinationDate }, value: '2026-10-16T00:00:00.000Z' },
+        { concept: { uuid: config.ampathFormPersistence.concepts.doseNumber }, value: doseNumber },
+      ],
+    });
+
+    const groups = mapFromAmpathImmunizationEncounters(
+      [encounterFor('dose-1', 1), encounterFor('dose-3', 3), encounterFor('dose-2', 2)],
+      config,
+    );
+
+    expect(groups[0].existingDoses.map((dose) => dose.doseNumber)).toEqual([3, 2, 1]);
+  });
+
   it('maps OpenMRS AMPATH form encounters back to grouped immunizations', () => {
     const groups = mapFromAmpathImmunizationEncounters(
       [
@@ -185,7 +272,7 @@ describe('AMPATH immunization form mapper', () => {
           immunizationObsUuid: 'encounter-uuid',
           locationUuid: 'historical-location-uuid',
           doseNumber: 1,
-          occurrenceDateTime: '2026-05-28T00:00:00.000Z',
+          occurrenceDateTime: '',
           status: 'not-done',
           statusReason: 'Diferida por evaluación clínica',
           programContext: 'special',

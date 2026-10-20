@@ -51,7 +51,7 @@ function parseMaybeJson(value: unknown): unknown {
   }
 }
 
-function getDiagnostics(error: unknown): string | undefined {
+export function getImmunizationErrorDiagnostics(error: unknown): string | undefined {
   const body = parseMaybeJson(getResponseBody(error));
 
   if (body && typeof body === 'object') {
@@ -86,7 +86,7 @@ export function getImmunizationSaveErrorDetails(
   mappings: FhirConceptMappings,
 ): ImmunizationSaveErrorDetails {
   const status = getStatus(error);
-  const diagnostics = getDiagnostics(error);
+  const diagnostics = getImmunizationErrorDiagnostics(error);
   const missingMapping = getMissingMapping(diagnostics);
 
   if (status === 501 && missingMapping) {

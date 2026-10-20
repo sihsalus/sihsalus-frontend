@@ -1,5 +1,6 @@
 import {
   Activity,
+  ChartLineData,
   CloudMonitoring,
   HospitalBed,
   Stethoscope,
@@ -11,7 +12,7 @@ import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
-import { credNeonatalPrivilege } from '../constants';
+import { credNeonatalPrivilege, neonatalFluidBalanceSlot } from '../constants';
 
 export interface NeonatalCareProps {
   patient?: fhir.Patient | null;
@@ -26,9 +27,16 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
   const tabs: TabConfig[] = useMemo(
     () => [
       {
+        id: 'vitals',
         labelKey: 'newbornVitals',
         icon: Activity,
         slotName: 'neonatal-vitals-slot',
+      },
+      {
+        id: 'fluid-balance',
+        labelKey: 'fluidBalance',
+        icon: ChartLineData,
+        slotName: neonatalFluidBalanceSlot,
       },
       {
         labelKey: 'perinatalRecord',
@@ -59,7 +67,7 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
     [],
   );
 
-  if (!patient || !patientUuid) {
+  if (!patient || !patientUuid || patient.id !== patientUuid) {
     return null;
   }
 
@@ -72,6 +80,7 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
         tabs={tabs}
         ariaLabelKey="neonatalCareTabs"
         translationNamespace={translationNamespace}
+        mountActiveTabOnly
       />
     </RequirePrivilege>
   );

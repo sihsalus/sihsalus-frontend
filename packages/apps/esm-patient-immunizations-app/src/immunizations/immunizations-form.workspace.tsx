@@ -41,6 +41,10 @@ import { getAmpathImmunizationFormPersistence, resolveAmpathImmunizationForm } f
 import { mapToAmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 import { DoseInput } from './components/dose-input.component';
 import { getFhirImmunizationConceptMappings } from './fhir-immunization-config';
+import {
+  ensureImmunizationEncounterProvider,
+  getUnknownEncounterRoleUuid,
+} from './immunization-encounter-provider.resource';
 import { mapToFHIRImmunizationResource } from './immunization-mapper';
 import {
   getImmunizationSaveErrorDetails,
@@ -58,6 +62,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const ampathPersistence = getAmpathImmunizationFormPersistence(config);
   const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const currentUser = useSession();
+  const providerUuid = currentUser?.currentProvider?.uuid;
+  const unknownEncounterRoleUuid = getUnknownEncounterRoleUuid(config);
   const activeVisitLocationUuid = visitContext?.location?.uuid;
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation('@sihsalus/esm-patient-immunizations-app');
@@ -97,7 +103,9 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
             {
               message: t('vaccinationDateCannotBeInTheFuture', 'Vaccination date cannot be in the future'),
             },
-          ),
+          )
+          .nullable()
+          .optional(),
         // null means unset; when provided, must be an integer ≥ 1
         doseNumber: z.union([z.coerce.number<number>().int().min(1), z.null()]).optional(),
         // FHIR supports not-done immunizations; MINSA workflows need this for
@@ -126,6 +134,13 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         manufacturer: z.string().nullable().optional(),
       })
       .superRefine((value, ctx) => {
+        if (value.status === 'completed' && !value.vaccinationDate) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['vaccinationDate'],
+            message: t('vaccinationDateRequired', 'Enter the administration date for an administered vaccination.'),
+          });
+        }
         if (value.status === 'not-done' && !value.statusReason?.trim()) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -243,10 +258,14 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   useEffect(() => {
     const sub = immunizationFormSub.subscribe((props) => {
       if (props) {
-        const vaccinationDateOrNow = props.vaccinationDate ? parseDate(props.vaccinationDate) : new Date();
+        const initialVaccinationDate = props.vaccinationDate
+          ? parseDate(props.vaccinationDate)
+          : props.immunizationId
+            ? null
+            : new Date();
         reset({
           vaccineUuid: props.vaccineUuid,
-          vaccinationDate: vaccinationDateOrNow,
+          vaccinationDate: initialVaccinationDate,
           doseNumber: props.doseNumber,
           status:
             props.status === 'completed' || props.status === 'not-done'
@@ -320,7 +339,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         });
         return;
       }
-      if (!immunizationToEditMeta?.immunizationObsUuid && !currentUser?.currentProvider?.uuid) {
+      if (!immunizationToEditMeta?.immunizationObsUuid && !providerUuid) {
         showSnackbar({
           title: t('errorSaving', 'Error saving vaccination'),
           subtitle: t('clinicalProviderRequired', 'A linked clinical provider is required to record an immunization.'),
@@ -345,6 +364,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           nextDoseDate,
         } = data;
         const abortController = new AbortController();
+        const isNewImmunization = !immunizationToEditMeta?.immunizationObsUuid;
+        const visitUuid = immunizationToEditMeta?.visitUuid || visitContext?.uuid;
 
         const recordedAt = new Date().toISOString();
         const immunization: ImmunizationFormData = {
@@ -354,7 +375,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           vaccineUuid: vaccineUuid,
           vaccinationDate:
             status === 'not-done'
-              ? immunizationToEditMeta?.immunizationObsUuid
+              ? immunizationToEditMeta?.immunizationObsUuid && vaccinationDate
                 ? dayjs(vaccinationDate).toISOString()
                 : recordedAt
               : dayjs(vaccinationDate).startOf('day').toDate().toISOString(),
@@ -384,7 +405,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                     formUuid: form.uuid,
                     visitUuid: visitContext.uuid,
                     locationUuid,
-                    providerUuid: currentUser.currentProvider.uuid,
+                    providerUuid,
                     recordedAt,
                   }
                 : undefined,
@@ -397,12 +418,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
 
         const saveViaFhir = () =>
           savePatientImmunization(
-            mapToFHIRImmunizationResource(
-              immunization,
-              immunizationToEditMeta?.visitUuid || visitContext?.uuid,
-              locationUuid,
-              currentUser?.currentProvider?.uuid,
-            ),
+            mapToFHIRImmunizationResource(immunization, visitUuid, locationUuid, providerUuid),
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
           );
@@ -410,6 +426,45 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         if (immunizationToEditMeta?.persistenceSource === 'ampath-form') {
           await saveViaAmpathForm();
         } else {
+          if (!providerUuid) {
+            showSnackbar({
+              title: t('errorSaving', 'Error saving vaccination'),
+              subtitle: t(
+                'providerRequiredForVaccination',
+                'Your user account has no provider record. Ask support to assign one before recording vaccinations.',
+              ),
+              kind: 'error',
+              isLowContrast: false,
+            });
+            return;
+          }
+          if (isNewImmunization) {
+            // FHIR2 reuses the visit's latest vaccination encounter and cannot
+            // read it back unless a provider holds the "Unknown" role. This
+            // runs before anything is sent, so a failure here means nothing
+            // was saved.
+            try {
+              await ensureImmunizationEncounterProvider({
+                patientUuid,
+                visitUuid,
+                encounterTypeUuid: ampathPersistence.encounterTypeUuid,
+                providerUuid,
+                encounterRoleUuid: unknownEncounterRoleUuid,
+                signal: abortController.signal,
+              });
+            } catch {
+              showSnackbar({
+                title: t('errorSaving', 'Error saving vaccination'),
+                subtitle: t(
+                  'encounterProviderPreflightFailed',
+                  'Could not prepare the vaccination encounter. Nothing was saved.',
+                ),
+                kind: 'error',
+                isLowContrast: false,
+              });
+              return;
+            }
+          }
           try {
             await saveViaFhir();
           } catch (err) {
@@ -455,7 +510,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       patientUuid,
       immunizationsError,
       isLoadingImmunizations,
-      currentUser?.currentProvider?.uuid,
+      providerUuid,
+      unknownEncounterRoleUuid,
       visitContext?.uuid,
       immunizationToEditMeta,
       immunizationsConceptSet,
@@ -466,6 +522,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       fhirConceptMappings,
       ampathPersistence.enabled,
       ampathPersistence.concepts,
+      ampathPersistence.encounterTypeUuid,
       config,
     ],
   );
@@ -531,7 +588,18 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
                       }
                       items={immunizationsConceptSet?.answers?.map((item) => item.uuid) || []}
                       label={t('selectImmunization', 'Select immunization')}
-                      onChange={(val) => onChange(val.selectedItem)}
+                      onChange={(val) => {
+                        onChange(val.selectedItem);
+                        const sequences = activeScheduleSequenceDefinitions.find(
+                          (definition) => definition.vaccineConceptUuid === val.selectedItem,
+                        )?.sequences;
+                        if (
+                          sequences?.length &&
+                          !sequences.some((sequence) => sequence.sequenceNumber === doseNumber)
+                        ) {
+                          setValue('doseNumber', null, { shouldDirty: true, shouldValidate: true });
+                        }
+                      }}
                       selectedItem={value}
                       titleText={`${t('immunization', 'Immunization')} *`}
                       aria-required

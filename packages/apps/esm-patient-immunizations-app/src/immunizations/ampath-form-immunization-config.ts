@@ -1,12 +1,16 @@
 import { resolvePublishedForm } from '@openmrs/esm-patient-common-lib';
 import type { ImmunizationConfigObject } from '../config-schema';
 
+/** OpenMRS "Unknown" encounter role, required by FHIR2 on immunization encounters. */
+export const defaultUnknownEncounterRoleUuid = 'a0b03050-c99b-11e0-9572-0800200c9a66';
+
 export const defaultAmpathImmunizationFormPersistence: ImmunizationConfigObject['ampathFormPersistence'] = {
   enabled: true,
   encounterTypeUuid: '29c02aff-9a93-46c9-bf6f-48b552fcb1fa',
   encounterRoleUuid: '738ba7c1-354f-47f8-b6d4-9d705ce05731',
   formName: 'INMU-001-REGISTRO DE VACUNACIÓN',
   formVersion: '1.1.0',
+  encounterDateAdministrationFormVersions: ['1.0.0'],
   concepts: {
     vaccineUuid: 'f9840000-0000-4000-8000-000000000984',
     vaccinationDate: 'f1410000-0000-4000-8000-000000001410',

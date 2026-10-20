@@ -1,8 +1,11 @@
 import dayjs from 'dayjs';
 import type { ImmunizationConfigObject } from '../config-schema';
 import type { ExistingDoses, ImmunizationFormData, ImmunizationGrouped } from '../types';
-import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
-import { readImmunizationStatus, requireWritableImmunizationStatus } from './utils';
+import {
+  defaultUnknownEncounterRoleUuid,
+  getAmpathImmunizationFormPersistence,
+} from './ampath-form-immunization-config';
+import { latestFirst, readImmunizationStatus, requireWritableImmunizationStatus } from './utils';
 
 type ObsValue = string | number | boolean | { uuid?: string; display?: string; name?: string } | null | undefined;
 
@@ -19,6 +22,7 @@ export interface AmpathImmunizationEncounter {
   uuid: string;
   patient?: { uuid?: string };
   encounterDatetime?: string;
+  form?: { name?: string; version?: string };
   visit?: {
     uuid?: string;
   };
@@ -109,9 +113,6 @@ function getNumberValue(encounter: AmpathImmunizationEncounter, conceptUuid: str
   return Number.isFinite(numericValue) ? numericValue : undefined;
 }
 
-function toDateString(value?: string | null): string {
-  return value ? dayjs(value).startOf('day').toDate().toISOString() : '';
-}
 function toOpenmrsDateObsValue(value: string): string {
   const dateOnlyValue = value.match(/^(\d{4}-\d{2}-\d{2})$/)?.[1];
   if (dateOnlyValue) {
@@ -212,7 +213,12 @@ export function mapToAmpathImmunizationEncounterPayload(
           encounterDatetime: newEncounter.recordedAt,
           visit: newEncounter.visitUuid,
           location: newEncounter.locationUuid,
-          encounterProviders: [{ provider: newEncounter.providerUuid, encounterRole: persistence.encounterRoleUuid }],
+          encounterProviders: [
+            ...new Set([
+              persistence.encounterRoleUuid,
+              config.unknownEncounterRoleUuid || defaultUnknownEncounterRoleUuid,
+            ]),
+          ].map((encounterRole) => ({ provider: newEncounter.providerUuid, encounterRole })),
         }
       : {}),
     obs,
@@ -223,7 +229,8 @@ export function mapFromAmpathImmunizationEncounters(
   encounters: Array<AmpathImmunizationEncounter> | undefined,
   config: ImmunizationConfigObject,
 ): Array<ImmunizationGrouped> {
-  const concepts = getAmpathImmunizationFormPersistence(config).concepts;
+  const persistence = getAmpathImmunizationFormPersistence(config);
+  const concepts = persistence.concepts;
 
   const doses: Array<{
     vaccineUuid: string;
@@ -238,9 +245,18 @@ export function mapFromAmpathImmunizationEncounters(
         return null;
       }
 
-      const occurrenceDateTime =
-        getStringValue(encounter, concepts.vaccinationDate) || encounter.encounterDatetime || toDateString(null);
       const status = getStringValue(encounter, concepts.status);
+      // Only the verified legacy Form used encounterDatetime as administration.
+      // New and unidentified forms must not turn registration into a clinical date.
+      const hasLegacyAdministrationDate =
+        encounter.form?.name === persistence.formName &&
+        !!encounter.form?.version &&
+        persistence.encounterDateAdministrationFormVersions?.includes(encounter.form?.version);
+      const occurrenceDateTime =
+        status === 'not-done'
+          ? ''
+          : getStringValue(encounter, concepts.vaccinationDate) ||
+            (hasLegacyAdministrationDate ? (encounter.encounterDatetime ?? '') : '');
       const programContext = getStringValue(encounter, concepts.programContext);
       const note = getStringValue(encounter, concepts.note);
 
@@ -290,9 +306,7 @@ export function mapFromAmpathImmunizationEncounters(
 
   return Object.values(grouped).map((group) => ({
     ...group,
-    existingDoses: group.existingDoses
-      .slice()
-      .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+    existingDoses: group.existingDoses.slice().sort(latestFirst),
   }));
 }
 
@@ -320,9 +334,7 @@ export function mergeImmunizationGroups(
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
-      existingDoses: group.existingDoses
-        .slice()
-        .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+      existingDoses: group.existingDoses.slice().sort(latestFirst),
     }))
     .sort((a, b) =>
       (b.existingDoses?.[0]?.occurrenceDateTime ?? '').localeCompare(a.existingDoses?.[0]?.occurrenceDateTime ?? ''),

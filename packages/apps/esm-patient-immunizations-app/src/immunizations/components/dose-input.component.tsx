@@ -61,8 +61,18 @@ export const DoseInput: React.FC<{
           id="sequence"
           invalid={!!fieldState.error}
           invalidText={fieldState.error?.message}
-          items={vaccineSequences.map((sequence) => sequence.sequenceNumber)}
-          itemToString={(item) => vaccineSequences.find((sequence) => sequence.sequenceNumber === item)?.sequenceLabel}
+          items={Array.from(
+            new Set([
+              ...vaccineSequences.map((sequence) => sequence.sequenceNumber),
+              ...(field.value != null ? [field.value] : []),
+            ]),
+          )}
+          itemToString={(item) =>
+            item == null
+              ? ''
+              : (vaccineSequences.find((sequence) => sequence.sequenceNumber === item)?.sequenceLabel ??
+                t('doseNumber', 'Dose {{number}}', { number: item }))
+          }
           label={t('pleaseSelect', 'Please select')}
           onChange={(val) => field.onChange(parseInt(String(val.selectedItem || 0), 10))}
           selectedItem={field.value}

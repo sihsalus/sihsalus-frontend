@@ -34,12 +34,21 @@ Contratos de frontend:
 - Un estado canónico ausente o desconocido se muestra como «Estado no verificado». El registro permanece en la historia, sin contar como aplicación, última vacunación o dosis duplicada. Su edición exige seleccionar explícitamente `completed` o `not-done`; el estado de lectura `unverified` nunca se persiste ni convierte observaciones históricas automáticamente.
 - La captura nueva exige el profesional vinculado a la sesión. El encuentro REST incluye proveedor y rol funcional configurable `Responsable del registro de inmunización` (`738ba7c1-354f-47f8-b6d4-9d705ce05731`), cuya provisión requiere el content coordinado. Ese rol no atribuye una profesión ni otorga permisos.
 - Las lecturas REST recorren el tipo de encuentro y la observación canónica de producto, incluyendo versiones anteriores del Form. Al editar un encuentro REST se conservan Form, proveedor, fecha/hora, visita y ubicación originales. La fecha de administración completada se conserva en su observación propia; una no aplicación no genera fecha de administración. La nueva versión `1.1.0` distingue fecha del registro y fecha de administración; el timestamp completo del registro debe estar dentro de la visita, sin sustituirlo por la medianoche del día elegido.
+- La fecha del encuentro solo se interpreta como administración para el nombre de Form configurado y las versiones verificadas de `encounterDateAdministrationFormVersions` (predeterminado: `1.0.0`). La lectura solicita nombre/versión. En `1.1.0`, formularios desconocidos y metadatos ausentes, una fecha de administración no informada permanece vacía; no se sustituye por registro ni por hoy al editar. Un evento aplicado sin fecha sigue accesible en la historia, pero no acredita «última vacunación». Confirmar una aplicación al editar exige su fecha; una no aplicación no la requiere.
+- Al seleccionar una vacuna, se limpia una dosis heredada que no pertenece a sus opciones. La dosis sigue siendo opcional: dejarla vacía no envía un número; elegir bOPV «2do Refuerzo» envía `12`. Los ordinales históricos fuera de la pauta conservan una etiqueta explícita y su valor original.
 - Las dosis ya registradas producen una advertencia y no excluyen opciones: el profesional puede registrar aplicaciones anuales o corregir datos. Un registro `not-done` no equivale a una dosis administrada.
 - Las pautas predeterminadas no calculan la próxima fecha con intervalos aproximados; el profesional la confirma. Los calendarios institucionales publicados conservan su configuración existente de intervalos.
 - Si `ampathFormPersistence.enabled=false`, el modulo depende directamente de FHIR2 `Immunization`; un `501` debe mostrarse como error operativo claro para QA/backend.
 - El usuario final no debe ver detalles tecnicos del endpoint, salvo que sea una pantalla de diagnostico.
 - Las advertencias MINSA por edad/dosis no deben bloquear guardado sin una regla clinica explicita.
 - Si una vacuna de la NTS no existe en content/backend, debe estar deshabilitada o documentada como pendiente, no simulada silenciosamente.
+- En «Vacunación reciente», la fecha/hora de aplicación determina el registro
+  mostrado. Si varios registros de una vacuna tienen exactamente la misma
+  fecha/hora, se muestra el mayor número de dosis entero positivo registrado,
+  conservando la etiqueta de secuencia configurada cuando exista. El número procede de FHIR
+  `protocolApplied.doseNumberPositiveInt` o de la observación configurada de
+  Ampath; nunca se calcula contando registros. Este desempate no determina la
+  hora real de aplicación ni valida la pertinencia clínica de las dosis.
 
 TODO content/backend:
 
@@ -56,6 +65,12 @@ TODO QA/QLTY:
 - Probar el flujo end-to-end de vacunación: abrir formulario, registrar vacuna, guardar, recargar y confirmar lectura por FHIR2.
 - Probar un paciente sin inmunizaciones, un paciente con esquema parcial y un paciente con dosis fuera de ventana de edad para validar advertencias MINSA.
 - Confirmar permisos de usuario para crear y editar inmunizaciones en QLTY.
+- Para el reporte #393, verificar con datos sintéticos el resumen de dosis 1, 2
+  y 3 con una misma fecha, tanto antes como después de recargar; debe mostrar 3
+  y conservar los tres registros al expandir la fila. Una dosis 1 de fecha
+  posterior debe seguir siendo la más reciente. Comparar con la respuesta
+  persistida: si todos los registros contienen dosis 1, el frontend debe seguir
+  mostrando 1, y corresponde investigar el registro sin inventar una secuencia.
 - Volver a incluir la pantalla de vacunación infantil en los GIFs CRED cuando el save/read real este validado en QLTY.
 
 TODO i18n/UI:
@@ -85,11 +100,31 @@ y [ImmunizationObsGroupHelper](https://github.com/openmrs/openmrs-module-fhir2/b
 La referencia FHIR `Encounter/<visitUuid>` es parte de ese contrato; no debe
 sustituirse por un UUID de atención REST.
 
-Esta corrección modifica únicamente frontend: no reasigna profesionales o roles,
-no repara registros históricos ni modifica backend/content. El responsable de
-backend debe revisar el contrato y los registros afectados en una tarea separada.
-Las pruebas locales de interfaz no acreditan el guardado/lectura real de esos
-reportes. Queda pendiente aceptación en QLTY con paciente sintético y rol CRED.
+Mitigación frontend (sin cambios de backend/content):
+
+- Antes de crear una vacuna por FHIR, el formulario consulta por REST
+  (`GET /encounter?patient=...&visit=...&encounterType=...`) la última atención
+  del tipo `ampathFormPersistence.encounterTypeUuid` de la consulta y, si no
+  tiene un proveedor con el rol `unknownEncounterRoleUuid` (default
+  `a0b03050-c99b-11e0-9572-0800200c9a66`, "Unknown"), lo agrega con el
+  profesional de la sesión (`POST /encounter/<uuid>/encounterprovider`).
+  `unknownEncounterRoleUuid` debe coincidir con la propiedad global de FHIR2
+  `fhir2.administeringEncounterRoleUuid`, que selecciona el rol de atención
+  administrador y por defecto es el rol "Unknown". Si la
+  sesión no tiene profesional asociado, no guarda y muestra un error; si esa
+  consulta previa falla, tampoco guarda y lo indica. Esa consulta REST solo ve
+  atenciones no anuladas, mientras que FHIR2 considera todas las de la
+  consulta, por lo que una última atención de vacunación anulada no se repara.
+- El fallback AMPATH crea la atención con el rol funcional de registro y el rol requerido por FHIR2, sin duplicarlos cuando coinciden.
+- Si la lectura FHIR falla con el diagnóstico de FHIR2 sobre el rol de atención
+  faltante (cualquiera sea el nombre del rol), el resumen y la vista detallada
+  muestran un estado de error específico con el botón
+  "Reparar" (solo con profesional en sesión), que agrega el rol a la atención
+  indicada y recarga el historial.
+- En el resumen, las dosis con la misma fecha se ordenan por número de dosis
+  descendente, de modo que "Vacunación reciente" muestra la última dosis (#393).
+
+Queda pendiente aceptación en QLTY con paciente sintético y rol CRED.
 
 ### Fuentes y aceptación pendiente de la revisión del 19 de octubre de 2026
 

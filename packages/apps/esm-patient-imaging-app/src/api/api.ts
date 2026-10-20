@@ -386,7 +386,7 @@ export async function saveRequestProcedureStep(
     requestId: requestId,
     modality: step.modality,
     aetTitle: step.aetTitle,
-    scheduledReferringPhysician: step.scheduledReferringPhysician,
+    scheduledPerformingPhysician: step.scheduledPerformingPhysician,
     requestedProcedureDescription: step.requestedProcedureDescription,
     stepStartDate: step.stepStartDate,
     stepStartTime: step.stepStartTime,

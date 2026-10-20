@@ -1,5 +1,6 @@
+import { Button } from '@carbon/react';
 import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useBalance, useVitalsConceptMetadata, withUnit } from '../../../common';
@@ -13,7 +14,25 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
-  const { data: balanceData, error, isLoading, isValidating } = useBalance(patientUuid);
+  const { data: balanceData, error, isLoading, isValidating, hasMore, setPage, mutate } = useBalance(patientUuid);
+  const [paginationFailure, setPaginationFailure] = useState<{
+    patientUuid: string;
+    error: Error;
+  } | null>(null);
+  const paginationError = paginationFailure?.patientUuid === patientUuid ? paginationFailure.error : null;
+
+  useEffect(() => {
+    if (hasMore && !isValidating && !error && !paginationError) {
+      // An encounter's observations may cross a page boundary. Complete the
+      // read before presenting a row or a chart as a complete balance record.
+      void setPage((page) => page + 1).catch((cause: unknown) => {
+        setPaginationFailure({
+          patientUuid,
+          error: cause instanceof Error ? cause : new Error('Balance read failed'),
+        });
+      });
+    }
+  }, [hasMore, isValidating, error, paginationError, patientUuid, setPage]);
 
   const clinicalFields = useMemo(
     () => [
@@ -90,8 +109,11 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
 
     // Generar tableRows
     const rows =
-      balanceData?.map((item, index) => {
-        const row: { id: string; [key: string]: string | number | React.ReactNode } = { id: `${index}` };
+      balanceData?.map((item) => {
+        const row: {
+          id: string;
+          [key: string]: string | number | React.ReactNode;
+        } = { id: item.id };
         clinicalFields.forEach((field) => {
           row[field.key] = field.format ? field.format(item[field.key] || item.date) : (item[field.key] ?? '--');
         });
@@ -117,25 +139,47 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
     };
   }, [clinicalFields, balanceData, conceptUnits, config.concepts, t]);
 
-  const clinicalData = (balanceData ?? []) as unknown as Array<{ date: string; [key: string]: string | number | null }>;
+  const clinicalData = (balanceData ?? []) as unknown as Array<{
+    date: string;
+    [key: string]: string | number | null;
+  }>;
 
   return (
-    <ClinicalDataOverview
-      patientUuid={patientUuid}
-      pageSize={pageSize}
-      headerTitle={t('balanceOverview', 'Balance de líquidos del recién nacido')}
-      data={clinicalData}
-      error={error}
-      isLoading={isLoading}
-      isValidating={isValidating}
-      tableHeaders={tableHeaders}
-      tableRows={tableRows}
-      // Read-only until a replacement for the removed newborn fluid balance form exists
-      emptyStateDisplayText={t('balanceOverview', 'Balance de líquidos del recién nacido')}
-      conceptUnits={conceptUnits}
-      config={config}
-      chartConfig={chartConfig}
-    />
+    <>
+      <ClinicalDataOverview
+        patientUuid={patientUuid}
+        pageSize={pageSize}
+        headerTitle={t('balanceOverview', 'Balance de líquidos del recién nacido')}
+        data={clinicalData}
+        error={error ?? paginationError}
+        isLoading={isLoading || (hasMore && !error && !paginationError)}
+        isValidating={isValidating}
+        tableHeaders={tableHeaders}
+        tableRows={tableRows}
+        // Read-only until a replacement for the removed newborn fluid balance form exists
+        emptyStateDisplayText={t('balanceOverview', 'Balance de líquidos del recién nacido')}
+        conceptUnits={conceptUnits}
+        config={config}
+        chartConfig={chartConfig}
+      />
+      {(error || paginationError) && (
+        <Button
+          kind="ghost"
+          disabled={isValidating}
+          onClick={() => {
+            setPaginationFailure(null);
+            void mutate().catch((cause: unknown) =>
+              setPaginationFailure({
+                patientUuid,
+                error: cause instanceof Error ? cause : new Error('Balance read failed'),
+              }),
+            );
+          }}
+        >
+          {t('retry', 'Reintentar')}
+        </Button>
+      )}
+    </>
   );
 };
 

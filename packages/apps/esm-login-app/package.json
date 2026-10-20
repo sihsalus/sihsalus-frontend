@@ -43,8 +43,8 @@
     "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.89.0",
-    "zod": "^4.6.5"
+    "react-hook-form": "^7.90.0",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
@@ -68,6 +68,6 @@
     "rxjs": "^7.8.2",
     "swr": "2.5.1",
     "vite": "8.3.4",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   }
 }

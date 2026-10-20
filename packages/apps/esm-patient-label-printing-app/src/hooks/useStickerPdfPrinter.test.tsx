@@ -1,3 +1,5 @@
+// @vitest-environment-options {"settings":{"enableIframePageLoading":true}}
+
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useStickerPdfPrinter } from './useStickerPdfPrinter';
 

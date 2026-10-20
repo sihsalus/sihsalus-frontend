@@ -44,6 +44,7 @@ import {
   useVaccinationSchedule,
 } from '../vaccine-scheduling-builder/vaccination-schedule.resource';
 import SequenceTable from './components/immunizations-sequence-table.component';
+import ImmunizationEncounterRepairState from './immunization-encounter-repair-state.component';
 import styles from './immunizations-detailed-summary.scss';
 import { getLatestCompletedDose, immunizationFormSub, linkConfiguredSequences } from './utils';
 
@@ -70,7 +71,14 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
     return scheduleSequences.length ? scheduleSequences : config.sequenceDefinitions;
   }, [config.sequenceDefinitions, scheduleData]);
 
-  const { data: existingImmunizations, isLoading, error, isValidating } = useImmunizations(patientUuid);
+  const {
+    data: existingImmunizations,
+    isLoading,
+    error,
+    isValidating,
+    repairableEncounterUuid,
+    repairEncounterProvider,
+  } = useImmunizations(patientUuid);
 
   const consolidatedImmunizations = useMemo(() => {
     return linkConfiguredSequences(existingImmunizations, sequenceDefinitions);
@@ -170,6 +178,8 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const content =
     isLoading || !sortedImmunizations ? (
       <DataTableSkeleton role="progressbar" />
+    ) : error && repairableEncounterUuid ? (
+      <ImmunizationEncounterRepairState headerTitle={headerTitle} onRepair={repairEncounterProvider} />
     ) : error ? (
       <ErrorState error={error} headerTitle={headerTitle} />
     ) : sortedImmunizations?.length ? (

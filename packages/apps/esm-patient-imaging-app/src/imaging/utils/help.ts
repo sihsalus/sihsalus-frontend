@@ -14,6 +14,16 @@ export function toDicomDate(date: Date): string {
   return `${date.getFullYear().toString().padStart(4, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * The imaging module reports an active request as either `progress` (legacy) or `in progress`
+ * (after a step is added or a worklist callback). Both map to the single `progress` status
+ * used by the request table and its filter.
+ */
+export function normalizeRequestStatus(status: string | null | undefined): string {
+  const normalized = (status ?? '').trim().toLowerCase();
+  return normalized === 'in progress' ? 'progress' : normalized;
+}
+
 /** Accession Number is DICOM SH (at most 16 characters). */
 export function generateAccessionNumber(): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(8)), (byte) => byte.toString(16).padStart(2, '0'))

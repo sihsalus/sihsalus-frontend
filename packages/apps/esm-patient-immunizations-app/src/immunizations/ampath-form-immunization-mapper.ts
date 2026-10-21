@@ -1,7 +1,11 @@
 import dayjs from 'dayjs';
 import type { ImmunizationConfigObject } from '../config-schema';
 import type { ExistingDoses, ImmunizationFormData, ImmunizationGrouped } from '../types';
-import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
+import {
+  defaultUnknownEncounterRoleUuid,
+  getAmpathImmunizationFormPersistence,
+} from './ampath-form-immunization-config';
+import { latestFirst, readImmunizationStatus, requireWritableImmunizationStatus } from './utils';
 
 type ObsValue = string | number | boolean | { uuid?: string; display?: string; name?: string } | null | undefined;
 
@@ -16,7 +20,9 @@ export interface AmpathImmunizationObs {
 
 export interface AmpathImmunizationEncounter {
   uuid: string;
+  patient?: { uuid?: string };
   encounterDatetime?: string;
+  form?: { name?: string; version?: string };
   visit?: {
     uuid?: string;
   };
@@ -29,18 +35,55 @@ export interface AmpathImmunizationEncounter {
 export interface AmpathImmunizationEncounterPayload {
   patient: string;
   encounterType: string;
-  form: string;
-  encounterDatetime: string;
+  form?: string;
+  encounterDatetime?: string;
   visit?: string;
   location?: string;
-  obs: Array<{
-    concept: string;
-    value: string | number;
-  }>;
+  encounterProviders?: Array<{ provider: string; encounterRole: string }>;
+  obs: Array<
+    { concept: string; value: string | number; uuid?: string } | { uuid: string; voided?: boolean; voidReason?: string }
+  >;
 }
 
 function getObsByConcept(encounter: AmpathImmunizationEncounter, conceptUuid: string) {
-  return encounter.obs?.find((obs) => obs.concept?.uuid === conceptUuid);
+  const observations = encounter.obs?.filter((obs) => obs.concept?.uuid === conceptUuid) ?? [];
+  if (observations.length > 1) throw new Error('The immunization encounter contains ambiguous observations');
+  return observations[0];
+}
+
+/** Preserve native Obs identities: REST does not replace observations by concept. */
+export function reconcileAmpathImmunizationObs(
+  desired: AmpathImmunizationEncounterPayload['obs'],
+  existing: AmpathImmunizationObs[],
+  managedConcepts: string[],
+): AmpathImmunizationEncounterPayload['obs'] {
+  const managed = new Set(managedConcepts);
+  if (!managed.size) throw new Error('The immunization observation contract is unavailable');
+  const desiredByConcept = new Map(
+    desired.map((obs) => {
+      if (!('concept' in obs) || !managed.has(obs.concept)) throw new Error('Unexpected immunization observation');
+      return [obs.concept, obs] as const;
+    }),
+  );
+  if (desiredByConcept.size !== desired.length) throw new Error('Duplicate configured immunization concepts');
+  const seen = new Set<string>();
+  const updates: AmpathImmunizationEncounterPayload['obs'] = existing.map((obs) => {
+    if (!obs.uuid) throw new Error('An existing observation identity is unavailable');
+    const concept = obs.concept?.uuid;
+    if (!managed.has(concept)) return { uuid: obs.uuid };
+    if (seen.has(concept)) throw new Error('The immunization encounter contains ambiguous observations');
+    seen.add(concept);
+    const replacement = desiredByConcept.get(concept);
+    desiredByConcept.delete(concept);
+    return replacement
+      ? { ...replacement, uuid: obs.uuid }
+      : {
+          uuid: obs.uuid,
+          voided: true,
+          voidReason: 'Updated immunization record',
+        };
+  });
+  return [...updates, ...desiredByConcept.values()];
 }
 
 function getValueUuid(value: ObsValue): string {
@@ -70,10 +113,6 @@ function getNumberValue(encounter: AmpathImmunizationEncounter, conceptUuid: str
   return Number.isFinite(numericValue) ? numericValue : undefined;
 }
 
-function toDateString(value?: string | null): string {
-  return value ? dayjs(value).startOf('day').toDate().toISOString() : '';
-}
-//DEUDA TECNICA, ESTE ARCHIVO CREO QUE TIENE QUE VLOLAR
 function toOpenmrsDateObsValue(value: string): string {
   const dateOnlyValue = value.match(/^(\d{4}-\d{2}-\d{2})$/)?.[1];
   if (dateOnlyValue) {
@@ -92,8 +131,13 @@ function toOpenmrsDateObsValue(value: string): string {
 export function mapToAmpathImmunizationEncounterPayload(
   immunization: ImmunizationFormData,
   config: ImmunizationConfigObject,
-  visitUuid?: string,
-  locationUuid?: string,
+  newEncounter?: {
+    formUuid: string;
+    visitUuid: string;
+    locationUuid: string;
+    providerUuid: string;
+    recordedAt: string;
+  },
 ): AmpathImmunizationEncounterPayload {
   const persistence = getAmpathImmunizationFormPersistence(config);
   const concepts = persistence.concepts;
@@ -103,18 +147,18 @@ export function mapToAmpathImmunizationEncounterPayload(
       value: immunization.vaccineUuid,
     },
     {
-      concept: concepts.vaccinationDate,
-      value: toOpenmrsDateObsValue(immunization.vaccinationDate),
-    },
-    {
       concept: concepts.status,
-      value: immunization.status ?? 'completed',
+      value: requireWritableImmunizationStatus(immunization.status),
     },
     {
       concept: concepts.programContext,
       value: immunization.programContext ?? 'routine',
     },
   ];
+
+  if (immunization.status === 'completed') {
+    obs.push({ concept: concepts.vaccinationDate, value: toOpenmrsDateObsValue(immunization.vaccinationDate) });
+  }
 
   if (typeof immunization.doseNumber === 'number' && immunization.doseNumber >= 1) {
     obs.push({ concept: concepts.doseNumber, value: immunization.doseNumber });
@@ -162,10 +206,21 @@ export function mapToAmpathImmunizationEncounterPayload(
   return {
     patient: immunization.patientUuid,
     encounterType: persistence.encounterTypeUuid,
-    form: persistence.formUuid,
-    encounterDatetime: immunization.vaccinationDate,
-    ...(visitUuid ? { visit: visitUuid } : {}),
-    ...(locationUuid ? { location: locationUuid } : {}),
+    // Edits retain the historical encounter context, including its timestamp.
+    ...(newEncounter
+      ? {
+          form: newEncounter.formUuid,
+          encounterDatetime: newEncounter.recordedAt,
+          visit: newEncounter.visitUuid,
+          location: newEncounter.locationUuid,
+          encounterProviders: [
+            ...new Set([
+              persistence.encounterRoleUuid,
+              config.unknownEncounterRoleUuid || defaultUnknownEncounterRoleUuid,
+            ]),
+          ].map((encounterRole) => ({ provider: newEncounter.providerUuid, encounterRole })),
+        }
+      : {}),
     obs,
   };
 }
@@ -174,7 +229,8 @@ export function mapFromAmpathImmunizationEncounters(
   encounters: Array<AmpathImmunizationEncounter> | undefined,
   config: ImmunizationConfigObject,
 ): Array<ImmunizationGrouped> {
-  const concepts = getAmpathImmunizationFormPersistence(config).concepts;
+  const persistence = getAmpathImmunizationFormPersistence(config);
+  const concepts = persistence.concepts;
 
   const doses: Array<{
     vaccineUuid: string;
@@ -189,9 +245,18 @@ export function mapFromAmpathImmunizationEncounters(
         return null;
       }
 
-      const occurrenceDateTime =
-        getStringValue(encounter, concepts.vaccinationDate) || encounter.encounterDatetime || toDateString(null);
       const status = getStringValue(encounter, concepts.status);
+      // Only the verified legacy Form used encounterDatetime as administration.
+      // New and unidentified forms must not turn registration into a clinical date.
+      const hasLegacyAdministrationDate =
+        encounter.form?.name === persistence.formName &&
+        !!encounter.form?.version &&
+        persistence.encounterDateAdministrationFormVersions?.includes(encounter.form?.version);
+      const occurrenceDateTime =
+        status === 'not-done'
+          ? ''
+          : getStringValue(encounter, concepts.vaccinationDate) ||
+            (hasLegacyAdministrationDate ? (encounter.encounterDatetime ?? '') : '');
       const programContext = getStringValue(encounter, concepts.programContext);
       const note = getStringValue(encounter, concepts.note);
 
@@ -210,7 +275,7 @@ export function mapFromAmpathImmunizationEncounters(
           expirationDate: getStringValue(encounter, concepts.expirationDate),
           nextDoseDate: getStringValue(encounter, concepts.nextDoseDate),
           note: note ? [{ text: note }] : [],
-          status: status === 'not-done' ? 'not-done' : 'completed',
+          status: readImmunizationStatus(status),
           statusReason: getStringValue(encounter, concepts.statusReason),
           programContext: programContext || 'routine',
         } as ExistingDoses,
@@ -241,9 +306,7 @@ export function mapFromAmpathImmunizationEncounters(
 
   return Object.values(grouped).map((group) => ({
     ...group,
-    existingDoses: group.existingDoses
-      .slice()
-      .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+    existingDoses: group.existingDoses.slice().sort(latestFirst),
   }));
 }
 
@@ -271,9 +334,7 @@ export function mergeImmunizationGroups(
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
-      existingDoses: group.existingDoses
-        .slice()
-        .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
+      existingDoses: group.existingDoses.slice().sort(latestFirst),
     }))
     .sort((a, b) =>
       (b.existingDoses?.[0]?.occurrenceDateTime ?? '').localeCompare(a.existingDoses?.[0]?.occurrenceDateTime ?? ''),

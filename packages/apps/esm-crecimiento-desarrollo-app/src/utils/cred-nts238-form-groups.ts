@@ -65,7 +65,6 @@ export const CRED_NTS238_FORM_GROUPS: CREDFormAgeGroup[] = [
     forms: [
       'nursingAssessment',
       'breastfeedingObservation',
-      'childMentalHealthForm',
       'ediDevelopmentForm',
       ...withCommonUnder30Months(),
     ],
@@ -127,7 +126,6 @@ export const CRED_NTS238_FORM_GROUPS: CREDFormAgeGroup[] = [
       'nursingAssessment',
       ...INFANT_FORMS,
       'anemiaScreeningForm',
-      'childMentalHealthForm',
       'parasitosisScreeningForm',
       'vitaminAAdministrationForm',
       'huancaNeurodevelopmentForm',
@@ -173,7 +171,6 @@ export const CRED_NTS238_FORM_GROUPS: CREDFormAgeGroup[] = [
       'nursingAssessment',
       'childFeeding6to42',
       'anemiaScreeningForm',
-      'childMentalHealthForm',
       'autismScreeningForm',
       'parasitosisScreeningForm',
       'vitaminAAdministrationForm',

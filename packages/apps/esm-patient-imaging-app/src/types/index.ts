@@ -61,7 +61,7 @@ export interface CreateRequestProcedureStep {
   requestId: number;
   modality: string;
   aetTitle: string;
-  scheduledReferringPhysician: string;
+  scheduledPerformingPhysician: string;
   requestedProcedureDescription: string;
   stepStartDate: string;
   stepStartTime: string;
@@ -74,7 +74,7 @@ export interface RequestProcedureStep {
   requestProcedureId: number;
   modality: string;
   aetTitle: string;
-  scheduledReferringPhysician: string;
+  scheduledPerformingPhysician: string;
   requestedProcedureDescription: string;
   stepStartDate: string;
   stepStartTime: string;

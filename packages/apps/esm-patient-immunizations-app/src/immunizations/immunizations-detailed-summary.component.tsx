@@ -44,8 +44,9 @@ import {
   useVaccinationSchedule,
 } from '../vaccine-scheduling-builder/vaccination-schedule.resource';
 import SequenceTable from './components/immunizations-sequence-table.component';
+import ImmunizationEncounterRepairState from './immunization-encounter-repair-state.component';
 import styles from './immunizations-detailed-summary.scss';
-import { immunizationFormSub, latestFirst, linkConfiguredSequences } from './utils';
+import { getLatestCompletedDose, immunizationFormSub, linkConfiguredSequences } from './utils';
 
 interface ImmunizationsDetailedSummaryProps {
   patientUuid: string;
@@ -70,7 +71,14 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
     return scheduleSequences.length ? scheduleSequences : config.sequenceDefinitions;
   }, [config.sequenceDefinitions, scheduleData]);
 
-  const { data: existingImmunizations, isLoading, error, isValidating } = useImmunizations(patientUuid);
+  const {
+    data: existingImmunizations,
+    isLoading,
+    error,
+    isValidating,
+    repairableEncounterUuid,
+    repairEncounterProvider,
+  } = useImmunizations(patientUuid);
 
   const consolidatedImmunizations = useMemo(() => {
     return linkConfiguredSequences(existingImmunizations, sequenceDefinitions);
@@ -87,11 +95,8 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const sortedImmunizations = useMemo(() => {
     return consolidatedImmunizations.slice().sort((a, b) => {
       const latestTime = (imm: ImmunizationGrouped) => {
-        if (!imm.existingDoses?.length) return 0;
-        const latest = imm.existingDoses.reduce((prev, cur) =>
-          new Date(cur.occurrenceDateTime) > new Date(prev.occurrenceDateTime) ? cur : prev,
-        );
-        return new Date(latest.occurrenceDateTime).getTime();
+        const latest = getLatestCompletedDose(imm.existingDoses);
+        return latest ? new Date(latest.occurrenceDateTime).getTime() : 0;
       };
       return latestTime(b) - latestTime(a);
     });
@@ -112,8 +117,7 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const tableRows = useMemo(
     () =>
       sortedImmunizations?.map((immunization) => {
-        const sortedDoses = immunization.existingDoses ? [...immunization.existingDoses].sort(latestFirst) : [];
-        const latestDose = sortedDoses?.[0];
+        const latestDose = getLatestCompletedDose(immunization.existingDoses);
 
         const hasDoses = !!latestDose;
         const hasSequences = immunization.sequences?.length > 0;
@@ -174,6 +178,8 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const content =
     isLoading || !sortedImmunizations ? (
       <DataTableSkeleton role="progressbar" />
+    ) : error && repairableEncounterUuid ? (
+      <ImmunizationEncounterRepairState headerTitle={headerTitle} onRepair={repairEncounterProvider} />
     ) : error ? (
       <ErrorState error={error} headerTitle={headerTitle} />
     ) : sortedImmunizations?.length ? (

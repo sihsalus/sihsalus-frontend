@@ -192,8 +192,11 @@ export const configSchema = {
 
   adverseReactionReporting: {
     _type: Type.Object,
-    _description: 'Configuration for ESAVI/adverse vaccine reaction reporting as a normal OpenMRS encounter.',
+    _description: 'Clinical ESAVI recording with explicit visit and session provider; not official notification.',
     _default: {
+      formName: 'INMU-002-REPORTE ESAVI',
+      formVersion: '1.0.0',
+      encounterRoleUuid: 'e967b2f3-62d8-49df-a37a-e8467f29bc88',
       vaccineNameConceptUuid: 'f0000017-0000-4000-8000-000000000017',
       severityConceptUuid: 'f0000019-0000-4000-8000-000000000019',
       reactionDescriptionConceptUuid: 'f0000002-0000-4000-8000-000000000002',
@@ -430,7 +433,7 @@ export const configSchema = {
     },
     urineGramsUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Urine output in grams/mL',
+      _description: 'Weight of urine output in grams',
       _default: '4a275a66-ea18-4ee6-a967-c2bc4a2ff607',
     },
     vomitCountUuid: {
@@ -440,7 +443,7 @@ export const configSchema = {
     },
     vomitGramsMLUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Vomit output in grams/mL',
+      _description: 'Vomit density in grams/mL',
       _default: 'db881ca6-26ff-46df-aac5-3f9a0efd67d4',
     },
 
@@ -1415,6 +1418,9 @@ export interface ConfigObject {
     adverseReactionForm: string;
   };
   adverseReactionReporting: {
+    formName: string;
+    formVersion: string;
+    encounterRoleUuid: string;
     vaccineNameConceptUuid: string;
     severityConceptUuid: string;
     reactionDescriptionConceptUuid: string;

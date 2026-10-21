@@ -249,8 +249,9 @@ export const configSchema = {
   triageEncounter: {
     encounterTypeUuid: {
       _type: Type.UUID,
-      _default: '67a71486-1a54-468f-ac3e-7091a9a79584',
-      _description: 'UUID del encounter type "Triaje"',
+      _default: '978deb64-358e-4c78-bbb0-04cea73df805',
+      _description:
+        'UUID del tipo Triaje de Emergencia para clasificaciones nuevas, separado del registro longitudinal de signos vitales y del tipo histórico mixto.',
     },
   },
 

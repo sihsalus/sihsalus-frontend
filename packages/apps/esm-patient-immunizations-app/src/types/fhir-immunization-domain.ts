@@ -67,6 +67,7 @@ export type ImmunizationSequence = {
   sequenceLabel: string;
   sequenceNumber: number;
   intervalInDaysAfterPreviousDose?: number;
+  minAgeInMonths?: number;
   minAgeInDays?: number;
   maxAgeInDays?: number;
   minsaLabel?: string;

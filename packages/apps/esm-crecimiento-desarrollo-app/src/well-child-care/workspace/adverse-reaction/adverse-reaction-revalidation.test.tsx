@@ -1,4 +1,11 @@
-import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig, useVisit } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  openmrsFetch,
+  showSnackbar,
+  useConfig,
+  useSession,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
@@ -14,9 +21,18 @@ it.each([false, true])(
   async (refreshFails) => {
     const config = getDefaultsFromConfigSchema<ConfigObject>(configSchema);
     vi.mocked(useConfig).mockReturnValue(config);
-    vi.mocked(useVisit).mockReturnValue({ activeVisit: { location: { uuid: 'synthetic-location' } } } as ReturnType<
-      typeof useVisit
-    >);
+    vi.mocked(useSession).mockReturnValue({
+      authenticated: true,
+      currentProvider: { uuid: 'synthetic-provider' },
+    } as never);
+    vi.mocked(useVisit).mockReturnValue({
+      activeVisit: {
+        uuid: 'synthetic-visit',
+        patient: { uuid: 'synthetic-child' },
+        startDatetime: '2026-01-02T09:00:00',
+        location: { uuid: 'synthetic-location' },
+      },
+    } as ReturnType<typeof useVisit>);
     const reads = new Map<string, number>();
     let saved = false;
     let writes = 0;
@@ -28,7 +44,19 @@ it.each([false, true])(
         return { data: { uuid: 'synthetic-reaction' } } as never;
       }
       if (request.pathname.endsWith('/form')) {
-        return { data: { results: [{ uuid: 'synthetic-form', name: config.formsList.adverseReactionForm }] } } as never;
+        return {
+          data: {
+            results: [
+              {
+                uuid: 'synthetic-form',
+                name: config.formsList.adverseReactionForm,
+                version: '1.0.0',
+                published: true,
+                retired: false,
+              },
+            ],
+          },
+        } as never;
       }
       const patient = request.searchParams.get('patient');
       reads.set(patient, (reads.get(patient) ?? 0) + 1);
@@ -72,7 +100,8 @@ it.each([false, true])(
     await user.selectOptions(screen.getByLabelText(/Vacuna/), 'BCG');
     await user.selectOptions(screen.getByLabelText(/Severidad/), 'mild');
     await user.type(screen.getByLabelText(/Descripción de la reacción/), 'Synthetic reaction');
-    fireEvent.change(screen.getByLabelText(/Fecha de ocurrencia/), { target: { value: '2026-01-02' } });
+    fireEvent.change(screen.getByLabelText(/Fecha del reporte/), { target: { value: '2026-01-02' } });
+    fireEvent.change(screen.getByLabelText(/Hora del reporte/), { target: { value: '10:30' } });
     const submit = screen.getByRole('button', { name: 'Registrar Reacción' });
     await user.click(submit);
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledOnce());

@@ -47,11 +47,12 @@ import SupplementationTracker from './well-child-care/components/supplementation
 import TpedReferenceWidget from './well-child-care/components/test-peruano/tped-reference-widget.component';
 import VaccinationSchedule from './well-child-care/components/vaccination-schema-widget/vaccinationSchedule.component';
 import { EarlyStimulation } from './well-child-care/early-stimulation.component';
-import { NeonatalCare } from './well-child-care/neonatal-care.component';
-import { WellChildControl } from './well-child-care/well-child-control.component';
-import CREDFormsSelectorWorkspace from './well-child-care/workspace/cred-forms-selector.workspace';
 import IntegratedCredDashboard from './well-child-care/integrated-cred-dashboard.component';
 import IntegratedCredLink from './well-child-care/integrated-cred-link.component';
+import { NeonatalCare } from './well-child-care/neonatal-care.component';
+import NeonatalCareLink from './well-child-care/neonatal-care-link.component';
+import { WellChildControl } from './well-child-care/well-child-control.component';
+import CREDFormsSelectorWorkspace from './well-child-care/workspace/cred-forms-selector.workspace';
 
 const moduleName = '@sihsalus/esm-cred-app';
 const options = {
@@ -71,6 +72,7 @@ export function startupApp(): void {
 export const wellChildCareSideNavGroup = getSyncLifecycle(createDashboardGroup(wellChildCareNavGroup), options);
 export const integratedCredDashboard = getSyncLifecycle(IntegratedCredDashboard, options);
 export const integratedCredLink = getSyncLifecycle(IntegratedCredLink, options);
+export const neonatalCareSidebarLink = getSyncLifecycle(NeonatalCareLink, options);
 
 // Navigation Links
 export const childImmunizationScheduleLink = getSyncLifecycle(

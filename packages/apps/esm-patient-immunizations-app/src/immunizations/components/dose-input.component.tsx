@@ -17,9 +17,8 @@ export const DoseInput: React.FC<{
   sequences: ImmunizationSequenceDefinition[];
   field: Pick<ControllerRenderProps<{ doseNumber?: number | null }, 'doseNumber'>, 'value' | 'onChange'>;
   fieldState: ControllerFieldState;
-  existingDoseNumbers?: number[];
   warningMessage?: string;
-}> = ({ vaccine, sequences, field, fieldState, existingDoseNumbers = [], warningMessage }) => {
+}> = ({ vaccine, sequences, field, fieldState, warningMessage }) => {
   const { t } = useTranslation();
   const showWarning = !!warningMessage && !fieldState.error;
 
@@ -28,10 +27,8 @@ export const DoseInput: React.FC<{
     [sequences, vaccine],
   );
 
-  const availableSequences = useMemo(
-    () => vaccineSequences.filter((sequence) => !existingDoseNumbers.includes(sequence.sequenceNumber)),
-    [existingDoseNumbers, vaccineSequences],
-  );
+  // Dose history produces a warning in the workspace, never an eligibility
+  // decision. Repeated annual doses and corrections must remain recordable.
 
   const handleChange = useCallback(
     (_event, { value }) => {
@@ -60,25 +57,29 @@ export const DoseInput: React.FC<{
   return (
     <div className={styles.row}>
       {vaccineSequences.length ? (
-        availableSequences.length === 0 ? (
-          <p>{t('allDosesAdministered', 'All doses for this vaccine have already been recorded')}</p>
-        ) : (
-          <Dropdown
-            id="sequence"
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
-            items={availableSequences.map((sequence) => sequence.sequenceNumber)}
-            itemToString={(item) =>
-              availableSequences.find((sequence) => sequence.sequenceNumber === item)?.sequenceLabel
-            }
-            label={t('pleaseSelect', 'Please select')}
-            onChange={(val) => field.onChange(parseInt(String(val.selectedItem || 0), 10))}
-            selectedItem={field.value}
-            titleText={t('sequence', 'Sequence')}
-            warn={showWarning}
-            warnText={warningMessage}
-          />
-        )
+        <Dropdown
+          id="sequence"
+          invalid={!!fieldState.error}
+          invalidText={fieldState.error?.message}
+          items={Array.from(
+            new Set([
+              ...vaccineSequences.map((sequence) => sequence.sequenceNumber),
+              ...(field.value != null ? [field.value] : []),
+            ]),
+          )}
+          itemToString={(item) =>
+            item == null
+              ? ''
+              : (vaccineSequences.find((sequence) => sequence.sequenceNumber === item)?.sequenceLabel ??
+                t('doseNumber', 'Dose {{number}}', { number: item }))
+          }
+          label={t('pleaseSelect', 'Please select')}
+          onChange={(val) => field.onChange(parseInt(String(val.selectedItem || 0), 10))}
+          selectedItem={field.value}
+          titleText={t('sequence', 'Sequence')}
+          warn={showWarning}
+          warnText={warningMessage}
+        />
       ) : (
         <NumberInput
           allowEmpty

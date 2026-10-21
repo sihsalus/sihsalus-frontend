@@ -37,3 +37,19 @@ describe('DoseInput', () => {
     ).toBe(false);
   });
 });
+
+it('shows an out-of-schedule historical ordinal without relabeling or changing it', () => {
+  const onChange = vi.fn();
+  render(
+    <DoseInput
+      vaccine="synthetic-vaccine"
+      sequences={[
+        { vaccineConceptUuid: 'synthetic-vaccine', sequences: [{ sequenceNumber: 1, sequenceLabel: 'Dose-1' }] },
+      ]}
+      field={{ value: 11, onChange }}
+      fieldState={{ invalid: false, isTouched: false, isDirty: false, isValidating: false }}
+    />,
+  );
+  expect(screen.getByRole('combobox', { name: /Sequence/i })).toHaveTextContent('Dose 11');
+  expect(onChange).not.toHaveBeenCalled();
+});

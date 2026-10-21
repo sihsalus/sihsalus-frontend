@@ -1,4 +1,5 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { resolvePublishedForm } from '@openmrs/esm-patient-common-lib';
 import useSWR, { type ScopedMutator } from 'swr';
 
 import type { ConfigObject } from '../../../config-schema';
@@ -8,10 +9,12 @@ export type Severity = 'mild' | 'moderate' | 'severe';
 export interface AdverseReactionPayload {
   patientUuid: string;
   locationUuid: string;
+  visitUuid: string;
+  providerUuid: string;
   vaccineName: string;
   reactionDescription: string;
   severity: Severity;
-  occurrenceDate: Date;
+  reportDatetime: Date;
   config: ConfigObject;
 }
 
@@ -40,12 +43,6 @@ interface EncounterResponse {
   obs?: Array<ObsResponse>;
 }
 
-interface FormResponse {
-  uuid: string;
-  name?: string;
-  display?: string;
-}
-
 export interface AdverseReactionSummary {
   id: string;
   occurrenceDate: string;
@@ -58,14 +55,30 @@ export interface AdverseReactionSummary {
 export async function saveAdverseReaction({
   patientUuid,
   locationUuid,
+  visitUuid,
+  providerUuid,
   vaccineName,
   reactionDescription,
   severity,
-  occurrenceDate,
+  reportDatetime,
   config,
 }: AdverseReactionPayload) {
   const adverseReactionConfig = config.adverseReactionReporting;
-  const formUuid = await resolveFormUuid(config.formsList.adverseReactionForm);
+  if (
+    !patientUuid ||
+    !locationUuid ||
+    !visitUuid ||
+    !providerUuid ||
+    !adverseReactionConfig.encounterRoleUuid ||
+    !adverseReactionConfig.formName ||
+    !adverseReactionConfig.formVersion
+  ) {
+    throw new Error('ESAVI requires a patient, visit, location, clinical provider and verified form configuration');
+  }
+  const form = await resolvePublishedForm(config.formsList.adverseReactionForm, {
+    name: adverseReactionConfig.formName,
+    version: adverseReactionConfig.formVersion,
+  });
 
   return openmrsFetch(`${restBaseUrl}/encounter`, {
     method: 'POST',
@@ -75,9 +88,11 @@ export async function saveAdverseReaction({
     body: {
       patient: patientUuid,
       location: locationUuid,
-      encounterDatetime: occurrenceDate,
+      encounterDatetime: reportDatetime,
       encounterType: config.encounterTypes.vaccinationAdministration,
-      form: formUuid,
+      form: form.uuid,
+      visit: visitUuid,
+      encounterProviders: [{ provider: providerUuid, encounterRole: adverseReactionConfig.encounterRoleUuid }],
       obs: [
         {
           concept: adverseReactionConfig.vaccineNameConceptUuid,
@@ -94,26 +109,6 @@ export async function saveAdverseReaction({
       ],
     },
   });
-}
-
-async function resolveFormUuid(formIdentifier: string) {
-  if (isUuid(formIdentifier)) {
-    return formIdentifier;
-  }
-
-  const response = await openmrsFetch<{ results: Array<FormResponse> }>(
-    `${restBaseUrl}/form?q=${encodeURIComponent(formIdentifier)}&v=custom:(uuid,name,display)`,
-  );
-
-  const exactMatch = response.data.results.find(
-    (form) => form.name === formIdentifier || form.display === formIdentifier || form.uuid === formIdentifier,
-  );
-
-  return exactMatch?.uuid ?? response.data.results[0]?.uuid ?? formIdentifier;
-}
-
-function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 export function getAdverseReactionsUrl(patientUuid: string, config: ConfigObject) {

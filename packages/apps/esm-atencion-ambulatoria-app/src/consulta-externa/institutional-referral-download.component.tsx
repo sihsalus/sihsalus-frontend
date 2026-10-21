@@ -7,7 +7,8 @@ import {
   SIS_CONCEPT_UUID,
   type VisitInsurance,
 } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useRef, useState } from 'react';
+import isEqual from 'lodash-es/isEqual';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import type { ReferralEntry } from '../hooks/useReferralCounterReferral';
@@ -46,6 +47,59 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const [isGenerating, setIsGenerating] = useState(false);
   const generationInProgress = useRef(false);
+  const generationEpoch = useRef(0);
+
+  // Compare the values used by the document. Hooks/history mapping may return
+  // equivalent new objects on every render, including our own busy-state render.
+  const generationContext = {
+    patientUuid,
+    patient: patient ? toSummaryPatient(patient) : null,
+    isPatientLoading,
+    hasPatientError: Boolean(patientError),
+    language: i18n.language,
+    referral: {
+      uuid: entry.uuid,
+      visitUuid: entry.visitUuid,
+      encounterDatetime: entry.encounterDatetime,
+      destination: entry.referralDestination,
+      destinationCode: entry.referralDestinationCode,
+      specialty: entry.referralDestinationSpecialtyOther || entry.referralDestinationSpecialty,
+      priority: entry.referralType,
+      patientCondition: entry.referralPatientCondition,
+      transportMode: entry.referralTransportMode,
+      reason: entry.referralReason,
+    },
+    config: {
+      ambulatoryVisitType: config.visitTypes.ambulatory,
+      facilityName: config.referralOriginFacilityName,
+      renaesCode: config.referralOriginRenaesCode,
+      professionalRegistration: config.professionalRegistrationProviderAttributeTypeUuid,
+      clinicianRole: config.clinicianEncounterRoleUuid,
+      visitNoteType: config.encounterTypes.visitNote,
+      visitNoteForm: config.formsList.visitNoteFormUuid,
+      referralType: config.encounterTypes.referralCounterReferral,
+      concepts: config.concepts,
+    },
+  };
+  const activeContext = useRef(generationContext);
+
+  useLayoutEffect(() => {
+    if (isEqual(activeContext.current, generationContext)) return;
+    activeContext.current = generationContext;
+    generationEpoch.current += 1;
+    generationInProgress.current = false;
+    setIsGenerating(false);
+  });
+
+  useLayoutEffect(
+    () => () => {
+      // The reads/PDF builder cannot be aborted. Invalidate their results on
+      // unmount; old completions must not download or affect a newer operation.
+      generationEpoch.current += 1;
+      generationInProgress.current = false;
+    },
+    [],
+  );
 
   const showError = useCallback(
     (subtitle: string) =>
@@ -91,6 +145,8 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
     };
     summaryPatient.gender = genderLabels[summaryPatient.gender ?? ''] ?? summaryPatient.gender;
 
+    const operationEpoch = ++generationEpoch.current;
+    const isCurrent = () => generationEpoch.current === operationEpoch;
     generationInProgress.current = true;
     setIsGenerating(true);
     try {
@@ -98,6 +154,7 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
         fetchOutpatientVisitSummarySource(entry.visitUuid),
         fetchVisitInsurance(entry.visitUuid),
       ]);
+      if (!isCurrent()) return;
       const summary = buildOutpatientVisitSummary({
         source,
         expectedVisitUuid: entry.visitUuid,
@@ -139,6 +196,7 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
         },
         i18n.language || 'es-PE',
       );
+      if (!isCurrent()) return;
       downloadInstitutionalReferralPdf(bytes, createInstitutionalReferralFileName(entry.encounterDatetime, entry.uuid));
       showSnackbar({
         isLowContrast: true,
@@ -147,18 +205,26 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
         subtitle: t('referralDownloadedLocally', 'El documento se generó localmente en formato PDF.'),
       });
     } catch (error) {
+      if (!isCurrent()) return;
       createErrorHandler()(error);
       showError(
-        error instanceof ReferralServicesError
+        error instanceof Error && error.name === 'OutpatientPdfUnsupportedCharacterError'
           ? t(
-              'referralServicesUnavailable',
-              'Revise la referencia: no se pudieron verificar sus servicios de origen y destino. No se generó el documento.',
+              'outpatientPdfUnsupportedCharacters',
+              'El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.',
             )
-          : t('referralDownloadRetry', 'Recargue la historia e intente nuevamente.'),
+          : error instanceof ReferralServicesError
+            ? t(
+                'referralServicesUnavailable',
+                'Revise la referencia: no se pudieron verificar sus servicios de origen y destino. No se generó el documento.',
+              )
+            : t('referralDownloadRetry', 'Recargue la historia e intente nuevamente.'),
       );
     } finally {
-      generationInProgress.current = false;
-      setIsGenerating(false);
+      if (isCurrent()) {
+        generationInProgress.current = false;
+        setIsGenerating(false);
+      }
     }
   }, [config, entry, i18n.language, isPatientLoading, patient, patientError, patientUuid, showError, t]);
 

@@ -1,6 +1,7 @@
 // hooks/useCREDFormsForAgeGroup.ts
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 import {
@@ -10,7 +11,7 @@ import {
   credNutritionEditPrivilege,
 } from '../constants';
 import type { CompletedFormInfo } from '../types';
-import { getConfiguredAgeGroupFromBirthDate } from '../utils/age-group-utils';
+import { calculateAgeInMonths, getConfiguredAgeGroupFromBirthDate } from '../utils/age-group-utils';
 
 type CredFormKey = keyof ConfigObject['formsList'];
 type CompletedCREDFormInfo = CompletedFormInfo & {
@@ -38,7 +39,7 @@ const credFormLabels: Partial<Record<CredFormKey, string>> = {
   stimulationCounselingForm: 'Consejería de desarrollo infantil',
   ediDevelopmentForm: 'EDI (registro resumido; aplicar instrumento oficial)',
   autismScreeningForm: 'M-CHAT-R/F (registro resumido; aplicar cuestionario oficial)',
-  childMentalHealthForm: 'Salud mental del niño y cuidador (registro resumido)',
+  childMentalHealthForm: 'Salud mental del niño: PPSC/PSC-17 (según edad)',
   parasitosisScreeningForm: 'Descarte de parasitosis',
   vitaminAAdministrationForm: 'Vitamina A (solo en zonas de riesgo)',
   physicalExamForm: 'Examen físico integral',
@@ -90,9 +91,14 @@ export function useCREDFormsForAgeGroup(
   birthDate: string | undefined,
   referenceDate?: Date | string,
 ): CompletedCREDFormInfo[] {
+  const { t } = useTranslation('@sihsalus/esm-cred-app');
   return useMemo(() => {
-    return getCREDFormsForAgeGroup(config, birthDate, referenceDate);
-  }, [birthDate, config, referenceDate]);
+    return getCREDFormsForAgeGroup(config, birthDate, referenceDate).map((info) => {
+      if (info.formKey !== 'childMentalHealthForm') return info;
+      const label = t('childMentalHealthFormLabel', credFormLabels.childMentalHealthForm);
+      return { ...info, form: { ...info.form, name: label, display: label } };
+    });
+  }, [birthDate, config, referenceDate, t]);
 }
 
 export function getCREDFormsForAgeGroup(
@@ -113,7 +119,10 @@ export function getCREDFormsForAgeGroup(
 
   if (!matchedGroup || !matchedGroup.forms) return [];
 
-  const uniqueFormKeys = Array.from(new Set(matchedGroup.forms));
+  const childAgeMonths = calculateAgeInMonths(birthDate, referenceDate);
+  const uniqueFormKeys = Array.from(new Set(matchedGroup.forms)).filter(
+    (key) => key !== 'childMentalHealthForm' || (childAgeMonths >= 36 && childAgeMonths < 144),
+  );
 
   return uniqueFormKeys
     .map((formKey) => {

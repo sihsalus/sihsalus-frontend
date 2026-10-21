@@ -1,4 +1,5 @@
 {
+  "clinicalProviderRequired": "A linked clinical provider is required to record an immunization.",
   "requiredFieldsHint": "Fields marked with * are required.",
   "vaccinationServiceUnavailable": "Vaccination is unavailable. Contact support before trying again.",
   "vaccinationSaveUnconfirmed": "The vaccination could not be confirmed as saved. Review the history before trying again.",
@@ -22,6 +23,12 @@
   "dueSoon": "Due soon",
   "duplicateDoseWarning": "Dose {{dose}} has already been recorded for this vaccine",
   "empty": "Sin dosis",
+  "encounterProviderMissing": "A vaccination encounter lacks the provider role required to read the vaccination history.",
+  "encounterProviderMissingNoProviderHint": "Your user account has no provider record. Ask support to repair the encounter.",
+  "encounterProviderMissingRepairHint": "Repair adds your provider record to that encounter with the required role and reloads the history.",
+  "encounterProviderPreflightFailed": "Could not prepare the vaccination encounter. Nothing was saved.",
+  "encounterRepairFailed": "The vaccination record could not be repaired",
+  "encounterRepairFailedHint": "Try again or contact support.",
   "error": "Error",
   "errorSaving": "Error saving vaccination",
   "expirationDate": "Expiration Date",
@@ -60,7 +67,10 @@
   "peruNationalSchedule": "Esquema Nacional de Vacunación — Perú",
   "pleaseSelect": "Please select",
   "programContext": "MINSA context",
+  "providerRequiredForVaccination": "Your user account has no provider record. Ask support to assign one before recording vaccinations.",
   "recentVaccination": "Recent vaccination",
+  "repair": "Repair",
+  "repairing": "Repairing",
   "required": "Obligatoria",
   "routineSchedule": "Routine schedule",
   "saved": "Guardado",
@@ -86,6 +96,7 @@
   "unknownVaccinationSaveError": "Unknown error while saving vaccination.",
   "unknownVaccine": "Unknown vaccine",
   "vaccination": "Vaccination",
+  "vaccinationDateRequired": "Enter the administration date for an administered vaccination.",
   "vaccinationDate": "Vaccination date",
   "vaccinationDateCannotBeBeforeBirthDate": "Vaccination date cannot precede birth date",
   "vaccinationDateCannotBeInTheFuture": "Vaccination date cannot be in the future",
@@ -95,5 +106,8 @@
   "vaccine": "Vaccine",
   "vaccineBatchInformation": "Vaccine Batch Information",
   "vaccineRequired": "Vaccine is required",
-  "viewingScheduleVersion": "viendo v{{version}}"
+  "viewingScheduleVersion": "viendo v{{version}}",
+  "registrationTimeAtSave": "The record date and time are assigned when you save, separately from the administration date.",
+  "unverifiedStatus": "Unverified status",
+  "immunizationStatusRequired": "Select an administration status before saving"
 }

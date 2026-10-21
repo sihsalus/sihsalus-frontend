@@ -1,7 +1,7 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
 import useSWR from 'swr';
-import { StudyUploadError, uploadStudies, useOrthancConfigurations } from './api';
+import { saveRequestProcedureStep, StudyUploadError, uploadStudies, useOrthancConfigurations } from './api';
 
 vi.mock('@openmrs/esm-framework', () => ({ restBaseUrl: '/ws/rest/v1', openmrsFetch: vi.fn() }));
 vi.mock('swr', () => ({ default: vi.fn() }));
@@ -117,5 +117,31 @@ describe('Orthanc configuration response boundary', () => {
     const { result } = renderHook(useOrthancConfigurations);
     expect(result.current.data).toEqual([]);
     expect(result.current.error).toBeUndefined();
+  });
+});
+
+describe('worklist step creation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('posts the performing physician under the key the imaging module requires', async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ ok: true, data: { id: 7 } } as never);
+    await saveRequestProcedureStep(
+      {
+        requestId: 31,
+        modality: 'CR',
+        aetTitle: 'SYNTHETIC_AE',
+        scheduledPerformingPhysician: 'Synthetic clinician',
+        requestedProcedureDescription: 'Synthetic procedure',
+        stepStartDate: '20300904',
+        stepStartTime: '123000',
+      },
+      31,
+      new AbortController(),
+    );
+    const [url, options] = vi.mocked(openmrsFetch).mock.calls[0];
+    expect(url).toMatch(/\/worklist\/savestep$/);
+    const body = JSON.parse(options.body as string);
+    expect(body.scheduledPerformingPhysician).toBe('Synthetic clinician');
+    expect(body).not.toHaveProperty('scheduledReferringPhysician');
   });
 });

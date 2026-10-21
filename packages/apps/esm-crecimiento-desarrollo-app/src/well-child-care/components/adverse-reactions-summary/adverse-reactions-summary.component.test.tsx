@@ -5,7 +5,7 @@ import AdverseReactionsSummary from './adverse-reactions-summary.component';
 
 vi.mock('../../workspace/adverse-reaction/adverse-reaction.resource', () => ({ useAdverseReactions: vi.fn() }));
 
-it('formats occurrence dates and coded severity while preserving historical labels', () => {
+it('formats recorded dates and coded severity while preserving historical labels', () => {
   vi.mocked(useConfig).mockReturnValue({});
   vi.mocked(useAdverseReactions).mockReturnValue({
     reactions: [
@@ -31,6 +31,8 @@ it('formats occurrence dates and coded severity while preserving historical labe
     mutate: vi.fn(),
   });
   render(<AdverseReactionsSummary />);
+  expect(screen.getByRole('columnheader', { name: 'Fecha registrada' })).toBeVisible();
+  expect(screen.queryByRole('columnheader', { name: 'Fecha de ocurrencia' })).not.toBeInTheDocument();
   expect(
     screen.getByText(formatDate(parseDate('2026-10-10T05:00:00.000+0000'), { mode: 'standard' })),
   ).toBeInTheDocument();

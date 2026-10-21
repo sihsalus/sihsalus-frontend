@@ -1,6 +1,14 @@
-import { Button, ButtonSet, Form, InlineNotification, Select, SelectItem, TextArea } from '@carbon/react';
-import { OpenmrsDatePicker, showSnackbar, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
+import { Button, ButtonSet, Form, InlineNotification, Select, SelectItem, TextArea, TimePicker } from '@carbon/react';
+import {
+  OpenmrsDatePicker,
+  showSnackbar,
+  useConfig,
+  useLayoutType,
+  useSession,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import dayjs from 'dayjs';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -15,7 +23,8 @@ interface AdverseReaction {
   vaccineName: string;
   reactionDescription: string;
   severity: 'mild' | 'moderate' | 'severe' | '';
-  occurrenceDate: Date | null;
+  reportDate: Date | null;
+  reportTime: string;
 }
 
 const VACCINE_OPTIONS = [
@@ -40,12 +49,16 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const isTablet = useLayoutType() === 'tablet';
   const patientUuid = patientUuidProp ?? workspaceProps?.patientUuid;
   const { activeVisit, currentVisit } = useVisit(patientUuid);
-  const locationUuid = (currentVisit ?? activeVisit)?.location?.uuid;
+  const visit = currentVisit ?? activeVisit;
+  const locationUuid = visit?.location?.uuid;
+  const session = useSession();
+  const providerUuid = session?.authenticated ? session.currentProvider?.uuid : undefined;
   const [formData, setFormData] = useState<AdverseReaction>({
     vaccineName: '',
     reactionDescription: '',
     severity: '',
-    occurrenceDate: null,
+    reportDate: null,
+    reportTime: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,24 +84,58 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       setError(t('severityRequired', 'Debe seleccionar la severidad'));
       return false;
     }
-    if (!formData.occurrenceDate) {
-      setError(t('dateRequired', 'Debe seleccionar la fecha de ocurrencia'));
+    if (!formData.reportDate || !Number.isFinite(formData.reportDate.getTime())) {
+      setError(t('esaviReportDateRequired', 'Debe seleccionar la fecha del reporte'));
       return false;
     }
-    if (!patientUuid || !locationUuid) {
+    const reportDatetime = getReportDatetime(formData.reportDate, formData.reportTime);
+    if (!reportDatetime) {
+      setError(t('esaviReportTimeRequired', 'Ingrese la hora del reporte en formato de 24 horas (HH:mm).'));
+      return false;
+    }
+    if (!patientUuid || !locationUuid || !visit?.uuid || visit.stopDatetime || visit.patient?.uuid !== patientUuid) {
       setError(t('missingPatientOrLocation', 'Se requiere una visita activa con una UPSS asistencial'));
       return false;
     }
+    const visitStart = Date.parse(visit.startDatetime);
+    if (
+      !Number.isFinite(visitStart) ||
+      reportDatetime.getTime() < visitStart ||
+      reportDatetime.getTime() > Date.now()
+    ) {
+      setError(
+        t(
+          'esaviReportOutsideVisit',
+          'La fecha y hora del reporte debe estar dentro de la visita abierta y no puede ser futura.',
+        ),
+      );
+      return false;
+    }
+    if (!providerUuid) {
+      setError(t('esaviProviderRequired', 'Your session must be linked to a clinical provider to record the event.'));
+      return false;
+    }
     return true;
-  }, [formData, locationUuid, patientUuid, t]);
+  }, [formData, locationUuid, patientUuid, providerUuid, visit, t]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
 
-      if (submitting.current || isSaved || !validateForm()) {
+      if (
+        submitting.current ||
+        isSaved ||
+        !validateForm() ||
+        !patientUuid ||
+        !locationUuid ||
+        !visit?.uuid ||
+        !providerUuid
+      ) {
         return;
       }
+
+      const reportDatetime = getReportDatetime(formData.reportDate, formData.reportTime);
+      if (!reportDatetime) return;
 
       setIsSubmitting(true);
       submitting.current = true;
@@ -97,10 +144,12 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         await saveAdverseReaction({
           patientUuid,
           locationUuid,
+          visitUuid: visit.uuid,
+          providerUuid,
           vaccineName: formData.vaccineName,
           reactionDescription: formData.reactionDescription,
           severity: formData.severity as Exclude<AdverseReaction['severity'], ''>,
-          occurrenceDate: formData.occurrenceDate,
+          reportDatetime,
           config,
         });
 
@@ -141,13 +190,28 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         submitting.current = false;
       }
     },
-    [closeWorkspace, config, formData, isSaved, locationUuid, mutate, patientUuid, validateForm, t],
+    [
+      closeWorkspace,
+      config,
+      formData,
+      isSaved,
+      locationUuid,
+      mutate,
+      patientUuid,
+      providerUuid,
+      visit,
+      validateForm,
+      t,
+    ],
   );
 
   return (
     <RequirePrivilege privilege={credImmunizationEditPrivilege}>
       <Form className={styles.adverseReactionForm} onSubmit={handleSubmit} noValidate>
         <div style={{ padding: '1rem' }}>
+          <p>
+            {t('esaviClinicalRecordHelp', 'This clinical record does not replace official adverse event notification.')}
+          </p>
           <p>{t('requiredFieldsHint', 'Fields marked with * are required.')}</p>
           {error && (
             <InlineNotification
@@ -179,6 +243,10 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
             required
             value={formData.reactionDescription}
             onChange={(e) => handleInputChange('reactionDescription', e.target.value)}
+            helperText={t(
+              'esaviNarrativeTimingHelp',
+              'Indique en la descripción cuándo inició el evento y la cronología de los síntomas. La fecha del reporte se registra por separado.',
+            )}
             rows={4}
             placeholder={t('reactionPlaceholder', 'Describa los síntomas observados...')}
             className={styles.formField}
@@ -200,12 +268,22 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
           <div className={styles.formField}>
             <OpenmrsDatePicker
-              id="occurrence-date"
-              labelText={`${t('occurrenceDate', 'Fecha de ocurrencia del evento')} *`}
+              id="report-date"
+              labelText={`${t('esaviReportDate', 'Fecha del reporte')} *`}
               isRequired
+              minDate={visit?.startDatetime ? dayjs(visit.startDatetime).startOf('day') : undefined}
               maxDate={new Date()}
-              value={formData.occurrenceDate}
-              onChange={(date) => handleInputChange('occurrenceDate', date)}
+              value={formData.reportDate}
+              onChange={(date) => handleInputChange('reportDate', date)}
+            />
+            <TimePicker
+              id="report-time"
+              labelText={`${t('esaviReportTime', 'Hora del reporte (24 horas)')} *`}
+              value={formData.reportTime}
+              placeholder="HH:mm"
+              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              onChange={(event) => handleInputChange('reportTime', event.target.value)}
+              aria-required={true}
             />
           </div>
         </div>
@@ -224,3 +302,11 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 };
 
 export default AdverseReactionFormWorkspace;
+
+function getReportDatetime(date: Date | null, time: string): Date | null {
+  if (!date || !Number.isFinite(date.getTime()) || !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) return null;
+  const [hours, minutes] = time.split(':').map(Number);
+  const result = new Date(date);
+  result.setHours(hours, minutes, 0, 0);
+  return result;
+}

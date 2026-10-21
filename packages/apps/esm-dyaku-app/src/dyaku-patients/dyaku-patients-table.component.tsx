@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 
 import DyakuPatientSyncButton from './dyaku-patient-sync-button.component';
 import {
-  DNI_SYSTEM,
+  getDniFromDyakuPatient,
   type DyakuPatient,
   useDyakuPatients,
   useDyakuPatientsByIdentifier,
@@ -89,12 +89,7 @@ const DyakuPatientsTable: React.FC<DyakuPatientsTableProps> = ({ pageSize: initi
   const allRows: Array<DyakuPatientsTableRow> = patients
     ? patients.map((patient, index) => ({
         id: patient.id || `patient-${index}`,
-        dni:
-          patient.identifier?.find(
-            (identifier) => identifier.system === DNI_SYSTEM || identifier.type?.coding?.some((c) => c.code === 'DNI'),
-          )?.value ??
-          patient.identifier?.[0]?.value ??
-          '-',
+        dni: getDniFromDyakuPatient(patient) ?? '-',
         firstName: patient.name?.[0]?.given?.join(' ') || '-',
         lastName: patient.name?.[0]?.family || '-',
         gender:
@@ -144,7 +139,10 @@ const DyakuPatientsTable: React.FC<DyakuPatientsTableProps> = ({ pageSize: initi
   if (error) {
     return (
       <div className={styles.errorState}>
-        {t('errorLoadingPatients', 'Error al cargar los pacientes: {{error}}', { error: error.message })}
+        {t(
+          'errorLoadingPatients',
+          'No se pudieron consultar los pacientes. Intente nuevamente. Si el problema continúa, contacte a soporte.',
+        )}
       </div>
     );
   }
@@ -201,25 +199,30 @@ const DyakuPatientsTable: React.FC<DyakuPatientsTableProps> = ({ pageSize: initi
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, rowIndex) => (
-                  <TableRow key={row.id} {...getRowProps({ row })}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>
-                        {cell.info.header === 'actions' ? (
-                          <DyakuPatientSyncButton
-                            patient={paginatedData[rowIndex].actions}
-                            onSyncComplete={handleSyncComplete}
-                            size="sm"
-                          />
-                        ) : typeof cell.value === 'string' ? (
-                          cell.value
-                        ) : (
-                          ''
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {rows.map((row) => {
+                  // Carbon sorts its own rows; array positions no longer identify
+                  // the patient displayed. Ambiguous row IDs must not offer import.
+                  const matchingRows = paginatedData.filter((item) => item.id === row.id);
+                  const patient = matchingRows.length === 1 ? matchingRows[0].actions : undefined;
+                  const { key, ...rowProps } = getRowProps({ row });
+                  return (
+                    <TableRow key={key} {...rowProps}>
+                      {row.cells.map((cell) => (
+                        <TableCell key={cell.id}>
+                          {cell.info.header === 'actions' ? (
+                            patient ? (
+                              <DyakuPatientSyncButton patient={patient} onSyncComplete={handleSyncComplete} size="sm" />
+                            ) : null
+                          ) : typeof cell.value === 'string' ? (
+                            cell.value
+                          ) : (
+                            ''
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
             {filteredRows.length === 0 && (

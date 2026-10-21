@@ -82,6 +82,21 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
     [inputConstraints],
   );
 
+  // Carbon labels the stepper buttons through translateWithId; without this the
+  // titles stay in English regardless of the session locale.
+  const translateStepperLabel = useCallback(
+    (id: string) => {
+      if (id === 'increment.number') {
+        return t('incrementNumber', 'Increment number');
+      }
+      if (id === 'decrement.number') {
+        return t('decrementNumber', 'Decrement number');
+      }
+      return id;
+    },
+    [t],
+  );
+
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLInputElement>) => {
       if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), inputConstraints)) {
@@ -124,6 +139,7 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
           warn={warnings.length > 0}
           warnText={warnings[0]?.message}
           step={field.questionOptions.step ?? 0.01}
+          translateWithId={translateStepperLabel}
         />
       </Layer>
     )

@@ -23,6 +23,9 @@ const config = {
     adverseReactionForm: 'INMU-002-REPORTE ESAVI',
   },
   adverseReactionReporting: {
+    formName: 'INMU-002-REPORTE ESAVI',
+    formVersion: '1.0.0',
+    encounterRoleUuid: 'synthetic-esavi-role',
     vaccineNameConceptUuid: 'f0000017-0000-4000-8000-000000000017',
     severityConceptUuid: 'f0000019-0000-4000-8000-000000000019',
     reactionDescriptionConceptUuid: 'f0000002-0000-4000-8000-000000000002',
@@ -44,6 +47,9 @@ describe('adverse reaction resource', () => {
             uuid: '6e4ae4b0-d746-3587-8f17-c0316847dff8',
             name: 'INMU-002-REPORTE ESAVI',
             display: 'INMU-002-REPORTE ESAVI',
+            version: '1.0.0',
+            published: true,
+            retired: false,
           },
         ],
       },
@@ -51,21 +57,21 @@ describe('adverse reaction resource', () => {
   });
 
   it('saves an adverse reaction as an ESAVI encounter with observations', async () => {
-    const occurrenceDate = new Date('2026-05-05T10:30:00.000Z');
+    const reportDatetime = new Date('2026-05-05T10:30:00.000Z');
 
     await saveAdverseReaction({
       patientUuid: 'patient-uuid',
       locationUuid: 'location-uuid',
+      visitUuid: 'synthetic-visit',
+      providerUuid: 'synthetic-provider',
       vaccineName: 'BCG',
       reactionDescription: 'Fiebre y enrojecimiento local',
       severity: 'moderate',
-      occurrenceDate,
+      reportDatetime,
       config,
     });
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      '/ws/rest/v1/form?q=INMU-002-REPORTE%20ESAVI&v=custom:(uuid,name,display)',
-    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/ws/rest/v1/form?'), { cache: 'no-store' });
     expect(mockOpenmrsFetch).toHaveBeenCalledWith('/ws/rest/v1/encounter', {
       method: 'POST',
       headers: {
@@ -74,9 +80,11 @@ describe('adverse reaction resource', () => {
       body: {
         patient: 'patient-uuid',
         location: 'location-uuid',
-        encounterDatetime: occurrenceDate,
+        encounterDatetime: reportDatetime,
         encounterType: '29c02aff-9a93-46c9-bf6f-48b552fcb1fa',
         form: '6e4ae4b0-d746-3587-8f17-c0316847dff8',
+        visit: 'synthetic-visit',
+        encounterProviders: [{ provider: 'synthetic-provider', encounterRole: 'synthetic-esavi-role' }],
         obs: [
           {
             concept: 'f0000017-0000-4000-8000-000000000017',
@@ -132,3 +140,37 @@ it.each(['mild', 'moderate', 'severe', 'historical'] as const)(
     expect(result.current.reactions[0].severity).toBe('Stored label');
   },
 );
+
+const savePayload = {
+  patientUuid: 'synthetic-child',
+  locationUuid: 'synthetic-location',
+  visitUuid: 'synthetic-visit',
+  providerUuid: 'synthetic-provider',
+  vaccineName: 'BCG',
+  reactionDescription: 'Synthetic reaction',
+  severity: 'mild' as const,
+  reportDatetime: new Date('2026-10-01T00:00:00Z'),
+  config,
+};
+it.each(['visitUuid', 'providerUuid', 'locationUuid', 'patientUuid'] as const)(
+  'does not POST without %s',
+  async (missing) => {
+    mockOpenmrsFetch.mockReset();
+    await expect(saveAdverseReaction({ ...savePayload, [missing]: '' })).rejects.toThrow();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  },
+);
+it.each([
+  [{ uuid: 'wrong', name: config.formsList.adverseReactionForm, version: '1.0.0', published: false, retired: false }],
+  [{ uuid: 'old', name: config.formsList.adverseReactionForm, version: '0.9', published: true, retired: false }],
+  [{ uuid: 'retired', name: config.formsList.adverseReactionForm, version: '1.0.0', published: true, retired: true }],
+  [
+    { uuid: 'one', name: config.formsList.adverseReactionForm, version: '1.0.0', published: true, retired: false },
+    { uuid: 'two', name: config.formsList.adverseReactionForm, version: '1.0.0', published: true, retired: false },
+  ],
+])('does not POST an unverified or ambiguous ESAVI schema: %j', async (...results) => {
+  mockOpenmrsFetch.mockReset();
+  mockOpenmrsFetch.mockResolvedValue({ data: { results } } as never);
+  await expect(saveAdverseReaction(savePayload)).rejects.toThrow();
+  expect(mockOpenmrsFetch.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
+});

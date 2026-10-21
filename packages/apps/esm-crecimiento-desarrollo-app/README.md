@@ -38,11 +38,146 @@ el recorrido bilateral con pacientes sintéticos.
 **Abrir formularios del control** reutiliza el workspace y la comprobación de
 consulta activa existentes. **Consultas anteriores** conserva el permiso de
 visitas y abre el historial del mismo paciente sin cambiar la consulta activa.
-El orden del enlace lateral pertenece a `config/frontend.json`. Las rutas,
+El orden de los enlaces laterales pertenece a `config/frontend.json`. Las rutas,
 componentes y privilegios de los cinco dashboards anteriores se conservan para
-enlaces directos. La atención inmediata y hospitalaria neonatal permanece en su
-pantalla original, accesible desde **Ver atención neonatal** con su permiso
-propio; no es un paso obligatorio del control ambulatorio.
+enlaces directos. **Atención neonatal** aparece junto a Crecimiento y desarrollo,
+reutiliza `neonatal-care-dashboard` y conserva en el enlace los permisos de
+curso de vida y lectura neonatal y la inscripción activa a Control de Niño Sano.
+También se conserva **Ver atención neonatal** desde Antecedentes y nacimiento.
+La atención inmediata y hospitalaria neonatal permanece en su pantalla propia;
+no es un paso obligatorio del control ambulatorio.
+
+La pantalla neonatal usa `TabbedDashboard`: Signos vitales, Balance de líquidos,
+Registro perinatal, Atención inmediata, Evaluación cefalocaudal, Alojamiento
+conjunto y Lactancia. Solo monta la pestaña activa y reinicia la selección al
+cambiar de paciente. El balance ocupa `neonatal-fluid-balance-slot`; el widget
+deja de pertenecer a `neonatal-vitals-slot`. Las configuraciones externas que
+reordenen ese widget deben usar el nuevo slot.
+
+Control y examen ofrece **Ver atención odontológica y odontograma**, que abre
+la ruta odontológica existente para el mismo paciente. Requiere conexión y
+permiso odontológico; reutiliza el módulo responsable de captura e historial.
+La tarjeta de antecedentes ya está disponible en Antecedentes y nacimiento.
+
+### Estado de recuperación de funciones anteriores
+
+| Función anterior                                | Estado y destino                                                                                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Atención neonatal                               | Pantalla existente recuperada en la navegación; siete pestañas y permisos conservados.                                                                                                      |
+| Balance de líquidos                             | Historial en pestaña propia. Completa todas las páginas de observaciones antes de mostrar las filas; un fallo permite reintentar y no se presenta como historial vacío.                     |
+| Captura React del balance                       | Pendiente: sustituir la captura eliminada en `eb735b973` con la propuesta por evento/intervalo descrita debajo; requiere conceptos correctos y validación clínica. Escritura no habilitada. |
+| Antropometría neonatal                          | Ya usa el workspace compartido de signos vitales; se conserva esa implementación.                                                                                                           |
+| Nutrición y estimulación                        | Conservadas en Crecimiento y nutrición, Desarrollo y Seguimiento.                                                                                                                           |
+| Odontograma en Servicios adicionales            | Acceso recuperado desde Control y examen al módulo odontológico existente.                                                                                                                  |
+| Órdenes médicas, evolución y epicrisis antiguas | Referencias de configuración sin lanzador CRED; pendiente confirmar su propietario en el flujo asistencial correspondiente.                                                                 |
+| TPED y TEPSI React anteriores                   | No se reactivan los prototipos retirados. Se conservan referencia e históricos; cualquier captura adicional requiere evaluar los formularios actuales y su contrato.                        |
+
+El export local de content
+`10_SIHSALUS_sihsalus_concepts_2026-09-09-1.zip` identifica
+`urineGramsUuid` como cantidad de orina en gramos y
+`vomitGramsMLUuid` (`db881ca6-26ff-46df-aac5-3f9a0efd67d4`) como
+**Densidad del vómito**, unidad `gr/ml`. Las antiguas etiquetas de volumen no
+demuestran equivalencia. Este hallazgo corresponde al catálogo versionado, no
+a una comprobación del backend desplegado. La propuesta siguiente resuelve las
+unidades y el período de captura; aún requiere comprobar conceptos instalados,
+revisión clínica y adaptar el guardado a consulta, proveedor, UPSS y fecha.
+Los encabezados del historial identifican peso de orina y densidad del vómito;
+las unidades se obtienen de la metadata sin duplicarlas en las traducciones.
+Este ajuste no convierte valores ni certifica la unidad con que se capturaron
+los registros antiguos.
+No se modifican conceptos ni observaciones históricas con esta recuperación de
+navegación.
+
+La siguiente etapa de captura mantiene un workspace React propio. Se
+verifican el tipo de atención y los conceptos instalados y se vincula el guardado
+con paciente, consulta, proveedor, ubicación y fecha, y se evita atribuirlo al
+formulario genérico de signos vitales. La recuperación debe conservar ceros,
+distinguir campos vacíos, validar números según cada concepto y bloquear envíos
+duplicados. La aceptación requiere guardar, recargar y reabrir el mismo registro
+con datos sintéticos y comprobar permisos, cambio de paciente y fallos de red.
+
+### Propuesta de captura revisada con fuentes clínicas — 19/10/2026
+
+El formulario antiguo contenía seis campos de eliminaciones. Para calcular un
+balance se necesitan también aportes y un período identificado. La propuesta
+para SIH Salus es registrar cada evento o intervalo una vez y calcular resúmenes
+por turno y por 24 horas. El horario de corte debe configurarse por servicio.
+La guía neonatal de [RCH sobre manejo de fluidos](https://www.rch.org.au/rchcpg/hospital_clinical_guideline_index/Neonatal_and_Infant_Intravenous_Fluid_Management/)
+documenta volúmenes administrados por hora, revisión diaria y diuresis según
+volumen, peso y duración. Su corte a las 06:00 es una práctica institucional
+que no se incorpora como regla universal.
+
+| Dato              | Registro propuesto                                                                                                                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tiempo            | Fecha/hora del evento; inicio y fin para cantidades recogidas durante un intervalo. Los acumulados son resultados, sin volver a sumarlos como eventos.                                                                                     |
+| Ingresos          | Volumen realmente administrado en mL, tipo y vía: leche/alimentación enteral, soluciones IV, medicación y lavados, nutrición parenteral y hemoderivados. Evitar contar un mismo aporte en dos categorías.                                  |
+| Lactancia directa | Registrar la toma y su evaluación. El volumen queda sin cuantificar cuando no se midió; no asignar mL por duración ni sustituirlo por cero.                                                                                                |
+| Orina             | Volumen en mL con método de medición. El pesaje de pañal conserva peso seco, húmedo y diferencia en g; cualquier volumen derivado se identifica como estimación. Un pañal mixto no se atribuye íntegramente a diuresis.                    |
+| Vómitos           | Número de episodios, volumen en mL cuando sea cuantificable y características. Distinguir medido, estimado y no cuantificable. No pedir densidad en la nueva captura.                                                                      |
+| Deposiciones      | Número, color y consistencia. Peso en g si se midió; volumen de pérdidas líquidas o estoma cuando sea medible. No convertir automáticamente gramos de heces en mL.                                                                         |
+| Otras pérdidas    | Volumen en mL y origen: drenajes, aspirado eliminado, estomas y sangre extraída, cuando corresponda. Diferenciar aspirado devuelto para no contabilizarlo como pérdida neta.                                                               |
+| Resumen           | Aportes y pérdidas cuantificados, balance en mL y cobertura del período. Diuresis en mL/kg/h únicamente con volumen urinario, peso de cálculo en kg identificado y duración conocida. Conservar la procedencia y fecha del peso utilizado. |
+
+El [manual SIP de CLAP/OPS alojado por MINSA](https://bvs.minsa.gob.pe/local/MINSA/4992.pdf),
+sección Pérdidas, página 96, describe orina en mL desde el registro anterior,
+deposiciones por número y vómitos por volumen estimado y características; también
+distingue orina perdida sin medir. Se consultó el texto indexado de esa sección:
+la descarga directa del PDF no estuvo disponible. Se usa como referencia de
+registro, no como prueba de vigencia normativa.
+
+El [material de enfermería de Worcestershire NHS, página 47](https://apps.worcsacute.nhs.uk/KeyDocumentPortal/Home/DownloadFile/3393)
+describe la estimación urinaria por diferencia de peso del pañal, usando
+aproximadamente 1 g por 1 mL. En el software se propone conservar ambas magnitudes
+y el método; esta estimación no justifica convertir observaciones históricas ni
+extrapolarla a heces, pañales mixtos o vómitos.
+
+Las pérdidas insensibles se mostrarían separadas como estimaciones con método,
+período y autor; no se aplica una fórmula universal ni se presentan como medidas.
+La [guía neonatal de CAHS, revisada en mayo de 2024](https://www.health.wa.gov.au/-/media/HSPs/CAHS/Documents/Health-Professionals/Neonatology-guidelines/Fluid-Balance-and-Elimination.pdf)
+describe su dependencia de prematuridad, edad y entorno térmico. El balance de
+volúmenes registrados debe indicar si tiene datos sin cuantificar. Su signo por
+sí solo no determina normalidad ni una indicación de tratamiento.
+
+Para la atención habitual del recién nacido, los conteos y las características
+siguen siendo útiles: [RCH distingue el registro de orina, deposiciones y vómitos](https://www.rch.org.au/rchcpg/hospital_clinical_guideline_index/Ward_management_of_a_neonate/).
+El control cuantitativo se organiza dentro de Atención neonatal según el contexto
+asistencial; no se convierte en requisito de todo control CRED.
+
+El catálogo local también contiene `d5a412ea-144e-4771-9520-06d67db74d3f`
+(orina, con nombres en mL/cc, sin unidad en extras) y
+`6d0c0e45-dc24-4fb2-b1e9-c01267423d1c` (cantidad de vómito, con nombre
+inglés en gr/ml, sin unidad en extras). Son candidatos para auditoría, no mapeos
+aprobados. La captura requiere conceptos de volumen inequívocos en mL y
+persistencia de intervalo/método antes de habilitar cálculos. Los conceptos de
+peso y densidad antiguos conservan su identidad y sus observaciones.
+
+Esta sección documenta una propuesta de implementación basada en las fuentes;
+no acredita aprobación clínica ni crea indicaciones terapéuticas. Antes de
+habilitar escritura y cálculos se debe validar el contrato con enfermería y
+neonatología y comprobarlo en el backend. En esta revisión solo se actualiza la
+documentación; las pruebas y el código de la recuperación anterior siguen
+identificados por su SHA en la tabla siguiente.
+
+### Validación local de recuperación — 19/10/2026
+
+Código validado: `0796c42f4`, sobre `2ab15da9b`, en el worktree aislado
+`neonatal-recovery-20261019`, con instalación propia mediante
+`corepack enable` y `yarn install --immutable`. El registro de resultados se
+añade después como documentación; no cambia el código validado.
+
+| Estado  | Comprobación                                                                                                           | Resultado y alcance                                                                                                                                                                                                                                                                                                                                                              |
+| ------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PASSED  | `VITEST_MAX_WORKERS=1 TURBO_ENV_MODE=loose yarn verify:changed --base origin/main --head HEAD`                         | En `0796c42f4`: 270 tareas de lint/tipado y compilación dependiente, 267 de caché; 115 tareas de pruebas y dependencias, 114 de caché. CRED ejecutó 446 pruebas en 52 archivos. La ejecución previa en `040fad0c0` completó las 270 tareas sin caché y las 115 tareas con 25 de caché; ejecutó 9.772 pruebas. Los ocho paquetes sin pruebas no cuentan como cobertura funcional. |
+| PASSED  | `yarn workspace @sihsalus/esm-cred-app build` y `yarn assemble`                                                        | Compilación del código final y artefacto SPA válido en `0796c42f4`. El build CRED reporta dos advertencias de tamaño.                                                                                                                                                                                                                                                            |
+| PASSED  | `yarn lint:all`                                                                                                        | Código final: sin errores; 925 advertencias y seis mensajes informativos del repositorio.                                                                                                                                                                                                                                                                                        |
+| PASSED  | `yarn validate:workspaces`, `yarn validate:critical-route-privileges` y `yarn validate:react-router`                   | Código final: contratos de workspaces/FHIR, 15 aplicaciones con rutas críticas y runtime del router correctos. Se conservan tres excepciones documentadas con guardas en código.                                                                                                                                                                                                 |
+| PASSED  | `yarn validate:error-exposure --base origin/main --head HEAD`                                                          | Código final: nueve archivos fuente cambiados, cero exposiciones detectadas.                                                                                                                                                                                                                                                                                                     |
+| PASSED  | `node --test --test-concurrency=2 'packages/tooling/scripts/*.test.js'`                                                | 221 pruebas en `040fad0c0`, incluida la navegación; estos archivos no cambiaron después.                                                                                                                                                                                                                                                                                         |
+| PASSED  | `yarn typecheck:e2e`                                                                                                   | Tipado de E2E en `040fad0c0`; no ejecuta recorridos de navegador. Los archivos E2E no cambiaron después.                                                                                                                                                                                                                                                                         |
+| PASSED  | `yarn prettier --check packages/apps/esm-crecimiento-desarrollo-app/README.md` y `git diff --check origin/main...HEAD` | Formato Markdown y espacios del diff comprobados, incluido este registro documental.                                                                                                                                                                                                                                                                                             |
+| FAILED  | Iteraciones iniciales corregidas                                                                                       | La primera prueba focalizada no pudo importar una dependencia compartida aún sin compilar; se compiló y se repitió. El primer tipado detectó propiedades faltantes en un mock nuevo; se corrigió. Las repeticiones y el baseline final pasaron.                                                                                                                                  |
+| NOT RUN | Recorridos clínicos/E2E en DEV o QLTY                                                                                  | No se coordinó un entorno con datos sintéticos para esta recuperación. Quedan pendientes las comprobaciones indicadas debajo y la definición del contrato de captura.                                                                                                                                                                                                            |
+| NOT RUN | CI de PR, release y despliegue                                                                                         | Cambios locales sin publicación ni despliegue. Las pruebas locales no acreditan el frontend instalado.                                                                                                                                                                                                                                                                           |
 
 QA pendiente en QLTY: recorrido de las siete pestañas con datos sintéticos,
 perfiles de lectura/edición restringidos, revocación, cambio de paciente, creación
@@ -450,3 +585,53 @@ encuentros históricos sin proveedor descritos en #376/#377.
 Las reglas de alta y hospitalización de #389/#390 pertenecen al formulario de
 content; la precisión decimal de talla (#391) depende de su concepto canónico.
 Las pruebas locales no acreditan publicación ni aceptación clínica en QLTY.
+
+### Alineación de sujetos CRED, referencias y registro ESAVI — 19/10/2026
+
+El selector reserva PPSC/PSC-17 infantil para edades de 3 a 11 años, según
+NTS 238, 6.6.5. También excluye edades menores cuando una matriz externa antigua
+incluye el formulario. La captura de content debe seguir identificando PPSC a
+3–5 años y PSC-17 a 6–11; el frontend no sustituye sus fichas oficiales.
+
+La evaluación del cuidador se presenta como una actividad distinta al mes, a los
+12 meses y anualmente de 2 a 4 años, o antes por riesgo (NTS 238, 6.6.4).
+La guía permite abrir la búsqueda nativa del adulto y reutiliza el vínculo
+materno explícito cuando el usuario tiene los permisos existentes. El profesional
+confirma quién fue evaluado; una madre vinculada no identifica automáticamente
+al cuidador. No se abre un cuestionario adulto bajo el paciente infantil ni se
+copia su resultado. Esta orientación no afirma cumplimiento del tamizaje ni
+provisiona un formulario adulto nuevo; ese contrato clínico sigue requiriendo
+coordinación con el módulo responsable.
+
+Las cuatro referencias escolares incorporan el mes 60 publicado por la
+implementación oficial OMS AnthroPlus; se preservan las filas 61–228 del XLSX
+anterior. Selección, trazado e interpolación usan el mismo dominio de edad.
+No se inventan parámetros ni se extrapola la fila 61 hacia atrás; procedencia,
+SHA del origen y pruebas de los límites están en el README de las referencias.
+La interpretación continúa siendo referencial, sin nuevas observaciones derivadas.
+
+El guardado ESAVI resuelve el formulario con `resolvePublishedForm` de la
+biblioteca común: UUID verificado o coincidencia exacta única, nombre y versión
+configurados, publicado y no retirado. Una respuesta ambigua o incompleta bloquea
+el envío. La configuración predeterminada requiere INMU-002 1.0.0 y el rol
+`e967b2f3-62d8-49df-a37a-e8467f29bc88`, **Responsable del registro de ESAVI**;
+content debe distribuir ese rol antes de habilitar el escritor actualizado.
+No se infiere la profesión ni se cambia la política de acceso.
+
+El POST lleva la visita abierta del paciente, su ubicación y el profesional
+`session.currentProvider.uuid` con ese rol. Una sesión sin profesional o una
+visita cerrada, ausente o de otro paciente conserva la entrada sin enviar.
+El mensaje de pantalla distingue el registro clínico de la notificación oficial.
+La aceptación de sujetos, referencias y atribución requiere revisión clínica y
+ensayos sintéticos de guardar, recargar y reabrir en QLTY; los tests locales no
+acreditan esa aceptación ni un despliegue.
+
+La captura nueva ESAVI registra explícitamente **fecha y hora del reporte**,
+conforme a `INMU-002.fechaReporte`; usa el patrón DatePicker/TimePicker existente
+y verifica el instante completo contra el inicio de la visita y la fecha actual.
+Una hora vacía permanece vacía. El inicio del evento se documenta expresamente
+en la narrativa de síntomas, hasta contar con un concepto canónico específico.
+No se transforma una fecha de ocurrencia elegida en la fecha actual. Las lecturas
+históricas conservan el `encounterDatetime` almacenado y muestran **Fecha
+registrada**, pues versiones previas lo etiquetaban como ocurrencia sin
+distinguirlo del reporte. No se reatribuyen ni reescriben esos datos.

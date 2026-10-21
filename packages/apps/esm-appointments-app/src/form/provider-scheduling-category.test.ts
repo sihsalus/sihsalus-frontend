@@ -117,26 +117,25 @@ describe('assessProviderSchedulingCategory', () => {
     });
   });
 
-  it.each([
-    'off',
-    'warn',
-    'strict',
-  ] as const)('filters providers by the exact active scheduling category in %s mode', (mode) => {
-    const incompatibleProvider = {
-      ...provider,
-      uuid: 'incompatible-provider-uuid',
-      attributes: [],
-    };
+  it.each(['off', 'warn', 'strict'] as const)(
+    'uses the configured validation mode to filter providers in %s mode',
+    (mode) => {
+      const incompatibleProvider = {
+        ...provider,
+        uuid: 'incompatible-provider-uuid',
+        attributes: [],
+      };
 
-    expect(
-      filterProvidersBySchedulingCategory({
-        mode,
-        providerAttributeTypeUuid: attributeTypeUuid,
-        providers: [incompatibleProvider, provider],
-        service,
-      }),
-    ).toEqual([provider]);
-  });
+      expect(
+        filterProvidersBySchedulingCategory({
+          mode,
+          providerAttributeTypeUuid: attributeTypeUuid,
+          providers: [incompatibleProvider, provider],
+          service,
+        }),
+      ).toEqual(mode === 'strict' ? [provider] : [incompatibleProvider, provider]);
+    },
+  );
 
   it('does not expose providers until a service has been selected', () => {
     expect(
@@ -148,14 +147,17 @@ describe('assessProviderSchedulingCategory', () => {
     ).toEqual([]);
   });
 
-  it('does not list unrelated providers if service category metadata is missing', () => {
-    expect(
-      filterProvidersBySchedulingCategory({
-        mode: 'warn',
-        providers: [provider],
-        service: { ...service, speciality: {} },
-        providerAttributeTypeUuid: attributeTypeUuid,
-      }),
-    ).toEqual([]);
-  });
+  it.each(['off', 'warn', 'strict'] as const)(
+    'allows profession-only services without a category in %s mode',
+    (mode) => {
+      expect(
+        filterProvidersBySchedulingCategory({
+          mode,
+          providers: [provider],
+          service: { ...service, speciality: {} },
+          providerAttributeTypeUuid: attributeTypeUuid,
+        }),
+      ).toEqual([provider]);
+    },
+  );
 });

@@ -28,7 +28,9 @@ import React, { type ComponentProps, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { immunizationEditPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
+import ImmunizationEncounterRepairState from './immunization-encounter-repair-state.component';
 import styles from './immunizations-overview.scss';
+import { getLatestCompletedDose } from './utils';
 
 export interface ImmunizationsOverviewProps {
   basePath: string;
@@ -46,7 +48,14 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: 
   const urlLabel = t('seeAll', 'See all');
   const pageUrl = globalThis.spaBase + basePath + '/immunizations';
 
-  const { data: immunizations, error, isLoading, isValidating } = useImmunizations(patientUuid);
+  const {
+    data: immunizations,
+    error,
+    isLoading,
+    isValidating,
+    repairableEncounterUuid,
+    repairEncounterProvider,
+  } = useImmunizations(patientUuid);
   const { results: paginatedImmunizations, goTo, currentPage } = usePagination(immunizations ?? [], immunizationsCount);
 
   const launchImmunizationsForm = React.useCallback(() => launchWorkspace2('vacunacion-form-workspace'), []);
@@ -63,22 +72,26 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: 
   ];
 
   const tableRows = useMemo(() => {
-    return paginatedImmunizations?.map((immunization, index) => ({
-      ...immunization,
-      id: `${index}`,
-      vaccineName: immunization.vaccineName,
-      vaccinationDate:
-        immunization.existingDoses.length > 0
-          ? formatDate(parseDate(immunization.existingDoses[0].occurrenceDateTime), {
+    return paginatedImmunizations?.map((immunization, index) => {
+      const latestDose = getLatestCompletedDose(immunization.existingDoses);
+      return {
+        ...immunization,
+        id: `${index}`,
+        vaccineName: immunization.vaccineName,
+        vaccinationDate: latestDose
+          ? formatDate(parseDate(latestDose.occurrenceDateTime), {
               day: false,
               time: false,
             })
           : '--',
-    }));
+      };
+    });
   }, [paginatedImmunizations]);
 
   const content = isLoading ? (
     <DataTableSkeleton role="progressbar" />
+  ) : error && repairableEncounterUuid ? (
+    <ImmunizationEncounterRepairState headerTitle={headerTitle} onRepair={repairEncounterProvider} />
   ) : error ? (
     <ErrorState error={error} headerTitle={headerTitle} />
   ) : immunizations?.length ? (

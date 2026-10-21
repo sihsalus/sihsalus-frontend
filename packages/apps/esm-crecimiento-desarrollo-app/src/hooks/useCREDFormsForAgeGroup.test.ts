@@ -1,3 +1,4 @@
+import { renderHook } from '@testing-library/react';
 import type { ConfigObject } from '../config-schema';
 import {
   credCourseLifeEditPrivilege,
@@ -5,7 +6,7 @@ import {
   credNeonatalEditPrivilege,
   credNutritionEditPrivilege,
 } from '../constants';
-import { getCREDFormEditPrivilege, getCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
+import { getCREDFormEditPrivilege, getCREDFormsForAgeGroup, useCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
 
 const config = {
   formsList: {
@@ -175,4 +176,49 @@ describe('getCREDFormEditPrivilege', () => {
   it('falls back to the course-of-life edit privilege for unmapped forms', () => {
     expect(getCREDFormEditPrivilege('childAbuseScreening')).toBe(credCourseLifeEditPrivilege);
   });
+});
+
+it.each(['2026-03-07', '2027-02-05', '2028-02-05'])(
+  'keeps childhood PPSC/PSC out of caregiver screening ages: %s',
+  (referenceDate) => {
+    const defaults = { formsList: {}, CREDFormsByAgeGroup: [] } as unknown as ConfigObject;
+    expect(getCREDFormsForAgeGroup(defaults, '2026-02-05', referenceDate).map(({ formKey }) => formKey)).not.toContain(
+      'childMentalHealthForm',
+    );
+  },
+);
+it.each(['2029-02-05', '2032-02-05', '2037-02-05'])(
+  'offers childhood screening from age three through eleven: %s',
+  (referenceDate) => {
+    const defaults = { formsList: {}, CREDFormsByAgeGroup: [] } as unknown as ConfigObject;
+    expect(getCREDFormsForAgeGroup(defaults, '2026-02-05', referenceDate).map(({ formKey }) => formKey)).toContain(
+      'childMentalHealthForm',
+    );
+  },
+);
+it('does not reintroduce childhood screening for an infant through an older runtime matrix', () => {
+  const runtime = {
+    formsList: {},
+    CREDFormsByAgeGroup: [{ label: 'old matrix', minMonths: 0, maxMonths: 36, forms: ['childMentalHealthForm'] }],
+  } as unknown as ConfigObject;
+  expect(getCREDFormsForAgeGroup(runtime, '2026-02-05', '2026-03-05')).toEqual([]);
+});
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, fallback: string) =>
+      key === 'childMentalHealthFormLabel' ? 'Translated child mental health' : fallback,
+  }),
+}));
+it('translates the child-only label without changing the configured form identity', () => {
+  const { result } = renderHook(() =>
+    useCREDFormsForAgeGroup(
+      { formsList: {}, CREDFormsByAgeGroup: [] } as unknown as ConfigObject,
+      '2026-02-05',
+      '2029-02-05',
+    ),
+  );
+  const info = result.current.find(({ formKey }) => formKey === 'childMentalHealthForm');
+  expect(info?.form.display).toBe('Translated child mental health');
+  expect(info?.form.uuid).toBe('CRED-011-SALUD MENTAL NIÑO Y CUIDADOR');
 });

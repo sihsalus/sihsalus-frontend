@@ -5,6 +5,7 @@ import {
   showSnackbar,
   useConfig,
   usePatient,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   fetchFreshPatientVitalStatus,
@@ -14,7 +15,14 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, mockVitalsConfig } from 'test-utils';
+import {
+  mockConceptMetadata,
+  mockConceptRanges,
+  mockConceptUnits,
+  mockPatient,
+  mockSession,
+  mockVitalsConfig,
+} from 'test-utils';
 
 import { saveVitalsAndBiometrics, useVitalsConceptMetadata } from '../common';
 import { type ConfigObject, configSchema } from '../config-schema';
@@ -49,6 +57,9 @@ const testProps = {
 const testWorkspace2Props: PatientWorkspace2DefinitionProps<
   {
     encounterTypeUuid?: string;
+    encounterRoleUuid?: string;
+    expectedVisitTypeUuid?: string;
+    locationUuid?: string;
     onVitalsSaved?: (payload: { formData: Record<string, number>; patientUuid: string; visitUuid: string }) => void;
     profile?: 'default' | 'emergency-triage';
   },
@@ -78,6 +89,7 @@ const mockPersistVitalsEncounter = vi.mocked(persistVitalsEncounter);
 const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePatient = vi.mocked(usePatient);
+const mockUseSession = vi.mocked(useSession);
 const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 const mockUseVitalsConceptMetadata = vi.mocked(useVitalsConceptMetadata);
@@ -127,11 +139,6 @@ vi.mock('../offline', () => ({
   persistVitalsEncounter: vi.fn(),
 }));
 
-mockUseConfig.mockReturnValue({
-  ...getDefaultsFromConfigSchema(configSchema),
-  ...mockVitalsConfig,
-} as ConfigObject);
-
 mockUsePatient.mockReturnValue({
   patient: {
     birthDate: mockPatient.birthdate,
@@ -148,9 +155,28 @@ const activeVisitMock = {
   },
 } as ReturnType<typeof useVisitOrOfflineVisit>;
 
+const emergencyTriageContext = {
+  expectedVisitTypeUuid: 'test-emergency-visit-type',
+  locationUuid: 'test-visit-location',
+};
+
+const activeEmergencyVisitMock = {
+  currentVisit: {
+    ...activeVisitMock.currentVisit,
+    visitType: { uuid: emergencyTriageContext.expectedVisitTypeUuid },
+  },
+} as ReturnType<typeof useVisitOrOfflineVisit>;
+
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue(mockSession.data);
+    const defaults = getDefaultsFromConfigSchema(configSchema) as ConfigObject;
+    mockUseConfig.mockReturnValue({
+      ...defaults,
+      ...mockVitalsConfig,
+      vitals: { ...defaults.vitals, ...mockVitalsConfig.vitals },
+    } as ConfigObject);
     mockUsePatient.mockReturnValue({
       patient: {
         birthDate: mockPatient.birthdate,
@@ -194,6 +220,49 @@ describe('VitalsBiometricsForm', () => {
       mutate: vi.fn(),
     });
     mockUseVisitOrOfflineVisit.mockReturnValue(activeVisitMock);
+  });
+
+  it('queues new chart measurements with the canonical encounter type and responsible professional role', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ConfigObject);
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockPersistVitalsEncounter).toHaveBeenCalledOnce());
+    expect(mockBuildVitalsEncounter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        encounterTypeUuid: '20d4a603-8472-484c-b2bf-b45bdecf6b4f',
+        encounterRoleUuid: 'bebe2266-abbb-4f3c-b28b-a5b47406fff5',
+        providerUuid: mockSession.data.currentProvider.uuid,
+        visitUuid: 'test-visit-uuid',
+        locationUuid: 'test-visit-location',
+      }),
+    );
+  });
+
+  it('does not queue a new record without the responsible session professional', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      currentProvider: null,
+    });
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'The responsible professional could not be identified. Check your clinical profile before saving.',
+        }),
+      ),
+    );
+    expect(mockBuildVitalsEncounter).not.toHaveBeenCalled();
+    expect(mockPersistVitalsEncounter).not.toHaveBeenCalled();
   });
 
   it('renders the vitals and biometrics form', async () => {
@@ -624,9 +693,10 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByText('Reference ranges could not be loaded')).toBeInTheDocument();
   });
 
-  it('uses the workspace encounter type override when saving from Workspace 2', async () => {
+  it('uses explicit workspace encounter type and provider role overrides when saving from Workspace 2', async () => {
     const user = userEvent.setup();
     const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
+    const triageEncounterRoleUuid = 'triage-provider-role-uuid';
     const triageLocationUuid = 'emergency-location-uuid';
 
     mockSavePatientVitals.mockResolvedValue({
@@ -640,6 +710,7 @@ describe('VitalsBiometricsForm', () => {
         {...testWorkspace2Props}
         workspaceProps={{
           encounterTypeUuid: triageEncounterTypeUuid,
+          encounterRoleUuid: triageEncounterRoleUuid,
           locationUuid: triageLocationUuid,
         }}
       />,
@@ -660,7 +731,7 @@ describe('VitalsBiometricsForm', () => {
       triageLocationUuid,
       'test-visit-uuid',
       expect.objectContaining({
-        encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
+        encounterRoleUuid: triageEncounterRoleUuid,
       }),
     );
   });
@@ -668,6 +739,7 @@ describe('VitalsBiometricsForm', () => {
   it('renders Glasgow coma scale only for the emergency triage profile and saves the component concepts', async () => {
     const user = userEvent.setup();
     const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
+    mockUseVisitOrOfflineVisit.mockReturnValue(activeEmergencyVisitMock);
 
     mockSavePatientVitals.mockResolvedValue({
       statusText: 'created',
@@ -679,6 +751,7 @@ describe('VitalsBiometricsForm', () => {
       <VitalsAndBiometricsForm
         {...testWorkspace2Props}
         workspaceProps={{
+          ...emergencyTriageContext,
           encounterTypeUuid: triageEncounterTypeUuid,
           profile: 'emergency-triage',
         }}
@@ -714,7 +787,7 @@ describe('VitalsBiometricsForm', () => {
       'test-visit-location',
       'test-visit-uuid',
       expect.objectContaining({
-        encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
+        encounterRoleUuid: 'bd16c32b-6784-45e6-9504-df1cfe0b62e5',
       }),
     );
   });
@@ -755,6 +828,7 @@ describe('VitalsBiometricsForm', () => {
 
   it('does not compute Glasgow total when a component is not testable', async () => {
     const user = userEvent.setup();
+    mockUseVisitOrOfflineVisit.mockReturnValue(activeEmergencyVisitMock);
 
     mockSavePatientVitals.mockResolvedValue({
       statusText: 'created',
@@ -766,6 +840,7 @@ describe('VitalsBiometricsForm', () => {
       <VitalsAndBiometricsForm
         {...testWorkspace2Props}
         workspaceProps={{
+          ...emergencyTriageContext,
           profile: 'emergency-triage',
         }}
       />,
@@ -793,6 +868,74 @@ describe('VitalsBiometricsForm', () => {
       glasgowMotorResponse: glasgowMotorResponseObeysCommandsUuid,
     });
     expect(savedPayload).not.toHaveProperty('glasgowTotal');
+  });
+
+  it.each([
+    {
+      reason: 'an ambulatory visit',
+      visitTypeUuid: 'ambulatory-visit-type',
+      visitLocationUuid: 'test-visit-location',
+      context: emergencyTriageContext,
+    },
+    {
+      reason: 'another UPSS',
+      visitTypeUuid: emergencyTriageContext.expectedVisitTypeUuid,
+      visitLocationUuid: 'another-upss',
+      context: emergencyTriageContext,
+    },
+    {
+      reason: 'a missing expected visit type',
+      visitTypeUuid: emergencyTriageContext.expectedVisitTypeUuid,
+      visitLocationUuid: 'test-visit-location',
+      context: { locationUuid: emergencyTriageContext.locationUuid },
+    },
+    {
+      reason: 'a missing expected UPSS',
+      visitTypeUuid: emergencyTriageContext.expectedVisitTypeUuid,
+      visitLocationUuid: 'test-visit-location',
+      context: { expectedVisitTypeUuid: emergencyTriageContext.expectedVisitTypeUuid },
+    },
+    {
+      reason: 'a missing visit type',
+      visitTypeUuid: undefined,
+      visitLocationUuid: 'test-visit-location',
+      context: emergencyTriageContext,
+    },
+    {
+      reason: 'a missing visit UPSS',
+      visitTypeUuid: emergencyTriageContext.expectedVisitTypeUuid,
+      visitLocationUuid: undefined,
+      context: emergencyTriageContext,
+    },
+  ])('does not persist or queue emergency triage with $reason', async ({ visitTypeUuid, visitLocationUuid, context }) => {
+    const user = userEvent.setup();
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: {
+        ...activeVisitMock.currentVisit,
+        visitType: visitTypeUuid ? { uuid: visitTypeUuid } : undefined,
+        location: visitLocationUuid ? { uuid: visitLocationUuid } : undefined,
+      },
+    } as ReturnType<typeof useVisitOrOfflineVisit>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{ ...context, profile: 'emergency-triage' }}
+      />,
+    );
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockBuildVitalsEncounter).not.toHaveBeenCalled();
+    expect(mockPersistVitalsEncounter).not.toHaveBeenCalled();
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle:
+          'Open the active emergency visit in the emergency UPSS before recording triage. Check the emergency workspace configuration if the problem persists.',
+      }),
+    );
   });
 
   it('renders an error snackbar if there was a problem saving vitals and biometrics', async () => {

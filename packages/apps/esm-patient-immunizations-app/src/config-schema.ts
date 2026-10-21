@@ -1,31 +1,30 @@
 import { Type } from '@openmrs/esm-framework';
-import { defaultAmpathImmunizationFormPersistence } from './immunizations/ampath-form-immunization-config';
+import {
+  defaultAmpathImmunizationFormPersistence,
+  defaultUnknownEncounterRoleUuid,
+} from './immunizations/ampath-form-immunization-config';
 import { defaultFhirImmunizationConceptMappings } from './immunizations/fhir-immunization-config';
 import { type FhirImmunizationConceptMappings } from './types/fhir-immunization-domain';
 
 /**
- * Esquema Nacional de Vacunación — NTS N.° 196-MINSA/DGIESP-2022
- * (RM 884-2022, modificada por RM 218-2024, RM 474-2025, RM 709-2025 y RM 403-2026)
- *
- * Sequence convention: doses [1...9], boosters [11...19].
- * CIEL concept UUIDs follow the pattern {CIEL_ID}AAAAAAAAAAAAAAAAAAAAAAAAA.
- * Adjust UUIDs to match the concepts loaded on your OpenMRS server.
- *
- * RM 403-2026 incorporates VRS/Nirsevimab progressively. Keep its concept UUIDs
- * in the content package/configuration before enabling those entries here.
+ * NTS 246-MINSA/DGIESP-2026 (RM 561-2026), §§6.2.2 and annex 2.
+ * Product UUIDs are the stable identities in SIHSALUS OCL 2026-06-30.
+ * These non-blocking routine labels do not decide eligibility, catch-up,
+ * special populations, stock transitions or the progressive varicella dose.
+ * Doses use [1...9], boosters [11...19]; historical numbers are never rewritten.
  */
 export const configSchema = {
   minsaReference: {
     _type: Type.Object,
     _description: 'Normative reference used to configure the Peru national immunization schedule.',
     _default: {
-      nts: 'NTS N.° 196-MINSA/DGIESP-2022',
-      approvedBy: 'RM 884-2022-MINSA',
-      latestModification: 'RM 403-2026-MINSA',
-      vaccineCount: 18,
-      protectedDiseaseCount: 28,
+      nts: 'NTS N.° 246-MINSA/DGIESP-2026',
+      approvedBy: 'RM 561-2026-MINSA',
+      latestModification: 'RM 561-2026-MINSA',
+      vaccineCount: 23,
+      protectedDiseaseCount: 36,
       notes:
-        'RM 403-2026-MINSA incorporates VRS/Nirsevimab progressively. Add local concept UUIDs before enabling those entries.',
+        'Hexavalent introduction depends on pentavalent/IPV stock exhaustion at national, regional and local levels; the first DPT booster changes in 2027. Special-population schedules require clinical confirmation.',
     },
   },
   immunizationConceptSet: {
@@ -45,6 +44,12 @@ export const configSchema = {
     _description:
       'AMPATH form/encounter contract used by the custom vaccination UI to persist vaccine events as OpenMRS obs.',
     _default: defaultAmpathImmunizationFormPersistence,
+  },
+  unknownEncounterRoleUuid: {
+    _type: Type.UUID,
+    _default: defaultUnknownEncounterRoleUuid,
+    _description:
+      'UUID of the encounter role FHIR2 requires on vaccination encounters. It must equal the FHIR2 global property fhir2.administeringEncounterRoleUuid, which selects the administering encounter role and defaults to the "Unknown" role. FHIR2 only reads and writes Immunization resources whose vaccination encounter (ampathFormPersistence.encounterTypeUuid) has a provider with this role, so the frontend adds the current provider with this role before saving and offers to repair encounters that lack it.',
   },
   supplementalVaccines: {
     _type: Type.Array,
@@ -104,6 +109,10 @@ export const configSchema = {
             _description:
               'Days after the previous dose when this dose should be administered. Used to auto-suggest the next dose date. Omit for first doses or single-dose vaccines.',
           },
+          minAgeInMonths: {
+            _type: Type.Number,
+            _description: 'Minimum age in completed calendar months; a warning, never an eligibility decision.',
+          },
           minAgeInDays: {
             _type: Type.Number,
             _description:
@@ -129,237 +138,213 @@ export const configSchema = {
       'Doses/Schedules definitions for each vaccine configured if applicable. If not provided the vaccine would be treated as a vaccine without schedules',
     _default: [
       {
-        vaccineConceptUuid: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: 'b328841a-7c35-4f39-8f64-be15ff33b7bf',
         sequences: [
           {
             sequenceLabel: 'Dosis-Unica',
             sequenceNumber: 1,
             minAgeInDays: 0,
-            maxAgeInDays: 28,
+            maxAgeInDays: 1,
+            minsaLabel: 'Recién nacido; primeras 24 horas',
           },
         ],
       },
       {
-        vaccineConceptUuid: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '7a5c2fbc-6848-44c9-b9a2-f9a37fe17ae8',
         sequences: [
           {
             sequenceLabel: 'Dosis-RN',
             sequenceNumber: 1,
             minAgeInDays: 0,
             maxAgeInDays: 1,
+            minsaLabel: 'Recién nacido; primeras 24 horas',
           },
         ],
       },
       {
-        vaccineConceptUuid: '1685AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '41844230-91cc-5983-8c28-1275dda75b6f',
         sequences: [
           {
             sequenceLabel: '1ra Dosis',
             sequenceNumber: 1,
-            minAgeInDays: 60,
+            minAgeInMonths: 2,
             minsaLabel: '2 meses',
           },
           {
             sequenceLabel: '2da Dosis',
             sequenceNumber: 2,
-            intervalInDaysAfterPreviousDose: 60,
-            minAgeInDays: 120,
+            minAgeInMonths: 4,
             minsaLabel: '4 meses',
           },
           {
             sequenceLabel: '3ra Dosis',
             sequenceNumber: 3,
-            intervalInDaysAfterPreviousDose: 60,
-            minAgeInDays: 180,
+            minAgeInMonths: 6,
             minsaLabel: '6 meses',
           },
         ],
       },
       {
-        vaccineConceptUuid: '783AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '964748ed-787b-5629-9469-dd49e9243421',
         sequences: [
           {
             sequenceLabel: '1ra Dosis',
             sequenceNumber: 1,
-            minAgeInDays: 60,
+            minAgeInMonths: 2,
             minsaLabel: '2 meses',
           },
           {
             sequenceLabel: '2da Dosis',
             sequenceNumber: 2,
-            intervalInDaysAfterPreviousDose: 60,
-            minAgeInDays: 120,
+            minAgeInMonths: 4,
             minsaLabel: '4 meses',
           },
           {
             sequenceLabel: '3ra Dosis',
             sequenceNumber: 3,
-            intervalInDaysAfterPreviousDose: 60,
-            minAgeInDays: 180,
+            minAgeInMonths: 6,
             minsaLabel: '6 meses',
           },
           {
             sequenceLabel: '1er Refuerzo',
             sequenceNumber: 11,
-            intervalInDaysAfterPreviousDose: 365,
-            minAgeInDays: 540,
+            minAgeInMonths: 18,
             minsaLabel: '18 meses',
           },
+        ],
+      },
+      {
+        vaccineConceptUuid: 'e1cb9975-7474-5d2c-ae81-0beb5235f26a',
+        sequences: [
           {
             sequenceLabel: '2do Refuerzo',
             sequenceNumber: 12,
-            intervalInDaysAfterPreviousDose: 913,
-            minAgeInDays: 1460,
-            minsaLabel: '4 años',
+            minAgeInMonths: 48,
+            minsaLabel: '48 meses',
           },
         ],
       },
       {
-        vaccineConceptUuid: '83531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '3789796f-95e7-5e34-b489-44ed27f4b521',
         sequences: [
           {
             sequenceLabel: '1ra Dosis',
             sequenceNumber: 1,
-            minAgeInDays: 60,
+            minAgeInMonths: 2,
             minsaLabel: '2 meses',
           },
           {
             sequenceLabel: '2da Dosis',
             sequenceNumber: 2,
-            intervalInDaysAfterPreviousDose: 60,
-            minAgeInDays: 120,
+            minAgeInMonths: 4,
             minsaLabel: '4 meses',
           },
         ],
       },
       {
-        vaccineConceptUuid: '162342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '308fe0e6-a6c9-54a9-b499-e01e53a42b5c',
         sequences: [
           {
             sequenceLabel: '1ra Dosis',
             sequenceNumber: 1,
-            minAgeInDays: 60,
+            minAgeInMonths: 2,
             minsaLabel: '2 meses',
           },
           {
             sequenceLabel: '2da Dosis',
             sequenceNumber: 2,
-            intervalInDaysAfterPreviousDose: 60,
-            minAgeInDays: 120,
+            minAgeInMonths: 4,
             minsaLabel: '4 meses',
           },
           {
-            sequenceLabel: 'Refuerzo',
-            sequenceNumber: 11,
-            intervalInDaysAfterPreviousDose: 240,
-            minAgeInDays: 365,
+            sequenceLabel: '3ra Dosis',
+            sequenceNumber: 3,
+            minAgeInMonths: 12,
             minsaLabel: '12 meses',
           },
         ],
       },
       {
-        vaccineConceptUuid: '5261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '5c56c39a-8003-5944-ace3-f0cbdcb68c08',
         sequences: [
-          { sequenceLabel: '1ra Dosis', sequenceNumber: 1 },
+          {
+            sequenceLabel: '1ra Dosis',
+            sequenceNumber: 1,
+            minAgeInMonths: 6,
+            minsaLabel: '6 meses',
+          },
           {
             sequenceLabel: '2da Dosis',
             sequenceNumber: 2,
-            intervalInDaysAfterPreviousDose: 30,
+            minAgeInMonths: 7,
+            minsaLabel: '7 meses',
           },
         ],
       },
       {
-        vaccineConceptUuid: '36AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: 'f709d361-8e2a-5253-bd17-7bd34577aeea',
         sequences: [
-          { sequenceLabel: '1ra Dosis', sequenceNumber: 1 },
           {
-            sequenceLabel: 'Refuerzo',
-            sequenceNumber: 11,
-            intervalInDaysAfterPreviousDose: 180,
+            sequenceLabel: '1ra Dosis',
+            sequenceNumber: 1,
+            minAgeInMonths: 12,
+            minsaLabel: '12 meses',
+          },
+          {
+            sequenceLabel: '2da Dosis',
+            sequenceNumber: 2,
+            minAgeInMonths: 18,
+            minsaLabel: '18 meses',
           },
         ],
       },
       {
-        vaccineConceptUuid: '5859AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '5864AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '5857AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '781AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vaccineConceptUuid: '9f33fb25-b37e-545e-946d-202295c42ab0',
         sequences: [
-          { sequenceLabel: '1er Refuerzo', sequenceNumber: 11 },
+          {
+            sequenceLabel: '1ra Dosis',
+            sequenceNumber: 1,
+            minAgeInMonths: 12,
+            minsaLabel: '12 meses',
+          },
+        ],
+      },
+      {
+        vaccineConceptUuid: 'e4be0faa-d28b-4cbc-9af3-ffac7133341a',
+        sequences: [
+          {
+            sequenceLabel: 'Dosis-Unica',
+            sequenceNumber: 1,
+            minAgeInMonths: 15,
+            minsaLabel: '15 meses',
+          },
+        ],
+      },
+      {
+        vaccineConceptUuid: '5b80bbc7-f7da-566e-9790-64b3e33794c7',
+        sequences: [
+          {
+            sequenceLabel: 'Dosis-Unica',
+            sequenceNumber: 1,
+            minAgeInMonths: 15,
+            minsaLabel: '15 meses',
+          },
+        ],
+      },
+      {
+        vaccineConceptUuid: '80d59cb9-0eb6-5e14-93fe-dbf4867cad7d',
+        sequences: [
+          {
+            sequenceLabel: '1er Refuerzo',
+            sequenceNumber: 11,
+            minAgeInMonths: 18,
+            minsaLabel: '18 meses',
+          },
           {
             sequenceLabel: '2do Refuerzo',
             sequenceNumber: 12,
-            intervalInDaysAfterPreviousDose: 913,
-          },
-        ],
-      },
-      {
-        vaccineConceptUuid: '5856AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '1679AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '1680AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '1681AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '1682AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '1683AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '1684AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [{ sequenceLabel: 'Dosis-Unica', sequenceNumber: 1 }],
-      },
-      {
-        vaccineConceptUuid: '162586AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        sequences: [
-          { sequenceLabel: '1ra Dosis', sequenceNumber: 1 },
-          {
-            sequenceLabel: '2da Dosis',
-            sequenceNumber: 2,
-            intervalInDaysAfterPreviousDose: 30,
-          },
-        ],
-      },
-      {
-        vaccineConceptUuid: 'f0000180-0000-4000-8000-000000000180',
-        sequences: [
-          {
-            sequenceLabel: 'Dosis-Unica',
-            sequenceNumber: 1,
-            minsaLabel: 'Gestante',
-            minsaPopulation: 'Gestantes según lineamientos MINSA para VRS',
-          },
-        ],
-      },
-      {
-        vaccineConceptUuid: 'f0000181-0000-4000-8000-000000000181',
-        sequences: [
-          {
-            sequenceLabel: 'Dosis-Unica',
-            sequenceNumber: 1,
-            minsaLabel: 'Recién nacido/lactante',
-            minsaPopulation: 'Recién nacidos y lactantes según lineamientos MINSA para VRS',
+            minAgeInMonths: 48,
+            minsaLabel: '48 meses',
           },
         ],
       },
@@ -378,10 +363,17 @@ export interface ImmunizationConfigObject {
   };
   immunizationConceptSet: string;
   fhirConceptMappings: Partial<FhirImmunizationConceptMappings>;
+  unknownEncounterRoleUuid?: string;
   ampathFormPersistence?: {
     enabled: boolean;
     encounterTypeUuid: string;
-    formUuid: string;
+    encounterRoleUuid: string;
+    formName: string;
+    formVersion: string;
+    /** Only these verified historical Form versions stored administration in encounterDatetime. */
+    encounterDateAdministrationFormVersions?: string[];
+    /** Optional persisted REST Form UUID; still verified against name, version and publication. */
+    formUuid?: string;
     concepts: {
       vaccineUuid: string;
       vaccinationDate: string;
@@ -407,6 +399,7 @@ export interface ImmunizationConfigObject {
       sequenceLabel: string;
       sequenceNumber: number;
       intervalInDaysAfterPreviousDose?: number;
+      minAgeInMonths?: number;
       minAgeInDays?: number;
       maxAgeInDays?: number;
       minsaLabel?: string;

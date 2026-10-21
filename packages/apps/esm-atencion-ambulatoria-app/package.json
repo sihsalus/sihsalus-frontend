@@ -67,22 +67,22 @@
     "@carbon/styles": "^1.117.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@rspack/cli": "2.2.8",
-    "@rspack/core": "2.2.8",
+    "@rspack/cli": "2.2.9",
+    "@rspack/core": "2.2.9",
     "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "^1.11.23",
-    "i18next": "^26.4.2",
+    "i18next": "^26.4.7",
     "openmrs": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
-    "react-is": "^19.3.0",
+    "react-is": "^19.3.1",
     "react-router-dom": "7.18.4",
     "rxjs": "^7.8.2",
-    "sass": "^1.105.1",
+    "sass": "^1.105.2",
     "single-spa": "^6.0.3",
     "swr": "^2.5.1",
     "vite": "8.3.4",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   }
 }

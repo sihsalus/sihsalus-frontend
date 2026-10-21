@@ -9,13 +9,16 @@ import {
   type VisitReturnType,
 } from '@openmrs/esm-framework';
 import { usePatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit, mockPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import type { Mock } from 'vitest';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
+import type { FHIRImmunizationResource } from '../types/fhir-immunization-domain';
+import { mapFromAmpathImmunizationEncounters } from './ampath-form-immunization-mapper';
+import { mapFromFHIRImmunizationBundle } from './immunization-mapper';
 import ImmunizationsDetailedSummary from './immunizations-detailed-summary.component';
 
 vi.mock('../hooks/useImmunizations', async () => ({
@@ -81,6 +84,7 @@ const mockImmunizationData = [
     existingDoses: [
       {
         immunizationObsUuid: '1',
+        status: 'completed' as const,
         occurrenceDateTime: '2018-11-20T00:00:00.000Z',
         doseNumber: 1,
         note: [],
@@ -134,6 +138,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -162,6 +168,8 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -174,6 +182,83 @@ describe('ImmunizationsDetailedSummary', () => {
     expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
+  it('offers to repair the vaccination encounter when FHIR2 reports a missing provider role', async () => {
+    const user = userEvent.setup();
+    const repairEncounterProvider = vi.fn().mockResolvedValue(undefined);
+    mockUseImmunizations.mockReturnValue({
+      data: [],
+      error: { status: 400, message: 'private diagnostics' },
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      repairableEncounterUuid: 'encounter-uuid',
+      repairEncounterProvider,
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('heading', { name: /immunizations/i })).toBeInTheDocument();
+    expect(screen.getByText(/a vaccination encounter lacks the provider role/i)).toBeInTheDocument();
+    expect(screen.queryByText(/private diagnostics/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/there was a problem displaying this information/i)).not.toBeInTheDocument();
+    const repairButton = screen.getByRole('button', { name: /repair/i });
+    expect(document.activeElement).not.toBe(repairButton);
+    await user.click(repairButton);
+    expect(repairEncounterProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains the missing provider role without a repair button when the user has no provider', async () => {
+    mockUseImmunizations.mockReturnValue({
+      data: [],
+      error: { status: 400 },
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      repairableEncounterUuid: 'encounter-uuid',
+      repairEncounterProvider: null,
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByText(/a vaccination encounter lacks the provider role/i)).toBeInTheDocument();
+    expect(screen.getByText(/your user account has no provider record/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /repair/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the latest dose when several doses share the vaccination date', async () => {
+    const sameDayDose = (immunizationObsUuid: string, doseNumber: number) => ({
+      ...mockImmunizationData[0].existingDoses[0],
+      immunizationObsUuid,
+      doseNumber,
+      occurrenceDateTime: '2026-10-16T00:00:00.000Z',
+    });
+    mockUseImmunizations.mockReturnValue({
+      data: [
+        {
+          vaccineUuid: 'pentavalente-uuid',
+          vaccineName: 'Pentavalente',
+          existingDoses: [sameDayDose('d1', 1), sameDayDose('d2', 2), sameDayDose('d3', 3)],
+        },
+      ],
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByText(/last dose on .*, Dose 3/i)).toBeInTheDocument();
+  });
+
   it('displays immunization records in a table when data is available', async () => {
     mockUseImmunizations.mockReturnValueOnce({
       data: mockImmunizationData,
@@ -181,6 +266,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -199,6 +286,203 @@ describe('ImmunizationsDetailedSummary', () => {
     expect(screen.getByText(new RegExp(`last dose on ${formattedDate}, Primary Series`, 'i'))).toBeInTheDocument();
   });
 
+  it.each(['unverified', 'not-done', undefined] as const)(
+    'keeps the previous completed dose as the latest application when a later record has status %s',
+    async (status) => {
+      const completedDose = mockImmunizationData[0].existingDoses[0];
+      const laterDate = '2024-06-15T00:00:00.000Z';
+      mockUseImmunizations.mockReturnValue({
+        data: [
+          {
+            ...mockImmunizationData[0],
+            existingDoses: [
+              {
+                ...completedDose,
+                immunizationObsUuid: 'unconfirmed',
+                status,
+                occurrenceDateTime: laterDate,
+                doseNumber: 2,
+              },
+              completedDose,
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      const completedDate = formatDate(parseDate(completedDose.occurrenceDateTime), {
+        mode: 'standard',
+        noToday: true,
+        time: false,
+      });
+      const laterFormattedDate = formatDate(parseDate(laterDate), { mode: 'standard', noToday: true, time: false });
+      const summary = screen.getByRole('table', { name: 'immunizations summary' });
+      expect(within(summary).getByText(`Last dose on ${completedDate}, Primary Series`)).toBeInTheDocument();
+      expect(
+        within(summary).queryByText(new RegExp(`Last dose on ${laterFormattedDate}`, 'i')),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['unverified', 'not-done', undefined] as const)(
+    'keeps a record with status %s accessible without presenting a confirmed application',
+    async (status) => {
+      const user = userEvent.setup();
+      mockUseImmunizations.mockReturnValue({
+        data: [
+          {
+            ...mockImmunizationData[0],
+            existingDoses: [{ ...mockImmunizationData[0].existingDoses[0], status }],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      const summary = screen.getByRole('table', { name: 'immunizations summary' });
+      expect(within(summary).getByText('Polio')).toBeInTheDocument();
+      expect(within(summary).queryByText(/Last dose on/i)).not.toBeInTheDocument();
+      const vaccineRow = within(summary).getByRole('row', { name: /Polio/ });
+      await user.click(within(vaccineRow).getByRole('button', { expanded: false }));
+
+      const history = screen.getByRole('table', { name: 'immunization dose sequence' });
+      expect(
+        within(history).getByText(
+          status === 'not-done' ? /not administered|no aplicada/i : /unverified|sin verificar/i,
+        ),
+      ).toBeInTheDocument();
+      expect(within(history).queryByText(/^administered$|^aplicada$/i)).not.toBeInTheDocument();
+      expect(within(history).getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    },
+  );
+
+  it.each(['fhir', 'ampath-form'] as const)(
+    'shows the highest recorded dose for matching dates from %s, independently of response order',
+    async (source) => {
+      const date = '2026-10-16T00:00:00.000Z';
+      const doseNumbers = [1, 3, 2];
+      const fullConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
+      const concepts = fullConfig.ampathFormPersistence.concepts;
+      const data =
+        source === 'fhir'
+          ? mapFromFHIRImmunizationBundle(
+              doseNumbers.map(
+                (doseNumber): FHIRImmunizationResource => ({
+                  resourceType: 'Immunization',
+                  id: `synthetic-dose-${doseNumber}`,
+                  status: 'completed',
+                  vaccineCode: { coding: [{ code: 'synthetic-vaccine', display: 'Synthetic vaccine' }] },
+                  patient: { type: 'Patient', reference: `Patient/${mockPatient.id}` },
+                  encounter: null,
+                  occurrenceDateTime: date,
+                  protocolApplied: [{ doseNumberPositiveInt: doseNumber }],
+                }),
+              ),
+            )
+          : mapFromAmpathImmunizationEncounters(
+              doseNumbers.map((doseNumber) => ({
+                uuid: `synthetic-dose-${doseNumber}`,
+                encounterDatetime: date,
+                obs: [
+                  {
+                    concept: { uuid: concepts.vaccineUuid },
+                    value: { uuid: 'synthetic-vaccine', display: 'Synthetic vaccine' },
+                  },
+                  { concept: { uuid: concepts.vaccinationDate }, value: date },
+                  { concept: { uuid: concepts.status }, value: 'completed' },
+                  { concept: { uuid: concepts.doseNumber }, value: doseNumber },
+                ],
+              })),
+              fullConfig,
+            );
+      const mappedDoseNumbers = data[0].existingDoses.map((dose) => dose.doseNumber);
+      mockUseImmunizations.mockReturnValue({
+        data,
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      expect(screen.getByText(/last dose on .*, Dose 3$/i)).toBeInTheDocument();
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Expand current row' }));
+      const detail = screen.getByRole('table', { name: 'immunization dose sequence' });
+      expect(within(detail).getAllByRole('row')).toHaveLength(4);
+      for (const doseNumber of doseNumbers) {
+        expect(within(detail).getByRole('cell', { name: String(doseNumber) })).toBeInTheDocument();
+      }
+      expect(data[0].existingDoses.map((dose) => dose.doseNumber)).toEqual(mappedDoseNumbers);
+    },
+  );
+
+  it.each([
+    { doses: [1, 5], dates: ['2026-10-16', '2026-10-16'], expectedDose: 5 },
+    { doses: [5, 1], dates: ['2026-10-16', '2026-10-16'], expectedDose: 5 },
+    { doses: [1, 1, 1], dates: ['2026-10-16', '2026-10-16', '2026-10-16'], expectedDose: 1 },
+    { doses: [undefined, 1, 3], dates: ['2026-10-16', '2026-10-16', '2026-10-16'], expectedDose: 3 },
+    { doses: [2.5, 1, 2], dates: ['2026-10-16', '2026-10-16', '2026-10-16'], expectedDose: 2 },
+    { doses: [3, 1], dates: ['2026-10-15', '2026-10-16'], expectedDose: 1 },
+    {
+      doses: [1, 3],
+      dates: ['2026-10-16T08:00:00-05:00', '2026-10-16T13:00:00Z'],
+      expectedDose: 3,
+    },
+    {
+      doses: [3, 1],
+      dates: ['2026-10-16T08:00:00-05:00', '2026-10-16T09:00:00-05:00'],
+      expectedDose: 1,
+    },
+  ])(
+    'uses recorded dose $expectedDose for dates $dates and doses $doses, never record count',
+    async ({ doses, dates, expectedDose }) => {
+      mockUseImmunizations.mockReturnValue({
+        data: [
+          {
+            vaccineUuid: 'synthetic-vaccine',
+            vaccineName: 'Synthetic vaccine',
+            existingDoses: doses.map((doseNumber, index) => ({
+              ...mockImmunizationData[0].existingDoses[0],
+              immunizationObsUuid: `synthetic-dose-${index}`,
+              occurrenceDateTime: dates[index],
+              doseNumber,
+            })),
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isValidating: false,
+        mutate: vi.fn(),
+        repairableEncounterUuid: null,
+        repairEncounterProvider: null,
+      });
+
+      renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+      await waitForLoadingToFinish();
+
+      expect(screen.getByText(new RegExp(`last dose on .*, Dose ${expectedDose}$`, 'i'))).toBeInTheDocument();
+    },
+  );
+
   it('shows loading indicator when data is loading', async () => {
     mockUseImmunizations.mockReturnValueOnce({
       data: null,
@@ -206,6 +490,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -234,6 +520,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(
@@ -266,6 +554,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(
@@ -289,6 +579,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '1',
+            status: 'completed' as const,
             occurrenceDateTime: '2018-11-20T00:00:00.000Z',
             doseNumber: 1,
             note: [],
@@ -306,6 +597,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '2',
+            status: 'completed' as const,
             occurrenceDateTime: '2020-05-15T00:00:00.000Z',
             doseNumber: 1,
             note: [],
@@ -325,6 +617,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -343,6 +637,7 @@ describe('ImmunizationsDetailedSummary', () => {
       existingDoses: [
         {
           immunizationObsUuid: `${index}`,
+          status: 'completed' as const,
           occurrenceDateTime: `2020-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
           doseNumber: 1,
           note: [],
@@ -361,6 +656,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -381,6 +678,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '1',
+            status: 'completed' as const,
             occurrenceDateTime: '2018-11-20T00:00:00.000Z',
             doseNumber: 1,
             note: [],
@@ -400,6 +698,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -418,6 +718,7 @@ describe('ImmunizationsDetailedSummary', () => {
         existingDoses: [
           {
             immunizationObsUuid: '1',
+            status: 'completed' as const,
             occurrenceDateTime: '2023-12-25T14:30:00.000Z',
             doseNumber: 1,
             note: [],
@@ -437,6 +738,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -466,6 +769,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
@@ -486,6 +791,8 @@ describe('ImmunizationsDetailedSummary', () => {
       error: null,
       isValidating: false,
       mutate: vi.fn(),
+      repairableEncounterUuid: null,
+      repairEncounterProvider: null,
     });
 
     renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);

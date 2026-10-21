@@ -1,11 +1,18 @@
 import { Button, InlineLoading, InlineNotification } from '@carbon/react';
 import { ArrowRight, DocumentMultiple_01, Report, Time } from '@carbon/react/icons';
-import { ExtensionSlot, navigate, userHasAccess, usePatient, useSession } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  navigate,
+  useConnectivity,
+  usePatient,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import {
   ErrorState,
   evaluateShowWhenExpression,
-  type TabConfig,
   TabbedDashboard,
+  type TabConfig,
   useLaunchWorkspaceRequiringVisit,
   usePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -46,6 +53,7 @@ interface IntegratedCredDashboardProps {
 function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhir.Patient; patientUuid: string }) {
   const { t } = useTranslation(translationNamespace);
   const session = useSession();
+  const isOnline = useConnectivity();
   const [selectedTabId, setSelectedTabId] = useState('overview');
   const canRead = (privilege: string) => userHasAccess(privilege, session?.user);
   const sections = integratedCredSections.filter(({ readPrivileges }) => readPrivileges.some(canRead));
@@ -92,6 +100,21 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
             </Button>
           </RequirePrivilege>
           <CredControlsMatrix patientUuid={patientUuid} />
+          {isOnline && (
+            <RequirePrivilege privilege="app:hoja.clinica.odontologia" hideUnauthorized>
+              <Button
+                kind="ghost"
+                renderIcon={ArrowRight}
+                onClick={() =>
+                  navigate({
+                    to: `${window.getOpenmrsSpaBase()}patient/${patientUuid}/chart/atencion-odontologica`,
+                  })
+                }
+              >
+                {t('credOpenDentalCare')}
+              </Button>
+            </RequirePrivilege>
+          )}
         </div>
       </RequirePrivilege>
     ),
@@ -189,7 +212,11 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
               kind="ghost"
               size="sm"
               renderIcon={Time}
-              onClick={() => navigate({ to: `${window.getOpenmrsSpaBase()}patient/${patientUuid}/chart/Visits` })}
+              onClick={() =>
+                navigate({
+                  to: `${window.getOpenmrsSpaBase()}patient/${patientUuid}/chart/Visits`,
+                })
+              }
             >
               {t('credPreviousConsultations')}
             </Button>

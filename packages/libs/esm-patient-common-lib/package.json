@@ -32,12 +32,12 @@
     "@hookform/resolvers": "^5.9.1",
     "classnames": "^2.5.1",
     "dayjs": "1.x",
-    "jsep": "^1.4.0",
+    "jsep": "^1.6.0",
     "lodash-es": "^4.17.23",
-    "react-hook-form": "^7.89.0",
+    "react-hook-form": "^7.90.0",
     "swr": "2.x",
-    "uuid": "^14.0.2",
-    "zod": "^4.6.5"
+    "uuid": "^14.0.3",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "@openmrs/esm-extensions": "*",
@@ -54,6 +54,6 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "react-router-dom": "7.18.4",
     "vite": "8.3.4",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   }
 }

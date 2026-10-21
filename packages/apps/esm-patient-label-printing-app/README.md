@@ -35,3 +35,10 @@ loading/error/mismatched identities, HTTP/content failures, retries, duplicate
 clicks, cancellation and printer cleanup. Before deployment, verify the actual
 OMOD version, role, generated PDF and native browser/physical print behavior in
 coordinated DEV/QLTY using synthetic data. No remote patient was used here.
+
+The printer hook suite enables iframe page loading only in that test file:
+Happy DOM 21 disables it by default and emits an error before the mocked load
+event. Its frame URLs use `about:blank` with synthetic fragments, and focus/print
+remain mocked. Other suites retain the default environment settings. This
+preserves the existing load-failure, duplicate-request, cancellation, timeout
+and cleanup assertions without changing the production printer.

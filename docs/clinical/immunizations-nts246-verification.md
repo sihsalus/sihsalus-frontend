@@ -64,6 +64,7 @@ no se incorpora como una nueva suite mantenida del repositorio.
 Resultado final **por entorno**:
 
 - PASSED: separación entre fecha de administración y registro.
+- PASSED: recarga del mismo día clínico con timestamps UTC y Lima.
 - PASSED: conservación de contexto en edición REST.
 - PASSED: corrección de nota con revisión nativa trazable.
 - PASSED: no aplicación REST sin fecha de administración.

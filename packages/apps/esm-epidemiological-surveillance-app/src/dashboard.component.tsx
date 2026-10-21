@@ -24,6 +24,8 @@ import {
 } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
 import { EventsPanel } from "./events-panel.component";
+import { IndicatorsPanel } from "./indicators-panel.component";
+import { NotificationSettings } from "./notification-settings.component";
 import { ReportPanel } from "./report-panel.component";
 import { EndemicSettings } from "./endemic-settings.component";
 import { dateInZone } from "./case-form.utils";
@@ -57,6 +59,7 @@ function SessionDashboard() {
   const [formKey, setFormKey] = useState(0);
   const [showCaseForm, setShowCaseForm] = useState(false);
   const [geographicRevision, setGeographicRevision] = useState(0);
+  const [indicatorRevision, setIndicatorRevision] = useState(0);
   const [temporalRevision, setTemporalRevision] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and session identity must invalidate the catalogue even when authentication stays true.
   useEffect(() => {
@@ -151,7 +154,11 @@ function SessionDashboard() {
                 />
               </RequirePrivilege>
             </TabPanel>
-            <TabPanel />
+            <TabPanel>
+              <RequirePrivilege privilege={reportPrivilege}>
+                <IndicatorsPanel key={indicatorRevision} catalogue={catalogue} locationUuid={session?.sessionLocation?.uuid} />
+              </RequirePrivilege>
+            </TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={reportPrivilege}>
                 <DemographicPanel
@@ -183,6 +190,7 @@ function SessionDashboard() {
                   className={styles.configurationGrid}
                   aria-label={t("configuration")}
                 >
+                  <NotificationSettings onSaved={() => setIndicatorRevision((value) => value + 1)} />
                   <TableSettings {...tableAppearance} />
                   <AgeGroupsPanel onSaved={reloadSurveillancePage} />
                   <EndemicSettings

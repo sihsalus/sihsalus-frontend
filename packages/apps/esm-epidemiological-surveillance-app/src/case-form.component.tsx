@@ -1,3 +1,4 @@
+import { DateTimeInput } from "./date-time-input.component";
 import { FieldError } from "./field-error.component";
 import {
   caseDateErrors,
@@ -9,7 +10,7 @@ import {
   RequiredFieldLabel,
   requiredCaseFields,
 } from "./required-field-label.component";
-import { displayDate } from "./date-display";
+import { displayDate, displayDateTime } from "./date-display";
 import {
   Button,
   ComboBox,
@@ -126,6 +127,12 @@ export function CaseForm({
       pregnant: canSelectPregnancy ? (current.pregnant ?? false) : false,
     }));
   }, [investigationDate, canSelectPregnancy, patient, source]);
+  useEffect(() => {
+    if (!patient) return;
+    setRequest((current) => ({ ...current,
+      deathAttribution: patient?.deathDate && request.status === "CONFIRMED" ? (current.deathAttribution ?? "POR_DETERMINAR") : null,
+    }));
+  }, [patient, request.status]);
   const ageLabel = (item: FhirResource) => {
     const age = patientAge(
       item.birthDate,
@@ -281,6 +288,7 @@ export function CaseForm({
       uuid: value.uuid,
       providerUuid: value.providerUuid,
       patientUuid: value.patientUuid,
+      deathAttribution: patient?.deathDate ? "POR_DETERMINAR" : null,
       sourceEncounterUuid: id,
       locationUuid: referenceId(selected?.location?.[0]?.location.reference),
     }));
@@ -343,9 +351,7 @@ export function CaseForm({
       uuid: diag.uuid,
       display: diag.display,
       mapping,
-      label: mapping?.eventName
-        ? `${diag.display} (${mapping.eventName})`
-        : diag.display,
+      label: diag.display,
     };
   });
   const onDiagnosisChange = (diagUuid: string) => {
@@ -448,7 +454,7 @@ export function CaseForm({
     request,
     dateInZone(m.timezone),
     patient?.birthDate,
-    source?.period?.start?.slice(0, 10),
+    source?.period?.start,
   );
   const fieldProps = (key: string) => {
     const reason =
@@ -747,6 +753,9 @@ export function CaseForm({
             ))}
           </Select>
           <FieldError message={fieldProps("status").invalidText} />
+          {select("habitualResidence", ["1", "2", "3"].map((value) => ({
+            value, text: t(`caseDetails.values.habitualResidence.${value}`),
+          })))}
           {select(
             "vaccinationStatus",
             ["SI", "NO", "IGN"].map((value) => ({
@@ -754,21 +763,23 @@ export function CaseForm({
               text: t(`vaccinationValues.${value}`),
             })),
           )}
-          <Select
-            id="case-pregnant"
-            labelText={t("fields.pregnant")}
-            value={request.pregnant ? "SI" : "NO"}
-            disabled={busy || !canSelectPregnancy}
-            onChange={(e) =>
-              setRequest((current) => ({
-                ...current,
-                pregnant: e.target.value === "SI",
-              }))
-            }
-          >
-            <SelectItem value="SI" text={t("vaccinationValues.SI")} />
-            <SelectItem value="NO" text={t("vaccinationValues.NO")} />
-          </Select>
+          {canSelectPregnancy && (
+            <Select
+              id="case-pregnant"
+              labelText={t("fields.pregnant")}
+              value={request.pregnant ? "SI" : "NO"}
+              disabled={busy}
+              onChange={(e) =>
+                setRequest((current) => ({
+                  ...current,
+                  pregnant: e.target.value === "SI",
+                }))
+              }
+            >
+              <SelectItem value="SI" text={t("vaccinationValues.SI")} />
+              <SelectItem value="NO" text={t("vaccinationValues.NO")} />
+            </Select>
+          )}
           {select(
             "surveillanceType",
             ["PASIVA", "BUSQUEDA_ACTIVA"].map((value) => ({
@@ -776,26 +787,19 @@ export function CaseForm({
               text: t(`surveillanceValues.${value}`),
             })),
           )}
-          {(
-            ["investigationDate", "notificationDate", "deathDate"] as const
-          ).map((key) => (
-            <DateInput
-              key={key}
-              id={`case-${key}`}
-              type="date"
-              labelText={
-                <RequiredFieldLabel required={requiredCaseFields.has(key)}>
-                  {t(`fields.${key}`)}
-                </RequiredFieldLabel>
-              }
-              value={request[key] ?? ""}
-              disabled={busy || key === "investigationDate"}
-              max={key === "deathDate" ? undefined : dateInZone(m.timezone)}
-              min={key === "notificationDate" ? investigationDate : undefined}
-              {...fieldProps(key)}
-              onChange={(e) => update(key, e.target.value)}
-            />
-          ))}
+          <DateTimeInput id="case-notificationDate" labelText={t("fields.notificationDate")}
+            value={request.notificationDate ?? ""} disabled={busy}
+            {...fieldProps("notificationDate")}
+            onChange={(event) => update("notificationDate", event.target.value)} />
+          {patient?.deathDate && request.status === "CONFIRMED" && (
+            <Select id="case-deathAttribution" labelText={t("fields.deathAttribution")}
+              value={request.deathAttribution ?? ""} disabled={busy}
+              {...fieldProps("deathAttribution")}
+              onChange={(e) => update("deathAttribution", e.target.value)}>
+              {["SI", "NO", "POR_DETERMINAR"].map((entry) =>
+                <SelectItem key={entry} value={entry} text={t(`caseDetails.values.deathAttribution.${entry}`)} />)}
+            </Select>
+          )}
         </>
       )}
       {step === 2 && (
@@ -807,7 +811,7 @@ export function CaseForm({
               {event?.conceptDisplay ?? event?.conceptUuid}
             </p>
             <dl>
-              <div>
+              {canSelectPregnancy && <div>
                 <dt>{t("fields.pregnant")}</dt>
                 <dd>
                   {t(
@@ -816,7 +820,7 @@ export function CaseForm({
                       : "vaccinationValues.NO",
                   )}
                 </dd>
-              </div>
+              </div>}
               <div>
                 <dt>{t("casesTable.age")}</dt>
                 <dd>{caseAge ?? t("patientAgeUnknown")}</dd>
@@ -826,11 +830,11 @@ export function CaseForm({
                   "onsetDate",
                   "status",
                   "origin",
+                  "habitualResidence",
                   "vaccinationStatus",
                   "surveillanceType",
-                  "investigationDate",
                   "notificationDate",
-                  "deathDate",
+                  "deathAttribution",
                 ] as const
               )
                 .filter((key) => request[key])
@@ -838,8 +842,12 @@ export function CaseForm({
                   <div key={key}>
                     <dt>{t(`fields.${key}`)}</dt>
                     <dd>
-                      {key.endsWith("Date")
+                      {key === "notificationDate" ? displayDateTime(request[key]) : key.endsWith("Date")
                         ? displayDate(request[key])
+                        : key === "habitualResidence"
+                          ? t(`caseDetails.values.habitualResidence.${request[key]}`)
+                        : key === "deathAttribution"
+                          ? t(`caseDetails.values.deathAttribution.${request[key]}`)
                         : key === "status"
                           ? t(`statuses.${request[key]}`)
                           : key === "vaccinationStatus"

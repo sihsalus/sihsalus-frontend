@@ -4,6 +4,7 @@ export const validationMessages = {
   required: true,
   selection: true,
   dateFormat: true,
+  dateTimeFormat: true,
   future: true,
   beforeBirth: true,
   afterCare: true,
@@ -30,11 +31,12 @@ export const formFields = new Set([
   "status",
   "origin",
   "vaccinationStatus",
+  "habitualResidence",
   "surveillanceType",
   "onsetDate",
   "investigationDate",
   "notificationDate",
-  "deathDate",
+  "deathAttribution",
   "infectionAddressUuid",
   "testOrderUuid",
   "laboratoryObservationUuid",
@@ -56,54 +58,30 @@ export function isCalendarDate(value?: string): value is string {
   );
 }
 export function caseDateErrors(
-  value: Pick<
-    SurveillanceCaseDraft,
-    "onsetDate" | "investigationDate" | "notificationDate" | "deathDate"
-  >,
-  today: string,
-  birth?: string,
-  care?: string,
+  value: Pick<SurveillanceCaseDraft, "onsetDate" | "investigationDate" | "notificationDate">,
+  today: string, birth?: string, care?: string,
 ): FieldErrors {
   const errors: FieldErrors = {};
-  for (const key of [
-    "onsetDate",
-    "investigationDate",
-    "notificationDate",
-    "deathDate",
-  ] as const) {
+  for (const key of ["onsetDate", "investigationDate"] as const) {
     const date = value[key];
     if (date && !isCalendarDate(date)) errors[key] = "dateFormat";
+    else if (date && date > today) errors[key] = "future";
   }
-  const set = (key: string, reason: ValidationReason) => {
-    if (!errors[key]) errors[key] = reason;
-  };
-  if (!value.investigationDate) set("investigationDate", "required");
-  for (const key of [
-    "onsetDate",
-    "investigationDate",
-    "notificationDate",
-  ] as const) {
-    if (isCalendarDate(value[key]) && value[key] > today) set(key, "future");
-  }
+  if (!value.investigationDate) errors.investigationDate = "required";
   if (isCalendarDate(value.onsetDate)) {
-    if (birth && value.onsetDate < birth) set("onsetDate", "beforeBirth");
-    if (
-      (care && value.onsetDate > care) ||
-      (isCalendarDate(value.investigationDate) &&
-        value.onsetDate > value.investigationDate)
-    )
-      set("onsetDate", "afterCare");
-    for (const key of ["notificationDate", "deathDate"] as const) {
-      if (isCalendarDate(value[key]) && value[key] < value.onsetDate)
-        set(key, "beforeOnset");
-    }
+    if (birth && value.onsetDate < birth) errors.onsetDate = "beforeBirth";
+    else if (value.investigationDate && value.onsetDate > value.investigationDate) errors.onsetDate = "afterCare";
   }
-  if (
-    isCalendarDate(value.notificationDate) &&
-    isCalendarDate(value.investigationDate) &&
-    value.notificationDate < value.investigationDate
-  )
-    set("notificationDate", "notificationBeforeInvestigation");
+  const notification = value.notificationDate;
+  if (notification) {
+    const time = Date.parse(notification);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?-05:00$/.test(notification) ||
+        !isCalendarDate(notification.slice(0, 10)) || !Number.isFinite(time)) errors.notificationDate = "dateTimeFormat";
+    else if (notification.slice(0, 10) > today || time > Date.now()) errors.notificationDate = "future";
+    else if (value.onsetDate && notification.slice(0, 10) < value.onsetDate) errors.notificationDate = "beforeOnset";
+    else if (care && time < Date.parse(care.length === 10 ? `${care}T00:00:00-05:00` : care)) errors.notificationDate = "notificationBeforeInvestigation";
+    else if (value.investigationDate && notification.slice(0, 10) < value.investigationDate) errors.notificationDate = "notificationBeforeInvestigation";
+  }
   return errors;
 }
 

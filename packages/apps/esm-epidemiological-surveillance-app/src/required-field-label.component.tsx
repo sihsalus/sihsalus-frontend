@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
 import styles from "./dashboard.scss";
 
-// User-facing fields backed by NOT NULL columns in liquibase-surveillance-case.xml.
+// Fields required for saving; historical records may lack newer required fields.
 export const requiredCaseFields = new Set([
   "patientUuid",
   "sourceEncounterUuid",
@@ -13,6 +13,9 @@ export const requiredCaseFields = new Set([
   "diagnosisUuid",
   "status",
   "diagnosisType",
+  "habitualResidence",
+  "vaccinationStatus",
+  "surveillanceType",
 ]);
 export function RequiredFieldLabel({
   children,

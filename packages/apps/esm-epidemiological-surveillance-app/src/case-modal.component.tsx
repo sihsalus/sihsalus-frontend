@@ -1,3 +1,4 @@
+import { DateTimeInput } from "./date-time-input.component";
 import { FieldError } from "./field-error.component";
 import {
   caseDateErrors,
@@ -24,7 +25,6 @@ import {
   getEncounterObservations,
   getSurveillanceCase,
   updateSurveillanceCase,
-  SurveillanceApiError,
 } from "./api";
 import {
   dateInZone,
@@ -49,9 +49,7 @@ import { getEncounterDiagnosesDetails } from "./api";
 
 const dateFields = [
   "onsetDate",
-  "investigationDate",
   "notificationDate",
-  "deathDate",
 ] as const;
 const options = {
   diagnosisType: ["CONFIRMADO", "PROBABLE", "DESCARTADO"],
@@ -64,7 +62,9 @@ const options = {
     "RECAIDA",
     "RECRUDESCENCIA",
   ],
+  habitualResidence: ["1", "2", "3"],
   vaccinationStatus: ["SI", "NO", "IGN"],
+  deathAttribution: ["SI", "NO", "POR_DETERMINAR"],
   surveillanceType: ["PASIVA", "BUSQUEDA_ACTIVA"],
 } as const;
 
@@ -81,12 +81,12 @@ export function caseUpdatePayload(
     diagnosisUuid: value.diagnosisUuid,
     diagnosisType: value.diagnosisType,
     origin: value.origin || undefined,
+    habitualResidence: value.habitualResidence,
     vaccinationStatus: value.vaccinationStatus || undefined,
     surveillanceType: value.surveillanceType || undefined,
     onsetDate: value.onsetDate || undefined,
-    investigationDate: value.investigationDate || undefined,
     notificationDate: value.notificationDate || undefined,
-    deathDate: value.deathDate || undefined,
+    deathAttribution: value.diagnosisType === "CONFIRMADO" ? (value.deathAttribution ?? null) : null,
     infectionAddressUuid: value.infectionAddressUuid || undefined,
     testOrderUuid: value.testOrderUuid || undefined,
     laboratoryObservationUuid: value.laboratoryObservationUuid || undefined,
@@ -124,9 +124,7 @@ export function CaseModal({
   const [error, setError] = useState<unknown>();
   const [retry, setRetry] = useState(0);
   const submitting = useRef(false);
-  // Keep editing enabled while entering a NEW death date; the saved record determines the lock.
-  const [locked, setLocked] = useState(false);
-  const canEdit = mode === "edit" && !!value && !locked;
+  const canEdit = mode === "edit" && !!value;
   // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit retry reloads the same case.
   useEffect(() => {
     const abort = new AbortController();
@@ -156,9 +154,9 @@ export function CaseModal({
       if (!abort.signal.aborted) {
         setDisease(caseDisease);
         setInfectionDisplay(record.infectionAddressDisplay || "");
-        setValue(record);
+        setValue({ ...record, deathAttribution: record.patientDeathDate && record.diagnosisType === "CONFIRMADO" ? (record.deathAttribution ?? "POR_DETERMINAR") : null });
         setObservations(labs);
-        setLocked(!!record.deathDate);
+
       }
     })()
       .catch((reason) => {
@@ -185,6 +183,7 @@ export function CaseModal({
           caseDateErrors(
             { ...value, [key]: next },
             dateInZone(catalogue.catalog.timezone),
+            undefined, value.encounterDate,
           ),
         );
       }
@@ -194,7 +193,10 @@ export function CaseModal({
   };
   const save = async () => {
     if (!value || !canEdit || submitting.current) return;
-    const dates = caseDateErrors(value, dateInZone(catalogue.catalog.timezone));
+    const dates = caseDateErrors(value, dateInZone(catalogue.catalog.timezone), undefined, value.encounterDate);
+    for (const key of ["habitualResidence", "vaccinationStatus", "surveillanceType"] as const) {
+      if (!value[key]) dates[key] = "required";
+    }
     setFieldErrors(dates);
     setError(undefined);
     if (Object.keys(dates).length) return;
@@ -209,11 +211,6 @@ export function CaseModal({
       const fields = serverFieldErrors(failure);
       setFieldErrors(fields);
       setError(Object.keys(fields).length ? undefined : failure);
-      if (
-        reason instanceof SurveillanceApiError &&
-        reason.code === "CASE_CLOSED"
-      )
-        setLocked(true);
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -236,7 +233,7 @@ export function CaseModal({
   const resultDisplay = selectedResult
     ? laboratoryLabel(selectedResult)
     : value?.laboratoryObservationDisplay;
-  const enumLabel = (key: string, entry?: string) =>
+  const enumLabel = (key: string, entry?: string | null) =>
     entry ? t(`caseDetails.values.${key}.${entry}`, entry) : "—";
   const detailFields: Record<string, string> = {
     name: "patientUuid",
@@ -248,12 +245,12 @@ export function CaseModal({
   const detail = (
     key: string,
     label: React.ReactNode,
-    content?: string | number,
+    content?: string | number | null,
   ) => (
     <div key={key}>
       <dt>{label}</dt>
       <dd>
-        {content === undefined || content === "" ? "\u2014" : content}
+        {content == null || content === "" ? "\u2014" : content}
         <FieldError message={fieldProps(detailFields[key]).invalidText} />
       </dd>
     </div>
@@ -265,15 +262,16 @@ export function CaseModal({
         id={`edit-${key}`}
         {...fieldProps(key)}
         labelText={fieldLabel(key, key !== "diagnosisType")}
-        disabled={key === "diagnosisType"}
+        disabled={key === "diagnosisType" || (key === "deathAttribution" && !value.patientDeathDate)}
         value={String(value[key as keyof SurveillanceCase] ?? "")}
         onChange={(event) =>
           change(key as keyof SurveillanceCaseDraft, event.target.value)
         }
       >
-        {key !== "diagnosisType" && (
+        {key !== "diagnosisType" && key !== "deathAttribution" && (
           <SelectItem value="" text={t("notAvailable")} />
         )}
+        {key === "deathAttribution" && !value.patientDeathDate && <SelectItem value="" text={t("notAvailable")} />}
         {options[key].map((entry) => (
           <SelectItem key={entry} value={entry} text={enumLabel(key, entry)} />
         ))}
@@ -287,7 +285,7 @@ export function CaseModal({
     <Modal
       open
       size="lg"
-      passiveModal={mode === "view" || locked}
+      passiveModal={mode === "view"}
       modalHeading={t(
         mode === "view" ? "caseDetails.view" : "caseDetails.edit",
       )}
@@ -360,7 +358,6 @@ export function CaseModal({
               value.diagnosisDisplay,
             )}
           </dl>
-          {locked && <p>{t("caseDetails.locked")}</p>}
           {canEdit ? (
             <fieldset disabled={busy} className={styles.caseEditFields}>
               <legend>{t("caseDetails.editableFields")}</legend>
@@ -424,6 +421,8 @@ export function CaseModal({
                           laboratoryObservationDisplay: undefined,
                           testOrderUuid: obs?.orderUuid,
                           testOrderDisplay: obs?.orderDisplay,
+                          deathAttribution: classification === "CONFIRMED" && current.patientDeathDate
+                            ? (current.deathAttribution ?? "POR_DETERMINAR") : null,
                           diagnosisType:
                             classification === "CONFIRMED"
                               ? "CONFIRMADO"
@@ -454,7 +453,9 @@ export function CaseModal({
                 ))}
               </Select>
               {renderOption("diagnosisType")}
+              {renderOption("habitualResidence")}
               {renderOption("vaccinationStatus")}
+              {pregnancyEligible(value.patientSex, value.patientAge) && (
               <Select
                 id="edit-pregnant"
                 labelText={t("fields.pregnant")}
@@ -464,9 +465,6 @@ export function CaseModal({
                     ? "SI"
                     : "NO"
                 }
-                disabled={
-                  !pregnancyEligible(value.patientSex, value.patientAge)
-                }
                 onChange={(event) =>
                   setValue({ ...value, pregnant: event.target.value === "SI" })
                 }
@@ -474,36 +472,16 @@ export function CaseModal({
                 <SelectItem value="SI" text={t("vaccinationValues.SI")} />
                 <SelectItem value="NO" text={t("vaccinationValues.NO")} />
               </Select>
+              )}
               {renderOption("surveillanceType")}
-              {dateFields
-                .filter((key) => key !== "onsetDate")
-                .map((key) => (
-                  <DateInput
-                    key={key}
-                    id={`edit-${key}`}
-                    {...fieldProps(key)}
-                    type="date"
-                    disabled={key === "investigationDate"}
-                    max={
-                      key === "deathDate"
-                        ? undefined
-                        : dateInZone(catalogue.catalog.timezone)
-                    }
-                    min={
-                      key === "notificationDate"
-                        ? value.investigationDate
-                        : undefined
-                    }
-                    labelText={fieldLabel(key)}
-                    value={value[key]?.slice(0, 10) ?? ""}
-                    onChange={(event) => change(key, event.target.value)}
-                  />
-                ))}
-              {value.deathDate && <p>{t("caseDetails.deathWarning")}</p>}
+              <DateTimeInput id="edit-notificationDate" labelText={fieldLabel("notificationDate")}
+                value={value.notificationDate ?? ""} {...fieldProps("notificationDate")}
+                onChange={(event) => change("notificationDate", event.target.value)} />
+              {value.patientDeathDate && value.diagnosisType === "CONFIRMADO" && renderOption("deathAttribution")}
             </fieldset>
           ) : (
             <dl className={styles.caseDetails}>
-              {detail(
+              {pregnancyEligible(value.patientSex, value.patientAge) && detail(
                 "pregnant",
                 t("fields.pregnant"),
                 value.pregnant == null
@@ -514,7 +492,7 @@ export function CaseModal({
                         : "vaccinationValues.NO",
                     ),
               )}
-              {Object.keys(options).map((key) =>
+              {Object.keys(options).filter((key) => key !== "deathAttribution" || (!!value.patientDeathDate && value.diagnosisType === "CONFIRMADO")).map((key) =>
                 detail(
                   key,
                   fieldLabel(key),
@@ -522,7 +500,7 @@ export function CaseModal({
                 ),
               )}
               {dateFields.map((key) =>
-                detail(key, fieldLabel(key), displayDate(value[key])),
+                detail(key, fieldLabel(key), key === "notificationDate" ? displayDateTime(value[key]) : displayDate(value[key])),
               )}
               {detail(
                 "infection",

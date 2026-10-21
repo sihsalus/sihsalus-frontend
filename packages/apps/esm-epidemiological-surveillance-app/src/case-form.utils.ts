@@ -38,10 +38,10 @@ export function toSurveillanceCaseDraft(
     onsetDate: request.onsetDate,
     infectionAddressUuid: request.infectionAddressUuid,
     diagnosisType: status as SurveillanceCaseDraft["diagnosisType"],
+    habitualResidence: request.habitualResidence,
     vaccinationStatus: request.vaccinationStatus,
-    investigationDate: request.investigationDate,
     notificationDate: request.notificationDate,
-    deathDate: request.deathDate,
+    deathAttribution: status === "CONFIRMADO" ? (request.deathAttribution ?? null) : null,
     surveillanceType: request.surveillanceType,
   };
 }
@@ -67,7 +67,7 @@ export function encounterDate(
 export function invalidCaseDates(
   request: Pick<
     SurveillanceCaseDraft,
-    "investigationDate" | "notificationDate" | "onsetDate" | "deathDate"
+    "investigationDate" | "notificationDate" | "onsetDate"
   >,
   today: string,
 ): string[] {
@@ -240,7 +240,7 @@ export function validateCase(
   patient?: FhirResource,
   source?: FhirResource,
 ): string[] {
-  const fields: string[] = invalidCaseDates(request, dateInZone(m.timezone));
+  const fields: string[] = Object.keys(caseDateErrors(request, dateInZone(m.timezone), patient?.birthDate, source?.period?.start));
   if (source && request.investigationDate !== encounterDate(source, m.timezone))
     fields.push("investigationDate");
   const requiredKeys = [
@@ -251,6 +251,9 @@ export function validateCase(
     "eventUuid",
     "status",
     "origin",
+    "habitualResidence",
+    "vaccinationStatus",
+    "surveillanceType",
     "onsetDate",
   ] as const;
   for (const key of requiredKeys) {

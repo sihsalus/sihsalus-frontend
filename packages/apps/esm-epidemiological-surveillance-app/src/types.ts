@@ -69,10 +69,12 @@ export interface CaseRequest {
   onsetDate: string;
   laboratoryResultUuid?: string;
   infectionAddressUuid?: string;
+  habitualResidence?: "1" | "2" | "3" | null;
   vaccinationStatus?: "SI" | "NO" | "IGN";
   investigationDate?: string;
+  /** ISO date-time with an explicit UTC-5 offset. */
   notificationDate?: string;
-  deathDate?: string;
+  deathAttribution?: "SI" | "NO" | "POR_DETERMINAR" | null;
   surveillanceType?: "PASIVA" | "BUSQUEDA_ACTIVA";
 }
 export interface CaseResult {
@@ -100,14 +102,17 @@ export interface SurveillanceCaseDraft {
   onsetDate?: string;
   infectionAddressUuid?: string;
   diagnosisType: "CONFIRMADO" | "PROBABLE" | "DESCARTADO";
+  habitualResidence?: "1" | "2" | "3" | null;
   vaccinationStatus?: "SI" | "NO" | "IGN";
   investigationDate?: string;
+  /** ISO date-time with an explicit UTC-5 offset. */
   notificationDate?: string;
-  deathDate?: string;
+  deathAttribution?: "SI" | "NO" | "POR_DETERMINAR" | null;
   surveillanceType?: "PASIVA" | "BUSQUEDA_ACTIVA";
 }
 
 export interface SurveillanceCase extends SurveillanceCaseDraft {
+  patientDeathDate?: string | null;
   patientGivenNames?: string;
   patientPaternalSurname?: string;
   patientMaternalSurname?: string;
@@ -178,6 +183,7 @@ export interface FhirResource {
   name?: { text?: string; given?: string[]; family?: string }[];
   identifier?: { value?: string; type?: { text?: string } }[];
   birthDate?: string;
+  deathDate?: string;
   gender?: string;
   deceasedBoolean?: boolean;
   code?: { coding?: Coding[]; text?: string };

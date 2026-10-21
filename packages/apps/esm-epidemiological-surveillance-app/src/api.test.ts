@@ -104,6 +104,7 @@ describe("surveillance API", () => {
               display: "Synthetic Patient",
               gender: "F",
               birthdate: "2000-01-01",
+              deathDate: "2026-01-22",
             },
           },
         ],
@@ -118,8 +119,10 @@ describe("surveillance API", () => {
         identifier: [{ value: "SYN-001" }],
         gender: "F",
         birthDate: "2000-01-01",
+        deathDate: "2026-01-22",
       },
     ]);
+    expect(decodeURIComponent(String(vi.mocked(openmrsFetch).mock.calls[0][0]))).toContain("birthdate,deathDate");
     expect(openmrsFetch).toHaveBeenCalledWith(
       expect.stringContaining("/patient?q=Synthetic"),
       expect.any(Object),

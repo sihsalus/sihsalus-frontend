@@ -1,5 +1,5 @@
 import { DateInput } from "./date-input.component";
-import { displayDate } from "./date-display";
+import { displayDate, displayDateTime } from "./date-display";
 import {
   Button,
   ComboBox,
@@ -231,7 +231,7 @@ export function CasesPanel({
                         {displayDate(item.onsetDate) || "—"}
                       </TableCell>
                       <TableCell className={styles.dateCell}>
-                        {displayDate(item.notificationDate) || "—"}
+                        {displayDateTime(item.notificationDate) || "—"}
                       </TableCell>
                       <TableCell>
                         <div className={styles.cellActions}>
@@ -254,7 +254,6 @@ export function CasesPanel({
                             onClick={() =>
                               setSelectedCase({ uuid: item.uuid, mode: "edit" })
                             }
-                            disabled={!!item.deathDate}
                           />
                         </div>
                       </TableCell>

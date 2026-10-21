@@ -22,7 +22,7 @@ it("uses a Carbon table with separate patient, diagnosis, date and action column
       diagnosisDisplay: "Diagnóstico de prueba",
       onsetDate: "2026-09-01",
       notificationDate: "2026-09-02",
-      deathDate: "2026-09-03",
+      patientDeathDate: "2026-09-03",
     } as SurveillanceCase,
   ]);
   render(<CasesPanel catalogue={catalogue} revision={0} onNewCase={vi.fn()} />);
@@ -34,7 +34,7 @@ it("uses a Carbon table with separate patient, diagnosis, date and action column
   ).toBeInTheDocument();
   expect(screen.getByRole("cell", { name: "Femenino" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Ver caso" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Editar" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Editar" })).toBeEnabled();
 });
 
 it("shows an explicit empty result instead of a blank table", async () => {

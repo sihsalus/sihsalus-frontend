@@ -49,6 +49,8 @@ vi.mock("./reload-surveillance", () => ({ reloadSurveillancePage: vi.fn() }));
 vi.mock("./demographic-panel.component", () => ({
   DemographicPanel: () => <div>Demographic content</div>,
 }));
+vi.mock("./indicators-panel.component", () => ({ IndicatorsPanel: () => <div>Indicator content</div> }));
+vi.mock("./notification-settings.component", () => ({ NotificationSettings: () => <div>Notification configuration</div> }));
 vi.mock("./age-groups.component", () => ({
   AgeGroupsPanel: () => <div>Age configuration</div>,
 }));
@@ -143,12 +145,12 @@ it("reloads the catalogue when the authenticated actor changes", async () => {
   expect(getCatalogue).toHaveBeenCalledTimes(2);
 });
 
-it("keeps indicators empty while gating geography, demographics and configuration", async () => {
+it("shows indicators while gating geography, demographics and configuration", async () => {
   state.privileges = [reportPrivilege];
   render(<Dashboard />);
   await screen.findByRole("tab", { name: "Indicators" });
   fireEvent.click(screen.getByRole("tab", { name: "Indicators" }));
-  expect(screen.getByRole("tabpanel")).toBeEmptyDOMElement();
+  expect(screen.getByText("Indicator content")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "geographic" }));
   expect(screen.getByText("Geographic content")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "demographic.title" }));

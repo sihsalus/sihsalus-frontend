@@ -113,13 +113,24 @@
       "surveillanceType": "Surveillance type",
       "onsetDate": "Symptom onset date",
       "investigationDate": "Investigation date",
-      "notificationDate": "Notification date",
-      "deathDate": "Date of death",
+      "notificationDate": "Notification date and time",
+      "habitualResidence": "Habitual residence",
+      "deathAttribution": "Death attributable to the case",
       "infectionAddressUuid": "Probable place of infection",
       "testOrderUuid": "Laboratory order",
       "laboratoryObservationUuid": "Laboratory result"
     },
     "values": {
+      "habitualResidence": {
+        "1": "1. Urban",
+        "2": "2. Marginal urban",
+        "3": "3. Rural/Peasant"
+      },
+      "deathAttribution": {
+        "SI": "Yes",
+        "NO": "No",
+        "POR_DETERMINAR": "Undetermined"
+      },
       "sex": {
         "M": "Male",
         "F": "Female",
@@ -257,8 +268,9 @@
     "vaccinationStatus": "Vaccination status",
     "surveillanceType": "Surveillance type",
     "investigationDate": "Investigation date",
-    "notificationDate": "Notification date",
-    "deathDate": "Death date",
+    "notificationDate": "Notification date and time",
+    "habitualResidence": "Habitual residence",
+    "deathAttribution": "Death attributable to the case",
     "patientUuid": "Patient",
     "sourceEncounterUuid": "Source care record",
     "providerUuid": "Registering professional",
@@ -385,7 +397,9 @@
     "UNKNOWN_CENTER_CODE": "The CSV contains unknown or ambiguous populated center codes. No coordinates were saved.",
     "INVALID_GEOGRAPHIC_RANGE": "Select ordered dates within the same calendar year, no later than today.",
     "OUTSIDE_CURRENT_YEAR": "Select dates within the current calendar year.",
-    "INVALID_ENDEMIC_SETTINGS": "Enter positive whole numbers. The minimum cannot exceed the historical years, which must be less than the current year."
+    "INVALID_ENDEMIC_SETTINGS": "Enter positive whole numbers. The minimum cannot exceed the historical years, which must be less than the current year.",
+    "INVALID_NOTIFICATION_SETTINGS": "Select a valid day and time.",
+    "INVALID_INDICATOR": "Select a valid indicator."
   },
   "events": "Events",
   "newEvent": "New event",
@@ -449,7 +463,8 @@
     "beforeBirth": "The date cannot be before the patient’s birth.",
     "afterCare": "Symptom onset cannot be after the care date.",
     "beforeOnset": "The date cannot be before symptom onset.",
-    "notificationBeforeInvestigation": "Notification cannot be before investigation.",
+    "notificationBeforeInvestigation": "Notification cannot be before the source encounter.",
+    "dateTimeFormat": "Enter a valid date and time in UTC-5.",
     "endBeforeStart": "The end date cannot be before the start date.",
     "referenceLength": "The reference regulation cannot exceed 100 characters.",
     "duplicateDiagnosis": "A case already exists for this diagnosis.",
@@ -538,5 +553,34 @@
   },
   "eventState": "Status",
   "eventActive": "Active",
-  "eventInactive": "Inactive"
+  "eventInactive": "Inactive",
+  "indicatorPanel": {
+    "from": "Investigation from",
+    "to": "Investigation to",
+    "completeness": "Percentage of cases with complete data",
+    "fatality": "Case fatality rate",
+    "timeliness": "Percentage of cases notified on time",
+    "count": "{{numerator}} of {{denominator}} cases",
+    "confirmedCount": "{{numerator}} of {{denominator}} confirmed cases",
+    "noCases": "No cases",
+    "completenessHelp": "Cases with symptom onset, notification date and time, probable infection location and origin completed.",
+    "fatalityHelp": "Deaths attributed to the disease divided by all confirmed cases.",
+    "timelinessHelp": "Immediate events: less than 24 hours from care. Weekly events: before the configured deadline after the epidemiological week of care ends."
+  },
+  "notificationSettings": {
+    "configure": "Configure weekly notification deadline",
+    "saved": "Weekly notification deadline updated",
+    "settingsHelp": "The deadline falls on the selected day and time after each epidemiological week ends. Epidemiological calendar time (UTC−5). Default: Monday, 12:00 noon.",
+    "day": "Day of week",
+    "time": "Deadline time (UTC−5)",
+    "days": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
+    }
+  }
 }

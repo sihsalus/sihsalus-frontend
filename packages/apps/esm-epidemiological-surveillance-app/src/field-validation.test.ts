@@ -5,19 +5,16 @@ import { safeError } from "./api";
 it("reports the specific violated condition for each date", () => {
   const dates = { investigationDate: "2026-01-20", onsetDate: "2026-01-19" };
   expect(
-    caseDateErrors({ ...dates, notificationDate: "2026-01-21" }, "2026-01-20"),
+    caseDateErrors({ ...dates, notificationDate: "2026-01-21T12:00:00-05:00" }, "2026-01-20"),
   ).toEqual({ notificationDate: "future" });
   expect(
-    caseDateErrors({ ...dates, notificationDate: "2026-01-19" }, "2026-01-20"),
+    caseDateErrors({ ...dates, notificationDate: "2026-01-19T12:00:00-05:00" }, "2026-01-20"),
   ).toEqual({ notificationDate: "notificationBeforeInvestigation" });
-  expect(
-    caseDateErrors({ ...dates, deathDate: "2026-01-18" }, "2026-01-20"),
-  ).toEqual({ deathDate: "beforeOnset" });
   expect(
     caseDateErrors({ ...dates, onsetDate: "2026-02-30" }, "2026-01-20"),
   ).toEqual({ onsetDate: "dateFormat" });
   expect(
-    caseDateErrors({ ...dates, notificationDate: "2026-01-20" }, "2026-01-20"),
+    caseDateErrors({ ...dates, notificationDate: "2026-01-20T12:00:00-05:00" }, "2026-01-20"),
   ).toEqual({});
 });
 

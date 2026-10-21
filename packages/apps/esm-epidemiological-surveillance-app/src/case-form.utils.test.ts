@@ -11,6 +11,9 @@ import {
 } from "./case-form.utils";
 import { catalogue, request } from "./test-fixtures";
 describe("case form validation", () => {
+  it.each(["vaccinationStatus", "surveillanceType"] as const)("requires %s before registering", (field) => {
+    expect(validateCase({ ...request, [field]: undefined }, catalogue.catalog)).toContain(field);
+  });
   it.each([
     ["2016-01-21", 9, false],
     ["2016-01-20", 10, true],
@@ -28,19 +31,19 @@ describe("case form validation", () => {
   it("validates date ordering and accepts equality with today", () => {
     expect(
       invalidCaseDates(
-        { investigationDate: "2026-01-20", notificationDate: "2026-01-20" },
+        { investigationDate: "2026-01-20", notificationDate: "2026-01-20T12:00:00-05:00" },
         "2026-01-20",
       ),
     ).toEqual([]);
     expect(
       invalidCaseDates(
-        { investigationDate: "2026-01-20", notificationDate: "2026-01-19" },
+        { investigationDate: "2026-01-20", notificationDate: "2026-01-19T12:00:00-05:00" },
         "2026-01-20",
       ),
     ).toContain("notificationDate");
     expect(
       invalidCaseDates(
-        { investigationDate: "2026-01-21", notificationDate: "2026-01-22" },
+        { investigationDate: "2026-01-21", notificationDate: "2026-01-22T12:00:00-05:00" },
         "2026-01-20",
       ),
     ).toEqual(["investigationDate", "notificationDate"]);

@@ -24,6 +24,9 @@ vi.mock("./error-notification.component", () => ({
   ErrorNotification: () => <p role="alert">Error seguro</p>,
 }));
 const record: SurveillanceCase = {
+  vaccinationStatus: "IGN",
+  surveillanceType: "PASIVA",
+  habitualResidence: "1",
   uuid: "synthetic-case",
   patientDisplay: "Paciente de prueba",
   patientIdentifier: "TEST-DNI",
@@ -40,7 +43,7 @@ const record: SurveillanceCase = {
   diagnosisType: "PROBABLE",
   origin: "AUTOCTONO",
   onsetDate: "2026-09-01",
-  notificationDate: "2026-09-02",
+  notificationDate: "2026-09-02T12:00:00-05:00",
   testOrderUuid: "synthetic-order",
   encounterDisplay: "Atención sintética",
   encounterDate: "2026-09-01",
@@ -84,6 +87,22 @@ const mount = (mode: "view" | "edit" = "view", onSaved = vi.fn()) =>
       onSaved={onSaved}
     />,
   );
+
+it.each(["view", "edit"] as const)("hides attribution for a deceased probable case in %s mode", async (mode) => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, patientDeathDate: "2026-09-03", deathAttribution: "SI" });
+  mount(mode);
+  await screen.findByText("Paciente de prueba");
+  expect(screen.queryByText("caseDetails.fields.deathAttribution")).not.toBeInTheDocument();
+});
+
+it.each(["vaccinationStatus", "surveillanceType"] as const)("requires %s when editing a historical case", async (field) => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, [field]: null });
+  mount("edit");
+  await screen.findByText("Paciente de prueba");
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  expect(updateSurveillanceCase).not.toHaveBeenCalled();
+  expect(document.getElementById(`edit-${field}`)).toHaveAttribute("aria-invalid", "true");
+});
 
 it("loads all case data and residence in a read-only modal", async () => {
   vi.mocked(getSurveillanceCase).mockResolvedValue({
@@ -134,7 +153,7 @@ it("formats immutable case details without required markers when editing", async
     await screen.findByText("Paterno Materno Nombre Segundo"),
   ).toBeInTheDocument();
   expect(
-    screen.getByText("01/09/2026 23:00 · Atención sintética"),
+    screen.getByText("01/09/2026 18:00 · Atención sintética"),
   ).toBeInTheDocument();
   for (const label of [
     "casesTable.patient",
@@ -151,9 +170,9 @@ it("formats immutable case details without required markers when editing", async
   expect(
     screen.getByLabelText("caseDetails.fields.diagnosisType"),
   ).toBeDisabled();
-  expect(
-    screen.queryByText("requiredField", { exact: false }),
-  ).not.toBeInTheDocument();
+  expect(screen.getByText(/caseDetails.fields.habitualResidence.*requiredField/)).toHaveTextContent(
+    "caseDetails.fields.habitualResidence",
+  );
 });
 
 it("edits epidemiological fields without sending demographic or response fields", async () => {
@@ -181,8 +200,8 @@ it("edits epidemiological fields without sending demographic or response fields"
   );
   const payload = vi.mocked(updateSurveillanceCase).mock.calls[0][1];
   expect(
-    screen.getByLabelText("caseDetails.fields.investigationDate"),
-  ).toBeDisabled();
+    screen.queryByLabelText("caseDetails.fields.investigationDate"),
+  ).not.toBeInTheDocument();
   for (const field of [
     "patientGivenNames",
     "patientPaternalSurname",
@@ -196,38 +215,35 @@ it("edits epidemiological fields without sending demographic or response fields"
   expect(payload).not.toHaveProperty("diagnosisDisplay");
   expect(payload).not.toHaveProperty("residence");
 });
-it("locks editing based on the freshly loaded death date", async () => {
-  vi.mocked(getSurveillanceCase).mockResolvedValue({
-    ...record,
-    deathDate: "2026-09-03",
-  });
+it("enables attribution for deceased patients and saves all three choices", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, diagnosisType: "CONFIRMADO", patientDeathDate: "2026-09-03" });
   mount("edit");
-  await screen.findByText("caseDetails.locked");
-  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Guardar" }),
-  ).not.toBeInTheDocument();
+  const field = await screen.findByLabelText("caseDetails.fields.deathAttribution");
+  expect(field).toBeEnabled();
+  expect(field).toHaveValue("POR_DETERMINAR");
+  for (const value of ["SI", "NO", "POR_DETERMINAR"]) {
+    fireEvent.change(field, { target: { value } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() => expect(updateSurveillanceCase).toHaveBeenLastCalledWith(
+      record.uuid, expect.objectContaining({ deathAttribution: value })));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled());
+  }
+  expect(vi.mocked(updateSurveillanceCase).mock.calls[0][1]).not.toHaveProperty("deathDate");
 });
-it("allows saving a new death date but warns that it locks the case", async () => {
+it("clears stale attribution and hides it for a living patient", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, deathAttribution: "SI", patientDeathDate: null });
   mount("edit");
-  fireEvent.change(
-    await screen.findByLabelText("caseDetails.fields.deathDate"),
-    { target: { value: "2026-09-03" } },
-  );
-  expect(screen.getByText("caseDetails.deathWarning")).toBeInTheDocument();
+  await screen.findByLabelText("caseDetails.fields.origin");
+  expect(screen.queryByLabelText("caseDetails.fields.deathAttribution")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-  await waitFor(() =>
-    expect(updateSurveillanceCase).toHaveBeenCalledWith(
-      record.uuid,
-      expect.objectContaining({ deathDate: "2026-09-03" }),
-    ),
-  );
+  await waitFor(() => expect(updateSurveillanceCase).toHaveBeenCalledWith(
+    record.uuid, expect.objectContaining({ deathAttribution: null })));
 });
 it("rejects dates before onset without submitting", async () => {
   mount("edit");
   fireEvent.change(
     await screen.findByLabelText("caseDetails.fields.notificationDate"),
-    { target: { value: "2026-08-01" } },
+    { target: { value: "2026-08-01T12:00" } },
   );
   fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
   await screen.findByText("validation.beforeOnset");
@@ -274,12 +290,11 @@ it("keeps editable case fields in registration order and marks only non-null fie
     "edit-onsetDate",
     "edit-laboratory",
     "edit-diagnosisType",
+    "edit-habitualResidence",
     "edit-vaccinationStatus",
     "edit-pregnant",
     "edit-surveillanceType",
-    "edit-investigationDate",
     "edit-notificationDate",
-    "edit-deathDate",
   ]);
   expect(
     screen.getByLabelText(/caseDetails.fields.diagnosisType/),
@@ -287,4 +302,50 @@ it("keeps editable case fields in registration order and marks only non-null fie
   expect(
     screen.getByLabelText("caseDetails.fields.origin"),
   ).toBeInTheDocument();
+});
+
+it.each([["M", 30, false], ["F", 9, false], ["F", 10, true], ["F", 55, true], ["F", 56, false]])(
+  "only renders pregnancy when applicable: %s, %s", async (patientSex, patientAge, eligible) => {
+    vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, patientSex: String(patientSex), patientAge: Number(patientAge) });
+    mount("edit");
+    await screen.findByLabelText("caseDetails.fields.origin");
+    const field = screen.queryByLabelText("fields.pregnant");
+    if (eligible) expect(field).toBeEnabled();
+    else expect(field).not.toBeInTheDocument();
+  },
+);
+
+it("requires habitual residence on legacy cases and saves the selected code", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, habitualResidence: null });
+  mount("edit");
+  const field = await screen.findByLabelText(/caseDetails.fields.habitualResidence/);
+  expect(field).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  expect(await screen.findByText("validation.required")).toBeInTheDocument();
+  expect(updateSurveillanceCase).not.toHaveBeenCalled();
+  fireEvent.change(field, { target: { value: "3" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() => expect(updateSurveillanceCase).toHaveBeenCalledWith(record.uuid, expect.objectContaining({ habitualResidence: "3" })));
+});
+
+it("hides inapplicable view fields and renders null values with an em dash", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record,
+    patientSex: "M", patientAge: null, patientDeathDate: null,
+    providerDisplay: null, locationDisplay: null, habitualResidence: null,
+    notificationDate: null, patientResidence: null,
+    encounterDate: "2026-09-02T02:30:00Z",
+  } as unknown as SurveillanceCase);
+  mount("view");
+  await screen.findByText(/01\/09\/2026 21:30/);
+  expect(screen.queryByText("fields.pregnant")).not.toBeInTheDocument();
+  expect(screen.queryByText("caseDetails.fields.deathAttribution")).not.toBeInTheDocument();
+  for (const key of ["casesTable.age", "caseDetails.residence", "caseDetails.fields.providerUuid", "caseDetails.fields.locationUuid", "caseDetails.fields.habitualResidence", "caseDetails.fields.notificationDate"])
+    expect(screen.getByText(key).nextElementSibling).toHaveTextContent("\u2014");
+});
+it("shows applicable pregnancy and death attribution in view mode", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, pregnant: true,
+    diagnosisType: "CONFIRMADO", patientDeathDate: "2026-09-01", deathAttribution: "SI" });
+  mount("view");
+  expect(await screen.findByText("fields.pregnant")).toBeInTheDocument();
+  expect(screen.getByText("caseDetails.fields.deathAttribution")).toBeInTheDocument();
 });

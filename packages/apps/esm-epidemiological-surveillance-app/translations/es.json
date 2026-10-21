@@ -113,13 +113,24 @@
       "surveillanceType": "Tipo de vigilancia",
       "onsetDate": "Fecha de inicio de síntomas",
       "investigationDate": "Fecha de investigación",
-      "notificationDate": "Fecha de notificación",
-      "deathDate": "Fecha de defunción",
+      "notificationDate": "Fecha y hora de notificación",
+      "habitualResidence": "Residencia Habitual",
+      "deathAttribution": "Defunción atribuible al caso",
       "infectionAddressUuid": "Lugar probable de infección",
       "testOrderUuid": "Orden de laboratorio",
       "laboratoryObservationUuid": "Resultado de laboratorio"
     },
     "values": {
+      "habitualResidence": {
+        "1": "1. Urbana",
+        "2": "2. Urbana marginal",
+        "3": "3. Rural/Campesina"
+      },
+      "deathAttribution": {
+        "SI": "Sí",
+        "NO": "No",
+        "POR_DETERMINAR": "Por determinar"
+      },
       "sex": {
         "M": "Masculino",
         "F": "Femenino",
@@ -257,8 +268,9 @@
     "vaccinationStatus": "Estado de vacunación",
     "surveillanceType": "Tipo de vigilancia",
     "investigationDate": "Fecha de investigación",
-    "notificationDate": "Fecha de notificación",
-    "deathDate": "Fecha de defunción",
+    "notificationDate": "Fecha y hora de notificación",
+    "habitualResidence": "Residencia Habitual",
+    "deathAttribution": "Defunción atribuible al caso",
     "patientUuid": "Paciente",
     "sourceEncounterUuid": "Atención de origen",
     "providerUuid": "Profesional que registra",
@@ -385,7 +397,9 @@
     "UNKNOWN_CENTER_CODE": "El CSV contiene códigos de centro poblado inexistentes o ambiguos en el catálogo territorial. No se guardaron coordenadas.",
     "INVALID_GEOGRAPHIC_RANGE": "Seleccione fechas ordenadas dentro del mismo año calendario, sin superar hoy.",
     "OUTSIDE_CURRENT_YEAR": "Selecciona fechas que pertenezcan al año calendario en curso",
-    "INVALID_ENDEMIC_SETTINGS": "Ingresa cantidades enteras positivas. El mínimo no debe superar los años históricos y estos deben ser menores que el año actual."
+    "INVALID_ENDEMIC_SETTINGS": "Ingresa cantidades enteras positivas. El mínimo no debe superar los años históricos y estos deben ser menores que el año actual.",
+    "INVALID_NOTIFICATION_SETTINGS": "Seleccione un día y una hora válidos.",
+    "INVALID_INDICATOR": "Seleccione un indicador válido."
   },
   "events": "Eventos",
   "newEvent": "Nuevo evento",
@@ -449,7 +463,8 @@
     "beforeBirth": "La fecha no puede ser anterior al nacimiento del paciente.",
     "afterCare": "El inicio de síntomas no puede ser posterior a la fecha de atención.",
     "beforeOnset": "La fecha no puede ser anterior al inicio de síntomas.",
-    "notificationBeforeInvestigation": "La notificación no puede ser anterior a la investigación.",
+    "notificationBeforeInvestigation": "La notificación no puede ser anterior a la atención de origen.",
+    "dateTimeFormat": "Ingresa una fecha y hora válidas en UTC-5.",
     "endBeforeStart": "La vigencia final no puede ser anterior a la vigencia inicial.",
     "referenceLength": "La norma de referencia no puede superar los 100 caracteres.",
     "duplicateDiagnosis": "Ya existe un caso para este diagnóstico.",
@@ -538,5 +553,34 @@
   },
   "eventState": "Estado",
   "eventActive": "Activo",
-  "eventInactive": "Inactivo"
+  "eventInactive": "Inactivo",
+  "indicatorPanel": {
+    "from": "Investigación desde",
+    "to": "Investigación hasta",
+    "completeness": "Porcentaje de casos con datos completos",
+    "fatality": "Tasa de letalidad",
+    "timeliness": "Porcentaje de casos notificados oportunamente",
+    "count": "{{numerator}} de {{denominator}} casos",
+    "confirmedCount": "{{numerator}} de {{denominator}} casos confirmados",
+    "noCases": "Sin casos",
+    "completenessHelp": "Casos con inicio de síntomas, fecha y hora de notificación, lugar probable de infección y origen completos.",
+    "fatalityHelp": "Defunciones atribuidas a la enfermedad sobre el total de casos confirmados.",
+    "timelinessHelp": "Eventos inmediatos: menos de 24 horas desde la atención. Semanales: antes del límite configurado tras el cierre de la semana epidemiológica de la atención."
+  },
+  "notificationSettings": {
+    "configure": "Configurar fecha y hora límite de notificación semanal",
+    "saved": "Límite de notificación semanal actualizado",
+    "settingsHelp": "El plazo vence el día y hora seleccionados después del cierre de cada semana epidemiológica. Hora del calendario epidemiológico (UTC−5). Por defecto: lunes, 12:00 (mediodía).",
+    "day": "Día de la semana",
+    "time": "Hora límite (UTC−5)",
+    "days": {
+      "1": "Lunes",
+      "2": "Martes",
+      "3": "Miércoles",
+      "4": "Jueves",
+      "5": "Viernes",
+      "6": "Sábado",
+      "7": "Domingo"
+    }
+  }
 }

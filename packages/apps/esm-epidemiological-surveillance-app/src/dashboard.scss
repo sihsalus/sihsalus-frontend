@@ -336,3 +336,21 @@
   margin-top: 1rem;
   min-width: 0;
 }
+
+.indicatorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+.indicatorCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+.indicatorValue {
+  text-align: center;
+  font-size: 2rem;
+  line-height: 1.3;
+}
+.indicatorCount { text-align: center; }

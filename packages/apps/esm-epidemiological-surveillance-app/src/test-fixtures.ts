@@ -45,6 +45,9 @@ export const catalogue: Catalogue = {
   },
 };
 export const request: CaseRequest = {
+  vaccinationStatus: "IGN",
+  surveillanceType: "PASIVA",
+  habitualResidence: "1",
   uuid: "case",
   patientUuid: "patient",
   sourceEncounterUuid: "source",

@@ -126,6 +126,57 @@ describe("case registration screen", () => {
     expect(screen.getByText(/years/)).toBeInTheDocument();
     expect(screen.queryByLabelText("Recording professional")).not.toBeInTheDocument();
   });
+  it.each([null, "2026-01-22"])("gates attribution on the patient death date: %s", async (deathDate) => {
+    vi.mocked(getPatient).mockResolvedValueOnce({ resourceType: "Patient", id: "patient",
+      name: [{ text: "Synthetic Patient" }], deathDate: deathDate ?? undefined });
+    render(<CaseForm catalogue={catalogue} initial={{ ...request, status: "CONFIRMED", laboratoryResultUuid: "synthetic-lab", deathAttribution: "SI" }} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const field = screen.queryByLabelText("Death attributable to the case");
+    if (deathDate) {
+      expect(field).toBeEnabled();
+      expect(field).toHaveValue("SI");
+      fireEvent.change(screen.getByLabelText("Death attributable to the case"), { target: { value: "NO" } });
+    } else expect(field).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Death date")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Register case" }));
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(
+      expect.objectContaining({ deathAttribution: deathDate ? "NO" : null })));
+  });
+  it("requires habitual residence before review and submits its code", async () => {
+    render(<CaseForm catalogue={catalogue} initial={{ ...request, habitualResidence: undefined }} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const field = screen.getByLabelText(/Habitual residence/);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("This field is required.")).toBeInTheDocument();
+    expect(createSurveillanceCase).not.toHaveBeenCalled();
+    fireEvent.change(field, { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("2. Marginal urban")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Register case" }));
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(expect.objectContaining({ habitualResidence: "2" })));
+  });
+  it("shows the diagnosis name without appending the event name", async () => {
+    render(<CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("option", { name: "Synthetic disease" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Synthetic disease (Synthetic disease)" })).not.toBeInTheDocument();
+  });
+  it("registers notification date and time with the UTC-5 offset without an investigation field", async () => {
+    render(<CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.queryByLabelText("Investigation date")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Notification date and time"), { target: { value: "2026-01-20T18:35" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("20/01/2026 18:35")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Register case" }));
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(expect.objectContaining({ notificationDate: "2026-01-20T18:35-05:00" })));
+    expect(vi.mocked(createSurveillanceCase).mock.calls[0][0]).not.toHaveProperty("investigationDate");
+  });
   it("registers a draft within three steps", async () => {
     render(
       <CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />,
@@ -157,20 +208,18 @@ describe("case registration screen", () => {
     await screen.findByText("Synthetic Patient");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByText("Synthetic professional")).toBeInTheDocument();
-    for (const label of ["Investigation date", "Notification date", "Death date", "Vaccination status", "Surveillance type"])
-      expect(screen.getByLabelText(label)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Vaccination status"), { target: { value: "SI" } });
-    expect(screen.getByLabelText("Investigation date")).toBeDisabled();
-    expect(screen.getByLabelText("Investigation date")).toHaveValue("20/01/2026");
+    for (const label of ["Notification date and time", "Vaccination status", "Surveillance type"])
+      expect(screen.getByLabelText(new RegExp(label))).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Vaccination status/), { target: { value: "SI" } });
+    expect(screen.queryByLabelText("Investigation date")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.queryByLabelText("Vaccination status")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Investigation date")).not.toBeInTheDocument();
-    expect(screen.getByText("20/01/2026")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(screen.getByLabelText("Vaccination status")).toHaveValue("SI");
+    expect(screen.getByLabelText(/Vaccination status/)).toHaveValue("SI");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Register case" }));
-    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(expect.objectContaining({ vaccinationStatus: "SI", investigationDate: "2026-01-20" })));
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(expect.objectContaining({ vaccinationStatus: "SI" })));
   });
   it("preserves the active form when connectivity changes", async () => {
     const props = { catalogue, initial: request, onSaved: vi.fn() };
@@ -197,15 +246,16 @@ describe("case registration screen", () => {
     render(<CaseForm catalogue={catalogue} initial={{ ...request, pregnant: true }} onSaved={vi.fn()} />);
     await screen.findByText("Synthetic Patient");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    const pregnant = screen.getByLabelText("Pregnant");
+    const pregnant = screen.queryByLabelText("Pregnant");
     if (eligible) {
       expect(pregnant).toBeEnabled();
       expect(pregnant).toHaveValue("SI");
-      fireEvent.change(pregnant, { target: { value: "NO" } });
+      fireEvent.change(screen.getByLabelText("Pregnant"), { target: { value: "NO" } });
       expect(pregnant).toHaveValue("NO");
     } else {
-      expect(pregnant).toBeDisabled();
-      expect(pregnant).toHaveValue("NO");
+      expect(pregnant).not.toBeInTheDocument();
     }
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    if (!eligible) expect(screen.queryByText("Pregnant")).not.toBeInTheDocument();
   });
 });

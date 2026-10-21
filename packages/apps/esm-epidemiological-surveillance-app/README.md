@@ -6,7 +6,7 @@ Terminología: visita = consulta; encounter = atención.
 
 ## Alcance
 
-Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación/defunción. No se incorpora React Form Engine en este cambio.
+Registro en **tres pasos**: paciente/atención existente; todos los campos del caso; revisión de solo lectura y registro. El paso 2 reúne profesional/localidad de solo lectura, diagnóstico, clasificación, laboratorio, origen, lugar probable de infección, inicio de síntomas, vacunación, tipo de vigilancia y fechas de investigación/notificación y defunción atribuible al caso. No se incorpora React Form Engine en este cambio.
 
 Cubre el registro, la información temporal, la distribución demográfica (RF-22)
 y la información geográfica de focos (RF-18/RF-19 de la tesis), con usabilidad
@@ -627,3 +627,120 @@ Configuración incluye Apariencia de las tablas: tamaño (12 a 24 px) y
 alineación independientes para encabezados y resto de filas. Se abre desde un botón con icono en un modal con Cancelar y Guardar. Se aplica al
 guardar a las tablas del módulo y persiste por usuario en este navegador,
 sin cambiar la configuración compartida del servidor.
+
+### Defunción atribuible al caso (20/10/2026)
+
+Registro y edición ofrecen Sí, No y Por determinar. El campo solo se muestra
+si Person.deathDate existe; Por determinar es el valor inicial del fallecido.
+Sin fecha, la atribución es nula. El servidor valida la condición al guardar y
+limpia las atribuciones al guardar Person/Patient como vivo, también desde otros
+módulos. Los casos de fallecidos siguen siendo editables.
+Requiere desplegar ESM y OMOD juntos, con la migración
+surveillance-death-attribution-20261020. No se deduce causalidad de fechas antiguas.
+
+Pruebas locales: registro y edición, tres opciones, valor nulo para vivos,
+rechazo de opciones inválidas y limpieza persistente mediante PatientService y
+PersonService. Smoke integrado DEV/QLTY: NOT RUN, sin sesión coordinada.
+
+Validación local: PASSED, 155 pruebas con `vitest run --maxWorkers=2` y 38
+pruebas de API/registro/edición repetidas tras el último ajuste de consulta.
+PASSED: `node ../../../node_modules/typescript/bin/tsc6 --noEmit`, scripts
+`lint` y `build` del paquete (advertencia de tamaño del chunk de ExcelJS).
+Backend PASSED: `mvn -o -pl api,omod -am compiler:compile compiler:testCompile
+surefire:test`, 139 pruebas API y 7 REST, incluidos migración y guardado nativo.
+`git diff --check` PASSED. `yarn.cmd prettier --check` del README: FAILED por
+formato del documento; no se reformatea el contenido ajeno a esta corrección.
+`verify:changed`: NOT RUN, cambios locales sin commit. No se desplegó.
+
+Registro y edición omiten completamente Gestante cuando no aplica la regla de
+sexo y edad vigente, y Defunción atribuible al caso cuando no hay fecha de
+defunción. No se renderizan sus controles ni contenedores, por lo que no reservan
+espacio. La revisión previa al registro también omite Gestante cuando no aplica.
+
+### Residencia Habitual
+
+Registro y edición requieren seleccionar 1. Urbana, 2. Urbana marginal o
+3. Rural/Campesina. El contrato `habitualResidence` transmite los códigos como
+cadenas `"1"`, `"2"` o `"3"`; no se deriva de la dirección del paciente.
+Los casos históricos sin clasificación conservan null hasta su edición, cuando
+deben completarla. El servidor rechaza valores ausentes o fuera del catálogo.
+Requiere actualizar ESM y OMOD y aplicar `surveillance-habitual-residence-20261020`.
+La columna admite null para conservar los casos históricos sin inventar datos;
+la obligatoriedad se aplica a todas las creaciones y actualizaciones de casos.
+
+Validación local: TypeScript, lint, build y diff --check PASSED. Vitest ejecutó
+162 pruebas: 161 PASSED y una expectativa antigua de etiquetas FAILED; corregida
+la expectativa, las 14 pruebas del modal PASSED. Maven con `resources:resources
+compiler:compile compiler:testCompile surefire:test` PASSED, incluidas migración,
+persistencia y validación de códigos. Smoke integrado DEV/QLTY NOT RUN; sin despliegue.
+
+Visualizar caso presenta la atención de origen en UTC−5 a partir del instante
+ISO con zona explícita enviado por el OMOD. Las respuestas antiguas sin zona se
+interpretan como UTC; actualizar OMOD y ESM juntos para eliminar esa ambigüedad.
+Gestante y Defunción atribuible al caso se omiten cuando no aplican, también en
+la vista de consulta. Los valores nulos se presentan como «—». El selector de
+diagnóstico muestra solo su nombre, sin añadir el nombre del evento entre paréntesis.
+
+### Fecha y hora de notificación
+
+Registro y edición sustituyen Fecha de notificación por Fecha y hora de
+notificación, con indicación UTC−5. El valor incluye el offset `-05:00` y se
+muestra con hora en la revisión, consulta y tabla de casos. Fecha de investigación
+ya no aparece como campo ni se envía al guardar; el servidor la deriva de la
+atención de origen. Se mantiene la edad calculada respecto de esa atención.
+Se rechazan notificaciones anteriores a la atención o futuras.
+
+Requiere actualizar ESM y OMOD y aplicar `liquibase-notification-time.xml`.
+La migración asigna a cada notificación existente la hora de la atención más
+una hora y conserva null para los casos todavía sin notificación. No se ejecutó
+la migración en DEV/QLTY ni producción; smoke integrado pendiente.
+
+Validación local de fecha y hora: PASSED, 56 pruebas Vitest de registro, edición,
+fechas, selector y tabla; TypeScript, lint y build. Maven PASSED: 146 pruebas API
+y 7 REST, con migración repetible, cambio de año, conservación de null, precisión
+tras recarga y filtros por días completos. El primer pase general del frontend
+detectó 7 fallos del modal; el pase específico de las seis suites afectadas pasó
+tras corregirlos. Build mantiene la advertencia de tamaño del chunk de ExcelJS.
+
+### Indicadores RF-21, RF-22 y RF-23
+
+Indicadores presenta tres cuadros con porcentaje, numerador y denominador.
+Comparte filtros de enfermedad, lugar probable de infección y rango inclusivo de
+fechas de investigación, derivado de la atención de origen en la zona del calendario.
+Un único filtro general permite elegir confirmados, probables o ambos para
+completitud y oportunidad; Letalidad siempre usa confirmados y el servidor
+rechaza cualquier otra selección para ese indicador. Los cuadros muestran solo
+nombre, porcentaje y numerador/denominador, sin descripciones inferiores. Los casos
+anulados, diagnósticos anulados, atenciones anuladas y descartados se excluyen.
+Un denominador vacío muestra «Sin casos», sin asignar un porcentaje.
+
+Completitud exige inicio de síntomas, fecha/hora de notificación, centro poblado
+de infección y origen. Los incompletos permanecen en el denominador; un filtro
+territorial solo incluye casos cuyo lugar de infección pertenece al territorio.
+Letalidad cuenta únicamente atribución SI y fecha de defunción del paciente.
+Registro y edición exigen Estado de vacunación y Tipo de vigilancia, incluso al
+editar registros históricos. Defunción atribuible solo aparece para confirmados
+con fecha de defunción; conserva las opciones Sí, No y Por determinar.
+
+Configuración permite guardar el día y hora de cierre semanal compartidos.
+Por defecto: lunes 12:00. La fecha límite es la primera ocurrencia del día elegido
+tras terminar la semana epidemiológica de la atención, usando el calendario y
+zona del servidor. La comparación es estricta: a la hora límite ya no es oportuno.
+Los inmediatos requieren notificación desde la atención y antes de cumplir 24 h.
+La configuración usa día ISO 1–7, hora 0–23 y minuto 0–59, almacenados como enteros;
+no se añade texto libre. Guardar recalcula los cuadros con la nueva configuración.
+
+Requiere publicar ESM y OMOD juntos y aplicar `liquibase-notification-config.xml`.
+Los permisos existentes de reportes y administración protegen consulta y guardado.
+No se ejecutaron despliegues ni smoke clínico integrado DEV/QLTY.
+
+Validación local de indicadores (20/10/2026): Maven con `resources:resources
+compiler:compile compiler:testCompile surefire:test` PASSED: 154 pruebas API y
+8 REST. TypeScript (`tsc6 --noEmit`), lint, build y prueba HMR PASSED. Build
+advierte por tamaño del chunk de ExcelJS. Migración probada en H2, incluidos
+valores iniciales y conservación de cambios al repetirla. Smoke integrado
+DEV/QLTY NOT RUN. `verify:changed` NOT RUN: trabajo sin commit.
+Prettier de README y contrato API FAILED por formato; no se reformateó el
+contenido completo. `diff --check` frontend PASSED; backend FAILED por espacios
+finales en el conjunto de cambios locales conservados. No se desplegó.
+Pase final completo: `vitest run --maxWorkers=2` PASSED, 185 pruebas en 29 suites.

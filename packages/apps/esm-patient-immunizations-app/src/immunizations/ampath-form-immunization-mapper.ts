@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { toOmrsIsoString } from '@openmrs/esm-utils';
 import type { ImmunizationConfigObject } from '../config-schema';
 import type { ExistingDoses, ImmunizationFormData, ImmunizationGrouped } from '../types';
 import {
@@ -115,17 +116,12 @@ function getNumberValue(encounter: AmpathImmunizationEncounter, conceptUuid: str
 
 function toOpenmrsDateObsValue(value: string): string {
   const dateOnlyValue = value.match(/^(\d{4}-\d{2}-\d{2})$/)?.[1];
-  if (dateOnlyValue) {
-    return dateOnlyValue;
-  }
-
   const utcMidnightDateValue = value.match(/^(\d{4}-\d{2}-\d{2})T00:00:00(?:\.000)?Z$/)?.[1];
-  if (utcMidnightDateValue) {
-    return utcMidnightDateValue;
-  }
-
-  const date = dayjs(value);
-  return date.isValid() ? date.format('YYYY-MM-DD') : value;
+  // REST Obs setters require a full timestamp even for date-valued concepts.
+  // Treat stored date-only / UTC-midnight values as calendar days, then encode
+  // local midnight with its offset so Lima does not reopen on the previous day.
+  const date = dayjs(dateOnlyValue ?? utcMidnightDateValue ?? value);
+  return date.isValid() ? toOmrsIsoString(date.startOf('day').toDate()) : value;
 }
 
 export function mapToAmpathImmunizationEncounterPayload(
@@ -144,6 +140,8 @@ export function mapToAmpathImmunizationEncounterPayload(
   if (
     newEncounter &&
     ([
+      immunization.patientUuid,
+      persistence.encounterTypeUuid,
       newEncounter.formUuid,
       newEncounter.visitUuid,
       newEncounter.locationUuid,

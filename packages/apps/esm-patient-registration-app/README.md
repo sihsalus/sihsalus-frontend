@@ -22,7 +22,7 @@ Al cambiar realmente de financiador se reemplaza la cobertura de forma atómica:
 código, la acreditación y los datos específicos del anterior y después se escribe la nueva selección o
 el resultado compuesto de SETISIS/SITEDS. Así no se reinterpreta, por ejemplo, un código SIS como póliza
 EsSalud, y una verificación recién aplicada se conserva aunque alguno de sus valores coincida con el
-anterior. Volver a SIS comienza explícitamente en `No consultada` hasta aplicar una verificación. Abrir y
+anterior. Volver a SIS comienza explícitamente en `No consultada` hasta registrar una verificación. Abrir y
 guardar un paciente EsSalud/EPS sin cambiar su financiador conserva los atributos genéricos provenientes
 de SITEDS. La UI oculta los controles incompatibles y el armado del payload aplica el mismo contrato como
 segunda defensa; al editar un paciente autofinanciado también se eliminan los valores incompatibles que
@@ -31,6 +31,32 @@ ya estuvieran persistidos.
 El financiador continúa siendo opcional mientras Producto no apruebe la obligatoriedad y el tratamiento
 de los casos sin cobertura. La consulta real a SETISIS/IAFAS y la derivación a Caja tampoco forman parte
 de este contrato frontend.
+
+### Guardado de la verificación SIS
+
+Los controles de estado, producto y EESS usan los atributos del formulario principal. Seleccionar un resultado
+no escribe en el backend: se guarda junto con el paciente, sin un botón adicional de aplicación. Una nueva
+verificación requiere un resultado explícito y un producto del catálogo cargado; la validación bloquea el
+guardado si faltan y conserva la entrada para corregirla. Si el catálogo no está disponible, se informa y
+se bloquea la nueva verificación.
+
+Al editar se muestran el estado, producto y EESS existentes. Abrir y guardar sin cambios conserva fecha,
+método y valores históricos, incluidos productos que ya no aparecen en el catálogo. Corregir producto o EESS
+no renueva la evidencia de acreditación. Seleccionar un resultado manual registra una nueva fecha y método
+`manual-web`, incluso al reconfirmar el mismo estado seleccionado; completar un resultado automático conserva
+su fecha y método. Sin conexión, una nueva
+verificación queda pendiente y no permite declarar cobertura vigente.
+
+Regresión local del flujo y del payload nativo:
+
+```sh
+yarn workspace @sihsalus/esm-patient-registration-app test src/patient-registration/field/external-lookup/sis-lookup-field.component.test.tsx
+```
+
+La aceptación en QLTY requiere el frontend candidato y un paciente sintético: con `admision`, guardar un
+resultado, comprobar los atributos por REST y reabrir la edición; repetir con producto faltante, otro estado,
+una verificación histórica sin cambios y cambio de financiador. Verificar el reintento tras un rechazo y la
+limpieza de los datos sintéticos. Las pruebas locales del payload no sustituyen ese flujo contra el backend.
 
 ## Pacientes no identificados o incapaces de comunicarse
 

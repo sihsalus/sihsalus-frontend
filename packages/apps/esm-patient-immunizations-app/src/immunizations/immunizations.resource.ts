@@ -118,7 +118,7 @@ export function getImmunizationSaveErrorDetails(
   };
 }
 
-export function savePatientImmunization(
+export async function savePatientImmunization(
   patientImmunization: FHIRImmunizationResource,
   immunizationObsUuid: string,
   abortController: AbortController,
@@ -126,6 +126,30 @@ export function savePatientImmunization(
   let immunizationEndpoint = `${fhirBaseUrl}/Immunization`;
   if (immunizationObsUuid) {
     immunizationEndpoint = `${immunizationEndpoint}/${immunizationObsUuid}`;
+    const { data } = await openmrsFetch<FHIRImmunizationResource>(immunizationEndpoint, {
+      signal: abortController.signal,
+      cache: 'no-store',
+    });
+    if (
+      data?.resourceType !== 'Immunization' ||
+      data.id !== immunizationObsUuid ||
+      patientImmunization.id !== immunizationObsUuid ||
+      !patientImmunization.patient?.reference ||
+      data.patient?.reference !== patientImmunization.patient.reference
+    ) {
+      throw new Error('The immunization resource could not be verified');
+    }
+    // Preserve the historical context without reintroducing clinical values
+    // omitted by the editor to clear them (for example lot or dose number).
+    const { location: _location, performer: _performer, recorded: _recorded, ...changes } = patientImmunization;
+    patientImmunization = {
+      ...changes,
+      patient: data.patient,
+      encounter: data.encounter,
+      ...(data.location !== undefined ? { location: data.location } : {}),
+      ...(data.performer !== undefined ? { performer: data.performer } : {}),
+      ...(data.recorded !== undefined ? { recorded: data.recorded } : {}),
+    };
   }
   return openmrsFetch(immunizationEndpoint, {
     headers: {

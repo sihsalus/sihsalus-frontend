@@ -39,6 +39,7 @@ Contratos de frontend:
 - Las dosis ya registradas producen una advertencia y no excluyen opciones: el profesional puede registrar aplicaciones anuales o corregir datos. Un registro `not-done` no equivale a una dosis administrada.
 - Las pautas predeterminadas no calculan la próxima fecha con intervalos aproximados; el profesional la confirma. Los calendarios institucionales publicados conservan su configuración existente de intervalos.
 - Si `ampathFormPersistence.enabled=false`, el modulo depende directamente de FHIR2 `Immunization`; un `501` debe mostrarse como error operativo claro para QA/backend.
+- El mapper de alta REST rechaza un contexto con formulario, visita, ubicación, profesional, fecha/hora de registro o rol funcional ausentes, vacíos o compuestos solo por espacios; la fecha/hora debe poder interpretarse como fecha. El rechazo ocurre antes de construir el payload. La edición de observaciones sigue omitiendo el contexto de alta y conserva el encuentro original. Se mantienen ambos roles de proveedor requeridos por el contrato FHIR2 y su deduplicación; este control no verifica existencia de metadatos, permisos ni pertenencia de la visita en el servidor.
 - El usuario final no debe ver detalles tecnicos del endpoint, salvo que sea una pantalla de diagnostico.
 - Las advertencias MINSA por edad/dosis no deben bloquear guardado sin una regla clinica explicita.
 - Si una vacuna de la NTS no existe en content/backend, debe estar deshabilitada o documentada como pendiente, no simulada silenciosamente.
@@ -61,6 +62,7 @@ TODO content/backend:
 TODO QA/QLTY:
 
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que FHIR2/widgets leen los datos persistidos.
+- Para el alta REST, verificar con una visita y profesional sintéticos que el contexto completo se conserva tras guardar y recargar; una configuración sin rol funcional debe bloquear el payload. Confirmar también que editar observaciones conserva el contexto anterior. Las regresiones locales del mapper no acreditan este ensayo de persistencia en QLTY, que sigue pendiente.
 - Mantener healthcheck de FHIR2 `Immunization` en QLTY; debe responder bundle vacio o con recursos, no `501`, antes y despues de los cambios de content.
 - Probar el flujo end-to-end de vacunación: abrir formulario, registrar vacuna, guardar, recargar y confirmar lectura por FHIR2.
 - Probar un paciente sin inmunizaciones, un paciente con esquema parcial y un paciente con dosis fuera de ventana de edad para validar advertencias MINSA.

@@ -141,6 +141,20 @@ export function mapToAmpathImmunizationEncounterPayload(
 ): AmpathImmunizationEncounterPayload {
   const persistence = getAmpathImmunizationFormPersistence(config);
   const concepts = persistence.concepts;
+  if (
+    newEncounter &&
+    ([
+      newEncounter.formUuid,
+      newEncounter.visitUuid,
+      newEncounter.locationUuid,
+      newEncounter.providerUuid,
+      newEncounter.recordedAt,
+      persistence.encounterRoleUuid,
+    ].some((value) => typeof value !== 'string' || !value.trim()) ||
+      !Number.isFinite(Date.parse(newEncounter.recordedAt)))
+  ) {
+    throw new Error('The immunization registration context is incomplete');
+  }
   const obs: AmpathImmunizationEncounterPayload['obs'] = [
     {
       concept: concepts.vaccineUuid,

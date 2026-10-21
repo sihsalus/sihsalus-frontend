@@ -213,6 +213,95 @@ describe('AMPATH immunization form mapper', () => {
     expect(mapFromAmpathImmunizationEncounters([deferred], config)[0].existingDoses[0].occurrenceDateTime).toBe('');
   });
 
+  it.each(
+    ['formUuid', 'visitUuid', 'locationUuid', 'providerUuid', 'recordedAt', 'encounterRoleUuid'].flatMap((field) =>
+      [undefined, '', '   '].map((value) => ({ field, value })),
+    ),
+  )('rejects new REST registrations with $field=$value', ({ field, value }) => {
+    const immunization: ImmunizationFormData = {
+      patientUuid: 'patient-uuid',
+      vaccineName: 'BCG',
+      vaccineUuid: 'vaccine-uuid',
+      vaccinationDate: '2026-05-28T00:00:00.000Z',
+      doseNumber: 1,
+      status: 'completed',
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    };
+    const context = {
+      formUuid: 'persisted-form',
+      visitUuid: 'visit-uuid',
+      locationUuid: 'location-uuid',
+      providerUuid: 'recording-provider',
+      recordedAt: '2026-05-28T15:30:00.000Z',
+    };
+    const changedConfig = {
+      ...config,
+      ampathFormPersistence: { ...config.ampathFormPersistence },
+    };
+    if (field === 'encounterRoleUuid') {
+      Reflect.set(changedConfig.ampathFormPersistence, 'encounterRoleUuid', value);
+    } else {
+      Reflect.set(context, field, value);
+    }
+    expect(() => mapToAmpathImmunizationEncounterPayload(immunization, changedConfig, context)).toThrow(
+      /registration context is incomplete/i,
+    );
+  });
+
+  it('rejects a new registration with an invalid recording timestamp', () => {
+    const immunization: ImmunizationFormData = {
+      patientUuid: 'synthetic-patient',
+      vaccineUuid: 'synthetic-vaccine',
+      vaccineName: 'Synthetic vaccine',
+      vaccinationDate: '2026-05-28',
+      doseNumber: 1,
+      status: 'completed',
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    };
+    expect(() =>
+      mapToAmpathImmunizationEncounterPayload(immunization, config, {
+        formUuid: 'synthetic-form',
+        visitUuid: 'synthetic-visit',
+        locationUuid: 'synthetic-location',
+        providerUuid: 'synthetic-provider',
+        recordedAt: 'invalid-date',
+      }),
+    ).toThrow(/registration context is incomplete/i);
+  });
+
+  it('updates observations without requiring or inventing new registration context', () => {
+    const immunization: ImmunizationFormData = {
+      patientUuid: 'synthetic-patient',
+      vaccineUuid: 'synthetic-vaccine',
+      vaccineName: 'Synthetic vaccine',
+      vaccinationDate: '2026-05-28',
+      doseNumber: 1,
+      status: 'completed',
+      note: '',
+      expirationDate: '',
+      lotNumber: '',
+      nextDoseDate: '',
+      manufacturer: '',
+    };
+    const payload = mapToAmpathImmunizationEncounterPayload(immunization, config);
+    for (const field of ['form', 'visit', 'location', 'encounterDatetime', 'encounterProviders']) {
+      expect(payload).not.toHaveProperty(field);
+    }
+    expect(payload.obs).toEqual(
+      expect.arrayContaining([
+        { concept: config.ampathFormPersistence.concepts.vaccineUuid, value: immunization.vaccineUuid },
+      ]),
+    );
+  });
+
   it('lists the highest dose first when several doses share the same date', () => {
     const encounterFor = (uuid: string, doseNumber: number) => ({
       uuid,

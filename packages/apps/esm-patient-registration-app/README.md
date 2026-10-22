@@ -58,6 +58,33 @@ resultado, comprobar los atributos por REST y reabrir la edición; repetir con p
 una verificación histórica sin cambios y cambio de financiador. Verificar el reintento tras un rechazo y la
 limpieza de los datos sintéticos. Las pruebas locales del payload no sustituyen ese flujo contra el backend.
 
+## Etnia: código MINSA y sinónimos
+
+El campo Perú `ethnicity` conserva el UUID del concepto como valor del atributo. Su
+`answerConceptCodeSource: 'MINSA-ETNIAS'` obtiene el código de mappings nativos activos
+`SAME-AS` de esa fuente. El ID interno de OCL/OpenMRS y la posición en el catálogo no
+son códigos MINSA. No se mantiene una tabla de equivalencias en el frontend.
+
+La búsqueda admite el nombre y los nombres alternativos activos, sin distinguir tildes
+ni mayúsculas. Una consulta numérica exige coincidencia exacta con el código oficial,
+incluidos sus ceros iniciales. Al seleccionar se muestra `código - nombre` y se guarda
+el UUID; escribir un código desconocido no selecciona una etnia. Otros campos conservan
+su búsqueda actual salvo que configuren explícitamente `answerConceptCodeSource`.
+
+Si falta un mapping o existen varios códigos oficiales para un concepto, se informa
+al seleccionar esa opción y se conserva su UUID histórico. No se infiere ni se elige
+un código arbitrario. Los catálogos antiguos siguen siendo seleccionables por nombre.
+Los permisos de lectura del catálogo y la validación de pertenencia siguen vigentes.
+
+La metadata corresponde a `sihsalus-content` 1.25.41 (PR #277) y a la fuente nativa
+`MINSA-ETNIAS`; actualizar el frontend por sí solo no incorpora esos mappings al backend.
+Para la aceptación de sihsalus/sihsalus#400 en DEV/QLTY: comprobar la versión de content,
+buscar `2`/`Aymara`, comprobar `Aimara`, buscar `Aguáruna`, rechazar un código inexistente
+y reabrir un paciente sintético con una etnia histórica. Verificar por REST que se
+conserva el UUID al guardar; comprobar los avisos de catálogo incompleto/ambiguo en
+pruebas controladas y limpiar los recursos sintéticos. Registrar por separado el SHA
+frontend y la versión de content del ambiente.
+
 ## Pacientes no identificados o incapaces de comunicarse
 
 El registro debe permitir crear un paciente aunque no exista DNI, nombre legal confirmado, teléfono, dirección o fecha exacta de nacimiento. Ese caso se marca con el atributo `Paciente No Identificado` configurado en `fieldConfigurations.name.unidentifiedPatientAttributeTypeUuid`.

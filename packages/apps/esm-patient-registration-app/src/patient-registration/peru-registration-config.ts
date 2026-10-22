@@ -299,6 +299,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Etnia',
     showHeading: false,
     answerConceptSetUuid: '70482c1e-181e-416d-a0c4-a93919f9f2ef',
+    answerConceptCodeSource: 'MINSA-ETNIAS',
     searchable: true,
   },
   {

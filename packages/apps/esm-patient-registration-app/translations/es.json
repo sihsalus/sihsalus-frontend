@@ -149,6 +149,8 @@
   "closeOverlay": "Cerrar venta superpuesta",
   "cnvIdentifierHelperText": "12 dígitos",
   "cnvIdentifierInvalid": "El CNV debe tener 12 dígitos",
+  "codedAnswerAmbiguousOfficialCode": "Esta opción tiene más de un código oficial; revise el catálogo",
+  "codedAnswerNoOfficialCode": "Esta opción no tiene código oficial",
   "codedPersonAttributeAnswerSetEmpty": "El campo de atributo de persona codificado '{{codedPersonAttributeFieldId}}' se ha definido con un conjunto de conceptos de respuesta con UUID '{{answerConceptSetUuid}}' que no tiene ninguna respuesta de concepto.",
   "codedPersonAttributeAnswerSetInvalid": "El campo de atributo de persona codificado '{{codedPersonAttributeFieldId}}' se ha definido con un conjunto de conceptos de respuesta con UUID '{{answerConceptSetUuid}}' inválido.",
   "codedPersonAttributeNoAnswerSet": "El campo de atributo de persona '{{codedPersonAttributeFieldId}}' es de tipo 'codificado', pero se ha definido sin un UUID para el conjunto de conceptos de respuesta. La clave 'answerConceptSetUuid' es obligatoria.",

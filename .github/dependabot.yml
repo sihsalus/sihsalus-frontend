@@ -58,6 +58,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      # React, its renderer and their types need a coordinated major migration.
+      react-runtime:
+        applies-to: version-updates
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       # Type definitions — review compatibility; FHIR needs a separate migration.
       types:
         patterns:

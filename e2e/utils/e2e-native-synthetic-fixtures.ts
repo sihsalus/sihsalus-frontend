@@ -3,6 +3,7 @@ import path from 'node:path';
 import { type APIRequestContext, type APIResponse, test as base, type TestInfo } from '@playwright/test';
 import { openmrsRestApi } from './e2e-api';
 import { PrivateFixtureJournal } from './e2e-fixture-journal';
+import { createSshJournalCheckpoint } from './e2e-journal-checkpoint';
 import { loadE2EBaseConfig } from './e2e-gate-config';
 import { FixtureAuthorizationError, SyntheticFixtures } from './e2e-synthetic-fixtures';
 
@@ -44,9 +45,8 @@ export async function withNativeSyntheticFixture(
     attempt.skip(true, 'Mutating interconsultation flows run only on desktop');
     return;
   }
-  if (environment.CI || environment.GITHUB_ACTIONS === 'true') {
-    throw new Error('NATIVE_CI_RECOVERY_RETENTION_UNAVAILABLE');
-  }
+  const checkpoint =
+    environment.CI || environment.GITHUB_ACTIONS === 'true' ? createSshJournalCheckpoint(environment) : undefined;
   const config = loadE2EBaseConfig(environment);
   if (environment.E2E_NATIVE_SUPERVISED_TARGET !== config.target) {
     throw new Error('NATIVE_FIXTURE_SUPERVISION_REQUIRED');
@@ -55,7 +55,7 @@ export async function withNativeSyntheticFixture(
   const directory = mkdtempSync(
     path.join(realpathSync(journalRoot), `native-${attempt.workerIndex}-${attempt.retry}-`),
   );
-  const journal = new PrivateFixtureJournal(directory);
+  const journal = new PrivateFixtureJournal(directory, checkpoint);
   let fixtures: SyntheticFixtures | undefined;
   let authorizationFailed = false;
   const failures: unknown[] = [];

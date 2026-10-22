@@ -184,7 +184,8 @@ jobs:
 
   styles:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Cold browser setup and both style contract commands share this budget.
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:

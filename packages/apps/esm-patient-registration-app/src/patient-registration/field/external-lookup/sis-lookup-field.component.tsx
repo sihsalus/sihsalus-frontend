@@ -10,6 +10,7 @@ import {
 } from '@carbon/react';
 import { Launch, Search } from '@carbon/react/icons';
 import { showSnackbar, useConfig, useFeatureFlag } from '@openmrs/esm-framework';
+import { useField } from 'formik';
 import { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,9 +18,11 @@ import { type RegistrationConfig } from '../../../config-schema';
 import { externalIdentityLookupsFlag, moduleName } from '../../../constants';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import {
+  isPeruSisFinancer,
   peruInsuranceAccreditationActiveConceptUuid,
   peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
   peruInsuranceAccreditationInactiveConceptUuid,
+  peruInsuranceAccreditationNotConsultedConceptUuid,
   peruInsuranceAccreditationPendingConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
@@ -154,17 +157,66 @@ export const SisLookupField = () => {
   const { identifierTypes, values, setFieldValue, setFieldTouched, isOffline } = useContext(PatientRegistrationContext);
   const [isAutoLoading, setIsAutoLoading] = useState(false);
   const [status, setStatus] = useState<LookupStatus | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(true);
-  const [verificationMethod, setVerificationMethod] = useState<SisVerificationMethod>('manual-web');
-  const [accreditation, setAccreditation] = useState<SisAccreditationSelection | ''>(isOffline ? 'pending' : '');
-  const [selectedProductUuid, setSelectedProductUuid] = useState('');
-  const [productValidationVisible, setProductValidationVisible] = useState(false);
-  const [affiliateCode, setAffiliateCode] = useState('');
-  const [eessName, setEessName] = useState('');
+  const [hasVerificationChanges, setHasVerificationChanges] = useState(false);
 
   const onlineVerificationUrl = config?.sisVerification?.onlineVerificationUrl ?? sisOnlineVerificationUrl;
   const productConceptUuid = config?.sisVerification?.productConceptUuid ?? peruSisProductConceptUuid;
-  const { answers: productAnswers, isLoading: isLoadingProducts } = useSisProductAnswers(productConceptUuid);
+  const {
+    answers: productAnswers,
+    error: productsError,
+    isLoading: isLoadingProducts,
+  } = useSisProductAnswers(productConceptUuid);
+  const attributes = values.attributes ?? {};
+  const statusUuid = attributes[peruInsuranceAccreditationStatusAttributeTypeUuid];
+  const accreditation =
+    Object.entries(accreditationStatusConceptUuids).find(([, uuid]) => uuid === statusUuid)?.[0] ??
+    (isOffline ? 'pending' : '');
+  const selectedProduct = attributes[peruSisTypeDescriptionAttributeTypeUuid] ?? '';
+  const eessName = attributes[peruSisEessNameAttributeTypeUuid] ?? '';
+  const validateVerification =
+    hasVerificationChanges && isPeruSisFinancer(attributes[peruInsuranceTypeAttributeTypeUuid]);
+  const [, accreditationMeta] = useField<string>({
+    name: `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
+    validate: (value) =>
+      validateVerification && !Object.values(accreditationStatusConceptUuids).includes(value)
+        ? t('sisManualStatusRequired', 'Seleccione el resultado de la verificación SIS')
+        : undefined,
+  });
+  const [, productMeta] = useField<string>({
+    name: `attributes.${peruSisTypeDescriptionAttributeTypeUuid}`,
+    validate: (value) =>
+      validateVerification && !productAnswers.some((answer) => answer.display === value)
+        ? t('sisManualProductRequired', 'Seleccione un producto SIS')
+        : undefined,
+  });
+
+  const updateManualVerification = (changes: Record<string, string>) => {
+    setHasVerificationChanges(true);
+    setStatus(null);
+    replacePeruInsuranceCoverageInForm(
+      {
+        ...attributes,
+        ...changes,
+        [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+        ...(isOffline || Object.hasOwn(changes, peruInsuranceAccreditationStatusAttributeTypeUuid)
+          ? {
+              [peruInsuranceVerificationMethodAttributeTypeUuid]: 'manual-web',
+              [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: new Date().toISOString(),
+            }
+          : {}),
+        ...(isOffline
+          ? { [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationPendingConceptUuid }
+          : {}),
+      },
+      setFieldValue,
+      setFieldTouched,
+    );
+  };
+
+  const selectManualResult = (selection: SisAccreditationSelection) =>
+    updateManualVerification({
+      [peruInsuranceAccreditationStatusAttributeTypeUuid]: accreditationStatusConceptUuids[selection],
+    });
 
   const dniIdentifier = useMemo(
     () => getDniIdentifier(values.identifiers ?? {}, identifierTypes ?? []),
@@ -213,12 +265,6 @@ export const SisLookupField = () => {
     return normalizedIdentifier;
   };
 
-  const openManualForm = () => {
-    setVerificationMethod('manual-web');
-    setAccreditation((current) => current || (isOffline ? 'pending' : ''));
-    setIsFormOpen(true);
-  };
-
   const handleOpenOnlineVerification = async () => {
     const normalizedIdentifier = validateSisIdentifier();
     if (!normalizedIdentifier) {
@@ -228,7 +274,6 @@ export const SisLookupField = () => {
     setStatus(null);
     // Synchronously within the user gesture so popup blockers allow the tab.
     window.open(onlineVerificationUrl, '_blank', 'noopener');
-    openManualForm();
 
     const copied = await copyTextToClipboard(normalizedIdentifier);
     if (copied) {
@@ -266,17 +311,13 @@ export const SisLookupField = () => {
         return;
       }
 
-      // The automatic result prefills the mini-form (instead of writing the
-      // form values directly) so the operator reviews it before applying.
-      setVerificationMethod('setisis');
-      setAccreditation(insurance.active ? 'active' : 'inactive');
-      setAffiliateCode(insurance.insuranceCode);
-      setIsFormOpen(true);
+      applySisInsuranceToForm(insurance, setFieldValue, setFieldTouched);
+      setHasVerificationChanges(true);
       setStatus({
         kind: 'info',
         title: insurance.active
-          ? t('sisLookupPrefillActive', 'SIS vigente encontrado. Revise el resultado y aplíquelo al formulario.')
-          : t('sisLookupPrefillInactive', 'SIS no vigente encontrado. Revise el resultado y aplíquelo al formulario.'),
+          ? t('sisLookupPrefillActive', 'SIS vigente encontrado. Revise el resultado y guarde el paciente.')
+          : t('sisLookupPrefillInactive', 'SIS no vigente encontrado. Revise el resultado y guarde el paciente.'),
       });
     } catch {
       setStatus({
@@ -286,36 +327,6 @@ export const SisLookupField = () => {
     } finally {
       setIsAutoLoading(false);
     }
-  };
-
-  const handleApply = () => {
-    if (!accreditation || !selectedProductUuid) {
-      setProductValidationVisible(true);
-      return;
-    }
-
-    const product = productAnswers.find((answer) => answer.uuid === selectedProductUuid);
-    const currentInsuranceCode = values.attributes?.[peruInsuranceCodeAttributeTypeUuid]?.trim() ?? '';
-    applySisVerificationToForm(
-      {
-        status: accreditation,
-        method: verificationMethod,
-        insuranceCode: affiliateCode.trim() || currentInsuranceCode || undefined,
-        productDisplay: product?.display,
-        eessName: eessName.trim() || undefined,
-        checkedAt: new Date().toISOString(),
-      },
-      setFieldValue,
-      setFieldTouched,
-    );
-
-    setStatus({
-      kind: 'success',
-      title:
-        accreditation === 'pending'
-          ? t('sisManualAppliedPending', 'Acreditación pendiente registrada en el formulario')
-          : t('sisManualApplied', 'Verificación SIS aplicada al formulario'),
-    });
   };
 
   return (
@@ -365,76 +376,96 @@ export const SisLookupField = () => {
           )}
         />
       ) : null}
-      {!isFormOpen ? (
-        <Button kind="ghost" size="sm" onClick={openManualForm}>
-          {t('sisManualRecordResult', 'Registrar resultado de verificación')}
-        </Button>
+      {statusUuid === peruInsuranceAccreditationNotConsultedConceptUuid && !isOffline ? (
+        <p>{t('sisManualNotConsulted', 'SIS no consultado')}</p>
       ) : null}
-      {isFormOpen ? (
-        <div className={styles.externalLookupForm}>
-          <RadioButtonGroup
-            legendText={t('sisManualStatusLegend', 'Resultado de la verificación')}
-            name="sis-manual-accreditation-status"
-            orientation="vertical"
-            valueSelected={accreditation}
-            onChange={(value) => setAccreditation(value as SisAccreditationSelection)}
-          >
-            <RadioButton
-              id="sis-manual-status-active"
-              labelText={t('sisManualStatusActive', 'Vigente')}
-              value="active"
-            />
-            <RadioButton
-              id="sis-manual-status-inactive"
-              labelText={t('sisManualStatusInactive', 'No vigente')}
-              value="inactive"
-            />
-            <RadioButton
-              id="sis-manual-status-pending"
-              labelText={t('sisManualStatusPending', 'No consultada / pendiente')}
-              value="pending"
-            />
-          </RadioButtonGroup>
-          <Select
-            id="sis-manual-product"
-            labelText={t('sisManualProductLabel', 'Producto SIS')}
-            invalid={productValidationVisible && !selectedProductUuid}
-            invalidText={t('sisManualProductRequired', 'Seleccione un producto SIS')}
-            required
-            value={selectedProductUuid}
-            onChange={(event) => {
-              setSelectedProductUuid(event.target.value);
-              setProductValidationVisible(false);
+      <div className={styles.externalLookupForm}>
+        <p>{t('sisManualSelectResult', 'Seleccione un resultado para registrar una nueva verificación.')}</p>
+        <RadioButtonGroup
+          legendText={t('sisManualStatusLegend', 'Resultado de la verificación')}
+          name="sis-manual-accreditation-status"
+          orientation="vertical"
+          valueSelected={accreditation}
+          invalid={accreditationMeta.touched && Boolean(accreditationMeta.error)}
+          invalidText={accreditationMeta.error}
+          onBlur={() => setFieldTouched(`attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`, true)}
+          onChange={(value) => selectManualResult(value as SisAccreditationSelection)}
+        >
+          <RadioButton
+            id="sis-manual-status-active"
+            labelText={t('sisManualStatusActive', 'Vigente')}
+            value="active"
+            disabled={isOffline}
+            onClick={() => {
+              if (accreditation === 'active') selectManualResult('active');
             }}
-          >
-            <SelectItem
-              value=""
-              text={
-                isLoadingProducts
-                  ? t('sisManualProductLoading', 'Cargando productos SIS…')
-                  : t('sisManualProductPlaceholder', 'Seleccione')
-              }
-            />
-            {productAnswers.map((answer) => (
-              <SelectItem key={answer.uuid} value={answer.uuid} text={answer.display} />
-            ))}
-          </Select>
-          <TextInput
-            id="sis-manual-eess"
-            labelText={t('sisManualEess', 'EESS de adscripción (opcional)')}
-            value={eessName}
-            onChange={(event) => setEessName(event.target.value)}
           />
-          <div className={styles.externalLookupAction}>
-            <Button kind="primary" size="sm" onClick={handleApply} disabled={!accreditation}>
-              {t('sisManualApply', 'Aplicar al formulario')}
-            </Button>
-            <Button kind="ghost" size="sm" onClick={() => setIsFormOpen(false)}>
-              {t('sisManualClose', 'Cerrar')}
-            </Button>
-          </div>
+          <RadioButton
+            id="sis-manual-status-inactive"
+            labelText={t('sisManualStatusInactive', 'No vigente')}
+            value="inactive"
+            disabled={isOffline}
+            onClick={() => {
+              if (accreditation === 'inactive') selectManualResult('inactive');
+            }}
+          />
+          <RadioButton
+            id="sis-manual-status-pending"
+            labelText={t('sisManualStatusPending', 'No consultada / pendiente')}
+            value="pending"
+            onClick={() => {
+              if (accreditation === 'pending') selectManualResult('pending');
+            }}
+          />
+        </RadioButtonGroup>
+        <Select
+          id="sis-manual-product"
+          labelText={t('sisManualProductLabel', 'Producto SIS')}
+          invalid={productMeta.touched && Boolean(productMeta.error)}
+          invalidText={productMeta.error}
+          value={selectedProduct}
+          onBlur={() => setFieldTouched(`attributes.${peruSisTypeDescriptionAttributeTypeUuid}`, true)}
+          onChange={(event) => {
+            updateManualVerification({ [peruSisTypeDescriptionAttributeTypeUuid]: event.target.value });
+          }}
+        >
+          <SelectItem
+            value=""
+            text={
+              isLoadingProducts
+                ? t('sisManualProductLoading', 'Cargando productos SIS…')
+                : t('sisManualProductPlaceholder', 'Seleccione')
+            }
+          />
+          {selectedProduct && !productAnswers.some((answer) => answer.display === selectedProduct) ? (
+            <SelectItem value={selectedProduct} text={selectedProduct} />
+          ) : null}
+          {productAnswers.map((answer) => (
+            <SelectItem key={answer.uuid} value={answer.display} text={answer.display} />
+          ))}
+        </Select>
+        {!isLoadingProducts && (productsError || productAnswers.length === 0) ? (
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            title={t(
+              'sisManualProductsUnavailable',
+              'No se pueden cargar los productos SIS para una nueva verificación',
+            )}
+          />
+        ) : null}
+        <TextInput
+          id="sis-manual-eess"
+          labelText={t('sisManualEess', 'EESS de adscripción (opcional)')}
+          value={eessName}
+          onChange={(event) => updateManualVerification({ [peruSisEessNameAttributeTypeUuid]: event.target.value })}
+        />
+        <div className={styles.externalLookupAction}>
+          <p>
+            {t('sisManualSaveWithPatient', 'Los cambios de la verificación SIS se guardan al guardar el paciente.')}
+          </p>
         </div>
-      ) : null}
+      </div>
       {status ? (
         <InlineNotification
           className={styles.externalLookupNotification}

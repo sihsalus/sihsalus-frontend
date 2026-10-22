@@ -26,7 +26,10 @@ export class PrivateFixtureJournal implements FixtureJournal {
   private readonly lock: string;
   private closed = false;
 
-  constructor(directory: string) {
+  constructor(
+    directory: string,
+    private readonly retainCheckpoint?: (value: unknown) => void,
+  ) {
     const resolved = path.resolve(directory);
     if (!existsSync(resolved)) mkdirSync(resolved, { mode: 0o700 });
     const stat = lstatSync(resolved);
@@ -83,6 +86,8 @@ export class PrivateFixtureJournal implements FixtureJournal {
     } finally {
       closeSync(directoryDescriptor);
     }
+    // A clinical caller may proceed only after its durable checkpoint is acknowledged.
+    this.retainCheckpoint?.(value);
   }
 
   /** Release only this process's lock. A completed or failed run's state is retained. */

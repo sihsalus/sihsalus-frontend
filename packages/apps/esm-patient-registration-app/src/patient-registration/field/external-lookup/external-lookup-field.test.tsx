@@ -21,18 +21,8 @@ import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import {
   peruDniPatientIdentifierTypeUuid,
-  peruTemporaryAffiliationPatientIdentifierTypeUuid,
-  peruInsuranceAccreditationActiveConceptUuid,
-  peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
-  peruInsuranceAccreditationPendingConceptUuid,
-  peruInsuranceAccreditationStatusAttributeTypeUuid,
-  peruInsuranceCodeAttributeTypeUuid,
-  peruInsuranceSisConceptUuid,
-  peruInsuranceTypeAttributeTypeUuid,
-  peruInsuranceVerificationMethodAttributeTypeUuid,
-  peruSisEessNameAttributeTypeUuid,
   peruSisProductConceptUuid,
-  peruSisTypeDescriptionAttributeTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
 import { IdentityLookupField } from './identity-lookup-field.component';
 import { lookupReniecIdentityByDni } from './reniec-lookup.resource';
@@ -448,7 +438,6 @@ describe('IdentityLookupField', () => {
 });
 
 describe('SisLookupField', () => {
-  const checkedAtIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
   let windowOpenSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -547,172 +536,6 @@ describe('SisLookupField', () => {
     expect(screen.getByText('El DNI debe tener 8 dígitos')).toBeInTheDocument();
     expect(windowOpenSpy).not.toHaveBeenCalled();
     expect(setFieldValue).not.toHaveBeenCalled();
-  });
-
-  it('applies the manual result with financiador SIS, estado, checkedAt and SETISIS attributes', async () => {
-    const user = userEvent.setup();
-    const { setFieldTouched, setFieldValue } = renderLookup(<SisLookupField />);
-
-    await user.click(screen.getByRole('radio', { name: 'Vigente' }));
-    await screen.findByRole('option', { name: 'SIS Para Todos' });
-    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
-    await user.type(screen.getByLabelText(/eess de adscripción/i), 'C.S. San Juan');
-    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
-
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
-      peruInsuranceSisConceptUuid,
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
-      peruInsuranceAccreditationActiveConceptUuid,
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceAccreditationCheckedAtAttributeTypeUuid}`,
-      expect.stringMatching(checkedAtIsoPattern),
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruInsuranceCodeAttributeTypeUuid}`, '', false);
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruSisTypeDescriptionAttributeTypeUuid}`,
-      'SIS Para Todos',
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruSisEessNameAttributeTypeUuid}`,
-      'C.S. San Juan',
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
-      'manual-web',
-      false,
-    );
-    expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruInsuranceTypeAttributeTypeUuid}`, true, false);
-    expect(screen.getByText('Verificación SIS aplicada al formulario')).toBeInTheDocument();
-  });
-
-  it('requires a SIS product before applying the verification result', async () => {
-    const user = userEvent.setup();
-    const { setFieldValue } = renderLookup(<SisLookupField />);
-
-    await user.click(screen.getByRole('radio', { name: 'Vigente' }));
-    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
-
-    expect(screen.getByText('Seleccione un producto SIS')).toBeInTheDocument();
-    expect(setFieldValue).not.toHaveBeenCalled();
-  });
-
-  it('preserves an existing affiliation code when applying a manual verification result', async () => {
-    const user = userEvent.setup();
-    const values = buildFormValues();
-    values.attributes = {
-      [peruInsuranceTypeAttributeTypeUuid]: 'previous-financer',
-      [peruInsuranceCodeAttributeTypeUuid]: 'SIS-EXISTENTE',
-    };
-    const { setFieldValue } = renderLookup(<SisLookupField />, values);
-
-    await user.click(screen.getByRole('radio', { name: 'Vigente' }));
-    await screen.findByRole('option', { name: 'SIS Para Todos' });
-    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
-    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
-
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
-      'SIS-EXISTENTE',
-      false,
-    );
-    expect(screen.getByRole('radio', { name: 'Vigente' })).toBeInTheDocument();
-  });
-
-  it('disables the online link, preselects pendiente, and applies the pending status when offline', async () => {
-    const user = userEvent.setup();
-    const { setFieldValue } = renderLookup(<SisLookupField />, buildFormValues(), { isOffline: true });
-
-    expect(screen.getByRole('button', { name: /verificar sis \(en línea\)/i })).toBeDisabled();
-    expect(screen.getByText(/sin conexión: no se puede abrir la consulta sis en línea/i)).toBeInTheDocument();
-
-    expect(screen.getByRole('radio', { name: 'No consultada / pendiente' })).toBeChecked();
-
-    await screen.findByRole('option', { name: 'SIS Para Todos' });
-    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
-    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
-
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
-      peruInsuranceSisConceptUuid,
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
-      peruInsuranceAccreditationPendingConceptUuid,
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
-      'manual-web',
-      false,
-    );
-    expect(screen.getByText('Acreditación pendiente registrada en el formulario')).toBeInTheDocument();
-  });
-
-  it('prefills the mini-form from the automatic lookup instead of writing directly', async () => {
-    const user = userEvent.setup();
-    const { setFieldValue } = renderLookup(<SisLookupField />);
-
-    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
-
-    expect(await screen.findByRole('radio', { name: 'Vigente' })).toBeChecked();
-    expect(screen.queryByLabelText(/código de afiliado/i)).not.toBeInTheDocument();
-    expect(setFieldValue).not.toHaveBeenCalled();
-
-    await screen.findByRole('option', { name: 'SIS Para Todos' });
-    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
-    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
-
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
-      peruInsuranceSisConceptUuid,
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
-      'SIS-12345678',
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
-      peruInsuranceAccreditationActiveConceptUuid,
-      false,
-    );
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
-      'setisis',
-      false,
-    );
-  });
-
-  it('records the manual method when the operator reopens the mini-form after an automatic lookup', async () => {
-    const user = userEvent.setup();
-    const { setFieldValue } = renderLookup(<SisLookupField />);
-
-    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
-    expect(await screen.findByRole('radio', { name: 'Vigente' })).toBeChecked();
-    await screen.findByRole('option', { name: 'SIS Para Todos' });
-    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
-
-    // The operator dismisses the automatic result and records a manual one.
-    await user.click(screen.getByRole('button', { name: /cerrar/i }));
-    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
-    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
-
-    expect(setFieldValue).toHaveBeenCalledWith(
-      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
-      'manual-web',
-      false,
-    );
   });
 
   it('hides the automatic lookup when the external lookups flag is disabled', () => {

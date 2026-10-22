@@ -1,5 +1,7 @@
 import { formFields, validationMessages, type FieldErrors } from "./field-validation";
 import { openmrsFetch, restBaseUrl } from "@openmrs/esm-framework";
+import type { WeeklyRecords } from "./weekly-records";
+import { conceptIcd10, type ConceptMapping, type DiagnosisConceptName } from "./diagnosis-display";
 import type {
   Catalogue,
   EncounterDiagnosis,
@@ -101,11 +103,15 @@ export async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
 }
 export const getCatalogue = (signal?: AbortSignal) =>
   read<Catalogue>(`${apiBase}/catalog`, signal);
+
+export const getWeeklyRecords = (year: number, week: number, signal?: AbortSignal) =>
+  read<WeeklyRecords>(`${apiBase}/weekly-records?${new URLSearchParams({ year: String(year), week: String(week) })}`, signal);
 /** Native encounter diagnoses are distinct from longitudinal FHIR Conditions. */
 export async function getEncounterDiagnosesDetails(
   uuid: string,
   patientUuid: string,
   signal?: AbortSignal,
+  icd10SourceUuid?: string,
 ): Promise<EncounterDiagnosis[]> {
   const source = await read<{
     uuid: string;
@@ -119,11 +125,13 @@ export async function getEncounterDiagnosesDetails(
           uuid: string;
           display?: string;
           name?: { name?: string };
+          mappings?: ConceptMapping[];
+          names?: DiagnosisConceptName[];
         };
       };
     }[];
   }>(
-    `${restBaseUrl}/encounter/${encodeURIComponent(uuid)}?v=custom:(uuid,voided,patient:(uuid),diagnoses:(uuid,voided,diagnosis:(coded:(uuid,display,name:(name)))))`,
+    `${restBaseUrl}/encounter/${encodeURIComponent(uuid)}?v=custom:(uuid,voided,patient:(uuid),diagnoses:(uuid,voided,diagnosis:(coded:(uuid,display,name:(name),names:(name,conceptNameType,voided),mappings:(conceptReferenceTerm:(code,retired,conceptSource:(uuid,name)))))))`,
     signal,
   );
   if (
@@ -138,6 +146,7 @@ export async function getEncounterDiagnosesDetails(
           {
             uuid: d.uuid,
             conceptUuid: d.diagnosis.coded.uuid,
+            icd10: conceptIcd10(d.diagnosis.coded.mappings, icd10SourceUuid, d.diagnosis.coded.names),
             display:
               d.diagnosis.coded.name?.name ??
               d.diagnosis.coded.display ??
@@ -248,6 +257,9 @@ export async function updateEvent(
 
 
 export interface RestConcept {
+  names?: DiagnosisConceptName[];
+  mappings?: ConceptMapping[];
+  icd10?: string | null;
   uuid: string;
   display: string;
   conceptClass?: { name?: string };
@@ -265,7 +277,7 @@ export async function searchConcepts(
     const response = await read<Results<RestConcept>>(
     `${restBaseUrl}/concept?${new URLSearchParams({
       q: query,
-      v: "custom:(uuid,display,conceptClass:(name))",
+      v: "custom:(uuid,display,conceptClass:(name),names:(name,conceptNameType,voided),mappings:(conceptReferenceTerm:(code,retired,conceptSource:(uuid,name))))",
       limit: "30",
       startIndex: String(startIndex),
     })}`,

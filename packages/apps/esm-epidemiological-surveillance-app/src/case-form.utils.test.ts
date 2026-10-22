@@ -11,7 +11,7 @@ import {
 } from "./case-form.utils";
 import { catalogue, request } from "./test-fixtures";
 describe("case form validation", () => {
-  it.each(["vaccinationStatus", "surveillanceType"] as const)("requires %s before registering", (field) => {
+  it.each(["vaccinationStatus", "surveillanceType", "investigationForm"] as const)("requires %s before registering", (field) => {
     expect(validateCase({ ...request, [field]: undefined }, catalogue.catalog)).toContain(field);
   });
   it.each([

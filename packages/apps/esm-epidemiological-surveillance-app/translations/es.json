@@ -264,6 +264,7 @@
   "caseDateInvalid": "La investigación debe corresponder a la atención y no superar la notificación ni hoy. La notificación no puede superar hoy; las fechas no pueden preceder al inicio de síntomas.",
   "fields": {
     "pregnant": "Gestante",
+    "investigationForm": "Ficha de investigación",
     "infectionAddressUuid": "Lugar probable de infección",
     "vaccinationStatus": "Estado de vacunación",
     "surveillanceType": "Tipo de vigilancia",
@@ -581,6 +582,37 @@
       "5": "Viernes",
       "6": "Sábado",
       "7": "Domingo"
+    }
+  },
+  "weekly": {
+    "title": "Registros semanales",
+    "year": "Año de notificación",
+    "week": "Semana de notificación",
+    "empty": "No hay casos notificados en la semana seleccionada.",
+    "columns": {
+      "year": "Año de notificación",
+      "week": "Semana de notificación",
+      "paternalSurname": "Apellido paterno",
+      "maternalSurname": "Apellido materno",
+      "givenNames": "Nombres",
+      "age": "Edad",
+      "sex": "Sexo",
+      "dni": "DNI",
+      "province": "Provincia de infección",
+      "district": "Distrito de infección",
+      "locality": "Localidad de infección",
+      "residence": "Dirección de residencia",
+      "ethnicity": "Etnia",
+      "habitualResidence": "Residencia habitual",
+      "icd10": "Diagnóstico CIE-10",
+      "diagnosisType": "Tipo de diagnóstico",
+      "vaccinationStatus": "Protegido por vacuna",
+      "onsetDate": "Inicio de síntomas",
+      "deathDate": "Defunción",
+      "investigationDate": "Investigación",
+      "notificationDate": "Notificación",
+      "investigationForm": "Ficha de investigación",
+      "surveillanceType": "Tipo de vigilancia"
     }
   }
 }

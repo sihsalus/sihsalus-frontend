@@ -5,6 +5,8 @@ import {
   getCatalogue,
   getReport,
   getEncounterDiagnoses,
+  getEncounterDiagnosesDetails,
+  getWeeklyRecords,
   getEncounterObservations,
   references,
   safeError,
@@ -21,6 +23,38 @@ vi.mock("@openmrs/esm-framework", () => ({
   fhirBaseUrl: "/ws/fhir2/R4",
 }));
 describe("surveillance API", () => {
+  it("reads the MINSA short-name code for a diagnosis with no ICD mappings", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {
+      uuid: "source", patient: { uuid: "patient" }, diagnoses: [{ uuid: "diagnosis", diagnosis: { coded: {
+        uuid: "concept", display: "DENGUE GRAVE", mappings: [], names: [{ name: "A972", conceptNameType: "SHORT", voided: false }],
+      } } }],
+    } } as never);
+    expect(await getEncounterDiagnosesDetails("source", "patient", undefined, "configured-source")).toEqual([
+      { uuid: "diagnosis", conceptUuid: "concept", display: "DENGUE GRAVE", icd10: "A972" },
+    ]);
+    expect(String(vi.mocked(openmrsFetch).mock.calls[0][0])).toContain("names:(name,conceptNameType,voided)");
+  });
+  it("requests all rows for the notification period and forwards cancellation", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: { year: 2025, week: 53, rows: [] } } as never);
+    const signal = new AbortController().signal;
+    await getWeeklyRecords(2025, 53, signal);
+    expect(openmrsFetch).toHaveBeenCalledWith(expect.stringContaining("/weekly-records?year=2025&week=53"), expect.objectContaining({ signal }));
+  });
+  it("reads ICD-10 from the configured source with a balanced native representation", async () => {
+    vi.mocked(openmrsFetch).mockResolvedValue({ data: {
+      uuid: "source", patient: { uuid: "patient" }, diagnoses: [{ uuid: "diagnosis", diagnosis: { coded: {
+        uuid: "concept", display: "Synthetic diagnosis", mappings: [{ conceptReferenceTerm: {
+          code: "A972", conceptSource: { uuid: "configured-source" },
+        } }],
+      } } }],
+    } } as never);
+    expect(await getEncounterDiagnosesDetails("source", "patient", undefined, "configured-source")).toEqual([
+      { uuid: "diagnosis", conceptUuid: "concept", display: "Synthetic diagnosis", icd10: "A972" },
+    ]);
+    const url = String(vi.mocked(openmrsFetch).mock.calls[0][0]);
+    expect(url.match(/\(/g)?.length).toBe(url.match(/\)/g)?.length);
+    expect(url).toContain("mappings:(conceptReferenceTerm:(code,retired,conceptSource:(uuid,name)))");
+  });
   it("only lists Diagnosis concepts and searches subsequent pages", async () => {
     vi.mocked(openmrsFetch)
       .mockResolvedValueOnce({ data: { results: [

@@ -24,6 +24,7 @@ beforeEach(() => {
       uuid: "event-1",
       conceptUuid: "concept-1",
       conceptDisplay: "Dengue",
+      icd10: "A90",
       periodicity: "SEMANAL",
       referenceRegulation: "NTS",
       validFrom: "2026-01-01",
@@ -92,7 +93,7 @@ it("edits every event attribute and refreshes the catalogue", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   expect(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
-  ).toHaveValue("Dengue");
+  ).toHaveValue("A90 - Dengue");
   expect(screen.getByLabelText(/Norma de referencia/i)).toHaveValue("NTS");
   expect(screen.getByLabelText(/^Estado/)).toHaveValue("active");
   fireEvent.change(
@@ -236,7 +237,7 @@ it("paginates events and opens the selected event on the second page", async () 
   fireEvent.click(screen.getByRole("button", { name: "Editar" }));
   expect(
     screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
-  ).toHaveValue("Evento 11");
+  ).toHaveValue("A90 - Evento 11");
   fireEvent.click(screen.getByRole("button", { name: /Cancelar|Cancel/i }));
   fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
   expect(screen.getByText("Evento 1", { selector: "td" })).toBeInTheDocument();

@@ -79,6 +79,19 @@
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
 }
+.weeklyTable {
+  overflow-x: auto;
+  max-width: 100%;
+
+  table {
+    min-width: 220rem;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+  }
+}
 .caseFiltersHeading {
   margin-block-start: 1.25rem;
 }

@@ -22,6 +22,7 @@ export interface Disease {
   }[];
 }
 export interface ClinicalCatalog {
+  icd10SourceUuid?: string;
   version: number;
   encounterRoleUuid: string;
   trueConceptUuid: string | null;
@@ -36,6 +37,7 @@ export interface ClinicalCatalog {
   diseases: Disease[];
 }
 export interface SurveillanceEvent {
+  icd10?: string | null;
   uuid: string;
   conceptUuid: string;
   conceptDisplay?: string;
@@ -46,6 +48,7 @@ export interface SurveillanceEvent {
   validTo?: string | null;
 }
 export interface EncounterDiagnosis {
+  icd10?: string;
   uuid: string;
   conceptUuid: string;
   display: string;
@@ -56,6 +59,7 @@ export interface Catalogue {
 }
 export interface CaseRequest {
   pregnant?: boolean;
+  investigationForm?: boolean;
   uuid: string; // Stable idempotency key; the source encounter keeps its own UUID.
   patientUuid: string;
   sourceEncounterUuid: string;
@@ -91,6 +95,7 @@ export interface CaseResult {
 
 export interface SurveillanceCaseDraft {
   pregnant?: boolean;
+  investigationForm?: boolean;
   patientUuid: string;
   encounterUuid: string;
   providerUuid: string;
@@ -112,6 +117,7 @@ export interface SurveillanceCaseDraft {
 }
 
 export interface SurveillanceCase extends SurveillanceCaseDraft {
+  diagnosisIcd10?: string | null;
   patientDeathDate?: string | null;
   patientGivenNames?: string;
   patientPaternalSurname?: string;

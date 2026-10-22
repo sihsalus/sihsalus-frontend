@@ -26,6 +26,7 @@ vi.mock("./error-notification.component", () => ({
 const record: SurveillanceCase = {
   vaccinationStatus: "IGN",
   surveillanceType: "PASIVA",
+  investigationForm: false,
   habitualResidence: "1",
   uuid: "synthetic-case",
   patientDisplay: "Paciente de prueba",
@@ -87,6 +88,43 @@ const mount = (mode: "view" | "edit" = "view", onSaved = vi.fn()) =>
       onSaved={onSaved}
     />,
   );
+
+it.each([true, false])("shows investigation form value %s", async (investigationForm) => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, investigationForm });
+  mount();
+  const label = await screen.findByText("fields.investigationForm");
+  expect(label.nextElementSibling).toHaveTextContent(investigationForm ? "vaccinationValues.SI" : "vaccinationValues.NO");
+});
+
+it("requires an investigation form answer when editing a case without one", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, investigationForm: undefined });
+  mount("edit");
+  const field = await screen.findByLabelText(/fields.investigationForm/);
+  expect(field).toHaveValue("");
+  expect(field).toHaveAccessibleName(/requiredField/);
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  expect(updateSurveillanceCase).not.toHaveBeenCalled();
+  expect(field).toHaveAttribute("aria-invalid", "true");
+  fireEvent.change(field, { target: { value: "NO" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() => expect(updateSurveillanceCase).toHaveBeenCalledWith(record.uuid, expect.objectContaining({ investigationForm: false })));
+});
+
+it.each([true, false])("edits investigation form from %s to its opposite", async (investigationForm) => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, investigationForm });
+  mount("edit");
+  const field = await screen.findByLabelText(/fields.investigationForm/);
+  expect(field).toHaveValue(investigationForm ? "SI" : "NO");
+  fireEvent.change(field, { target: { value: investigationForm ? "NO" : "SI" } });
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() => expect(updateSurveillanceCase).toHaveBeenCalledWith(record.uuid, expect.objectContaining({ investigationForm: !investigationForm })));
+});
+
+it.each(["view", "edit"] as const)("shows ICD-10 alongside the diagnosis in %s mode", async (mode) => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, diagnosisIcd10: "A972" });
+  mount(mode);
+  expect(await screen.findByText("A972 - Diagnóstico sintético")).toBeInTheDocument();
+});
 
 it.each(["view", "edit"] as const)("hides attribution for a deceased probable case in %s mode", async (mode) => {
   vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, patientDeathDate: "2026-09-03", deathAttribution: "SI" });
@@ -293,6 +331,7 @@ it("keeps editable case fields in registration order and marks only non-null fie
     "edit-habitualResidence",
     "edit-vaccinationStatus",
     "edit-pregnant",
+    "edit-investigationForm",
     "edit-surveillanceType",
     "edit-notificationDate",
   ]);

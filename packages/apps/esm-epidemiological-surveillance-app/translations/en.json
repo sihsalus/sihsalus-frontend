@@ -264,6 +264,7 @@
   "caseDateInvalid": "Investigation must match the encounter and be no later than notification or today. Notification cannot be in the future; dates cannot precede symptom onset.",
   "fields": {
     "pregnant": "Pregnant",
+    "investigationForm": "Investigation form",
     "infectionAddressUuid": "Probable place of infection",
     "vaccinationStatus": "Vaccination status",
     "surveillanceType": "Surveillance type",
@@ -581,6 +582,37 @@
       "5": "Friday",
       "6": "Saturday",
       "7": "Sunday"
+    }
+  },
+  "weekly": {
+    "title": "Weekly records",
+    "year": "Notification year",
+    "week": "Notification week",
+    "empty": "No cases were notified in the selected week.",
+    "columns": {
+      "year": "Notification year",
+      "week": "Notification week",
+      "paternalSurname": "Paternal surname",
+      "maternalSurname": "Maternal surname",
+      "givenNames": "Given names",
+      "age": "Age in years",
+      "sex": "Sex",
+      "dni": "DNI",
+      "province": "Infection province",
+      "district": "Infection district",
+      "locality": "Infection locality",
+      "residence": "Residence address",
+      "ethnicity": "Ethnicity",
+      "habitualResidence": "Habitual residence",
+      "icd10": "ICD-10 diagnosis",
+      "diagnosisType": "Diagnosis type",
+      "vaccinationStatus": "Vaccination protection",
+      "onsetDate": "Symptom onset",
+      "deathDate": "Death",
+      "investigationDate": "Investigation",
+      "notificationDate": "Notification",
+      "investigationForm": "Investigation form",
+      "surveillanceType": "Surveillance type"
     }
   }
 }

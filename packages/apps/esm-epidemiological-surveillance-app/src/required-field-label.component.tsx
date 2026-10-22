@@ -16,6 +16,7 @@ export const requiredCaseFields = new Set([
   "habitualResidence",
   "vaccinationStatus",
   "surveillanceType",
+  "investigationForm",
 ]);
 export function RequiredFieldLabel({
   children,

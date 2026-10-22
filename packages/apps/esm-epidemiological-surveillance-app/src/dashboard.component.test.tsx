@@ -77,6 +77,19 @@ vi.mock("./cases-panel.component", () => ({
 vi.mock("./report-panel.component", () => ({
   ReportPanel: () => <div>Report content</div>,
 }));
+vi.mock("./weekly-records.component", () => ({
+  WeeklyRecordsPanel: () => <div>Weekly records content</div>,
+}));
+
+it("requires both case-view and report privileges for weekly records", async () => {
+  state.privileges = [reportPrivilege];
+  const view = render(<Dashboard />);
+  fireEvent.click(await screen.findByRole("tab", { name: "weekly.title" }));
+  expect(screen.queryByText("Weekly records content")).toBeNull();
+  state.privileges = [caseViewPrivilege, reportPrivilege];
+  view.rerender(<Dashboard />);
+  expect(await screen.findByText("Weekly records content")).toBeTruthy();
+});
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -1,3 +1,4 @@
+import { diagnosisLabel } from "./diagnosis-display";
 import { DateInput } from "./date-input.component";
 import { displayDate, displayDateTime } from "./date-display";
 import {
@@ -221,7 +222,7 @@ export function CasesPanel({
                             : item.patientSex || "—"}
                       </TableCell>
                       <TableCell className={styles.diagnosisCell}>
-                        {item.diagnosisDisplay ||
+                        {diagnosisLabel(item.diagnosisDisplay, item.diagnosisIcd10) ||
                           t(
                             "casesTable.diagnosisUnavailable",
                             "Diagnóstico no disponible",

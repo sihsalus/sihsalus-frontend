@@ -12,6 +12,72 @@ Cubre el registro, la información temporal, la distribución demográfica (RF-2
 y la información geográfica de focos (RF-18/RF-19 de la tesis), con usabilidad
 RNF-04, RNF-05 y RNF-06. La exportación de consolidados cubre RF-14; NOTI no se incluye.
 
+### Registros semanales (RF-13)
+
+El campo **Ficha de investigación** se registra y edita con opciones Sí/No,
+aparece en la revisión previa y en el detalle del caso, y se envía como booleano
+`investigationForm`. Es obligatorio seleccionar Sí o No; los casos nuevos no
+tienen una respuesta preseleccionada. Al editar se conserva el
+valor recibido del backend, incluidos los casos migrados a Sí.
+
+La pestaña **Registros semanales**, después de Casos, permite seleccionar año
+y semana de notificación según el calendario epidemiológico del servidor.
+Consulta `GET /weekly-records?year=YYYY&week=N`. Requiere conjuntamente los
+privilegios de consulta de casos y reportes, tanto en la pantalla como en el
+backend. No requiere permiso de registro ni modifica casos al exportar.
+
+La tabla Carbon ofrece paginación y desplazamiento horizontal. Excel y CSV
+incluyen todas las filas del periodo, no solo la página visible. Conservan DNI
+como texto, edades como números y fechas de calendario en formato ISO. CSV usa
+UTF-8 con BOM y el escape de fórmulas existente. Al cambiar filtros desaparecen
+los datos anteriores; carga, error y reintento no permiten exportarlos.
+
+El subconjunto disponible del anexo 2 comprende apellidos,
+nombres, edad en años, sexo, DNI, provincia/distrito/localidad de infección,
+residencia, nombre de etnia, residencia habitual, diagnóstico CIE-10,
+clasificación C/P/D, vacunación S/N/I, fechas de síntomas/defunción/investigación/
+notificación, ficha de investigación S/N y tipo de vigilancia P/A. Provincia,
+distrito y localidad de infección muestran códigos del catálogo territorial,
+conservados como texto. Residencia muestra el código de localidad resuelto por
+la jerarquía completa guardada en el caso; si no existe una coincidencia única,
+queda vacío. No se inventan
+códigos de etnia, red, microred, DIRESA ni firmas ausentes. No se declara un
+formato de importación NOTI-Web. Los nombres, edad, sexo y residencia proceden
+de la copia del caso; DNI, etnia y defunción proceden del paciente vigente.
+Solo se coloca DNI cuando el identificador es del tipo DNI. Los ausentes quedan
+vacíos en los archivos y como «—» en pantalla.
+
+Incluye todos los tipos C/P/D notificados en la semana, incluso eventos de
+periodicidad inmediata. Excluye casos, pacientes, diagnósticos y atenciones
+anulados. El intervalo es desde el inicio de la semana inclusive hasta el
+inicio de la siguiente exclusivo, en la zona del calendario; se valida la
+existencia de la semana 53. No se filtra por inicio de síntomas ni por la
+vigencia actual del evento.
+
+Registro, revisión, consulta y edición de casos y registro/edición de eventos
+muestran `CIE-10 - diagnóstico`. Los códigos proceden del catálogo o del mapeo
+del concepto a `catalog.icd10SourceUuid`; ante ausencia o ambigüedad se conserva
+el nombre sin inventar un código. Si no hay mapeos, se lee el nombre `SHORT`
+del concepto, como en el catálogo MINSA/OCL (por ejemplo, `A972`). Solo se acepta
+un código único, con formato CIE-10 y no anulado; también se solicita `names`
+en las representaciones REST de diagnósticos y búsqueda de eventos.
+Requiere actualizar OMOD y ESM juntos.
+Se conserva la migración anterior `liquibase-case-investigation-form.xml`.
+
+Validación local (21/10/2026): PASSED, 195 pruebas Vitest, prueba HMR,
+`tsc6 --noEmit`, lint directo (`node ../../tooling/scripts/run-biome.js lint .`)
+y build directo (`node ../../../node_modules/@rspack/cli/bin/rspack.js
+--mode=production`). Build advierte el tamaño del chunk de ExcelJS (910 KiB).
+Maven completo con `resources:resources resources:testResources compiler:compile
+compiler:testCompile surefire:test`: PASSED, 159 pruebas API y 9 REST, incluidas
+fronteras temporales en Hibernate, permisos y exportaciones reabiertas en ExcelJS.
+La selección aislada que inicia con NativePersistenceTest FAILED al inicializar
+PowerMock; la suite completa final PASSED. No se modificaron las dependencias.
+Yarn BLOCKED por marcadores de conflicto existentes en `yarn.lock`; se ejecutaron
+las herramientas locales instaladas. Prettier de README FAILED por formato del
+documento; no se reformateó completo. Smoke integrado DEV/QLTY y `verify:changed`
+NOT RUN (sin sesión coordinada ni commits). No se desplegó.
+
 ### Exportación de Información (RF-14)
 
 Cada tabla, gráfico y mapa presenta un botón **Exportar** a la derecha de su
@@ -679,7 +745,7 @@ ISO con zona explícita enviado por el OMOD. Las respuestas antiguas sin zona se
 interpretan como UTC; actualizar OMOD y ESM juntos para eliminar esa ambigüedad.
 Gestante y Defunción atribuible al caso se omiten cuando no aplican, también en
 la vista de consulta. Los valores nulos se presentan como «—». El selector de
-diagnóstico muestra solo su nombre, sin añadir el nombre del evento entre paréntesis.
+diagnóstico muestra CIE-10 y nombre, sin añadir el nombre del evento entre paréntesis.
 
 ### Fecha y hora de notificación
 

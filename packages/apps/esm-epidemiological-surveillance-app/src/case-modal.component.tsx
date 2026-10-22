@@ -1,3 +1,4 @@
+import { diagnosisLabel } from "./diagnosis-display";
 import { DateTimeInput } from "./date-time-input.component";
 import { FieldError } from "./field-error.component";
 import {
@@ -74,6 +75,7 @@ export function caseUpdatePayload(
 ): SurveillanceCaseDraft {
   return {
     pregnant: value.pregnant,
+    investigationForm: value.investigationForm,
     patientUuid: value.patientUuid,
     encounterUuid: value.encounterUuid,
     providerUuid: value.providerUuid,
@@ -197,6 +199,7 @@ export function CaseModal({
     for (const key of ["habitualResidence", "vaccinationStatus", "surveillanceType"] as const) {
       if (!value[key]) dates[key] = "required";
     }
+    if (typeof value.investigationForm !== "boolean") dates.investigationForm = "required";
     setFieldErrors(dates);
     setError(undefined);
     if (Object.keys(dates).length) return;
@@ -355,7 +358,7 @@ export function CaseModal({
             {detail(
               "diagnosisEncounter",
               fieldLabel("diagnosisUuid", false),
-              value.diagnosisDisplay,
+              diagnosisLabel(value.diagnosisDisplay, value.diagnosisIcd10),
             )}
           </dl>
           {canEdit ? (
@@ -473,6 +476,20 @@ export function CaseModal({
                 <SelectItem value="NO" text={t("vaccinationValues.NO")} />
               </Select>
               )}
+              <Select
+                id="edit-investigationForm"
+                labelText={<RequiredFieldLabel>{t("fields.investigationForm")}</RequiredFieldLabel>}
+                value={value.investigationForm == null ? "" : value.investigationForm ? "SI" : "NO"}
+                {...fieldProps("investigationForm")}
+                onChange={(event) => {
+                  setFieldErrors((current) => { const next = { ...current }; delete next.investigationForm; return next; });
+                  setValue({ ...value, investigationForm: event.target.value === "" ? undefined : event.target.value === "SI" });
+                }}
+              >
+                <SelectItem value="" text={t("selectOption", "Select an option")} />
+                <SelectItem value="SI" text={t("vaccinationValues.SI")} />
+                <SelectItem value="NO" text={t("vaccinationValues.NO")} />
+              </Select>
               {renderOption("surveillanceType")}
               <DateTimeInput id="edit-notificationDate" labelText={fieldLabel("notificationDate")}
                 value={value.notificationDate ?? ""} {...fieldProps("notificationDate")}
@@ -481,6 +498,8 @@ export function CaseModal({
             </fieldset>
           ) : (
             <dl className={styles.caseDetails}>
+              {detail("investigationForm", t("fields.investigationForm"),
+                value.investigationForm == null ? undefined : t(value.investigationForm ? "vaccinationValues.SI" : "vaccinationValues.NO"))}
               {pregnancyEligible(value.patientSex, value.patientAge) && detail(
                 "pregnant",
                 t("fields.pregnant"),

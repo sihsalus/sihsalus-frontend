@@ -144,6 +144,21 @@ describe("case registration screen", () => {
     await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(
       expect.objectContaining({ deathAttribution: deathDate ? "NO" : null })));
   });
+  it.each([true, false])("registers investigation form as %s and includes it in review", async (investigationForm) => {
+    render(<CaseForm catalogue={catalogue} initial={{ ...request, investigationForm: undefined }} onSaved={vi.fn()} />);
+    await screen.findByText("Synthetic Patient");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByLabelText(/Investigation form/)).toHaveValue("");
+    expect(screen.getByLabelText(/Investigation form/)).toHaveAccessibleName(/required/);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("This field is required.")).toBeInTheDocument();
+    expect(createSurveillanceCase).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText(/Investigation form/), { target: { value: investigationForm ? "SI" : "NO" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("Investigation form").nextElementSibling).toHaveTextContent(investigationForm ? "Yes" : "No");
+    fireEvent.click(screen.getByRole("button", { name: "Register case" }));
+    await waitFor(() => expect(createSurveillanceCase).toHaveBeenCalledWith(expect.objectContaining({ investigationForm })));
+  });
   it("requires habitual residence before review and submits its code", async () => {
     render(<CaseForm catalogue={catalogue} initial={{ ...request, habitualResidence: undefined }} onSaved={vi.fn()} />);
     await screen.findByText("Synthetic Patient");
@@ -162,7 +177,7 @@ describe("case registration screen", () => {
     render(<CaseForm catalogue={catalogue} initial={request} onSaved={vi.fn()} />);
     await screen.findByText("Synthetic Patient");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(screen.getByRole("option", { name: "Synthetic disease" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "A90 - Synthetic disease" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Synthetic disease (Synthetic disease)" })).not.toBeInTheDocument();
   });
   it("registers notification date and time with the UTC-5 offset without an investigation field", async () => {

@@ -8,6 +8,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
 import { downloadBlob, imageBlob, tableBlob, tableRows } from "./report-export";
+import type { ExportCell } from "./report-export";
 import styles from "./report-export.scss";
 
 export function ReportExport({
@@ -15,11 +16,13 @@ export function ReportExport({
   name,
   title,
   children,
+  rows,
 }: {
   kind: "table" | "image";
   name: string;
   title: string;
   children: ReactNode;
+  rows?: ExportCell[][];
 }) {
   const { t } = useTranslation(moduleName);
   const target = useRef<HTMLDivElement>(null);
@@ -35,8 +38,9 @@ export function ReportExport({
       let blob: Blob;
       if (format === "xlsx" || format === "csv") {
         const table = target.current.querySelector("table");
-        if (!table) throw new Error("Missing table");
-        blob = await tableBlob(tableRows(table), format);
+        const data = rows ?? (table ? tableRows(table) : undefined);
+        if (!data) throw new Error("Missing table");
+        blob = await tableBlob(data, format);
       } else {
         blob = await imageBlob(target.current, format);
       }

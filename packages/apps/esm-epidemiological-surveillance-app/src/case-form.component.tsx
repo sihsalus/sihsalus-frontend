@@ -1,3 +1,4 @@
+import { diagnosisLabel } from "./diagnosis-display";
 import { DateTimeInput } from "./date-time-input.component";
 import { FieldError } from "./field-error.component";
 import {
@@ -187,6 +188,7 @@ export function CaseForm({
         initial.sourceEncounterUuid,
         initial.patientUuid,
         abort.signal,
+        m.icd10SourceUuid,
       ),
     ])
       .then(
@@ -215,7 +217,7 @@ export function CaseForm({
         if (!abort.signal.aborted) setError(failure);
       });
     return () => abort.abort();
-  }, [initial, catalogue]);
+  }, [initial, catalogue, m.icd10SourceUuid]);
 
   useEffect(
     () => () => {
@@ -299,7 +301,7 @@ export function CaseForm({
     setError(undefined);
     try {
       const [diagDetails, sourceObservations] = await Promise.all([
-        getEncounterDiagnosesDetails(id, request.patientUuid),
+        getEncounterDiagnosesDetails(id, request.patientUuid, undefined, m.icd10SourceUuid),
         getEncounterObservations(id, request.patientUuid),
       ]);
       if (current !== generation.current) return;
@@ -351,7 +353,7 @@ export function CaseForm({
       uuid: diag.uuid,
       display: diag.display,
       mapping,
-      label: diag.display,
+      label: diagnosisLabel(diag.display, diag.icd10 ?? mapping?.icd10Code),
     };
   });
   const onDiagnosisChange = (diagUuid: string) => {
@@ -427,7 +429,7 @@ export function CaseForm({
       setResult({
         uuid: saved.uuid,
         diagnosisConceptUuid: saved.diagnosisUuid,
-        icd10: "",
+        icd10: saved.diagnosisIcd10 ?? "",
         periodicity: "",
         deadlineDays: 0,
         replayed: false,
@@ -780,6 +782,22 @@ export function CaseForm({
               <SelectItem value="NO" text={t("vaccinationValues.NO")} />
             </Select>
           )}
+          <Select
+            id="case-investigationForm"
+            labelText={<RequiredFieldLabel>{t("fields.investigationForm")}</RequiredFieldLabel>}
+            value={request.investigationForm == null ? "" : request.investigationForm ? "SI" : "NO"}
+            disabled={busy}
+            {...fieldProps("investigationForm")}
+            onChange={(event) => {
+              setInvalid((current) => current.filter((field) => field !== "investigationForm"));
+              setRemoteErrors((current) => { const next = { ...current }; delete next.investigationForm; return next; });
+              setRequest((current) => ({ ...current, investigationForm: event.target.value === "" ? undefined : event.target.value === "SI" }));
+            }}
+          >
+            <SelectItem value="" text={t("selectOption", "Select an option")} />
+            <SelectItem value="SI" text={t("vaccinationValues.SI")} />
+            <SelectItem value="NO" text={t("vaccinationValues.NO")} />
+          </Select>
           {select(
             "surveillanceType",
             ["PASIVA", "BUSQUEDA_ACTIVA"].map((value) => ({
@@ -808,9 +826,13 @@ export function CaseForm({
             <h3>{t("reviewBeforeSave", "Review before registering")}</h3>
             <p>
               {patient ? patientName(patient) : ""} ·{" "}
-              {event?.conceptDisplay ?? event?.conceptUuid}
+              {diagnosisOptions.find((item) => item.uuid === selectedDiagnosisUuid)?.label ?? event?.conceptDisplay}
             </p>
             <dl>
+              <div>
+                <dt>{t("fields.investigationForm")}</dt>
+                <dd>{t(request.investigationForm ? "vaccinationValues.SI" : "vaccinationValues.NO")}</dd>
+              </div>
               {canSelectPregnancy && <div>
                 <dt>{t("fields.pregnant")}</dt>
                 <dd>

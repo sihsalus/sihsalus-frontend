@@ -1,3 +1,4 @@
+import { conceptIcd10, diagnosisLabel } from "./diagnosis-display";
 import { serverFieldErrors, type FieldErrors } from "./field-validation";
 import { RequiredFieldLabel } from "./required-field-label.component";
 import { Add, Edit } from "@carbon/react/icons";
@@ -35,7 +36,7 @@ import styles from "./dashboard.scss";
 import { TablePagination } from "./table-pagination.component";
 
 export function EventsPanel({
-  catalogue: _catalogue,
+  catalogue,
   onEventsChanged,
 }: {
   catalogue?: Catalogue;
@@ -305,6 +306,7 @@ export function EventsPanel({
                                   uuid: event.conceptUuid,
                                   display:
                                     event.conceptDisplay ?? event.conceptUuid,
+                                  icd10: event.icd10,
                                 };
                                 setEditing(event);
                                 setConcepts([selected]);
@@ -389,7 +391,7 @@ export function EventsPanel({
               }
               items={concepts}
               selectedItem={concept}
-              itemToString={(item) => item?.display ?? ""}
+              itemToString={(item) => item ? diagnosisLabel(item.display, item.icd10 ?? conceptIcd10(item.mappings, catalogue?.catalog.icd10SourceUuid, item.names)) : ""}
               onInputChange={search}
               onChange={({ selectedItem }) => {
                 setConcept(selectedItem ?? null);

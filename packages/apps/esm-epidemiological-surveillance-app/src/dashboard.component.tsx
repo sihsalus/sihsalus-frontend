@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getCatalogue } from "./api";
 import { CaseForm } from "./case-form.component";
 import { CasesPanel } from "./cases-panel.component";
+import { WeeklyRecordsPanel } from "./weekly-records.component";
 import {
   caseRegisterPrivilege,
   caseViewPrivilege,
@@ -109,6 +110,7 @@ function SessionDashboard() {
             )}
           >
             <Tab>{t("cases", "Cases")}</Tab>
+            <Tab>{t("weekly.title")}</Tab>
             <Tab>{t("temporalInformation")}</Tab>
             <Tab>{t("indicators", "Indicators")}</Tab>
             <Tab>{t("demographic.title")}</Tab>
@@ -142,6 +144,13 @@ function SessionDashboard() {
                       onSaved={reloadSurveillancePage}
                     />
                   </Modal>
+                </RequirePrivilege>
+              </RequirePrivilege>
+            </TabPanel>
+            <TabPanel>
+              <RequirePrivilege privilege={reportPrivilege}>
+                <RequirePrivilege privilege={caseViewPrivilege}>
+                  <WeeklyRecordsPanel catalogue={catalogue} />
                 </RequirePrivilege>
               </RequirePrivilege>
             </TabPanel>

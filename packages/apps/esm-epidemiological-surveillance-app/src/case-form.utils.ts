@@ -28,6 +28,7 @@ export function toSurveillanceCaseDraft(
     )[request.origin] ?? request.origin;
   return {
     pregnant: request.pregnant,
+    investigationForm: request.investigationForm,
     patientUuid: request.patientUuid,
     encounterUuid: request.sourceEncounterUuid,
     providerUuid: request.providerUuid,
@@ -121,6 +122,7 @@ export function findDiagnosisMapping(
       severity?: string;
       species?: string;
       diagnosisConceptUuid: string;
+      icd10Code?: string | null;
     }
   | undefined {
   const { catalog: m, events } = catalogue;
@@ -139,6 +141,7 @@ export function findDiagnosisMapping(
         severity: mapping.severity,
         species: mapping.species,
         diagnosisConceptUuid: mapping.diagnosisConceptUuid,
+        icd10Code: mapping.icd10Code,
       };
     }
   }
@@ -152,6 +155,7 @@ export function findDiagnosisMapping(
       eventName: directEvent.conceptDisplay ?? directEvent.conceptUuid,
       severity: disease?.severities?.[0]?.key,
       diagnosisConceptUuid: diagnosisUuid,
+      icd10Code: directEvent.icd10,
     };
   }
   return undefined;
@@ -259,6 +263,7 @@ export function validateCase(
   for (const key of requiredKeys) {
     if (!request[key]) fields.push(key);
   }
+  if (typeof request.investigationForm !== "boolean") fields.push("investigationForm");
   const disease = m.diseases.find((d) => d.eventUuid === request.eventUuid);
   if (disease?.severities?.length && !request.severity) fields.push("severity");
   if (disease?.species?.length && !request.species) fields.push("species");

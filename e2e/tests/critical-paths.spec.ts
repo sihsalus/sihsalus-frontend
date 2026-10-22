@@ -54,12 +54,10 @@ test.describe('Critical user journeys', () => {
     await page.goto(`patient/${patientUuid}/chart/consulta-externa`);
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { name: /Consulta Externa|Outpatient consultation/i })).toBeVisible({
-      timeout: 30_000,
-    });
-    await expect(
-      page.getByRole('tablist', { name: /Pestañas de Consulta Externa|Consulta Externa tabs/i }),
-    ).toBeVisible();
+    const tabs = page.getByRole('tablist', { name: /Pestañas de Consulta Externa|Consulta Externa tabs/i });
+    await expect(tabs).toBeVisible({ timeout: 30_000 });
+    await expect(tabs.getByRole('tab')).toHaveCount(8);
+    await expect(tabs.getByRole('tab', { name: /Triajes previos/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   test('offline notification clears after connectivity is restored', async ({ page }, testInfo) => {

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { type APIRequestContext, type APIResponse, type TestInfo } from '@playwright/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrivateFixtureJournal } from './e2e-fixture-journal';
+import * as checkpointModule from './e2e-journal-checkpoint';
 import { nativeInterconsultationMetadata, withNativeSyntheticFixture } from './e2e-native-synthetic-fixtures';
 import { FixtureAuthorizationError } from './e2e-synthetic-fixtures';
 
@@ -110,6 +111,43 @@ afterEach(() => {
 });
 
 describe('opt-in native fixture lifecycle with real private local journals', () => {
+  it('requires acknowledged checkpoints before provisioning in configured CI', async () => {
+    const { api, root } = setup();
+    const checkpoint = vi.fn();
+    const factory = vi.spyOn(checkpointModule, 'createSshJournalCheckpoint').mockReturnValue(checkpoint);
+    try {
+      await withNativeSyntheticFixture(
+        api,
+        attempt,
+        vi.fn(),
+        { ...environment, CI: 'true', GITHUB_ACTIONS: 'true' },
+        root,
+      );
+      expect(checkpoint).toHaveBeenCalledTimes(3);
+      expect(checkpoint.mock.invocationCallOrder[1]).toBeLessThan(doubles.create.mock.invocationCallOrder[0] ?? 0);
+      expect(retained(journals(root)[0])).toEqual({ pending: false });
+    } finally {
+      factory.mockRestore();
+    }
+  });
+
+  it('does not provision or start a session when the first CI checkpoint fails', async () => {
+    const { api, root } = setup();
+    const checkpoint = vi.fn(() => {
+      throw new Error('FIXTURE_CHECKPOINT_UNCONFIRMED_RETAIN_JOURNAL');
+    });
+    const factory = vi.spyOn(checkpointModule, 'createSshJournalCheckpoint').mockReturnValue(checkpoint);
+    try {
+      await expect(
+        withNativeSyntheticFixture(api, attempt, vi.fn(), { ...environment, CI: 'true', GITHUB_ACTIONS: 'true' }, root),
+      ).rejects.toThrow('NATIVE_FIXTURE_SETUP_FAILED_RETAIN_JOURNAL');
+      expect(doubles.create).not.toHaveBeenCalled();
+      expect(api.post).not.toHaveBeenCalled();
+      expect(retained(journals(root)[0])).toEqual({ pending: false });
+    } finally {
+      factory.mockRestore();
+    }
+  });
   it('establishes the exact Spanish session and provisions one foundation-owned patient/visit', async () => {
     const { api, root } = setup();
     const use = vi.fn().mockResolvedValue(undefined);

@@ -1,6 +1,9 @@
 # Private journal retention for native browser CI
 
-Status: **prepared; access policy and remote acceptance pending human review**.
+DEV access was explicitly authorized and configured on **2026-10-22**, using the
+receiver from `01273b64a3889a506217552a2fb411ab96686579`. Native browser results
+and cleanup evidence by SHA are recorded in [#1252](https://github.com/sihsalus/sihsalus-frontend/pull/1252)
+and [#1119](https://github.com/sihsalus/sihsalus-frontend/issues/1119).
 This is DEV-only and reuses `PrivateFixtureJournal` and `SyntheticFixtures`.
 Laboratory and O3 Forms CI remain outside this activation.
 
@@ -31,7 +34,7 @@ writer lock, which must never be cleared automatically. Storage stops at 64 MiB
 or 10,000 files; an operator resolves capacity without deleting unresolved state.
 This preserves state across runner loss; it is not a backup against loss of DEV.
 
-## Exact access proposal — approval required before activation
+## Approved DEV access policy
 
 - Destination/account: existing `u.hsc.dev@200.16.7.137`, DEV only.
 - Receiver: `/home/u.hsc.dev/.local/lib/sihsalus/e2e/receive-fixture-journal.py`,
@@ -40,7 +43,8 @@ This preserves state across runner loss; it is not a backup against loss of DEV.
   mode 0700. The receiver does not expose read/list/delete operations to CI.
 - New CI key: ED25519 fingerprint
   `SHA256:Ohp+v3aXLI00+71Qo7erP23NGqk7OExqUYmi2hdcut8`.
-  It is prepared privately, **not authorized on DEV or uploaded to GitHub**.
+  It is authorized with the forced command below and held in the private GitHub
+  secret. Key rotation or broader access requires a separate reviewed decision.
 - Add this key to the existing account only with the following native OpenSSH
   restriction; preserve every existing authorized-key entry:
 
@@ -57,7 +61,7 @@ Docker access, deployment operation or application-role grant is requested for
 CI. A separate OS account remains an alternative if the environment owner
 requires stronger process isolation; that needs administrator provisioning.
 
-After approval, the operator installs the reviewed receiver, verifies DEV's MAC
+For installation/recovery after approval, the operator installs the reviewed receiver, verifies DEV's MAC
 `00:0c:29:86:a3:3b`, creates the private store, preserves a recoverable copy of
 `authorized_keys`, ensures `.ssh` is mode 0700 and `authorized_keys` is mode
 0600 under the existing account, and appends exactly the restricted public-key entry. No SSH
@@ -100,10 +104,14 @@ Record the final reviewed SHA and the separate access-policy approval.
 5. Preserve evidence and checkpoints after verified cleanup. No rotation removes
    unresolved attempts. Review capacity separately with the environment owner.
 
-Before calling the complete CI gate operational, exercise interrupted creation,
-lost acknowledgment and cleanup recovery with the actual restricted key and
-DEV, then run the native suite with verified cleanup. Local receiver tests and
-an approved access policy do not establish that acceptance.
+The operator verified the restricted key against DEV, including denial of
+shell/file/subsystem/forwarding requests. A writer was killed immediately after
+its synthetic patient POST succeeded, before the foundation received the UUID.
+A separate process reconstructed recovery solely from the remote checkpoint
+and verified cleanup. The original local writer lock was retained, not cleared.
+An empty checkpoint also survived loss of its acknowledgment. These checks
+exercise storage/partial creation; the full native suite must separately record
+its exact SHA, cases and verified cleanup before claiming clinical gate success.
 
 Rollback: remove the new GitHub secret and the exact new authorized-key entry
 after checking active writers. Retain receiver/store/journals for recovery.

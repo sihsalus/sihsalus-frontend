@@ -54,9 +54,10 @@ E2E_NATIVE_SUPERVISED_TARGET="$E2E_GATE_TARGET" yarn test:e2e:suite clinical --w
 
 Run the last command against the exact assembled build under review. Record
 that SHA, target, executed/skipped cases and verified cleanup. Local contracts
-or discovery do not establish remote clinical acceptance. Remote execution and
-interrupted-run recovery for this adapter remain **NOT RUN** until supervised
-evidence is recorded.
+or discovery do not establish remote clinical acceptance. The
+[DEV checkpoint evidence](PRIVATE_JOURNAL_RETENTION.md) covers interrupted
+foundation provisioning/recovery. Native interconsultation UI/order acceptance
+requires its own executed cases and cleanup evidence by SHA.
 
 ## Cleanup and interrupted runs
 
@@ -93,9 +94,9 @@ journal save in GitHub Actions. Without the explicit CI binding and private
 key/known-hosts files it rejects execution before journal/session creation with
 `NATIVE_CI_RECOVERY_RETENTION_UNAVAILABLE`. A missing or failed acknowledgment
 blocks clinical writes and retains local state. Other CI systems remain blocked.
-The [DEV retention proposal](PRIVATE_JOURNAL_RETENTION.md) documents exact access,
-failure behavior and recovery. Its server key authorization, GitHub configuration
-and actual interrupted-run recovery still require review/verification; the full
-browser gate is not activated by the source change or an `e2e` label alone.
+The [DEV retention policy](PRIVATE_JOURNAL_RETENTION.md) documents approved access,
+failure behavior and verified interrupted provisioning/recovery. The complete
+browser gate still requires executed native cases and cleanup evidence by SHA;
+source changes or an `e2e` label alone do not establish that acceptance.
 Local contracts and `--list` remain available. Laboratory/O3 Forms keep their
 existing independent CI boundaries.

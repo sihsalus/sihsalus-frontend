@@ -1,12 +1,13 @@
 # Recoverable synthetic fixture foundation
 
-Status: **draft; supervised adapters exist, browser CI activation remains pending**.
+Supervised adapters exist; native browser CI requires private DEV checkpoint storage.
 The [laboratory adapter](../../e2e/laboratory/README.md) reuses this foundation for one
 patient/visit pair per local test attempt, with private retained journals.
 The [native interconsultation fixture](../../e2e/NATIVE_SYNTHETIC_FIXTURES.md) also
 uses the foundation for two desktop specs. Its
-[private DEV checkpoint proposal](../../e2e/PRIVATE_JOURNAL_RETENTION.md) requires
-reviewed access and verified recovery before browser CI activation.
+[private DEV checkpoint policy](../../e2e/PRIVATE_JOURNAL_RETENTION.md) records
+reviewed access and verified interrupted provisioning/recovery. Browser case
+acceptance is recorded separately by SHA in the associated PR/issue.
 The separate [supervised O3 Forms adapter](../../e2e/scripts/O3FORMS_SUPERVISED.md) provides
 an explicit opt-in CLI and retains the requirements below; it has not passed
 remote clinical acceptance. Importing these utilities does not run a remote
@@ -133,7 +134,8 @@ metadata deliberately blocks cleanup for review rather than guessing a new one.
   clinical orders as separate, still-unapproved workflows. This journal does
   not cover temporary users, roles, or concurrent runtime notification captures.
 
-No current-SHA DEV/QLTY clinical validation is claimed by this foundation.
+This foundation does not by itself claim DEV/QLTY clinical acceptance; use the
+executed cases, exact SHA and cleanup evidence in the associated PR/issue.
 The laboratory adapter requires explicit local supervision and rejects CI before
 requests because a runner's destruction would lose its local journal. The
 supervised O3 Forms adapter does not activate global setup/teardown or a browser

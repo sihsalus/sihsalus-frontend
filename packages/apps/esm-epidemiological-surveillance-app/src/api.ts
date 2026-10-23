@@ -166,7 +166,9 @@ export async function getEncounterDiagnoses(
 }
 export async function createSurveillanceCase(draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
   try {
-    return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: draft })).data;
+    const result = (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases`, { method: "POST", headers: { "Content-Type": "application/json" }, body: draft })).data;
+    window.dispatchEvent(new CustomEvent("surveillance-alerts-generated", { detail: result.generatedAlerts ?? [] }));
+    return result;
   } catch (error) { throw safeError(error); }
 }
 
@@ -180,7 +182,9 @@ export const getSurveillanceCase = (uuid: string, signal?: AbortSignal) =>
 
 export async function updateSurveillanceCase(uuid: string, draft: SurveillanceCaseDraft): Promise<SurveillanceCase> {
   try {
-    return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases/${encodeURIComponent(uuid)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: draft })).data;
+    const result = (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases/${encodeURIComponent(uuid)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: draft })).data;
+    window.dispatchEvent(new CustomEvent("surveillance-alerts-generated", { detail: result.generatedAlerts ?? [] }));
+    return result;
   } catch (error) { throw safeError(error); }
 }
 
@@ -509,4 +513,12 @@ export async function references(
     { v: `custom:(uuid,display${resource === "provider" ? ",person:(uuid)" : ""})` },
     signal,
   );
+}
+
+export const getAlerts = (filters: Record<string, string> = {}, signal?: AbortSignal) =>
+  read<import("./types").SurveillanceAlert[]>(`${apiBase}/alerts?${new URLSearchParams(filters)}`, signal);
+export async function attendAlert(uuid: string) {
+  try {
+    return (await openmrsFetch<import("./types").SurveillanceAlert>(`${apiBase}/alerts/${encodeURIComponent(uuid)}/attend`, { method: "POST" })).data;
+  } catch (error) { throw safeError(error); }
 }

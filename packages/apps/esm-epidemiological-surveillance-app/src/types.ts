@@ -117,6 +117,7 @@ export interface SurveillanceCaseDraft {
 }
 
 export interface SurveillanceCase extends SurveillanceCaseDraft {
+  generatedAlerts?: SurveillanceAlert[];
   diagnosisIcd10?: string | null;
   patientDeathDate?: string | null;
   patientGivenNames?: string;
@@ -210,4 +211,23 @@ export interface NamedReference {
   uuid: string;
   display: string;
   person?: { uuid: string };
+}
+
+export interface SurveillanceAlert {
+  patientDisplay?: string | null;
+  encounterDate?: string | null;
+  diagnosisDisplay?: string | null;
+  diagnosisIcd10?: string | null;
+  uuid: string;
+  type: "IMMEDIATE" | "OUTBREAK";
+  reason: string;
+  caseUuid: string;
+  eventUuid: string;
+  eventName: string;
+  center: string | null;
+  generatedAt: string;
+  additionalInformation: string | null;
+  status: "PENDING" | "ATTENDED";
+  attendedAt: string | null;
+  attendedBy: string | null;
 }

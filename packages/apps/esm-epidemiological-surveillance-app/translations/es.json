@@ -614,5 +614,40 @@
       "investigationForm": "Ficha de investigación",
       "surveillanceType": "Tipo de vigilancia"
     }
+  },
+  "alertInbox": {
+    "title": "Alertas",
+    "type": "Tipo de alerta",
+    "reason": "Motivo",
+    "status": "Estado",
+    "all": "Todos",
+    "refresh": "Actualizar",
+    "case": "Caso",
+    "event": "Evento notificable",
+    "center": "Centro poblado",
+    "generatedAt": "Fecha y hora de generación",
+    "additionalInformation": "Información adicional",
+    "attendedAt": "Fecha y hora de atención",
+    "attendedBy": "Atendida por",
+    "actions": "Acciones",
+    "attend": "Marcar como atendida",
+    "attendedSuccess": "Alerta marcada como atendida",
+    "empty": "No hay alertas con los filtros seleccionados.",
+    "values": {
+      "IMMEDIATE": "Notificación inmediata",
+      "OUTBREAK": "Brote",
+      "PENDING": "Pendiente",
+      "ATTENDED": "Atendida"
+    },
+    "reasons": {
+      "IMMEDIATE_EVENT": "Evento notificable de periodicidad inmediata",
+      "STATUS_CHANGED": "Cambio de estado epidemiológico de un caso",
+      "DEATH": "Defunción atribuible a un caso",
+      "CONFIRMED_PREGNANCY": "Caso confirmado en una gestante",
+      "EPIDEMIC_THRESHOLD": "Cruce del umbral de la zona de alerta a la zona de epidemia",
+      "SUSTAINED_INCREASE": "Superación de Q3 durante dos semanas epidemiológicas consecutivas",
+      "AUTOCHTHONOUS_ELIMINATED": "Aparición de un caso autóctono en un foco eliminado"
+    },
+    "disconnected": "La conexión de alertas se está restableciendo. Puede actualizar la pestaña Alertas para consultar las pendientes."
   }
 }

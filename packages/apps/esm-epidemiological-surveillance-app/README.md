@@ -810,3 +810,64 @@ Prettier de README y contrato API FAILED por formato; no se reformateó el
 contenido completo. `diff --check` frontend PASSED; backend FAILED por espacios
 finales en el conjunto de cambios locales conservados. No se desplegó.
 Pase final completo: `vitest run --maxWorkers=2` PASSED, 185 pruebas en 29 suites.
+
+
+### Alertas RF-10 / RF-11
+
+`POST /cases` y `PUT /cases/{uuid}` evalúan y persisten las alertas en la misma
+transacción, sin scheduler. La migración `liquibase-alerts.xml` incorpora la
+bandeja, clave única del suceso, estado pendiente/atendida y auditoría de atención.
+Se requiere actualizar ESM y OMOD juntos. Los destinatarios y quienes pueden
+consultar/atender tienen **los cinco privilegios de vigilancia epidemiológica**.
+No se asignan privilegios ni se depende del nombre de un rol.
+
+RF-10: periodicidad inmediata al registrar solo si no se indica fecha de notificaci?n; transición de clasificación con
+estado anterior y nuevo; defunción con atribución `SI` al caso; gestación con
+clasificación confirmada. La fecha de defunción procede de Person; su asociación
+al caso se establece al guardar la atribución. Las ediciones idénticas no crean
+alertas y A→B→A→B conserva cada transición. Gestación y defunción se deduplican por
+caso/evento/motivo; los brotes por evento/centro/semana/motivo (foco: centro/año).
+
+RF-11 usa casos confirmados y probables, excluye descartados y agrupa por inicio
+de síntomas y centro de infección, como el canal endémico. Q3 usa interpolación
+R7 y los años/mínimo configurados. La ausencia de historia no se convierte en cero.
+El cruce exige pasar de `<= Q3` a `> Q3`. Dos semanas consecutivas deben superar
+cada una su Q3; no se exige que el segundo conteo sea mayor que el primero.
+Un registro tardío reevalúa también la semana siguiente. La clasificación previa
+del foco sigue el criterio geográfico: sin autóctonos en el año y los tres
+anteriores; un origen desconocido en ese intervalo impide afirmar eliminado.
+
+`GET /alerts` filtra `type`, `reason`, `status`; `POST /alerts/{uuid}/attend`
+registra atención de forma idempotente. La pestaña muestra identificación del
+caso/evento, centro, motivo, fecha/hora, información adicional y atención.
+`GET /alerts/stream` entrega señales SSE después del commit, sin datos clínicos;
+la lectura posterior vuelve a comprobar permisos. El canal se reconecta y
+recupera pendientes; el fallo de conexión se informa en pantalla. Requiere soporte
+async/SSE y ausencia de buffering en el proxy. La señal entre sesiones es local
+a la instancia del OMOD; una instalación con varias instancias requiere un bus
+compartido. Se conserva además la notificación nativa OpenMRS a cada responsable.
+
+Validación integrada DEV/QLTY, incluyendo proxy SSE y entrega a otra sesión:
+NOT RUN, sin entorno coordinado. No se ha desplegado.
+
+Validaci?n local RF-10/RF-11 (22/10/2026): PASSED, Maven
+`resources:resources resources:testResources compiler:compile compiler:testCompile
+surefire:test` (172 API y 10 REST); Vitest `run --maxWorkers=2` (211 pruebas);
+`tsc6 --noEmit`; `node ../../tooling/scripts/run-biome.js lint .`;
+`node --test tooling/hmr-compat.check.cjs`; Rspack `--mode=production`.
+El build advierte por el chunk de ExcelJS de 910 KiB. Las pruebas incluyen
+clave ?nica en H2, filtros, permisos, reintentos, transiciones repetidas,
+notificaci?n despu?s del commit y apertura SSE con MockMvc.
+`git diff --check` sobre fuentes backend y frontend: PASSED.
+`verify:changed`: NOT RUN, cambios sin commits; se ejecutaron herramientas
+locales instaladas. Estos resultados no sustituyen la prueba integrada pendiente.
+Prettier `--check README.md`: FAILED por formato del documento; no se reformateó el README completo.
+
+
+Ajuste de Alertas (22/10/2026): los tres filtros y Actualizar comparten una fila,
+bajo el encabezado Filtros. Los casos se presentan como nombre del paciente,
+fecha/hora de atenci?n y CIE-10/diagn?stico, sin UUID visible; para brotes se
+muestra ???. La API incorpora esos datos al consultar las alertas inmediatas,
+tambi?n para las alertas ya existentes, sin migraci?n adicional. Las alertas ya
+generadas conservan su historial; la condici?n de fecha de notificaci?n se
+aplica a nuevos registros. Requiere actualizar backend y frontend juntos.

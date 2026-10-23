@@ -1,3 +1,4 @@
+import { AlertAccess, AlertNotifications, AlertsPanel } from "./alerts-panel.component";
 import {
   Button,
   InlineLoading,
@@ -79,6 +80,7 @@ function SessionDashboard() {
   }, [session?.authenticated, session?.user?.uuid, retry]);
   return (
     <main className={styles.container} style={tableAppearance.style}>
+      <AlertAccess><AlertNotifications /></AlertAccess>
       <h1>
         {t("epidemiologicalSurveillance", "Epidemiological Surveillance")}
       </h1>
@@ -117,6 +119,7 @@ function SessionDashboard() {
             <Tab>{t("geographic")}</Tab>
             <Tab>{t("events", "Events")}</Tab>
             <Tab>{t("configuration")}</Tab>
+            <Tab>{t("alertInbox.title")}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
@@ -214,6 +217,7 @@ function SessionDashboard() {
                 </section>
               </RequirePrivilege>
             </TabPanel>
+            <TabPanel><AlertAccess><AlertsPanel /></AlertAccess></TabPanel>
           </TabPanels>
         </Tabs>
       )}

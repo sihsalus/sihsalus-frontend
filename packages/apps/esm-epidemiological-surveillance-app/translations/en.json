@@ -614,5 +614,40 @@
       "investigationForm": "Investigation form",
       "surveillanceType": "Surveillance type"
     }
+  },
+  "alertInbox": {
+    "title": "Alerts",
+    "type": "Alert type",
+    "reason": "Reason",
+    "status": "Status",
+    "all": "All",
+    "refresh": "Refresh",
+    "case": "Case",
+    "event": "Notifiable event",
+    "center": "Populated center",
+    "generatedAt": "Generated at",
+    "additionalInformation": "Additional information",
+    "attendedAt": "Attended at",
+    "attendedBy": "Attended by",
+    "actions": "Actions",
+    "attend": "Mark as attended",
+    "attendedSuccess": "Alert marked as attended",
+    "empty": "No alerts match the selected filters.",
+    "values": {
+      "IMMEDIATE": "Immediate notification",
+      "OUTBREAK": "Outbreak",
+      "PENDING": "Pending",
+      "ATTENDED": "Attended"
+    },
+    "reasons": {
+      "IMMEDIATE_EVENT": "Event requiring immediate notification",
+      "STATUS_CHANGED": "Case epidemiological status changed",
+      "DEATH": "Death attributable to a case",
+      "CONFIRMED_PREGNANCY": "Confirmed case in a pregnant patient",
+      "EPIDEMIC_THRESHOLD": "Crossing from the alert zone to the epidemic zone",
+      "SUSTAINED_INCREASE": "Q3 exceeded for two consecutive epidemiological weeks",
+      "AUTOCHTHONOUS_ELIMINATED": "Autochthonous case in an eliminated focus"
+    },
+    "disconnected": "Reconnecting live alerts. Refresh the Alerts tab to review pending alerts."
   }
 }

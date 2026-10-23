@@ -25,6 +25,8 @@ vi.mock("@sihsalus/esm-rbac", async () => {
   };
 });
 
+vi.mock("./alerts-panel.component", () => ({ AlertAccess: ({ children }: { children: ReactNode }) => children, AlertNotifications: () => null, AlertsPanel: () => null }));
+
 describe("epidemiological surveillance root", () => {
   beforeEach(() => {
     mockRequirePrivilege.mockImplementation(({ children }) => <>{children}</>);

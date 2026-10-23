@@ -6,7 +6,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credCourseLifeEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 
 const CREDFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
@@ -27,7 +27,7 @@ const CREDFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = (
   if (!patientUuid) return null;
 
   return (
-    <UserHasAccess privilege={credCourseLifeEditPrivilege}>
+    <UserHasAccess privilege={growthDevelopmentWritePrivileges}>
       <ActionMenuButton2
         icon={(props: ComponentProps<typeof DocumentIcon>) => <DocumentIcon {...props} />}
         label={t('credForms', 'Formularios Crecimiento y Desarrollo')}

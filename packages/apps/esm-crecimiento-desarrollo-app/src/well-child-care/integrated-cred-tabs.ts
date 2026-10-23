@@ -1,14 +1,6 @@
 import { Calendar, ChartLineData, Eyedropper, Growth, Stethoscope, UserFollow } from '@carbon/react/icons';
 import { type Session, userHasAccess } from '@openmrs/esm-framework';
-import {
-  credAntecedentsPrivilege,
-  credCourseLifePrivilege,
-  credEarlyStimulationPrivilege,
-  credImmunizationPrivilege,
-  credNeonatalPrivilege,
-  credNutritionPrivilege,
-  credWellChildPrivilege,
-} from '../constants';
+import { growthDevelopmentPrivilege, immunizationPrivilege } from '../constants';
 
 export const integratedCredSections = [
   {
@@ -16,42 +8,42 @@ export const integratedCredSections = [
     labelKey: 'credAntecedentsTab',
     descriptionKey: 'credAntecedentsDescription',
     icon: UserFollow,
-    readPrivileges: [credAntecedentsPrivilege, credNeonatalPrivilege],
+    readPrivileges: [growthDevelopmentPrivilege],
   },
   {
     id: 'control',
     labelKey: 'credControlTab',
     descriptionKey: 'credControlDescription',
     icon: Stethoscope,
-    readPrivileges: [credWellChildPrivilege],
+    readPrivileges: [growthDevelopmentPrivilege],
   },
   {
     id: 'growth',
     labelKey: 'credGrowthTab',
     descriptionKey: 'credGrowthDescription',
     icon: ChartLineData,
-    readPrivileges: [credWellChildPrivilege, credNeonatalPrivilege, credNutritionPrivilege],
+    readPrivileges: [growthDevelopmentPrivilege],
   },
   {
     id: 'development',
     labelKey: 'credDevelopmentTab',
     descriptionKey: 'credDevelopmentDescription',
     icon: Growth,
-    readPrivileges: [credEarlyStimulationPrivilege],
+    readPrivileges: [growthDevelopmentPrivilege],
   },
   {
     id: 'immunization',
     labelKey: 'credImmunizationTab',
     descriptionKey: 'credImmunizationDescription',
     icon: Eyedropper,
-    readPrivileges: [credImmunizationPrivilege],
+    readPrivileges: [immunizationPrivilege],
   },
   {
     id: 'followup',
     labelKey: 'credFollowupTab',
     descriptionKey: 'credFollowupDescription',
     icon: Calendar,
-    readPrivileges: [credWellChildPrivilege, credNutritionPrivilege, credEarlyStimulationPrivilege],
+    readPrivileges: [growthDevelopmentPrivilege],
   },
 ] as const;
 
@@ -62,9 +54,6 @@ export function canReadIntegratedCred(session: Session | null | undefined): bool
   return Boolean(
     session?.authenticated &&
       user?.uuid &&
-      userHasAccess(credCourseLifePrivilege, user) &&
-      integratedCredSections.some(({ readPrivileges }) =>
-        readPrivileges.some((privilege) => userHasAccess(privilege, user)),
-      ),
+      userHasAccess(growthDevelopmentPrivilege, user),
   );
 }

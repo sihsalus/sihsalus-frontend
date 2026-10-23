@@ -1,11 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import type { ConfigObject } from '../config-schema';
-import {
-  credCourseLifeEditPrivilege,
-  credEarlyStimulationEditPrivilege,
-  credNeonatalEditPrivilege,
-  credNutritionEditPrivilege,
-} from '../constants';
+import { growthDevelopmentWritePrivileges, neonatalCareWritePrivileges } from '../constants';
 import { getCREDFormEditPrivilege, getCREDFormsForAgeGroup, useCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
 
 const config = {
@@ -119,8 +114,8 @@ describe('getCREDFormsForAgeGroup', () => {
     const forms = getCREDFormsForAgeGroup(config, '2026-02-04T00:00:00.000Z', '2026-02-07T00:00:00.000Z');
 
     expect(forms.map(({ requiredPrivilege }) => requiredPrivilege)).toEqual([
-      credNeonatalEditPrivilege,
-      credNeonatalEditPrivilege,
+      neonatalCareWritePrivileges,
+      neonatalCareWritePrivileges,
     ]);
   });
 
@@ -167,14 +162,14 @@ describe('getCREDFormsForAgeGroup', () => {
 });
 
 describe('getCREDFormEditPrivilege', () => {
-  it('maps forms to the edit privilege of their CRED section', () => {
-    expect(getCREDFormEditPrivilege('atencionImmediataNewborn')).toBe(credNeonatalEditPrivilege);
-    expect(getCREDFormEditPrivilege('anemiaScreeningForm')).toBe(credNutritionEditPrivilege);
-    expect(getCREDFormEditPrivilege('stimulationSessionForm')).toBe(credEarlyStimulationEditPrivilege);
+  it('separates neonatal forms from growth-and-development forms', () => {
+    expect(getCREDFormEditPrivilege('atencionImmediataNewborn')).toEqual(neonatalCareWritePrivileges);
+    expect(getCREDFormEditPrivilege('anemiaScreeningForm')).toEqual(growthDevelopmentWritePrivileges);
+    expect(getCREDFormEditPrivilege('stimulationSessionForm')).toEqual(growthDevelopmentWritePrivileges);
   });
 
-  it('falls back to the course-of-life edit privilege for unmapped forms', () => {
-    expect(getCREDFormEditPrivilege('childAbuseScreening')).toBe(credCourseLifeEditPrivilege);
+  it('falls back to the growth-and-development edit privilege for unmapped forms', () => {
+    expect(getCREDFormEditPrivilege('childAbuseScreening')).toEqual(growthDevelopmentWritePrivileges);
   });
 });
 

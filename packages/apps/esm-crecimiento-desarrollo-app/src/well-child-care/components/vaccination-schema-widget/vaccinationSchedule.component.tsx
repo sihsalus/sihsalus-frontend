@@ -5,7 +5,7 @@ import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { credImmunizationEditPrivilege } from '../../../constants';
+import { immunizationWritePrivileges } from '../../../constants';
 import styles from './vaccination-schedule.scss';
 
 interface VaccinationScheduleProps {
@@ -15,7 +15,7 @@ interface VaccinationScheduleProps {
 const VaccinationSchedule: React.FC<VaccinationScheduleProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(immunizationWritePrivileges, session?.user);
 
   const headerTitle = t('vaccinationSchedule', 'Calendario de Vacunación');
 

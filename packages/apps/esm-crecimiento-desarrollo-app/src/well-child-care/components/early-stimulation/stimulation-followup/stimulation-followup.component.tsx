@@ -12,7 +12,7 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credEarlyStimulationEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
 
@@ -25,7 +25,7 @@ interface StimulationFollowupProps {
 const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =
     useStimulationFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationFollowupForm');

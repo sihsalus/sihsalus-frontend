@@ -4,7 +4,7 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNutritionEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useSupplementationTracker } from '../../../hooks/useSupplementationTracker';
 
@@ -17,7 +17,7 @@ interface SupplementationTrackerProps {
 const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { hasRecords, delivered, total, percentage, isComplete, isLoading, error } =
     useSupplementationTracker(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');

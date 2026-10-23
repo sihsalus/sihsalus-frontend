@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import type { ConfigObject } from '../../../config-schema';
-import { credNeonatalEditPrivilege } from '../../../constants';
+import { neonatalCareWritePrivileges } from '../../../constants';
 import {
   invalidateCachedPrenatalAntecedents,
   savePrenatalAntecedents,
@@ -235,7 +235,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
   }
 
   return (
-    <RequirePrivilege privilege={credNeonatalEditPrivilege}>
+    <RequirePrivilege privilege={neonatalCareWritePrivileges}>
       <Form className={styles.form} onSubmit={handleSubmit(savePerinatalData, onError)}>
         <div className={styles.grid}>
           <Stack gap={4}>

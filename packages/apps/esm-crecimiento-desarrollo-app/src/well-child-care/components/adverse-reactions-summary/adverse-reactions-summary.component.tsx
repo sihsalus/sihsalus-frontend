@@ -24,7 +24,7 @@ import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
-import { credImmunizationEditPrivilege } from '../../../constants';
+import { immunizationWritePrivileges } from '../../../constants';
 import { useAdverseReactions } from '../../workspace/adverse-reaction/adverse-reaction.resource';
 
 const AdverseReactionsSummary: React.FC = () => {
@@ -32,7 +32,7 @@ const AdverseReactionsSummary: React.FC = () => {
   const config = useConfig<ConfigObject>();
   const { patientUuid } = usePatient();
   const session = useSession();
-  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(immunizationWritePrivileges, session?.user);
   const { reactions, error, isLoading } = useAdverseReactions(patientUuid, config);
   const headerTitle = t('adverseReactions', 'Reacciones Adversas a Vacunas');
   const displayText = t('adverseReactions', 'Reacciones Adversas a Vacunas');

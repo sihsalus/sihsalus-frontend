@@ -35,7 +35,7 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
-import { credAntecedentsEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import { type Condition, useConditionsFromConceptSet, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import styles from './conditions-overview.scss';
@@ -77,7 +77,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   workspaceFormId = 'conditions-filter-form-workspace',
   enableAdd = true,
   urlPath = 'Conditions',
-  editPrivilege = credAntecedentsEditPrivilege,
+  editPrivilege = growthDevelopmentWritePrivileges,
   conditionFilter,
 }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();

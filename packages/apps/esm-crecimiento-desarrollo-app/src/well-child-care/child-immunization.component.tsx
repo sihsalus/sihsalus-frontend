@@ -4,7 +4,7 @@ import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
-import { credImmunizationPrivilege } from '../constants';
+import { growthDevelopmentPrivilege, immunizationPrivilege } from '../constants';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -41,7 +41,7 @@ export const ChildImmunizationSchedule: React.FC<ChildImmunizationProps> = ({
   }
 
   return (
-    <RequirePrivilege privilege={credImmunizationPrivilege}>
+    <RequirePrivilege privilege={[growthDevelopmentPrivilege, immunizationPrivilege]}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}

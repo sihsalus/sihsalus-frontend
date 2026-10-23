@@ -20,14 +20,10 @@ import { RequirePrivilege, UnauthorizedState } from '@sihsalus/esm-rbac';
 import React, { lazy, Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  credAntecedentsPrivilege,
-  credCourseLifeEditPrivilege,
-  credCourseLifePrivilege,
-  credEarlyStimulationPrivilege,
-  credImmunizationPrivilege,
-  credNeonatalPrivilege,
-  credNutritionPrivilege,
-  credWellChildPrivilege,
+  growthDevelopmentPrivilege,
+  growthDevelopmentWritePrivileges,
+  immunizationPrivilege,
+  neonatalCarePrivilege,
 } from '../constants';
 import { neonatalCareDashboardMeta, wellChildCareNavGroup } from '../dashboard.meta';
 import ChildMedicalHistory from '../ui/conditions-filter/conditions-overview.component';
@@ -64,10 +60,10 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
   const panelContents: Record<IntegratedCredSectionId, React.ReactNode> = {
     antecedents: (
       <div className={styles.panel}>
-        <RequirePrivilege privilege={credAntecedentsPrivilege} hideUnauthorized>
+        <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
           <ChildMedicalHistory patientUuid={patientUuid} />
         </RequirePrivilege>
-        <RequirePrivilege privilege={credNeonatalPrivilege} hideUnauthorized>
+        <RequirePrivilege privilege={neonatalCarePrivilege} hideUnauthorized>
           <Button
             className={styles.formAction}
             kind="ghost"
@@ -86,10 +82,10 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
       </div>
     ),
     control: (
-      <RequirePrivilege privilege={credWellChildPrivilege}>
+      <RequirePrivilege privilege={growthDevelopmentPrivilege}>
         <div className={styles.panel}>
           <p className={styles.description}>{t('credControlInstructions')}</p>
-          <RequirePrivilege privilege={credCourseLifeEditPrivilege} hideUnauthorized>
+          <RequirePrivilege privilege={growthDevelopmentWritePrivileges} hideUnauthorized>
             <Button
               className={styles.formAction}
               kind="tertiary"
@@ -120,7 +116,7 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
     ),
     growth: (
       <div className={styles.panel}>
-        {(canRead(credWellChildPrivilege) || canRead(credNeonatalPrivilege)) && (
+        {canRead(growthDevelopmentPrivilege) && (
           <>
             <Suspense fallback={<InlineLoading description={t('credLoadingGrowth')} />}>
               <GrowthChartOverview patient={patient} patientUuid={patientUuid} />
@@ -128,7 +124,7 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
             <p className={styles.description}>{t('credGrowthReference')}</p>
           </>
         )}
-        <RequirePrivilege privilege={credNutritionPrivilege} hideUnauthorized>
+        <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
           <ExtensionSlot name="child-nutrition-assessment-slot" state={state} />
           <ExtensionSlot name="child-nutrition-counseling-slot" state={state} />
           <AnemiaScreening patientUuid={patientUuid} />
@@ -138,7 +134,7 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
       </div>
     ),
     development: (
-      <RequirePrivilege privilege={credEarlyStimulationPrivilege}>
+      <RequirePrivilege privilege={growthDevelopmentPrivilege}>
         <div className={styles.panel}>
           <ExtensionSlot name="cred-development-slot" state={state} />
           <ExtensionSlot name="early-stimulation-sessions-slot" state={state} />
@@ -147,7 +143,7 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
       </RequirePrivilege>
     ),
     immunization: (
-      <RequirePrivilege privilege={credImmunizationPrivilege}>
+      <RequirePrivilege privilege={immunizationPrivilege}>
         <div className={styles.panel}>
           <ExtensionSlot name="vaccination-schedule-slot" state={state} />
           <ExtensionSlot name="vaccination-appointment-slot" state={state} />
@@ -156,13 +152,13 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
     ),
     followup: (
       <div className={styles.panel}>
-        <RequirePrivilege privilege={credWellChildPrivilege} hideUnauthorized>
+        <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
           <ExtensionSlot name="cred-schedule-slot" state={state} />
         </RequirePrivilege>
-        <RequirePrivilege privilege={credNutritionPrivilege} hideUnauthorized>
+        <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
           <ExtensionSlot name="child-nutrition-followup-slot" state={state} />
         </RequirePrivilege>
-        <RequirePrivilege privilege={credEarlyStimulationPrivilege} hideUnauthorized>
+        <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
           <ExtensionSlot name="early-stimulation-followup-slot" state={state} />
         </RequirePrivilege>
       </div>
@@ -197,7 +193,7 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
       mountActiveTabOnly
       headerActions={
         <div className={styles.actions}>
-          <RequirePrivilege privilege={credCourseLifeEditPrivilege} hideUnauthorized>
+          <RequirePrivilege privilege={growthDevelopmentWritePrivileges} hideUnauthorized>
             <Button
               kind="tertiary"
               size="sm"
@@ -257,7 +253,7 @@ export default function IntegratedCredDashboard({
   const patient = patientProp ?? hookPatient;
   const patientUuid = patientUuidProp ?? hookPatientUuid;
   if (!patient || !patientUuid || patient.id !== patientUuid) return null;
-  if (!canReadIntegratedCred(session)) return <UnauthorizedState privilege={credCourseLifePrivilege} />;
+  if (!canReadIntegratedCred(session)) return <UnauthorizedState privilege={growthDevelopmentPrivilege} />;
 
   return <EnrolledCredDashboard key={patientUuid} patient={patient} patientUuid={patientUuid} />;
 }

@@ -15,11 +15,14 @@ registradas. No calcula cumplimiento clínico ni declara un control completo por
 contar formularios. Las curvas reutilizan el lector y las referencias OMS del
 componente de crecimiento existente; sus límites y procedencia siguen vigentes.
 
-La entrada exige sesión autenticada, acceso a la historia,
-`app:hoja.clinica.cred.cursoVida` y lectura de al menos una familia CRED.
-Cada sección conserva su permiso de lectura
-y los lectores/formularios mantienen sus permisos de edición. Las pestañas sin
-permiso no se muestran ni montan sus lectores. Solo se monta la pestaña activa y
+La entrada exige sesión autenticada, permisos para acceder a la hoja clínica y
+`app:hoja.clinica.crecimientoDesarrollo`. Ese permiso también habilita la tarjeta
+de evaluación del crecimiento en el resumen del paciente. Las acciones de
+registro exigen además `app:hoja.clinica.crecimientoDesarrollo.editar`.
+Inmunizaciones conserva su autorización general independiente:
+`app:hoja.clinica.inmunizaciones` para lectura y su variante `.editar` para
+registro. Sin lectura general no se muestra ni monta la pestaña de inmunizaciones.
+Solo se monta la pestaña activa y
 al cambiar de paciente se reinicia en Resumen. La inscripción activa al programa
 «Control de Niño Sano» sigue condicionando el enlace lateral mediante el helper
 clínico compartido. La ruta directa comprueba también esa inscripción antes de
@@ -27,7 +30,7 @@ montar los lectores clínicos; carga incompleta o error no habilitan el panel.
 No se crea otro evaluador de programas.
 
 El resumen muestra **Madre vinculada** con acceso a la historia y lectura
-neonatal (`app:hoja.clinica.cred.neonatal`), sin exigir edición de relaciones.
+neonatal (`app:hoja.clinica.atencionNeonatal`), sin exigir edición de relaciones.
 El lector compartido consulta el vínculo explícito de EmrApi por el UUID del
 niño y abre la historia nativa de la madre. Carga todas las páginas; un error de
 consulta o configuración no se presenta como ausencia de madre. No deriva
@@ -41,8 +44,10 @@ visitas y abre el historial del mismo paciente sin cambiar la consulta activa.
 El orden de los enlaces laterales pertenece a `config/frontend.json`. Las rutas,
 componentes y privilegios de los cinco dashboards anteriores se conservan para
 enlaces directos. **Atención neonatal** aparece junto a Crecimiento y desarrollo,
-reutiliza `neonatal-care-dashboard` y conserva en el enlace los permisos de
-curso de vida y lectura neonatal y la inscripción activa a Control de Niño Sano.
+reutiliza `neonatal-care-dashboard` y depende únicamente de
+`app:hoja.clinica.atencionNeonatal` para lectura y de su variante `.editar` para
+acciones clínicas. Tanto el enlace como la ruta directa comprueban primero el
+permiso y después la inscripción activa a Control de Niño Sano.
 También se conserva **Ver atención neonatal** desde Antecedentes y nacimiento.
 La atención inmediata y hospitalaria neonatal permanece en su pantalla propia;
 no es un paso obligatorio del control ambulatorio.
@@ -63,7 +68,7 @@ La tarjeta de antecedentes ya está disponible en Antecedentes y nacimiento.
 
 | Función anterior                                | Estado y destino                                                                                                                                                                            |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Atención neonatal                               | Pantalla existente recuperada en la navegación; siete pestañas y permisos conservados.                                                                                                      |
+| Atención neonatal                               | Pantalla existente recuperada en la navegación; siete pestañas bajo los permisos reestructurados de lectura y edición.                                                                      |
 | Balance de líquidos                             | Historial en pestaña propia. Completa todas las páginas de observaciones antes de mostrar las filas; un fallo permite reintentar y no se presenta como historial vacío.                     |
 | Captura React del balance                       | Pendiente: sustituir la captura eliminada en `eb735b973` con la propuesta por evento/intervalo descrita debajo; requiere conceptos correctos y validación clínica. Escritura no habilitada. |
 | Antropometría neonatal                          | Ya usa el workspace compartido de signos vitales; se conserva esa implementación.                                                                                                           |
@@ -225,7 +230,7 @@ Las dos entradas de antecedentes patológicos del menor muestran los registros p
 ## TODO content/backend
 
 - Usar siempre `external_id` de OCL como UUID de OpenMRS. El campo `uuid` de OCL es interno/versionado y no debe entrar en config frontend.
-- Content ya declara los privilegios `app:hoja.clinica.cred.*` y conserva el perfil `SIHSALUS CRED - Pruebas` en su contrato de accesos. Falta comprobar la sesión operativa contra el ambiente desplegado; no convertir ese perfil de pruebas en una política de producción por inferencia.
+- Content declara los cuatro privilegios de Crecimiento y Desarrollo y Atención neonatal, pero todavía no los asigna a roles funcionales. Los 14 privilegios CRED anteriores ya no forman parte del contrato. La asignación funcional requiere revisión humana y validación con una sesión nueva en el ambiente desplegado.
 - Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
 
 Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), `Número de control CRED` = `ce8b07e8-712f-406a-b44d-2fa69167f5ea` está instalado en DEV como concepto numérico, y psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes. El TPED histórico tiene una definición frontend versionada de 88 hitos, pero su mapeo individual de conceptos sigue pendiente; ver `docs/clinical/test-peruano/CONCEPT-AUDIT.md`.

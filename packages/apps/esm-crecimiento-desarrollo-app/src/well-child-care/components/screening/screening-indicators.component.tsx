@@ -16,7 +16,7 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credCourseLifeEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
 
@@ -29,7 +29,7 @@ interface ScreeningIndicatorsProps {
 const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { nextDueControl } = useCREDSchedule(patientUuid);
   const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{ control: typeof nextDueControl }>(
     patientUuid,

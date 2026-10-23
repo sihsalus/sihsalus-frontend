@@ -12,7 +12,7 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credEarlyStimulationEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationCounseling } from '../../../../hooks/useStimulationCounseling';
 
@@ -25,7 +25,7 @@ interface StimulationCounselingProps {
 const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { totalSessions, lastCounselingDate, lastCounselingResult, isLoading, error } =
     useStimulationCounseling(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationCounselingForm');

@@ -3,7 +3,7 @@ import { launchWorkspace2, showModal, useLayoutType, userHasAccess, useSession }
 import { isSupportedConditionStatus } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credAntecedentsEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import { type Condition } from './conditions.resource';
 import styles from './conditions-action-menu.scss';
 
@@ -18,7 +18,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   const canEditStatus = isSupportedConditionStatus(condition?.clinicalStatus);
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const canEdit = userHasAccess(credAntecedentsEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
 
   const launchEditConditionsForm = useCallback(() => {
     if (!canEditStatus) return;

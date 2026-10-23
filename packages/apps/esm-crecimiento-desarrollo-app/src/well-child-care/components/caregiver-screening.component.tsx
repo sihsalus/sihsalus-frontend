@@ -2,7 +2,7 @@ import { InlineNotification, Link } from '@carbon/react';
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { MotherChildRelationships } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
-import { credNeonatalPrivilege } from '../../constants';
+import { neonatalCarePrivilege } from '../../constants';
 import { calculateAgeInDays, calculateAgeInMonths } from '../../utils/age-group-utils';
 
 /** NTS 238 6.6.4: 1 month, 12 months, then annually at ages 2–4; check the adult's history. */
@@ -48,7 +48,7 @@ export default function CaregiverScreening({
       <MotherChildRelationships
         patientUuid={patientUuid}
         patientRole="child"
-        canView={canViewChart && userHasAccess(credNeonatalPrivilege, session?.user)}
+        canView={canViewChart && userHasAccess(neonatalCarePrivilege, session?.user)}
         translationNamespace="@sihsalus/esm-cred-app"
       />
     </section>

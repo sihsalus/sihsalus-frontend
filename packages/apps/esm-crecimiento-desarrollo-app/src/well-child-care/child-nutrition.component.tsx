@@ -4,7 +4,7 @@ import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
-import { credNutritionPrivilege } from '../constants';
+import { growthDevelopmentPrivilege } from '../constants';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -46,7 +46,7 @@ export const ChildNutrition: React.FC<ChildNutritionProps> = ({
   }
 
   return (
-    <RequirePrivilege privilege={credNutritionPrivilege}>
+    <RequirePrivilege privilege={growthDevelopmentPrivilege}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}

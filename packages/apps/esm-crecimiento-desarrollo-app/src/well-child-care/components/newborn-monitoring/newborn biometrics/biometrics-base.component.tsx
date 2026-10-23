@@ -1,7 +1,7 @@
 import { formatDatetime, parseDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNeonatalEditPrivilege } from '../../../../constants';
+import { neonatalCareWritePrivileges } from '../../../../constants';
 import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useVitalsAndBiometrics, useVitalsConceptMetadata, withUnit } from '../../../common';
 
@@ -13,7 +13,7 @@ interface BiometricsBaseProps {
 const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize = 10 }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
+  const canEdit = userHasAccess(neonatalCareWritePrivileges, session?.user);
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
   const { data: biometrics, error, isLoading, isValidating } = useVitalsAndBiometrics(patientUuid, 'biometrics');

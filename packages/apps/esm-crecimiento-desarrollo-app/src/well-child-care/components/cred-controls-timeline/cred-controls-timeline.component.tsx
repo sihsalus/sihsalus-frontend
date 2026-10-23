@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AgeRange, ConfigObject } from '../../../config-schema';
-import { credCourseLifeEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { type CREDControlWithStatus, useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { canRegisterCREDControlFromAgeGroup } from '../../../utils/cred-age-group-actions';
@@ -21,7 +21,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const { ageGroupsCRED } = useConfig<ConfigObject>();
   const session = useSession();
-  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { controls, isLoading: isScheduleLoading, error: scheduleError } = useCREDSchedule(patientUuid);
   const { getAgeGroupForDisplay } = useAgeGroups();

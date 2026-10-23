@@ -12,7 +12,7 @@ import { CONDITION_TEXT_MAX_LENGTH, useConditionDeletion } from '@openmrs/esm-pa
 import React, { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { credAntecedentsEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import { deleteCondition, useConditions } from './conditions.resource';
 import styles from './delete-condition.scss';
 
@@ -31,7 +31,7 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
   const reasonInvalid = !trimmedReason || trimmedReason.length > CONDITION_TEXT_MAX_LENGTH;
   const { mutate } = useConditions(patientUuid);
   const session = useSession();
-  const canEditAntecedents = userHasAccess(credAntecedentsEditPrivilege, session?.user);
+  const canEditAntecedents = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
 
   const { isDeleting, isDeleted, isUncertain, handleDelete, handleClose } = useConditionDeletion({
     onDelete: () => deleteCondition(conditionId, patientUuid, trimmedReason),

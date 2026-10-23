@@ -15,14 +15,10 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen } from '@testing-library/react';
 import {
-  credAntecedentsPrivilege,
-  credCourseLifeEditPrivilege,
-  credCourseLifePrivilege,
-  credEarlyStimulationPrivilege,
-  credImmunizationPrivilege,
-  credNeonatalPrivilege,
-  credNutritionPrivilege,
-  credWellChildPrivilege,
+  growthDevelopmentEditPrivilege,
+  growthDevelopmentPrivilege,
+  immunizationPrivilege,
+  neonatalCarePrivilege,
 } from '../constants';
 import useEncountersCRED from '../hooks/useEncountersCRED';
 import routes from '../routes.json';
@@ -87,17 +83,8 @@ const patient = {
   birthDate: '2025-04-01',
 } as fhir.Patient;
 const launchControl = vi.fn();
-const allFamilies = [
-  credAntecedentsPrivilege,
-  credWellChildPrivilege,
-  credNeonatalPrivilege,
-  credNutritionPrivilege,
-  credEarlyStimulationPrivilege,
-  credImmunizationPrivilege,
-];
-
 it('reads the child’s linked mother with chart and neonatal view permission without relationship editing', () => {
-  setPrivileges(['app:hoja.clinica', credCourseLifePrivilege, credNeonatalPrivilege]);
+  setPrivileges(['app:hoja.clinica', growthDevelopmentPrivilege, neonatalCarePrivilege]);
   render(<IntegratedCredDashboard />);
   expect(MotherChildRelationships).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -112,13 +99,13 @@ it('reads the child’s linked mother with chart and neonatal view permission wi
 });
 
 it('removes the linked mother reader when neonatal view or global chart access is missing', () => {
-  setPrivileges(['app:hoja.clinica', credCourseLifePrivilege, credNeonatalPrivilege, credWellChildPrivilege]);
+  setPrivileges(['app:hoja.clinica', growthDevelopmentPrivilege, neonatalCarePrivilege]);
   const { rerender } = render(<IntegratedCredDashboard />);
   expect(screen.getByText(`Child relationship reader ${patient.id}`)).toBeInTheDocument();
-  setPrivileges(['app:hoja.clinica', credCourseLifePrivilege, credWellChildPrivilege]);
+  setPrivileges(['app:hoja.clinica', growthDevelopmentPrivilege]);
   rerender(<IntegratedCredDashboard />);
   expect(screen.queryByText(/Child relationship reader/)).not.toBeInTheDocument();
-  setPrivileges([credCourseLifePrivilege, credNeonatalPrivilege]);
+  setPrivileges([growthDevelopmentPrivilege, neonatalCarePrivilege]);
   rerender(<IntegratedCredDashboard />);
   expect(screen.queryByText(/Child relationship reader/)).not.toBeInTheDocument();
 });
@@ -136,7 +123,7 @@ function setPrivileges(privileges: string[], authenticated = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConnectivity).mockReturnValue(true);
-  setPrivileges([credCourseLifePrivilege, ...allFamilies]);
+  setPrivileges([growthDevelopmentPrivilege, neonatalCarePrivilege, immunizationPrivilege]);
   vi.mocked(usePatient).mockReturnValue({
     patient,
     patientUuid: patient.id,
@@ -182,28 +169,32 @@ it('mounts the seven sections and reads clinical panels only after selection', a
   expect(screen.queryByText('Atenciones de crecimiento y desarrollo registradas')).not.toBeInTheDocument();
 });
 
-it('permits a nutrition reader without granting child-checkup, neonatal or immunization access', () => {
-  setPrivileges([credCourseLifePrivilege, credNutritionPrivilege]);
+it('gives a growth-and-development reader every CRED section except immunization', () => {
+  setPrivileges([growthDevelopmentPrivilege]);
   render(<IntegratedCredDashboard />);
   expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
     'Resumen',
+    'Antecedentes y nacimiento',
+    'Control y examen',
     'Crecimiento y nutrición',
+    'Desarrollo',
     'Seguimiento',
   ]);
-  expect(useEncountersCRED).not.toHaveBeenCalled();
+  expect(screen.queryByRole('tab', { name: 'Vacunación' })).not.toBeInTheDocument();
+  expect(useEncountersCRED).toHaveBeenCalledWith(patient.id);
   expect(screen.queryByRole('button', { name: 'Abrir formularios del control' })).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('tab', { name: 'Crecimiento y nutrición' }));
   expect(screen.getByTestId('child-nutrition-assessment-slot')).toHaveTextContent(patient.id ?? '');
-  expect(GrowthChartOverview).not.toHaveBeenCalled();
+  expect(GrowthChartOverview).toHaveBeenCalled();
 });
 
-it('opens neonatal history with its own read permission without mounting pathological antecedents', () => {
-  setPrivileges([credCourseLifePrivilege, credNeonatalPrivilege]);
+it('adds neonatal history when the independent neonatal read permission is present', () => {
+  setPrivileges([growthDevelopmentPrivilege, neonatalCarePrivilege]);
   render(<IntegratedCredDashboard />);
   fireEvent.click(screen.getByRole('tab', { name: 'Antecedentes y nacimiento' }));
   expect(screen.getByText('Nacimiento: synthetic-child')).toBeVisible();
-  expect(ChildMedicalHistory).not.toHaveBeenCalled();
+  expect(ChildMedicalHistory).toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Ver atención neonatal' }));
   expect(navigate).toHaveBeenCalledWith({
     to: '/openmrs/spa/patient/synthetic-child/chart/neonatal-care-dashboard',
@@ -211,9 +202,8 @@ it('opens neonatal history with its own read permission without mounting patholo
 });
 
 it.each([
-  ['without course-of-life permission', [credWellChildPrivilege], true],
-  ['without a readable family', [credCourseLifePrivilege], true],
-  ['without authentication', [credCourseLifePrivilege, credWellChildPrivilege], false],
+  ['without growth-and-development read permission', [neonatalCarePrivilege], true],
+  ['without authentication', [growthDevelopmentPrivilege], false],
 ])('does not mount enrollment or clinical readers %s', (_name, privileges, authenticated) => {
   setPrivileges(privileges, authenticated);
   render(<IntegratedCredDashboard />);
@@ -303,22 +293,21 @@ it('returns to Overview and uses the new identity when switching patients', () =
   expect(screen.getByText('Curvas: synthetic-next-child')).toBeVisible();
 });
 
-it('unmounts a selected family when its permission is revoked', () => {
+it('unmounts the immunization section when its general chart permission is revoked', () => {
   const { rerender } = render(<IntegratedCredDashboard />);
-  fireEvent.click(screen.getByRole('tab', { name: 'Crecimiento y nutrición' }));
-  expect(screen.getByText('Curvas: synthetic-child')).toBeVisible();
-  setPrivileges([credCourseLifePrivilege, credImmunizationPrivilege]);
+  fireEvent.click(screen.getByRole('tab', { name: 'Vacunación' }));
+  expect(screen.getByTestId('vaccination-schedule-slot')).toHaveTextContent(patient.id ?? '');
+  setPrivileges([growthDevelopmentPrivilege]);
   rerender(<IntegratedCredDashboard />);
-  expect(screen.queryByRole('tab', { name: 'Crecimiento y nutrición' })).not.toBeInTheDocument();
-  expect(screen.queryByText('Curvas: synthetic-child')).not.toBeInTheDocument();
+  expect(screen.queryByRole('tab', { name: 'Vacunación' })).not.toBeInTheDocument();
+  expect(screen.queryByTestId('vaccination-schedule-slot')).not.toBeInTheDocument();
   expect(screen.getByRole('tab', { name: 'Resumen' })).toHaveAttribute('aria-selected', 'true');
 });
 
 it('uses the existing visit-guarded launcher and preserves the current patient in history navigation', () => {
   setPrivileges([
-    credCourseLifePrivilege,
-    credWellChildPrivilege,
-    credCourseLifeEditPrivilege,
+    growthDevelopmentPrivilege,
+    growthDevelopmentEditPrivilege,
     'app:hoja.clinica.visitas',
   ]);
   render(<IntegratedCredDashboard />);
@@ -332,7 +321,7 @@ it('uses the existing visit-guarded launcher and preserves the current patient i
 });
 
 it('opens the existing odontogram for the same patient with dental permission and connectivity', () => {
-  setPrivileges([credCourseLifePrivilege, credWellChildPrivilege, 'app:hoja.clinica.odontologia']);
+  setPrivileges([growthDevelopmentPrivilege, 'app:hoja.clinica.odontologia']);
   const { rerender } = render(<IntegratedCredDashboard />);
   fireEvent.click(screen.getByRole('tab', { name: 'Control y examen' }));
   fireEvent.click(
@@ -351,7 +340,7 @@ it('opens the existing odontogram for the same patient with dental permission an
     }),
   ).not.toBeInTheDocument();
   vi.mocked(useConnectivity).mockReturnValue(true);
-  setPrivileges([credCourseLifePrivilege, credWellChildPrivilege]);
+  setPrivileges([growthDevelopmentPrivilege]);
   rerender(<IntegratedCredDashboard />);
   expect(
     screen.queryByRole('button', {
@@ -367,24 +356,24 @@ it('does not render a previous patient under a different patient UUID', () => {
 });
 
 it('keeps the same program and read-permission conditions on the new navigation link', () => {
-  setPrivileges([credCourseLifePrivilege, credImmunizationPrivilege]);
+  setPrivileges([growthDevelopmentPrivilege, immunizationPrivilege]);
   const { rerender } = render(<IntegratedCredLink basePath="/patient/synthetic-child/chart" />);
   expect(screen.getByRole('link', { name: 'Crecimiento y desarrollo' })).toHaveAttribute(
     'href',
     '/patient/synthetic-child/chart/cred-dashboard',
   );
-  setPrivileges([credCourseLifePrivilege]);
+  setPrivileges([]);
   rerender(<IntegratedCredLink basePath="/patient/synthetic-child/chart" />);
   expect(screen.queryByRole('link', { name: 'Crecimiento y desarrollo' })).not.toBeInTheDocument();
 });
 
 it.each([
-  ['well-child-care-dashboard', credWellChildPrivilege],
-  ['neonatal-care-dashboard', credNeonatalPrivilege],
-  ['child-immunization-schedule-dashboard', credImmunizationPrivilege],
-  ['early-stimulation-dashboard', credEarlyStimulationPrivilege],
-  ['child-nutrition-dashboard', credNutritionPrivilege],
-])('preserves the original route privilege for %s', (name, privilege) => {
-  expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toBe(privilege);
-  expect(routes.extensions.find((extension) => extension.name === `${name}-route`)?.privileges).toBe(privilege);
+  ['well-child-care-dashboard', growthDevelopmentPrivilege],
+  ['neonatal-care-dashboard', neonatalCarePrivilege],
+  ['child-immunization-schedule-dashboard', [growthDevelopmentPrivilege, immunizationPrivilege]],
+  ['early-stimulation-dashboard', growthDevelopmentPrivilege],
+  ['child-nutrition-dashboard', growthDevelopmentPrivilege],
+])('uses the restructured route privilege for %s', (name, privilege) => {
+  expect(routes.extensions.find((extension) => extension.name === name)?.privileges).toEqual(privilege);
+  expect(routes.extensions.find((extension) => extension.name === `${name}-route`)?.privileges).toEqual(privilege);
 });

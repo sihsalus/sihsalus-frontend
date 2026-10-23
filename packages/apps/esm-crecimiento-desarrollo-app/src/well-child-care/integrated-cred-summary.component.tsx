@@ -5,7 +5,7 @@ import { ErrorState, MotherChildRelationships } from '@openmrs/esm-patient-commo
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNeonatalPrivilege, credWellChildPrivilege } from '../constants';
+import { growthDevelopmentPrivilege, neonatalCarePrivilege } from '../constants';
 import useEncountersCRED from '../hooks/useEncountersCRED';
 import { groupCREDControlEncounters } from '../hooks/useCREDSchedule';
 import styles from './integrated-cred-dashboard.scss';
@@ -68,7 +68,7 @@ export default function IntegratedCredSummary({ patientUuid, sections, onNavigat
     session?.authenticated &&
       session.user?.uuid &&
       userHasAccess('app:hoja.clinica', session.user) &&
-      userHasAccess(credNeonatalPrivilege, session.user),
+      userHasAccess(neonatalCarePrivilege, session.user),
   );
 
   return (
@@ -79,7 +79,7 @@ export default function IntegratedCredSummary({ patientUuid, sections, onNavigat
         canView={canViewRelationships}
         translationNamespace="@sihsalus/esm-cred-app"
       />
-      <RequirePrivilege privilege={credWellChildPrivilege} hideUnauthorized>
+      <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
         <RecentCREDRecords patientUuid={patientUuid} />
       </RequirePrivilege>
       <div className={styles.sectionCards}>

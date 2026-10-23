@@ -176,8 +176,10 @@ const contextInitializableTypes = new Set([
 ]);
 
 export class EncounterFormProcessor extends FormProcessor {
+  protected readonly addMissingEncounterRole: boolean = true;
+
   prepareFormSchema(schema: FormSchema): FormSchema {
-    ensureEncounterRoleField(schema);
+    if (this.addMissingEncounterRole) ensureEncounterRoleField(schema);
     const allFieldIds = new Set<string>();
 
     schema.pages.forEach((page) => {

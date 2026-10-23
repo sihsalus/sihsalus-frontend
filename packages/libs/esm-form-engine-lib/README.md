@@ -327,6 +327,7 @@ catalog. It appears next to a visible provider question when available, otherwis
 in its own visible section. Existing role questions, their restrictions and the
 stored form UUID/version remain unchanged. A schema with no visible editable page
 gets a separate role page; form-level readonly still applies.
+Schema previews do not acquire this runtime field or its metadata lookup.
 
 Submission rejects a missing or blank role before identifier, attribute, program
 or encounter writes. The message preserves the entered form values and asks for

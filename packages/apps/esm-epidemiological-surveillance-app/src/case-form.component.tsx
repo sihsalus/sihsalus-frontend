@@ -104,6 +104,8 @@ export function CaseForm({
   const [result, setResult] = useState<CaseResult>();
   const [queued, setQueued] = useState(false);
   const generation = useRef(0);
+  const patientSearchGeneration = useRef(0);
+  const [searchingPatients, setSearchingPatients] = useState(false);
   const patientSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const source = encounters.find(
     (item) => item.id === request.sourceEncounterUuid,
@@ -222,6 +224,8 @@ export function CaseForm({
   useEffect(
     () => () => {
       generation.current++;
+      patientSearchGeneration.current++;
+      if (patientSearchTimer.current) clearTimeout(patientSearchTimer.current);
     },
     [],
   );
@@ -240,22 +244,25 @@ export function CaseForm({
   };
   const handlePatientInputChange = (searchStr: string) => {
     if (patientSearchTimer.current) clearTimeout(patientSearchTimer.current);
+    const current = ++patientSearchGeneration.current;
+    setSearchingPatients(false);
     if (!searchStr || searchStr.trim().length < 2) return;
     patientSearchTimer.current = setTimeout(async () => {
-      const current = ++generation.current;
-      setBusy(true);
-      setError(undefined);
+      setSearchingPatients(true);
       try {
         const found = await searchPatients(searchStr);
-        if (current === generation.current) setPatients(found);
+        if (current === patientSearchGeneration.current) setPatients(found);
       } catch (failure) {
-        if (current === generation.current) setError(failure);
+        if (current === patientSearchGeneration.current) setError(failure);
       } finally {
-        if (current === generation.current) setBusy(false);
+        if (current === patientSearchGeneration.current) setSearchingPatients(false);
       }
     }, 250);
   };
   async function choosePatient(id: string) {
+    if (patientSearchTimer.current) clearTimeout(patientSearchTimer.current);
+    patientSearchGeneration.current++;
+    setSearchingPatients(false);
     setInfectionAddressDisplay("");
     const selected = patients.find((item) => item.id === id);
     const current = ++generation.current;
@@ -270,7 +277,10 @@ export function CaseForm({
       providerUuid: value.providerUuid,
       patientUuid: id,
     }));
-    if (!id) return;
+    if (!id) {
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     try {
       const nextEncounters = await encountersForPatient(id);
@@ -558,7 +568,7 @@ export function CaseForm({
         />
       )}
       {error ? <ErrorNotification error={error} /> : null}
-      {busy && <InlineLoading description={t("loading", "Loading")} />}
+      {(busy || searchingPatients) && <InlineLoading description={t("loading", "Loading")} />}
       {step === 0 && (
         <>
           {!initial && (

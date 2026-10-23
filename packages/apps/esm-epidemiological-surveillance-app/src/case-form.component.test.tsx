@@ -7,7 +7,8 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaseForm } from "./case-form.component";
-import { createSurveillanceCase, getPatient } from "./api";
+import { createSurveillanceCase, encountersForPatient, getPatient } from "./api";
+import type { FhirResource } from "./types";
 import { catalogue, request } from "./test-fixtures";
 import en from "../translations/en.json";
 const connection = vi.hoisted(() => ({ online: true }));
@@ -95,6 +96,45 @@ vi.mock("./api", async (importOriginal) => ({
   })),
 }));
 describe("case registration screen", () => {
+  it("keeps delayed encounters when the patient combobox triggers another search", async () => {
+    let resolveEncounters!: (items: FhirResource[]) => void;
+    vi.mocked(encountersForPatient).mockReturnValueOnce(new Promise((resolve) => {
+      resolveEncounters = resolve;
+    }));
+    render(<CaseForm catalogue={catalogue} onSaved={vi.fn()} />);
+    const input = screen.getByPlaceholderText("Select a patient");
+    fireEvent.change(input, { target: { value: "Synthetic" } });
+    const option = await screen.findByRole("option", { name: /Synthetic Patient/ });
+    fireEvent.click(option);
+    await waitFor(() => expect(encountersForPatient).toHaveBeenCalledWith("patient"));
+    // A further input notification must not invalidate the selected patient's request.
+    fireEvent.change(input, { target: { value: "Synthetic Patient " } });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
+    expect(screen.getByLabelText(/Source care record/)).toBeDisabled();
+    await act(async () => resolveEncounters([{
+      resourceType: "Encounter", id: "delayed-source",
+      period: { start: "2026-01-20" }, type: [{ text: "Delayed care" }],
+    }]));
+    expect(screen.getByRole("option", { name: /Delayed care/ })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Source care record/)).toBeEnabled();
+  });
+  it("discards pending encounters when the patient selection is cleared", async () => {
+    let resolveEncounters!: (items: FhirResource[]) => void;
+    vi.mocked(encountersForPatient).mockReturnValueOnce(new Promise((resolve) => {
+      resolveEncounters = resolve;
+    }));
+    render(<CaseForm catalogue={catalogue} onSaved={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText("Select a patient"), { target: { value: "Synthetic" } });
+    fireEvent.click(await screen.findByRole("option", { name: /Synthetic Patient/ }));
+    await waitFor(() => expect(encountersForPatient).toHaveBeenCalledWith("patient"));
+    fireEvent.click(screen.getByRole("button", { name: /Clear selected item/ }));
+    await act(async () => resolveEncounters([{
+      resourceType: "Encounter", id: "old-source",
+      period: { start: "2026-01-20" }, type: [{ text: "Previous patient's care" }],
+    }]));
+    expect(screen.queryByRole("option", { name: /Previous patient's care/ })).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Source care record/)).toBeEnabled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     connection.online = true;

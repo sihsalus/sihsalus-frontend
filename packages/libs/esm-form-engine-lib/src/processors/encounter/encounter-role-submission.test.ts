@@ -54,9 +54,17 @@ function createContext(extraFields: FormField[] = []): FormContextProps {
     patient: { id: 'synthetic-patient' },
     currentProvider: { uuid: 'synthetic-provider' },
     location: { uuid: 'synthetic-location' },
-    visit: { uuid: 'synthetic-visit' },
+    visit: {
+      uuid: 'synthetic-visit',
+      visitType: { uuid: 'synthetic-visit-type', display: 'Synthetic outpatient visit' },
+      startDatetime: '2026-10-23T14:00:00Z',
+      stopDatetime: null,
+    },
     sessionDate: new Date('2026-10-23T15:00:00Z'),
     sessionMode: 'enter',
+    workspaceLayout: 'minimized',
+    layoutType: 'large-desktop',
+    methods: {} as FormContextProps['methods'],
     formFields: schema.pages.flatMap((page) => page.sections.flatMap((section) => section.questions)),
     deletedFields: [],
     customDependencies: undefined, // QLTY: no generic Clinician role.

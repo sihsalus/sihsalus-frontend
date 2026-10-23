@@ -66,6 +66,15 @@ Recurso base: **Order** con order type `Interconsulta` (`f3c2e4b6-8b5a-11e5-8e9b
 
 Todos los UUIDs son configurables vía `config-schema.ts`.
 
+Tras recibir, atender, rechazar o responder, la invalidación usa el `mutate` del
+provider SWR activo del framework, compartido por bandejas, modales y chart.
+La función global de SWR opera sobre otra caché y dejaba el estado anterior
+visible aunque Orders hubiera confirmado el cambio (#1254). Se revalidan las
+consultas globales y del paciente para el tipo de orden configurado; los demás
+tipos conservan su caché. La regresión reproduce las transiciones con SWR real
+y un provider propio. El E2E con backend debe confirmar también recibir,
+atender, responder y recargar; esa aceptación permanece pendiente.
+
 Los defaults de la distribución SIHSALUS son:
 
 - `interconsultaOrderTypeUuid`: `f3c2e4b6-8b5a-11e5-8e9b-12345678901b`

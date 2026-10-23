@@ -1,6 +1,6 @@
 import { openmrsFetch, restBaseUrl, toOmrsIsoString, useConfig } from '@openmrs/esm-framework';
 import { useCallback, useMemo } from 'react';
-import useSWR, { mutate } from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import type { ConfigObject } from './config-schema';
 import type {
   FulfillerStatus,
@@ -138,6 +138,7 @@ export function usePatientInterconsultas(patientUuid: string) {
 /** Invalida todas las consultas SWR de interconsultas tras una mutación. */
 export function useInvalidateInterconsultas() {
   const { interconsultaOrderTypeUuid } = useConfig<ConfigObject>();
+  const { mutate } = useSWRConfig();
   return useCallback(() => {
     return mutate(
       (key) =>
@@ -145,7 +146,7 @@ export function useInvalidateInterconsultas() {
       undefined,
       { revalidate: true },
     );
-  }, [interconsultaOrderTypeUuid]);
+  }, [interconsultaOrderTypeUuid, mutate]);
 }
 
 export function setInterconsultaFulfillerStatus(

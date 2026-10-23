@@ -24,7 +24,7 @@
     "@openmrs/esm-framework": "workspace:*",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "@typescript/native": "npm:typescript@7.0.2",
-    "react": "^19.3.1",
+    "react": "^18.3.1",
     "vite": "8.3.4",
     "vitest": "^5.0.5"
   }

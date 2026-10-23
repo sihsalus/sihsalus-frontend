@@ -59,7 +59,7 @@
     "@types/lodash": "^4.17.26",
     "@types/node": "^26.6.5",
     "@types/pacote": "^11.1.8",
-    "@types/react": "^19.3.0",
+    "@types/react": "^18.3.21",
     "@types/semver": "^7",
     "@types/tar": "^7.0.87",
     "@typescript/native": "npm:typescript@7.0.2",

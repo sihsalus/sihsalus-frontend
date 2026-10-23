@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.20
 
 # Install dependencies independently of application source changes.
-FROM node:24-alpine AS dependencies
+FROM node:25-alpine AS dependencies
 WORKDIR /app
 RUN apk upgrade --no-cache
 RUN corepack enable && corepack prepare yarn@4.18.1 --activate
@@ -44,7 +44,7 @@ RUN rm -rf node_modules/@typescript/native node_modules/@typescript/typescript-*
 # SIHSALUS_PUBLIC_SPA_URL),
 # and copies config files. The infra repo mounts a shared volume at SPA_OUTPUT_DIR;
 # a stock nginx serves from it — no runtime substitution needed.
-FROM node:24-alpine AS init
+FROM node:25-alpine AS init
 WORKDIR /app
 
 RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
@@ -78,7 +78,7 @@ CMD ["node", "packages/tooling/scripts/assemble-importmap.js"]
 # Stage 3: Hardened init container image
 # Same runtime behavior as `init`, but runs as a non-root user and keeps the
 # published image target explicit for secure container workflows.
-FROM node:24-alpine AS secure-init
+FROM node:25-alpine AS secure-init
 WORKDIR /app
 
 RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx

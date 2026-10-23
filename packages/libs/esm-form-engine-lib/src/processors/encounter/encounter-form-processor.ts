@@ -37,6 +37,7 @@ import {
   savePatientPrograms,
   savePersonAttributes,
 } from './encounter-processor-helper';
+import { ensureEncounterRoleField } from './encounter-role-field';
 
 type FormValues = Record<string, unknown>;
 
@@ -176,6 +177,7 @@ const contextInitializableTypes = new Set([
 
 export class EncounterFormProcessor extends FormProcessor {
   prepareFormSchema(schema: FormSchema): FormSchema {
+    ensureEncounterRoleField(schema);
     const allFieldIds = new Set<string>();
 
     schema.pages.forEach((page) => {
@@ -232,6 +234,17 @@ export class EncounterFormProcessor extends FormProcessor {
     }
 
     const { encounterRole, encounterProvider, encounterDate, encounterLocation } = getMutableSessionProps(context);
+    if (!encounterRole?.trim()) {
+      throw new FormSubmissionError({
+        title: t('encounterRoleRequired', 'Select the professional’s role in this encounter'),
+        subtitle: t(
+          'encounterRoleRequiredDescription',
+          'The clinical record has not been saved. Select a role and save again. Your entries remain in the form.',
+        ),
+        kind: 'error',
+        isLowContrast: false,
+      });
+    }
     const patientIdentifiers = preparePatientIdentifiers(context.formFields, encounterLocation);
     let hasDuplicateIdentifiers: boolean;
     try {

@@ -59,11 +59,13 @@ export async function prepareEncounter(
   if (encounter) {
     Object.assign(encounterForSubmission, encounter);
     // update encounter providers
-    const hasCurrentProvider =
+    const hasCurrentProviderRole =
       (encounterForSubmission.encounterProviders ?? []).findIndex(
-        (encProvider) => getResourceUuid(encProvider.provider) === encounterProvider,
+        (encProvider) =>
+          getResourceUuid(encProvider.provider) === encounterProvider &&
+          getResourceUuid(encProvider.encounterRole) === encounterRole,
       ) !== -1;
-    if (!hasCurrentProvider) {
+    if (!hasCurrentProviderRole) {
       encounterForSubmission.encounterProviders = [
         ...(encounterForSubmission.encounterProviders ?? []),
         {

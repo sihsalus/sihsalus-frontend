@@ -67,7 +67,7 @@
     "dayjs": "^1.11.23",
     "husky": "^8.0.3",
     "i18next": "^26.4.7",
-    "i18next-cli": "1.75.3",
+    "i18next-cli": "1.77.0",
     "lint-staged": "^17.6.0",
     "openmrs": "workspace:*",
     "react": "^18.3.1",

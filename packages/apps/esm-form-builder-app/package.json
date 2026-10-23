@@ -79,7 +79,7 @@
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "i18next": "^26.4.7",
+    "i18next": "^26.5.3",
     "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.3.1",

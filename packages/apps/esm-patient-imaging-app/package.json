@@ -71,7 +71,7 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "1.x",
     "dotenv": "^18.0.8",
-    "i18next": "^26.4.7",
+    "i18next": "^26.5.3",
     "i18next-cli": "1.75.3",
     "openmrs": "*",
     "react": "^18.x",

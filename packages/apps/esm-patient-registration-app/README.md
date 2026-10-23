@@ -79,7 +79,7 @@ Los permisos de lectura del catálogo y la validación de pertenencia siguen vig
 La metadata corresponde a `sihsalus-content` 1.25.41 (PR #277) y a la fuente nativa
 `MINSA-ETNIAS`; actualizar el frontend por sí solo no incorpora esos mappings al backend.
 Para la aceptación de sihsalus/sihsalus#400 en DEV/QLTY: comprobar la versión de content,
-buscar `2`/`Aymara`, comprobar `Aimara`, buscar `Aguáruna`, rechazar un código inexistente
+buscar `2`/`Aimara`, comprobar `Aimara`, buscar `Aguáruna` y comprobar `Awajún`, rechazar un código inexistente
 y reabrir un paciente sintético con una etnia histórica. Verificar por REST que se
 conserva el UUID al guardar; comprobar los avisos de catálogo incompleto/ambiguo en
 pruebas controladas y limpiar los recursos sintéticos. Registrar por separado el SHA

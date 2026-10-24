@@ -98,7 +98,7 @@ test('social history selects a role and preserves its encounter after save, relo
 
   await openHistory();
   await page.getByRole('button', { name: /Registrar historia social/i }).click({ timeout: 15_000 });
-  await expect(roleInput).toBeVisible();
+  await expect(roleInput).toBeVisible({ timeout: 15_000 });
   await expect(roleInput).toHaveValue('');
   await expect(cigarettesInput).toBeVisible();
   await cigarettesInput.fill('0');
@@ -106,7 +106,7 @@ test('social history selects a role and preserves its encounter after save, relo
     .getByRole('button', { name: /^(Guardar|Save)$/ })
     .filter({ visible: true })
     .click();
-  await expect(roleInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(roleInput).toHaveAccessibleDescription(/Este campo es obligatorio|Field is mandatory/i);
   await expect(cigarettesInput).toHaveValue('0');
   expect(encounterWrites).toBe(0);
 

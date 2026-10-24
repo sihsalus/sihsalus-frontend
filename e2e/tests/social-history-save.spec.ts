@@ -34,12 +34,14 @@ function isEncounterWrite(url: string, method: string): boolean {
 }
 
 async function save(page: Page): Promise<{ uuid: string }> {
-  const response = page.waitForResponse((item) => isEncounterWrite(item.url(), item.request().method()));
-  await page
-    .getByRole('button', { name: /^(Guardar|Save)$/ })
-    .filter({ visible: true })
-    .click();
-  return read(await response);
+  const [response] = await Promise.all([
+    page.waitForResponse((item) => isEncounterWrite(item.url(), item.request().method())),
+    page
+      .getByRole('button', { name: /^(Guardar|Save)$/ })
+      .filter({ visible: true })
+      .click(),
+  ]);
+  return read(response);
 }
 
 test('social history selects a role and preserves its encounter after save, reload and edit', async ({
@@ -85,9 +87,9 @@ test('social history selects a role and preserves its encounter after save, relo
   const roleInput = page.getByRole('combobox', {
     name: /Rol del profesional en esta atención/i,
   });
-  const cigarettesInput = page.getByRole('spinbutton', {
-    name: /Cigarrillos por día/i,
-  });
+  // FieldLabel's existing tooltip changes this control's accessible name to its help text.
+  // Bind the numeric control to its published schema ID, keeping all persistence assertions.
+  const cigarettesInput = page.getByRole('spinbutton').and(page.locator('#cigarrillosDia'));
   const history = page.getByRole('region', { name: /^Historia social$/i });
   let encounterWrites = 0;
   page.on('request', (request) => {
@@ -98,6 +100,7 @@ test('social history selects a role and preserves its encounter after save, relo
   await page.getByRole('button', { name: /Registrar historia social/i }).click({ timeout: 15_000 });
   await expect(roleInput).toBeVisible();
   await expect(roleInput).toHaveValue('');
+  await expect(cigarettesInput).toBeVisible();
   await cigarettesInput.fill('0');
   await page
     .getByRole('button', { name: /^(Guardar|Save)$/ })

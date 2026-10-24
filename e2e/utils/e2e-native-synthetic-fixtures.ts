@@ -32,7 +32,7 @@ async function read<T>(response: APIResponse): Promise<T> {
   return response.json();
 }
 
-/** Only the two mutating native interconsultation specs opt into this lifecycle. */
+/** Mutating clinical specs opt into this lifecycle with private recovery journals. */
 export async function withNativeSyntheticFixture(
   api: APIRequestContext,
   attempt: Pick<TestInfo, 'project' | 'workerIndex' | 'retry' | 'skip'> & Partial<Pick<TestInfo, 'errors'>>,
@@ -42,7 +42,7 @@ export async function withNativeSyntheticFixture(
 ): Promise<void> {
   // Body-level skips run after fixture setup. Skip here, before any requests or journal creation.
   if (attempt.project.name !== 'desktop') {
-    attempt.skip(true, 'Mutating interconsultation flows run only on desktop');
+    attempt.skip(true, 'Mutating clinical flows run only on desktop');
     return;
   }
   const checkpoint =

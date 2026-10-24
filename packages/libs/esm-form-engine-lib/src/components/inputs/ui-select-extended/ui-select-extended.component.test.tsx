@@ -1,8 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useWatch } from 'react-hook-form';
+import { ensureEncounterRoleField } from '../../../processors/encounter/encounter-role-field';
 import { useFormProviderContext } from '../../../provider/form-provider';
 import { getRegisteredDataSource } from '../../../registry/registry';
+import { type FormField, type FormSchema } from '../../../types';
 import UiSelectExtended from './ui-select-extended.component';
 
 vi.mock('react-hook-form', () => ({
@@ -81,7 +83,7 @@ describe('UiSelectExtended', () => {
     // for the ComboBox to replace it.
     expect(await screen.findByRole('combobox')).toHaveValue('Consultorio actual');
   });
-  it('opens the role catalog without typing and preserves an explicit nursing selection', async () => {
+  it.each(['explicit', 'generated'])('opens the %s role catalog and preserves the selected role', async (source) => {
     mockUseWatch.mockReturnValue(undefined as never);
     const roles = [
       { uuid: 'nurse', display: 'Enfermería Responsable' },
@@ -94,22 +96,22 @@ describe('UiSelectExtended', () => {
       toUuidAndDisplay: (item) => item,
     } as never);
     const setFieldValue = vi.fn();
+    let field = {
+      id: 'role',
+      label: 'Rol',
+      type: 'encounterRole',
+      meta: {},
+      questionOptions: { rendering: 'encounter-role', isSearchable: false },
+    } as FormField;
+    if (source === 'generated') {
+      const schema = {
+        pages: [{ id: 'social', sections: [{ questions: [] }] }],
+      } as FormSchema;
+      ensureEncounterRoleField(schema);
+      field = schema.pages[0].sections[0].questions[0];
+    }
     render(
-      <UiSelectExtended
-        errors={[]}
-        warnings={[]}
-        setFieldValue={setFieldValue}
-        value={undefined}
-        field={
-          {
-            id: 'role',
-            label: 'Rol',
-            type: 'encounterRole',
-            meta: {},
-            questionOptions: { rendering: 'encounter-role', isSearchable: false },
-          } as never
-        }
-      />,
+      <UiSelectExtended errors={[]} warnings={[]} setFieldValue={setFieldValue} value={undefined} field={field} />,
     );
     await waitFor(() => expect(fetchData).toHaveBeenCalled());
     await userEvent.click(await screen.findByRole('button', { name: /open/i }));

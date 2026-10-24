@@ -77,6 +77,10 @@ test('social history selects a role and preserves its encounter after save, relo
       })
       .getByRole('tab', { name: /Antecedentes/i })
       .click();
+    await page
+      .getByRole('tablist', { name: /Secciones de antecedentes|Antecedents tabs/i })
+      .getByRole('tab', { name: /^Historia social$|^Social History$/i })
+      .click();
   };
   const roleInput = page.getByRole('combobox', {
     name: /Rol del profesional en esta atención/i,
@@ -91,7 +95,7 @@ test('social history selects a role and preserves its encounter after save, relo
   });
 
   await openHistory();
-  await page.getByRole('button', { name: /Registrar historia social/i }).click();
+  await page.getByRole('button', { name: /Registrar historia social/i }).click({ timeout: 15_000 });
   await expect(roleInput).toBeVisible();
   await expect(roleInput).toHaveValue('');
   await cigarettesInput.fill('0');

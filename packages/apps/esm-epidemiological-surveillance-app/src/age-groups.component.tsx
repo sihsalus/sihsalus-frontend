@@ -19,11 +19,12 @@ export function ageGroupsFromBounds(
   groups: AgeGroup[],
   bounds: string[],
 ): AgeGroup[] | undefined {
-  if (groups.length !== 6 || bounds.length !== 5) return undefined;
+  if (groups.length === 0 || bounds.length !== groups.length - 1)
+    return undefined;
   let min = 0;
   const result: AgeGroup[] = [];
   for (let i = 0; i < groups.length; i++) {
-    const max = i === 5 ? null : Number(bounds[i]);
+    const max = i === groups.length - 1 ? null : Number(bounds[i]);
     if (
       max !== null &&
       (!/^\d+$/.test(bounds[i]) ||
@@ -32,7 +33,9 @@ export function ageGroupsFromBounds(
         max >= 2147483647)
     )
       return undefined;
-    result.push({ key: groups[i].key, minAge: min, maxAge: max });
+    if (groups[i].name !== undefined && !groups[i].name?.trim())
+      return undefined;
+    result.push({ ...groups[i], minAge: min, maxAge: max });
     if (max !== null) min = max + 1;
   }
   return result;
@@ -55,7 +58,14 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
     void getAgeGroups(abort.signal)
       .then((value) => {
         if (!abort.signal.aborted) {
-          setGroups(value);
+          setGroups(
+            value.map((group) => ({
+              ...group,
+              name:
+                group.name ??
+                t(`ageGroups.${group.key}`, { defaultValue: group.key }),
+            })),
+          );
           setBounds(value.slice(0, -1).map((g) => String(g.maxAge)));
         }
       })
@@ -118,8 +128,24 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
                 {groups.map((group, i) => (
                   <div className={styles.filters} key={group.key}>
                     <TextInput
+                      id={`age-name-${group.key}`}
+                      labelText={t("ageGroupName")}
+                      value={group.name ?? ""}
+                      invalid={!group.name?.trim()}
+                      invalidText={t("ageGroupNameRequired")}
+                      onChange={(event) =>
+                        setGroups((current) =>
+                          current?.map((item, index) =>
+                            index === i
+                              ? { ...item, name: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                    />
+                    <TextInput
                       id={`age-min-${group.key}`}
-                      labelText={`${t(`ageGroups.${group.key}`)} · ${t("from")}`}
+                      labelText={`${group.name} · ${t("from")}`}
                       readOnly
                       value={
                         i === 0
@@ -129,13 +155,13 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
                             : String(Number(bounds[i - 1]) + 1)
                       }
                     />
-                    {i < 5 ? (
+                    {i < groups.length - 1 ? (
                       <TextInput
                         id={`age-max-${group.key}`}
                         type="number"
                         min={i === 0 ? 0 : Number(bounds[i - 1]) + 1}
                         step={1}
-                        labelText={`${t(`ageGroups.${group.key}`)} · ${t("to")}`}
+                        labelText={`${group.name} · ${t("to")}`}
                         value={bounds[i]}
                         onChange={(e) =>
                           setBounds((current) =>
@@ -148,8 +174,41 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
                     ) : (
                       <p>{t("ageGroupsNoUpperLimit")}</p>
                     )}
+                    <Button
+                      kind="danger--ghost"
+                      disabled={busy || groups.length === 1}
+                      onClick={() => {
+                        setGroups(groups.filter((_, index) => index !== i));
+                        setBounds(
+                          bounds.filter(
+                            (_, index) =>
+                              index !== Math.min(i, groups.length - 2),
+                          ),
+                        );
+                      }}
+                    >
+                      {t("removeAgeGroup")}
+                    </Button>
                   </div>
                 ))}
+                <Button
+                  kind="tertiary"
+                  disabled={busy}
+                  onClick={() => {
+                    setGroups([
+                      ...groups,
+                      {
+                        key: crypto.randomUUID(),
+                        name: "",
+                        minAge: 0,
+                        maxAge: null,
+                      },
+                    ]);
+                    setBounds([...bounds, ""]);
+                  }}
+                >
+                  {t("addAgeGroup")}
+                </Button>
               </fieldset>
               {!draft && (
                 <InlineNotification

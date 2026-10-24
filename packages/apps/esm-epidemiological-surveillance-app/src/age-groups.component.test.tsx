@@ -3,6 +3,9 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { AgeGroupsPanel, ageGroupsFromBounds } from "./age-groups.component";
 import { getAgeGroups, saveAgeGroups } from "./demographic.resource";
 import type { AgeGroup } from "./demographic.types";
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
 vi.mock("./demographic.resource", () => ({
   getAgeGroups: vi.fn(),
   saveAgeGroups: vi.fn(),
@@ -63,4 +66,47 @@ it("keeps unsaved boundaries on a rejected save and does not refresh", async () 
   await screen.findByText("Safe error");
   expect(screen.getByLabelText("ageGroups.INFANTS · to")).toHaveValue(2);
   expect(saved).not.toHaveBeenCalled();
+});
+
+it("adds, renames and removes groups while keeping complete age coverage", async () => {
+  render(<AgeGroupsPanel onSaved={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "configureAgeGroups" }));
+  await screen.findByLabelText("ageGroups.INFANTS \u00b7 to");
+  fireEvent.click(screen.getByRole("button", { name: "addAgeGroup" }));
+  expect(screen.getByRole("button", { name: "saveAgeGroups" })).toBeDisabled();
+  fireEvent.change(screen.getAllByLabelText("ageGroupName")[6], {
+    target: { value: "Mayores de 80" },
+  });
+  fireEvent.change(screen.getByLabelText("ageGroups.OLDER_ADULTS \u00b7 to"), {
+    target: { value: "80" },
+  });
+  fireEvent.click(screen.getAllByRole("button", { name: "removeAgeGroup" })[0]);
+  fireEvent.change(screen.getAllByLabelText("ageGroupName")[0], {
+    target: { value: "Infancia" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "saveAgeGroups" }));
+  await waitFor(() => expect(saveAgeGroups).toHaveBeenCalledOnce());
+  const saved = vi.mocked(saveAgeGroups).mock.calls[0][0];
+  expect(saved).toHaveLength(6);
+  expect(saved[0]).toMatchObject({ name: "Infancia", minAge: 0, maxAge: 11 });
+  expect(saved[5]).toMatchObject({
+    name: "Mayores de 80",
+    minAge: 81,
+    maxAge: null,
+  });
+});
+it("keeps at least one group and rejects blank names", () => {
+  expect(
+    ageGroupsFromBounds(
+      [{ key: "one", name: "Todas las edades", minAge: 0, maxAge: null }],
+      [],
+    ),
+  ).toHaveLength(1);
+  expect(ageGroupsFromBounds([], [])).toBeUndefined();
+  expect(
+    ageGroupsFromBounds(
+      [{ key: "one", name: " ", minAge: 0, maxAge: null }],
+      [],
+    ),
+  ).toBeUndefined();
 });

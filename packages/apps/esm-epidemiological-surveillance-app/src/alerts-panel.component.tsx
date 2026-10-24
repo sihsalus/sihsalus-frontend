@@ -53,6 +53,7 @@ export const alertReasons = [
   "EPIDEMIC_THRESHOLD",
   "SUSTAINED_INCREASE",
   "AUTOCHTHONOUS_ELIMINATED",
+  "FOCUS_CASES",
 ];
 export function AlertAccess({ children }: { children: React.ReactNode }) {
   return [

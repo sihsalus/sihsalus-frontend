@@ -10,6 +10,7 @@ export const demographicDimensions = [
 export type DemographicDimension = (typeof demographicDimensions)[number];
 export interface AgeGroup {
   key: string;
+  name?: string;
   minAge: number;
   maxAge: number | null;
 }

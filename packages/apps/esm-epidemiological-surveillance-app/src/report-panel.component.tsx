@@ -224,15 +224,20 @@ export function ReportPanel({
               {new Date(report.generatedAt).toLocaleString("es-PE")}
             </p>
           </Tile>
-          {report.warnings.map((code) => (
-            <InlineNotification
-              key={code}
-              kind="info"
-              lowContrast
-              hideCloseButton
-              title={t(`alerts.${code}`)}
-            />
-          ))}
+          {report.warnings
+            .filter(
+              (code) =>
+                !["INSUFFICIENT_HISTORY", "PARTIAL_PERIOD"].includes(code),
+            )
+            .map((code) => (
+              <InlineNotification
+                key={code}
+                kind="info"
+                lowContrast
+                hideCloseButton
+                title={t(`alerts.${code}`)}
+              />
+            ))}
           {report.total === 0 && (
             <p>
               {t("noSelectedCases", "No cases match the selected filters.")}

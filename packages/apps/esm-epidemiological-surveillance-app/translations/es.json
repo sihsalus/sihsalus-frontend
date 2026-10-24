@@ -1,4 +1,27 @@
 {
+  "outbreakRules": {
+    "configure": "Configurar reglas de brote",
+    "saved": "Reglas de brote guardadas",
+    "help": "Las reglas se aplican a todas las enfermedades al registrar o editar casos. Superar un umbral significa ser estrictamente mayor. Se conservan las alertas ya generadas.",
+    "rule": "Regla {{number}}",
+    "type": "Tipo de regla",
+    "types": {
+      "THRESHOLD": "Superar umbral",
+      "CONSECUTIVE": "Superar umbral en X semanas consecutivas",
+      "FOCUS_CASES": "Superar mínimo de casos por origen y foco"
+    },
+    "add": "Añadir regla",
+    "percentile": "Percentil a superar (0–100)",
+    "weeks": "Semanas consecutivas (1–53)",
+    "minimumCases": "Número de casos a superar",
+    "origin": "Origen de los casos",
+    "focus": "Clasificación previa del foco",
+    "focusHelp": "Cuenta casos de la misma semana epidemiológica. Usa la clasificación del foco antes de comenzar la semana; superar 0 se cumple desde el primer caso."
+  },
+  "removeAgeGroup": "Quitar grupo etario",
+  "addAgeGroup": "Añadir grupo etario",
+  "ageGroupNameRequired": "Introduce un nombre para el grupo etario.",
+  "ageGroupName": "Nombre del grupo etario",
   "export": {
     "open": "Exportar",
     "table": "Exportar tabla",
@@ -35,7 +58,7 @@
   "geographic": "Información geográfica",
   "configuration": "Configuración",
   "configureAgeGroups": "Configurar grupo etario",
-  "ageGroupsCoverage": "Modifica la edad máxima de cada grupo. La edad mínima siguiente se ajusta automáticamente para incluir todas las edades, desde 0 y sin límite superior en adultos mayores.",
+  "ageGroupsCoverage": "Añade, quita o cambia el nombre de los grupos. Ajusta sus edades máximas: los mínimos se calculan automáticamente desde 0 y el último grupo no tiene límite superior.",
   "ageGroupsYears": "Edades en años cumplidos",
   "ageGroupsNoUpperLimit": "Sin límite superior",
   "ageGroupsInvalid": "Usa edades enteras consecutivas y crecientes. Cada grupo debe incluir al menos una edad.",
@@ -352,6 +375,7 @@
     "PARTIAL_PERIOD": "El rango seleccionado incluye periodos parciales; compara con precaución."
   },
   "errors": {
+    "INVALID_OUTBREAK_RULES": "Revise las reglas: percentil entre 0 y 100, semanas enteras entre 1 y 53 y cantidad de casos entera no negativa.",
     "INVALID_AGE_GROUPS": "Los seis grupos deben cubrir todas las edades desde 0, sin huecos ni solapamientos, y el último no debe tener límite superior.",
     "INVALID_DEMOGRAPHIC_DIMENSIONS": "Selecciona dos variables diferentes y un tipo de periodo válido.",
     "INVALID_DEMOGRAPHIC_EVENTS": "Selecciona una enfermedad o las enfermedades que deseas comparar.",
@@ -640,13 +664,14 @@
       "ATTENDED": "Atendida"
     },
     "reasons": {
+      "FOCUS_CASES": "Superación de casos por origen y clasificación previa del foco",
       "IMMEDIATE_EVENT": "Evento notificable de periodicidad inmediata",
       "STATUS_CHANGED": "Cambio de estado epidemiológico de un caso",
       "DEATH": "Defunción atribuible a un caso",
       "CONFIRMED_PREGNANCY": "Caso confirmado en una gestante",
-      "EPIDEMIC_THRESHOLD": "Cruce del umbral de la zona de alerta a la zona de epidemia",
-      "SUSTAINED_INCREASE": "Superación de Q3 durante dos semanas epidemiológicas consecutivas",
-      "AUTOCHTHONOUS_ELIMINATED": "Aparición de un caso autóctono en un foco eliminado"
+      "EPIDEMIC_THRESHOLD": "Superación del percentil configurado",
+      "SUSTAINED_INCREASE": "Superación del percentil durante las semanas consecutivas configuradas",
+      "AUTOCHTHONOUS_ELIMINATED": "Superación de casos autóctonos en un foco previamente eliminado"
     },
     "disconnected": "La conexión de alertas se está restableciendo. Puede actualizar la pestaña Alertas para consultar las pendientes."
   }

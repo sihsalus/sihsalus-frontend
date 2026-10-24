@@ -871,3 +871,76 @@ muestra ???. La API incorpora esos datos al consultar las alertas inmediatas,
 tambi?n para las alertas ya existentes, sin migraci?n adicional. Las alertas ya
 generadas conservan su historial; la condici?n de fecha de notificaci?n se
 aplica a nuevos registros. Requiere actualizar backend y frontend juntos.
+
+
+### Grupos etarios personalizados (23/10/2026)
+
+Configurar grupo etario permite añadir, quitar y renombrar grupos, manteniendo al
+menos uno, edades consecutivas desde 0 y el último sin máximo. Los nombres se
+conservan en los reportes demográficos/geográficos y sus exportaciones. Cancelar
+descarta el borrador; un error de guardado conserva sus cambios.
+
+Requiere actualizar ESM y OMOD juntos y aplicar `liquibase-age-group-names.xml`.
+El campo `name` de `PUT /configuration/age-groups` se guarda con el arreglo JSON
+en `surveillance_age_group_config.lower_bounds`, ampliado de VARCHAR(100) a
+LONGTEXT. No se impone un máximo funcional por nombre ni se trunca el texto;
+se rechazan nombres vacíos o solo espacios. Las claves permanecen estables al
+renombrar. La lectura conserva los seis grupos y límites del formato anterior.
+
+Las tablas demográfica y geográfica usan Fila / Columna en título y primera
+celda. Información temporal omite los avisos INSUFFICIENT_HISTORY y PARTIAL_PERIOD;
+los valores y estados del canal endémico permanecen disponibles.
+
+Validación local: PASSED, 175 pruebas API y 10 REST con Maven
+`-B -o resources:resources resources:testResources compiler:compile compiler:testCompile surefire:test`;
+31 pruebas Vitest de los cuatro componentes afectados, TypeScript, lint, HMR y build.
+El primer pase completo ejecutó 217 pruebas: 214 pasaron y tres fallaron por el
+mock de traducción del editor; el mock se corrigió y las pruebas afectadas pasaron.
+La migración falló inicialmente por usar el esquema XML antiguo; el pase final
+con la migración separada pasó. Build mantiene el aviso de ExcelJS (910 KiB).
+Prettier de README y contrato demográfico: FAILED por formato del documento;
+no se reformatearon completos. Diff --check: PASSED.
+Smoke integrado DEV/QLTY y `verify:changed`: NOT RUN, sin despliegue ni commits.
+
+
+### Configurar reglas de brote (23/10/2026)
+
+Configuración incorpora un editor de reglas compartidas entre enfermedades.
+Permite editar las existentes y añadir reglas de tres tipos: superar un percentil,
+superarlo en X semanas consecutivas o superar un número de casos de un origen
+en un foco activo, residual no activo o eliminado. Valores iniciales: P75,
+P75 durante dos semanas y más de cero autóctonos en foco eliminado.
+
+El percentil admite valores entre 0 y 100. La secuencia admite de 1 a 53 semanas
+(una ventana de hasta un año epidemiológico). El conteo por origen utiliza la
+misma semana epidemiológica y la clasificación del foco antes de comenzar esa
+semana, según lo confirmado por el usuario. El umbral es estricto: superar N
+requiere N+1 casos. La cantidad admite enteros de 0 a 2147483646, de modo que
+el primer valor que supera el umbral sigue siendo representable como entero Java.
+No se añaden campos de texto libre.
+
+`GET/PUT /configuration/outbreak-rules` exige Configurar. El backend persiste
+el arreglo completo en `surveillance_outbreak_config.rules_json` (LONGTEXT),
+con identificadores estables. Requiere actualizar OMOD y ESM juntos y aplicar
+`liquibase-outbreak-config.xml`. Sin configuración guardada usa las tres reglas
+iniciales. Un fallo conserva el borrador; Cancelar lo descarta. El mensaje de
+éxito solo aparece tras confirmar el guardado.
+
+Las reglas se evalúan al registrar/editar casos, con confirmados y probables,
+por enfermedad y centro de infección e inicio de síntomas. Cambiar configuración
+no genera alertas retroactivas ni modifica las ya emitidas. Cada regla nueva tiene
+su propia clave de deduplicación; las iniciales conservan las claves históricas.
+Los detalles de alerta conservan percentil, semanas o conteo/origen/foco usados.
+El canal endémico conserva sus cuartiles; configurar un percentil de alerta no
+cambia su representación. La historia mínima y años de referencia siguen la
+configuración del canal. No se convierte historia ausente en cero.
+
+Validación local de reglas de brote: PASSED, `vitest run --maxWorkers=2`
+(222 pruebas en 33 suites), `tsc6 --noEmit`, lint, HMR y Rspack de producción.
+Maven `-B -o resources:resources resources:testResources compiler:compile
+compiler:testCompile surefire:test`: PASSED, 181 API y 11 REST; cubre persistencia,
+migración repetible, permisos, percentiles, semanas consecutivas, registro tardío,
+focos previos y rechazo de semanas fraccionarias en JSON. Diff --check: PASSED.
+El build advierte por el chunk ExcelJS de 910 KiB. Prettier del README: FAILED
+por formato del documento; no se reformateó completo. Smoke integrado DEV/QLTY
+y `verify:changed`: NOT RUN, sin entorno coordinado ni commits. No se desplegó.

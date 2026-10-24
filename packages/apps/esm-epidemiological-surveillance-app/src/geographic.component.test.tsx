@@ -119,6 +119,12 @@ it("selects geographic columns without disease and renders the breakdown by cent
     "origin",
   ]);
   expect(selector).toHaveValue("origin");
+  expect(screen.getByRole("table")).toHaveAccessibleName(
+    "reportCenter / fields.origin",
+  );
+  expect(
+    screen.getByRole("columnheader", { name: "reportCenter / fields.origin" }),
+  ).toBeInTheDocument();
   vi.mocked(getGeography).mockResolvedValue({
     ...report,
     table: {

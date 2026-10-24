@@ -33,6 +33,7 @@ import { EndemicSettings } from "./endemic-settings.component";
 import { dateInZone } from "./case-form.utils";
 import { demographicPeriodLabel } from "./demographic-period";
 import { DemographicPanel } from "./demographic-panel.component";
+import { OutbreakRulesSettings } from "./outbreak-rules.component";
 import { AgeGroupsPanel } from "./age-groups.component";
 import { GeographicPanel } from "./geographic-panel.component";
 import { GeographicSettings } from "./geographic-settings.component";
@@ -205,6 +206,7 @@ function SessionDashboard() {
                   <NotificationSettings onSaved={() => setIndicatorRevision((value) => value + 1)} />
                   <TableSettings {...tableAppearance} />
                   <AgeGroupsPanel onSaved={reloadSurveillancePage} />
+                  <OutbreakRulesSettings />
                   <EndemicSettings
                     currentYear={Number(
                       dateInZone(catalogue.catalog.timezone).slice(0, 4),

@@ -163,14 +163,12 @@ export function GeographicPanel({
       return t(`demographic.values.${item.key}`);
     if (dimension === "ageGroup") {
       const group = table?.ageGroups.find((group) => group.key === item.key);
-      return `${t(`ageGroups.${item.key}`)} (${group?.minAge ?? ""}\u2013${group?.maxAge ?? "\u221e"})`;
+      return `${group?.name ?? t(`ageGroups.${item.key}`, { defaultValue: item.label })} (${group?.minAge ?? ""}\u2013${group?.maxAge ?? "\u221e"})`;
     }
     return item.label;
   };
-  const tableTitle =
-    column === "origin"
-      ? t("geo.tableTitle")
-      : `${t("reportCenter")} / ${t(`demographic.dimensions.${column}`)}`;
+  const tableColumn = table?.column ?? column;
+  const tableTitle = `${t("reportCenter")} / ${tableColumn === "origin" ? t("fields.origin") : t(`demographic.dimensions.${tableColumn}`)}`;
   return (
     <section className={styles.form} aria-label={t("geographic")}>
       <h3>{t("filters")}</h3>
@@ -329,7 +327,7 @@ export function GeographicPanel({
                 <caption>{tableTitle}</caption>
                 <thead>
                   <tr>
-                    <th scope="col">{t("reportCenter")}</th>
+                    <th scope="col">{tableTitle}</th>
                     {columns.map((origin) => (
                       <th scope="col" key={origin}>
                         {columnLabel(origin)}

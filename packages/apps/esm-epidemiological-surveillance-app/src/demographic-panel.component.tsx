@@ -135,7 +135,7 @@ export function DemographicPanel({
       );
     if (dimension === "ageGroup") {
       const group = report?.ageGroups.find((g) => g.key === value.key);
-      return `${t(`ageGroups.${value.key}`)} (${group?.minAge ?? ""}–${group?.maxAge ?? "∞"})`;
+      return `${group?.name ?? t(`ageGroups.${value.key}`, { defaultValue: value.label })} (${group?.minAge ?? ""}–${group?.maxAge ?? "∞"})`;
     }
     if (dimension === "sex" || dimension === "pregnancy")
       return t(`demographic.values.${value.key}`);
@@ -311,13 +311,12 @@ export function DemographicPanel({
             <ReportExport
               kind="table"
               name="informacion-demografica"
-              title={`${t("demographic.title")}: ${t(`demographic.dimensions.${report.row}`)} / ${t(`demographic.dimensions.${report.column}`)}`}
+              title={`${t(`demographic.dimensions.${report.row}`)} / ${t(`demographic.dimensions.${report.column}`)}`}
             >
               <div className={styles.tableWrapper}>
                 <table className={styles.table}>
                   <caption>
-                    {t("demographic.title")}:{" "}
-                    {t(`demographic.dimensions.${report.row}`)} ×{" "}
+                    {t(`demographic.dimensions.${report.row}`)} /{" "}
                     {t(`demographic.dimensions.${report.column}`)}
                   </caption>
                   <thead>

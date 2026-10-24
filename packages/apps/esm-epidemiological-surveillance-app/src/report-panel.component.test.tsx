@@ -72,7 +72,7 @@ describe("report screen", () => {
         },
       ],
       demographics: {},
-      warnings: ["INSUFFICIENT_HISTORY"],
+      warnings: ["INSUFFICIENT_HISTORY", "PARTIAL_PERIOD"],
     });
     render(<ReportPanel catalogue={catalogue} />);
     await screen.findByText("No cases match the selected filters.");
@@ -101,6 +101,12 @@ describe("report screen", () => {
       screen.queryByText("2025-S53", { selector: "td" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Insufficient history")).toBeInTheDocument();
+    expect(
+      screen.queryByText(en.alerts.INSUFFICIENT_HISTORY),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(en.alerts.PARTIAL_PERIOD),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("img", { name: "Epidemic curve" }),
     ).not.toBeInTheDocument();

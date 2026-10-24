@@ -218,9 +218,7 @@ it("hides only all-zero rows and columns without changing totals", async () => {
   });
   render(<DemographicPanel catalogue={catalogue} />);
   await screen.findByText("Infants (0–1)");
-  fireEvent.click(
-    screen.getByLabelText("Hide rows and columns without cases"),
-  );
+  fireEvent.click(screen.getByLabelText("Hide rows and columns without cases"));
   expect(screen.queryByText("Infants (0–1)")).not.toBeInTheDocument();
   expect(screen.getByText("Children (2–11)")).toBeInTheDocument();
   expect(
@@ -296,4 +294,21 @@ it("allows date ranges longer than two years", async () => {
       expect.any(AbortSignal),
     ),
   );
+});
+
+it("uses the same criterion pair for the title and first cell and displays custom group names", async () => {
+  vi.mocked(getDemographics).mockResolvedValue({
+    ...result,
+    ageGroups: result.ageGroups.map((group) => ({
+      ...group,
+      name: "Grupo personalizado",
+    })),
+  });
+  render(<DemographicPanel catalogue={catalogue} />);
+  const title = `${en.demographic.dimensions.ageGroup} / ${en.demographic.dimensions.sex}`;
+  expect(await screen.findByRole("table", { name: title })).toBeInTheDocument();
+  expect(screen.getByRole("columnheader", { name: title })).toBeInTheDocument();
+  expect(
+    screen.getAllByRole("rowheader", { name: /Grupo personalizado/ }).length,
+  ).toBeGreaterThan(0);
 });

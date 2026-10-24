@@ -1,4 +1,27 @@
 {
+  "outbreakRules": {
+    "configure": "Configure outbreak rules",
+    "saved": "Outbreak rules saved",
+    "help": "Rules apply to all diseases when cases are registered or edited. Exceeding a threshold means strictly greater. Existing alerts are retained.",
+    "rule": "Rule {{number}}",
+    "type": "Rule type",
+    "types": {
+      "THRESHOLD": "Exceed threshold",
+      "CONSECUTIVE": "Exceed threshold for X consecutive weeks",
+      "FOCUS_CASES": "Exceed minimum cases by origin and focus"
+    },
+    "add": "Add rule",
+    "percentile": "Percentile to exceed (0–100)",
+    "weeks": "Consecutive weeks (1–53)",
+    "minimumCases": "Case count to exceed",
+    "origin": "Case origin",
+    "focus": "Prior focus classification",
+    "focusHelp": "Counts cases in the same epidemiological week. Uses focus classification before the week begins; exceeding 0 triggers from the first case."
+  },
+  "removeAgeGroup": "Remove age group",
+  "addAgeGroup": "Add age group",
+  "ageGroupNameRequired": "Enter an age group name.",
+  "ageGroupName": "Age group name",
   "export": {
     "open": "Export",
     "table": "Export table",
@@ -35,7 +58,7 @@
   "geographic": "Geographic information",
   "configuration": "Configuration",
   "configureAgeGroups": "Configure age groups",
-  "ageGroupsCoverage": "Edit each group's maximum age. The next minimum adjusts automatically to cover all ages, starting at 0 with no upper limit for older adults.",
+  "ageGroupsCoverage": "Add, remove or rename groups. Adjust their maximum ages: minimum ages are calculated automatically from 0 and the last group has no upper limit.",
   "ageGroupsYears": "Ages in completed years",
   "ageGroupsNoUpperLimit": "No upper limit",
   "ageGroupsInvalid": "Use consecutive, increasing integer ages. Each group must include at least one age.",
@@ -352,6 +375,7 @@
     "PARTIAL_PERIOD": "The selected range includes partial periods; compare with caution."
   },
   "errors": {
+    "INVALID_OUTBREAK_RULES": "Check the rules: percentile from 0 to 100, whole weeks from 1 to 53 and a nonnegative whole case count.",
     "INVALID_AGE_GROUPS": "The six groups must cover every age from 0, without gaps or overlaps, and the last group must have no upper bound.",
     "INVALID_DEMOGRAPHIC_DIMENSIONS": "Select two different variables and a valid period type.",
     "INVALID_DEMOGRAPHIC_EVENTS": "Select a disease or the diseases you want to compare.",
@@ -640,13 +664,14 @@
       "ATTENDED": "Attended"
     },
     "reasons": {
+      "FOCUS_CASES": "Case threshold exceeded by origin and prior focus classification",
       "IMMEDIATE_EVENT": "Event requiring immediate notification",
       "STATUS_CHANGED": "Case epidemiological status changed",
       "DEATH": "Death attributable to a case",
       "CONFIRMED_PREGNANCY": "Confirmed case in a pregnant patient",
-      "EPIDEMIC_THRESHOLD": "Crossing from the alert zone to the epidemic zone",
-      "SUSTAINED_INCREASE": "Q3 exceeded for two consecutive epidemiological weeks",
-      "AUTOCHTHONOUS_ELIMINATED": "Autochthonous case in an eliminated focus"
+      "EPIDEMIC_THRESHOLD": "Configured percentile exceeded",
+      "SUSTAINED_INCREASE": "Configured percentile exceeded for consecutive weeks",
+      "AUTOCHTHONOUS_ELIMINATED": "Autochthonous case threshold exceeded in a previously eliminated focus"
     },
     "disconnected": "Reconnecting live alerts. Refresh the Alerts tab to review pending alerts."
   }

@@ -187,9 +187,14 @@ it('gives a growth-and-development reader every CRED section except immunization
   fireEvent.click(screen.getByRole('tab', { name: 'Crecimiento y nutrición' }));
   expect(screen.getByTestId('child-nutrition-assessment-slot')).toHaveTextContent(patient.id ?? '');
   expect(GrowthChartOverview).toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole('tab', { name: 'Antecedentes y nacimiento' }));
+  expect(screen.getByText('Nacimiento: synthetic-child')).toBeVisible();
+  expect(screen.getByText('Embarazo y parto: synthetic-child')).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Ver atención neonatal' })).not.toBeInTheDocument();
 });
 
-it('adds neonatal history when the independent neonatal read permission is present', () => {
+it('adds the neonatal navigation action when the independent neonatal read permission is present', () => {
   setPrivileges([growthDevelopmentPrivilege, neonatalCarePrivilege]);
   render(<IntegratedCredDashboard />);
   fireEvent.click(screen.getByRole('tab', { name: 'Antecedentes y nacimiento' }));

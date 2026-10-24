@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
+import { CardHeaderActions } from '../../../ui/card-header-actions.component';
 
 import styles from './screening-indicators.scss';
 
@@ -78,17 +79,29 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type="gray" size="sm">
-          {t('screeningTypesRecorded', '{{completed}}/{{total}} tipos con registro', {
-            completed: completedCount,
-            total: totalRequired,
-          })}
-        </Tag>
-        {canEdit && (
-          <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type="gray" size="sm">
+              {t('screeningTypesRecorded', '{{completed}}/{{total}} tipos con registro', {
+                completed: completedCount,
+                total: totalRequired,
+              })}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? handleAdd : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <DataTable headers={tableHeaders} rows={tableRows} size="sm" useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps }) => (

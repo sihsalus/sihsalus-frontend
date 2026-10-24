@@ -1,0 +1,20 @@
+@use "@carbon/layout";
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-inline-start: auto;
+}
+
+.actionSlot {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.hiddenAction {
+  visibility: hidden;
+  pointer-events: none;
+}

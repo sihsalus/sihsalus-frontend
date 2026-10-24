@@ -52,6 +52,15 @@ También se conserva **Ver atención neonatal** desde Antecedentes y nacimiento.
 La atención inmediata y hospitalaria neonatal permanece en su pantalla propia;
 no es un paso obligatorio del control ambulatorio.
 
+Dentro de CRED, **Datos del Nacimiento** y **Embarazo y Parto** forman parte de
+**Antecedentes y nacimiento**: su lectura depende de
+`app:hoja.clinica.crecimientoDesarrollo` y sus acciones de registro de la variante
+`.editar`. El permiso independiente de Atención neonatal solo controla el enlace
+**Ver atención neonatal** y esas mismas tablas cuando se consumen desde la pantalla
+neonatal. Los indicadores de cabecera de Crecimiento y nutrición, Desarrollo y
+Seguimiento conservan su posición al ocultar las acciones de escritura para un
+perfil de solo lectura.
+
 La pantalla neonatal usa `TabbedDashboard`: Signos vitales, Balance de líquidos,
 Registro perinatal, Atención inmediata, Evaluación cefalocaudal, Alojamiento
 conjunto y Lactancia. Solo monta la pestaña activa y reinicia la selección al

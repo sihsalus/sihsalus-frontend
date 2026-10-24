@@ -62,6 +62,8 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
       <div className={styles.panel}>
         <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
           <ChildMedicalHistory patientUuid={patientUuid} />
+          <BirthDataTable patientUuid={patientUuid} writePrivileges={growthDevelopmentWritePrivileges} />
+          <PregnancyBirthTable patientUuid={patientUuid} writePrivileges={growthDevelopmentWritePrivileges} />
         </RequirePrivilege>
         <RequirePrivilege privilege={neonatalCarePrivilege} hideUnauthorized>
           <Button
@@ -76,8 +78,6 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
           >
             {t('credViewNeonatalCare')}
           </Button>
-          <BirthDataTable patientUuid={patientUuid} />
-          <PregnancyBirthTable patientUuid={patientUuid} />
         </RequirePrivilege>
       </div>
     ),

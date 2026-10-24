@@ -9,12 +9,13 @@ import PatientSummaryTable from '../../../../ui/patient-summary-table/patient-su
 
 interface BirthDataProps {
   patientUuid: string;
+  writePrivileges?: string | string[];
 }
 
-const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
+const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid, writePrivileges = neonatalCareWritePrivileges }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(neonatalCareWritePrivileges, session?.user);
+  const canEdit = userHasAccess(writePrivileges, session?.user);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('birthData', 'Datos del Nacimiento');

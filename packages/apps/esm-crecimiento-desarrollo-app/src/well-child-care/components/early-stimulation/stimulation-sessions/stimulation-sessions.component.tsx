@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationSessions } from '../../../../hooks/useStimulationSessions';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from './stimulation-sessions.scss';
 
@@ -41,21 +42,26 @@ const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
-          {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
+              {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useAnemiaScreening } from '../../../hooks/useAnemiaScreening';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
+import { CardHeaderActions } from '../../../ui/card-header-actions.component';
 
 import styles from './anemia-screening.scss';
 
@@ -41,23 +42,28 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        {lastHb !== null && (
-          <Tag type="gray" size="sm">
-            {t('resultRecorded', 'Resultado registrado')}
-          </Tag>
-        )}
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            lastHb !== null ? (
+              <Tag type="gray" size="sm">
+                {t('resultRecorded', 'Resultado registrado')}
+              </Tag>
+            ) : null
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

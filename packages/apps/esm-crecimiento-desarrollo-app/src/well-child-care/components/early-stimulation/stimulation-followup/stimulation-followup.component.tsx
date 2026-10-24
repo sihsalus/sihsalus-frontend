@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from '../../../../ui/summary-card.scss';
 
@@ -49,23 +50,26 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <div className={styles.headerActions}>
-          <Tag type={riskTagType} size="sm">
-            {riskLabel ?? t('noData', 'Sin datos')}
-          </Tag>
-          {canEdit && (
+        <CardHeaderActions
+          status={
+            <Tag type={riskTagType} size="sm">
+              {riskLabel ?? t('noData', 'Sin datos')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
             <Button
               kind="ghost"
               size="sm"
               renderIcon={Add}
-              onClick={() => handleAdd()}
+              onClick={canEdit ? () => handleAdd() : undefined}
               iconDescription={t('add', 'Add')}
-              disabled={isFormLoading}
+              disabled={!canEdit || isFormLoading}
             >
               {t('add', 'Add')}
             </Button>
-          )}
-        </div>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

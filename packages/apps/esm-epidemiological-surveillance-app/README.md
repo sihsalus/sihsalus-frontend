@@ -1,5 +1,78 @@
 # @sihsalus/esm-epidemiological-surveillance-app
 
+## Fichas de investigación
+
+La pestaña **Fichas**, al final de la navegación, ofrece 25 PDF en blanco para
+los 18 temas solicitados, además de arbovirosis V.03, leishmaniasis y malaria.
+El buscador filtra por nombre, sigla o descripción, sin distinguir mayúsculas
+ni tildes, y muestra el número de resultados o un mensaje cuando no hay coincidencias.
+Requiere el acceso existente al módulo y el privilegio
+`Vigilancia Epidemiologica: Ver Casos`. No requiere permisos de registro ni
+administración, no modifica casos y no marca automáticamente la ficha como realizada.
+
+Los PDF se incluyen sin modificación en `src/assets/forms` y Rspack los publica
+como recursos independientes; se descargan solo al pulsar **Descargar PDF**.
+Se valida la respuesta y la cabecera PDF antes de guardar, se bloquean descargas
+duplicadas y se permite reintentar o consultar la fuente oficial ante un error.
+La descarga usa un Blob para conservar el nombre incluso si los assets se sirven
+desde otro origen (ese servidor debe permitir CORS). No requiere cambios de OMOD.
+No se garantiza la descarga sin conexión si el recurso aún no está en caché.
+
+Catálogo revisado el **24/10/2026**. Se conservan las tres fichas iniciales de la
+[unidad de enfermedades metaxénicas del CDC](https://www.dge.gob.pe/portalnuevo/vigilancia-epidemiologica/vigilancia-de-enfermedades-metaxenicas-utvmtx/):
+
+- [Arbovirosis V.03](https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/f_arbovirosis.pdf):
+  NTS 230-MINSA/CDC-2025, RM 473-2025/MINSA. Se usa la versión publicada actualmente
+  por el CDC en lugar del adjunto V.2.
+- [Leishmaniasis](https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/05/LEISHMANIASIS-ficha-clinico.pdf):
+  [NTS 225-MINSA/CDC-2025](https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/03/LEISHMANIASIS.pdf),
+  RM 165-2025/MINSA. La norma exige la ficha para casos probables o confirmados.
+  Se usa el formulario actual del CDC, distinto del adjunto proporcionado.
+- [Malaria](https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2026/04/Ficha-de-investigacion-epidemiologica-de-malaria-_16042026-UTEMOTV.pdf):
+  [NTS 228-MINSA/CDC-2025](https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/05/MALARIA_NTS-N%C2%B0228-MINSA-CDC-2025-.pdf),
+  RM 273-2025/MINSA. La aplicación de la ficha depende de las condiciones de
+  investigación descritas en el apartado 6.3; notificación obligatoria no implica
+  que todos los casos requieran idéntica investigación.
+
+Las nuevas descargas cubren TBC; VIH/SIDA; sífilis y gonorrea; varicela con
+complicaciones; ofidismo (accidentes por animales ponzoñosos); muerte materna
+(investigación y notificación inmediata); diabetes (captación y seguimiento);
+hepatitis B, D y C; ESAVI severo (investigación y notificación inmediata);
+violencia familiar; metales pesados y metaloides; sarampión/rubéola; parálisis
+flácida aguda; leptospirosis; muerte fetal/neonatal; VIH en gestantes y niños
+expuestos; defunción por IRA/neumonía (menores de 5 años y mayores de 60 años);
+y tos ferina.
+
+Las 21 nuevas fichas del CDC proceden de su
+[catálogo de fichas epidemiológicas](https://www.dge.gob.pe/portalnuevo/area-privada/aplicativos-para-la-vigilancia/).
+La ficha conjunta de [hepatitis B, D y C](https://riscuscovraem.pe/wp-content/uploads/2024/01/FICHA-DE-INVESTIGACION-CLINICA-EPIDEMIOLOGICA-HEPATITIS-B.pdf)
+procede del enlace de la Red de Servicios de Salud Cusco VRAEM aportado por el
+solicitante; se comprobó visualmente que contempla los tres tipos. No se
+sustituye por el formulario exclusivo de hepatitis B del catálogo del CDC.
+`src/assets/forms/sources.json` registra título, URL, páginas, fecha de revisión
+y SHA-256 de los 22 archivos nuevos. Se revisaron sus 41 páginas y se conservan
+los archivos originales, incluidas las cuatro páginas finales en blanco del PDF
+de tos ferina. Las fechas del directorio de publicación no se presentan como
+versiones normativas del documento. Solo se muestra una norma cuando fue verificada.
+
+La pestaña es una biblioteca, no determina la obligatoriedad de un paciente ni
+pretende cubrir todos los eventos nacionales. El personal aplica la norma de
+cada enfermedad. Para actualizarla, contrastar el PDF con el portal oficial,
+revisar todas sus páginas y actualizar el recurso y su referencia; no hay
+actualización automática. No se incorporaron formularios con datos de pacientes.
+
+Validación local del catálogo ampliado: TypeScript, lint y build PASSED;
+12 pruebas de componente/dashboard PASSED,
+incluidas las 25 descargas, búsqueda por siglas, tildes y varios términos, cero
+resultados, errores HTTP/HTML y reintentos. Comprobar después de cada build con
+`node --test tooling/investigation-forms.check.cjs` que los 25 PDF publicados
+son idénticos a los originales. Pruebas de integridad de PDF y HMR PASSED
+(14 pruebas en total). Build advierte por el tamaño de varios PDF originales
+y del chunk de ExcelJS; los PDF se descargan bajo demanda. Lint y
+validación de permisos de rutas: PASSED. Prettier del README: FAILED por formato;
+no se reformateó el documento completo. Smoke integrado DEV/QLTY, ensamblado
+completo del SPA y despliegue: NOT RUN.
+
 Microfrontend OpenMRS 3 de vigilancia epidemiológica de SIH Salus, iteración 1 (RE 3.1). Registro de casos, eventos notificables, alertas, curva epidémica y canal endémico.
 
 Terminología: visita = consulta; encounter = atención.

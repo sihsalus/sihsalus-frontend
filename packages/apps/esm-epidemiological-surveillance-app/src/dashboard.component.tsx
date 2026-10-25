@@ -26,6 +26,7 @@ import {
 } from "./constants";
 import { ErrorNotification } from "./error-notification.component";
 import { EventsPanel } from "./events-panel.component";
+import { InvestigationFormsPanel } from "./investigation-forms.component";
 import { IndicatorsPanel } from "./indicators-panel.component";
 import { NotificationSettings } from "./notification-settings.component";
 import { ReportPanel } from "./report-panel.component";
@@ -121,6 +122,7 @@ function SessionDashboard() {
             <Tab>{t("events", "Events")}</Tab>
             <Tab>{t("configuration")}</Tab>
             <Tab>{t("alertInbox.title")}</Tab>
+            <Tab>{t("investigationForms.tab")}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
@@ -220,6 +222,11 @@ function SessionDashboard() {
               </RequirePrivilege>
             </TabPanel>
             <TabPanel><AlertAccess><AlertsPanel /></AlertAccess></TabPanel>
+            <TabPanel>
+              <RequirePrivilege privilege={caseViewPrivilege}>
+                <InvestigationFormsPanel />
+              </RequirePrivilege>
+            </TabPanel>
           </TabPanels>
         </Tabs>
       )}

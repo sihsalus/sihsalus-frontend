@@ -1,4 +1,118 @@
 {
+  "investigationForms": {
+    "tuberculosis": {
+      "name": "Tuberculosis (TB)",
+      "description": "Tuberculosis case notification form."
+    },
+    "vih": {
+      "name": "HIV and AIDS",
+      "description": "Individual notification of HIV infection and AIDS."
+    },
+    "sifilis-gonorrea": {
+      "name": "Syphilis and gonorrhea",
+      "description": "Epidemiological investigation of syphilis and gonorrhea cases."
+    },
+    "varicela": {
+      "name": "Varicella with complications",
+      "description": "Clinical and epidemiological investigation of varicella with complications."
+    },
+    "ofidismo": {
+      "name": "Snakebite and venomous animal injuries",
+      "description": "Clinical and epidemiological investigation of snakebite and other venomous animal injuries."
+    },
+    "muerte-materna": {
+      "name": "Maternal death: investigation",
+      "description": "Epidemiological investigation of maternal death. Annex 2."
+    },
+    "muerte-materna-notificacion": {
+      "name": "Maternal death: immediate notification",
+      "description": "Immediate notification of maternal death. Annex 1."
+    },
+    "diabetes": {
+      "name": "Diabetes: case registration",
+      "description": "Epidemiological form for diabetes case registration."
+    },
+    "diabetes-seguimiento": {
+      "name": "Diabetes: follow-up",
+      "description": "Diabetes follow-up form."
+    },
+    "hepatitis-bcd": {
+      "name": "Hepatitis B, D and C",
+      "description": "Combined clinical and epidemiological investigation of viral hepatitis B, D and C. Published by the Cusco VRAEM Health Services Network."
+    },
+    "esavi": {
+      "name": "Severe AEFI: investigation",
+      "description": "Clinical and epidemiological investigation of severe adverse events following immunization (AEFI)."
+    },
+    "esavi-notificacion": {
+      "name": "Severe AEFI: immediate notification",
+      "description": "Immediate notification of severe adverse events following immunization (AEFI)."
+    },
+    "violencia-familiar": {
+      "name": "Family violence",
+      "description": "Multisectoral epidemiological surveillance form for family violence."
+    },
+    "metales-pesados": {
+      "name": "Heavy metals and metalloids",
+      "description": "Investigation of risk factors for exposure to and poisoning by heavy metals and metalloids."
+    },
+    "sarampion-rubeola": {
+      "name": "Measles and rubella",
+      "description": "Investigation of measles, rubella and other febrile rash illnesses."
+    },
+    "paralisis-flacida": {
+      "name": "Acute flaccid paralysis (AFP)",
+      "description": "Clinical and epidemiological surveillance of acute flaccid paralysis."
+    },
+    "leptospirosis": {
+      "name": "Human leptospirosis",
+      "description": "Clinical and epidemiological investigation of human leptospirosis."
+    },
+    "muerte-fetal-neonatal": {
+      "name": "Fetal and neonatal death",
+      "description": "Notification of fetal, neonatal and perinatal deaths."
+    },
+    "vih-gestantes": {
+      "name": "HIV in pregnant women and exposed children",
+      "description": "Investigation of pregnant women with HIV and children born exposed to HIV."
+    },
+    "neumonia-menores": {
+      "name": "Death from ARI or pneumonia: children under 5",
+      "description": "Individual notification of deaths from acute respiratory infection and/or pneumonia in children under 5 years."
+    },
+    "neumonia-mayores": {
+      "name": "Death from ARI or pneumonia: adults over 60",
+      "description": "Individual notification of deaths from acute respiratory infection and/or pneumonia in adults over 60 years."
+    },
+    "tos-ferina": {
+      "name": "Pertussis",
+      "description": "Clinical and epidemiological investigation of pertussis."
+    },
+    "search": "Search forms by disease or event",
+    "results": "{{count}} forms available",
+    "empty": "No forms found. Try another name or abbreviation.",
+    "tab": "Forms",
+    "title": "Clinical and epidemiological investigation forms",
+    "description": "Download official epidemiological notification, investigation and follow-up forms. Use the applicable form according to the disease and the criteria in its technical standard.",
+    "download": "Download PDF",
+    "downloadNamed": "Download {{name}} investigation form as PDF",
+    "downloading": "Downloading…",
+    "source": "Official source",
+    "failed": "The form could not be downloaded",
+    "retry": "Try downloading again or consult the official source.",
+    "arbovirosis": {
+      "name": "Arboviral diseases",
+      "description": "Dengue, chikungunya, Zika, Oropouche, Mayaro and other arboviral diseases. Investigation form, version 03."
+    },
+    "leishmaniasis": {
+      "name": "Leishmaniasis",
+      "description": "Clinical and epidemiological investigation form for leishmaniasis published by CDC Peru."
+    },
+    "malaria": {
+      "name": "Malaria",
+      "description": "Malaria epidemiological investigation form. Update published in April 2026."
+    }
+  },
   "outbreakRules": {
     "configure": "Configure outbreak rules",
     "saved": "Outbreak rules saved",

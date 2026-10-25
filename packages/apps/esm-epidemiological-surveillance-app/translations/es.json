@@ -1,4 +1,118 @@
 {
+  "investigationForms": {
+    "tuberculosis": {
+      "name": "Tuberculosis (TBC)",
+      "description": "Ficha de Notificación de Caso de Tuberculosis"
+    },
+    "vih": {
+      "name": "VIH y SIDA",
+      "description": "Ficha de notificación individual de caso de infección por VIH y SIDA"
+    },
+    "sifilis-gonorrea": {
+      "name": "Sífilis y gonorrea",
+      "description": "Ficha de investigación epidemiológica de caso de sífilis y gonorrea"
+    },
+    "varicela": {
+      "name": "Varicela con complicaciones",
+      "description": "Ficha de investigación clínico epidemiológica de Varicela con complicaciones"
+    },
+    "ofidismo": {
+      "name": "Ofidismo y accidentes por animales ponzoñosos",
+      "description": "Ficha Clínico Epidemiológica de caso de Accidente por Animales Ponzoñosos"
+    },
+    "muerte-materna": {
+      "name": "Muerte materna: investigación",
+      "description": "Ficha de Investigación epidemiológica de muerte materna"
+    },
+    "muerte-materna-notificacion": {
+      "name": "Muerte materna: notificación inmediata",
+      "description": "Ficha de notificación inmediata de muerte materna"
+    },
+    "diabetes": {
+      "name": "Diabetes: captación",
+      "description": "Ficha epidemiológica de captación de casos de diabetes."
+    },
+    "diabetes-seguimiento": {
+      "name": "Diabetes: seguimiento",
+      "description": "Ficha de seguimiento Diabetes"
+    },
+    "hepatitis-bcd": {
+      "name": "Hepatitis B, D y C",
+      "description": "Ficha conjunta de investigación de hepatitis viral B, D y C. Publicada por la Red de Servicios de Salud Cusco VRAEM."
+    },
+    "esavi": {
+      "name": "ESAVI severo: investigación",
+      "description": "Ficha de Investigación Clínica Epidemiológica de ESAVI Severo"
+    },
+    "esavi-notificacion": {
+      "name": "ESAVI severo: notificación inmediata",
+      "description": "Ficha de Notificación Inmediata de Casos de ESAVI Severo"
+    },
+    "violencia-familiar": {
+      "name": "Violencia familiar",
+      "description": "Ficha multisectorial vigilancia epidemiológica de la violencia familiar"
+    },
+    "metales-pesados": {
+      "name": "Metales pesados y metaloides",
+      "description": "Ficha de investigación epidemiológica en salud pública de factores de riesgo por exposición e intoxicación por metales pesados y metaloides"
+    },
+    "sarampion-rubeola": {
+      "name": "Sarampión y rubéola",
+      "description": "Ficha de investigación clínico epidemiológica: Sarampión, rubéola, otras febriles eruptivas"
+    },
+    "paralisis-flacida": {
+      "name": "Parálisis flácida aguda (PFA)",
+      "description": "Ficha clínica epidemiológica Vigilancia de Parálisis Flácida Aguda (PFA)"
+    },
+    "leptospirosis": {
+      "name": "Leptospirosis humana",
+      "description": "Ficha Clínico-Epidemiológica de Leptospirosis Humana"
+    },
+    "muerte-fetal-neonatal": {
+      "name": "Muerte fetal y neonatal",
+      "description": "Notificación de defunciones fetales, neonatales y perinatales."
+    },
+    "vih-gestantes": {
+      "name": "VIH en gestantes y niños expuestos",
+      "description": "Ficha de investigación epidemiológica de caso de la gestante con VIH y el niño nacido expuesto al VIH"
+    },
+    "neumonia-menores": {
+      "name": "Muerte por IRA o neumonía: menores de 5 años",
+      "description": "Formato de notificación individual de defunciones por infección respiratoria aguda y/o neumonía en menores de 5 años"
+    },
+    "neumonia-mayores": {
+      "name": "Muerte por IRA o neumonía: mayores de 60 años",
+      "description": "Formato de notificación individual de defunciones por infección respiratoria aguda y/o neumonía en mayores de 60 años"
+    },
+    "tos-ferina": {
+      "name": "Tos ferina",
+      "description": "Investigación clínico-epidemiológica de tos ferina."
+    },
+    "search": "Buscar fichas por enfermedad o evento",
+    "results": "{{count}} fichas disponibles",
+    "empty": "No se encontraron fichas. Prueba otro nombre o sigla.",
+    "tab": "Fichas",
+    "title": "Fichas de investigación clínico-epidemiológica",
+    "description": "Descarga fichas oficiales de notificación, investigación y seguimiento epidemiológico. Utiliza la ficha correspondiente según la enfermedad y los criterios de su norma técnica.",
+    "download": "Descargar PDF",
+    "downloadNamed": "Descargar ficha de {{name}} en PDF",
+    "downloading": "Descargando…",
+    "source": "Fuente oficial",
+    "failed": "No se pudo descargar la ficha",
+    "retry": "Vuelve a intentar la descarga o consulta la fuente oficial.",
+    "arbovirosis": {
+      "name": "Arbovirosis",
+      "description": "Dengue, chikungunya, zika, oropouche, mayaro y otras arbovirosis. Ficha de investigación, versión 03."
+    },
+    "leishmaniasis": {
+      "name": "Leishmaniasis",
+      "description": "Ficha de investigación clínico-epidemiológica de leishmaniasis publicada por el CDC Perú."
+    },
+    "malaria": {
+      "name": "Malaria",
+      "description": "Ficha de investigación epidemiológica de malaria. Actualización publicada en abril de 2026."
+    }
+  },
   "outbreakRules": {
     "configure": "Configurar reglas de brote",
     "saved": "Reglas de brote guardadas",

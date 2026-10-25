@@ -1,0 +1,178 @@
+[
+  {
+    "id": "tuberculosis",
+    "title": "Ficha de Notificación de Caso de Tuberculosis",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/01/Fichas_TB.pdf",
+    "pages": 1,
+    "sha256": "27251a4046477cd5b7d232f78ade641cf47714907e3ee78c5aa6e8ae2dc91efa",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "vih",
+    "title": "Ficha de notificación individual de caso de infección por VIH y SIDA",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/03/Ficha-notificacion-VIH.pdf",
+    "pages": 1,
+    "sha256": "fb4cd1b8b9b9c20db8c7fef0d84768411176cee1b0347bf56965126f74b1b13b",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "sifilis-gonorrea",
+    "title": "Ficha de investigación epidemiológica de caso de sífilis y gonorrea",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/01/Ficha-investigacion-sifilis_gonorrea.pdf",
+    "pages": 1,
+    "sha256": "946c4afb45bb9cf94d1a4376b00622ace9fcf035b2a03f50ca99e85ffc0ba5e8",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "varicela",
+    "title": "Ficha de investigación clínico epidemiológica de Varicela con complicaciones",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/varicela_cc.pdf",
+    "pages": 1,
+    "sha256": "51bbf6b286e955907b46a445da5fa60e44c539ec7a0a9df5c68a764132d76144",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "ofidismo",
+    "title": "Ficha Clínico Epidemiológica de caso de Accidente por Animales Ponzoñosos",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/fc_Epidemiologica%20de%20caso%20Accidente%20por%20animales%20ponzonosos.pdf",
+    "pages": 1,
+    "sha256": "29f74c9781f9c8e793ed0d6589b77962f5194f97ef260e8bedf9f1ba0861a53d",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "muerte-materna",
+    "title": "Ficha de Investigación epidemiológica de muerte materna",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/06/MUERTE-MATERNA_Ficha-de-Investigacion-epidemiologica-de-muerte-materna.pdf",
+    "pages": 3,
+    "sha256": "e3955a674fc12bdbbd96a442c256e72720f863ae583cf9fa2948e904467e095e",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "muerte-materna-notificacion",
+    "title": "Ficha de notificación inmediata de muerte materna",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/06/MUERTE-MATERNA_Ficha-de-notificacion-inmediata-de-muerte-materna.pdf",
+    "pages": 1,
+    "sha256": "be522283512b0cbe2106f13120f8aa9537fd583386bc75337ab5969b92368dc0",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "diabetes",
+    "title": "Ficha epidemiológica Diabetes",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/01/Ficha-de-sobre-vig.-diabetes.pdf",
+    "pages": 3,
+    "sha256": "edf5c2b2c4986d3090088868b8b45889c26c2f20540d42f42058b3b8c957730a",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "diabetes-seguimiento",
+    "title": "Ficha de seguimiento Diabetes",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/01/Ficha-de-seguimiento-sobre-vig.-diabetes.pdf",
+    "pages": 3,
+    "sha256": "c3e4ea3948fcbba575f6b5002d6ecc8fe850f7c0ec3a4c085dae82621499b86c",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "hepatitis-bcd",
+    "title": "Ficha de investigación clínico epidemiológica de hepatitis viral B, D y C",
+    "source": "https://riscuscovraem.pe/wp-content/uploads/2024/01/FICHA-DE-INVESTIGACION-CLINICA-EPIDEMIOLOGICA-HEPATITIS-B.pdf",
+    "pages": 1,
+    "sha256": "f7db1e92721d62ade9c644fb4cee37f13d1a543e960f2c190a92bb2162ed0f2b",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "esavi",
+    "title": "Ficha de Investigación Clínica Epidemiológica de ESAVI Severo",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/ESAVI_FI.pdf",
+    "pages": 3,
+    "sha256": "bef19e5e559534b16ee7af36b665f46386c7a6bda76614426bb75ff889ce5c06",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "esavi-notificacion",
+    "title": "Ficha de Notificación Inmediata de Casos de ESAVI Severo",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/ESAVI_NI_Anx01.pdf",
+    "pages": 1,
+    "sha256": "238e5cf46e113ef9d7e9a0ec5b6be3f829d4215d987150f1c22fba3b4323cb48",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "violencia-familiar",
+    "title": "Ficha multisectorial vigilancia epidemiológica de la violencia familiar",
+    "source": "https://app7.dge.gob.pe/notiWeb/assets/images/Ficha_vfamiliar.pdf",
+    "pages": 1,
+    "sha256": "c19af79c35bce077673c2c6a92591fbb4dd1eb94dfaa1c21f109bbdfd6c1d171",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "metales-pesados",
+    "title": "Ficha de investigación epidemiológica en salud pública de factores de riesgo por exposición e intoxicación por metales pesados y metaloides",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/05/Ficha_Metalespesados.pdf",
+    "pages": 2,
+    "sha256": "5f54e8076893b56858a4f91941e34f79a997936ac45a503508802ccf0c4828cb",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "sarampion-rubeola",
+    "title": "Ficha de investigación clínico epidemiológica: Sarampión, rubéola, otras febriles eruptivas",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/f_srubeola.pdf",
+    "pages": 3,
+    "sha256": "93c7b75b0ef2e3dca87a7a5c45e72d02c1e26cd80b568bc4c45129ca0afeb2a8",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "paralisis-flacida",
+    "title": "Ficha clínica epidemiológica Vigilancia de Parálisis Flácida Aguda (PFA)",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/f_pfa.pdf",
+    "pages": 3,
+    "sha256": "faa27adbca97d743f4369d04b2abd690eb1f83592f054229f9a5a59b5c3e49d4",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "leptospirosis",
+    "title": "Ficha Clínico-Epidemiológica de Leptospirosis Humana",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2026/06/Ficha-Clinico-Epidemiologica-Leptospirosis-Humana.pdf",
+    "pages": 2,
+    "sha256": "9a54ab5577706ee9e4680c46060591eb2d7822996033af38672fdc20bd62987a",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "muerte-fetal-neonatal",
+    "title": "Ficha de notificación de muerte neonatal y perinatal",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2026/02/MUERTE-FETAL-Y-NEONATAL_Ficha-de-notificacion-de-muerte-neonatal-y-perinatal.pdf",
+    "pages": 1,
+    "sha256": "82e35aac4b6abfa843d30246fb5f57c465b25fdeef3cbcc65f99999c0260bd57",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "vih-gestantes",
+    "title": "Ficha de investigación epidemiológica de caso de la gestante con VIH y el niño nacido expuesto al VIH",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/03/Ficha-investigacion-de-la-gestante-y-el-nino-expuesto-al-VIH.pdf",
+    "pages": 1,
+    "sha256": "9f935c43802f98dc3d2d3e261824d65bf1da3ab723647dbad88419190a3d1366",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "neumonia-menores",
+    "title": "Formato de notificación individual de defunciones por infección respiratoria aguda y/o neumonía en menores de 5 años",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2024/05/8.7-Ficha-Def-IRA-menor.pdf",
+    "pages": 1,
+    "sha256": "a06018ff9c0b4eaff82cb7a30bd902674dd4a2604ac25d4e6d7102a3cffd18ae",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "neumonia-mayores",
+    "title": "Formato de notificación individual de defunciones por infección respiratoria aguda y/o neumonía en mayores de 60 años",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/07/8.8-Ficha-Def-IRA-mayor.pdf",
+    "pages": 1,
+    "sha256": "f07192b2ea5cf88b8bc5e72c181a8f9f402c7f1798c9c2d6e060658191367616",
+    "reviewed": "2026-10-24"
+  },
+  {
+    "id": "tos-ferina",
+    "title": "Ficha de investigación clínico epidemiológica de Tos Ferina",
+    "source": "https://www.dge.gob.pe/portal/docs/vigilancia/herramientas/fichas/f_tosf.pdf",
+    "pages": 6,
+    "sha256": "03a98ce61feaf7832842413bf82e2cc46683c264a9b416bfe57438080dc7bbfc",
+    "reviewed": "2026-10-24"
+  }
+]

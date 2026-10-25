@@ -187,7 +187,10 @@ export function EventsPanel({
         : t("eventInactive", "Inactivo"),
   }));
   return (
-    <section aria-label={t("events", "Eventos")} className={styles.form}>
+    <section
+      aria-label={t("events", "Eventos")}
+      className={`${styles.form} ${styles.eventsPanel}`}
+    >
       {error && <ErrorNotification error={error} />}
       <div className={styles.actions}>
         <Button

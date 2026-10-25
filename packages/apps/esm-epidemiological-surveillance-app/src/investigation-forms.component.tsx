@@ -2,6 +2,7 @@ import { Button, InlineNotification, Link, Search, Tile } from "@carbon/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
+import dashboardStyles from "./dashboard.scss";
 import {
   fetchInvestigationForm,
   investigationForms,
@@ -23,10 +24,10 @@ export function InvestigationFormsPanel() {
   });
   return (
     <section
-      className={styles.panel}
+      className={dashboardStyles.form}
       aria-labelledby="investigation-forms-title"
     >
-      <h2 id="investigation-forms-title">{t("investigationForms.title")}</h2>
+      <h3 id="investigation-forms-title">{t("investigationForms.title")}</h3>
       <p>{t("investigationForms.description")}</p>
       <Search
         id="investigation-forms-search"
@@ -71,7 +72,7 @@ function FormCard({ form }: { form: (typeof investigationForms)[number] }) {
   };
   return (
     <Tile className={styles.card}>
-      <h3>{name}</h3>
+      <h4>{name}</h4>
       <p>{t(`investigationForms.${form.id}.description`)}</p>
       {form.regulation && <p>{form.regulation}</p>}
       <div className={styles.actions}>

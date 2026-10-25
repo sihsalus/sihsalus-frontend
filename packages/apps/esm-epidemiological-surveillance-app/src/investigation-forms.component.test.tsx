@@ -71,7 +71,7 @@ it("finds requested diseases by accent-insensitive names, abbreviations and mult
   ]) {
     fireEvent.change(search, { target: { value: query } });
     expect(
-      screen.getByRole("heading", { name: expected, level: 3 }),
+      screen.getByRole("heading", { name: expected, level: 4 }),
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: /Descargar ficha/ }),

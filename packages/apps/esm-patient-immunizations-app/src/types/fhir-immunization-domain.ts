@@ -25,6 +25,7 @@ export interface FHIRImmunizationResource {
   patient: Reference | null;
   encounter: Reference | null;
   occurrenceDateTime: string;
+  recorded?: string;
   expirationDate?: string;
   extension?: Array<{
     url: string;

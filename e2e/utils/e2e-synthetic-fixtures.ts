@@ -67,7 +67,7 @@ function familyName(run: string, label: Label): string {
 }
 
 /**
- * Draft fixture foundation, deliberately not wired to global setup or CI.
+ * Fixture foundation; adapters own supervision, retention and activation.
  * Callers supply an authorized API context and retain the journal after closing it.
  * All REST requests use absolute URLs from the existing exact DEV/QLTY gate.
  */

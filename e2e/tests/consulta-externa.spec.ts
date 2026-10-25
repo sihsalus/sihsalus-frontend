@@ -219,7 +219,12 @@ test.describe('Consulta externa - hoja clínica', () => {
     const tgpResult = page
       .getByRole('listitem')
       .filter({ hasText: /alanina|ALT|TGP/i })
-      .filter({ has: page.getByRole('button', { name: /Agregar a la cesta|Add to basket/i }) })
+      // Keep the same row after its action changes from Add to Remove.
+      .filter({
+        has: page.getByRole('button', {
+          name: /Agregar a la cesta|Add to basket|Quitar de la canasta|Remove from basket/i,
+        }),
+      })
       .first();
     await expect(tgpResult, 'TGP debe resolver la prueba ALT configurada').toBeVisible({ timeout: 20_000 });
     await tgpResult.getByRole('button', { name: /Agregar a la cesta|Add to basket/i }).click();
@@ -241,12 +246,13 @@ test.describe('Consulta externa - hoja clínica', () => {
 
     // Re-entering direct prescribing must preserve the two pending laboratory orders.
     await page.getByRole('button', { name: /Prescribir medicamentos|Prescribe medications/i }).click();
-    // Replacing a basket with pending drafts must respect the existing close guard.
-    const confirmClose = page.getByRole('button', { name: /Descartar cambios|Discard changes/i });
-    await expect(confirmClose).toBeVisible();
-    await confirmClose.click();
     await expect(medicationSearch).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: /Regresar a la canasta de [oó]rdenes|Back to order basket/i }).click();
+    // Returning to the existing dirty basket triggers the workspace close guard.
+    const closeDialog = page.getByRole('dialog');
+    const confirmClose = closeDialog.getByRole('button', { name: /Descartar cambios|Discard changes/i });
+    await expect(confirmClose).toBeVisible();
+    await confirmClose.click();
     await expect(
       page.getByRole('heading', { name: /[ÓO]rdenes de laboratorio \(2\)|Lab orders \(2\)/i }),
     ).toBeVisible();

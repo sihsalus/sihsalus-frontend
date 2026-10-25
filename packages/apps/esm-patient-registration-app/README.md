@@ -22,7 +22,7 @@ Al cambiar realmente de financiador se reemplaza la cobertura de forma atómica:
 código, la acreditación y los datos específicos del anterior y después se escribe la nueva selección o
 el resultado compuesto de SETISIS/SITEDS. Así no se reinterpreta, por ejemplo, un código SIS como póliza
 EsSalud, y una verificación recién aplicada se conserva aunque alguno de sus valores coincida con el
-anterior. Volver a SIS comienza explícitamente en `No consultada` hasta aplicar una verificación. Abrir y
+anterior. Volver a SIS comienza explícitamente en `No consultada` hasta registrar una verificación. Abrir y
 guardar un paciente EsSalud/EPS sin cambiar su financiador conserva los atributos genéricos provenientes
 de SITEDS. La UI oculta los controles incompatibles y el armado del payload aplica el mismo contrato como
 segunda defensa; al editar un paciente autofinanciado también se eliminan los valores incompatibles que
@@ -31,6 +31,59 @@ ya estuvieran persistidos.
 El financiador continúa siendo opcional mientras Producto no apruebe la obligatoriedad y el tratamiento
 de los casos sin cobertura. La consulta real a SETISIS/IAFAS y la derivación a Caja tampoco forman parte
 de este contrato frontend.
+
+### Guardado de la verificación SIS
+
+Los controles de estado, producto y EESS usan los atributos del formulario principal. Seleccionar un resultado
+no escribe en el backend: se guarda junto con el paciente, sin un botón adicional de aplicación. Una nueva
+verificación requiere un resultado explícito y un producto del catálogo cargado; la validación bloquea el
+guardado si faltan y conserva la entrada para corregirla. Si el catálogo no está disponible, se informa y
+se bloquea la nueva verificación.
+
+Al editar se muestran el estado, producto y EESS existentes. Abrir y guardar sin cambios conserva fecha,
+método y valores históricos, incluidos productos que ya no aparecen en el catálogo. Corregir producto o EESS
+no renueva la evidencia de acreditación. Seleccionar un resultado manual registra una nueva fecha y método
+`manual-web`, incluso al reconfirmar el mismo estado seleccionado; completar un resultado automático conserva
+su fecha y método. Sin conexión, una nueva
+verificación queda pendiente y no permite declarar cobertura vigente.
+
+Regresión local del flujo y del payload nativo:
+
+```sh
+yarn workspace @sihsalus/esm-patient-registration-app test src/patient-registration/field/external-lookup/sis-lookup-field.component.test.tsx
+```
+
+La aceptación en QLTY requiere el frontend candidato y un paciente sintético: con `admision`, guardar un
+resultado, comprobar los atributos por REST y reabrir la edición; repetir con producto faltante, otro estado,
+una verificación histórica sin cambios y cambio de financiador. Verificar el reintento tras un rechazo y la
+limpieza de los datos sintéticos. Las pruebas locales del payload no sustituyen ese flujo contra el backend.
+
+## Etnia: código MINSA y sinónimos
+
+El campo Perú `ethnicity` conserva el UUID del concepto como valor del atributo. Su
+`answerConceptCodeSource: 'MINSA-ETNIAS'` obtiene el código de mappings nativos activos
+`SAME-AS` de esa fuente. El ID interno de OCL/OpenMRS y la posición en el catálogo no
+son códigos MINSA. No se mantiene una tabla de equivalencias en el frontend.
+
+La búsqueda admite el nombre y los nombres alternativos activos, sin distinguir tildes
+ni mayúsculas. Una consulta numérica exige coincidencia exacta con el código oficial,
+incluidos sus ceros iniciales. Al seleccionar se muestra `código - nombre` y se guarda
+el UUID; escribir un código desconocido no selecciona una etnia. Otros campos conservan
+su búsqueda actual salvo que configuren explícitamente `answerConceptCodeSource`.
+
+Si falta un mapping o existen varios códigos oficiales para un concepto, se informa
+al seleccionar esa opción y se conserva su UUID histórico. No se infiere ni se elige
+un código arbitrario. Los catálogos antiguos siguen siendo seleccionables por nombre.
+Los permisos de lectura del catálogo y la validación de pertenencia siguen vigentes.
+
+La metadata corresponde a `sihsalus-content` 1.25.41 (PR #277) y a la fuente nativa
+`MINSA-ETNIAS`; actualizar el frontend por sí solo no incorpora esos mappings al backend.
+Para la aceptación de sihsalus/sihsalus#400 en DEV/QLTY: comprobar la versión de content,
+buscar `2`/`Aimara`, comprobar `Aimara`, buscar `Aguáruna` y comprobar `Awajún`, rechazar un código inexistente
+y reabrir un paciente sintético con una etnia histórica. Verificar por REST que se
+conserva el UUID al guardar; comprobar los avisos de catálogo incompleto/ambiguo en
+pruebas controladas y limpiar los recursos sintéticos. Registrar por separado el SHA
+frontend y la versión de content del ambiente.
 
 ## Pacientes no identificados o incapaces de comunicarse
 

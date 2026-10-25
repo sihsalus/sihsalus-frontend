@@ -330,6 +330,18 @@ export interface ConceptResponse {
 export interface ConceptAnswers {
   display: string;
   uuid: string;
+  names?: Array<{ name: string; voided: boolean }>;
+  mappings?: Array<{
+    conceptMapType?: { name?: string };
+    conceptReferenceTerm?: {
+      code?: string;
+      retired?: boolean;
+      conceptSource?: { name?: string; retired?: boolean };
+    };
+  }>;
+  code?: string;
+  synonyms?: Array<string>;
+  codeMappingStatus?: 'mapped' | 'unmapped' | 'ambiguous';
 }
 
 export type AddressProperties =

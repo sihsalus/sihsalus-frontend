@@ -6,7 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type CustomConceptAnswer } from '../../../config-schema';
 import { moduleName } from '../../../constants';
-import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
+import { type ConceptAnswers, type PersonAttributeTypeResponse } from '../../patient-registration.types';
 import {
   peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
@@ -87,6 +87,17 @@ export function formatCodedAnswerLabel(answer?: Pick<CustomConceptAnswer, 'code'
   return [answer?.code, answer?.label].filter(Boolean).join(' - ');
 }
 
+type CodedAnswer = CustomConceptAnswer & Pick<ConceptAnswers, 'synonyms' | 'codeMappingStatus'>;
+
+function matchesCodedAnswer(item: CodedAnswer, inputValue: string | null) {
+  const query = normalizeAnswerLabel(inputValue ?? '');
+  if (!query) return true;
+  if (/^\d+$/.test(query)) return item.code === query;
+  return [formatCodedAnswerLabel(item), ...(item.synonyms ?? [])].some((value) =>
+    normalizeAnswerLabel(value).includes(query),
+  );
+}
+
 function CodedAnswerOption({ answer }: { answer: CustomConceptAnswer }) {
   return (
     <span className={styles.codedAnswerOption}>
@@ -102,6 +113,7 @@ export interface CodedPersonAttributeFieldProps {
   id: string;
   personAttributeType: PersonAttributeTypeResponse;
   answerConceptSetUuid: string;
+  answerConceptCodeSource?: string;
   label?: string;
   customConceptAnswers: Array<CustomConceptAnswer>;
   codedInputType?: 'select' | 'radio';
@@ -115,6 +127,7 @@ export function CodedPersonAttributeField({
   id,
   personAttributeType,
   answerConceptSetUuid,
+  answerConceptCodeSource,
   label,
   customConceptAnswers,
   codedInputType = 'select',
@@ -125,6 +138,7 @@ export function CodedPersonAttributeField({
 }: CodedPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
   const { user } = useSession();
+  const codeSource = answerConceptCodeSource?.trim();
   const hasCustomConceptAnswers = customConceptAnswers.length > 0;
   const canGetConcepts = userHasAccess(getConceptsPrivilege, user);
   const shouldLoadConceptAnswers = !hasCustomConceptAnswers && canGetConcepts && Boolean(answerConceptSetUuid);
@@ -132,7 +146,7 @@ export function CodedPersonAttributeField({
     data: conceptAnswers,
     isLoading: isLoadingConceptAnswers,
     error: conceptAnswersError,
-  } = useConceptAnswers(shouldLoadConceptAnswers ? answerConceptSetUuid : '');
+  } = useConceptAnswers(shouldLoadConceptAnswers ? answerConceptSetUuid : '', codeSource);
 
   const isMissingAnswerSet = !answerConceptSetUuid && !hasCustomConceptAnswers;
   const isInvalidAnswerSet = !hasCustomConceptAnswers && canGetConcepts && isMissingConceptError(conceptAnswersError);
@@ -141,7 +155,7 @@ export function CodedPersonAttributeField({
   const cannotLoadConceptAnswers = !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
 
   const answers = useMemo(() => {
-    const availableAnswers = hasCustomConceptAnswers
+    const availableAnswers: Array<CodedAnswer> = hasCustomConceptAnswers
       ? customConceptAnswers
       : (conceptAnswers ?? [])
           .map((answer) => ({ ...answer, label: answer.display }))
@@ -274,12 +288,25 @@ export function CodedPersonAttributeField({
 
               if (searchable) {
                 return (
-                  <ComboBox
+                  <ComboBox<CodedAnswer>
                     id={id}
                     items={answers}
                     itemToString={formatCodedAnswerLabel}
                     itemToElement={(answer) => <CodedAnswerOption answer={answer} />}
                     selectedItem={selectedAnswer}
+                    shouldFilterItem={
+                      codeSource ? ({ item, inputValue }) => matchesCodedAnswer(item, inputValue) : undefined
+                    }
+                    helperText={
+                      selectedAnswer?.codeMappingStatus === 'unmapped'
+                        ? t('codedAnswerNoOfficialCode', 'This option has no official code')
+                        : selectedAnswer?.codeMappingStatus === 'ambiguous'
+                          ? t(
+                              'codedAnswerAmbiguousOfficialCode',
+                              'This option has more than one official code; review the catalog',
+                            )
+                          : undefined
+                    }
                     titleText={labelText}
                     placeholder={t('searchSelectAnOption', 'Search and select an option')}
                     invalid={invalid}

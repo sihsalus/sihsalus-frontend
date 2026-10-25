@@ -37,6 +37,13 @@ env:
   SIHSALUS_BACKEND_URL: ${{ vars.E2E_API_BASE_URL }}
   SIHSALUS_DEV_APPS: "none"
   SIHSALUS_REQUIRE_BACKEND_URL: "true"
+  GIT_SHA: ${{ github.sha }}
+  E2E_FIXTURE_EXPECTED_SHA: ${{ github.sha }}
+  E2E_NATIVE_SUPERVISED_TARGET: ${{ vars.E2E_GATE_TARGET }}
+  E2E_FIXTURE_IDENTIFIER_SOURCE_UUID: ${{ vars.E2E_FIXTURE_IDENTIFIER_SOURCE_UUID }}
+  E2E_FIXTURE_IDENTIFIER_TYPE_UUID: ${{ vars.E2E_FIXTURE_IDENTIFIER_TYPE_UUID }}
+  E2E_FIXTURE_VISIT_TYPE_UUID: ${{ vars.E2E_FIXTURE_VISIT_TYPE_UUID }}
+  E2E_FIXTURE_REQUIRED_PRIVILEGES: ${{ vars.E2E_FIXTURE_REQUIRED_PRIVILEGES }}
 
 jobs:
   contracts:
@@ -95,6 +102,28 @@ jobs:
       - name: Install Playwright browser (chromium)
         run: yarn playwright install --with-deps chromium
 
+      - name: Configure private fixture checkpoint connection
+        env:
+          CHECKPOINT_KEY: ${{ secrets.E2E_JOURNAL_PRIVATE_KEY }}
+          CHECKPOINT_HOSTS: ${{ vars.E2E_JOURNAL_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$CHECKPOINT_KEY" || -z "$CHECKPOINT_HOSTS" ]]; then
+            echo '::error::Private DEV journal retention must be reviewed and configured before clinical writes.'
+            exit 1
+          fi
+          umask 077
+          key_file="$RUNNER_TEMP/e2e-checkpoint-key"
+          hosts_file="$RUNNER_TEMP/e2e-checkpoint-known-hosts"
+          printf '%s\n' "$CHECKPOINT_KEY" > "$key_file"
+          printf '%s\n' "$CHECKPOINT_HOSTS" > "$hosts_file"
+          ssh-keygen -y -f "$key_file" >/dev/null
+          {
+            echo "E2E_JOURNAL_KEY_FILE=$key_file"
+            echo "E2E_JOURNAL_KNOWN_HOSTS_FILE=$hosts_file"
+          } >> "$GITHUB_ENV"
+
       - name: Build and assemble SPA
         run: yarn package:spa
 
@@ -102,6 +131,11 @@ jobs:
       # login page before running the suite.
       - name: Run E2E tests
         run: yarn test:e2e:suite ${{ matrix.suite }}
+
+      - name: Remove temporary checkpoint credentials
+        if: always()
+        shell: bash
+        run: rm -f -- "$RUNNER_TEMP/e2e-checkpoint-key" "$RUNNER_TEMP/e2e-checkpoint-known-hosts"
 
       - name: Upload Playwright report
         if: failure()

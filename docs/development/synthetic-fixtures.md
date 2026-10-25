@@ -1,11 +1,13 @@
 # Recoverable synthetic fixture foundation
 
-Status: **draft; supervised adapters exist, browser CI remains blocked**.
+Supervised adapters exist; native browser CI requires private DEV checkpoint storage.
 The [laboratory adapter](../../e2e/laboratory/README.md) reuses this foundation for one
 patient/visit pair per local test attempt, with private retained journals.
 The [native interconsultation fixture](../../e2e/NATIVE_SYNTHETIC_FIXTURES.md) also
-uses the foundation for two explicitly supervised desktop specs, retaining the
-same browser CI recovery boundary.
+uses the foundation for two desktop specs. Its
+[private DEV checkpoint policy](../../e2e/PRIVATE_JOURNAL_RETENTION.md) records
+reviewed access and verified interrupted provisioning/recovery. Browser case
+acceptance is recorded separately by SHA in the associated PR/issue.
 The separate [supervised O3 Forms adapter](../../e2e/scripts/O3FORMS_SUPERVISED.md) provides
 an explicit opt-in CLI and retains the requirements below; it has not passed
 remote clinical acceptance. Importing these utilities does not run a remote
@@ -80,6 +82,9 @@ uses the foundation for patient/visit provisioning and dependent cleanup.
 writer lock, writes state with mode 0600, and atomically replaces/fsyncs the state
 file. Its directory is mode 0700. Keep it under the ignored
 `e2e/.synthetic-fixtures/` directory, as the laboratory adapter does.
+An optional synchronous checkpoint callback runs after local fsync and before
+`save()` returns. The native GitHub adapter uses it to require an acknowledged
+private DEV copy; callback failure propagates and preserves the local state.
 The journal is sensitive recovery material: do not upload it as a CI artifact,
 commit it, paste it into a PR, or expose it in logs. It contains only binding,
 run marker, generated identifiers, synthetic UUIDs and progress flags, not
@@ -129,7 +134,8 @@ metadata deliberately blocks cleanup for review rather than guessing a new one.
   clinical orders as separate, still-unapproved workflows. This journal does
   not cover temporary users, roles, or concurrent runtime notification captures.
 
-No current-SHA DEV/QLTY clinical validation is claimed by this foundation.
+This foundation does not by itself claim DEV/QLTY clinical acceptance; use the
+executed cases, exact SHA and cleanup evidence in the associated PR/issue.
 The laboratory adapter requires explicit local supervision and rejects CI before
 requests because a runner's destruction would lose its local journal. The
 supervised O3 Forms adapter does not activate global setup/teardown or a browser

@@ -144,7 +144,7 @@ export function EventsPanel({
   const headers = [
     {
       key: "concept",
-      header: t("eventsTable.concept", "Enfermedad (Concepto)"),
+      header: t("eventsTable.concept", "Enfermedad"),
     },
     {
       key: "periodicity",
@@ -386,7 +386,7 @@ export function EventsPanel({
               {...fieldProps("conceptUuid")}
               titleText={
                 <RequiredFieldLabel>
-                  {t("eventsTable.concept", "Enfermedad (Concepto)")}
+                  {t("eventsTable.concept", "Enfermedad")}
                 </RequiredFieldLabel>
               }
               items={concepts}
@@ -403,7 +403,7 @@ export function EventsPanel({
               {...fieldProps("periodicity")}
               labelText={
                 <RequiredFieldLabel>
-                  {t("period", "Periodicidad")}
+                  {t("eventsTable.periodicity", "Periodicidad")}
                 </RequiredFieldLabel>
               }
               value={periodicity}

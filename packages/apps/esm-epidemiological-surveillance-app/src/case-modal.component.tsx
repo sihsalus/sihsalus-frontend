@@ -251,7 +251,9 @@ export function CaseModal({
     content?: string | number | null,
   ) => (
     <div key={key}>
-      <dt>{label}</dt>
+      <dt style={key === "infection" ? { fontWeight: 400 } : undefined}>
+        {label}
+      </dt>
       <dd>
         {content == null || content === "" ? "\u2014" : content}
         <FieldError message={fieldProps(detailFields[key]).invalidText} />

@@ -62,7 +62,6 @@ export function InfectionAddressSelector({
   return (
     <fieldset className={styles.selector}>
       <legend>{t("fields.infectionAddressUuid")}</legend>
-      <p>{t("infectionHierarchyHelp")}</p>
       {value && (
         <div className={styles.selection}>
           <span>{display || t("infectionPreservedCenter")}</span>

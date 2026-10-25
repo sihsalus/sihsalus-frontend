@@ -202,7 +202,7 @@ it("shows translated event attributes in a Carbon table", async () => {
   });
   expect(table).toHaveClass("cds--data-table");
   for (const name of [
-    "Enfermedad (Concepto)",
+    "Enfermedad",
     "Periodicidad",
     "Norma de referencia",
     "Estado",

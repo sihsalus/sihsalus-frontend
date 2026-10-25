@@ -666,7 +666,7 @@ export function CaseForm({
             id="case-disease-diagnosis"
             labelText={
               <RequiredFieldLabel>
-                {t("fields.diagnosisUuid", "Diagnóstico del encuentro")}
+                {t("fields.diagnosisUuid", "Diagnóstico de la atención")}
               </RequiredFieldLabel>
             }
             value={selectedDiagnosisUuid}

@@ -62,7 +62,7 @@
   "ageGroupsYears": "Ages in completed years",
   "ageGroupsNoUpperLimit": "No upper limit",
   "ageGroupsInvalid": "Use consecutive, increasing integer ages. Each group must include at least one age.",
-  "saveAgeGroups": "Save age groups",
+  "saveAgeGroups": "Save",
   "ageGroups": {
     "INFANTS": "Infants",
     "CHILDREN": "Children",
@@ -192,7 +192,6 @@
   "patientAgeYears": "years",
   "infectionSearchAll": "Populated-center code or name of center, district or province",
   "infectionTypeMore": "Enter at least 3 letters, or the populated-center code (at least 6 digits).",
-  "infectionHierarchyHelp": "Search by code or name. Select Department → Province → District → Populated center (code); only the populated center is saved.",
   "infectionChange": "Change place",
   "infectionNoResults": "No places found. Try another name.",
   "infectionSearch": {
@@ -286,6 +285,7 @@
   "unknown": "Unknown",
   "caseDateInvalid": "Investigation must match the encounter and be no later than notification or today. Notification cannot be in the future; dates cannot precede symptom onset.",
   "fields": {
+    "diagnosisUuid": "Encounter diagnosis",
     "pregnant": "Pregnant",
     "investigationForm": "Investigation form",
     "infectionAddressUuid": "Probable place of infection",
@@ -456,7 +456,7 @@
     "empty": "No notifiable events registered.",
     "name": "Event name",
     "namePlaceholder": "E.g. Dengue, Malaria...",
-    "concept": "Disease (Concept)",
+    "concept": "Disease",
     "searchConcept": "Type to search concept...",
     "deadlineDays": "Deadline (days)",
     "status": "Status",

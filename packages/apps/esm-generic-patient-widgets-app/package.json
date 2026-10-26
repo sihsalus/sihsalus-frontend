@@ -37,8 +37,8 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-chart/issues"
   },
   "dependencies": {
-    "@carbon/charts-react": "^1.27.21",
-    "@carbon/react": "^1.118.0"
+    "@carbon/charts-react": "^1.27.23",
+    "@carbon/react": "^1.119.0"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

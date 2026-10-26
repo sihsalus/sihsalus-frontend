@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.118.0",
+    "@carbon/react": "^1.119.0",
     "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",

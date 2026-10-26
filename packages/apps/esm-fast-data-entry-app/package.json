@@ -62,7 +62,7 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "concurrently": "^10.0.6",
     "i18next": "^26.4.7",
-    "i18next-cli": "1.75.3",
+    "i18next-cli": "1.80.0",
     "lodash-es": "^4.17.21",
     "openmrs": "*",
     "react": "^18.3.1",
@@ -71,9 +71,9 @@
     "react-router-dom": "7.18.4",
     "semver": "^7.8.5",
     "swr": "^2.5.1",
-    "turbo": "^2.11.9",
+    "turbo": "^2.11.10",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "^5.0.5"
   },
   "dependencies": {

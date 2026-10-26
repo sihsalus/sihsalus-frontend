@@ -64,7 +64,7 @@
     "dayjs": "1.x",
     "dotenv": "^18.0.8",
     "i18next": "^26.4.7",
-    "i18next-cli": "1.75.3",
+    "i18next-cli": "1.80.0",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -72,8 +72,8 @@
     "react-router-dom": "7.18.4",
     "rxjs": "^7.8.2",
     "swc-loader": "^0.2.3",
-    "turbo": "^2.11.9",
-    "vite": "8.3.4",
+    "turbo": "^2.11.10",
+    "vite": "8.3.5",
     "vitest": "^5.0.5"
   }
 }

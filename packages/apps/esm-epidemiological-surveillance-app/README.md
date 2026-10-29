@@ -2,7 +2,7 @@
 
 ## Fichas de investigación
 
-La pestaña **Fichas**, al final de la navegación, ofrece 25 PDF en blanco para
+La pestaña **Fichas**, antes de **Configuración** (última pestaña), ofrece 25 PDF en blanco para
 los 18 temas solicitados, además de arbovirosis V.03, leishmaniasis y malaria.
 El buscador filtra por nombre, sigla o descripción, sin distinguir mayúsculas
 ni tildes, y muestra el número de resultados o un mensaje cuando no hay coincidencias.
@@ -349,7 +349,7 @@ recarga. Guardar grupos etarios también recarga para aplicar los límites nuevo
 
 ### Edición de eventos notificables
 
-Las tablas de Casos y Eventos muestran 10 filas por página, con opciones de 20 y
+Las tablas de Casos, Eventos y Alertas muestran 10 filas por página, con opciones de 20 y
 50, selector de página y botones anterior/siguiente. La paginación es local sobre
 los resultados de la API; al filtrar o recargar los registros vuelve a la primera página.
 
@@ -904,7 +904,8 @@ caso/evento/motivo; los brotes por evento/centro/semana/motivo (foco: centro/añ
 RF-11 usa casos confirmados y probables, excluye descartados y agrupa por inicio
 de síntomas y centro de infección, como el canal endémico. Q3 usa interpolación
 R7 y los años/mínimo configurados. La ausencia de historia no se convierte en cero.
-El cruce exige pasar de `<= Q3` a `> Q3`. Dos semanas consecutivas deben superar
+La condición exige `> Q3`; la primera evaluación que la cumple genera la alerta
+si aún no existe para esa regla y periodo. Dos semanas consecutivas deben superar
 cada una su Q3; no se exige que el segundo conteo sea mayor que el primero.
 Un registro tardío reevalúa también la semana siguiente. La clasificación previa
 del foco sigue el criterio geográfico: sin autóctonos en el año y los tres
@@ -914,8 +915,10 @@ anteriores; un origen desconocido en ese intervalo impide afirmar eliminado.
 registra atención de forma idempotente. La pestaña muestra identificación del
 caso/evento, centro, motivo, fecha/hora, información adicional y atención.
 `GET /alerts/stream` entrega señales SSE después del commit, sin datos clínicos;
-la lectura posterior vuelve a comprobar permisos. El canal se reconecta y
-recupera pendientes; el fallo de conexión se informa en pantalla. Requiere soporte
+la lectura posterior vuelve a comprobar permisos. El canal usa la ruta base de
+OpenMRS, se reconecta y recupera pendientes. Se consultan además cada 30 segundos
+y al volver a la ventana, incluso si SSE falla; la bandeja permite reintentar
+errores de consulta. Requiere soporte
 async/SSE y ausencia de buffering en el proxy. La señal entre sesiones es local
 a la instancia del OMOD; una instalación con varias instancias requiere un bus
 compartido. Se conserva además la notificación nativa OpenMRS a cada responsable.
@@ -979,7 +982,7 @@ Smoke integrado DEV/QLTY y `verify:changed`: NOT RUN, sin despliegue ni commits.
 ### Configurar reglas de brote (23/10/2026)
 
 Configuración incorpora un editor de reglas compartidas entre enfermedades.
-Permite editar las existentes y añadir reglas de tres tipos: superar un percentil,
+Permite editar, eliminar las existentes y añadir reglas de tres tipos: superar un percentil,
 superarlo en X semanas consecutivas o superar un número de casos de un origen
 en un foco activo, residual no activo o eliminado. Valores iniciales: P75,
 P75 durante dos semanas y más de cero autóctonos en foco eliminado.
@@ -1004,9 +1007,41 @@ por enfermedad y centro de infección e inicio de síntomas. Cambiar configuraci
 no genera alertas retroactivas ni modifica las ya emitidas. Cada regla nueva tiene
 su propia clave de deduplicación; las iniciales conservan las claves históricas.
 Los detalles de alerta conservan percentil, semanas o conteo/origen/foco usados.
+El origen y la clasificación del foco en la información adicional se traducen al idioma
+seleccionado, también para alertas históricas, sin modificar el texto persistido.
+Se reutilizan las traducciones de Información geográfica para activo, residual
+no activo, eliminado y sin clasificación; los valores desconocidos se conservan.
 El canal endémico conserva sus cuartiles; configurar un percentil de alerta no
 cambia su representación. La historia mínima y años de referencia siguen la
 configuración del canal. No se convierte historia ausente en cero.
+
+Eliminar una regla modifica el borrador; Guardar confirma la eliminación y
+Cancelar la descarta. Se permite eliminar la última: se persiste `[]`, sin
+restaurar las reglas iniciales. Sin reglas de brote siguen vigentes las alertas
+inmediatas y se conserva la bandeja histórica. Requiere actualizar ESM y OMOD
+juntos, sin migración adicional.
+
+Al registrar o editar un caso se evalúa si se cumple cada regla vigente,
+incluso si el conteo ya estaba por encima del umbral antes de ese guardado.
+Esto permite la primera alerta de una regla recién creada. La clave persistida
+por regla/evento/centro/periodo evita duplicados, también tras atender la alerta.
+Guardar configuración por sí solo no reevalúa casos ni emite alertas retroactivas.
+
+Validación local de eliminación y alertas (28/10/2026): Maven
+`-B -o resources:resources resources:testResources compiler:compile compiler:testCompile surefire:test`
+PASSED, 197 pruebas API y 11 REST. Vitest de alertas, reglas y dashboard
+PASSED, 22 pruebas; cubre eliminación hasta lista vacía, cancelación, ruta SSE,
+recuperación sin SSE y ausencia de avisos duplicados. `tsc6 --noEmit`, lint,
+build y HMR PASSED. El script `typescript` FAILED porque no encuentra `tsc`;
+se verificó directamente con el ejecutable instalado `tsc6`.
+La suite completa `yarn workspace @sihsalus/esm-epidemiological-surveillance-app test --maxWorkers=2`
+FAILED: 181 pruebas pasaron y seis suites no cargaron por resolución de módulos
+del mock compartido (último error: `@openmrs/esm-globals`). No se ha verificado
+este fallo contra la rama base. La instalación inmutable PASSED y se compiló
+la dependencia local `esm-expression-evaluator`, sin modificar sus fuentes.
+Prettier del README FAILED por formato; diff --check de fuentes PASSED.
+Build advierte por tamaño de PDF y ExcelJS. Smoke DEV/QLTY y `verify:changed`
+NOT RUN: sin entorno coordinado ni commits. No se desplegó.
 
 Validación local de reglas de brote: PASSED, `vitest run --maxWorkers=2`
 (222 pruebas en 33 suites), `tsc6 --noEmit`, lint, HMR y Rspack de producción.

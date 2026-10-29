@@ -239,8 +239,20 @@ export function OutbreakRulesSettings() {
                       )}
                     </>
                   )}
+                  <Button
+                    kind="danger--tertiary"
+                    disabled={busy}
+                    onClick={() =>
+                      setRules((current) =>
+                        current?.filter((item) => item.id !== rule.id),
+                      )
+                    }
+                  >
+                    {t("outbreakRules.remove", { number: index + 1 })}
+                  </Button>
                 </fieldset>
               ))}
+              {rules.length === 0 && <p>{t("outbreakRules.empty")}</p>}
               <Button
                 kind="tertiary"
                 disabled={busy}

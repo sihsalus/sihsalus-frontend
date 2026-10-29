@@ -125,6 +125,8 @@
       "FOCUS_CASES": "Exceed minimum cases by origin and focus"
     },
     "add": "Add rule",
+    "remove": "Delete rule {{number}}",
+    "empty": "No outbreak rules. Saving will stop new outbreak alerts; immediate alerts will remain active.",
     "percentile": "Percentile to exceed (0–100)",
     "weeks": "Consecutive weeks (1–53)",
     "minimumCases": "Case count to exceed",

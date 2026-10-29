@@ -84,16 +84,23 @@ vi.mock("./investigation-forms.component", () => ({
   InvestigationFormsPanel: () => <div>Investigation forms content</div>,
 }));
 
-it("places forms last and requires case-view permission to access them", async () => {
+it("places configuration last and requires case-view permission to access forms", async () => {
   state.privileges = [reportPrivilege];
   const view = render(<Dashboard />);
   const tab = await screen.findByRole("tab", { name: "investigationForms.tab" });
-  expect(screen.getAllByRole("tab").at(-1)).toBe(tab);
+  expect(screen.getAllByRole("tab").at(-2)).toBe(tab);
+  expect(screen.getAllByRole("tab").at(-1)).toBe(
+    screen.getByRole("tab", { name: "configuration" }),
+  );
   fireEvent.click(tab);
   expect(screen.queryByText("Investigation forms content")).toBeNull();
   state.privileges = [caseViewPrivilege];
   view.rerender(<Dashboard />);
   expect(screen.getByText("Investigation forms content")).toBeInTheDocument();
+  state.privileges = [managePrivilege];
+  view.rerender(<Dashboard />);
+  fireEvent.click(screen.getByRole("tab", { name: "configuration" }));
+  expect(screen.getByText("Age configuration")).toBeInTheDocument();
 });
 
 it("requires both case-view and report privileges for weekly records", async () => {

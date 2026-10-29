@@ -120,9 +120,9 @@ function SessionDashboard() {
             <Tab>{t("demographic.title")}</Tab>
             <Tab>{t("geographic")}</Tab>
             <Tab>{t("events", "Events")}</Tab>
-            <Tab>{t("configuration")}</Tab>
             <Tab>{t("alertInbox.title")}</Tab>
             <Tab>{t("investigationForms.tab")}</Tab>
+            <Tab>{t("configuration")}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
@@ -199,6 +199,12 @@ function SessionDashboard() {
                 />
               </RequirePrivilege>
             </TabPanel>
+            <TabPanel><AlertAccess><AlertsPanel /></AlertAccess></TabPanel>
+            <TabPanel>
+              <RequirePrivilege privilege={caseViewPrivilege}>
+                <InvestigationFormsPanel />
+              </RequirePrivilege>
+            </TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={managePrivilege}>
                 <section
@@ -219,12 +225,6 @@ function SessionDashboard() {
                     onSaved={() => setGeographicRevision((value) => value + 1)}
                   />
                 </section>
-              </RequirePrivilege>
-            </TabPanel>
-            <TabPanel><AlertAccess><AlertsPanel /></AlertAccess></TabPanel>
-            <TabPanel>
-              <RequirePrivilege privilege={caseViewPrivilege}>
-                <InvestigationFormsPanel />
               </RequirePrivilege>
             </TabPanel>
           </TabPanels>

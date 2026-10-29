@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@carbon/react";
-import { showToast } from "@openmrs/esm-framework";
+import { makeUrl, showToast } from "@openmrs/esm-framework";
 import { RequirePrivilege } from "@sihsalus/esm-rbac";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,7 @@ import {
 import { ErrorNotification } from "./error-notification.component";
 import styles from "./dashboard.scss";
 import type { SurveillanceAlert } from "./types";
+import { TablePagination } from "./table-pagination.component";
 
 function caseDescription(alert: SurveillanceAlert) {
   const missing = "\u2014";
@@ -43,6 +44,26 @@ function caseDescription(alert: SurveillanceAlert) {
       : missing,
     diagnosis || missing,
   ].join(" \u00b7 ");
+}
+
+export function alertInformation(
+  alert: SurveillanceAlert,
+  translate: (key: string) => string,
+) {
+  const information = alert.additionalInformation ?? "—";
+  if (alert.type !== "OUTBREAK") return information;
+  // Historical alerts store this field as text, including focus and origin codes.
+  return information
+    .replace(
+      /(\bfoco previo:\s*)(ACTIVE|RESIDUAL|ELIMINATED|UNCLASSIFIED)(?=\s*(?:;|$))/g,
+      (_match, label: string, focus: string) =>
+        `${label}${translate(`geo.classes.${focus}`)}`,
+    )
+    .replace(
+      /(\borigen:\s*)(AUTOCTONO|IMPORTADO_NACIONAL|IMPORTADO_INTERNACIONAL|RECAIDA|RECRUDESCENCIA|INDUCIDO|INTRODUCIDO|UNKNOWN)(?=\s*(?:;|$))/g,
+      (_match, label: string, origin: string) =>
+        `${label}${translate(`geo.origins.${origin}`)}`,
+    );
 }
 
 export const alertReasons = [
@@ -91,28 +112,50 @@ export function AlertNotifications() {
         });
       }
     };
-    const receive = (event: Event) =>
+    const receive = (event: Event) => {
       display((event as CustomEvent<SurveillanceAlert[]>).detail);
+      window.dispatchEvent(new Event("surveillance-alerts-changed"));
+    };
+    let refreshing = false;
     const refresh = async () => {
+      if (refreshing || abort.signal.aborted) return;
+      refreshing = true;
       try {
         const alerts = await getAlerts({ status: "PENDING" }, abort.signal);
-        if (!abort.signal.aborted) display(alerts);
+        if (!abort.signal.aborted) {
+          const hasNew = alerts.some((alert) => !seen.current.has(alert.uuid));
+          display(alerts);
+          if (hasNew)
+            window.dispatchEvent(new Event("surveillance-alerts-changed"));
+        }
       } catch {
         /* The inbox exposes retrieval errors and retry; do not interrupt case entry. */
+      } finally {
+        refreshing = false;
       }
     };
     window.addEventListener("surveillance-alerts-generated", receive);
     void refresh();
-    const stream = new EventSource(`${apiBase}/alerts/stream`, {
-      withCredentials: true,
-    });
-    stream.onmessage = () => {
-      void refresh();
-      window.dispatchEvent(new Event("surveillance-alerts-changed"));
-    };
+    const interval = window.setInterval(() => void refresh(), 30000);
+    window.addEventListener("focus", refresh);
+    let stream: EventSource | undefined;
+    try {
+      stream = new EventSource(makeUrl(`${apiBase}/alerts/stream`), {
+        withCredentials: true,
+      });
+      stream.onopen = () => void refresh();
+      stream.onmessage = () => {
+        void refresh();
+        window.dispatchEvent(new Event("surveillance-alerts-changed"));
+      };
+    } catch {
+      /* Periodic retrieval remains available if EventSource is unsupported. */
+    }
     return () => {
       abort.abort();
-      stream.close();
+      stream?.close();
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
       window.removeEventListener("surveillance-alerts-generated", receive);
     };
   }, [t]);
@@ -123,6 +166,8 @@ export function AlertsPanel() {
   const { t } = useTranslation(moduleName);
   const [filters, setFilters] = useState({ type: "", reason: "", status: "" });
   const [rows, setRows] = useState<SurveillanceAlert[]>();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [error, setError] = useState<unknown>();
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState<string>();
@@ -137,7 +182,10 @@ export function AlertsPanel() {
       abort.signal,
     )
       .then((value) => {
-        if (!abort.signal.aborted) setRows(value);
+        if (!abort.signal.aborted) {
+          setRows(value);
+          setPage(1);
+        }
       })
       .catch((failure) => {
         if (!abort.signal.aborted) setError(failure);
@@ -217,66 +265,83 @@ export function AlertsPanel() {
       {!rows && !error && <InlineLoading description={t("loading")} />}
       {rows?.length === 0 && <p>{t("alertInbox.empty")}</p>}
       {rows && rows.length > 0 && (
-        <div style={{ overflowX: "auto" }}>
-          <Table aria-label={t("alertInbox.title")}>
-            <TableHead>
-              <TableRow>
-                {[
-                  "type",
-                  "case",
-                  "event",
-                  "center",
-                  "reason",
-                  "generatedAt",
-                  "additionalInformation",
-                  "status",
-                  "attendedAt",
-                  "attendedBy",
-                  "actions",
-                ].map((key) => (
-                  <TableHeader key={key}>{t(`alertInbox.${key}`)}</TableHeader>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((alert) => (
-                <TableRow key={alert.uuid}>
-                  <TableCell>{t(`alertInbox.values.${alert.type}`)}</TableCell>
-                  <TableCell>{caseDescription(alert)}</TableCell>
-                  <TableCell>{alert.eventName}</TableCell>
-                  <TableCell>{alert.center ?? "—"}</TableCell>
-                  <TableCell>
-                    {t(`alertInbox.reasons.${alert.reason}`)}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(alert.generatedAt).toLocaleString()}
-                  </TableCell>
-                  <TableCell>{alert.additionalInformation ?? "—"}</TableCell>
-                  <TableCell>
-                    {t(`alertInbox.values.${alert.status}`)}
-                  </TableCell>
-                  <TableCell>
-                    {alert.attendedAt
-                      ? new Date(alert.attendedAt).toLocaleString()
-                      : "—"}
-                  </TableCell>
-                  <TableCell>{alert.attendedBy ?? "—"}</TableCell>
-                  <TableCell>
-                    {alert.status === "PENDING" && (
-                      <Button
-                        size="sm"
-                        disabled={Boolean(busy)}
-                        onClick={() => void attend(alert.uuid)}
-                      >
-                        {t("alertInbox.attend")}
-                      </Button>
-                    )}
-                  </TableCell>
+        <>
+          <div style={{ overflowX: "auto" }}>
+            <Table aria-label={t("alertInbox.title")}>
+              <TableHead>
+                <TableRow>
+                  {[
+                    "type",
+                    "case",
+                    "event",
+                    "center",
+                    "reason",
+                    "generatedAt",
+                    "additionalInformation",
+                    "status",
+                    "attendedAt",
+                    "attendedBy",
+                    "actions",
+                  ].map((key) => (
+                    <TableHeader key={key}>
+                      {t(`alertInbox.${key}`)}
+                    </TableHeader>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHead>
+              <TableBody>
+                {rows
+                  .slice((page - 1) * pageSize, page * pageSize)
+                  .map((alert) => (
+                    <TableRow key={alert.uuid}>
+                      <TableCell>
+                        {t(`alertInbox.values.${alert.type}`)}
+                      </TableCell>
+                      <TableCell>{caseDescription(alert)}</TableCell>
+                      <TableCell>{alert.eventName}</TableCell>
+                      <TableCell>{alert.center ?? "—"}</TableCell>
+                      <TableCell>
+                        {t(`alertInbox.reasons.${alert.reason}`)}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(alert.generatedAt).toLocaleString()}
+                      </TableCell>
+                      <TableCell>{alertInformation(alert, t)}</TableCell>
+                      <TableCell>
+                        {t(`alertInbox.values.${alert.status}`)}
+                      </TableCell>
+                      <TableCell>
+                        {alert.attendedAt
+                          ? new Date(alert.attendedAt).toLocaleString()
+                          : "—"}
+                      </TableCell>
+                      <TableCell>{alert.attendedBy ?? "—"}</TableCell>
+                      <TableCell>
+                        {alert.status === "PENDING" && (
+                          <Button
+                            size="sm"
+                            disabled={Boolean(busy)}
+                            onClick={() => void attend(alert.uuid)}
+                          >
+                            {t("alertInbox.attend")}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={rows.length}
+            onChange={({ page: nextPage, pageSize: nextSize }) => {
+              setPage(nextSize === pageSize ? nextPage : 1);
+              setPageSize(nextSize);
+            }}
+          />
+        </>
       )}
     </section>
   );

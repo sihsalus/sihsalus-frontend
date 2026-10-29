@@ -5,15 +5,18 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   AlertAccess,
   AlertNotifications,
   AlertsPanel,
+  alertInformation,
 } from "./alerts-panel.component";
 import { attendAlert, getAlerts } from "./api";
 import { showToast } from "@openmrs/esm-framework";
 import type { SurveillanceAlert } from "./types";
+import es from "../translations/es.json";
+import en from "../translations/en.json";
 
 const state = vi.hoisted(() => ({ allowed: true }));
 vi.mock("./api", () => ({
@@ -21,7 +24,14 @@ vi.mock("./api", () => ({
   getAlerts: vi.fn(),
   attendAlert: vi.fn(),
 }));
-vi.mock("@openmrs/esm-framework", () => ({ showToast: vi.fn() }));
+vi.mock("@openmrs/esm-framework", () => ({
+  showToast: vi.fn(),
+  makeUrl: (path: string) => `/openmrs${path}`,
+}));
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 vi.mock("@sihsalus/esm-rbac", () => ({
   RequirePrivilege: ({ children }: { children: React.ReactNode }) =>
     state.allowed ? children : null,
@@ -47,6 +57,87 @@ const alert: SurveillanceAlert = {
   attendedAt: null,
   attendedBy: null,
 };
+
+it.each(["ACTIVE", "RESIDUAL", "ELIMINATED", "UNCLASSIFIED"] as const)(
+  "translates persisted focus %s using the selected language without changing the evidence",
+  (focus) => {
+    const stored = {
+      ...alert,
+      type: "OUTBREAK" as const,
+      additionalInformation: `Semana desde 2025-10-05; origen: AUTOCTONO; foco previo: ${focus}; casos: 1; superar: 0`,
+    };
+    for (const translations of [es, en]) {
+      expect(
+        alertInformation(stored, (key) => {
+          if (key === "geo.origins.AUTOCTONO")
+            return translations.geo.origins.AUTOCTONO;
+          expect(key).toBe(`geo.classes.${focus}`);
+          return translations.geo.classes[focus];
+        }),
+      ).toBe(
+        `Semana desde 2025-10-05; origen: ${translations.geo.origins.AUTOCTONO}; foco previo: ${translations.geo.classes[focus]}; casos: 1; superar: 0`,
+      );
+    }
+    expect(stored.additionalInformation).toContain(`foco previo: ${focus};`);
+  },
+);
+
+it.each(Object.keys(es.geo.origins) as Array<keyof typeof es.geo.origins>)(
+  "translates persisted origin %s in Spanish and English",
+  (origin) => {
+    for (const translations of [es, en]) {
+      const stored = {
+        ...alert,
+        type: "OUTBREAK" as const,
+        additionalInformation: `origen: ${origin}; casos: 1`,
+      };
+      expect(
+        alertInformation(stored, (key) => {
+          expect(key).toBe(`geo.origins.${origin}`);
+          return translations.geo.origins[origin];
+        }),
+      ).toBe(`origen: ${translations.geo.origins[origin]}; casos: 1`);
+      expect(stored.additionalInformation).toBe(`origen: ${origin}; casos: 1`);
+    }
+  },
+);
+
+it("preserves missing, unknown and already translated alert details", () => {
+  const translate = vi.fn();
+  for (const information of [
+    null,
+    "foco previo: FUTURE; casos: 1",
+    "foco previo: Eliminado; casos: 1",
+    "origen: FUTURE; casos: 1",
+    "origen: Autóctono; casos: 1",
+  ]) {
+    expect(
+      alertInformation(
+        { ...alert, type: "OUTBREAK", additionalInformation: information },
+        translate,
+      ),
+    ).toBe(information ?? "—");
+  }
+  expect(alertInformation(alert, translate)).toBe(alert.additionalInformation);
+  expect(translate).not.toHaveBeenCalled();
+});
+
+it("renders the translated focus in the inbox for stored outbreak alerts", async () => {
+  vi.mocked(getAlerts).mockResolvedValue([
+    {
+      ...alert,
+      type: "OUTBREAK",
+      additionalInformation:
+        "Semana desde 2025-10-05; origen: AUTOCTONO; foco previo: ELIMINATED; casos: 1",
+    },
+  ]);
+  render(<AlertsPanel />);
+  expect(
+    await screen.findByText(
+      "Semana desde 2025-10-05; origen: geo.origins.AUTOCTONO; foco previo: geo.classes.ELIMINATED; casos: 1",
+    ),
+  ).toBeInTheDocument();
+});
 beforeEach(() => {
   vi.clearAllMocks();
   state.allowed = true;
@@ -72,6 +163,69 @@ it("shows full data and filters by type, reason and status", async () => {
       expect.any(AbortSignal),
     ),
   );
+});
+
+it("paginates alerts and attends the selected alert on the second page", async () => {
+  const rows = Array.from({ length: 11 }, (_, index) => ({
+    ...alert,
+    uuid: `alert-${index + 1}`,
+    eventName: `Event ${index + 1}`,
+  }));
+  vi.mocked(getAlerts).mockResolvedValue(rows);
+  render(<AlertsPanel />);
+  await screen.findByText("Event 1");
+  expect(screen.queryByText("Event 11")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Página anterior" }),
+  ).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
+  expect(screen.getByText("Event 11")).toBeInTheDocument();
+  expect(screen.queryByText("Event 1")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Página siguiente" }),
+  ).toBeDisabled();
+  vi.mocked(getAlerts).mockResolvedValue(rows.slice(0, 10));
+  fireEvent.click(screen.getByRole("button", { name: "alertInbox.attend" }));
+  await waitFor(() => expect(attendAlert).toHaveBeenCalledWith("alert-11"));
+  await screen.findByText("Event 1");
+  expect(
+    screen.getByRole("button", { name: "Página anterior" }),
+  ).toBeDisabled();
+});
+
+it("uses the shared page sizes and resets the page after filters and refresh", async () => {
+  vi.mocked(getAlerts).mockResolvedValue(
+    Array.from({ length: 51 }, (_, index) => ({
+      ...alert,
+      uuid: `alert-${index + 1}`,
+      eventName: `Event ${index + 1}`,
+    })),
+  );
+  render(<AlertsPanel />);
+  await screen.findByText("Event 1");
+  fireEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
+  fireEvent.change(screen.getByLabelText("Filas por página:"), {
+    target: { value: "20" },
+  });
+  expect(screen.getByText("Event 1")).toBeInTheDocument();
+  expect(screen.getByText("Event 20")).toBeInTheDocument();
+  expect(screen.queryByText("Event 21")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Filas por página:"), {
+    target: { value: "50" },
+  });
+  expect(screen.getByText("Event 50")).toBeInTheDocument();
+  expect(screen.queryByText("Event 51")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
+  fireEvent.change(screen.getByLabelText("alertInbox.status"), {
+    target: { value: "PENDING" },
+  });
+  await screen.findByText("Event 1");
+  fireEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
+  fireEvent.click(screen.getByRole("button", { name: "alertInbox.refresh" }));
+  await screen.findByText("Event 1");
+  expect(
+    screen.getByRole("button", { name: "Página anterior" }),
+  ).toBeDisabled();
 });
 it("marks an alert attended only after confirmed persistence", async () => {
   render(<AlertsPanel />);
@@ -101,6 +255,10 @@ it("does not load the inbox when access is denied", () => {
 it("shows committed alerts once across save and stream signals and closes the stream", async () => {
   const close = vi.fn();
   class Stream {
+    constructor(url: string, options: EventSourceInit) {
+      expect(url).toBe("/openmrs/surveillance/alerts/stream");
+      expect(options.withCredentials).toBe(true);
+    }
     onmessage: (() => void) | null = null;
     close = close;
   }
@@ -116,6 +274,57 @@ it("shows committed alerts once across save and stream signals and closes the st
   view.unmount();
   expect(close).toHaveBeenCalledTimes(1);
   vi.unstubAllGlobals();
+});
+
+it("recovers new alerts without stream messages and stops polling after unmount", async () => {
+  vi.useFakeTimers();
+  const close = vi.fn();
+  vi.stubGlobal(
+    "EventSource",
+    class {
+      close = close;
+    },
+  );
+  vi.mocked(getAlerts)
+    .mockResolvedValueOnce([])
+    .mockRejectedValueOnce(new Error("offline"));
+  const view = render(<AlertNotifications />);
+  await act(async () => {});
+  expect(showToast).not.toHaveBeenCalled();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(60000);
+  });
+  expect(showToast).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(30000);
+  });
+  expect(showToast).toHaveBeenCalledTimes(1);
+  view.unmount();
+  const calls = vi.mocked(getAlerts).mock.calls.length;
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(30000);
+  });
+  expect(getAlerts).toHaveBeenCalledTimes(calls);
+  expect(close).toHaveBeenCalledTimes(1);
+});
+
+it("recovers on focus even when EventSource cannot be constructed", async () => {
+  vi.stubGlobal(
+    "EventSource",
+    class {
+      constructor() {
+        throw new Error("unsupported");
+      }
+    },
+  );
+  vi.mocked(getAlerts).mockResolvedValueOnce([]);
+  const view = render(<AlertNotifications />);
+  await act(async () => {});
+  act(() => {
+    window.dispatchEvent(new Event("focus"));
+  });
+  await waitFor(() => expect(showToast).toHaveBeenCalledTimes(1));
+  view.unmount();
 });
 
 it("does not show a case for outbreak alerts", async () => {

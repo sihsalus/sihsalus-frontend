@@ -125,6 +125,8 @@
       "FOCUS_CASES": "Superar mínimo de casos por origen y foco"
     },
     "add": "Añadir regla",
+    "remove": "Eliminar regla {{number}}",
+    "empty": "Sin reglas de brote. Al guardar, dejarán de generarse nuevas alertas de brote; las alertas inmediatas seguirán activas.",
     "percentile": "Percentil a superar (0–100)",
     "weeks": "Semanas consecutivas (1–53)",
     "minimumCases": "Número de casos a superar",

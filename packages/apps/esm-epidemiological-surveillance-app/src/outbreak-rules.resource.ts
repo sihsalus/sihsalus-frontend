@@ -49,7 +49,6 @@ export function newOutbreakRule(
 }
 export function validOutbreakRules(rules: OutbreakRule[]) {
   return (
-    rules.length > 0 &&
     new Set(rules.map((r) => r.id)).size === rules.length &&
     rules.every((rule) => {
       if (rule.type === "FOCUS_CASES")

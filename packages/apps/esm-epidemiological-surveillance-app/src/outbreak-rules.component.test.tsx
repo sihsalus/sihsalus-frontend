@@ -10,6 +10,10 @@ import {
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
+vi.mock("@openmrs/esm-framework", () => ({
+  openmrsFetch: vi.fn(),
+  restBaseUrl: "/ws/rest/v1",
+}));
 vi.mock("./outbreak-rules.resource", async (original) => ({
   ...(await original<typeof import("./outbreak-rules.resource")>()),
   getOutbreakRules: vi.fn(),
@@ -100,6 +104,7 @@ it("cancels changes and reloads persisted rules on reopening", async () => {
   );
 });
 it("validates percentile and count boundaries", () => {
+  expect(validOutbreakRules([])).toBe(true);
   const rule = newOutbreakRule("a", "THRESHOLD");
   for (const percentile of [0, 75.5, 100])
     expect(validOutbreakRules([{ ...rule, percentile }])).toBe(true);
@@ -111,4 +116,32 @@ it("validates percentile and count boundaries", () => {
   expect(validOutbreakRules([{ ...focus, minimumCases: 2147483646 }])).toBe(
     true,
   );
+});
+
+it("removes rules including the last one only when saved", async () => {
+  render(<OutbreakRulesSettings />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "outbreakRules.configure" }),
+  );
+  await screen.findByLabelText("outbreakRules.weeks");
+  fireEvent.click(
+    screen.getAllByRole("button", { name: "outbreakRules.remove" })[1],
+  );
+  expect(
+    screen.queryByLabelText("outbreakRules.weeks"),
+  ).not.toBeInTheDocument();
+  expect(saveOutbreakRules).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "cancel" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "outbreakRules.configure" }),
+  );
+  await screen.findByLabelText("outbreakRules.weeks");
+  for (let n = 0; n < 3; n++)
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "outbreakRules.remove" })[0],
+    );
+  expect(screen.getByText("outbreakRules.empty")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "save" }));
+  await screen.findByText("outbreakRules.saved");
+  expect(saveOutbreakRules).toHaveBeenCalledWith([]);
 });

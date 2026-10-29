@@ -72,7 +72,7 @@
     "dayjs": "1.x",
     "dotenv": "^18.0.8",
     "i18next": "^26.4.7",
-    "i18next-cli": "1.75.3",
+    "i18next-cli": "1.80.4",
     "openmrs": "*",
     "react": "^18.x",
     "react-dom": "^18.x",
@@ -82,9 +82,9 @@
     "swc-loader": "^0.2.3",
     "swr": "^2.x",
     "ts-node": "^10.9.2",
-    "turbo": "^2.11.9",
+    "turbo": "^2.11.10",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "^5.0.5"
   },
   "author": "Wei Sadre (Uclouvain-ICTEAM)"

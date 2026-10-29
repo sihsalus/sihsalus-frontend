@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.118.0",
+    "@carbon/react": "^1.119.0",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {
@@ -55,7 +55,7 @@
     "@openmrs/esm-framework": "workspace:*",
     "@rspack/cli": "2.2.9",
     "@typescript/native": "npm:typescript@7.0.2",
-    "ace-builds": "^1.45.0",
+    "ace-builds": "^1.45.2",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-ace": "^15.0.0",

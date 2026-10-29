@@ -55,14 +55,14 @@
     "access": "public"
   },
   "dependencies": {
-    "i18next": "^26.4.7"
+    "i18next": "^26.5.11"
   },
   "peerDependencies": {
     "i18next": "26.x"
   },
   "devDependencies": {
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.18",
+    "@swc/core": "1.16.20",
     "@types/fhir": "0.0.31",
     "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@7.0.2",

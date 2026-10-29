@@ -39,7 +39,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-laboratory/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.118.0",
+    "@carbon/react": "^1.119.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "react-to-print": "^3.1.1"
   },
@@ -57,7 +57,7 @@
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@playwright/test": "^1.64.1",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.18",
+    "@swc/core": "1.16.20",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "@typescript/native": "npm:typescript@7.0.2",

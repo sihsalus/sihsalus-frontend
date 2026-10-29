@@ -48,8 +48,8 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "dependencies": {
-    "@carbon/charts": "^1.27.21",
-    "@carbon/react": "^1.118.0",
+    "@carbon/charts": "^1.27.23",
+    "@carbon/react": "^1.119.0",
     "@internationalized/date": "^3.12.4",
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-routes": "workspace:*",
@@ -79,7 +79,7 @@
     "cross-env": "^10.1.0",
     "css-loader": "7.1.5",
     "react-router-dom": "7.18.4",
-    "sass-embedded": "1.105.2",
+    "sass-embedded": "1.106.1",
     "sass-loader": "17.0.1",
     "vitest": "^5.0.5",
     "webpack-bundle-analyzer": "5.4.0"

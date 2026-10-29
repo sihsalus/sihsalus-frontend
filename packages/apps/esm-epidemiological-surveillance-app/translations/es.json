@@ -111,6 +111,18 @@
     "malaria": {
       "name": "Malaria",
       "description": "Ficha de investigación epidemiológica de malaria. Actualización publicada en abril de 2026."
+    },
+    "muerte-materna-autopsia-verbal": {
+      "name": "Muerte materna: autopsia verbal",
+      "description": "Ficha de autopsia verbal de muerte materna"
+    },
+    "varicela-sin-complicaciones": {
+      "name": "Varicela sin complicaciones",
+      "description": "Ficha de investigación clínico-epidemiológica de varicela"
+    },
+    "rabia-humana": {
+      "name": "Rabia humana",
+      "description": "Ficha clínica-epidemiológica de casos de rabia humana"
     }
   },
   "outbreakRules": {
@@ -781,7 +793,7 @@
     },
     "reasons": {
       "FOCUS_CASES": "Superación de casos por origen y clasificación previa del foco",
-      "IMMEDIATE_EVENT": "Evento notificable de periodicidad inmediata",
+      "IMMEDIATE_EVENT": "Evento notificable",
       "STATUS_CHANGED": "Cambio de estado epidemiológico de un caso",
       "DEATH": "Defunción atribuible a un caso",
       "CONFIRMED_PREGNANCY": "Caso confirmado en una gestante",
@@ -789,6 +801,7 @@
       "SUSTAINED_INCREASE": "Superación del percentil durante las semanas consecutivas configuradas",
       "AUTOCHTHONOUS_ELIMINATED": "Superación de casos autóctonos en un foco previamente eliminado"
     },
-    "disconnected": "La conexión de alertas se está restableciendo. Puede actualizar la pestaña Alertas para consultar las pendientes."
+    "disconnected": "La conexión de alertas se está restableciendo. Puede actualizar la pestaña Alertas para consultar las pendientes.",
+    "registeredBy": "Profesional que registró"
   }
 }

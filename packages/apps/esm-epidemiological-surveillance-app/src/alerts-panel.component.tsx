@@ -273,6 +273,7 @@ export function AlertsPanel() {
                   {[
                     "type",
                     "case",
+                    "registeredBy",
                     "event",
                     "center",
                     "reason",
@@ -298,6 +299,7 @@ export function AlertsPanel() {
                         {t(`alertInbox.values.${alert.type}`)}
                       </TableCell>
                       <TableCell>{caseDescription(alert)}</TableCell>
+                      <TableCell>{alert.registeredBy ?? "—"}</TableCell>
                       <TableCell>{alert.eventName}</TableCell>
                       <TableCell>{alert.center ?? "—"}</TableCell>
                       <TableCell>

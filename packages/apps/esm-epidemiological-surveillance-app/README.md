@@ -2,7 +2,7 @@
 
 ## Fichas de investigación
 
-La pestaña **Fichas**, antes de **Configuración** (última pestaña), ofrece 25 PDF en blanco para
+La pestaña **Fichas**, antes de **Configuración** (última pestaña), ofrece 28 PDF en blanco para
 los 18 temas solicitados, además de arbovirosis V.03, leishmaniasis y malaria.
 El buscador filtra por nombre, sigla o descripción, sin distinguir mayúsculas
 ni tildes, y muestra el número de resultados o un mensaje cuando no hay coincidencias.
@@ -894,7 +894,7 @@ Se requiere actualizar ESM y OMOD juntos. Los destinatarios y quienes pueden
 consultar/atender tienen **los cinco privilegios de vigilancia epidemiológica**.
 No se asignan privilegios ni se depende del nombre de un rol.
 
-RF-10: periodicidad inmediata al registrar solo si no se indica fecha de notificaci?n; transición de clasificación con
+RF-10: evento notificable al registrar un caso, independientemente de la periodicidad y de la fecha de notificación; transición de clasificación con
 estado anterior y nuevo; defunción con atribución `SI` al caso; gestación con
 clasificación confirmada. La fecha de defunción procede de Person; su asociación
 al caso se establece al guardar la atribución. Las ediciones idénticas no crean
@@ -1052,3 +1052,9 @@ focos previos y rechazo de semanas fraccionarias en JSON. Diff --check: PASSED.
 El build advierte por el chunk ExcelJS de 910 KiB. Prettier del README: FAILED
 por formato del documento; no se reformateó completo. Smoke integrado DEV/QLTY
 y `verify:changed`: NOT RUN, sin entorno coordinado ni commits. No se desplegó.
+
+Actualización 29/10/2026: se agregan las fichas de autopsia verbal de muerte materna, varicela sin complicaciones y rabia humana. Su procedencia y SHA-256 constan en `sources.json`; las tres incluyen el enlace «Fuente oficial» con el mismo formato que el resto del catálogo. Varicela enlaza al PDF idéntico publicado por RIS Grau; autopsia verbal y rabia descargan las versiones oficiales del CDC, idénticas a los PDF enlazados como fuente oficial. Se actualizaron sus SHA-256 y se revisaron sus cuatro páginas. Autopsia verbal corresponde al anexo 4 de la NTS 227-MINSA/CDC-2025. El adjunto de varicela menciona complicaciones en su definición de caso, pese al nombre del archivo.
+
+La alerta «Evento notificable» se genera al crear un caso asociado a un evento, con cualquier periodicidad y con o sin fecha de notificación. Conserva `IMMEDIATE_EVENT` por compatibilidad histórica; editar el caso no repite esta alerta. `registeredBy` muestra el autor original del caso (también en brotes), con nombre o usuario como respaldo; si el caso/paciente está anulado o no existe, se muestra un guion. Requiere el OMOD actualizado.
+
+Validación de esta actualización (29/10/2026): Maven `-B -o resources:resources resources:testResources compiler:compile compiler:testCompile surefire:test` PASSED (199 API y 11 REST). `yarn vitest run src/alerts-panel.component.test.tsx src/investigation-forms.component.test.tsx --maxWorkers=2` PASSED (31 pruebas); suite completa `yarn workspace @sihsalus/esm-epidemiological-surveillance-app test --maxWorkers=2`: FAILED al cargar seis suites por resolución de `@openmrs/esm-globals`, con 199 pruebas ejecutadas correctamente (fallo no contrastado contra la base). `lint`, `tsc6 --noEmit -p packages/apps/esm-epidemiological-surveillance-app/tsconfig.json`, `build`, `node --test tooling/investigation-forms.check.cjs` y `git diff --check`: PASSED. La compilación advierte por tamaños de PDF y ExcelJS. Se revisaron inicialmente las seis páginas de los tres adjuntos; posteriormente autopsia verbal y rabia se sustituyeron por las versiones oficiales, ambas con dos páginas de contenido. Smoke DEV/QLTY y despliegue: NOT RUN, sin entorno coordinado.

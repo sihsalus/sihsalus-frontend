@@ -111,6 +111,18 @@
     "malaria": {
       "name": "Malaria",
       "description": "Malaria epidemiological investigation form. Update published in April 2026."
+    },
+    "muerte-materna-autopsia-verbal": {
+      "name": "Maternal death: verbal autopsy",
+      "description": "Maternal death verbal autopsy form"
+    },
+    "varicela-sin-complicaciones": {
+      "name": "Chickenpox without complications",
+      "description": "Clinical and epidemiological investigation form for chickenpox"
+    },
+    "rabia-humana": {
+      "name": "Human rabies",
+      "description": "Clinical and epidemiological form for human rabies cases"
     }
   },
   "outbreakRules": {
@@ -781,7 +793,7 @@
     },
     "reasons": {
       "FOCUS_CASES": "Case threshold exceeded by origin and prior focus classification",
-      "IMMEDIATE_EVENT": "Event requiring immediate notification",
+      "IMMEDIATE_EVENT": "Notifiable event",
       "STATUS_CHANGED": "Case epidemiological status changed",
       "DEATH": "Death attributable to a case",
       "CONFIRMED_PREGNANCY": "Confirmed case in a pregnant patient",
@@ -789,6 +801,7 @@
       "SUSTAINED_INCREASE": "Configured percentile exceeded for consecutive weeks",
       "AUTOCHTHONOUS_ELIMINATED": "Autochthonous case threshold exceeded in a previously eliminated focus"
     },
-    "disconnected": "Reconnecting live alerts. Refresh the Alerts tab to review pending alerts."
+    "disconnected": "Reconnecting live alerts. Refresh the Alerts tab to review pending alerts.",
+    "registeredBy": "Registered by"
   }
 }

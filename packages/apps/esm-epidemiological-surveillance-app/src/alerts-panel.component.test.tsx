@@ -352,3 +352,12 @@ it("uses a single em dash when case details are unavailable", async () => {
     "Filters",
   );
 });
+
+
+it.each(["IMMEDIATE", "OUTBREAK"] as const)("shows the original registering professional for %s", async (type) => {
+  vi.mocked(getAlerts).mockResolvedValue([{ ...alert, type, registeredBy: "Ana Registro" }]);
+  render(<AlertsPanel />);
+  expect(await screen.findByText("Ana Registro")).toBeInTheDocument();
+  expect(screen.getByRole("columnheader", { name: "alertInbox.registeredBy" })).toBeInTheDocument();
+  expect(es.alertInbox.reasons.IMMEDIATE_EVENT).toBe("Evento notificable");
+});

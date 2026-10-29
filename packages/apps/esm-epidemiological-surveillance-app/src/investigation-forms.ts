@@ -24,7 +24,32 @@ import arbovirosis from "./assets/forms/arbovirosis.pdf";
 import leishmaniasis from "./assets/forms/leishmaniasis.pdf";
 import malaria from "./assets/forms/malaria.pdf";
 
+import addedForm0 from "./assets/forms/muerte-materna-autopsia-verbal.pdf";
+import addedForm1 from "./assets/forms/varicela-sin-complicaciones.pdf";
+import addedForm2 from "./assets/forms/rabia-humana.pdf";
+
 export const investigationForms = [
+  {
+    id: "muerte-materna-autopsia-verbal",
+    url: addedForm0,
+    regulation: "NTS N.° 227-MINSA/CDC-2025",
+    source:
+      "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/06/MUERTE-MATERNA_Ficha-de-autopsia-verbal-de-muerte-materna.pdf",
+  },
+  {
+    id: "varicela-sin-complicaciones",
+    url: addedForm1,
+    regulation: null,
+    source:
+      "https://risgrau.gob.pe/wp-content/uploads/2024/06/Ficha-clinico-epidemiologico-de-varicela-2017-sin-complicaciones.pdf",
+  },
+  {
+    id: "rabia-humana",
+    url: addedForm2,
+    regulation: null,
+    source:
+      "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/06/Ficha-Clinico-Epidemiologica-de-caso-de-rabia-humana.pdf",
+  },
   {
     id: "arbovirosis",
     url: arbovirosis,

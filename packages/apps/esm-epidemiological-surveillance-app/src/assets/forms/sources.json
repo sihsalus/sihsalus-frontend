@@ -174,5 +174,30 @@
     "pages": 6,
     "sha256": "03a98ce61feaf7832842413bf82e2cc46683c264a9b416bfe57438080dc7bbfc",
     "reviewed": "2026-10-24"
+  },
+  {
+    "id": "muerte-materna-autopsia-verbal",
+    "title": "Ficha de autopsia verbal de muerte materna",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/06/MUERTE-MATERNA_Ficha-de-autopsia-verbal-de-muerte-materna.pdf",
+    "pages": 2,
+    "sha256": "0223411bba4d5d82ad3fd93e5011e274eb5456998369cb73ca9bcbe285ce94f8",
+    "reviewed": "2026-10-29"
+  },
+  {
+    "id": "varicela-sin-complicaciones",
+    "title": "Ficha de investigación clínico-epidemiológica de varicela",
+    "source": "https://risgrau.gob.pe/wp-content/uploads/2024/06/Ficha-clinico-epidemiologico-de-varicela-2017-sin-complicaciones.pdf",
+    "providedFile": "Ficha-clinico-epidemiologico-de-varicela-2017-sin-complicaciones.pdf",
+    "pages": 2,
+    "sha256": "664874c35f925821a0cef96fb522e9653b1329b6ea5b01230348dd9c5ce5d784",
+    "reviewed": "2026-10-29"
+  },
+  {
+    "id": "rabia-humana",
+    "title": "Ficha clínica-epidemiológica de casos de rabia humana",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/06/Ficha-Clinico-Epidemiologica-de-caso-de-rabia-humana.pdf",
+    "pages": 2,
+    "sha256": "00cbb1c37b8c9e41acd66f3f113d9bc035364575fa908e72cdb055270286653e",
+    "reviewed": "2026-10-29"
   }
 ]

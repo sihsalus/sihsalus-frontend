@@ -13,7 +13,7 @@ test("production build includes every investigation PDF unchanged", () => {
     .filter((name) => name.endsWith(".pdf"))
     .map((name) => digest(readFileSync(join(dist, name))));
   const files = readdirSync(source).filter((name) => name.endsWith(".pdf"));
-  assert.equal(files.length, 25);
+  assert.equal(files.length, 28);
   const imports = readFileSync(
     join(root, "src/investigation-forms.ts"),
     "utf8",

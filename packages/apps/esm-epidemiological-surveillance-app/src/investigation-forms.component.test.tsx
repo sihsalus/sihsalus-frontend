@@ -42,8 +42,14 @@ it("downloads each bundled PDF with a descriptive filename and offers an officia
   fetchMock.mockImplementation(async () => pdfResponse());
   render(<InvestigationFormsPanel />);
   expect(screen.getAllByRole("link", { name: "Fuente oficial" })).toHaveLength(
-    25,
+    28,
   );
+  screen.getAllByRole("link", { name: "Fuente oficial" }).forEach((link, index) => {
+    expect(link).toHaveAttribute("href", investigationForms[index].source);
+    expect(new URL(investigationForms[index].source).protocol).toBe("https:");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
   for (const [index, button] of screen
     .getAllByRole("button", { name: /Descargar ficha/ })
     .entries()) {
@@ -62,6 +68,9 @@ it("finds requested diseases by accent-insensitive names, abbreviations and mult
     name: "Buscar fichas por enfermedad o evento",
   });
   for (const [query, expected] of [
+    ["autopsia verbal", "Muerte materna: autopsia verbal"],
+    ["varicela sin", "Varicela sin complicaciones"],
+    ["rabia humana", "Rabia humana"],
     ["  TBC  ", "Tuberculosis (TBC)"],
     ["sarampion", "Sarampión y rubéola"],
     ["PARALISIS FLACIDA", "Parálisis flácida aguda (PFA)"],
@@ -85,8 +94,8 @@ it("finds requested diseases by accent-insensitive names, abbreviations and mult
   fireEvent.change(search, { target: { value: "" } });
   expect(
     screen.getAllByRole("button", { name: /Descargar ficha/ }),
-  ).toHaveLength(25);
-  expect(screen.getByRole("status")).toHaveTextContent("25 fichas disponibles");
+  ).toHaveLength(28);
+  expect(screen.getByRole("status")).toHaveTextContent("28 fichas disponibles");
 });
 
 it("prevents duplicate downloads, preserves other downloads and allows retry after failure", async () => {

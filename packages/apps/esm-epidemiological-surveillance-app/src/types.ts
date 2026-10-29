@@ -214,6 +214,7 @@ export interface NamedReference {
 }
 
 export interface SurveillanceAlert {
+  registeredBy?: string | null;
   patientDisplay?: string | null;
   encounterDate?: string | null;
   diagnosisDisplay?: string | null;

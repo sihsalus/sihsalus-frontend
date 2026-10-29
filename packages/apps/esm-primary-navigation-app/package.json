@@ -39,8 +39,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.90.0",
-    "@carbon/react": "^1.118.0",
+    "@carbon/icons-react": "^11.91.0",
+    "@carbon/react": "^1.119.0",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21"

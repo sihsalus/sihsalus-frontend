@@ -38,8 +38,8 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@carbon/charts": "^1.27.21",
-    "@carbon/charts-react": "^1.27.21",
+    "@carbon/charts": "^1.27.23",
+    "@carbon/charts-react": "^1.27.23",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
     "zod": "^4.6.7"
@@ -63,15 +63,15 @@
   "devDependencies": {
     "@carbon/colors": "^11.60.0",
     "@carbon/layout": "^11.61.0",
-    "@carbon/react": "^1.118.0",
-    "@carbon/styles": "^1.117.0",
+    "@carbon/react": "^1.119.0",
+    "@carbon/styles": "^1.118.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "2.2.9",
     "@rspack/core": "2.2.9",
     "@typescript/native": "npm:typescript@7.0.2",
     "dayjs": "^1.11.23",
-    "i18next": "^26.4.7",
+    "i18next": "^26.5.11",
     "openmrs": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -79,7 +79,7 @@
     "react-is": "^19.3.1",
     "react-router-dom": "7.18.4",
     "rxjs": "^7.8.2",
-    "sass": "^1.105.2",
+    "sass": "^1.106.1",
     "single-spa": "^6.0.3",
     "swr": "^2.5.1",
     "vite": "8.3.4",

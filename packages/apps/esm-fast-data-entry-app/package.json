@@ -50,18 +50,18 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@carbon/react": "^1.118.0",
+    "@carbon/react": "^1.119.0",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@playwright/test": "^1.64.1",
     "@swc-node/loader": "^1.7.1",
-    "@swc/core": "1.16.18",
+    "@swc/core": "1.16.20",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "@types/testing-library__jest-dom": "^5.14.9",
     "@typescript/native": "npm:typescript@7.0.2",
     "concurrently": "^10.0.6",
-    "i18next": "^26.4.7",
+    "i18next": "^26.5.11",
     "i18next-cli": "1.75.3",
     "lodash-es": "^4.17.21",
     "openmrs": "*",
@@ -78,9 +78,9 @@
   },
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "playwright": "^1.64.1",
-    "react-hook-form": "^7.90.0",
+    "react-hook-form": "^7.91.0",
     "uuid": "^14.0.3"
   }
 }

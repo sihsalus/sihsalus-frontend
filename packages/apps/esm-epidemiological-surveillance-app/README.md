@@ -2,7 +2,7 @@
 
 ## Fichas de investigación
 
-La pestaña **Fichas**, antes de **Configuración** (última pestaña), ofrece 28 PDF en blanco para
+La pestaña **Fichas**, antes de **Configuración** (última pestaña), ofrece 29 PDF en blanco para
 los 18 temas solicitados, además de arbovirosis V.03, leishmaniasis y malaria.
 El buscador filtra por nombre, sigla o descripción, sin distinguir mayúsculas
 ni tildes, y muestra el número de resultados o un mensaje cuando no hay coincidencias.
@@ -1058,3 +1058,5 @@ Actualización 29/10/2026: se agregan las fichas de autopsia verbal de muerte ma
 La alerta «Evento notificable» se genera al crear un caso asociado a un evento, con cualquier periodicidad y con o sin fecha de notificación. Conserva `IMMEDIATE_EVENT` por compatibilidad histórica; editar el caso no repite esta alerta. `registeredBy` muestra el autor original del caso (también en brotes), con nombre o usuario como respaldo; si el caso/paciente está anulado o no existe, se muestra un guion. Requiere el OMOD actualizado.
 
 Validación de esta actualización (29/10/2026): Maven `-B -o resources:resources resources:testResources compiler:compile compiler:testCompile surefire:test` PASSED (199 API y 11 REST). `yarn vitest run src/alerts-panel.component.test.tsx src/investigation-forms.component.test.tsx --maxWorkers=2` PASSED (31 pruebas); suite completa `yarn workspace @sihsalus/esm-epidemiological-surveillance-app test --maxWorkers=2`: FAILED al cargar seis suites por resolución de `@openmrs/esm-globals`, con 199 pruebas ejecutadas correctamente (fallo no contrastado contra la base). `lint`, `tsc6 --noEmit -p packages/apps/esm-epidemiological-surveillance-app/tsconfig.json`, `build`, `node --test tooling/investigation-forms.check.cjs` y `git diff --check`: PASSED. La compilación advierte por tamaños de PDF y ExcelJS. Se revisaron inicialmente las seis páginas de los tres adjuntos; posteriormente autopsia verbal y rabia se sustituyeron por las versiones oficiales, ambas con dos páginas de contenido. Smoke DEV/QLTY y despliegue: NOT RUN, sin entorno coordinado.
+
+COVID-19: se incorpora la [ficha de investigación clínico epidemiológica del CDC](https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/05/COVID-19_Ficha-de-investigacion-clinico-epidemiologica-COVID-19.pdf), revisada el 29/10/2026. El PDF de una página se conserva íntegro y está disponible en búsqueda, descarga y fuente oficial. Su SHA-256 consta en `sources.json`.

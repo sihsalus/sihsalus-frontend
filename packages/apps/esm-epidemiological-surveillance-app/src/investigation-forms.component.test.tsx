@@ -42,7 +42,7 @@ it("downloads each bundled PDF with a descriptive filename and offers an officia
   fetchMock.mockImplementation(async () => pdfResponse());
   render(<InvestigationFormsPanel />);
   expect(screen.getAllByRole("link", { name: "Fuente oficial" })).toHaveLength(
-    28,
+    29,
   );
   screen.getAllByRole("link", { name: "Fuente oficial" }).forEach((link, index) => {
     expect(link).toHaveAttribute("href", investigationForms[index].source);
@@ -68,6 +68,7 @@ it("finds requested diseases by accent-insensitive names, abbreviations and mult
     name: "Buscar fichas por enfermedad o evento",
   });
   for (const [query, expected] of [
+    ["covid", "COVID-19"],
     ["autopsia verbal", "Muerte materna: autopsia verbal"],
     ["varicela sin", "Varicela sin complicaciones"],
     ["rabia humana", "Rabia humana"],
@@ -94,8 +95,8 @@ it("finds requested diseases by accent-insensitive names, abbreviations and mult
   fireEvent.change(search, { target: { value: "" } });
   expect(
     screen.getAllByRole("button", { name: /Descargar ficha/ }),
-  ).toHaveLength(28);
-  expect(screen.getByRole("status")).toHaveTextContent("28 fichas disponibles");
+  ).toHaveLength(29);
+  expect(screen.getByRole("status")).toHaveTextContent("29 fichas disponibles");
 });
 
 it("prevents duplicate downloads, preserves other downloads and allows retry after failure", async () => {

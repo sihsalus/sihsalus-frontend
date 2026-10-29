@@ -1,3 +1,4 @@
+import covid19 from "./assets/forms/covid-19.pdf";
 import form0 from "./assets/forms/tuberculosis.pdf";
 import form1 from "./assets/forms/vih.pdf";
 import form2 from "./assets/forms/sifilis-gonorrea.pdf";
@@ -29,6 +30,13 @@ import addedForm1 from "./assets/forms/varicela-sin-complicaciones.pdf";
 import addedForm2 from "./assets/forms/rabia-humana.pdf";
 
 export const investigationForms = [
+  {
+    id: "covid-19",
+    url: covid19,
+    regulation: null,
+    source:
+      "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/05/COVID-19_Ficha-de-investigacion-clinico-epidemiologica-COVID-19.pdf",
+  },
   {
     id: "muerte-materna-autopsia-verbal",
     url: addedForm0,

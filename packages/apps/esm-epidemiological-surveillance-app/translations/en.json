@@ -123,6 +123,10 @@
     "rabia-humana": {
       "name": "Human rabies",
       "description": "Clinical and epidemiological form for human rabies cases"
+    },
+    "covid-19": {
+      "name": "COVID-19",
+      "description": "COVID-19 clinical and epidemiological investigation form"
     }
   },
   "outbreakRules": {

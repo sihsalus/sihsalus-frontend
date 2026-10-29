@@ -199,5 +199,13 @@
     "pages": 2,
     "sha256": "00cbb1c37b8c9e41acd66f3f113d9bc035364575fa908e72cdb055270286653e",
     "reviewed": "2026-10-29"
+  },
+  {
+    "id": "covid-19",
+    "title": "Ficha de investigación clínico epidemiológica COVID-19",
+    "source": "https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/05/COVID-19_Ficha-de-investigacion-clinico-epidemiologica-COVID-19.pdf",
+    "pages": 1,
+    "sha256": "902d7a626a06e44fc632e5368ded12693733cf0301476859cb6bf2feb7cc99f2",
+    "reviewed": "2026-10-29"
   }
 ]

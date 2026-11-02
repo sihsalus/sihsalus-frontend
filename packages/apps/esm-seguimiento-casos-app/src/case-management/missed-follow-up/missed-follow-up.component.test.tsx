@@ -7,7 +7,7 @@ import { useMissedFollowUp } from './missed-follow-up.resource';
 
 vi.mock('./missed-follow-up.resource', () => ({ useMissedFollowUp: vi.fn() }));
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
-  ...await vi.importActual<typeof import('@openmrs/esm-patient-common-lib')>('@openmrs/esm-patient-common-lib'),
+  ...(await vi.importActual<typeof import('@openmrs/esm-patient-common-lib')>('@openmrs/esm-patient-common-lib')),
   launchPatientWorkspace: vi.fn(),
 }));
 
@@ -17,8 +17,13 @@ const empty = { encounters: [], isLoading: false, isValidating: false, error: un
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useMissedFollowUp).mockReturnValue(empty);
-  vi.mocked(useConfig).mockReturnValue({ concepts: {}, formsList: { defaulterTracingFormUuid: 'synthetic-tracing-form' } });
-  vi.mocked(useSession).mockReturnValue({ user: { uuid: 'synthetic-reader', privileges: [] } } as ReturnType<typeof useSession>);
+  vi.mocked(useConfig).mockReturnValue({
+    concepts: {},
+    formsList: { defaulterTracingFormUuid: 'synthetic-tracing-form' },
+  });
+  vi.mocked(useSession).mockReturnValue({ user: { uuid: 'synthetic-reader', privileges: [] } } as ReturnType<
+    typeof useSession
+  >);
   vi.mocked(userHasAccess).mockReturnValue(false);
 });
 
@@ -49,12 +54,21 @@ it('shows an empty history without a creation action for read-only access', () =
 });
 
 it('launches the configured form for the current patient only when modification is allowed', () => {
-  vi.mocked(userHasAccess).mockImplementation((privilege) => privilege === 'app:hoja.clinica.perdidaSeguimiento.editar');
+  vi.mocked(userHasAccess).mockImplementation(
+    (privilege) => privilege === 'app:hoja.clinica.perdidaSeguimiento.editar',
+  );
   const { rerender } = render(<MissedFollowUp patientUuid="patient-a" />);
   rerender(<MissedFollowUp patientUuid="patient-b" />);
   fireEvent.click(screen.getByRole('button', { name: /record/i }));
   expect(launchPatientWorkspace).toHaveBeenCalledExactlyOnceWith('patient-form-entry-workspace', {
-    workspaceTitle: 'Pérdida en el seguimiento', mutateForm: mutate,
-    formInfo: { encounterUuid: '', formUuid: 'synthetic-tracing-form', patientUuid: 'patient-b', visitTypeUuid: '', visitUuid: '' },
+    workspaceTitle: 'Pérdida en el seguimiento',
+    mutateForm: mutate,
+    formInfo: {
+      encounterUuid: '',
+      formUuid: 'synthetic-tracing-form',
+      patientUuid: 'patient-b',
+      visitTypeUuid: '',
+      visitUuid: '',
+    },
   });
 });

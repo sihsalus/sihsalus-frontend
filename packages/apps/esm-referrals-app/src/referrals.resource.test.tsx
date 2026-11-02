@@ -18,12 +18,18 @@ function isolatedCache() {
   };
 }
 
-beforeEach(() => fetchMock.mockReset());
+beforeEach(() => {
+  fetchMock.mockReset();
+});
 
 describe('community referral queries', () => {
   it('keeps loading distinct from a successful empty response', async () => {
     let finish: (value: unknown) => void;
-    fetchMock.mockReturnValue(new Promise((resolve) => { finish = resolve; }) as never);
+    fetchMock.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never,
+    );
     const { result } = renderHook(() => useCommunityReferrals('active'), { wrapper: isolatedCache() });
 
     expect(result.current.isLoading).toBe(true);
@@ -38,11 +44,15 @@ describe('community referral queries', () => {
   it('changes the query and results when the selected referral status changes', async () => {
     const active = { id: 7, uuid: 'synthetic-active', givenName: 'Synthetic active' };
     const completed = { id: 8, uuid: 'synthetic-completed', givenName: 'Synthetic completed' };
-    fetchMock.mockImplementation(async (url) => ({
-      data: String(url).endsWith('status=completed') ? [completed] : [active],
-    }) as never);
+    fetchMock.mockImplementation(
+      async (url) =>
+        ({
+          data: String(url).endsWith('status=completed') ? [completed] : [active],
+        }) as never,
+    );
     const { result, rerender } = renderHook(({ status }) => useCommunityReferrals(status), {
-      initialProps: { status: 'active' }, wrapper: isolatedCache(),
+      initialProps: { status: 'active' },
+      wrapper: isolatedCache(),
     });
     await waitFor(() => expect(result.current.referrals).toEqual([active]));
     rerender({ status: 'completed' });
@@ -65,7 +75,9 @@ describe('referral actions at the API boundary', () => {
     fetchMock.mockResolvedValue({ data: { uuid: 'synthetic-patient' } } as never);
     await expect(processCommunityReferral(27)).resolves.toMatchObject({ data: { uuid: 'synthetic-patient' } });
     expect(fetchMock).toHaveBeenCalledWith(`${restBaseUrl}/kenyaemril/serveReferredClient`, {
-      method: 'POST', body: { referralMessageId: 27 }, headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: { referralMessageId: 27 },
+      headers: { 'Content-Type': 'application/json' },
     });
   });
 

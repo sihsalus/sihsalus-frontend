@@ -10,7 +10,11 @@ const fetchMock = vi.mocked(openmrsFetch);
 function isolatedCache() {
   const cache = new Map();
   return function Wrapper({ children }: PropsWithChildren) {
-    return <SWRConfig value={{ provider: () => cache, dedupingInterval: 0, shouldRetryOnError: false }}>{children}</SWRConfig>;
+    return (
+      <SWRConfig value={{ provider: () => cache, dedupingInterval: 0, shouldRetryOnError: false }}>
+        {children}
+      </SWRConfig>
+    );
   };
 }
 
@@ -34,11 +38,15 @@ it.each([
 it('isolates the patient query when moving between charts', async () => {
   const first = { uuid: 'synthetic-encounter-a' };
   const second = { uuid: 'synthetic-encounter-b' };
-  fetchMock.mockImplementation(async (url) => ({
-    data: { results: String(url).includes('patient=patient-b&') ? [second] : [first] },
-  }) as never);
+  fetchMock.mockImplementation(
+    async (url) =>
+      ({
+        data: { results: String(url).includes('patient=patient-b&') ? [second] : [first] },
+      }) as never,
+  );
   const { result, rerender } = renderHook(({ patient }) => useMissedFollowUp(patient), {
-    initialProps: { patient: 'patient-a' }, wrapper: isolatedCache(),
+    initialProps: { patient: 'patient-a' },
+    wrapper: isolatedCache(),
   });
   await waitFor(() => expect(result.current.encounters).toEqual([first]));
   rerender({ patient: 'patient-b' });

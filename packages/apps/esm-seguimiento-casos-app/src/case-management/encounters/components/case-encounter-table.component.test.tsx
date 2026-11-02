@@ -16,7 +16,9 @@ const headers = [{ key: 'formName', header: 'Form name' }];
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useConfig).mockReturnValue({});
-  vi.mocked(useSession).mockReturnValue({ user: { uuid: 'synthetic-reader', privileges: [] } } as ReturnType<typeof useSession>);
+  vi.mocked(useSession).mockReturnValue({ user: { uuid: 'synthetic-reader', privileges: [] } } as ReturnType<
+    typeof useSession
+  >);
   vi.mocked(userHasAccess).mockReturnValue(false);
 });
 
@@ -40,9 +42,16 @@ it('targets the expanded encounter for both mutations with the current shared ed
   const remove = vi.fn();
   render(<CaseEncounterTable encounters={encounters} rows={rows} headers={headers} onEdit={edit} onDelete={remove} />);
   const row = screen.getByRole('row', { name: /Second follow-up/ });
-  fireEvent.click(within(row).getByRole('button'));
-  fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  const toggle = within(row).getByRole('button');
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  const detailsId = toggle.getAttribute('aria-controls');
+  if (!detailsId) throw new Error('The encounter toggle must identify its expanded row');
+  const details = document.getElementById(detailsId);
+  expect(details).toBeInTheDocument();
+  if (!details) throw new Error('The selected encounter details must exist');
+  fireEvent.click(within(details).getByRole('button', { name: 'Edit' }));
+  fireEvent.click(within(details).getByRole('button', { name: 'Delete' }));
   expect(edit).toHaveBeenCalledExactlyOnceWith('synthetic-encounter-b');
   expect(remove).toHaveBeenCalledExactlyOnceWith('synthetic-encounter-b');
 });

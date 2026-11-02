@@ -19,9 +19,13 @@ it('opens reasons for the selected referral and disposes the modal on close', ()
   vi.mocked(showModal).mockReturnValue(dispose);
   render(<ReferralActions referralData={referral} status="active" />);
   fireEvent.click(screen.getByRole('button', { name: 'View reasons' }));
-  expect(showModal).toHaveBeenCalledWith('referral-reasons-dialog', expect.objectContaining({
-    referralReasons: referral, status: 'active',
-  }));
+  expect(showModal).toHaveBeenCalledWith(
+    'referral-reasons-dialog',
+    expect.objectContaining({
+      referralReasons: referral,
+      status: 'active',
+    }),
+  );
   (vi.mocked(showModal).mock.calls[0][1].closeModal as () => void)();
   expect(dispose).toHaveBeenCalledOnce();
   expect(processCommunityReferral).not.toHaveBeenCalled();
@@ -31,9 +35,11 @@ it('navigates to the patient returned after successful processing, not the refer
   vi.mocked(processCommunityReferral).mockResolvedValue({ data: { uuid: 'synthetic-patient' } } as never);
   render(<ReferralActions referralData={referral} status="active" />);
   fireEvent.click(screen.getByRole('button', { name: 'Serve client' }));
-  await waitFor(() => expect(navigate).toHaveBeenCalledWith({
-    to: '/openmrs/spa/patient/synthetic-patient/chart/Patient Summary',
-  }));
+  await waitFor(() =>
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/openmrs/spa/patient/synthetic-patient/chart/Patient Summary',
+    }),
+  );
   expect(processCommunityReferral).toHaveBeenCalledExactlyOnceWith(27);
   expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
 });
@@ -50,9 +56,17 @@ it('does not navigate or announce registration success when processing fails', a
 it('keeps completed referrals read-only in both the action list and the reasons modal', () => {
   const process = vi.fn();
   const close = vi.fn();
-  render(<><ReferralActions referralData={referral} status="completed" />
-    <ReferralReasonsModal referralReasons={referral} status="completed" closeModal={close} handleProcessReferral={process} />
-  </>);
+  render(
+    <>
+      <ReferralActions referralData={referral} status="completed" />
+      <ReferralReasonsModal
+        referralReasons={referral}
+        status="completed"
+        closeModal={close}
+        handleProcessReferral={process}
+      />
+    </>,
+  );
   expect(screen.getByRole('button', { name: 'View reasons' })).toBeInTheDocument();
   expect(screen.getByText('Synthetic referral reason')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Serve client' })).not.toBeInTheDocument();

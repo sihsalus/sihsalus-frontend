@@ -10,7 +10,9 @@ it('keeps submission disabled even after choosing a patient while interoperabili
   render(<FacilityReferralWorkspace closeWorkspace={closeWorkspace} />);
 
   expect(screen.getByText('Backend pending')).toBeInTheDocument();
-  const searchProps = vi.mocked(ExtensionSlot).mock.calls.find(([props]) => props.name === 'patient-search-bar-slot')?.[0];
+  const searchProps = vi
+    .mocked(ExtensionSlot)
+    .mock.calls.find(([props]) => props.name === 'patient-search-bar-slot')?.[0];
   expect(searchProps).toBeDefined();
   const selectPatient = searchProps.state.selectPatientAction as (patientUuid: string) => void;
   act(() => selectPatient('synthetic-patient'));

@@ -159,7 +159,10 @@ describe('staff schedule view', () => {
       ...rosterState,
       schedulingData: {
         ...roster,
-        shifts: [{ ...shift, id: 'suspended-shift', providerName: 'Profesional suspendido', status: 'suspended' }, shift],
+        shifts: [
+          { ...shift, id: 'suspended-shift', providerName: 'Profesional suspendido', status: 'suspended' },
+          shift,
+        ],
       },
     });
     const user = userEvent.setup();

@@ -136,11 +136,13 @@ describe('Psicología encounter queries', () => {
   });
 
   it('does not retain the previous patient history when switching to a patient with no encounters', async () => {
-    vi.mocked(openmrsFetch).mockResolvedValueOnce(response([encounter])).mockResolvedValueOnce(response([]));
-    const { result, rerender } = renderHook(
-      ({ patient }) => useEncounters(encounterTypeUuid, formUuid, patient),
-      { initialProps: { patient: patientUuid }, wrapper: SwrBoundary },
-    );
+    vi.mocked(openmrsFetch)
+      .mockResolvedValueOnce(response([encounter]))
+      .mockResolvedValueOnce(response([]));
+    const { result, rerender } = renderHook(({ patient }) => useEncounters(encounterTypeUuid, formUuid, patient), {
+      initialProps: { patient: patientUuid },
+      wrapper: SwrBoundary,
+    });
     await waitFor(() => expect(result.current.encounters).toEqual([encounter]));
 
     rerender({ patient: 'synthetic-other-patient' });
@@ -169,7 +171,10 @@ describe('Psicología dashboard', () => {
     renderDashboard();
 
     expect(await screen.findByText('Error State')).toBeInTheDocument();
-    expect(ErrorState).toHaveBeenCalledWith(expect.objectContaining({ headerTitle: 'Psicología', error }), expect.anything());
+    expect(ErrorState).toHaveBeenCalledWith(
+      expect.objectContaining({ headerTitle: 'Psicología', error }),
+      expect.anything(),
+    );
     expect(screen.queryByText(/There are no .* to display for this patient/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Record|Add/ })).not.toBeInTheDocument();
     expect(launchPatientWorkspace).not.toHaveBeenCalled();

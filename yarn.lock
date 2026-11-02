@@ -1464,23 +1464,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/charts-react@npm:^1.27.21":
-  version: 1.27.21
-  resolution: "@carbon/charts-react@npm:1.27.21"
+"@carbon/charts-react@npm:^1.27.25":
+  version: 1.27.25
+  resolution: "@carbon/charts-react@npm:1.27.25"
   dependencies:
-    "@carbon/charts": "npm:1.27.21"
+    "@carbon/charts": "npm:1.27.25"
     "@carbon/icons-react": "npm:^11.64.0"
     "@ibm/telemetry-js": "npm:^1.9.1"
   peerDependencies:
     react: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
-  checksum: 10c0/f0f5d2406e5fa1fee68c2066e89fa8ffe02f1fb13a71922e64853cd33a881bed74004c9ab3488350beeb8c255b4e9fb78f7d08890645498f456de2e7526be228
+  checksum: 10c0/9cb72d2bdc3401daf35abde69ba76d582f785c7b5a666d5591577293a1020970aa3f2c60ef205388dc884678277fde79b57cc74f9e2d0faa4504fd63c661b36b
   languageName: node
   linkType: hard
 
-"@carbon/charts@npm:1.27.21, @carbon/charts@npm:^1.27.21":
-  version: 1.27.21
-  resolution: "@carbon/charts@npm:1.27.21"
+"@carbon/charts@npm:1.27.25, @carbon/charts@npm:^1.27.25":
+  version: 1.27.25
+  resolution: "@carbon/charts@npm:1.27.25"
   dependencies:
     "@carbon/colors": "npm:^11.37.0"
     "@carbon/utils-position": "npm:^1.3.0"
@@ -1491,12 +1491,12 @@ __metadata:
     d3-cloud: "npm:^1.2.7"
     d3-sankey: "npm:^0.12.3"
     date-fns: "npm:^4.1.0"
-    dompurify: "npm:^3.4.14"
+    dompurify: "npm:^3.4.16"
     html-to-image: "npm:1.11.11"
     lodash-es: "npm:^4.18.0"
     topojson-client: "npm:^3.1.0"
     tslib: "npm:^2.8.1"
-  checksum: 10c0/1ebde1b89cc1d2672b34a0fa5a5c3153e47582ffd012a3e5b1a3a20bcd0e5e20f2b5b8cbf001b6ae6c7567417c4674c390711591459dcf47d2ae5593c354a813
+  checksum: 10c0/ba36a10b00adc9aa75e6781a9b6fdf87b55375d0605a44f7a416e8e9427dfc8b9c3870157c11bdcb51e1920f163b92b62df75d4d6268e1106f3ce908ad9a3c02
   languageName: node
   linkType: hard
 
@@ -1533,6 +1533,15 @@ __metadata:
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
   checksum: 10c0/d119bf7e4cdadfc5ddab4fc592d42d9ca615a08ca22835d57d48474898df57dfd94fb3e7ed1361b7c4640c1d864df2d2fd9d1332c770b63a584deed6d5c4aa1a
+  languageName: node
+  linkType: hard
+
+"@carbon/feature-flags@npm:^1.11.0":
+  version: 1.11.0
+  resolution: "@carbon/feature-flags@npm:1.11.0"
+  dependencies:
+    "@ibm/telemetry-js": "npm:^1.5.0"
+  checksum: 10c0/3a16678aefd454e05b4f27a03625d094597865df119e5e6964f295187908a57e5eda0875741266418e7004c2afb6e3375db9e90460e4b62b5d76d564c2dd3b2f
   languageName: node
   linkType: hard
 
@@ -1577,16 +1586,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.90.0":
-  version: 11.90.0
-  resolution: "@carbon/icons-react@npm:11.90.0"
+"@carbon/icons-react@npm:^11.91.0":
+  version: 11.91.0
+  resolution: "@carbon/icons-react@npm:11.91.0"
   dependencies:
     "@carbon/icon-helpers": "npm:^10.84.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.8.1"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/0c455398ff6c19aa20074a91e49bccaa54e6004984b2e3c9b0380895ff57ae0d563f8b563f8fccb9cd900a6949f9486c2804dc32937793737ce2d83cd30fd0b3
+  checksum: 10c0/cbcd257b56bf0457801e9bbfe8ea820ff9c470292a011624e9eb96b7d6104b8db1d738c050321e4ee98e35d5e394c98098a1bed96d24f0e4df47db493821d802
   languageName: node
   linkType: hard
 
@@ -1608,6 +1617,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@carbon/layout@npm:^11.62.0":
+  version: 11.62.0
+  resolution: "@carbon/layout@npm:11.62.0"
+  dependencies:
+    "@ibm/telemetry-js": "npm:^1.5.0"
+  checksum: 10c0/7e320e9fb4178cd68a078344911c5deb916328fcf63235152417d488721b8a6f47eaa2385f5f7e72dc4a7d439987b29f3e99957f552de146dfa1024a73683649
+  languageName: node
+  linkType: hard
+
 "@carbon/motion@npm:^11.54.0":
   version: 11.54.0
   resolution: "@carbon/motion@npm:11.54.0"
@@ -1617,17 +1635,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/react@npm:^1.118.0":
-  version: 1.118.0
-  resolution: "@carbon/react@npm:1.118.0"
+"@carbon/motion@npm:^11.55.0":
+  version: 11.55.0
+  resolution: "@carbon/motion@npm:11.55.0"
+  dependencies:
+    "@ibm/telemetry-js": "npm:^1.5.0"
+  checksum: 10c0/b0363ab478a7d5a431afd8f6372aefbe315dabef84a8ea347914c14e037c2cb1ab26bb61d97900bbfb71b15f7aa9f57060ebb927eb660b9de77a08465c82337d
+  languageName: node
+  linkType: hard
+
+"@carbon/react@npm:^1.119.0":
+  version: 1.119.0
+  resolution: "@carbon/react@npm:1.119.0"
   dependencies:
     "@babel/runtime": "npm:^8.0.0"
-    "@carbon/feature-flags": "npm:^1.10.0"
-    "@carbon/icons-react": "npm:^11.90.0"
-    "@carbon/layout": "npm:^11.61.0"
-    "@carbon/motion": "npm:^11.54.0"
-    "@carbon/styles": "npm:^1.117.0"
-    "@carbon/utilities": "npm:^0.27.0"
+    "@carbon/feature-flags": "npm:^1.11.0"
+    "@carbon/icons-react": "npm:^11.91.0"
+    "@carbon/layout": "npm:^11.62.0"
+    "@carbon/motion": "npm:^11.55.0"
+    "@carbon/styles": "npm:^1.118.0"
+    "@carbon/utilities": "npm:^0.28.0"
     "@floating-ui/react": "npm:^0.27.4"
     "@ibm/telemetry-js": "npm:^1.5.0"
     classnames: "npm:2.5.1"
@@ -1645,7 +1672,10 @@ __metadata:
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0 || ^19.0.0
     react-is: ^16.13.1 || ^17.0.2 || ^18.3.1 || ^19.0.0
     sass: ^1.33.0
-  checksum: 10c0/ae3068284ece307667bc923ff38c28405bc047f48a6a1f4439f29557f020af7bba606d8edd73e21f17bd0a1280ebabef4405ff0c506b61b189805d613dd4b2a1
+  peerDependenciesMeta:
+    sass:
+      optional: true
+  checksum: 10c0/f781a77e774a13c43871f70930ac9b1adf193d8261a5ed96eaf3662032c20f297cefe4bf279733f5bbd47ab866dea1e551d815ad8d0ecdbf6cce10917c761809
   languageName: node
   linkType: hard
 
@@ -1743,14 +1773,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/utilities@npm:^0.27.0":
-  version: 0.27.0
-  resolution: "@carbon/utilities@npm:0.27.0"
+"@carbon/utilities@npm:^0.28.0":
+  version: 0.28.0
+  resolution: "@carbon/utilities@npm:0.28.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.6.1"
     "@internationalized/number": "npm:^3.6.1"
     temporal-polyfill: "npm:^1.0.4"
-  checksum: 10c0/2fd74aa1f0474b71f83d4e8f9018493806bc5ac18fa652d2066e64bb15b34fdb96bf53c372693012d664d52207c52702a2822fe3a32a4a111ed641a0dc4fa1e0
+  checksum: 10c0/2d6ec1abf8ab54e218d13237bcb6744e00791145053554d5d30f748895c04e86d4bf054b13191ca15cdeea369595b329b896b155c265ee80fe563fd4c4859023
   languageName: node
   linkType: hard
 
@@ -4167,7 +4197,7 @@ __metadata:
     "@openmrs/esm-navigation": "workspace:*"
     "@openmrs/esm-state": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4258,7 +4288,7 @@ __metadata:
     "@openmrs/esm-state": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/node": "npm:^26.6.5"
@@ -4297,7 +4327,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-translations": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4324,7 +4354,7 @@ __metadata:
     "@openmrs/esm-offline": "workspace:*"
     "@openmrs/esm-state": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4350,7 +4380,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-globals": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4376,7 +4406,7 @@ __metadata:
     "@jsep-plugin/template": "npm:^1.1.0"
     "@jsep-plugin/ternary": "npm:^1.2.0"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4403,7 +4433,7 @@ __metadata:
     "@openmrs/esm-translations": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4434,7 +4464,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-state": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4452,10 +4482,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/esm-form-engine-app@workspace:packages/apps/esm-form-engine-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-form-engine-lib": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     cross-env: "npm:^10.1.0"
@@ -4500,7 +4530,7 @@ __metadata:
     "@openmrs/esm-utils": "workspace:*"
     "@openmrs/typedoc-plugin-file-categories": "npm:10.0.0"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4533,7 +4563,7 @@ __metadata:
   resolution: "@openmrs/esm-globals@workspace:packages/libs/esm-globals"
   dependencies:
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4554,7 +4584,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-state": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4585,7 +4615,7 @@ __metadata:
     "@openmrs/esm-state": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@types/uuid": "npm:^9.0.1"
@@ -4594,9 +4624,9 @@ __metadata:
     concurrently: "npm:^10.0.6"
     cross-env: "npm:^10.1.0"
     dayjs: "npm:^1.11.23"
-    dexie: "npm:^4.4.6"
+    dexie: "npm:^4.4.7"
     happy-dom: "npm:^21.0.3"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     lodash-es: "npm:^4.17.21"
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^7.8.2"
@@ -4617,7 +4647,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/esm-patient-common-lib@workspace:packages/libs/esm-patient-common-lib"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-framework": "workspace:*"
@@ -4627,7 +4657,7 @@ __metadata:
     dayjs: "npm:1.x"
     jsep: "npm:^1.6.0"
     lodash-es: "npm:^4.17.23"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-router-dom: "npm:7.18.4"
     swr: "npm:2.x"
     uuid: "npm:^14.0.3"
@@ -4661,7 +4691,7 @@ __metadata:
     "@openmrs/esm-translations": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4670,7 +4700,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     dayjs: "npm:^1.11.23"
     happy-dom: "npm:^21.0.3"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     lodash-es: "npm:^4.17.21"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -4715,7 +4745,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4746,7 +4776,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -4767,8 +4797,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/esm-styleguide@workspace:packages/libs/esm-styleguide"
   dependencies:
-    "@carbon/charts": "npm:^1.27.21"
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/charts": "npm:^1.27.25"
+    "@carbon/react": "npm:^1.119.0"
     "@internationalized/date": "npm:^3.12.4"
     "@openmrs/esm-api": "workspace:*"
     "@openmrs/esm-config": "workspace:*"
@@ -4785,8 +4815,8 @@ __metadata:
     "@react-aria/datepicker": "npm:^3.17.1"
     "@react-aria/utils": "npm:^3.34.1"
     "@react-stately/datepicker": "npm:^3.17.1"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     clean-webpack-plugin: "npm:4.0.0"
     cross-env: "npm:^10.1.0"
@@ -4796,8 +4826,8 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     react-aria-components: "npm:^1.22.1"
     react-router-dom: "npm:7.18.4"
-    sass-embedded: "npm:1.105.2"
-    sass-loader: "npm:17.0.1"
+    sass-embedded: "npm:1.107.0"
+    sass-loader: "npm:17.1.0"
     vitest: "npm:^5.0.5"
     webpack-bundle-analyzer: "npm:5.4.0"
   peerDependencies:
@@ -4829,12 +4859,12 @@ __metadata:
   resolution: "@openmrs/esm-translations@workspace:packages/libs/esm-translations"
   dependencies:
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
     concurrently: "npm:^10.0.6"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     rimraf: "npm:^6.1.3"
   peerDependencies:
@@ -4850,7 +4880,7 @@ __metadata:
     "@internationalized/date": "npm:^3.12.4"
     "@openmrs/esm-globals": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/fhir": "npm:0.0.31"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/node": "npm:^26.6.5"
@@ -4881,8 +4911,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openmrs/rspack-config@workspace:packages/tooling/rspack-config"
   dependencies:
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/node": "npm:^26.6.5"
     "@types/semver": "npm:^7"
@@ -4892,11 +4922,11 @@ __metadata:
     copy-webpack-plugin: "npm:11.0.0"
     css-loader: "npm:7.1.5"
     lodash: "npm:4.18.1"
-    sass-embedded: "npm:1.105.2"
-    sass-loader: "npm:17.0.1"
+    sass-embedded: "npm:1.107.0"
+    sass-loader: "npm:17.1.0"
     semver: "npm:^7.8.5"
     style-loader: "npm:4.0.0"
-    ts-checker-rspack-plugin: "npm:1.7.1"
+    ts-checker-rspack-plugin: "npm:1.7.2"
     typescript: "npm:@typescript/typescript6@6.0.2"
     webpack-bundle-analyzer: "npm:5.4.0"
     webpack-stats-plugin: "npm:1.1.3"
@@ -6510,30 +6540,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rspack/dev-middleware@npm:^2.0.3":
-  version: 2.0.3
-  resolution: "@rspack/dev-middleware@npm:2.0.3"
+"@rspack/dev-middleware@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "@rspack/dev-middleware@npm:2.0.6"
   peerDependencies:
     "@rspack/core": ^2.0.0
   peerDependenciesMeta:
     "@rspack/core":
       optional: true
-  checksum: 10c0/603d51113a793235a04cc344c4cc7d82c411f651b067e88024ce16870e61c09cfed59c9b7142506dde43f2168448460a2eb03eb519c15d6e408785e3db0ed41b
+  checksum: 10c0/f1ba53218a512b8c9bf3660542afc2c9cfcfe808702beac45d6bc5d02a65069fa8976a77279bdfec99ce23bb5254454575c44e0c8834dec8a4a5ca142183dc82
   languageName: node
   linkType: hard
 
-"@rspack/dev-server@npm:2.2.1":
-  version: 2.2.1
-  resolution: "@rspack/dev-server@npm:2.2.1"
+"@rspack/dev-server@npm:2.2.2":
+  version: 2.2.2
+  resolution: "@rspack/dev-server@npm:2.2.2"
   dependencies:
-    "@rspack/dev-middleware": "npm:^2.0.3"
+    "@rspack/dev-middleware": "npm:^2.0.6"
   peerDependencies:
     "@rspack/core": ^2.0.0
     selfsigned: ^5.0.0
   peerDependenciesMeta:
     selfsigned:
       optional: true
-  checksum: 10c0/8ee9d29d0f23d23e6ac8261e36ca4045bfb68317d42a1a7b48b391c2f17bb05a2086460b0966db4522e6b34748c8a46e943f63d7efe143843bf82e2606e5907e
+  checksum: 10c0/cb9f03cf6645805bac79ff4b05086477c6d1b4c388796862afe45abddbdbe49e24cb8af802e2c6e85f8f0d98ae80fd7ec55e7bdcd409a58757ea1ed7a9ee5c1d
   languageName: node
   linkType: hard
 
@@ -6751,11 +6781,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-active-visits-app@workspace:packages/apps/esm-active-visits-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     lodash-es: "npm:^4.17.15"
@@ -6777,12 +6807,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-appointments-app@workspace:packages/apps/esm-appointments-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
@@ -6790,7 +6820,7 @@ __metadata:
     formik: "npm:^2.2.9"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     yup: "npm:^0.32.11"
@@ -6812,18 +6842,18 @@ __metadata:
   dependencies:
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.118.0"
-    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.119.0"
+    "@carbon/styles": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@sihsalus/esm-patient-conditions-app": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     pdf-lib: "npm:^1.17.1"
@@ -6833,7 +6863,7 @@ __metadata:
     react-is: "npm:^19.3.1"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.5.1"
     vite: "npm:8.3.4"
@@ -6875,16 +6905,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-bed-management-app@workspace:packages/apps/esm-bed-management-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -6902,7 +6932,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-billing-app@workspace:packages/apps/esm-billing-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -6910,7 +6940,7 @@ __metadata:
     "@playwright/test": "npm:^1.64.1"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
@@ -6920,9 +6950,9 @@ __metadata:
     concurrently: "npm:^10.0.6"
     d3-selection: "npm:^3.0.0"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.8"
+    dotenv: "npm:^18.0.9"
     fuzzy: "npm:^0.1.3"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash: "npm:^4.18.1"
     lodash-es: "npm:^4.17.21"
@@ -6930,12 +6960,12 @@ __metadata:
     pinst: "npm:^3.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     react-to-print: "npm:^3.1.1"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     swr: "npm:^2.5.1"
     turbo: "npm:^2.11.9"
     vite: "npm:8.3.4"
@@ -6957,11 +6987,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-blood-bank-app@workspace:packages/apps/esm-blood-bank-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
-    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.119.0"
+    "@carbon/styles": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@testing-library/react": "npm:^16.3.3"
     "@types/react": "npm:^18.3.21"
@@ -6974,8 +7004,8 @@ __metadata:
     react-i18next: "npm:^16.0.0"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
-    sass-embedded: "npm:1.105.2"
-    sass-loader: "npm:17.0.1"
+    sass-embedded: "npm:1.107.0"
+    sass-loader: "npm:17.1.0"
     style-loader: "npm:4.0.0"
     swc-loader: "npm:0.2.7"
     vitest: "npm:5.0.5"
@@ -6999,10 +7029,10 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7032,28 +7062,28 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-cohort-builder-app@workspace:packages/apps/esm-cohort-builder-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.8"
-    i18next: "npm:^26.4.7"
+    dotenv: "npm:^18.0.9"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash: "npm:^4.18.1"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     turbo: "npm:^2.11.9"
     typescript: "npm:@typescript/typescript6@6.0.2"
@@ -7076,22 +7106,22 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.8"
-    i18next: "npm:^26.4.7"
+    dotenv: "npm:^18.0.9"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -7115,33 +7145,33 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-cred-app@workspace:packages/apps/esm-crecimiento-desarrollo-app"
   dependencies:
-    "@carbon/charts": "npm:^1.27.21"
-    "@carbon/charts-react": "npm:^1.27.21"
+    "@carbon/charts": "npm:^1.27.25"
+    "@carbon/charts-react": "npm:^1.27.25"
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.118.0"
-    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.119.0"
+    "@carbon/styles": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.5.1"
     vite: "npm:8.3.4"
@@ -7169,9 +7199,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-devtools-app@workspace:packages/apps/esm-devtools-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@types/node": "npm:^26.6.5"
     "@typescript/native": "npm:typescript@7.0.2"
     fuzzy: "npm:^0.1.3"
@@ -7195,19 +7225,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-dispensing-app@workspace:packages/apps/esm-dispensing-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
     "@sihsalus/esm-rbac": "workspace:*"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
-    dotenv: "npm:^18.0.8"
-    i18next: "npm:^26.4.7"
+    dotenv: "npm:^18.0.9"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
@@ -7238,7 +7268,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     vite: "npm:8.3.4"
@@ -7265,7 +7295,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-emergency-app@workspace:packages/apps/esm-emergency-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
@@ -7276,7 +7306,7 @@ __metadata:
     cross-env: "npm:^7.0.3"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     swr: "npm:^2.5.1"
     uuid: "npm:^14.0.3"
     vite: "npm:8.3.4"
@@ -7298,27 +7328,27 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-fast-data-entry-app@workspace:packages/apps/esm-fast-data-entry-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc-node/loader": "npm:^1.7.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@types/testing-library__jest-dom": "npm:^5.14.9"
     "@typescript/native": "npm:typescript@7.0.2"
     concurrently: "npm:^10.0.6"
-    dotenv: "npm:^18.0.8"
-    i18next: "npm:^26.4.7"
+    dotenv: "npm:^18.0.9"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     playwright: "npm:^1.64.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     semver: "npm:^7.8.5"
@@ -7347,27 +7377,27 @@ __metadata:
   dependencies:
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.118.0"
-    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.119.0"
+    "@carbon/styles": "npm:^1.118.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:^1.11.23"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.5.1"
     vite: "npm:8.3.4"
@@ -7378,7 +7408,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
-    react-hook-form: ^7.90.0
+    react-hook-form: ^7.91.0
     react-i18next: 17.x
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
@@ -7389,7 +7419,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-form-builder-app@workspace:packages/apps/esm-form-builder-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/modifiers": "npm:^6.0.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
@@ -7400,13 +7430,13 @@ __metadata:
     "@sihsalus/esm-form-engine-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.2"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
-    ace-builds: "npm:^1.45.0"
+    ace-builds: "npm:^1.45.2"
     ajv: "npm:^8.20.0"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -7419,7 +7449,7 @@ __metadata:
     react-mde: "npm:^11.5.0"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     turbo: "npm:^2.11.9"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
@@ -7440,12 +7470,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-form-engine-lib@workspace:packages/libs/esm-form-engine-lib"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:^1.16.18"
+    "@swc/core": "npm:^1.16.20"
     "@types/lodash": "npm:^4.17.26"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/react": "npm:^18.3.2"
@@ -7453,7 +7483,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
     husky: "npm:^8.0.3"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     jsep: "npm:^1.6.0"
     lint-staged: "npm:^17.6.0"
@@ -7462,13 +7492,13 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.1.6"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-markdown: "npm:^10.1.0"
     react-waypoint: "npm:^10.3.0"
     resize-observer-polyfill: "npm:^1.5.1"
     rimraf: "npm:^5.0.0"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     swr: "npm:^2.5.1"
     turbo: "npm:^2.11.9"
     vite: "npm:8.3.4"
@@ -7488,11 +7518,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-form-entry-react-app@workspace:packages/apps/esm-form-entry-react-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-form-engine-lib": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     cross-env: "npm:^10.1.0"
@@ -7520,7 +7550,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     dompurify: "npm:3.4.17"
@@ -7547,11 +7577,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-generic-patient-widgets-app@workspace:packages/apps/esm-generic-patient-widgets-app"
   dependencies:
-    "@carbon/charts-react": "npm:^1.27.21"
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/charts-react": "npm:^1.27.25"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     vite: "npm:8.3.4"
@@ -7572,9 +7602,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-help-menu-app@workspace:packages/apps/esm-help-menu-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "npm:*"
@@ -7601,7 +7631,7 @@ __metadata:
     "@sihsalus/esm-patient-search-app": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     openmrs: "npm:*"
     vite: "npm:8.3.4"
@@ -7619,11 +7649,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-implementer-tools-app@workspace:packages/apps/esm-implementer-tools-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
-    ace-builds: "npm:^1.45.0"
+    ace-builds: "npm:^1.45.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
@@ -7651,10 +7681,10 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7686,8 +7716,8 @@ __metadata:
   resolution: "@sihsalus/esm-interconsultas-app@workspace:packages/apps/esm-interconsultas-app"
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
@@ -7713,13 +7743,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-laboratory-app@workspace:packages/apps/esm-laboratory-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7749,7 +7779,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-login-app@workspace:packages/apps/esm-login-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-api": "workspace:*"
     "@openmrs/esm-framework": "workspace:*"
@@ -7759,7 +7789,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
@@ -7783,8 +7813,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-odontologia-app@workspace:packages/apps/esm-odontologia-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
-    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.119.0"
+    "@carbon/styles": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -7806,10 +7836,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-offline-tools-app@workspace:packages/apps/esm-offline-tools-app"
   dependencies:
-    "@carbon/icons-react": "npm:^11.90.0"
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/icons-react": "npm:^11.91.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@types/lodash-es": "npm:^4.17.12"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7839,7 +7869,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-openconceptlab-app@workspace:packages/apps/esm-openconceptlab-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7864,10 +7894,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-allergies-app@workspace:packages/apps/esm-patient-allergies-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
@@ -7889,13 +7919,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-attachments-app@workspace:packages/apps/esm-patient-attachments-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
-    linkify-react: "npm:^4.3.3"
-    linkifyjs: "npm:^4.3.3"
+    linkify-react: "npm:^4.4.0"
+    linkifyjs: "npm:^4.4.0"
     openmrs: "workspace:*"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
@@ -7915,11 +7945,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-banner-app@workspace:packages/apps/esm-patient-banner-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
@@ -7948,7 +7978,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@types/uuid": "npm:^9.0.4"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -7980,10 +8010,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-conditions-app@workspace:packages/apps/esm-patient-conditions-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
@@ -8005,10 +8035,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-flags-app@workspace:packages/apps/esm-patient-flags-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     vite: "npm:8.3.4"
@@ -8029,10 +8059,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-forms-app@workspace:packages/apps/esm-patient-forms-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     cross-env: "npm:^10.1.0"
     fuzzy: "npm:^0.1.3"
@@ -8061,15 +8091,15 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.2.14"
     "@types/react-dom": "npm:^18.2.6"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
-    dotenv: "npm:^18.0.8"
-    i18next: "npm:^26.4.7"
+    dotenv: "npm:^18.0.9"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     openmrs: "npm:*"
     react: "npm:^18.x"
@@ -8078,7 +8108,7 @@ __metadata:
     react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.3.1"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.x"
     ts-node: "npm:^10.9.2"
@@ -8104,17 +8134,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-immunizations-app@workspace:packages/apps/esm-patient-immunizations-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     openmrs: "workspace:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8134,9 +8164,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-label-printing-app@workspace:packages/apps/esm-patient-label-printing-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     vite: "npm:8.3.4"
@@ -8154,9 +8184,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-list-management-app@workspace:packages/apps/esm-patient-list-management-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
@@ -8178,10 +8208,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-lists-app@workspace:packages/apps/esm-patient-lists-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     vite: "npm:8.3.4"
@@ -8202,16 +8232,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-medications-app@workspace:packages/apps/esm-patient-medications-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8233,7 +8263,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     html-entities: "npm:^2.5.2"
     lodash-es: "npm:^4.17.23"
@@ -8257,11 +8287,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-orders-app@workspace:packages/apps/esm-patient-orders-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
@@ -8283,15 +8313,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-procedures-app@workspace:packages/apps/esm-patient-procedures-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8311,10 +8341,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-programs-app@workspace:packages/apps/esm-patient-programs-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
@@ -8336,19 +8366,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-registration-app@workspace:packages/apps/esm-patient-registration-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-offline": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-form-engine-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     exceljs: "npm:^4.4.0"
     formik: "npm:^2.1.5"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
@@ -8370,18 +8400,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8398,14 +8428,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-task-list-app@workspace:packages/apps/esm-patient-task-list-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8425,11 +8455,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-tests-app@workspace:packages/apps/esm-patient-tests-app"
   dependencies:
-    "@carbon/charts-react": "npm:^1.27.21"
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/charts-react": "npm:^1.27.25"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
@@ -8450,12 +8480,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-vitals-app@workspace:packages/apps/esm-patient-vitals-app"
   dependencies:
-    "@carbon/charts-react": "npm:^1.27.21"
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/charts-react": "npm:^1.27.25"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
@@ -8478,10 +8508,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-primary-navigation-app@workspace:packages/apps/esm-primary-navigation-app"
   dependencies:
-    "@carbon/icons-react": "npm:^11.90.0"
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/icons-react": "npm:^11.91.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-audit-logger": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8513,8 +8543,8 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     lodash-es: "npm:^4.17.21"
@@ -8523,7 +8553,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     swr: "npm:^2.5.1"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
@@ -8543,7 +8573,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-rbac@workspace:packages/libs/esm-rbac"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-audit-logger": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8564,8 +8594,8 @@ __metadata:
   resolution: "@sihsalus/esm-referrals-app@workspace:packages/apps/esm-referrals-app"
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
@@ -8590,13 +8620,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-reports-app@workspace:packages/apps/esm-reports-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@datasert/cronjs-matcher": "npm:^1.2.0"
     "@datasert/cronjs-parser": "npm:^1.2.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
-    cronstrue: "npm:^3.32.0"
+    cronstrue: "npm:^3.38.0"
     dayjs: "npm:^1.11.23"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -8617,21 +8647,21 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-salud-materna-app@workspace:packages/apps/esm-salud-materna-app"
   dependencies:
-    "@carbon/charts": "npm:^1.27.21"
-    "@carbon/charts-react": "npm:^1.27.21"
+    "@carbon/charts": "npm:^1.27.25"
+    "@carbon/charts-react": "npm:^1.27.25"
     "@carbon/colors": "npm:^11.60.0"
     "@carbon/layout": "npm:^11.61.0"
-    "@carbon/react": "npm:^1.118.0"
-    "@carbon/styles": "npm:^1.117.0"
+    "@carbon/react": "npm:^1.119.0"
+    "@carbon/styles": "npm:^1.118.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.23"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -8639,7 +8669,7 @@ __metadata:
     react-is: "npm:^19.3.1"
     react-router-dom: "npm:7.18.4"
     rxjs: "npm:^7.8.2"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.5.1"
     vite: "npm:8.3.4"
@@ -8669,7 +8699,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
@@ -8694,18 +8724,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-service-queues-app@workspace:packages/apps/esm-service-queues-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8723,10 +8753,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-staff-scheduling-app@workspace:packages/apps/esm-staff-scheduling-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
@@ -8745,14 +8775,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-stock-management-app@workspace:packages/apps/esm-stock-management-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@hookform/resolvers": "npm:^5.9.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/file-saver": "npm:^2.0.5"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
@@ -8760,14 +8790,14 @@ __metadata:
     dayjs: "npm:^1.11.23"
     dompurify: "npm:3.4.17"
     file-saver: "npm:^2.0.5"
-    i18next: "npm:^26.4.7"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     parse5: "npm:8.0.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
     react-to-print: "npm:^2.14.13"
@@ -8793,7 +8823,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-system-admin-app@workspace:packages/apps/esm-system-admin-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
@@ -8820,15 +8850,15 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
   peerDependencies:
@@ -8848,8 +8878,8 @@ __metadata:
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.5.1"
     lodash-es: "npm:^4.17.21"
@@ -8858,7 +8888,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.4"
-    sass: "npm:^1.105.2"
+    sass: "npm:^1.107.0"
     swr: "npm:^2.5.1"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
@@ -8878,19 +8908,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-user-onboarding-app@workspace:packages/apps/esm-user-onboarding-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
     "@typescript/native": "npm:typescript@7.0.2"
     dayjs: "npm:1.x"
-    dotenv: "npm:^18.0.8"
-    i18next: "npm:^26.4.7"
+    dotenv: "npm:^18.0.9"
+    i18next: "npm:^26.5.11"
     i18next-cli: "npm:1.75.3"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -8918,16 +8948,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-ward-app@workspace:packages/apps/esm-ward-app"
   dependencies:
-    "@carbon/react": "npm:^1.118.0"
+    "@carbon/react": "npm:^1.119.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:2.2.9"
+    "@rspack/cli": "npm:2.3.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@typescript/native": "npm:typescript@7.0.2"
     classnames: "npm:^2.3.2"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
-    react-hook-form: "npm:^7.90.0"
+    react-hook-form: "npm:^7.91.0"
     vite: "npm:8.3.4"
     vitest: "npm:^5.0.5"
     zod: "npm:^4.6.7"
@@ -8947,7 +8977,7 @@ __metadata:
     "@biomejs/biome": "npm:2.5.15"
     "@openmrs/esm-offline": "workspace:*"
     "@playwright/test": "npm:^1.64.1"
-    "@swc/core": "npm:1.16.18"
+    "@swc/core": "npm:1.16.20"
     "@testing-library/dom": "npm:^10.4.2"
     "@testing-library/jest-dom": "npm:^7.0.1"
     "@testing-library/react": "npm:^16.3.3"
@@ -8962,7 +8992,7 @@ __metadata:
     acorn: "npm:8.19.0"
     chalk: "npm:^4.1.2"
     cross-env: "npm:^10.1.0"
-    dotenv: "npm:^18.0.8"
+    dotenv: "npm:^18.0.9"
     eslint-scope: "npm:9.1.2"
     express: "npm:^4.22.0"
     express-rate-limit: "npm:8.7.1"
@@ -9107,9 +9137,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swc/core-darwin-arm64@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-darwin-arm64@npm:1.16.20"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
 "@swc/core-darwin-x64@npm:1.16.18":
   version: 1.16.18
   resolution: "@swc/core-darwin-x64@npm:1.16.18"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@swc/core-darwin-x64@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-darwin-x64@npm:1.16.20"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
@@ -9121,9 +9165,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swc/core-linux-arm-gnueabihf@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-arm-gnueabihf@npm:1.16.20"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
 "@swc/core-linux-arm64-gnu@npm:1.16.18":
   version: 1.16.18
   resolution: "@swc/core-linux-arm64-gnu@npm:1.16.18"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@swc/core-linux-arm64-gnu@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-arm64-gnu@npm:1.16.20"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
@@ -9135,9 +9193,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swc/core-linux-arm64-musl@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-arm64-musl@npm:1.16.20"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
 "@swc/core-linux-ppc64-gnu@npm:1.16.18":
   version: 1.16.18
   resolution: "@swc/core-linux-ppc64-gnu@npm:1.16.18"
+  conditions: os=linux & cpu=ppc64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@swc/core-linux-ppc64-gnu@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-ppc64-gnu@npm:1.16.20"
   conditions: os=linux & cpu=ppc64 & libc=glibc
   languageName: node
   linkType: hard
@@ -9149,9 +9221,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swc/core-linux-s390x-gnu@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-s390x-gnu@npm:1.16.20"
+  conditions: os=linux & cpu=s390x & libc=glibc
+  languageName: node
+  linkType: hard
+
 "@swc/core-linux-x64-gnu@npm:1.16.18":
   version: 1.16.18
   resolution: "@swc/core-linux-x64-gnu@npm:1.16.18"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@swc/core-linux-x64-gnu@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-x64-gnu@npm:1.16.20"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
@@ -9163,9 +9249,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swc/core-linux-x64-musl@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-linux-x64-musl@npm:1.16.20"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
 "@swc/core-win32-arm64-msvc@npm:1.16.18":
   version: 1.16.18
   resolution: "@swc/core-win32-arm64-msvc@npm:1.16.18"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@swc/core-win32-arm64-msvc@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-win32-arm64-msvc@npm:1.16.20"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
@@ -9177,6 +9277,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@swc/core-win32-ia32-msvc@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-win32-ia32-msvc@npm:1.16.20"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
 "@swc/core-win32-x64-msvc@npm:1.16.18":
   version: 1.16.18
   resolution: "@swc/core-win32-x64-msvc@npm:1.16.18"
@@ -9184,7 +9291,66 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@swc/core@npm:1.16.18, @swc/core@npm:^1.15.18, @swc/core@npm:^1.16.18, @swc/core@npm:^1.16.2":
+"@swc/core-win32-x64-msvc@npm:1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core-win32-x64-msvc@npm:1.16.20"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@swc/core@npm:1.16.20, @swc/core@npm:^1.16.20":
+  version: 1.16.20
+  resolution: "@swc/core@npm:1.16.20"
+  dependencies:
+    "@swc/core-darwin-arm64": "npm:1.16.20"
+    "@swc/core-darwin-x64": "npm:1.16.20"
+    "@swc/core-linux-arm-gnueabihf": "npm:1.16.20"
+    "@swc/core-linux-arm64-gnu": "npm:1.16.20"
+    "@swc/core-linux-arm64-musl": "npm:1.16.20"
+    "@swc/core-linux-ppc64-gnu": "npm:1.16.20"
+    "@swc/core-linux-s390x-gnu": "npm:1.16.20"
+    "@swc/core-linux-x64-gnu": "npm:1.16.20"
+    "@swc/core-linux-x64-musl": "npm:1.16.20"
+    "@swc/core-win32-arm64-msvc": "npm:1.16.20"
+    "@swc/core-win32-ia32-msvc": "npm:1.16.20"
+    "@swc/core-win32-x64-msvc": "npm:1.16.20"
+    "@swc/counter": "npm:^0.1.3"
+    "@swc/types": "npm:^0.1.28"
+  peerDependencies:
+    "@swc/helpers": ">=0.5.17"
+  dependenciesMeta:
+    "@swc/core-darwin-arm64":
+      optional: true
+    "@swc/core-darwin-x64":
+      optional: true
+    "@swc/core-linux-arm-gnueabihf":
+      optional: true
+    "@swc/core-linux-arm64-gnu":
+      optional: true
+    "@swc/core-linux-arm64-musl":
+      optional: true
+    "@swc/core-linux-ppc64-gnu":
+      optional: true
+    "@swc/core-linux-s390x-gnu":
+      optional: true
+    "@swc/core-linux-x64-gnu":
+      optional: true
+    "@swc/core-linux-x64-musl":
+      optional: true
+    "@swc/core-win32-arm64-msvc":
+      optional: true
+    "@swc/core-win32-ia32-msvc":
+      optional: true
+    "@swc/core-win32-x64-msvc":
+      optional: true
+  peerDependenciesMeta:
+    "@swc/helpers":
+      optional: true
+  checksum: 10c0/1dae88a3c5c9c78ed463ad6b166943249f8af3705dc523d59545811dd02a738f69f31e399e8ea0e24f64ecb9b94ded57dc2e189618e544f4dbcaa430417cc813
+  languageName: node
+  linkType: hard
+
+"@swc/core@npm:^1.15.18, @swc/core@npm:^1.16.2":
   version: 1.16.18
   resolution: "@swc/core@npm:1.16.18"
   dependencies:
@@ -10990,10 +11156,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.45.0":
-  version: 1.45.0
-  resolution: "ace-builds@npm:1.45.0"
-  checksum: 10c0/0e03baac1249c404fc252583561b631ad90a8b13eb48850ae75067b07d1130ec8a664f1ed3f8123b6473aa17e2a10419c67211705bd00f0b323e70fb12e17b2f
+"ace-builds@npm:^1.45.2":
+  version: 1.45.2
+  resolution: "ace-builds@npm:1.45.2"
+  checksum: 10c0/8d256b40e3cea6bd00fea4fa9068b4a9284d41b8b6f49aa90b35dd75e63b3e6fec8bf4ec9ee1e7afe60267b78d7a6ef2067826ae1463767385b1664b192c74cd
   languageName: node
   linkType: hard
 
@@ -12731,12 +12897,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cronstrue@npm:^3.32.0":
-  version: 3.32.0
-  resolution: "cronstrue@npm:3.32.0"
+"cronstrue@npm:^3.38.0":
+  version: 3.38.0
+  resolution: "cronstrue@npm:3.38.0"
   bin:
     cronstrue: bin/cli.js
-  checksum: 10c0/b60f29538b2bb3bf03d20df1c318e6dbcb441a95a183557bbcffa02cb85da6ada27e805a62bb95484db72f8dbe836f5bb8e9ab8edd0738a1c79357254acd3b97
+  checksum: 10c0/629cdb29c62101f4b6a9218b03bebf695af9e27bd1a7a02ec6b141311674e59d6cf3e1af9705057d82f18deffb687bb71864e0a948422f664d162ef762563daa
   languageName: node
   linkType: hard
 
@@ -13485,10 +13651,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dexie@npm:^4.4.6":
-  version: 4.4.6
-  resolution: "dexie@npm:4.4.6"
-  checksum: 10c0/fc8be52970dc33c2a904ee77bfc459084afe6bb44f80cdce2ff5da989f0992bf56a5413cf3c3599d6e58f1fc1136632dde52cbf2d441cb9d430a92f5e99b28fc
+"dexie@npm:^4.4.7":
+  version: 4.4.7
+  resolution: "dexie@npm:4.4.7"
+  checksum: 10c0/5de6b45d928d61f8fd77dbb92ff206928007392c92c5500486655d2bed918eefb2c00ec07a932488bc09948463f91e7679607b241e2cd51930721a6e294da06c
   languageName: node
   linkType: hard
 
@@ -13623,12 +13789,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^18.0.8":
-  version: 18.0.8
-  resolution: "dotenv@npm:18.0.8"
+"dotenv@npm:^18.0.9":
+  version: 18.0.9
+  resolution: "dotenv@npm:18.0.9"
   bin:
     dotenv: dist/index.cjs
-  checksum: 10c0/88a6a81afe58aaad7f9ae5d97422731c6e7b9efa4db752ea5add7fb6035f5866ce6e10a76fb7ad2d7f606bdf0afc9507ffd7e04d86d9b347b38d4614a3a0c2ac
+  checksum: 10c0/62a70960e611f1d26bf5ade0e0baa7850513f65d56789ba282c8ae7f690411d364457d33d4302b2611cc18157d03dea589ac7e33f1aa85b8f69737b8c05cf726
   languageName: node
   linkType: hard
 
@@ -15752,7 +15918,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:26.4.7, i18next@npm:^26.4.7":
+"i18next@npm:26.4.7":
   version: 26.4.7
   resolution: "i18next@npm:26.4.7"
   peerDependencies:
@@ -15773,6 +15939,18 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/f2c9613e03e09e56a84aee939d8fbe3442a58622915e11f97e47f9ab358dfa65be783230b37a21483152711f786fccfe697d7f5ea9269c54f16179dc59960e4b
+  languageName: node
+  linkType: hard
+
+"i18next@npm:^26.5.11":
+  version: 26.5.11
+  resolution: "i18next@npm:26.5.11"
+  peerDependencies:
+    typescript: ^5 || ^6 || ^7
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/b2ecb58a38420530d928d93761efc1d4e966f24cf99518df843f5b8797be135d7b6defb01ca97b61bf2bc614a6fab56bd874032b42567ae22cfa84909c2187cd
   languageName: node
   linkType: hard
 
@@ -17038,20 +17216,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"linkify-react@npm:^4.3.3":
-  version: 4.3.3
-  resolution: "linkify-react@npm:4.3.3"
+"linkify-react@npm:^4.4.0":
+  version: 4.4.0
+  resolution: "linkify-react@npm:4.4.0"
   peerDependencies:
-    linkifyjs: "*"
+    linkifyjs: 4.4.0
     react: ">= 15.0.0"
-  checksum: 10c0/67885ea9466003cdd1c7c8bbecbc9fb5f903bde93bb3333bab1e61f12b76af93ba0bc40c7d9f0be3751e48d1dd1a10e3b0499691bfc8a249ef3267e62b03770e
+  checksum: 10c0/d67cc5cfce04b34eaa0bc40cecfe4f296983600eab8750a26e7c6be46c1500d8f1f36515f281c1708404df0afb1dcb1b31aac7081f25f9c0fef20f5fb0de0b41
   languageName: node
   linkType: hard
 
-"linkifyjs@npm:^4.3.3":
-  version: 4.3.3
-  resolution: "linkifyjs@npm:4.3.3"
-  checksum: 10c0/0eac293927f1465d13625c8c67c83c50d7fda9137c255a4a2ff5970ea4e9ba57de4846b170326e54b9e4e82be24f3705572bc50773737be9b13af5f1e4577798
+"linkifyjs@npm:^4.4.0":
+  version: 4.4.0
+  resolution: "linkifyjs@npm:4.4.0"
+  checksum: 10c0/0ddef5f2468194640746162dea069770fc7e052e6bb91a81586110c7aaeda66c350f47e27a3b10d953c8922ca3eaf68f291f0a8a0f63d7d79b95a369975c6618
   languageName: node
   linkType: hard
 
@@ -17601,7 +17779,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"memfs@npm:^4.79.0":
+"memfs@npm:^4.80.0":
   version: 4.80.0
   resolution: "memfs@npm:4.80.0"
   dependencies:
@@ -18739,10 +18917,10 @@ __metadata:
     "@openmrs/esm-app-shell": "npm:10.0.0"
     "@openmrs/rspack-config": "workspace:*"
     "@pnpm/npm-conf": "npm:^3.0.3"
-    "@rspack/cli": "npm:2.2.9"
-    "@rspack/core": "npm:2.2.9"
-    "@rspack/dev-server": "npm:2.2.1"
-    "@swc/core": "npm:1.16.18"
+    "@rspack/cli": "npm:2.3.0"
+    "@rspack/core": "npm:2.3.0"
+    "@rspack/dev-server": "npm:2.2.2"
+    "@swc/core": "npm:1.16.20"
     "@types/express": "npm:^4.11.1"
     "@types/glob": "npm:^7.1.1"
     "@types/lodash": "npm:^4.17.26"
@@ -20091,16 +20269,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:^7.90.0":
-  version: 7.90.0
-  resolution: "react-hook-form@npm:7.90.0"
+"react-hook-form@npm:^7.91.0":
+  version: 7.91.0
+  resolution: "react-hook-form@npm:7.91.0"
   peerDependencies:
     "@types/react": "*"
     react: ^16.8.0 || ^17 || ^18 || ^19
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/4278859ea6d1ed9288eade929255a21129a726e097121a9b6b290fc33e296d539e3cb290e3d07de37f3f5cc9b84722c1acf23d8657570729a6264230318b792a
+  checksum: 10c0/21c6164024082331242eaf7dd865ca6ac905af5a4941da60dc302337f0190635be7e73af30954cb7a310f5d94883e851b1d79322415aca796b81877085ef1c7c
   languageName: node
   linkType: hard
 
@@ -21019,162 +21197,162 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sass-embedded-all-unknown@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-all-unknown@npm:1.105.2"
+"sass-embedded-all-unknown@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-all-unknown@npm:1.107.0"
   dependencies:
-    sass: "npm:1.105.2"
+    sass: "npm:1.107.0"
   conditions: (!cpu=arm | !cpu=arm64 | !cpu=riscv64 | !cpu=x64)
   languageName: node
   linkType: hard
 
-"sass-embedded-android-arm64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-android-arm64@npm:1.105.2"
+"sass-embedded-android-arm64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-android-arm64@npm:1.107.0"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"sass-embedded-android-arm@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-android-arm@npm:1.105.2"
+"sass-embedded-android-arm@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-android-arm@npm:1.107.0"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"sass-embedded-android-riscv64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-android-riscv64@npm:1.105.2"
+"sass-embedded-android-riscv64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-android-riscv64@npm:1.107.0"
   conditions: os=android & cpu=riscv64
   languageName: node
   linkType: hard
 
-"sass-embedded-android-x64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-android-x64@npm:1.105.2"
+"sass-embedded-android-x64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-android-x64@npm:1.107.0"
   conditions: os=android & cpu=x64
   languageName: node
   linkType: hard
 
-"sass-embedded-darwin-arm64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-darwin-arm64@npm:1.105.2"
+"sass-embedded-darwin-arm64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-darwin-arm64@npm:1.107.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"sass-embedded-darwin-x64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-darwin-x64@npm:1.105.2"
+"sass-embedded-darwin-x64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-darwin-x64@npm:1.107.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-arm64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-arm64@npm:1.105.2"
+"sass-embedded-linux-arm64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-arm64@npm:1.107.0"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-arm@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-arm@npm:1.105.2"
+"sass-embedded-linux-arm@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-arm@npm:1.107.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-musl-arm64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-musl-arm64@npm:1.105.2"
+"sass-embedded-linux-musl-arm64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-musl-arm64@npm:1.107.0"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-musl-arm@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-musl-arm@npm:1.105.2"
+"sass-embedded-linux-musl-arm@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-musl-arm@npm:1.107.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-musl-riscv64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-musl-riscv64@npm:1.105.2"
+"sass-embedded-linux-musl-riscv64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-musl-riscv64@npm:1.107.0"
   conditions: os=linux & cpu=riscv64
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-musl-x64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-musl-x64@npm:1.105.2"
+"sass-embedded-linux-musl-x64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-musl-x64@npm:1.107.0"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-riscv64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-riscv64@npm:1.105.2"
+"sass-embedded-linux-riscv64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-riscv64@npm:1.107.0"
   conditions: os=linux & cpu=riscv64
   languageName: node
   linkType: hard
 
-"sass-embedded-linux-x64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-linux-x64@npm:1.105.2"
+"sass-embedded-linux-x64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-linux-x64@npm:1.107.0"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"sass-embedded-unknown-all@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-unknown-all@npm:1.105.2"
+"sass-embedded-unknown-all@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-unknown-all@npm:1.107.0"
   dependencies:
-    sass: "npm:1.105.2"
+    sass: "npm:1.107.0"
   conditions: (!os=android | !os=darwin | !os=linux | !os=win32)
   languageName: node
   linkType: hard
 
-"sass-embedded-win32-arm64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-win32-arm64@npm:1.105.2"
+"sass-embedded-win32-arm64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-win32-arm64@npm:1.107.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"sass-embedded-win32-x64@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded-win32-x64@npm:1.105.2"
+"sass-embedded-win32-x64@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded-win32-x64@npm:1.107.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"sass-embedded@npm:1.105.2":
-  version: 1.105.2
-  resolution: "sass-embedded@npm:1.105.2"
+"sass-embedded@npm:1.107.0":
+  version: 1.107.0
+  resolution: "sass-embedded@npm:1.107.0"
   dependencies:
     "@bufbuild/protobuf": "npm:^2.5.0"
     colorjs.io: "npm:^0.7.0"
     immutable: "npm:^5.1.5"
     rxjs: "npm:^7.4.0"
-    sass-embedded-all-unknown: "npm:1.105.2"
-    sass-embedded-android-arm: "npm:1.105.2"
-    sass-embedded-android-arm64: "npm:1.105.2"
-    sass-embedded-android-riscv64: "npm:1.105.2"
-    sass-embedded-android-x64: "npm:1.105.2"
-    sass-embedded-darwin-arm64: "npm:1.105.2"
-    sass-embedded-darwin-x64: "npm:1.105.2"
-    sass-embedded-linux-arm: "npm:1.105.2"
-    sass-embedded-linux-arm64: "npm:1.105.2"
-    sass-embedded-linux-musl-arm: "npm:1.105.2"
-    sass-embedded-linux-musl-arm64: "npm:1.105.2"
-    sass-embedded-linux-musl-riscv64: "npm:1.105.2"
-    sass-embedded-linux-musl-x64: "npm:1.105.2"
-    sass-embedded-linux-riscv64: "npm:1.105.2"
-    sass-embedded-linux-x64: "npm:1.105.2"
-    sass-embedded-unknown-all: "npm:1.105.2"
-    sass-embedded-win32-arm64: "npm:1.105.2"
-    sass-embedded-win32-x64: "npm:1.105.2"
+    sass-embedded-all-unknown: "npm:1.107.0"
+    sass-embedded-android-arm: "npm:1.107.0"
+    sass-embedded-android-arm64: "npm:1.107.0"
+    sass-embedded-android-riscv64: "npm:1.107.0"
+    sass-embedded-android-x64: "npm:1.107.0"
+    sass-embedded-darwin-arm64: "npm:1.107.0"
+    sass-embedded-darwin-x64: "npm:1.107.0"
+    sass-embedded-linux-arm: "npm:1.107.0"
+    sass-embedded-linux-arm64: "npm:1.107.0"
+    sass-embedded-linux-musl-arm: "npm:1.107.0"
+    sass-embedded-linux-musl-arm64: "npm:1.107.0"
+    sass-embedded-linux-musl-riscv64: "npm:1.107.0"
+    sass-embedded-linux-musl-x64: "npm:1.107.0"
+    sass-embedded-linux-riscv64: "npm:1.107.0"
+    sass-embedded-linux-x64: "npm:1.107.0"
+    sass-embedded-unknown-all: "npm:1.107.0"
+    sass-embedded-win32-arm64: "npm:1.107.0"
+    sass-embedded-win32-x64: "npm:1.107.0"
     supports-color: "npm:^8.1.1"
     sync-child-process: "npm:^1.0.2"
     varint: "npm:^6.0.0"
@@ -21217,13 +21395,13 @@ __metadata:
       optional: true
   bin:
     sass: dist/bin/sass.js
-  checksum: 10c0/6474276e0f4c3494f8c7b2b579d65284543ce849a44c28cb018c3ebec9f951c249fb4cae7d4686f4a0a50e712530c4aecdfc4978f71e4af676c9a39f2b9ee0af
+  checksum: 10c0/62ad7f6302e45a5941820efe1c47e24b4f8364366135395b28e276d22917de27ee4621cad6a6b74a671deec31831ee1ddc117ddebdee0f6db0e09ddc4ed563bc
   languageName: node
   linkType: hard
 
-"sass-loader@npm:17.0.1":
-  version: 17.0.1
-  resolution: "sass-loader@npm:17.0.1"
+"sass-loader@npm:17.1.0":
+  version: 17.1.0
+  resolution: "sass-loader@npm:17.1.0"
   peerDependencies:
     "@rspack/core": 0.x || ^1.0.0 || ^2.0.0-0
     sass: ^1.3.0
@@ -21238,7 +21416,7 @@ __metadata:
       optional: true
     webpack:
       optional: true
-  checksum: 10c0/a5211341426096acd7b96db6cba95935a86c3ba97a16c16d2f743f42c98ff79281f4f0f6e03fc336b77b22969eb8363379ffd52efe9bf87944cc21f1490c6595
+  checksum: 10c0/6eff347a98c3ff654430562d661f689a48079b16298dc4e59c49cf8730c7abea09cbdbe2493a3b68059d44bd89c0db2e3e5e93facc9ea83e332b0f8ba1b357e9
   languageName: node
   linkType: hard
 
@@ -22662,13 +22840,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-checker-rspack-plugin@npm:1.7.1":
-  version: 1.7.1
-  resolution: "ts-checker-rspack-plugin@npm:1.7.1"
+"ts-checker-rspack-plugin@npm:1.7.2":
+  version: 1.7.2
+  resolution: "ts-checker-rspack-plugin@npm:1.7.2"
   dependencies:
     "@rspack/lite-tapable": "npm:^1.3.0"
     chokidar: "npm:^4.0.3"
-    memfs: "npm:^4.79.0"
+    memfs: "npm:^4.80.0"
     picocolors: "npm:^1.1.1"
   peerDependencies:
     "@rspack/core": ^1.0.0 || ^2.0.0
@@ -22679,7 +22857,7 @@ __metadata:
       optional: true
     "@typescript/native-preview":
       optional: true
-  checksum: 10c0/9e7885465ad62f1b767ae79c554ddb4d0af89dbf06c7ffd7bb0c3827d2b4bea253d0abe10499f8b3acaafb463d06c0d2e2051b450fb0a032de67d8f03acd0946
+  checksum: 10c0/2f4105376c462989940b3f78e56460e2ac1018916344c7dd137317a8bfda75edec57eb5f0793aa9b306603959d1398a4c1fafa376813d8035d39ff08c66953f4
   languageName: node
   linkType: hard
 

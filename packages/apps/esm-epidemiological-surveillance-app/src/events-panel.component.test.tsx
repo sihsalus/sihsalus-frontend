@@ -92,12 +92,16 @@ it("edits every event attribute and refreshes the catalogue", async () => {
   render(<EventsPanel onEventsChanged={onEventsChanged} />);
   fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
   expect(
-    screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
+    within(screen.getByRole("dialog")).getByRole("combobox", {
+      name: /^Enfermedad/,
+    }),
   ).toHaveValue("A90 - Dengue");
   expect(screen.getByLabelText(/Norma de referencia/i)).toHaveValue("NTS");
   expect(screen.getByLabelText(/^Estado/)).toHaveValue("active");
   fireEvent.change(
-    screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
+    within(screen.getByRole("dialog")).getByRole("combobox", {
+      name: /^Enfermedad/,
+    }),
     { target: { value: "Malaria" } },
   );
   fireEvent.click(await screen.findByText("Malaria"));
@@ -236,7 +240,9 @@ it("paginates events and opens the selected event on the second page", async () 
   ).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Editar" }));
   expect(
-    screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
+    within(screen.getByRole("dialog")).getByRole("combobox", {
+      name: /^Enfermedad/,
+    }),
   ).toHaveValue("A90 - Evento 11");
   fireEvent.click(screen.getByRole("button", { name: /Cancelar|Cancel/i }));
   fireEvent.click(screen.getByRole("button", { name: "Página anterior" }));
@@ -261,7 +267,9 @@ it("creates an active event with regulation", async () => {
     }),
   ).not.toBeInTheDocument();
   fireEvent.change(
-    screen.getByLabelText(/Enfermedad \(Concepto\)/i, { selector: "input" }),
+    within(screen.getByRole("dialog")).getByRole("combobox", {
+      name: /^Enfermedad/,
+    }),
     { target: { value: "Malaria" } },
   );
   await waitFor(() => expect(searchConcepts).toHaveBeenCalled());

@@ -188,11 +188,6 @@ export async function updateSurveillanceCase(uuid: string, draft: SurveillanceCa
   } catch (error) { throw safeError(error); }
 }
 
-export const closeSurveillanceCase = async (uuid: string): Promise<SurveillanceCase> => {
-  try { return (await openmrsFetch<SurveillanceCase>(`${apiBase}/cases/${encodeURIComponent(uuid)}/close`, { method: "POST" })).data; }
-  catch (error) { throw safeError(error); }
-};
-
 export const addressChildren = (level: "departments" | "provinces" | "districts" | "populated-centers", parent?: string) =>
   read<{ results: NamedReference[] }>(`${apiBase}/addresses/${level}${parent ? `?parent=${encodeURIComponent(parent)}` : ""}`).then((result) => result.results);
 

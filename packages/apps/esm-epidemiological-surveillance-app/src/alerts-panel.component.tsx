@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiBase, attendAlert, getAlerts } from "./api";
 import {
-  caseRegisterPrivilege,
+  caseEditPrivilege,
   caseViewPrivilege,
   epidemiologicalSurveillanceReadPrivilege,
   managePrivilege,
@@ -80,7 +80,7 @@ export function AlertAccess({ children }: { children: React.ReactNode }) {
   return [
     epidemiologicalSurveillanceReadPrivilege,
     caseViewPrivilege,
-    caseRegisterPrivilege,
+    caseEditPrivilege,
     reportPrivilege,
     managePrivilege,
   ].reduceRight(

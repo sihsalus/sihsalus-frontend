@@ -127,16 +127,19 @@ function SessionDashboard() {
           <TabPanels>
             <TabPanel>
               <RequirePrivilege privilege={caseViewPrivilege}>
-                <RequirePrivilege privilege={caseRegisterPrivilege}>
-                  <CasesPanel
-                    catalogue={catalogue}
-                    revision={0}
-                    onSaved={reloadSurveillancePage}
-                    onNewCase={() => {
-                      setFormKey((value) => value + 1);
-                      setShowCaseForm(true);
-                    }}
-                  />
+                <CasesPanel
+                  catalogue={catalogue}
+                  revision={0}
+                  onSaved={reloadSurveillancePage}
+                  onNewCase={() => {
+                    setFormKey((value) => value + 1);
+                    setShowCaseForm(true);
+                  }}
+                />
+                <RequirePrivilege
+                  privilege={caseRegisterPrivilege}
+                  hideUnauthorized
+                >
                   <Modal
                     open={showCaseForm}
                     modalHeading={t("newCase", "New case")}

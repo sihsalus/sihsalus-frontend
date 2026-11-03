@@ -1060,3 +1060,25 @@ La alerta «Evento notificable» se genera al crear un caso asociado a un evento
 Validación de esta actualización (29/10/2026): Maven `-B -o resources:resources resources:testResources compiler:compile compiler:testCompile surefire:test` PASSED (199 API y 11 REST). `yarn vitest run src/alerts-panel.component.test.tsx src/investigation-forms.component.test.tsx --maxWorkers=2` PASSED (31 pruebas); suite completa `yarn workspace @sihsalus/esm-epidemiological-surveillance-app test --maxWorkers=2`: FAILED al cargar seis suites por resolución de `@openmrs/esm-globals`, con 199 pruebas ejecutadas correctamente (fallo no contrastado contra la base). `lint`, `tsc6 --noEmit -p packages/apps/esm-epidemiological-surveillance-app/tsconfig.json`, `build`, `node --test tooling/investigation-forms.check.cjs` y `git diff --check`: PASSED. La compilación advierte por tamaños de PDF y ExcelJS. Se revisaron inicialmente las seis páginas de los tres adjuntos; posteriormente autopsia verbal y rabia se sustituyeron por las versiones oficiales, ambas con dos páginas de contenido. Smoke DEV/QLTY y despliegue: NOT RUN, sin entorno coordinado.
 
 COVID-19: se incorpora la [ficha de investigación clínico epidemiológica del CDC](https://www.dge.gob.pe/portalnuevo/wp-content/uploads/2025/05/COVID-19_Ficha-de-investigacion-clinico-epidemiologica-COVID-19.pdf), revisada el 29/10/2026. El PDF de una página se conserva íntegro y está disponible en búsqueda, descarga y fuente oficial. Su SHA-256 consta en `sources.json`.
+
+## Privilegios de casos
+
+La pestaña Casos requiere Ver Casos. Nuevo caso y su formulario requieren
+Registrar Casos; Editar requiere Editar Casos. El backend conserva el profesional
+original y registra al editor en `changed_by`; rechaza cambiar `providerUuid`.
+Registrar sigue reservado al profesional de la atención. Las alertas requieren
+Acceso, Ver Casos, Editar Casos, Ver Indicadores y Configurar conjuntamente.
+Actualizar ESM y OMOD juntos y asignar el nuevo privilegio a los roles correspondientes.
+No existe una operación de cierre de casos.
+
+Validación local (03/11/2026): PASSED las 88 pruebas de API, casos, edición,
+dashboard y alertas (`yarn vitest run src/api.test.ts
+src/cases-panel.component.test.tsx src/case-modal.component.test.tsx
+src/dashboard.component.test.tsx src/alerts-panel.component.test.tsx --maxWorkers=2`).
+PASSED lint, `tsc6 --noEmit`, build, `validate:workspaces` y
+`validate:critical-route-privileges`. La suite completa ejecutó 251 pruebas:
+248 PASSED y 3 FAILED en events-panel por la etiqueta Enfermedad (Concepto);
+fallo no contrastado contra la base. Se compiló esm-globals para resolver la
+carga de seis suites. El script `typescript` no encuentra `tsc`; la revisión
+directa con `tsc6` pasó. Prettier del README FAILED por formato del documento.
+Smoke integrado DEV/QLTY: NOT RUN, sin entorno coordinado ni despliegue.

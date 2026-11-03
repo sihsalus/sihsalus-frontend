@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { listSurveillanceCases } from "./api";
 import { CasesPanel } from "./cases-panel.component";
@@ -8,9 +9,45 @@ vi.mock("./api", () => ({
   listSurveillanceCases: vi.fn(),
   searchPatients: vi.fn(),
 }));
+const access = vi.hoisted(() => ({ privileges: [] as string[] }));
+vi.mock("@sihsalus/esm-rbac", () => ({
+  RequirePrivilege: ({
+    privilege,
+    children,
+  }: {
+    privilege: string;
+    children: ReactNode;
+  }) => (access.privileges.includes(privilege) ? children : null),
+}));
 const catalogue = { events: [] } as unknown as Catalogue;
 
-beforeEach(() => vi.mocked(listSurveillanceCases).mockResolvedValue([]));
+beforeEach(() => {
+  vi.mocked(listSurveillanceCases).mockResolvedValue([]);
+  access.privileges = [
+    "Vigilancia Epidemiologica: Registrar Casos",
+    "Vigilancia Epidemiologica: Editar Casos",
+  ];
+});
+
+it("separates registration from editing by privilege", async () => {
+  vi.mocked(listSurveillanceCases).mockResolvedValue([
+    { uuid: "synthetic-case", patientDisplay: "Paciente Sintético" } as SurveillanceCase,
+  ]);
+  access.privileges = ["Vigilancia Epidemiologica: Editar Casos"];
+  const view = render(
+    <CasesPanel catalogue={catalogue} revision={0} onNewCase={vi.fn()} />,
+  );
+  await screen.findByRole("cell", { name: "Paciente Sintético" });
+  expect(screen.queryByRole("button", { name: "Nuevo caso" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
+  view.unmount();
+  access.privileges = ["Vigilancia Epidemiologica: Registrar Casos"];
+  render(<CasesPanel catalogue={catalogue} revision={0} onNewCase={vi.fn()} />);
+  await screen.findByRole("cell", { name: "Paciente Sintético" });
+  expect(screen.getByRole("button", { name: "Nuevo caso" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Editar" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Ver caso" })).toBeInTheDocument();
+});
 
 it("uses a Carbon table with separate patient, diagnosis, date and action columns", async () => {
   vi.mocked(listSurveillanceCases).mockResolvedValue([

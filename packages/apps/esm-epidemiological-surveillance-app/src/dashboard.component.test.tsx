@@ -10,6 +10,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import Dashboard from "./dashboard.component";
 import { getCatalogue } from "./api";
 import {
+  caseEditPrivilege,
   caseRegisterPrivilege,
   caseViewPrivilege,
   reportPrivilege,
@@ -152,13 +153,24 @@ it("shows the local epidemiological week under the subtitle and refreshes across
     vi.useRealTimers();
   }
 });
-it("requires both case privileges before mounting clinical components", async () => {
+it("requires the view privilege before mounting clinical components", async () => {
   state.privileges = [caseRegisterPrivilege];
   render(<Dashboard />);
   await screen.findByRole("tab", { name: "Cases" });
   expect(screen.queryByText("Form: empty")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "New case" })).toBeNull();
   fireEvent.click(screen.getByRole("tab", { name: "temporalInformation" }));
   expect(screen.queryByText("Report content")).not.toBeInTheDocument();
+});
+it("lets epidemiology staff view cases without the registration form", async () => {
+  state.privileges = [caseViewPrivilege, caseEditPrivilege];
+  render(<Dashboard />);
+  await screen.findByRole("tab", { name: "Cases" });
+  expect(
+    await screen.findByRole("button", { name: "Case edited" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Form: empty")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "New case" })).toBeNull();
 });
 it("allows report readers without mounting the case form", async () => {
   state.privileges = [reportPrivilege];

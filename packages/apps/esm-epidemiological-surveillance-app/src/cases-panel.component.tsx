@@ -18,7 +18,12 @@ import {
 import { Add, Edit, View } from "@carbon/react/icons";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { moduleName } from "./constants";
+import { RequirePrivilege } from "@sihsalus/esm-rbac";
+import {
+  caseEditPrivilege,
+  caseRegisterPrivilege,
+  moduleName,
+} from "./constants";
 import styles from "./dashboard.scss";
 import { listSurveillanceCases, searchPatients } from "./api";
 import { patientDni, patientName } from "./case-form.utils";
@@ -82,9 +87,11 @@ export function CasesPanel({
   return (
     <>
       <div className={styles.actions}>
-        <Button kind="primary" renderIcon={Add} onClick={onNewCase}>
-          {t("newCase", "Nuevo caso")}
-        </Button>
+        <RequirePrivilege privilege={caseRegisterPrivilege} hideUnauthorized>
+          <Button kind="primary" renderIcon={Add} onClick={onNewCase}>
+            {t("newCase", "Nuevo caso")}
+          </Button>
+        </RequirePrivilege>
       </div>
       <h3 className={styles.caseFiltersHeading}>{t("filters")}</h3>
       <div
@@ -246,16 +253,24 @@ export function CasesPanel({
                               setSelectedCase({ uuid: item.uuid, mode: "view" })
                             }
                           />
-                          <Button
-                            kind="ghost"
-                            size="sm"
-                            renderIcon={Edit}
-                            hasIconOnly
-                            iconDescription={t("edit", "Editar")}
-                            onClick={() =>
-                              setSelectedCase({ uuid: item.uuid, mode: "edit" })
-                            }
-                          />
+                          <RequirePrivilege
+                            privilege={caseEditPrivilege}
+                            hideUnauthorized
+                          >
+                            <Button
+                              kind="ghost"
+                              size="sm"
+                              renderIcon={Edit}
+                              hasIconOnly
+                              iconDescription={t("edit", "Editar")}
+                              onClick={() =>
+                                setSelectedCase({
+                                  uuid: item.uuid,
+                                  mode: "edit",
+                                })
+                              }
+                            />
+                          </RequirePrivilege>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -18,7 +18,7 @@ import type { SurveillanceAlert } from "./types";
 import es from "../translations/es.json";
 import en from "../translations/en.json";
 
-const state = vi.hoisted(() => ({ allowed: true }));
+const state = vi.hoisted(() => ({ allowed: true, deniedPrivilege: "" }));
 vi.mock("./api", () => ({
   apiBase: "/surveillance",
   getAlerts: vi.fn(),
@@ -33,9 +33,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 vi.mock("@sihsalus/esm-rbac", () => ({
-  RequirePrivilege: ({ children }: { children: React.ReactNode }) =>
-    state.allowed ? children : null,
+  RequirePrivilege: ({ children, privilege }: { children: React.ReactNode; privilege: string }) =>
+    state.allowed && state.deniedPrivilege !== privilege ? children : null,
 }));
+
+it("allows alerts without registration but requires editing", () => {
+  state.allowed = true;
+  state.deniedPrivilege = "Vigilancia Epidemiologica: Registrar Casos";
+  const view = render(<AlertAccess><span>Authorized alerts</span></AlertAccess>);
+  expect(screen.getByText("Authorized alerts")).toBeInTheDocument();
+  state.deniedPrivilege = "Vigilancia Epidemiologica: Editar Casos";
+  view.rerender(<AlertAccess><span>Authorized alerts</span></AlertAccess>);
+  expect(screen.queryByText("Authorized alerts")).toBeNull();
+  state.deniedPrivilege = "";
+});
 vi.mock("./error-notification.component", () => ({
   ErrorNotification: () => <p role="alert">Safe error</p>,
 }));

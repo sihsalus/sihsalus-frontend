@@ -43,7 +43,7 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.9.1",
+    "@hookform/resolvers": "^6.0.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.90.0",

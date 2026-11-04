@@ -1,4 +1,7 @@
-import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, type PropsWithChildren } from 'react';
+import useSWR, { SWRConfig } from 'swr';
 import { describe, expect, it } from 'vitest';
 import {
   buildResponseObsPayload,
@@ -8,6 +11,9 @@ import {
   getDestinationServicesFromConceptResults,
   interconsultaOrdersUrl,
   matchesTrayFilter,
+  useInterconsultas,
+  useInvalidateInterconsultas,
+  usePatientInterconsultas,
 } from './interconsultas.resource';
 import type { InterconsultaOrder } from './types';
 
@@ -172,11 +178,89 @@ describe('interconsultaOrdersUrl', () => {
   });
 });
 
+describe('interconsultation cache invalidation', () => {
+  it.each(['RECEIVED', 'IN_PROGRESS', 'COMPLETED'] as const)(
+    'refreshes the configured provider cache after %s, including the patient chart',
+    async (status) => {
+      vi.mocked(useConfig).mockReturnValue({
+        interconsultaOrderTypeUuid: 'interconsulta-type',
+      });
+      const cache = new Map();
+      let order = makeOrder();
+      mockOpenmrsFetch.mockReset();
+      mockOpenmrsFetch.mockImplementation(
+        async () => ({ data: { results: [order] }, ok: true }) as FetchResponse<unknown>,
+      );
+      const unrelatedFetcher = vi.fn(async () => 'unrelated');
+      function Wrapper({ children }: PropsWithChildren) {
+        return createElement(
+          SWRConfig,
+          {
+            value: {
+              provider: () => cache,
+              dedupingInterval: 0,
+              revalidateOnFocus: false,
+              revalidateOnReconnect: false,
+            },
+          },
+          children,
+        );
+      }
+
+      const { result } = renderHook(
+        () => ({
+          requested: useInterconsultas('REQUESTED'),
+          received: useInterconsultas('RECEIVED'),
+          inProgress: useInterconsultas('IN_PROGRESS'),
+          completed: useInterconsultas('COMPLETED'),
+          patient: usePatientInterconsultas('patient-uuid'),
+          invalidate: useInvalidateInterconsultas(),
+          unrelated: useSWR(interconsultaOrdersUrl('other-order-type'), unrelatedFetcher),
+        }),
+        { wrapper: Wrapper },
+      );
+      await waitFor(() => {
+        expect(result.current.requested.interconsultas).toEqual([order]);
+        expect(result.current.patient.interconsultas).toEqual([order]);
+        expect(result.current.unrelated.data).toBe('unrelated');
+      });
+      expect(result.current.received.interconsultas).toEqual([]);
+      expect(result.current.inProgress.interconsultas).toEqual([]);
+      expect(result.current.completed.interconsultas).toEqual([]);
+
+      order = { ...order, fulfillerStatus: status };
+      await act(async () => {
+        await result.current.invalidate();
+      });
+      await waitFor(() => {
+        expect(result.current.requested.interconsultas).toEqual([]);
+        expect(result.current.received.interconsultas).toEqual(status === 'RECEIVED' ? [order] : []);
+        expect(result.current.inProgress.interconsultas).toEqual(status === 'IN_PROGRESS' ? [order] : []);
+        expect(result.current.completed.interconsultas).toEqual(status === 'COMPLETED' ? [order] : []);
+        expect(result.current.patient.interconsultas).toEqual([order]);
+      });
+      expect(
+        mockOpenmrsFetch.mock.calls.filter(([url]) => url === interconsultaOrdersUrl('interconsulta-type')),
+      ).toHaveLength(2);
+      expect(
+        mockOpenmrsFetch.mock.calls.filter(
+          ([url]) => url === interconsultaOrdersUrl('interconsulta-type', 'patient-uuid'),
+        ),
+      ).toHaveLength(2);
+      expect(unrelatedFetcher).toHaveBeenCalledTimes(1);
+    },
+  );
+});
+
 describe('fetchInterconsultaOrders', () => {
   const url = interconsultaOrdersUrl('order-type-uuid');
   const page = Array.from({ length: 100 }, (_, index) => makeOrder({ uuid: `order-${index}` }));
   const response = (results: Array<InterconsultaOrder>, hasNext = false) =>
-    ({ data: { results, links: hasNext ? [{ rel: 'next' }] : [] }, ok: true, status: 200 }) as FetchResponse<{
+    ({
+      data: { results, links: hasNext ? [{ rel: 'next' }] : [] },
+      ok: true,
+      status: 200,
+    }) as FetchResponse<{
       results: Array<InterconsultaOrder>;
       links: Array<{ rel: string }>;
     }>;
@@ -186,7 +270,10 @@ describe('fetchInterconsultaOrders', () => {
   });
 
   it('includes orders beyond the first 100 for tray filtering', async () => {
-    const lastOrder = makeOrder({ uuid: 'order-100', fulfillerStatus: 'RECEIVED' });
+    const lastOrder = makeOrder({
+      uuid: 'order-100',
+      fulfillerStatus: 'RECEIVED',
+    });
     mockOpenmrsFetch.mockResolvedValueOnce(response(page, true)).mockResolvedValueOnce(response([lastOrder]));
 
     const orders = await fetchInterconsultaOrders(url);

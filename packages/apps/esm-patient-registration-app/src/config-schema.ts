@@ -28,6 +28,7 @@ export interface FieldDefinition {
   };
   locationTag?: string;
   answerConceptSetUuid?: string;
+  answerConceptCodeSource?: string;
   customConceptAnswers?: Array<CustomConceptAnswer>;
   codedInputType?: 'select' | 'radio';
   searchable?: boolean;
@@ -373,6 +374,12 @@ export const esmPatientRegistrationSchema = {
         _default: null,
         _description:
           'For coded questions only. A concept which has the possible responses either as answers or as set members.',
+      },
+      answerConceptCodeSource: {
+        _type: Type.String,
+        _default: null,
+        _description:
+          'For coded person attributes, load alternate names and active SAME-AS reference codes from this concept source. Selection still stores the clinical concept UUID.',
       },
       customConceptAnswers: {
         _type: Type.Array,

@@ -162,7 +162,7 @@ describe('NationalityField', () => {
     const user = userEvent.setup();
     renderNationalityField();
 
-    expect(mockUseConceptAnswers).toHaveBeenCalledWith(peruNationalityConceptSetUuid);
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith(peruNationalityConceptSetUuid, undefined);
     await user.click(screen.getByRole('button', { name: 'Open' }));
     expect(await screen.findByText('Perú')).toBeInTheDocument();
     expect(await screen.findByText('Estados Unidos de América')).toBeInTheDocument();

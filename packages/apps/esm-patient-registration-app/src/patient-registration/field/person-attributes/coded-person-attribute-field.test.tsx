@@ -69,6 +69,90 @@ describe('CodedPersonAttributeField', () => {
     expect(formatCodedAnswerLabel({ label: 'Sin código' })).toBe('Sin código');
   });
 
+  function renderOfficialField(initialValue = '') {
+    const onSubmit = vi.fn();
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        {
+          uuid: 'aimara-clinical-uuid',
+          display: 'Aimara',
+          code: '2',
+          synonyms: ['Aymara'],
+          codeMappingStatus: 'mapped',
+        },
+        {
+          uuid: 'awajun-clinical-uuid',
+          display: 'Awajún',
+          code: '1',
+          synonyms: ['Aguaruna'],
+          codeMappingStatus: 'mapped',
+        },
+        { uuid: 'andino-clinical-uuid', display: 'Andino', codeMappingStatus: 'unmapped' },
+        { uuid: 'ambiguous-clinical-uuid', display: 'Ambiguous option', codeMappingStatus: 'ambiguous' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+    render(
+      <Formik initialValues={{ attributes: { [personAttributeType.uuid]: initialValue } }} onSubmit={onSubmit}>
+        <Form>
+          <CodedPersonAttributeField
+            id="ethnicity"
+            label="Etnia"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            answerConceptCodeSource="MINSA-ETNIAS"
+            customConceptAnswers={[]}
+            required={false}
+            searchable
+          />
+          <button type="submit">Save</button>
+        </Form>
+      </Formik>,
+    );
+    return onSubmit;
+  }
+
+  it.each([
+    ['2', '2 - Aimara', 'aimara-clinical-uuid'],
+    ['Aymara', '2 - Aimara', 'aimara-clinical-uuid'],
+    ['aguáruna', '1 - Awajún', 'awajun-clinical-uuid'],
+  ])('finds an official code or active synonym (%s) and saves only the clinical UUID', async (query, label, uuid) => {
+    const user = userEvent.setup();
+    const onSubmit = renderOfficialField();
+    await user.type(screen.getByRole('combobox', { name: /etnia/i }), query);
+    await user.click(await screen.findByRole('option', { name: label }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
+    expect(onSubmit.mock.calls[0][0].attributes[personAttributeType.uuid]).toBe(uuid);
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith(answerConceptSetUuid, 'MINSA-ETNIAS');
+  });
+
+  it.each(['4', '999', '02'])(
+    'does not turn an unknown official code (%s) into a clinical selection',
+    async (query) => {
+      const user = userEvent.setup();
+      const onSubmit = renderOfficialField();
+      await user.type(screen.getByRole('combobox', { name: /etnia/i }), query);
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
+      expect(onSubmit.mock.calls[0][0].attributes[personAttributeType.uuid]).toBe('');
+    },
+  );
+
+  it.each([
+    ['andino-clinical-uuid', 'This option has no official code'],
+    ['ambiguous-clinical-uuid', 'This option has more than one official code; review the catalog'],
+  ])('preserves a saved clinical identity and explains its unresolved official code (%s)', async (uuid, message) => {
+    const user = userEvent.setup();
+    const onSubmit = renderOfficialField(uuid);
+    expect(screen.getByText(message)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
+    expect(onSubmit.mock.calls[0][0].attributes[personAttributeType.uuid]).toBe(uuid);
+  });
+
   it('renders configured codes and colors in a searchable coded selector', async () => {
     const user = userEvent.setup();
 
@@ -728,7 +812,7 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.queryByLabelText('Referred by (optional)')).not.toBeInTheDocument();
     expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
     expect(screen.getByText(/campo opcional no está disponible/i)).toBeInTheDocument();
-    expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith('', undefined);
     expect(mockReportError).not.toHaveBeenCalled();
   });
 
@@ -755,7 +839,7 @@ describe('CodedPersonAttributeField', () => {
     );
 
     expect(screen.getByText(/campo obligatorio no está disponible/i)).toBeInTheDocument();
-    expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith('', undefined);
     expect(mockReportError).not.toHaveBeenCalled();
   });
 
@@ -782,7 +866,7 @@ describe('CodedPersonAttributeField', () => {
     );
 
     expect(screen.getByText('Local answer')).toBeInTheDocument();
-    expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith('', undefined);
     expect(mockReportError).not.toHaveBeenCalled();
   });
 

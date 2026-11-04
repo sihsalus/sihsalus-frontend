@@ -88,6 +88,16 @@ react-stately @react-types/shared` para unificar las versiones compatibles del
 lockfile y ejecutar las pruebas de `esm-styleguide/src/datepicker`. Dos copias
 pueden compilar correctamente y fallar al renderizar los segmentos de fecha.
 
+### React y su renderer
+
+El conjunto validado utiliza React y ReactDOM 18, con ambos paquetes de tipos
+compatibles. Dependabot agrupa sus actualizaciones de versión como `react-runtime`.
+La migración a otra versión mayor requiere revisar el renderer, los tipos y los
+hooks consumidores, compilar el framework y ejecutar las pruebas de tooling y
+estilos en Chromium. El incidente [#1256](https://github.com/sihsalus/sihsalus-frontend/issues/1256)
+registra el fallo de combinar React 19 con ReactDOM 18. Se mantienen las reglas
+existentes para actualizaciones de seguridad.
+
 ## Parches temporales de dependencias
 
 `braces` 3.0.3 conserva el parche local para

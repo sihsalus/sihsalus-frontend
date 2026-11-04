@@ -4,9 +4,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNutritionEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useSupplementationTracker } from '../../../hooks/useSupplementationTracker';
+import { CardHeaderActions } from '../../../ui/card-header-actions.component';
 
 import styles from './supplementation-tracker.scss';
 
@@ -17,7 +18,7 @@ interface SupplementationTrackerProps {
 const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { hasRecords, delivered, total, percentage, isComplete, isLoading, error } =
     useSupplementationTracker(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
@@ -52,23 +53,28 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={isComplete ? 'green' : 'blue'} size="sm">
-          {isComplete
-            ? t('mmnDeliveryTargetReached', 'Meta de entregas alcanzada')
-            : t('mmnDeliveriesInProgress', 'Entregas en curso')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type={isComplete ? 'green' : 'blue'} size="sm">
+              {isComplete
+                ? t('mmnDeliveryTargetReached', 'Meta de entregas alcanzada')
+                : t('mmnDeliveriesInProgress', 'Entregas en curso')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <div className={styles.progressRow}>

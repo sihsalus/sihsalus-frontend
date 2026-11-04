@@ -12,9 +12,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNutritionEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionFollowup } from '../../../../hooks/useNutritionFollowup';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from '../../../../ui/summary-card.scss';
 
@@ -25,7 +26,7 @@ interface NutritionFollowupProps {
 const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { nutritionClassification, evolution, referral, lastFollowupDate, isLoading, error } =
     useNutritionFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionFollowupForm');
@@ -42,23 +43,26 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <div className={styles.headerActions}>
-          <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
-            {lastFollowupDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
-          </Tag>
-          {canEdit && (
+        <CardHeaderActions
+          status={
+            <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
+              {lastFollowupDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
             <Button
               kind="ghost"
               size="sm"
               renderIcon={Add}
-              onClick={() => handleAdd()}
+              onClick={canEdit ? () => handleAdd() : undefined}
               iconDescription={t('add', 'Add')}
-              disabled={isFormLoading}
+              disabled={!canEdit || isFormLoading}
             >
               {t('add', 'Add')}
             </Button>
-          )}
-        </div>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

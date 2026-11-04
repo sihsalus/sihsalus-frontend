@@ -36,7 +36,7 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
-import { credAntecedentsEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import { type Condition, useConditionsFromConceptSet, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import styles from './conditions-overview.scss';
@@ -77,7 +77,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
   const session = useSession();
-  const canEdit = userHasAccess(credAntecedentsEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
 
   const conceptSetUuid = config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
   const {

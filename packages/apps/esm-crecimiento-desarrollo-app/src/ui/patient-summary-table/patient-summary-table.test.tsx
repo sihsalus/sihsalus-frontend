@@ -7,6 +7,7 @@ import {
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { configSchema } from '../../config-schema';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import { useCREDFormLauncher } from '../../hooks/useCREDFormLauncher';
 import AlojamientoConjunto from '../../well-child-care/components/alojamiento-conjunto/alojamiento-conjunto.component';
 import NeonatalAttention from '../../well-child-care/components/neonatal-attention/neonatal-attention.component';
@@ -164,6 +165,17 @@ describe.each([
     await userEvent.click(screen.getByRole('button', { name: /^record/i }));
     expect(launchStartVisitPrompt).toHaveBeenCalledOnce();
     expect(launchForm).not.toHaveBeenCalled();
+  });
+});
+
+describe.each([
+  ['birth details', BirthDataTable],
+  ['pregnancy and birth', PregnancyBirthTable],
+] as const)('%s permission context', (_name, Component) => {
+  it('uses the write privileges supplied by the parent view', () => {
+    render(<Component patientUuid="synthetic-child" writePrivileges={growthDevelopmentWritePrivileges} />);
+
+    expect(userHasAccess).toHaveBeenCalledWith(growthDevelopmentWritePrivileges, undefined);
   });
 });
 

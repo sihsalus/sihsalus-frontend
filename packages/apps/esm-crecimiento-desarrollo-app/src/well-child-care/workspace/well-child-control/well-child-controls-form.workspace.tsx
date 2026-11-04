@@ -18,7 +18,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import type { ConfigObject } from '../../../config-schema';
-import { credCourseLifeEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
 import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
@@ -417,7 +417,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   if (loadingError) {
     return (
-      <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
+      <RequirePrivilege privilege={growthDevelopmentWritePrivileges}>
         <ResponsiveWrapper>
           <ErrorState
             error={loadingError}
@@ -448,7 +448,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   }
 
   return (
-    <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
+    <RequirePrivilege privilege={growthDevelopmentWritePrivileges}>
       <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
           {neonatal.missingDischarge && (

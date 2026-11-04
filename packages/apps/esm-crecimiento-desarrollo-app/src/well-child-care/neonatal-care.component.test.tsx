@@ -1,7 +1,7 @@
 import { Extension, ExtensionSlot, UserHasAccess, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { usePatientEnrollment } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { credCourseLifePrivilege, credNeonatalPrivilege, neonatalFluidBalanceSlot } from '../constants';
+import { neonatalCarePrivilege, neonatalFluidBalanceSlot } from '../constants';
 import routes from '../routes.json';
 import { NeonatalCare } from './neonatal-care.component';
 import NeonatalCareLink from './neonatal-care-link.component';
@@ -33,7 +33,7 @@ function setPrivileges(privileges: string[], authenticated = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  setPrivileges([credCourseLifePrivilege, credNeonatalPrivilege]);
+  setPrivileges([neonatalCarePrivilege]);
   vi.mocked(usePatient).mockReturnValue({
     patient,
     patientUuid: patient.id,
@@ -98,9 +98,29 @@ it('resets selection on patient change and never shows a previous patient under 
 it('unmounts the neonatal panels when read permission is revoked', () => {
   const { rerender } = render(<NeonatalCare />);
   fireEvent.click(screen.getByRole('tab', { name: 'Balance de líquidos' }));
-  setPrivileges([credCourseLifePrivilege]);
+  vi.mocked(usePatientEnrollment).mockClear();
+  setPrivileges([]);
   rerender(<NeonatalCare />);
   expect(screen.queryByTestId(neonatalFluidBalanceSlot)).not.toBeInTheDocument();
+  expect(usePatientEnrollment).not.toHaveBeenCalled();
+});
+
+it('checks direct-view permission before checking program eligibility', () => {
+  setPrivileges([]);
+  render(<NeonatalCare />);
+  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+  expect(usePatientEnrollment).not.toHaveBeenCalled();
+});
+
+it('blocks direct access when the CRED program is not active', () => {
+  vi.mocked(usePatientEnrollment).mockReturnValue({
+    activePatientEnrollment: [],
+    isLoading: false,
+    error: null,
+  } as ReturnType<typeof usePatientEnrollment>);
+  render(<NeonatalCare />);
+  expect(usePatientEnrollment).toHaveBeenCalledWith(patient.id);
+  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
 });
 
 it('links to the existing neonatal route without requiring edit privileges', () => {
@@ -112,16 +132,15 @@ it('links to the existing neonatal route without requiring edit privileges', () 
   expect(routes.extensions.find(({ name }) => name === 'neonatal-care-dashboard-route')).toEqual(
     expect.objectContaining({
       component: 'neonatalCareSidebarLink',
-      privileges: credNeonatalPrivilege,
+      privileges: neonatalCarePrivilege,
     }),
   );
 });
 
 it.each([
-  [[credCourseLifePrivilege], true],
-  [[credNeonatalPrivilege], true],
-  [[credCourseLifePrivilege, credNeonatalPrivilege], false],
-])('hides the link without the previous group permissions or authentication (%j, %s)', (privileges, authenticated) => {
+  [[], true],
+  [[neonatalCarePrivilege], false],
+])('hides the link without neonatal read permission or authentication (%j, %s)', (privileges, authenticated) => {
   setPrivileges(privileges, authenticated);
   render(<NeonatalCareLink basePath="/patient/synthetic-child/chart" />);
   expect(screen.queryByRole('link')).not.toBeInTheDocument();

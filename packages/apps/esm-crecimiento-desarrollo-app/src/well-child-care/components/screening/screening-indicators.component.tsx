@@ -16,9 +16,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credCourseLifeEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
+import { CardHeaderActions } from '../../../ui/card-header-actions.component';
 
 import styles from './screening-indicators.scss';
 
@@ -29,7 +30,7 @@ interface ScreeningIndicatorsProps {
 const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { nextDueControl } = useCREDSchedule(patientUuid);
   const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{ control: typeof nextDueControl }>(
     patientUuid,
@@ -78,17 +79,29 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type="gray" size="sm">
-          {t('screeningTypesRecorded', '{{completed}}/{{total}} tipos con registro', {
-            completed: completedCount,
-            total: totalRequired,
-          })}
-        </Tag>
-        {canEdit && (
-          <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type="gray" size="sm">
+              {t('screeningTypesRecorded', '{{completed}}/{{total}} tipos con registro', {
+                completed: completedCount,
+                total: totalRequired,
+              })}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? handleAdd : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <DataTable headers={tableHeaders} rows={tableRows} size="sm" useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps }) => (

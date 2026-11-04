@@ -12,9 +12,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNutritionEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useAnemiaScreening } from '../../../hooks/useAnemiaScreening';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
+import { CardHeaderActions } from '../../../ui/card-header-actions.component';
 
 import styles from './anemia-screening.scss';
 
@@ -25,7 +26,7 @@ interface AnemiaScreeningProps {
 const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { lastHb, lastDate, nextDueDate, isLoading, error } = useAnemiaScreening(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('anemiaScreeningForm');
   const headerTitle = t('anemiaScreening', 'Tamizaje de Anemia');
@@ -41,23 +42,28 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        {lastHb !== null && (
-          <Tag type="gray" size="sm">
-            {t('resultRecorded', 'Resultado registrado')}
-          </Tag>
-        )}
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            lastHb !== null ? (
+              <Tag type="gray" size="sm">
+                {t('resultRecorded', 'Resultado registrado')}
+              </Tag>
+            ) : null
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

@@ -12,9 +12,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credEarlyStimulationEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from '../../../../ui/summary-card.scss';
 
@@ -25,7 +26,7 @@ interface StimulationFollowupProps {
 const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =
     useStimulationFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationFollowupForm');
@@ -49,23 +50,26 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <div className={styles.headerActions}>
-          <Tag type={riskTagType} size="sm">
-            {riskLabel ?? t('noData', 'Sin datos')}
-          </Tag>
-          {canEdit && (
+        <CardHeaderActions
+          status={
+            <Tag type={riskTagType} size="sm">
+              {riskLabel ?? t('noData', 'Sin datos')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
             <Button
               kind="ghost"
               size="sm"
               renderIcon={Add}
-              onClick={() => handleAdd()}
+              onClick={canEdit ? () => handleAdd() : undefined}
               iconDescription={t('add', 'Add')}
-              disabled={isFormLoading}
+              disabled={!canEdit || isFormLoading}
             >
               {t('add', 'Add')}
             </Button>
-          )}
-        </div>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

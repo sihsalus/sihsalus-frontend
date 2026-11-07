@@ -184,6 +184,7 @@
   "obstetricCareRequiresConnection": "Connect to update care in the queue.",
   "obstetricCareRetry": "Refresh the queue and check that the visit is still active and outpatient triage has been saved.",
   "obstetricCareUnavailable": "Could not start obstetric care",
+  "obstetricVisitClosed": "The previous visit is closed. An authorized user must start a new visit to continue. The previous visit and interconsultation are preserved.",
   "onTime": "On time",
   "orderDurationAndUnit": "for {{duration}} {{durationUnit}}",
   "orderIndefiniteDuration": "Indefinite duration",

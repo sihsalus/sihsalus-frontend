@@ -184,6 +184,7 @@
   "obstetricCareRequiresConnection": "Conéctese para actualizar la atención en cola.",
   "obstetricCareRetry": "Actualice la cola y verifique que la consulta sigue activa y que el triaje ambulatorio está guardado.",
   "obstetricCareUnavailable": "No se pudo iniciar la atención obstétrica",
+  "obstetricVisitClosed": "La consulta anterior está cerrada. Para continuar, un usuario autorizado debe iniciar una nueva consulta. La consulta anterior y la interconsulta se conservan.",
   "onTime": "A tiempo",
   "orderDurationAndUnit": "por {{duration}} {{durationUnit}}",
   "orderIndefiniteDuration": "Duración indefinida",

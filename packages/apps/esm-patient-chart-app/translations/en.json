@@ -42,6 +42,7 @@
   "clinicalSearchResultCount": "Matching problems or history entries: {{total}}",
   "clinicalSearchScope": "Searches this patient's problems and clinical history.",
   "clinicalSearchTitle": "Search clinical data",
+  "closedVisitStartNewVisitText": "The previous visit is closed. Start a new visit to continue care. The previous visit and interconsultation are preserved.",
   "inactive": "Inactive",
   "recurrence": "Recurrence",
   "relapse": "Relapse",

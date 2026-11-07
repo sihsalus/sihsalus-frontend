@@ -131,6 +131,14 @@ ese smoke autenticado ni requieren crear citas para comprobar el orden.
 
 ### Fecha y hora de la consulta
 
+El diálogo de inicio admite `newVisitOnly` para continuar una atención cuya
+consulta anterior terminó. En ese modo explica que se creará otra consulta,
+oculta la edición de visitas pasadas y exige conexión, sesión autenticada y
+capacidad de inicio clínico. `dashboardName` permite volver al panel clínico
+autorizado al abrir el formulario existente. No se proporciona `visitToEdit`
+ni se copian datos de la consulta cerrada. Los consumidores habituales del
+diálogo conservan su comportamiento.
+
 Fecha y Hora se presentan como campos separados: se alinean cuando el panel
 ofrece espacio y se apilan en paneles estrechos, independientemente del ancho
 de la pantalla. AM/PM permanece junto a la hora y los errores quedan visibles.

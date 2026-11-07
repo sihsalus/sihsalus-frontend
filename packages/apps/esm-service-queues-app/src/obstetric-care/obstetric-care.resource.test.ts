@@ -220,7 +220,6 @@ describe('startObstetricCare', () => {
   });
 
   it.each([
-    { stopDatetime: '2026-09-14T14:00:00.000Z' },
     { stopDatetime: undefined },
     { voided: true },
     { auditInfo: { voided: true } },
@@ -233,6 +232,82 @@ describe('startObstetricCare', () => {
       'The active obstetric visit could not be verified.',
     );
     expect(openmrsFetch).toHaveBeenCalledTimes(1);
+    expect(transitionQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it.each(['outpatient', 'inpatient'] as const)(
+    'identifies a closed %s visit without changing it or starting another queue transition',
+    async (mode) => {
+      entry = makeQueueEntry(mode);
+      freshEntry = { ...entry };
+      visit = { ...visit, stopDatetime: '2026-09-14T14:00:00.000Z' };
+      activeVisits = { results: [] };
+
+      await expect(startObstetricCare(entry, mode, config)).rejects.toMatchObject({
+        code: 'OBSTETRIC_VISIT_CLOSED',
+      });
+      expect(openmrsFetch).toHaveBeenCalledTimes(2);
+      expect(assertFreshPatientIsAlive).toHaveBeenCalledWith('patient');
+      expect(transitionQueueEntry).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not offer a new visit when another active visit exists', async () => {
+    visit = { ...visit, stopDatetime: '2026-09-14T14:00:00.000Z' };
+    activeVisits = { results: [{ uuid: 'another-visit', patient: { uuid: 'patient' }, stopDatetime: null }] };
+
+    await expect(startObstetricCare(entry, 'outpatient', config)).rejects.not.toHaveProperty('code');
+    expect(transitionQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it.each([{}, { results: null }, { results: [], links: [{ rel: 'next' }] }])(
+    'does not offer a new visit after an incomplete active-visit response: %j',
+    async (data) => {
+      visit = { ...visit, stopDatetime: '2026-09-14T14:00:00.000Z' };
+      activeVisits = data as typeof activeVisits;
+
+      await expect(startObstetricCare(entry, 'outpatient', config)).rejects.not.toHaveProperty('code');
+      expect(transitionQueueEntry).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not offer a new visit after the active-visit read fails', async () => {
+    visit = { ...visit, stopDatetime: '2026-09-14T14:00:00.000Z' };
+    vi.mocked(openmrsFetch).mockResolvedValueOnce(response(visit)).mockRejectedValueOnce(new Error('Read failed'));
+
+    await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toThrow('Read failed');
+    expect(transitionQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it('offers a new visit even if the old in-service entry was ended with its visit', async () => {
+    freshEntry = { ...entry, endedAt: '2026-09-14T14:00:00.000Z', status: { uuid: 'in-service' } };
+    visit = { ...visit, stopDatetime: '2026-09-14T14:00:00.000Z' };
+    activeVisits = { results: [] };
+
+    await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toMatchObject({
+      code: 'OBSTETRIC_VISIT_CLOSED',
+    });
+    expect(transitionQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it('does not offer a new visit when the fresh vital status blocks care', async () => {
+    visit = { ...visit, stopDatetime: '2026-09-14T14:00:00.000Z' };
+    vi.mocked(assertFreshPatientIsAlive).mockRejectedValue(new Error('Deceased patient'));
+
+    await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toThrow('Deceased patient');
+    expect(openmrsFetch).toHaveBeenCalledTimes(1);
+    expect(transitionQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { stopDatetime: 'invalid' },
+    { stopDatetime: undefined },
+    { stopDatetime: '2026-09-14T14:00:00.000Z', patient: { uuid: 'other-patient' } },
+    { stopDatetime: '2026-09-14T14:00:00.000Z', voided: true },
+  ])('does not label an unverified visit as closed: %j', async (change) => {
+    visit = { ...visit, ...change } as Visit;
+
+    await expect(startObstetricCare(entry, 'outpatient', config)).rejects.not.toHaveProperty('code');
     expect(transitionQueueEntry).not.toHaveBeenCalled();
   });
 
@@ -285,28 +360,27 @@ describe('startObstetricCare', () => {
     expect(transitionQueueEntry).not.toHaveBeenCalled();
   });
 
-  it.each([
-    'pending',
-    'voided',
-    'wrong-type',
-  ] as const)('requires confirmed triage and rejects %s encounters', async (state) => {
-    visit.encounters =
-      state === 'pending'
-        ? []
-        : [
-            {
-              ...visit.encounters[0],
-              voided: state === 'voided',
-              encounterType: { uuid: state === 'wrong-type' ? 'another-encounter-type' : 'triage-encounter-type' },
-            },
-          ];
+  it.each(['pending', 'voided', 'wrong-type'] as const)(
+    'requires confirmed triage and rejects %s encounters',
+    async (state) => {
+      visit.encounters =
+        state === 'pending'
+          ? []
+          : [
+              {
+                ...visit.encounters[0],
+                voided: state === 'voided',
+                encounterType: { uuid: state === 'wrong-type' ? 'another-encounter-type' : 'triage-encounter-type' },
+              },
+            ];
 
-    await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toThrow(
-      'The obstetric appointment route or saved triage could not be verified.',
-    );
-    expect(openmrsFetch).toHaveBeenCalledTimes(3);
-    expect(transitionQueueEntry).not.toHaveBeenCalled();
-  });
+      await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toThrow(
+        'The obstetric appointment route or saved triage could not be verified.',
+      );
+      expect(openmrsFetch).toHaveBeenCalledTimes(3);
+      expect(transitionQueueEntry).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(['missing', 'ambiguous', 'wrong-queue'] as const)('rejects a %s outpatient arrival route', async (state) => {
     const route = config.appointmentTriage.appointmentArrivalRules[0];
@@ -388,7 +462,11 @@ describe('startObstetricCare', () => {
     };
 
     await expect(startObstetricCare(entry, 'outpatient', config)).rejects.toThrow('The obstetric queue entry changed');
-    expect(openmrsFetch).not.toHaveBeenCalled();
+    expect(openmrsFetch).toHaveBeenCalledTimes(1);
+    expect(openmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/visit/visit?'),
+      expect.objectContaining({ cache: 'no-store' }),
+    );
     expect(transitionQueueEntry).not.toHaveBeenCalled();
   });
 

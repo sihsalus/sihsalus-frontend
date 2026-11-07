@@ -14,11 +14,25 @@ vi.mock('../../../provider/form-provider', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => (key === 'incrementNumber' || key === 'decrementNumber' ? `${key}!` : fallback ?? key),
+    t: (key: string, fallback?: string) =>
+      key === 'incrementNumber' || key === 'decrementNumber' ? `${key}!` : (fallback ?? key),
   }),
 }));
 
 describe('NumberField', () => {
+  it('uses native concept bounds and integer policy in the input', () => {
+    const field = createNumberField({ min: '0', max: '200' });
+    field.meta = {
+      concept: { uuid: 'measurement', lowAbsolute: 5, hiAbsolute: 100, allowDecimal: false },
+    } as FormField['meta'];
+    renderNumberField({ field });
+    const input = screen.getByRole('spinbutton', { name: /clinical value/i });
+    expect(input).toHaveAttribute('min', '5');
+    expect(input).toHaveAttribute('max', '100');
+    expect(fireEvent.keyDown(input, { key: '.' })).toBe(false);
+    expect(fireEvent.paste(input, { clipboardData: { getData: () => '101' } })).toBe(false);
+  });
+
   it('translates the stepper button labels', () => {
     renderNumberField();
 

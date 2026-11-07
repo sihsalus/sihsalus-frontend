@@ -3,9 +3,12 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 const conceptRepresentation =
-  'custom:(uuid,display,conceptClass:(uuid,display),answers:(uuid,display),conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code)))';
+  'custom:(uuid,display,lowAbsolute,hiAbsolute,allowDecimal,conceptClass:(uuid,display),answers:(uuid,display),conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code)))';
 
 type ConceptRepresentation = Pick<Concept, 'uuid' | 'display'> & {
+  lowAbsolute?: number | null;
+  hiAbsolute?: number | null;
+  allowDecimal?: boolean;
   conceptClass: Pick<Concept['conceptClass'], 'uuid' | 'display'>;
   answers: Array<{
     uuid: string;

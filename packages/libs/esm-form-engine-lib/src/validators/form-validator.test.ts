@@ -18,6 +18,32 @@ vi.mock('@openmrs/esm-framework', () => ({
 const mockTranslateFrom = vi.mocked(translateFrom);
 
 describe('form validators', () => {
+  it('rejects values outside concept absolute bounds even when the schema allows them', () => {
+    const field = {
+      id: 'temperature',
+      type: 'obs',
+      questionOptions: { rendering: 'number', min: '0', max: '60' },
+      meta: { concept: { uuid: 'temperature', lowAbsolute: 25, hiAbsolute: 45, allowDecimal: true } },
+    } as FormField;
+    expect(FieldValidator.validate(field, 24)).toHaveLength(1);
+    expect(FieldValidator.validate(field, 46)).toHaveLength(1);
+    expect(FieldValidator.validate(field, 36.5)).toEqual([]);
+    expect(FieldValidator.validate(field, undefined)).toEqual([]);
+    for (const value of [NaN, Infinity, -Infinity]) {
+      expect(FieldValidator.validate(field, value)).toHaveLength(1);
+    }
+  });
+
+  it('does not infer zero bounds from empty or missing metadata', () => {
+    const field = {
+      id: 'measurement',
+      type: 'obs',
+      questionOptions: { rendering: 'number', min: '', max: '' },
+      meta: { concept: { uuid: 'measurement', lowAbsolute: null, hiAbsolute: null } },
+    } as FormField;
+    expect(FieldValidator.validate(field, 36.5)).toEqual([]);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -52,6 +78,17 @@ describe('form validators', () => {
     ]);
   });
 
+  it('validates the requested 255-unit narrative limit without altering Unicode or historical text', () => {
+    const field = { questionOptions: { rendering: 'textarea', maxLength: '255' } } as FormField;
+    for (const length of [254, 255, 256, 1000]) {
+      const text = 'á\n😀' + 'x'.repeat(length - 4);
+      const original = text;
+      expect(text.length).toBe(length);
+      expect(FieldValidator.validate(field, text)).toHaveLength(length > 255 ? 1 : 0);
+      expect(text).toBe(original);
+    }
+  });
+
   it('translates inclusive numeric upper-bound validation messages', () => {
     const result = numberInputRangeValidator(Number.NaN, 10, 1000);
 
@@ -78,19 +115,22 @@ describe('form validators', () => {
     [true, true, true],
     [true, false, true],
     [true, undefined, true],
-  ])('validates decimals with form restriction %s and concept allowance %s', (disallowDecimals, allowDecimal, rejects) => {
-    const field = {
-      id: 'hemoglobin',
-      type: 'obs',
-      questionOptions: { rendering: 'number', min: '3', max: '25', disallowDecimals },
-      meta: { concept: allowDecimal === undefined ? undefined : { uuid: 'synthetic-numeric-concept', allowDecimal } },
-    } as FormField;
+  ])(
+    'validates decimals with form restriction %s and concept allowance %s',
+    (disallowDecimals, allowDecimal, rejects) => {
+      const field = {
+        id: 'hemoglobin',
+        type: 'obs',
+        questionOptions: { rendering: 'number', min: '3', max: '25', disallowDecimals },
+        meta: { concept: allowDecimal === undefined ? undefined : { uuid: 'synthetic-numeric-concept', allowDecimal } },
+      } as FormField;
 
-    expect(FieldValidator.validate(field, 11.5)).toHaveLength(rejects ? 1 : 0);
-    expect(FieldValidator.validate(field, 11)).toEqual([]);
-    expect(FieldValidator.validate(field, undefined)).toEqual([]);
-    expect(FieldValidator.validate(field, 30)).toHaveLength(1);
-  });
+      expect(FieldValidator.validate(field, 11.5)).toHaveLength(rejects ? 1 : 0);
+      expect(FieldValidator.validate(field, 11)).toEqual([]);
+      expect(FieldValidator.validate(field, undefined)).toEqual([]);
+      expect(FieldValidator.validate(field, 30)).toHaveLength(1);
+    },
+  );
 
   it('translates future date validation messages', () => {
     const field = {

@@ -21,6 +21,13 @@ const TextArea: React.FC<FormFieldInputProps<string | number | null | undefined>
   const { layoutType, sessionMode, workspaceLayout } = useFormProviderContext();
   const configuredMaxLength = Number(field.questionOptions.maxLength);
   const maxLength = Number.isInteger(configuredMaxLength) && configuredMaxLength > 0 ? configuredMaxLength : undefined;
+  const counterText = maxLength ? `${String(value ?? '').length}/${maxLength}` : undefined;
+  const validationFeedback = (
+    <>
+      {errors[0]?.message ?? warnings[0]?.message}
+      {counterText && <div>{counterText}</div>}
+    </>
+  );
 
   const onBlur = (event: React.FocusEvent<HTMLTextAreaElement>): void => {
     event.preventDefault();
@@ -60,11 +67,10 @@ const TextArea: React.FC<FormFieldInputProps<string | number | null | undefined>
             disabled={field.isDisabled}
             readOnly={isTrue(field.readonly)}
             invalid={errors.length > 0}
-            invalidText={errors[0]?.message}
-            enableCounter={Boolean(maxLength)}
-            maxCount={maxLength}
+            invalidText={validationFeedback}
+            helperText={counterText}
             warn={warnings.length > 0}
-            warnText={warnings[0]?.message}
+            warnText={validationFeedback}
           />
         </Layer>
       </div>

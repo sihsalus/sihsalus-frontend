@@ -44,6 +44,19 @@ describe('form validators', () => {
     expect(FieldValidator.validate(field, 36.5)).toEqual([]);
   });
 
+  it('preserves finite numeric catalog bounds that JavaScript formats with exponents', () => {
+    const field = {
+      id: 'measurement',
+      type: 'obs',
+      questionOptions: { rendering: 'number' },
+      meta: { concept: { uuid: 'measurement', lowAbsolute: 1e-7, hiAbsolute: 1 } },
+    } as FormField;
+    expect(FieldValidator.validate(field, 0)).toHaveLength(1);
+    expect(FieldValidator.validate(field, 1e-7)).toEqual([]);
+    expect(FieldValidator.validate(field, 1)).toEqual([]);
+    expect(FieldValidator.validate(field, 2)).toHaveLength(1);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

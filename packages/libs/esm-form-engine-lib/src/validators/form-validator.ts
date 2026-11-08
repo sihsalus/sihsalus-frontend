@@ -10,14 +10,15 @@ export const fieldOutOfBoundErrCode = 'field.outOfBound';
 /** Resolve once for the input and submission validator; schema limits can only narrow the catalog. */
 export function getNumericFieldConstraints(field: FormField) {
   const concept: Record<string, unknown> = isPlainObject(field.meta?.concept) ? field.meta.concept : {};
-  const lower = [field.questionOptions.min, concept.lowAbsolute]
-    .filter(isStringOrNumber)
-    .map(parsePlainDecimalInput)
-    .filter((value): value is number => value !== undefined);
-  const upper = [field.questionOptions.max, concept.hiAbsolute]
-    .filter(isStringOrNumber)
-    .map(parsePlainDecimalInput)
-    .filter((value): value is number => value !== undefined);
+  const [lower, upper] = [
+    [field.questionOptions.min, concept.lowAbsolute],
+    [field.questionOptions.max, concept.hiAbsolute],
+  ].map((bounds) =>
+    bounds
+      .filter(isStringOrNumber)
+      .map((value) => (typeof value === 'number' ? value : parsePlainDecimalInput(value)))
+      .filter((value): value is number => value !== undefined && Number.isFinite(value)),
+  );
   const min = lower.length ? Math.max(...lower) : undefined;
   const max = upper.length ? Math.min(...upper) : undefined;
   return {

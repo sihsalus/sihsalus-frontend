@@ -47,6 +47,10 @@ it("applies the location defaults and clears descendants on manual selection", a
   });
   expect(onChange).toHaveBeenLastCalledWith("departments", "DEPARTAMENTO");
   expect(screen.getByLabelText("reportCenter")).toHaveValue("");
+  // The manual change reloads the dependent options; wait for that load to end.
+  await waitFor(() =>
+    expect(screen.getByLabelText("reportDepartment")).not.toBeDisabled(),
+  );
 });
 it("does not overwrite manual choices with late defaults", async () => {
   let resolve!: (value: typeof defaults) => void;

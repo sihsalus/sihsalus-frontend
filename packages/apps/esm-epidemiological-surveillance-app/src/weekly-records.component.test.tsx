@@ -129,11 +129,15 @@ it('clears stale data on a changed filter, ignores late responses and supports e
   await screen.findByText('weekly.empty');
   await act(async () => resolveOld(result()));
   expect(screen.queryByText('Synthetic 0')).toBeNull();
+  vi.mocked(getWeeklyRecords).mockResolvedValue({ ...result(2025, 1), rows: [] });
   fireEvent.change(screen.getByLabelText('weekly.year'), {
     target: { value: '2025' },
   });
   expect(screen.queryByRole('button', { name: 'export.open' })).toBeNull();
   expect(screen.getByRole('option', { name: 'S53' })).toBeTruthy();
+  // Let the request for the new year finish inside the test.
+  await screen.findByText('weekly.empty');
+  expect(getWeeklyRecords).toHaveBeenLastCalledWith(2025, 1, expect.any(AbortSignal));
 });
 
 it('shows a safe error and retries without an export of stale rows', async () => {

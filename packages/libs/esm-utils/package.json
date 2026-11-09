@@ -50,11 +50,11 @@
     "access": "public"
   },
   "dependencies": {
-    "@formatjs/intl-durationformat": "^0.11.1",
+    "@formatjs/intl-durationformat": "^0.12.3",
     "@internationalized/date": "^3.12.4",
     "any-date-parser": "^2.2.4",
     "lodash-es": "^4.17.21",
-    "semver": "^7.8.5"
+    "semver": "^7.8.6"
   },
   "peerDependencies": {
     "@openmrs/esm-globals": "10.x",
@@ -65,7 +65,7 @@
   "devDependencies": {
     "@openmrs/esm-globals": "workspace:*",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.16.18",
+    "@swc/core": "1.16.22",
     "@types/fhir": "0.0.31",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^26.6.5",

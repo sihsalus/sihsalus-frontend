@@ -14,6 +14,7 @@ export const weeklyColumns = [
   'district',
   'locality',
   'residence',
+  'ethnicityGroup',
   'ethnicity',
   'habitualResidence',
   'icd10',
@@ -45,7 +46,7 @@ export function weeklyCells(row: WeeklyRow): ExportCell[] {
       return { CONFIRMADO: 'C', PROBABLE: 'P', DESCARTADO: 'D' }[String(value)] ?? String(value);
     if (key === 'vaccinationStatus') return { SI: 'S', NO: 'N', IGN: 'I' }[String(value)] ?? String(value);
     if (key === 'surveillanceType') return { PASIVA: 'P', BUSQUEDA_ACTIVA: 'A' }[String(value)] ?? '';
-    // Preserve text identifiers and leading zeros; only ages, years and weeks are numeric.
+    // Preserve text identifiers and leading zeros; ethnicity and group codes are numeric too.
     return typeof value === 'number' ? value : String(value);
   });
 }

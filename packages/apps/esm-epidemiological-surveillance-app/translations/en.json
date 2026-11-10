@@ -760,6 +760,7 @@
       "residence": "Residence address",
       "ethnicity": "Ethnicity",
       "habitualResidence": "Habitual residence",
+      "ethnicityGroup": "Ethnic group",
       "icd10": "ICD-10 diagnosis",
       "diagnosisType": "Diagnosis type",
       "vaccinationStatus": "Vaccination protection",

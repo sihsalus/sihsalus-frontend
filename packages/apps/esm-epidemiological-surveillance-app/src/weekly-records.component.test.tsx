@@ -36,7 +36,8 @@ function result(year = 2026, week = 1): WeeklyRecords {
           givenNames: `Synthetic ${index}`,
           dni: '00123456',
           age: 0,
-          ethnicity: 'Synthetic ethnicity',
+          ethnicityGroup: 3,
+          ethnicity: 2,
           investigationForm: true,
           province: '0101',
           district: '010101',
@@ -88,6 +89,8 @@ it('shows all record columns and exports every page, preserving DNI and numeric 
   expect(sheet.rowCount).toBe(13);
   expect(sheet.getCell(2, weeklyColumns.indexOf('dni') + 1).value).toBe('00123456');
   expect(sheet.getCell(2, weeklyColumns.indexOf('age') + 1).value).toBe(0);
+  expect(sheet.getCell(2, weeklyColumns.indexOf('ethnicityGroup') + 1).value).toBe(3);
+  expect(sheet.getCell(2, weeklyColumns.indexOf('ethnicity') + 1).value).toBe(2);
   for (const [key, expected] of Object.entries({
     province: '0101',
     district: '010101',
@@ -105,6 +108,12 @@ it('renders negative investigation forms and active surveillance with report cod
   const cells = weeklyCells({ ...result().rows[0], investigationForm: false, surveillanceType: 'BUSQUEDA_ACTIVA' });
   expect(cells[weeklyColumns.indexOf('investigationForm')]).toBe('N');
   expect(cells[weeklyColumns.indexOf('surveillanceType')]).toBe('A');
+});
+
+it('leaves specific ethnicity blank for group-only answers', () => {
+  const cells = weeklyCells({ ...result().rows[0], ethnicityGroup: 2, ethnicity: null });
+  expect(cells[weeklyColumns.indexOf('ethnicityGroup')]).toBe(2);
+  expect(cells[weeklyColumns.indexOf('ethnicity')]).toBe('');
 });
 
 it('clears stale data on a changed filter, ignores late responses and supports empty weeks', async () => {

@@ -759,6 +759,7 @@
       "locality": "Localidad de infección",
       "residence": "Dirección de residencia",
       "ethnicity": "Etnia",
+      "ethnicityGroup": "Grupo de etnia",
       "habitualResidence": "Residencia habitual",
       "icd10": "Diagnóstico CIE-10",
       "diagnosisType": "Tipo de diagnóstico",

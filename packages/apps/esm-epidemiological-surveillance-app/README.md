@@ -107,7 +107,7 @@ los datos anteriores; carga, error y reintento no permiten exportarlos.
 
 El subconjunto disponible del anexo 2 comprende apellidos,
 nombres, edad en años, sexo, DNI, provincia/distrito/localidad de infección,
-residencia, nombre de etnia, residencia habitual, diagnóstico CIE-10,
+residencia, grupo de etnia y etnia numéricos, residencia habitual, diagnóstico CIE-10,
 clasificación C/P/D, vacunación S/N/I, fechas de síntomas/defunción/investigación/
 notificación, ficha de investigación S/N y tipo de vigilancia P/A. Provincia,
 distrito y localidad de infección muestran códigos del catálogo territorial,
@@ -119,6 +119,17 @@ formato de importación NOTI-Web. Los nombres, edad, sexo y residencia proceden
 de la copia del caso; DNI, etnia y defunción proceden del paciente vigente.
 Solo se coloca DNI cuando el identificador es del tipo DNI. Los ausentes quedan
 vacíos en los archivos y como «—» en pantalla.
+
+El servidor entrega `ethnicityGroup` y `ethnicity` como números o null; tabla,
+Excel y CSV conservan esos códigos. Los grupos del anexo 6 de la RM 273-2025/MINSA
+son 1 Mestizo, 2 Afrodescendiente, 3 Andino, 4 Indígena amazónico,
+5 Asiaticodescendiente y 6 Otros. Las etnias usan `MINSA-ETNIAS` de content:
+2, 19, 40 y 49 son andinas; las demás de 1 a 55 son amazónicas. No se usan
+los rangos de etnias del PDF. Los códigos 56–60 se muestran solo como grupo;
+Blanco corresponde a Otros y Afroperuano a Afrodescendiente. Las opciones de
+grupo sin mapping se reconocen por su UUID en el backend. No se inventa una
+etnia específica para ellas ni para códigos ausentes o ambiguos. Requiere
+content con las equivalencias MINSA y actualizar OMOD y ESM juntos.
 
 Incluye todos los tipos C/P/D notificados en la semana, incluso eventos de
 periodicidad inmediata. Excluye casos, pacientes, diagnósticos y atenciones

@@ -1,9 +1,33 @@
 import { translateFrom } from '@openmrs/esm-framework';
+import { parsePlainDecimalInput } from '@openmrs/esm-utils';
 import { formEngineAppName } from '../globals';
 import { type FormField, type FormFieldValidator, type ValidationResult } from '../types';
-import { isPlainObject } from '../utils/common-utils';
+import { isTrue } from '../utils/boolean-utils';
+import { isPlainObject, isStringOrNumber } from '../utils/common-utils';
 export const fieldRequiredErrCode = 'field.required';
 export const fieldOutOfBoundErrCode = 'field.outOfBound';
+
+/** Resolve once for the input and submission validator; schema limits can only narrow the catalog. */
+export function getNumericFieldConstraints(field: FormField) {
+  const concept: Record<string, unknown> = isPlainObject(field.meta?.concept) ? field.meta.concept : {};
+  const [lower, upper] = [
+    [field.questionOptions.min, concept.lowAbsolute],
+    [field.questionOptions.max, concept.hiAbsolute],
+  ].map((bounds) =>
+    bounds
+      .filter(isStringOrNumber)
+      .map((value) => (typeof value === 'number' ? value : parsePlainDecimalInput(value)))
+      .filter((value): value is number => value !== undefined && Number.isFinite(value)),
+  );
+  const min = lower.length ? Math.max(...lower) : undefined;
+  const max = upper.length ? Math.min(...upper) : undefined;
+  return {
+    min,
+    max,
+    integer: isTrue(field.questionOptions.disallowDecimals ?? false) || concept.allowDecimal === false,
+    nonNegative: min !== undefined && min >= 0,
+  };
+}
 
 export const FieldValidator: FormFieldValidator = {
   validate: (field: FormField, value: unknown): ValidationResult[] => {
@@ -28,13 +52,9 @@ export const FieldValidator: FormFieldValidator = {
       return textInputLengthValidator(minLength, maxLength, inputLength) ?? [];
     }
     if (field.questionOptions.rendering === 'number') {
-      const min = Number(field.questionOptions.min);
-      const max = Number(field.questionOptions.max);
-      const disallowDecimals =
-        Boolean(field.questionOptions.disallowDecimals) ||
-        (isPlainObject(field.meta?.concept) && field.meta.concept.allowDecimal === false);
+      const { min, max, integer: disallowDecimals } = getNumericFieldConstraints(field);
       if (isEmpty(value)) return [];
-      if (typeof value !== 'number') {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
         return addError(
           fieldOutOfBoundErrCode,
           translateValidationMessage('valueMustBeNumber', 'Value must be a number'),
@@ -46,8 +66,8 @@ export const FieldValidator: FormFieldValidator = {
           translateValidationMessage('decimalValuesNotAllowed', 'Decimal values are not allowed for this field'),
         );
       }
-      if (!Number.isNaN(min) || !Number.isNaN(max)) {
-        return numberInputRangeValidator(min, max, value);
+      if (min !== undefined || max !== undefined) {
+        return numberInputRangeValidator(min ?? Number.NaN, max ?? Number.NaN, value);
       }
     }
     return [];

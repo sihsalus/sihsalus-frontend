@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { useFormProviderContext } from '../../../provider/form-provider';
@@ -25,7 +25,14 @@ test('shows the configured character limit while entering a clinical narrative',
 
   function ControlledNarrative() {
     const [value, setValue] = useState('');
-    return <TextArea {...props} value={value} setFieldValue={(nextValue) => setValue(String(nextValue))} />;
+    return (
+      <TextArea
+        {...props}
+        value={value}
+        setFieldValue={(nextValue) => setValue(String(nextValue))}
+        errors={value.length > 5 ? [{ errCode: 'length', resultType: 'error', message: 'Too long' }] : []}
+      />
+    );
   }
 
   render(<ControlledNarrative />);
@@ -33,6 +40,12 @@ test('shows the configured character limit while entering a clinical narrative',
   expect(screen.getByText('0/5')).toBeInTheDocument();
 
   await userEvent.type(narrative, '123456');
-  expect(narrative).toHaveValue('12345');
-  expect(screen.getByText('5/5')).toBeInTheDocument();
+  expect(narrative).toHaveValue('123456');
+  expect(screen.getByText('6/5')).toBeInTheDocument();
+  expect(screen.getByText('Too long')).toBeInTheDocument();
+  expect(narrative).not.toHaveAttribute('maxlength');
+  const pasted = 'áe\u0301😀\n'.repeat(200);
+  fireEvent.change(narrative, { target: { value: pasted } });
+  expect(narrative).toHaveValue(pasted);
+  expect(screen.getByText(`${pasted.length}/5`)).toBeInTheDocument();
 });

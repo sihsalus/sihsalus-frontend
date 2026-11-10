@@ -65,6 +65,12 @@ separate QLTY check.
 
 ### Numeric precision
 
+The existing concept lookup includes native absolute bounds and decimal policy.
+The input and submission validator share their resolution in `form-validator`
+and reuse `esm-utils`' plain-number parser. Schema bounds can narrow the catalog
+but cannot relax it; absent bounds do not become zero. These are absolute
+recordability limits, not normal/critical ranges or clinical interpretations.
+
 A number field rejects decimals when its schema sets `disallowDecimals` or its
 loaded concept explicitly sets `allowDecimal: false`. A concept permitting
 decimals does not override a stricter schema. Missing concept metadata does not
@@ -90,8 +96,17 @@ edits, or the cause of an error observed in a deployed environment.
 ### Text area limits
 
 When a schema declares a positive `questionOptions.maxLength`, a text area shows
-Carbon's character counter and the shared validator rejects values above that
-limit. Schemas without a limit retain their previous behavior.
+Carbon's helper/error feedback shows the character count and the shared validator
+rejects values above that limit. It deliberately does not use Carbon's
+`enableCounter`, which adds HTML `maxlength` and truncates pasted input.
+Full text, including historical values above the limit, remains visible for
+explicit correction before saving. Counts and validation use UTF-16 units.
+Schemas without a limit retain their previous behavior.
+
+Date fields display their existing validator errors beside the calendar.
+A schema that prohibits future dates also constrains the calendar to today;
+date/time validation still checks the actual instant. Historical dates remain
+editable, subject to the schema's existing clinical rules.
 
 ### Schema-only preview
 

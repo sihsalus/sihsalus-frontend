@@ -76,7 +76,7 @@ export const alertReasons = [
   "AUTOCHTHONOUS_ELIMINATED",
   "FOCUS_CASES",
 ];
-export function AlertAccess({ children }: { children: React.ReactNode }) {
+export function AlertAccess({ children, hideUnauthorized = true }: { children: React.ReactNode; hideUnauthorized?: boolean }) {
   return [
     epidemiologicalSurveillanceReadPrivilege,
     caseViewPrivilege,
@@ -85,7 +85,7 @@ export function AlertAccess({ children }: { children: React.ReactNode }) {
     managePrivilege,
   ].reduceRight(
     (content, privilege) => (
-      <RequirePrivilege key={privilege} privilege={privilege} hideUnauthorized>
+      <RequirePrivilege key={privilege} privilege={privilege} hideUnauthorized={hideUnauthorized}>
         {content}
       </RequirePrivilege>
     ),

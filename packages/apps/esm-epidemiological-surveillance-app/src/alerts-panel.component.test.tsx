@@ -17,6 +17,7 @@ import { showToast } from "@openmrs/esm-framework";
 import type { SurveillanceAlert } from "./types";
 import es from "../translations/es.json";
 import en from "../translations/en.json";
+import { epidemiologicalSurveillanceReadPrivilege, caseViewPrivilege, caseEditPrivilege, reportPrivilege, managePrivilege } from "./constants";
 
 const state = vi.hoisted(() => ({ allowed: true, deniedPrivilege: "" }));
 vi.mock("./api", () => ({
@@ -33,9 +34,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 vi.mock("@sihsalus/esm-rbac", () => ({
-  RequirePrivilege: ({ children, privilege }: { children: React.ReactNode; privilege: string }) =>
-    state.allowed && state.deniedPrivilege !== privilege ? children : null,
+  RequirePrivilege: ({ children, privilege, hideUnauthorized }: { children: React.ReactNode; privilege: string; hideUnauthorized?: boolean }) =>
+    state.allowed && state.deniedPrivilege !== privilege ? children : hideUnauthorized ? null : <div>Unauthorized section</div>,
 }));
+
+it.each([epidemiologicalSurveillanceReadPrivilege, caseViewPrivilege, caseEditPrivilege, reportPrivilege, managePrivilege])(
+  "shows the unauthorized state when %s is missing and stays silent by default",
+  (privilege) => {
+    state.allowed = true;
+    state.deniedPrivilege = privilege;
+    const view = render(<AlertAccess hideUnauthorized={false}><span>Authorized alerts</span></AlertAccess>);
+    expect(screen.getByText("Unauthorized section")).toBeInTheDocument();
+    expect(screen.queryByText("Authorized alerts")).toBeNull();
+    view.rerender(<AlertAccess><span>Authorized alerts</span></AlertAccess>);
+    expect(screen.queryByText("Unauthorized section")).toBeNull();
+    expect(screen.queryByText("Authorized alerts")).toBeNull();
+    state.deniedPrivilege = "";
+    view.rerender(<AlertAccess hideUnauthorized={false}><span>Authorized alerts</span></AlertAccess>);
+    expect(screen.getByText("Authorized alerts")).toBeInTheDocument();
+  },
+);
 
 it("allows alerts without registration but requires editing", () => {
   state.allowed = true;

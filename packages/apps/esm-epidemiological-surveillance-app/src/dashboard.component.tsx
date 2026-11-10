@@ -202,7 +202,7 @@ function SessionDashboard() {
                 />
               </RequirePrivilege>
             </TabPanel>
-            <TabPanel><AlertAccess><AlertsPanel /></AlertAccess></TabPanel>
+            <TabPanel><AlertAccess hideUnauthorized={false}><AlertsPanel /></AlertAccess></TabPanel>
             <TabPanel>
               <RequirePrivilege privilege={caseViewPrivilege}>
                 <InvestigationFormsPanel />

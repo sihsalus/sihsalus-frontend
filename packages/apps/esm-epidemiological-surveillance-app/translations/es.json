@@ -97,9 +97,8 @@
     "download": "Descargar PDF",
     "downloadNamed": "Descargar ficha de {{name}} en PDF",
     "downloading": "Descargando…",
-    "source": "Fuente oficial",
     "failed": "No se pudo descargar la ficha",
-    "retry": "Vuelve a intentar la descarga o consulta la fuente oficial.",
+    "retry": "Vuelve a intentar la descarga.",
     "arbovirosis": {
       "name": "Arbovirosis",
       "description": "Dengue, chikungunya, zika, oropouche, mayaro y otras arbovirosis. Ficha de investigación, versión 03."

@@ -38,18 +38,10 @@ const pdfResponse = () =>
     headers: { "Content-Type": "application/pdf" },
   });
 
-it("downloads each bundled PDF with a descriptive filename and offers an official source", async () => {
+it("downloads each bundled PDF with a descriptive filename without source links", async () => {
   fetchMock.mockImplementation(async () => pdfResponse());
   render(<InvestigationFormsPanel />);
-  expect(screen.getAllByRole("link", { name: "Fuente oficial" })).toHaveLength(
-    29,
-  );
-  screen.getAllByRole("link", { name: "Fuente oficial" }).forEach((link, index) => {
-    expect(link).toHaveAttribute("href", investigationForms[index].source);
-    expect(new URL(investigationForms[index].source).protocol).toBe("https:");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
-  });
+  expect(screen.queryByRole("link", { name: "Fuente oficial" })).toBeNull();
   for (const [index, button] of screen
     .getAllByRole("button", { name: /Descargar ficha/ })
     .entries()) {

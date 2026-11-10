@@ -13,7 +13,8 @@ administración, no modifica casos y no marca automáticamente la ficha como rea
 Los PDF se incluyen sin modificación en `src/assets/forms` y Rspack los publica
 como recursos independientes; se descargan solo al pulsar **Descargar PDF**.
 Se valida la respuesta y la cabecera PDF antes de guardar, se bloquean descargas
-duplicadas y se permite reintentar o consultar la fuente oficial ante un error.
+duplicadas y se permite reintentar ante un error. Las tarjetas solo ofrecen la
+descarga; la procedencia de los PDF se conserva en `sources.json`.
 La descarga usa un Blob para conservar el nombre incluso si los assets se sirven
 desde otro origen (ese servidor debe permitir CORS). No requiere cambios de OMOD.
 No se garantiza la descarga sin conexión si el recurso aún no está en caché.

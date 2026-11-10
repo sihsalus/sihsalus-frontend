@@ -97,9 +97,8 @@
     "download": "Download PDF",
     "downloadNamed": "Download {{name}} investigation form as PDF",
     "downloading": "Downloading…",
-    "source": "Official source",
     "failed": "The form could not be downloaded",
-    "retry": "Try downloading again or consult the official source.",
+    "retry": "Try downloading again.",
     "arbovirosis": {
       "name": "Arboviral diseases",
       "description": "Dengue, chikungunya, Zika, Oropouche, Mayaro and other arboviral diseases. Investigation form, version 03."

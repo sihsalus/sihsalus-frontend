@@ -1,4 +1,4 @@
-import { Button, InlineNotification, Link, Search, Tile } from "@carbon/react";
+import { Button, InlineNotification, Search, Tile } from "@carbon/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { moduleName } from "./constants";
@@ -89,9 +89,6 @@ function FormCard({ form }: { form: (typeof investigationForms)[number] }) {
               : "investigationForms.download",
           )}
         </Button>
-        <Link href={form.source} target="_blank" rel="noopener noreferrer">
-          {t("investigationForms.source")}
-        </Link>
       </div>
       {failed && (
         <InlineNotification

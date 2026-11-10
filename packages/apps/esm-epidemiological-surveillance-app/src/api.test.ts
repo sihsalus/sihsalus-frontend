@@ -119,7 +119,7 @@ describe("surveillance API", () => {
     expect(safeError({ status: 422, responseBody: { code } }).code).toBe(code);
   });
   it("reads the fixed catalog contract", async () => {
-    const response = { catalog: { version: 1 }, events: [] };
+    const response = { catalog: { timezone: "America/Lima" }, events: [] };
     vi.mocked(openmrsFetch).mockResolvedValue({ data: response } as never);
     expect(await getCatalogue()).toEqual(response);
     expect(openmrsFetch).toHaveBeenCalledWith(

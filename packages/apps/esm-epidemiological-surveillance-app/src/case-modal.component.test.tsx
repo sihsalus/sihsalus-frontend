@@ -4,7 +4,6 @@ import {
   getSurveillanceCase,
   getPatient,
   getEncounterObservations,
-  getEncounterDiagnosesDetails,
   updateSurveillanceCase,
   SurveillanceApiError,
 } from "./api";
@@ -17,7 +16,6 @@ vi.mock("./api", async (original) => ({
   getSurveillanceCase: vi.fn(),
   getPatient: vi.fn(),
   getEncounterObservations: vi.fn(),
-  getEncounterDiagnosesDetails: vi.fn(),
   updateSurveillanceCase: vi.fn(),
 }));
 vi.mock("./error-notification.component", () => ({
@@ -65,7 +63,6 @@ beforeEach(() => {
     identifier: [{ value: "TEST-DNI", type: { text: "DNI" } }],
     residence: "Dirección sintética",
   });
-  vi.mocked(getEncounterDiagnosesDetails).mockResolvedValue([]);
   vi.mocked(getEncounterObservations).mockResolvedValue([
     {
       resourceType: "Observation",

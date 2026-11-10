@@ -1,22 +1,17 @@
 import { displayDate } from "./date-display";
-import type { ClinicalCatalog, Disease, FhirResource } from "./types";
-import { hasConcept, valueConcepts } from "./case-form.utils";
+import type { ClinicalCatalog, FhirResource } from "./types";
+import { valueConcepts } from "./case-form.utils";
 
-/** Shared by registration and editing: preserve the existing classification rules. */
+/**
+ * Generic classification shared by registration and editing. Laboratory tests are not mapped
+ * per notifiable event: the true/false concepts or the answer name decide the classification.
+ */
 export function classifyLaboratoryObservation(
   obs: FhirResource,
   catalog: ClinicalCatalog,
-  disease?: Disease,
 ): "CONFIRMED" | "DISCARDED" | null {
   if (["cancelled", "entered-in-error"].includes(obs.status ?? "")) return null;
-  const test = disease?.laboratoryTests.find((item) =>
-    hasConcept(obs, item.resultConceptUuid),
-  );
   const codes = valueConcepts(obs);
-  if (test?.positiveAnswerUuids.some((code) => codes.includes(code)))
-    return "CONFIRMED";
-  if (test?.negativeAnswerUuids.some((code) => codes.includes(code)))
-    return "DISCARDED";
   if (catalog.trueConceptUuid && codes.includes(catalog.trueConceptUuid))
     return "CONFIRMED";
   if (catalog.falseConceptUuid && codes.includes(catalog.falseConceptUuid))

@@ -432,9 +432,7 @@
     "locationUuid": "Localidad del caso",
     "eventUuid": "Enfermedad",
     "status": "Clasificación del diagnóstico",
-    "severity": "Gravedad",
     "origin": "Origen",
-    "species": "Especie",
     "onsetDate": "Fecha de inicio de síntomas",
     "laboratoryResultUuid": "Resultado de laboratorio"
   },

@@ -69,6 +69,7 @@ vi.mock("./api", async (importOriginal) => ({
       uuid: "encounter-diagnosis",
       conceptUuid: "diagnosis",
       display: "Synthetic disease",
+      icd10: "A90",
     },
   ]),
   searchPatients: vi.fn(async () => [

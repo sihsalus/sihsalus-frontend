@@ -37,3 +37,16 @@ it("excludes voided results and honors the catalogue's boolean concepts", () => 
     ),
   ).toBeNull();
 });
+it("classifies a coded answer by its name without a per-event test mapping", () => {
+  expect(
+    classifyLaboratoryObservation(
+      {
+        resourceType: "Observation",
+        id: "thick-smear",
+        code: { text: "Gota gruesa" },
+        valueCodeableConcept: { text: "Positivo", coding: [{ code: "any-positive-answer" }] },
+      },
+      catalogue.catalog,
+    ),
+  ).toBe("CONFIRMED");
+});

@@ -1,40 +1,17 @@
-export interface Choice {
-  key: string;
-  conceptUuid: string;
-  label: string;
-}
-export interface Disease {
-  eventUuid: string;
-  family?: string;
-  severities: Choice[];
-  species: Choice[];
-  diagnoses: {
-    severity: string;
-    species?: string;
-    diagnosisConceptUuid: string;
-    icd10Code: string;
-  }[];
-  laboratoryTests: {
-    orderConceptUuid: string;
-    resultConceptUuid: string;
-    positiveAnswerUuids: string[];
-    negativeAnswerUuids: string[];
-  }[];
-}
+/** Calendar and content references only; diagnoses and laboratory tests are not mapped per event. */
 export interface ClinicalCatalog {
   icd10SourceUuid?: string;
-  version: number;
-  encounterRoleUuid: string;
   trueConceptUuid: string | null;
   falseConceptUuid: string | null;
   surveillanceStartDate: string;
   timezone: string;
   firstDayOfWeek?: string;
   minimalDaysInFirstWeek?: number;
-  questions: Record<string, string>;
-  statuses: Choice[];
-  origins: Choice[];
-  diseases: Disease[];
+  historicalYears?: number;
+  minimumHistoricalYears?: number;
+  ethnicityAttributeTypeUuid?: string;
+  ethnicityCodeSource?: string;
+  ethnicityGroups?: Record<string, number>;
 }
 export interface SurveillanceEvent {
   icd10?: string | null;
@@ -44,6 +21,8 @@ export interface SurveillanceEvent {
   periodicity: "SEMANAL" | "INMEDIATA" | "DIARIA";
   referenceRegulation: string;
   active?: boolean;
+  /** The event concept and, for a concept set, its members (read from OpenMRS). */
+  diagnosisConceptUuids?: string[];
   validFrom?: string;
   validTo?: string | null;
 }
@@ -67,9 +46,7 @@ export interface CaseRequest {
   locationUuid: string;
   eventUuid: string;
   status: string;
-  severity: string;
   origin: string;
-  species?: string;
   onsetDate: string;
   laboratoryResultUuid?: string;
   infectionAddressUuid?: string;

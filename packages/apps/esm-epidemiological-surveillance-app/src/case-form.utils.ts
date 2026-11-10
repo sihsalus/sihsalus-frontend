@@ -7,6 +7,19 @@ import type {
   SurveillanceCaseDraft,
 } from "./types";
 
+/** Fixed origin codes accepted by the server (GeographicCalculator.ORIGINS without UNKNOWN). */
+export const ORIGINS = [
+  "AUTOCTONO",
+  "IMPORTADO_NACIONAL",
+  "IMPORTADO_INTERNACIONAL",
+  "INDUCIDO",
+  "INTRODUCIDO",
+  "RECAIDA",
+  "RECRUDESCENCIA",
+] as const;
+/** Form classification; derived from the selected laboratory result. */
+export const STATUSES = ["SUSPECTED", "CONFIRMED", "DISCARDED"] as const;
+
 export function toSurveillanceCaseDraft(
   request: CaseRequest,
   diagnosisUuid: string,
@@ -18,14 +31,6 @@ export function toSurveillanceCaseDraft(
   }[request.status];
   if (!status || !diagnosisUuid)
     throw new Error("A diagnosis and classification are required.");
-  const origin =
-    (
-      {
-        AUTOCHTHONOUS: "AUTOCTONO",
-        IMPORTED_NATIONAL: "IMPORTADO_NACIONAL",
-        IMPORTED_INTERNATIONAL: "IMPORTADO_INTERNACIONAL",
-      } as Record<string, string>
-    )[request.origin] ?? request.origin;
   return {
     pregnant: request.pregnant,
     investigationForm: request.investigationForm,
@@ -35,7 +40,7 @@ export function toSurveillanceCaseDraft(
     locationUuid: request.locationUuid,
     diagnosisUuid,
     laboratoryObservationUuid: request.laboratoryResultUuid,
-    origin,
+    origin: request.origin,
     onsetDate: request.onsetDate,
     infectionAddressUuid: request.infectionAddressUuid,
     diagnosisType: status as SurveillanceCaseDraft["diagnosisType"],
@@ -112,58 +117,35 @@ export function patientDni(patient: FhirResource): string {
     patient.identifier?.[0];
   return dniObj?.value || "";
 }
-export function findDiagnosisMapping(
-  diagnosisUuid: string,
+/**
+ * Each notifiable event is the diagnosis configured by epidemiology, or a concept set of diagnoses.
+ * A direct event concept wins over set membership, as on the server.
+ */
+export function findNotifiableEvent(
+  diagnosisConceptUuid: string,
   catalogue: Catalogue,
 ):
   | {
-      eventUuid?: string;
-      eventName?: string;
-      severity?: string;
-      species?: string;
+      eventUuid: string;
+      eventName: string;
       diagnosisConceptUuid: string;
       icd10Code?: string | null;
     }
   | undefined {
-  const { catalog: m, events } = catalogue;
-  for (const disease of m.diseases) {
-    const mapping = disease.diagnoses.find(
-      (d) => d.diagnosisConceptUuid === diagnosisUuid,
-    );
-    if (mapping) {
-      const event = events.find(
-        (e) => e.uuid === disease.eventUuid && e.active !== false,
-      );
-      if (!event) continue;
-      return {
-        eventUuid: disease.eventUuid,
-        eventName: event?.conceptDisplay ?? event?.conceptUuid,
-        severity: mapping.severity,
-        species: mapping.species,
-        diagnosisConceptUuid: mapping.diagnosisConceptUuid,
-        icd10Code: mapping.icd10Code,
-      };
-    }
-  }
-  const directEvent = events.find(
-    (e) => e.conceptUuid === diagnosisUuid && e.active !== false,
-  );
-  if (directEvent) {
-    const disease = m.diseases.find((d) => d.eventUuid === directEvent.uuid);
-    return {
-      eventUuid: directEvent.uuid,
-      eventName: directEvent.conceptDisplay ?? directEvent.conceptUuid,
-      severity: disease?.severities?.[0]?.key,
-      diagnosisConceptUuid: diagnosisUuid,
-      icd10Code: directEvent.icd10,
-    };
-  }
-  return undefined;
+  const active = catalogue.events.filter((e) => e.active !== false);
+  const event =
+    active.find((e) => e.conceptUuid === diagnosisConceptUuid) ??
+    active.find((e) => e.diagnosisConceptUuids?.includes(diagnosisConceptUuid));
+  if (!event) return undefined;
+  return {
+    eventUuid: event.uuid,
+    eventName: event.conceptDisplay ?? event.conceptUuid,
+    diagnosisConceptUuid,
+    icd10Code: event.conceptUuid === diagnosisConceptUuid ? event.icd10 : undefined,
+  };
 }
 export const referenceId = (reference?: string): string =>
   reference?.split("/").filter(Boolean).at(-1) ?? "";
-export const hasConcept = (resource: FhirResource, uuid: string): boolean =>
-  !!uuid && !!resource.code?.coding?.some((coding) => coding.code === uuid);
 export const valueConcepts = (resource: FhirResource): string[] =>
   resource.valueCodeableConcept?.coding?.flatMap((coding) =>
     coding.code ? [coding.code] : [],
@@ -178,65 +160,6 @@ export function dateInZone(timezone: string, value = new Date()): string {
   return ["year", "month", "day"]
     .map((type) => parts.find((part) => part.type === type)?.value)
     .join("-");
-}
-export function prefill(
-  observations: FhirResource[],
-  diagnoses: string[],
-  catalogue: Catalogue,
-): Partial<CaseRequest> {
-  const { catalog: m } = catalogue;
-  const result: Partial<CaseRequest> = {};
-  const matching = (field: string) =>
-    observations.filter((obs) => hasConcept(obs, m.questions[field]));
-  const onset = matching("onset");
-  if (onset.length === 1 && onset[0].valueDateTime)
-    result.onsetDate = onset[0].valueDateTime.slice(0, 10);
-  const eventObs = matching("event");
-  const eventUuids = new Set<string>();
-  if (eventObs.length === 1)
-    for (const event of catalogue.events)
-      if (
-        event.active !== false &&
-        valueConcepts(eventObs[0]).includes(event.conceptUuid)
-      )
-        eventUuids.add(event.uuid);
-  for (const disease of m.diseases)
-    if (
-      catalogue.events.some(
-        (event) => event.uuid === disease.eventUuid && event.active !== false,
-      ) &&
-      disease.diagnoses.some((mapping) =>
-        diagnoses.includes(mapping.diagnosisConceptUuid),
-      )
-    )
-      eventUuids.add(disease.eventUuid);
-  if (eventUuids.size === 1) result.eventUuid = [...eventUuids][0];
-  const disease = m.diseases.find(
-    (item) => item.eventUuid === result.eventUuid,
-  );
-  const mappings =
-    disease?.diagnoses.filter((mapping) =>
-      diagnoses.includes(mapping.diagnosisConceptUuid),
-    ) ?? [];
-  if (mappings.length === 1) {
-    result.severity = mappings[0].severity;
-    result.species = mappings[0].species;
-  }
-  for (const [key, choices] of [
-    ["status", m.statuses],
-    ["origin", m.origins],
-    ["severity", disease?.severities ?? []],
-    ["species", disease?.species ?? []],
-  ] as const) {
-    const obs = matching(key);
-    if (obs.length === 1) {
-      const choice = choices.find((item) =>
-        valueConcepts(obs[0]).includes(item.conceptUuid),
-      );
-      if (choice) result[key] = choice.key;
-    }
-  }
-  return result;
 }
 export function validateCase(
   request: Partial<CaseRequest>,
@@ -264,9 +187,6 @@ export function validateCase(
     if (!request[key]) fields.push(key);
   }
   if (typeof request.investigationForm !== "boolean") fields.push("investigationForm");
-  const disease = m.diseases.find((d) => d.eventUuid === request.eventUuid);
-  if (disease?.severities?.length && !request.severity) fields.push("severity");
-  if (disease?.species?.length && !request.species) fields.push("species");
   const date = request.onsetDate;
   if (
     date &&
@@ -284,15 +204,5 @@ export function validateCase(
     !request.laboratoryResultUuid
   )
     fields.push("laboratoryResultUuid");
-  if (
-    disease &&
-    disease.diagnoses.length > 0 &&
-    !disease.diagnoses.some(
-      (mapping) =>
-        mapping.severity === request.severity &&
-        (mapping.species ?? "") === (request.species ?? ""),
-    )
-  )
-    fields.push("severity");
   return [...new Set(fields)];
 }

@@ -38,13 +38,14 @@ import {
 } from "./api";
 import {
   dateInZone,
-  findDiagnosisMapping,
+  findNotifiableEvent,
+  ORIGINS,
+  STATUSES,
   patientDni,
   patientName,
   patientAge,
   pregnancyEligible,
   encounterDate,
-  prefill,
   referenceId,
   validateCase,
   toSurveillanceCaseDraft,
@@ -109,9 +110,6 @@ export function CaseForm({
   const patientSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const source = encounters.find(
     (item) => item.id === request.sourceEncounterUuid,
-  );
-  const disease = m.diseases.find(
-    (item) => item.eventUuid === request.eventUuid,
   );
   const event = catalogue.events.find(
     (item) => item.uuid === request.eventUuid,
@@ -201,13 +199,14 @@ export function CaseForm({
           setEncounters(nextEncounters);
           setObservations(nextObservations);
           const notifyingDiagnoses = nextDiagDetails.filter((d) =>
-            findDiagnosisMapping(d.conceptUuid, catalogue),
+            findNotifiableEvent(d.conceptUuid, catalogue),
           );
           setEncounterDiagnoses(notifyingDiagnoses);
-          const matched = notifyingDiagnoses.find((d) => {
-            const mapping = findDiagnosisMapping(d.conceptUuid, catalogue);
-            return mapping?.eventUuid === initial.eventUuid;
-          });
+          const matched = notifyingDiagnoses.find(
+            (d) =>
+              findNotifiableEvent(d.conceptUuid, catalogue)?.eventUuid ===
+              initial.eventUuid,
+          );
           if (matched) {
             setSelectedDiagnosisUuid(matched.uuid);
           } else if (notifyingDiagnoses.length > 0) {
@@ -317,39 +316,16 @@ export function CaseForm({
       if (current !== generation.current) return;
       setObservations(sourceObservations);
       const notifyingDiagnoses = diagDetails.filter((d) =>
-        findDiagnosisMapping(d.conceptUuid, catalogue),
+        findNotifiableEvent(d.conceptUuid, catalogue),
       );
       setEncounterDiagnoses(notifyingDiagnoses);
-      const conceptUuids = notifyingDiagnoses.map((d) => d.conceptUuid);
-      const prefilled = prefill(sourceObservations, conceptUuids, catalogue);
-      setRequest((value) => ({
-        ...value,
-        ...prefilled,
-      }));
-      if (prefilled.eventUuid) {
-        const matched = notifyingDiagnoses.find((d) => {
-          const mapping = findDiagnosisMapping(d.conceptUuid, catalogue);
-          return mapping?.eventUuid === prefilled.eventUuid;
-        });
-        if (matched) {
-          setSelectedDiagnosisUuid(matched.uuid);
-        } else if (notifyingDiagnoses.length > 0) {
-          setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
-        }
-      } else if (notifyingDiagnoses.length === 1) {
-        const mapping = findDiagnosisMapping(
+      if (notifyingDiagnoses.length === 1) {
+        const match = findNotifiableEvent(
           notifyingDiagnoses[0].conceptUuid,
           catalogue,
         );
-        if (mapping) {
-          setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
-          setRequest((value) => ({
-            ...value,
-            eventUuid: mapping.eventUuid,
-            severity: mapping.severity,
-            species: mapping.species,
-          }));
-        }
+        setSelectedDiagnosisUuid(notifyingDiagnoses[0].uuid);
+        setRequest((value) => ({ ...value, eventUuid: match?.eventUuid ?? "" }));
       }
     } catch (failure) {
       if (current === generation.current) setError(failure);
@@ -358,7 +334,7 @@ export function CaseForm({
     }
   }
   const diagnosisOptions = encounterDiagnoses.map((diag) => {
-    const mapping = findDiagnosisMapping(diag.conceptUuid, catalogue);
+    const mapping = findNotifiableEvent(diag.conceptUuid, catalogue);
     return {
       uuid: diag.uuid,
       display: diag.display,
@@ -373,23 +349,15 @@ export function CaseForm({
       setRequest((current) => ({
         ...current,
         eventUuid: item.mapping?.eventUuid ?? "",
-        severity: item.mapping?.severity ?? "",
-        species: item.mapping?.species ?? "",
         status: !current.laboratoryResultUuid ? "SUSPECTED" : current.status,
       }));
     } else {
       setRequest((current) => ({
         ...current,
         eventUuid: "",
-        severity: "",
-        species: "",
       }));
     }
-    setInvalid((current) =>
-      current.filter(
-        (field) => !["eventUuid", "severity", "species"].includes(field),
-      ),
-    );
+    setInvalid((current) => current.filter((field) => field !== "eventUuid"));
   };
   function next() {
     const currentRequest = {
@@ -541,7 +509,7 @@ export function CaseForm({
       />
     );
   const classifyLabObservation = (obs: FhirResource) =>
-    classifyLaboratoryObservation(obs, m, disease);
+    classifyLaboratoryObservation(obs, m);
   const labResults = observations.filter(
     (obs) => classifyLabObservation(obs) !== null,
   );
@@ -700,7 +668,7 @@ export function CaseForm({
           )}
           {select(
             "origin",
-            m.origins.map((item) => ({ value: item.key, text: item.label })),
+            ORIGINS.map((value) => ({ value, text: t(`geo.origins.${value}`) })),
           )}
           <InfectionAddressSelector
             invalidText={
@@ -756,11 +724,11 @@ export function CaseForm({
             onChange={() => {}}
           >
             <SelectItem value="" text={t("selectOption", "Select an option")} />
-            {m.statuses.map((s) => (
+            {STATUSES.map((value) => (
               <SelectItem
-                key={s.key}
-                value={s.key}
-                text={t(`statuses.${s.key}`, s.label)}
+                key={value}
+                value={value}
+                text={t(`statuses.${value}`)}
               />
             ))}
           </Select>
@@ -882,13 +850,13 @@ export function CaseForm({
                           ? t(`caseDetails.values.deathAttribution.${request[key]}`)
                         : key === "status"
                           ? t(`statuses.${request[key]}`)
+                        : key === "origin"
+                          ? t(`geo.origins.${request[key]}`)
                           : key === "vaccinationStatus"
                             ? t(`vaccinationValues.${request[key]}`)
                             : key === "surveillanceType"
                               ? t(`surveillanceValues.${request[key]}`)
-                              : ([...m.statuses, ...m.origins].find(
-                                  (item) => item.key === request[key],
-                                )?.label ?? request[key])}
+                              : request[key]}
                     </dd>
                   </div>
                 ))}
@@ -897,16 +865,6 @@ export function CaseForm({
                   <dt>{t("fields.infectionAddressUuid")}</dt>
                   <dd>
                     {infectionAddressDisplay || t("infectionPreservedCenter")}
-                  </dd>
-                </div>
-              )}
-              {request.severity && (
-                <div>
-                  <dt>{t("fields.severity")}</dt>
-                  <dd>
-                    {disease?.severities.find(
-                      (item) => item.key === request.severity,
-                    )?.label ?? request.severity}
                   </dd>
                 </div>
               )}

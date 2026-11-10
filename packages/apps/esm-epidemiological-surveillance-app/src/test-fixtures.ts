@@ -7,41 +7,15 @@ export const catalogue: Catalogue = {
       conceptDisplay: "Synthetic disease",
       periodicity: "SEMANAL",
       referenceRegulation: "NTS de prueba",
+      diagnosisConceptUuids: ["event-concept", "diagnosis"],
       validFrom: "2026-01-01",
     },
   ],
   catalog: {
-    version: 1,
-    encounterRoleUuid: "role",
     trueConceptUuid: "true",
     falseConceptUuid: "false",
     surveillanceStartDate: "2020-01-01",
     timezone: "America/Lima",
-    questions: {
-      onset: "onset",
-      status: "status",
-      origin: "origin",
-      severity: "severity",
-      species: "species",
-      event: "event-question",
-      pregnancy: "pregnancy",
-    },
-    statuses: [
-      { key: "SUSPECTED", conceptUuid: "suspect", label: "Suspected" },
-      { key: "CONFIRMED", conceptUuid: "confirmed", label: "Confirmed" },
-    ],
-    origins: [
-      { key: "AUTOCHTHONOUS", conceptUuid: "local", label: "Autochthonous" },
-    ],
-    diseases: [
-      {
-        eventUuid: "event",
-        severities: [{ key: "MILD", conceptUuid: "mild", label: "Mild" }],
-        species: [],
-        diagnoses: [{ severity: "MILD", diagnosisConceptUuid: "diagnosis", icd10Code: "A90" }],
-        laboratoryTests: [],
-      },
-    ],
   },
 };
 export const request: CaseRequest = {
@@ -56,8 +30,7 @@ export const request: CaseRequest = {
   locationUuid: "location",
   eventUuid: "event",
   status: "SUSPECTED",
-  severity: "MILD",
-  origin: "AUTOCHTHONOUS",
+  origin: "AUTOCTONO",
   onsetDate: "2026-01-19",
   investigationDate: "2026-01-20",
 };

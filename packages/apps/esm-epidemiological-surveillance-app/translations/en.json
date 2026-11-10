@@ -432,9 +432,7 @@
     "locationUuid": "Case locality",
     "eventUuid": "Disease",
     "status": "Diagnosis classification",
-    "severity": "Severity",
     "origin": "Origin",
-    "species": "Species",
     "onsetDate": "Symptom onset date",
     "laboratoryResultUuid": "Laboratory result"
   },

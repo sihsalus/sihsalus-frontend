@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  findDiagnosisMapping,
+  findNotifiableEvent,
   dateInZone,
-  prefill,
   validateCase,
   patientAge,
   pregnancyEligible,
@@ -90,51 +89,26 @@ describe("case form validation", () => {
       "2026-01-01",
     );
   });
-  it("prefills coded data only from exact concept references", () => {
-    const result = prefill(
-      [
-        {
-          resourceType: "Observation",
-          id: "obs",
-          code: { coding: [{ code: "status" }] },
-          valueCodeableConcept: { coding: [{ code: "confirmed" }] },
-        },
-        {
-          resourceType: "Observation",
-          id: "onset",
-          code: { coding: [{ code: "onset" }] },
-          valueDateTime: "2026-01-19T00:00:00Z",
-        },
+  it("matches a diagnosis configured directly as the event before set membership", () => {
+    const withDirect = {
+      ...catalogue,
+      events: [
+        ...catalogue.events,
+        { ...catalogue.events[0], uuid: "direct", conceptUuid: "diagnosis", icd10: "B50.0", diagnosisConceptUuids: ["diagnosis"] },
       ],
-      ["diagnosis"],
-      catalogue,
-    );
-    expect(result).toMatchObject({
-      status: "CONFIRMED",
-      onsetDate: "2026-01-19",
-      eventUuid: "event",
-    });
+    };
+    expect(findNotifiableEvent("diagnosis", catalogue)?.eventUuid).toBe("event");
+    expect(findNotifiableEvent("diagnosis", withDirect)).toMatchObject({ eventUuid: "direct", icd10Code: "B50.0" });
+    expect(findNotifiableEvent("other", catalogue)).toBeUndefined();
   });
-  it("excludes inactive diagnoses and event prefills", () => {
+  it("excludes diagnoses of inactive events", () => {
     const inactive = {
       ...catalogue,
       events: catalogue.events.map((event) => ({ ...event, active: false })),
     };
-    expect(findDiagnosisMapping("diagnosis", inactive)).toBeUndefined();
+    expect(findNotifiableEvent("diagnosis", inactive)).toBeUndefined();
     expect(
-      findDiagnosisMapping(inactive.events[0].conceptUuid, inactive),
-    ).toBeUndefined();
-    expect(prefill([], ["diagnosis"], inactive).eventUuid).toBeUndefined();
-  });
-  it("does not pick among ambiguous observations", () => {
-    const obs = {
-      resourceType: "Observation",
-      id: "one",
-      code: { coding: [{ code: "onset" }] },
-      valueDateTime: "2026-01-19",
-    };
-    expect(
-      prefill([obs, { ...obs, id: "two" }], [], catalogue).onsetDate,
+      findNotifiableEvent(inactive.events[0].conceptUuid, inactive),
     ).toBeUndefined();
   });
 });

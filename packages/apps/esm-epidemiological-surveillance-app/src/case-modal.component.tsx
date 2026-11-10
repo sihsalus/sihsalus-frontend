@@ -29,7 +29,7 @@ import {
 } from "./api";
 import {
   dateInZone,
-  findDiagnosisMapping,
+  ORIGINS,
   pregnancyEligible,
 } from "./case-form.utils";
 import { moduleName } from "./constants";
@@ -46,7 +46,6 @@ import {
   classifyLaboratoryObservation,
   laboratoryLabel,
 } from "./laboratory.utils";
-import { getEncounterDiagnosesDetails } from "./api";
 
 const dateFields = [
   "onsetDate",
@@ -54,15 +53,7 @@ const dateFields = [
 ] as const;
 const options = {
   diagnosisType: ["CONFIRMADO", "PROBABLE", "DESCARTADO"],
-  origin: [
-    "AUTOCTONO",
-    "IMPORTADO_NACIONAL",
-    "IMPORTADO_INTERNACIONAL",
-    "INDUCIDO",
-    "INTRODUCIDO",
-    "RECAIDA",
-    "RECRUDESCENCIA",
-  ],
+  origin: ORIGINS,
   habitualResidence: ["1", "2", "3"],
   vaccinationStatus: ["SI", "NO", "IGN"],
   deathAttribution: ["SI", "NO", "POR_DETERMINAR"],
@@ -111,8 +102,6 @@ export function CaseModal({
   const { t } = useTranslation(moduleName);
   const [value, setValue] = useState<SurveillanceCase>();
   const [observations, setObservations] = useState<FhirResource[]>([]);
-  const [disease, setDisease] =
-    useState<Catalogue["catalog"]["diseases"][number]>();
   const [infectionDisplay, setInfectionDisplay] = useState("");
   const [loading, setLoading] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -140,21 +129,7 @@ export function CaseModal({
         record.patientUuid,
         abort.signal,
       );
-      const diagnoses = await getEncounterDiagnosesDetails(
-        record.encounterUuid,
-        record.patientUuid,
-        abort.signal,
-      );
-      const diagnosis = diagnoses.find(
-        (item) => item.uuid === record.diagnosisUuid,
-      );
-      const mapping =
-        diagnosis && findDiagnosisMapping(diagnosis.conceptUuid, catalogue);
-      const caseDisease = catalogue.catalog.diseases.find(
-        (item) => item.eventUuid === mapping?.eventUuid,
-      );
       if (!abort.signal.aborted) {
-        setDisease(caseDisease);
         setInfectionDisplay(record.infectionAddressDisplay || "");
         setValue({ ...record, deathAttribution: record.patientDeathDate && record.diagnosisType === "CONFIRMADO" ? (record.deathAttribution ?? "POR_DETERMINAR") : null });
         setObservations(labs);
@@ -228,7 +203,7 @@ export function CaseModal({
   );
   const labResults = observations.filter(
     (obs) =>
-      classifyLaboratoryObservation(obs, catalogue.catalog, disease) !== null,
+      classifyLaboratoryObservation(obs, catalogue.catalog) !== null,
   );
   const selectedResult = observations.find(
     (obs) => obs.id === value?.laboratoryObservationUuid,
@@ -411,11 +386,7 @@ export function CaseModal({
                   );
                   const classification =
                     obs &&
-                    classifyLaboratoryObservation(
-                      obs,
-                      catalogue.catalog,
-                      disease,
-                    );
+                    classifyLaboratoryObservation(obs, catalogue.catalog);
                   setValue((current) =>
                     current
                       ? {

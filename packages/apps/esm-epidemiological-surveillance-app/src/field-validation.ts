@@ -41,8 +41,6 @@ export const formFields = new Set([
   "testOrderUuid",
   "laboratoryObservationUuid",
   "laboratoryResultUuid",
-  "severity",
-  "species",
   "conceptUuid",
   "periodicity",
   "referenceRegulation",

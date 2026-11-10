@@ -1,7 +1,7 @@
 import { age, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 
-import { credNeonatalEditPrivilege } from '../../constants';
+import { neonatalCareEditPrivilege, neonatalCarePrivilege, neonatalCareWritePrivileges } from '../../constants';
 import GrowthChartOverview from './growth-chart-overview.component';
 import { LineChart } from '@carbon/charts-react';
 import { useBiometrics } from './hooks/useBiometrics';
@@ -17,12 +17,17 @@ const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const sessionWithEditPrivilege = {
   authenticated: true,
-  user: { privileges: [{ display: credNeonatalEditPrivilege }] },
+  user: { privileges: [{ display: neonatalCarePrivilege }, { display: neonatalCareEditPrivilege }] },
 } as unknown as ReturnType<typeof useSession>;
 
 const sessionWithoutPrivileges = {
   authenticated: true,
   user: { privileges: [] },
+} as unknown as ReturnType<typeof useSession>;
+
+const sessionWithOnlyEditPrivilege = {
+  authenticated: true,
+  user: { privileges: [{ display: neonatalCareEditPrivilege }] },
 } as unknown as ReturnType<typeof useSession>;
 
 const patient = {
@@ -41,7 +46,11 @@ describe('GrowthChartOverview', () => {
       isLoading: false,
       error: null,
     } as unknown as ReturnType<typeof useBiometrics>);
-    mockUserHasAccess.mockReturnValue(false);
+    mockUserHasAccess.mockImplementation((privilege, user) =>
+      (Array.isArray(privilege) ? privilege : [privilege]).every((required) =>
+        user?.privileges?.some(({ display }) => display === required),
+      ),
+    );
   });
 
   it('shows school BMI and height references without offering preschool weight or head curves', () => {
@@ -112,14 +121,21 @@ describe('GrowthChartOverview', () => {
     expect(age).toHaveBeenLastCalledWith(new Date(2025, 3, 10), today);
   });
 
-  it('offers to record data when the user has the neonatal edit privilege', () => {
+  it('offers to record data when the user has neonatal read and edit privileges', () => {
     mockUseSession.mockReturnValue(sessionWithEditPrivilege);
-    mockUserHasAccess.mockReturnValue(true);
 
     render(<GrowthChartOverview patient={patient} patientUuid="patient-1" />);
 
-    expect(mockUserHasAccess).toHaveBeenCalledWith(credNeonatalEditPrivilege, sessionWithEditPrivilege.user);
+    expect(mockUserHasAccess).toHaveBeenCalledWith(neonatalCareWritePrivileges, sessionWithEditPrivilege.user);
     expect(screen.getByRole('button', { name: /record/i })).toBeInTheDocument();
+  });
+
+  it('does not treat the neonatal edit privilege as standalone access', () => {
+    mockUseSession.mockReturnValue(sessionWithOnlyEditPrivilege);
+
+    render(<GrowthChartOverview patient={patient} patientUuid="patient-1" />);
+
+    expect(screen.queryByRole('button', { name: /record/i })).not.toBeInTheDocument();
   });
 
   it('hides the record action when the user lacks the neonatal edit privilege', () => {

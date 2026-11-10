@@ -13,7 +13,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
-import { credImmunizationEditPrivilege } from '../../../constants';
+import { immunizationWritePrivileges } from '../../../constants';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
 
 import { refreshAdverseReactions, saveAdverseReaction } from './adverse-reaction.resource';
@@ -206,7 +206,7 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   );
 
   return (
-    <RequirePrivilege privilege={credImmunizationEditPrivilege}>
+    <RequirePrivilege privilege={immunizationWritePrivileges}>
       <Form className={styles.adverseReactionForm} onSubmit={handleSubmit} noValidate>
         <div style={{ padding: '1rem' }}>
           <p>

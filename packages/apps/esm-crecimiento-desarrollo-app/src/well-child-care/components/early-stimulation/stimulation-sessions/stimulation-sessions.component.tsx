@@ -12,9 +12,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credEarlyStimulationEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationSessions } from '../../../../hooks/useStimulationSessions';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from './stimulation-sessions.scss';
 
@@ -25,7 +26,7 @@ interface StimulationSessionsProps {
 const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { totalSessions, lastSessionDate, developmentAreas, isLoading, error } = useStimulationSessions(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationSessionForm');
   const headerTitle = t('esSessionsTitle', 'Sesiones de estimulación');
@@ -41,21 +42,26 @@ const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
-          {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
+              {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

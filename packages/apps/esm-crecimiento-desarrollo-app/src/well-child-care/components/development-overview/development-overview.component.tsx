@@ -3,7 +3,7 @@ import { Education } from '@carbon/react/icons';
 import { userHasAccess, usePatient, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credEarlyStimulationEditPrivilege } from '../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { calculateAgeInMonths } from '../../../utils/age-group-utils';
 
@@ -19,7 +19,7 @@ interface DevelopmentOverviewProps {
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { patient } = usePatient(patientUuid);
   const ageInMonths = patient?.birthDate ? calculateAgeInMonths(patient.birthDate) : null;
   const { launchForm: launchEdi, isLoading: isEdiLoading } = useCREDFormLauncher('ediDevelopmentForm');

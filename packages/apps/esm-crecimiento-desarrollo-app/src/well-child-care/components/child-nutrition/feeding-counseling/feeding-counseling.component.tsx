@@ -12,9 +12,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNutritionEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useFeedingAssessment } from '../../../../hooks/useFeedingAssessment';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from './feeding-counseling.scss';
 
@@ -25,7 +26,7 @@ interface FeedingCounselingProps {
 const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { feedingPractice, counseling, caregiverAgreements, lastAssessmentDate, isLoading, error } =
     useFeedingAssessment(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('feedingCounselingForm');
@@ -42,21 +43,26 @@ const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) =>
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={lastAssessmentDate ? 'green' : 'gray'} size="sm">
-          {lastAssessmentDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type={lastAssessmentDate ? 'green' : 'gray'} size="sm">
+              {lastAssessmentDate ? t('cnRecorded', 'Registrado') : t('pending', 'Pending')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

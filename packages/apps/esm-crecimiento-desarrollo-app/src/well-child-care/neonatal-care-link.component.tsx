@@ -1,7 +1,7 @@
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { createClinicalDashboardLink } from '@openmrs/esm-patient-common-lib';
 import type { ComponentProps } from 'react';
-import { credCourseLifePrivilege, credNeonatalPrivilege } from '../constants';
+import { neonatalCarePrivilege } from '../constants';
 import { neonatalCareDashboardMeta, wellChildCareNavGroup } from '../dashboard.meta';
 
 const ClinicalLink = createClinicalDashboardLink({
@@ -14,7 +14,7 @@ export default function NeonatalCareLink(props: ComponentProps<typeof ClinicalLi
   const canView = Boolean(
     session?.authenticated &&
       session.user?.uuid &&
-      [credCourseLifePrivilege, credNeonatalPrivilege].every((privilege) => userHasAccess(privilege, session.user)),
+      userHasAccess(neonatalCarePrivilege, session.user),
   );
   return canView ? <ClinicalLink {...props} /> : null;
 }

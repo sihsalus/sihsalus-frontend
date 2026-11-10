@@ -4,19 +4,14 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject, configSchema } from '../config-schema';
-import {
-  credCourseLifeEditPrivilege,
-  credEarlyStimulationEditPrivilege,
-  credNeonatalEditPrivilege,
-  credNutritionEditPrivilege,
-} from '../constants';
+import { growthDevelopmentWritePrivileges, neonatalCareWritePrivileges } from '../constants';
 import type { CompletedFormInfo } from '../types';
 import { calculateAgeInMonths, getConfiguredAgeGroupFromBirthDate } from '../utils/age-group-utils';
 
 type CredFormKey = keyof ConfigObject['formsList'];
 type CompletedCREDFormInfo = CompletedFormInfo & {
   formKey?: CredFormKey;
-  requiredPrivilege?: string;
+  requiredPrivilege?: string | string[];
 };
 
 const credFormLabels: Partial<Record<CredFormKey, string>> = {
@@ -58,32 +53,13 @@ const credFormLabels: Partial<Record<CredFormKey, string>> = {
   expectedSkillsBehaviorsForm: 'Habilidades y conductas esperadas (registro resumido)',
 };
 
-const credFormEditPrivileges: Partial<Record<CredFormKey, string>> = {
-  atencionImmediataNewborn: credNeonatalEditPrivilege,
-  breastfeedingObservation: credNeonatalEditPrivilege,
-  newbornNeuroEval: credNeonatalEditPrivilege,
-  roomingIn: credNeonatalEditPrivilege,
-  birthDetails: credNeonatalEditPrivilege,
-  pregnancyDetails: credNeonatalEditPrivilege,
-  childFeeding0to5: credNutritionEditPrivilege,
-  childFeeding6to42: credNutritionEditPrivilege,
-  anemiaScreeningForm: credNutritionEditPrivilege,
-  supplementationForm: credNutritionEditPrivilege,
-  nutritionalAssessmentForm: credNutritionEditPrivilege,
-  feedingCounselingForm: credNutritionEditPrivilege,
-  nutritionFollowupForm: credNutritionEditPrivilege,
-  parasitosisScreeningForm: credNutritionEditPrivilege,
-  vitaminAAdministrationForm: credNutritionEditPrivilege,
-  growthNutritionEvaluationForm: credNutritionEditPrivilege,
-  stimulationSessionForm: credEarlyStimulationEditPrivilege,
-  stimulationFollowupForm: credEarlyStimulationEditPrivilege,
-  stimulationCounselingForm: credEarlyStimulationEditPrivilege,
-  ediDevelopmentForm: credEarlyStimulationEditPrivilege,
-  autismScreeningForm: credEarlyStimulationEditPrivilege,
-  childMentalHealthForm: credEarlyStimulationEditPrivilege,
-  huancaNeurodevelopmentForm: credEarlyStimulationEditPrivilege,
-  expectedSkillsBehaviorsForm: credEarlyStimulationEditPrivilege,
-  tepsi: credEarlyStimulationEditPrivilege,
+const credFormEditPrivileges: Partial<Record<CredFormKey, string[]>> = {
+  atencionImmediataNewborn: neonatalCareWritePrivileges,
+  breastfeedingObservation: neonatalCareWritePrivileges,
+  newbornNeuroEval: neonatalCareWritePrivileges,
+  roomingIn: neonatalCareWritePrivileges,
+  birthDetails: neonatalCareWritePrivileges,
+  pregnancyDetails: neonatalCareWritePrivileges,
 };
 
 export function useCREDFormsForAgeGroup(
@@ -151,6 +127,6 @@ export function getCREDFormsForAgeGroup(
     .filter(Boolean) as CompletedCREDFormInfo[];
 }
 
-export function getCREDFormEditPrivilege(formKey: CredFormKey): string {
-  return credFormEditPrivileges[formKey] ?? credCourseLifeEditPrivilege;
+export function getCREDFormEditPrivilege(formKey: CredFormKey): string[] {
+  return credFormEditPrivileges[formKey] ?? growthDevelopmentWritePrivileges;
 }

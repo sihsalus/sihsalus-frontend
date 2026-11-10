@@ -5,8 +5,8 @@ import {
   showSnackbar,
   useConfig,
   useConnectivity,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -15,8 +15,15 @@ import type { ConfigObject } from '../config-schema';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { QueueTableActionCell } from '../queue-table/cells/queue-table-action-cell.component';
 import type { QueueEntry } from '../types';
+import { ObstetricVisitClosedError, startObstetricCare } from './obstetric-care.resource';
 import ObstetricCareActions from './obstetric-care-actions.component';
-import { startObstetricCare } from './obstetric-care.resource';
+
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  getUserFacingErrorMessage: (
+    await vi.importActual<typeof import('@openmrs/esm-error-handling')>('@openmrs/esm-error-handling')
+  ).getUserFacingErrorMessage,
+}));
 
 vi.mock('./obstetric-care.resource', async () => ({
   ...(await vi.importActual('./obstetric-care.resource')),
@@ -188,36 +195,86 @@ it('keeps failures actionable without navigating or exposing backend details', a
   expect(screen.getByRole('button', { name: 'Atender Obstetricia' })).toBeEnabled();
 });
 
-it.each([
-  'unmount',
-  'patient',
-  'session',
-  'privilege',
-] as const)('does not navigate after the pending action changes %s context', async (change) => {
+it('explains a closed visit when the user cannot create its replacement', async () => {
   const user = userEvent.setup();
-  let resolveStart: (entry: QueueEntry) => void;
-  vi.mocked(startObstetricCare).mockReturnValue(new Promise((resolve) => (resolveStart = resolve)));
-  const { unmount, rerender } = render(<ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />);
+  vi.mocked(userHasAccess).mockImplementation((privilege) => privilege !== 'Add Visits');
+  vi.mocked(startObstetricCare).mockRejectedValue(new ObstetricVisitClosedError());
+  render(<ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />);
   await user.click(screen.getByRole('button', { name: 'Atender Obstetricia' }));
-  if (change === 'unmount') {
-    unmount();
-  } else if (change === 'patient') {
-    rerender(
-      <ObstetricCareActions
-        queueEntry={{ ...entry, patient: { ...entry.patient, uuid: 'another-patient' } }}
-        mode="outpatient"
-        config={config}
-      />,
-    );
-  } else if (change === 'session') {
-    currentSession = { ...mockSession.data, user: { ...mockSession.data.user, uuid: 'another-user' } };
-  } else {
-    vi.mocked(userHasAccess).mockReturnValue(false);
-  }
-  await act(async () => resolveStart(entry));
+
+  await waitFor(() =>
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle:
+          'La consulta anterior está cerrada. Para continuar, un usuario autorizado debe iniciar una nueva consulta. La consulta anterior y la interconsulta se conservan.',
+      }),
+    ),
+  );
+  expect(navigate).not.toHaveBeenCalled();
+  expect(mutateQueueEntries).toHaveBeenCalled();
+  expect(showModal).not.toHaveBeenCalled();
+  expect(JSON.stringify(vi.mocked(showSnackbar).mock.calls)).not.toContain('The obstetric visit has ended');
+});
+
+it.each(['outpatient', 'inpatient'] as const)('offers the native new-visit flow for closed %s care', async (mode) => {
+  const user = userEvent.setup();
+  vi.mocked(startObstetricCare).mockRejectedValue(new ObstetricVisitClosedError());
+  render(<ObstetricCareActions queueEntry={entry} mode={mode} config={config} />);
+  await user.click(screen.getByRole('button', { name: 'Atender Obstetricia' }));
+
+  await waitFor(() =>
+    expect(showModal).toHaveBeenCalledWith(
+      'start-visit-dialog',
+      expect.objectContaining({
+        patientUuid: entry.patient.uuid,
+        launchPatientChart: true,
+        newVisitOnly: true,
+        visitType: 'new',
+        dashboardName: mode === 'outpatient' ? 'prenatal-care-dashboard' : 'labour-and-delivery-dashboard',
+      }),
+    ),
+  );
   expect(navigate).not.toHaveBeenCalled();
   expect(showSnackbar).not.toHaveBeenCalled();
 });
+
+it.each(['unmount', 'patient', 'visit', 'queue', 'session', 'privilege'] as const)(
+  'does not navigate after the pending action changes %s context',
+  async (change) => {
+    const user = userEvent.setup();
+    let resolveStart: (entry: QueueEntry) => void;
+    vi.mocked(startObstetricCare).mockReturnValue(new Promise((resolve) => (resolveStart = resolve)));
+    const { unmount, rerender } = render(<ObstetricCareActions queueEntry={entry} mode="outpatient" config={config} />);
+    await user.click(screen.getByRole('button', { name: 'Atender Obstetricia' }));
+    if (change === 'unmount') {
+      unmount();
+    } else if (change === 'patient') {
+      rerender(
+        <ObstetricCareActions
+          queueEntry={{ ...entry, patient: { ...entry.patient, uuid: 'another-patient' } }}
+          mode="outpatient"
+          config={config}
+        />,
+      );
+    } else if (change === 'session') {
+      currentSession = { ...mockSession.data, user: { ...mockSession.data.user, uuid: 'another-user' } };
+    } else if (change === 'visit' || change === 'queue') {
+      rerender(
+        <ObstetricCareActions
+          queueEntry={{ ...entry, [change]: { uuid: 'different-context' } } as QueueEntry}
+          mode="outpatient"
+          config={config}
+        />,
+      );
+    } else {
+      vi.mocked(userHasAccess).mockReturnValue(false);
+    }
+    await act(async () => resolveStart(entry));
+    expect(navigate).not.toHaveBeenCalled();
+    expect(showSnackbar).not.toHaveBeenCalled();
+  },
+);
 
 it('offers an explicit queue-only confirmation after care starts', async () => {
   const user = userEvent.setup();

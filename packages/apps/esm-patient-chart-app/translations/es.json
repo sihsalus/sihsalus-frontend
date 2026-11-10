@@ -42,6 +42,7 @@
   "clinicalSearchResultCount": "Problemas o antecedentes encontrados: {{total}}",
   "clinicalSearchScope": "Busca problemas y antecedentes clínicos de este paciente.",
   "clinicalSearchTitle": "Buscar datos clínicos",
+  "closedVisitStartNewVisitText": "La consulta anterior está cerrada. Inicie una nueva consulta para continuar la atención. La consulta anterior y la interconsulta se conservan.",
   "inactive": "Inactiva",
   "recurrence": "Recurrencia",
   "relapse": "Recaída",

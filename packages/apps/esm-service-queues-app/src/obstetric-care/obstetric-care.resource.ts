@@ -13,6 +13,15 @@ import { type Appointment, type QueueEntry } from '../types';
 
 export type ObstetricCareMode = 'outpatient' | 'inpatient';
 
+export class ObstetricVisitClosedError extends Error {
+  readonly code = 'OBSTETRIC_VISIT_CLOSED';
+
+  constructor() {
+    super('The obstetric visit has ended. A new visit is required.');
+    this.name = 'ObstetricVisitClosedError';
+  }
+}
+
 export function getObstetricCareMode(
   queueEntry: QueueEntry,
   config: ConfigObject['obstetricCare'],
@@ -69,7 +78,6 @@ export async function startObstetricCare(
     freshEntry.queue?.uuid !== queueEntry.queue?.uuid ||
     !freshEntry.priority?.uuid ||
     !allowedStatuses.includes(freshEntry.status?.uuid) ||
-    (freshEntry.endedAt && freshEntry.status?.uuid === inServiceStatus) ||
     (Array.isArray(freshEntry.queue.allowedStatuses) &&
       !freshEntry.queue.allowedStatuses.some((status) => status.uuid === inServiceStatus))
   ) {
@@ -88,14 +96,36 @@ export async function startObstetricCare(
     `${restBaseUrl}/visit/${encodeURIComponent(visitUuid)}?v=full&_=${freshReadNonce}`,
     freshReadOptions,
   );
-  if (
-    visit?.uuid !== visitUuid ||
-    visit.patient?.uuid !== patientUuid ||
-    visit.stopDatetime !== null ||
-    visit.voided ||
-    visit.auditInfo?.voided
-  ) {
+  if (visit?.uuid !== visitUuid || visit.patient?.uuid !== patientUuid || visit.voided || visit.auditInfo?.voided) {
     throw new Error('The active obstetric visit could not be verified.');
+  }
+
+  if (visit.stopDatetime !== null) {
+    if (typeof visit.stopDatetime !== 'string' || !Number.isFinite(Date.parse(visit.stopDatetime))) {
+      throw new Error('The active obstetric visit could not be verified.');
+    }
+    // Starting a new consultation must not resurrect this visit or reuse its
+    // queue transition. Check for a concurrent active visit before offering it.
+    await assertFreshPatientIsAlive(patientUuid);
+    const params = new URLSearchParams({
+      patient: patientUuid,
+      includeInactive: 'false',
+      limit: '1',
+      v: 'custom:(uuid)',
+      _: freshReadNonce,
+    });
+    const { data } = await openmrsFetch<{ results?: Array<{ uuid: string }>; links?: Array<{ rel?: string }> }>(
+      `${restBaseUrl}/visit?${params.toString()}`,
+      freshReadOptions,
+    );
+    if (!Array.isArray(data?.results) || data.results.length || data.links?.some(({ rel }) => rel === 'next')) {
+      throw new Error('The absence of another active obstetric visit could not be verified.');
+    }
+    throw new ObstetricVisitClosedError();
+  }
+
+  if (freshEntry.endedAt && freshEntry.status.uuid === inServiceStatus) {
+    throw new Error('The obstetric queue entry changed or does not allow this status.');
   }
 
   // The patient chart selects the patient's active visit on mount. Refuse an

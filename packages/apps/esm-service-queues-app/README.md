@@ -176,6 +176,20 @@ consultas y edición de entradas, y lectura/edición del panel materno elegido.
 La rama ambulatoria también necesita `View Appointments`. Las acciones se
 deshabilitan sin conexión; un triaje pendiente de sincronización no las habilita.
 
+Si la visita vinculada ya está cerrada, se comprueban su identidad, el estado
+vital y la ausencia de otra visita activa mediante lecturas sin caché. Un
+usuario con capacidad de iniciar consultas recibe el diálogo nativo para abrir
+una consulta nueva en el panel obstétrico autorizado. Debe confirmar y guardar
+el formulario habitual; esta acción no reabre la visita anterior, no transfiere
+su entrada de cola ni modifica la orden de interconsulta. Sin esa capacidad se
+indica que debe intervenir un usuario autorizado. Una lectura fallida, una
+identidad inconsistente u otra visita activa no habilitan la recuperación.
+
+La comprobación previa no bloquea escrituras concurrentes de otros usuarios;
+la creación conserva la validación, autorización y reconciliación del formulario
+y backend existentes. Validar en QLTY con datos sintéticos la nueva visita,
+la atención obstétrica y la conservación de la interconsulta antes de desplegar.
+
 `Finalizar en cola` pide confirmación y cierra únicamente la entrada operativa.
 El guardado clínico, finalización de la cita, cierre de consulta y egreso materno
 conservan sus flujos existentes. El acceso requiere que `esm-salud-materna-app`

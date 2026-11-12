@@ -325,7 +325,6 @@ Catalog selectors expose their invalid state on the input when validation fails.
 This includes generated encounter-role fields. Selecting an allowed role retains
 the selected UUID and clears the invalid state once field validation resolves.
 
-
 A catalog without the generic `Clinician` role has no implicit default role.
 The first catalog item may be `Unknown` or belong to another profession.
 Content can set `isSearchable: false` to show the existing role catalog without

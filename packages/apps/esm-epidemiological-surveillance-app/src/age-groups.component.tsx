@@ -98,6 +98,7 @@ export function AgeGroupsPanel({ onSaved }: { onSaved: () => void }) {
       </ConfigurationTile>
       {open && (
         <Modal
+          className={styles.boldFieldLabels}
           open
           modalHeading={t("configureAgeGroups")}
           primaryButtonText={t("saveAgeGroups")}

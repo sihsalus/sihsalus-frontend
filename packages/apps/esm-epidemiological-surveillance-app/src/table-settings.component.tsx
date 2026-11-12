@@ -101,6 +101,7 @@ export function TableSettings({
       )}
       {open && (
         <Modal
+          className={styles.boldFieldLabels}
           open
           modalHeading={t("tableSettings.title")}
           primaryButtonText={t("save")}

@@ -99,6 +99,7 @@ export function GeographicSettings({ onSaved }: { onSaved: () => void }) {
       )}
       {mode && (
         <Modal
+          className={styles.boldFieldLabels}
           open
           modalHeading={t(
             mode === "risk" ? "geo.configureRisk" : "geo.configureCoordinates",

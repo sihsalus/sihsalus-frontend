@@ -1,4 +1,5 @@
 {
+  "travelHistory": {"title": "Travel history (last 28 days)", "empty": "No travel history", "trip": "Trip {{number}}", "place": "Place", "startDate": "Start date", "endDate": "End date", "add": "Add trip", "remove": "Remove trip"},
   "investigationForms": {
     "tuberculosis": {
       "name": "Tuberculosis (TB)",
@@ -610,6 +611,7 @@
   },
   "requiredField": "required",
   "validation": {
+    "travelOutsideWindow": "The trip must overlap the 28 days before symptom onset or, if onset is unknown, the care date.",
     "required": "This field is required.",
     "selection": "Select a valid value for this field.",
     "dateFormat": "Enter a valid date in DD/MM/YYYY format.",

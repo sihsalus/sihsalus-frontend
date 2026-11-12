@@ -372,7 +372,7 @@ export function EventsPanel({
           onRequestSubmit={save}
         >
           <div
-            className={styles.form}
+            className={`${styles.form} ${styles.boldFieldLabels}`}
             style={{
               display: "flex",
               flexDirection: "column",

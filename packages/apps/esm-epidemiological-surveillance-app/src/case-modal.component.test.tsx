@@ -11,6 +11,11 @@ import { CaseModal } from "./case-modal.component";
 import { catalogue } from "./test-fixtures";
 import type { SurveillanceCase } from "./types";
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string, fallback?: string | { number: number }) =>
+    typeof fallback === "string" ? fallback : key === "travelHistory.trip" ? `Trip ${fallback?.number}` : key }),
+}));
+
 vi.mock("./api", async (original) => ({
   ...(await original<typeof import("./api")>()),
   getSurveillanceCase: vi.fn(),
@@ -384,4 +389,26 @@ it("shows applicable pregnancy and death attribution in view mode", async () => 
   mount("view");
   expect(await screen.findByText("fields.pregnant")).toBeInTheDocument();
   expect(screen.getByText("caseDetails.fields.deathAttribution")).toBeInTheDocument();
+});
+
+
+it("validates an added trip and sends an empty replacement after removing it", async () => {
+  mount("edit");
+  await screen.findByText("Paciente de prueba");
+  fireEvent.click(screen.getByRole("button", { name: "travelHistory.add" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  expect(updateSurveillanceCase).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("travelHistory.startDate")).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByLabelText("travelHistory.endDate")).toHaveAttribute("aria-invalid", "true");
+  fireEvent.click(screen.getByRole("button", { name: "travelHistory.remove" }));
+  fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() => expect(updateSurveillanceCase).toHaveBeenCalledWith(record.uuid, expect.objectContaining({ travelHistory: [] })));
+});
+
+it("shows the saved trip in consultation", async () => {
+  vi.mocked(getSurveillanceCase).mockResolvedValue({ ...record, travelHistory: [{ uuid: "trip", travelAddress: "center", travelAddressDisplay: "Centro de viaje sintético", startDate: "2026-08-20", endDate: "2026-08-21" }] });
+  mount("view");
+  expect(await screen.findByText("Centro de viaje sintético")).toBeInTheDocument();
+  expect(screen.getByText("20/08/2026")).toBeInTheDocument();
+  expect(screen.getByText("21/08/2026")).toBeInTheDocument();
 });

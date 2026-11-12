@@ -1,4 +1,4 @@
-import { formFields, validationMessages, type FieldErrors } from "./field-validation";
+import { isFormField, validationMessages, type FieldErrors } from "./field-validation";
 import { openmrsFetch, restBaseUrl } from "@openmrs/esm-framework";
 import type { WeeklyRecords } from "./weekly-records";
 import { conceptIcd10, type ConceptMapping, type DiagnosisConceptName } from "./diagnosis-display";
@@ -85,9 +85,9 @@ export function safeError(error: unknown): SurveillanceApiError {
           ? code
           : "SERVICE_UNAVAILABLE",
     status,
-    Array.isArray(failure?.responseBody?.fields) ? failure.responseBody.fields.filter((field): field is string => typeof field === "string" && formFields.has(field)) : [],
+    Array.isArray(failure?.responseBody?.fields) ? failure.responseBody.fields.filter((field): field is string => typeof field === "string" && isFormField(field)) : [],
     failure?.responseBody?.fieldErrors && typeof failure.responseBody.fieldErrors === "object"
-      ? Object.fromEntries(Object.entries(failure.responseBody.fieldErrors).filter(([field, reason]) => formFields.has(field) && typeof reason === "string" && Object.hasOwn(validationMessages, reason))) as FieldErrors : {},
+      ? Object.fromEntries(Object.entries(failure.responseBody.fieldErrors).filter(([field, reason]) => isFormField(field) && typeof reason === "string" && Object.hasOwn(validationMessages, reason))) as FieldErrors : {},
   );
 }
 export async function read<T>(url: string, signal?: AbortSignal): Promise<T> {

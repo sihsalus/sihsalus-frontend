@@ -88,6 +88,7 @@ export function NotificationSettings({ onSaved }: { onSaved: () => void }) {
       )}
       {open && (
         <Modal
+          className={styles.boldFieldLabels}
           open
           modalHeading={t("notificationSettings.configure")}
           primaryButtonText={t("save")}

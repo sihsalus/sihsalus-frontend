@@ -1,3 +1,5 @@
+import { TravelHistory } from "./travel-history.component";
+import { travelHistoryErrors } from "./field-validation";
 import { diagnosisLabel } from "./diagnosis-display";
 import { DateTimeInput } from "./date-time-input.component";
 import { FieldError } from "./field-error.component";
@@ -516,7 +518,7 @@ export function CaseForm({
   return (
     <section
       aria-label={t("registerCase", "Register case")}
-      className={styles.form}
+      className={`${styles.form} ${styles.boldFieldLabels}`}
     >
       <ProgressIndicator currentIndex={step} spaceEqually>
         <ProgressStep label={t("identify", "Patient and care")} />
@@ -685,6 +687,13 @@ export function CaseForm({
               setInfectionAddressDisplay(display ?? "");
             }}
           />
+          <TravelHistory value={request.travelHistory} disabled={busy} today={dateInZone(m.timezone)}
+            errors={Object.fromEntries(Object.entries({ ...travelHistoryErrors(request, dateInZone(m.timezone)), ...remoteErrors }).filter(([key]) => invalid.includes(key)))}
+            onChange={(travelHistory) => {
+              setRequest((current) => ({ ...current, travelHistory }));
+              setInvalid((current) => current.filter((key) => !key.startsWith("travelHistory[")));
+              setRemoteErrors((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith("travelHistory["))));
+            }} />
           <DateInput
             id="case-onset"
             type="date"
@@ -869,6 +878,7 @@ export function CaseForm({
                 </div>
               )}
             </dl>
+            <TravelHistory value={request.travelHistory} />
           </Tile>
         </>
       )}

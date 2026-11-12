@@ -36,6 +36,15 @@ export interface Catalogue {
   catalog: ClinicalCatalog;
   events: SurveillanceEvent[];
 }
+export interface TravelHistoryEntry {
+  clientKey?: string;
+  uuid?: string;
+  travelAddress: string;
+  travelAddressDisplay?: string;
+  startDate: string;
+  endDate: string;
+}
+
 export interface CaseRequest {
   pregnant?: boolean;
   investigationForm?: boolean;
@@ -50,6 +59,7 @@ export interface CaseRequest {
   onsetDate: string;
   laboratoryResultUuid?: string;
   infectionAddressUuid?: string;
+  travelHistory?: TravelHistoryEntry[];
   habitualResidence?: "1" | "2" | "3" | null;
   vaccinationStatus?: "SI" | "NO" | "IGN";
   investigationDate?: string;
@@ -83,6 +93,7 @@ export interface SurveillanceCaseDraft {
   origin?: string;
   onsetDate?: string;
   infectionAddressUuid?: string;
+  travelHistory?: TravelHistoryEntry[];
   diagnosisType: "CONFIRMADO" | "PROBABLE" | "DESCARTADO";
   habitualResidence?: "1" | "2" | "3" | null;
   vaccinationStatus?: "SI" | "NO" | "IGN";

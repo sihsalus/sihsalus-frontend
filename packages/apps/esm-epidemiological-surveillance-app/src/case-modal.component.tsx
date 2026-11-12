@@ -1,3 +1,5 @@
+import { TravelHistory } from "./travel-history.component";
+import { travelHistoryErrors } from "./field-validation";
 import { diagnosisLabel } from "./diagnosis-display";
 import { DateTimeInput } from "./date-time-input.component";
 import { FieldError } from "./field-error.component";
@@ -65,6 +67,7 @@ export function caseUpdatePayload(
   value: SurveillanceCaseDraft,
 ): SurveillanceCaseDraft {
   return {
+    travelHistory: (value.travelHistory ?? []).map(({ uuid, travelAddress, startDate, endDate }) => ({ uuid, travelAddress, startDate, endDate })),
     pregnant: value.pregnant,
     investigationForm: value.investigationForm,
     patientUuid: value.patientUuid,
@@ -175,6 +178,7 @@ export function CaseModal({
       if (!value[key]) dates[key] = "required";
     }
     if (typeof value.investigationForm !== "boolean") dates.investigationForm = "required";
+    Object.assign(dates, travelHistoryErrors(value, dateInZone(catalogue.catalog.timezone)));
     setFieldErrors(dates);
     setError(undefined);
     if (Object.keys(dates).length) return;
@@ -288,7 +292,7 @@ export function CaseModal({
         </Button>
       )}
       {!loading && value && (
-        <div className={styles.form}>
+        <div className={`${styles.form} ${styles.boldFieldLabels}`}>
           <dl className={styles.caseDetails}>
             {detail("dni", t("casesTable.dni"), value.patientIdentifier)}
             {detail(
@@ -353,6 +357,11 @@ export function CaseModal({
                   setInfectionDisplay(display || "");
                 }}
               />
+              <TravelHistory value={value.travelHistory} errors={fieldErrors} disabled={busy}
+                today={dateInZone(catalogue.catalog.timezone)} onChange={(travelHistory) => {
+                  setValue((current) => ({ ...current, travelHistory }));
+                  setFieldErrors((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith("travelHistory["))));
+                }} />
               {dateFields
                 .filter((key) => key === "onsetDate")
                 .map((key) => (
@@ -504,6 +513,7 @@ export function CaseModal({
               )}
             </dl>
           )}
+          {!canEdit && <TravelHistory value={value.travelHistory} />}
           {busy && <InlineLoading description={t("saving", "Guardando...")} />}
         </div>
       )}

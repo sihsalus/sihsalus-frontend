@@ -11,6 +11,7 @@ export const validationMessages = {
   beforeOnset: true,
   notificationBeforeInvestigation: true,
   endBeforeStart: true,
+  travelOutsideWindow: true,
   referenceLength: true,
   duplicateDiagnosis: true,
   invalidLaboratory: true,
@@ -47,6 +48,36 @@ export const formFields = new Set([
   "validFrom",
   "validTo",
 ]);
+export function isFormField(field: string): boolean {
+  return formFields.has(field) || /^travelHistory\[\d+\]\.(uuid|travelAddress|startDate|endDate)$/.test(field);
+}
+
+export function travelHistoryErrors(
+  value: Pick<SurveillanceCaseDraft, "travelHistory" | "onsetDate" | "investigationDate">,
+  today: string,
+): FieldErrors {
+  const errors: FieldErrors = {};
+  const reference = value.onsetDate || value.investigationDate;
+  const lower = isCalendarDate(reference)
+    ? new Date(Date.parse(reference) - 28 * 86400000).toISOString().slice(0, 10)
+    : undefined;
+  (value.travelHistory ?? []).forEach((travel, index) => {
+    const prefix = `travelHistory[${index}].`;
+    if (!travel.travelAddress) errors[`${prefix}travelAddress`] = "required";
+    for (const key of ["startDate", "endDate"] as const) {
+      if (!travel[key]) errors[prefix + key] = "required";
+      else if (!isCalendarDate(travel[key])) errors[prefix + key] = "dateFormat";
+      else if (travel[key] > today) errors[prefix + key] = "future";
+    }
+    if (!errors[`${prefix}startDate`] && !errors[`${prefix}endDate`]) {
+      if (travel.startDate > travel.endDate) errors[`${prefix}endDate`] = "endBeforeStart";
+      else if (lower && (travel.endDate < lower || travel.startDate > reference))
+        errors[`${prefix}startDate`] = "travelOutsideWindow";
+    }
+  });
+  return errors;
+}
+
 export function isCalendarDate(value?: string): value is string {
   return (
     !!value &&

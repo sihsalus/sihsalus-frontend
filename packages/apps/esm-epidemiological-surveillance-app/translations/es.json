@@ -1,4 +1,5 @@
 {
+  "travelHistory": {"title": "Antecedentes de viaje (últimos 28 días)", "empty": "Sin antecedentes de viaje", "trip": "Viaje {{number}}", "place": "Lugar", "startDate": "Fecha de inicio", "endDate": "Fecha de fin", "add": "Agregar viaje", "remove": "Eliminar viaje"},
   "investigationForms": {
     "tuberculosis": {
       "name": "Tuberculosis (TBC)",
@@ -610,6 +611,7 @@
   },
   "requiredField": "obligatorio",
   "validation": {
+    "travelOutsideWindow": "El viaje debe coincidir al menos un día con los 28 días anteriores al inicio de síntomas o, si no hay fecha de síntomas, a la atención.",
     "required": "Este campo es obligatorio.",
     "selection": "Selecciona un valor válido para este campo.",
     "dateFormat": "Ingresa una fecha válida en formato DD/MM/AAAA.",

@@ -89,6 +89,7 @@ export function EndemicSettings({
       )}
       {open && (
         <Modal
+          className={styles.boldFieldLabels}
           open
           modalHeading={t("endemic.configure")}
           primaryButtonText={t("save")}

@@ -1,4 +1,4 @@
-import { caseDateErrors } from "./field-validation";
+import { caseDateErrors, travelHistoryErrors } from "./field-validation";
 import type {
   CaseRequest,
   Catalogue,
@@ -32,6 +32,7 @@ export function toSurveillanceCaseDraft(
   if (!status || !diagnosisUuid)
     throw new Error("A diagnosis and classification are required.");
   return {
+    travelHistory: (request.travelHistory ?? []).map(({ uuid, travelAddress, startDate, endDate }) => ({ uuid, travelAddress, startDate, endDate })),
     pregnant: request.pregnant,
     investigationForm: request.investigationForm,
     patientUuid: request.patientUuid,
@@ -168,6 +169,7 @@ export function validateCase(
   source?: FhirResource,
 ): string[] {
   const fields: string[] = Object.keys(caseDateErrors(request, dateInZone(m.timezone), patient?.birthDate, source?.period?.start));
+  fields.push(...Object.keys(travelHistoryErrors(request, dateInZone(m.timezone))));
   if (source && request.investigationDate !== encounterDate(source, m.timezone))
     fields.push("investigationDate");
   const requiredKeys = [
@@ -181,7 +183,6 @@ export function validateCase(
     "habitualResidence",
     "vaccinationStatus",
     "surveillanceType",
-    "onsetDate",
   ] as const;
   for (const key of requiredKeys) {
     if (!request[key]) fields.push(key);

@@ -1094,3 +1094,34 @@ fallo no contrastado contra la base. Se compiló esm-globals para resolver la
 carga de seis suites. El script `typescript` no encuentra `tsc`; la revisión
 directa con `tsc6` pasó. Prettier del README FAILED por formato del documento.
 Smoke integrado DEV/QLTY: NOT RUN, sin entorno coordinado ni despliegue.
+
+
+## Antecedentes de viaje
+
+Registro, edición y consulta incluyen una lista opcional de viajes, inicialmente
+vacía. Cada viaje exige un centro poblado seleccionado en Address Hierarchy y
+fechas de inicio y fin, sin fechas futuras y con inicio menor o igual al fin.
+El intervalo debe intersectar `[referencia − 28 días, referencia]`, con ambos
+extremos incluidos. La referencia es el inicio de síntomas o, si falta, la fecha
+local de la atención. Se permiten viajes que comienzan antes de la ventana.
+
+Requiere el OMOD con `liquibase-case-travel.xml`, changeset `17`. El payload
+`travelHistory` contiene `{ uuid, travelAddress, startDate, endDate }`;
+`travelAddress` intercambia el UUID del centro poblado y persiste su ID entero,
+igual que `infectionAddressUuid`. La consulta añade `travelAddressDisplay`.
+PUT reemplaza la lista; `[]`, ausencia o `null` la vacían. Los UUID existentes
+conservan identidad y auditoría; un UUID de otro caso o repetido se rechaza.
+Los privilegios siguen siendo Registrar Casos y Editar Casos respectivamente.
+El registro semanal y los reportes conservan su contrato.
+
+
+Validación local (12/11/2026): `mvn clean install` PASSED (166 API y 12 REST).
+La suite completa de frontend PASSED con 280 pruebas en 35 suites y una prueba
+HMR. Una repetición concurrente falló en `report-address-filter.component.test.tsx`;
+el pase final con `test --maxWorkers=2` PASSED sin cambiar reportes ni aserciones.
+Lint, build, `tsc6 --noEmit`, typecheck de Playwright y sintaxis de los 26 scripts
+Postman PASSED. El script `typescript` no encuentra `tsc`; se usó directamente
+el compilador instalado `tsc6`. Build advierte por tamaño de PDF y ExcelJS.
+Playwright/Newman contra servidor y despliegue: NOT RUN. Los guiones quedan
+actualizados para ejecutarse con OMOD y frontend desplegados conjuntamente.
+Prettier del README: FAILED por formato del documento; no se reformateó completo. Diff --check: PASSED.

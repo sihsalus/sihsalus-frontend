@@ -68,6 +68,16 @@
   gap: 1.25rem;
   padding-block: 1rem;
 }
+.boldFieldLabels {
+  label,
+  :global(.cds--label),
+  legend,
+  fieldset[class] > legend,
+  dl dt {
+    font-weight: 700;
+  }
+}
+
 .form.eventsPanel {
   padding-block-start: 0;
 }
@@ -377,4 +387,30 @@
   align-items: end;
   gap: 1rem;
   overflow-x: auto;
+}
+
+.travelFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  align-items: flex-start;
+
+  > div {
+    flex: 1 1 9rem;
+    min-width: 0;
+  }
+
+  > div:first-child {
+    flex: 2 1 16rem;
+  }
+
+  dt {
+    margin-bottom: 0.5rem;
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
 }

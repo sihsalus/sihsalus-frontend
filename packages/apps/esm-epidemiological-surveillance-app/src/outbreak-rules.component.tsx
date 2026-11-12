@@ -91,6 +91,7 @@ export function OutbreakRulesSettings() {
       )}
       {open && (
         <Modal
+          className={styles.boldFieldLabels}
           open
           modalHeading={t("outbreakRules.configure")}
           primaryButtonText={t("save")}

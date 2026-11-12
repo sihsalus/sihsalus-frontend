@@ -8,11 +8,15 @@ import type { NamedReference } from "./types";
 import styles from "./infection-address-selector.scss";
 
 export function InfectionAddressSelector({
+  id = "infection-address-search",
+  label,
   value,
   display,
   invalidText,
   onChange,
 }: {
+  id?: string;
+  label?: string;
   value?: string;
   display?: string;
   invalidText?: string;
@@ -61,7 +65,7 @@ export function InfectionAddressSelector({
   };
   return (
     <fieldset className={styles.selector}>
-      <legend>{t("fields.infectionAddressUuid")}</legend>
+      <legend>{label ?? t("fields.infectionAddressUuid")}</legend>
       {value && (
         <div className={styles.selection}>
           <span>{display || t("infectionPreservedCenter")}</span>
@@ -73,7 +77,7 @@ export function InfectionAddressSelector({
       {!value && (
         <>
           <Search
-            id="infection-address-search"
+            id={id}
             labelText={t("infectionSearchAll")}
             placeholder={t("infectionSearchAll")}
             value={query}

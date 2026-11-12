@@ -299,3 +299,12 @@ it("loads professionals from the native provider endpoint", async () => {
     expect.any(Object),
   );
 });
+
+it("keeps only recognized indexed travel errors from the server", () => {
+  const error = safeError({ response: { status: 422 }, responseBody: {
+    code: "INVALID_DATE_RANGE", fields: ["travelHistory[1].endDate", "unexpected"],
+    fieldErrors: { "travelHistory[1].endDate": "endBeforeStart", unexpected: "required" },
+  } });
+  expect(error.fields).toEqual(["travelHistory[1].endDate"]);
+  expect(error.fieldErrors).toEqual({ "travelHistory[1].endDate": "endBeforeStart" });
+});

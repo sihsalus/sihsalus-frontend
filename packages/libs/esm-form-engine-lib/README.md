@@ -59,8 +59,10 @@ Date and time fields wrap to the available form width. Native time inputs retain
 enough room for the browser's locale-specific period and picker, including
 validation feedback. These scoped styles apply to all consumers of `DateField`;
 they do not change date values, timezone handling, schema validation or submission.
-The local `styles.browser.spec.js` regression covers narrow panels within a wide
-desktop viewport as well as mobile width; deployed-form acceptance remains a
+The calendar container can shrink so date and time share a row in a 480px
+form panel, while narrow panels still stack them. The existing
+`styles.browser.spec.js` regression covers these intermediate panels as well as
+narrow desktop panels and mobile width; deployed-form acceptance remains a
 separate QLTY check.
 
 ### Numeric precision

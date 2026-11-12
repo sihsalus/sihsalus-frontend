@@ -13,6 +13,7 @@ const schema: FormSchema = {
 
 it('has no clinical dependency or history hooks and cannot submit even when called directly', async () => {
   const processor = new PreviewFormProcessor(schema);
+  expect(processor.prepareFormSchema(structuredClone(schema)).pages).toEqual([]);
   expect(await processor.loadDependencies()).toEqual({});
   expect(processor.getCustomHooks().useCustomHooks).toBeNull();
   expect(await processor.getHistoricalValue()).toEqual({ value: null, display: '' });

@@ -5,6 +5,8 @@ import { type GetCustomHooksResponse } from './form-processor';
 
 /** Uses the canonical schema/default-value logic without clinical reads or submission. */
 export class PreviewFormProcessor extends EncounterFormProcessor {
+  protected readonly addMissingEncounterRole = false;
+
   async loadDependencies(): Promise<Record<string, unknown>> {
     return {};
   }

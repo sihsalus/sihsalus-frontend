@@ -199,6 +199,7 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
             disabled={field.isDisabled}
             readOnly={isTrue(field.readonly)}
             invalid={errors.length > 0}
+            aria-invalid={errors.length > 0 ? true : undefined}
             invalidText={errors.length && errors[0].message}
             onInputChange={(nextValue): void => {
               if (isProcessingSelection.current) {

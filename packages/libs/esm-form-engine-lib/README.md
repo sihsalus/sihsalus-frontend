@@ -321,6 +321,10 @@ Distributed under the MPLv2 with Healthcare Disclaimer License. See `LICENSE.txt
 
 ### Encounter role selection
 
+Catalog selectors expose their invalid state on the input when validation fails.
+This includes generated encounter-role fields. Selecting an allowed role retains
+the selected UUID and clears the invalid state once field validation resolves.
+
 A catalog without the generic `Clinician` role has no implicit default role.
 The first catalog item may be `Unknown` or belong to another profession.
 Content can set `isSearchable: false` to show the existing role catalog without
@@ -335,3 +339,29 @@ an implicit role. This addresses sihsalus/sihsalus#373 and #374. The helper
 regression reproduces the original failure and covers absence of a selected role.
 Manual save/reload of CRED physical examination and visual screening remains a
 QLTY acceptance check.
+
+For schemas without an `encounterRole` question (including social history),
+`EncounterFormProcessor` adds a required role selector using the existing active
+catalog. It appears next to a visible provider question when available, otherwise
+in its own visible section. Existing role questions, their restrictions and the
+stored form UUID/version remain unchanged. A schema with no visible editable page
+gets a separate role page; form-level readonly still applies.
+Schema previews do not acquire this runtime field or its metadata lookup.
+
+Submission rejects a missing or blank role before identifier, attribute, program
+or encounter writes. The message preserves the entered form values and asks for
+the responsible professional's role. A provider association on the login account
+does not supply this role. There is no fallback to the first catalog entry or a
+profession inferred from the login name.
+
+Editing with a provider field initializes the original provider/role pair. Without
+that field, an editable form only reuses the current provider's own recorded role;
+readonly views display the recorded role. Existing pairs are retained, an identical
+pair is not appended again, and choosing a different pair adds it without rewriting
+the previous association. This is encounter metadata, not an RBAC permission grant.
+
+The #409 regression covers a missing generic role, the generated selector, explicit
+CRED role fields, submission before/after selection, and existing encounter identity
+and provider-role preservation. Backend save/reload with a restricted QLTY test
+account remains required before deployment; local tests mock transport and do not
+establish server persistence.

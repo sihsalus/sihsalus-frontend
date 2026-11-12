@@ -6,6 +6,9 @@ import { moduleName } from "./constants";
 import type { GeographicFocus, GeographicReport } from "./geographic.resource";
 import styles from "./geographic.scss";
 
+const errorTileUrl =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAarVyFEAAAAASUVORK5CYII=";
+
 export const riskColors = {
   VERY_HIGH: "#da1e28",
   HIGH: "#ff832b",
@@ -224,7 +227,13 @@ export function GeographicMap({ report }: { report: GeographicReport }) {
                 width="256"
                 height="256"
                 href={`https://tile.openstreetmap.org/${viewport.zoom}/${tile.x}/${tile.y}.png`}
-                onError={() => setTileError(true)}
+                onError={(event) => {
+                  const image = event.currentTarget;
+                  if (image.getAttribute("href") !== errorTileUrl) {
+                    image.setAttribute("href", errorTileUrl);
+                  }
+                  setTileError(true);
+                }}
               />
             ))}
             {report.foci.map((focus) => {

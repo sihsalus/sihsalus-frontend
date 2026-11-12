@@ -553,7 +553,7 @@ test('clinical panels keep milestone details and native time controls readable b
         { className: date.datetime },
         h(
           'div',
-          { className: date.datePickerSpacing },
+          { id: 'session-date-field', className: date.datePickerSpacing },
           h('label', { htmlFor: 'session-date' }, 'Fecha y hora de la sesión'),
           h('input', {
             id: 'session-date',
@@ -563,7 +563,7 @@ test('clinical panels keep milestone details and native time controls readable b
         ),
         h(
           'div',
-          null,
+          { id: 'session-time-field' },
           h(TimePicker, {
             id: 'session-time',
             className: date.timeInput,
@@ -584,6 +584,7 @@ test('clinical panels keep milestone details and native time controls readable b
   for (const [viewport, panelWidth] of [
     [1440, 200],
     [1440, 320],
+    [1440, 480],
     [1440, 768],
     [420, 388],
   ]) {
@@ -628,6 +629,12 @@ test('clinical panels keep milestone details and native time controls readable b
     assert.ok(input.width >= 160, 'native time input has room for hours, minutes and locale-specific period');
     await expect(page.locator('#session-time')).toHaveValue('15:04');
     await expect(page.getByText('Revise la hora de la sesión.')).toBeVisible();
+    if (panelWidth === 480) {
+      const calendarField = await page.locator('#session-date-field').boundingBox();
+      const timeField = await page.locator('#session-time-field').boundingBox();
+      assert.ok(Math.abs(calendarField.y - timeField.y) <= 1, 'date and time share a row in a 480px form panel');
+      assert.ok(calendarField.x + calendarField.width <= timeField.x, 'date and time remain separated');
+    }
     if (panelWidth <= 320) {
       const calendar = await page.locator('#session-date').boundingBox();
       assert.ok(input.y >= calendar.y + calendar.height, 'narrow forms stack date and time');

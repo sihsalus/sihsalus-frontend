@@ -2,19 +2,20 @@ import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema';
-import { credNeonatalEditPrivilege } from '../../../../constants';
+import { neonatalCareWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '@openmrs/esm-patient-common-lib';
 import PatientSummaryTable from '../../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface BirthDataProps {
   patientUuid: string;
+  writePrivileges?: string | string[];
 }
 
-const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
+const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid, writePrivileges = neonatalCareWritePrivileges }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
+  const canEdit = userHasAccess(writePrivileges, session?.user);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('birthData', 'Datos del Nacimiento');

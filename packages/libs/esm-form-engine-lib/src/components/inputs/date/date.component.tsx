@@ -101,7 +101,22 @@ const DateField: React.FC<FormFieldInputProps<DateFieldValue>> = ({
               <div className={styles.datePickerLabel} id={`${field.id}-label`}>
                 <FieldLabel field={field} />
               </div>
-              <OpenmrsDatePicker id={field.id} onChange={onDateChange} value={dateValue} aria-label={t(field.label)} />
+              <OpenmrsDatePicker
+                id={field.id}
+                onChange={onDateChange}
+                value={dateValue}
+                aria-label={t(field.label)}
+                invalid={errors.length > 0}
+                invalidText={errors[0]?.message}
+                isDisabled={field.isDisabled}
+                maxDate={
+                  field.validators?.some(
+                    (validator) => validator.type === 'date' && !isTrue(validator.allowFutureDates ?? false),
+                  )
+                    ? new Date()
+                    : undefined
+                }
+              />
             </Layer>
             {warnings.length > 0 ? <div className={styles.datePickerWarn}>{warnings[0]?.message}</div> : null}
           </div>

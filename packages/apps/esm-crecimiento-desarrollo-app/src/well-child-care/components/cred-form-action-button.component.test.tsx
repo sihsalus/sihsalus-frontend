@@ -1,7 +1,7 @@
 import { ActionMenuButton2 } from '@openmrs/esm-framework';
 import { usePatientChartStore, useStartVisitIfNeeded } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
-import { credCourseLifeEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import routes from '../../routes.json';
 import CREDFormActionButton from './cred-form-action-button.component';
 
@@ -21,9 +21,9 @@ beforeEach(() => {
   vi.mocked(useStartVisitIfNeeded).mockReturnValue(vi.fn().mockResolvedValue(true));
 });
 
-it('registers the existing action on the current patient chart window with the same edit privilege', () => {
+it('registers the action with growth-and-development read and edit privileges', () => {
   expect(routes.workspaceWindows2.find(({ name }) => name === 'patient-chart-well-child-care-forms')).toEqual(
-    expect.objectContaining({ icon: 'credFormActionButton', privileges: credCourseLifeEditPrivilege }),
+    expect.objectContaining({ icon: 'credFormActionButton', privileges: growthDevelopmentWritePrivileges }),
   );
 });
 

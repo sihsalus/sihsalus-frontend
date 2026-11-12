@@ -3,46 +3,6 @@
   "recordedOn": "2026-09-03",
   "exceptions": [
     {
-      "workspace": "@sihsalus/esm-psicologia-app",
-      "path": "packages/apps/esm-psicologia-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "high",
-      "priority": "P0",
-      "missing": ["test-files"],
-      "reason": "El tablero de psicología no cubre la consulta de atenciones, observaciones clínicas ni fallos del backend.",
-      "expiresOn": "2026-10-31"
-    },
-    {
-      "workspace": "@sihsalus/esm-referrals-app",
-      "path": "packages/apps/esm-referrals-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "high",
-      "priority": "P0",
-      "missing": ["test-files"],
-      "reason": "El flujo de referencias no cubre listado, acciones, motivos, permisos ni respuestas de error.",
-      "expiresOn": "2026-10-31"
-    },
-    {
-      "workspace": "@sihsalus/esm-seguimiento-casos-app",
-      "path": "packages/apps/esm-seguimiento-casos-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "high",
-      "priority": "P0",
-      "missing": ["test-files"],
-      "reason": "El seguimiento de casos no tiene regresiones para el tablero, encuentros ni expresiones clínicas.",
-      "expiresOn": "2026-10-31"
-    },
-    {
-      "workspace": "@sihsalus/esm-staff-scheduling-app",
-      "path": "packages/apps/esm-staff-scheduling-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "high",
-      "priority": "P0",
-      "missing": ["test-files"],
-      "reason": "La programación de personal no cubre carga de turnos, representación del horario ni errores de servicio.",
-      "expiresOn": "2026-10-31"
-    },
-    {
       "workspace": "@sihsalus/esm-system-admin-app",
       "path": "packages/apps/esm-system-admin-app",
       "owner": "sihsalus@pucp.edu.pe",
@@ -51,16 +11,6 @@
       "missing": ["test-files"],
       "reason": "El panel administrativo no tiene regresiones para sus accesos, enlaces y comportamiento ante capacidades ausentes.",
       "expiresOn": "2026-12-31"
-    },
-    {
-      "workspace": "@sihsalus/esm-terapia-fisica-app",
-      "path": "packages/apps/esm-terapia-fisica-app",
-      "owner": "sihsalus@pucp.edu.pe",
-      "risk": "high",
-      "priority": "P0",
-      "missing": ["test-files"],
-      "reason": "El tablero de terapia física no cubre la consulta de atenciones, observaciones ni estados de error.",
-      "expiresOn": "2026-10-31"
     },
     {
       "workspace": "@openmrs/esm-feature-flags",

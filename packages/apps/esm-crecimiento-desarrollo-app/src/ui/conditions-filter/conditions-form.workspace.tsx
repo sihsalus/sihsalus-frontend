@@ -2,14 +2,14 @@ import { useConfig } from '@openmrs/esm-framework';
 import { ConditionConceptSetForm, type ConditionConceptSetWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../config-schema';
-import { credAntecedentsEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 
 export { createConditionConceptSetSchema as createSchema } from '@openmrs/esm-patient-common-lib';
 
 export default function ConditionsForm(props: ConditionConceptSetWorkspaceProps) {
   const config = useConfig<ConfigObject>();
   return (
-    <RequirePrivilege privilege={credAntecedentsEditPrivilege}>
+    <RequirePrivilege privilege={growthDevelopmentWritePrivileges}>
       <ConditionConceptSetForm
         {...props}
         translationNamespace="@sihsalus/esm-cred-app"

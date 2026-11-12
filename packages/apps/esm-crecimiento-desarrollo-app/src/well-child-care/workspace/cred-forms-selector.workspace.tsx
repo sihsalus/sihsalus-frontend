@@ -13,7 +13,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
-import { credCourseLifeEditPrivilege } from '../../constants';
+import { growthDevelopmentWritePrivileges } from '../../constants';
 import { resolveCREDForm } from '../../hooks/useCREDFormLauncher';
 import { useCREDFormsForAgeGroup } from '../../hooks/useCREDFormsForAgeGroup';
 import useEncountersCRED, {
@@ -36,7 +36,7 @@ interface CREDFormsSelectorWorkspaceProps extends DefaultPatientWorkspaceProps {
 }
 
 type CREDCompletedFormInfo = CompletedFormInfo & {
-  requiredPrivilege?: string;
+  requiredPrivilege?: string | string[];
 };
 
 const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (props) => {
@@ -84,7 +84,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const filteredAvailableForms = useMemo(
     () =>
       availableForms.filter((formInfo) =>
-        userHasAccess(formInfo.requiredPrivilege ?? credCourseLifeEditPrivilege, session?.user),
+        userHasAccess(formInfo.requiredPrivilege ?? growthDevelopmentWritePrivileges, session?.user),
       ),
     [availableForms, session?.user],
   );
@@ -188,7 +188,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   }, [mutateCREDEncounters]);
 
   return (
-    <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
+    <RequirePrivilege privilege={growthDevelopmentWritePrivileges}>
       {historyError ? (
         <>
           <ErrorState error={historyError} headerTitle={title} />

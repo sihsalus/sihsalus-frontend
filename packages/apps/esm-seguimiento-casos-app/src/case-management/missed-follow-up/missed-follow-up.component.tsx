@@ -113,7 +113,7 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
       <EmptyState
         displayText={headerTitle}
         headerTitle={headerTitle}
-        launchForm={canEdit ? openMissedFollowUpForm : undefined}
+        launchForm={canEdit ? () => openMissedFollowUpForm() : undefined}
       />
     );
   }

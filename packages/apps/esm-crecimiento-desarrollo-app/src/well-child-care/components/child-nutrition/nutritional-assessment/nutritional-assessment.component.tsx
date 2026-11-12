@@ -12,9 +12,10 @@ import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNutritionEditPrivilege } from '../../../../constants';
+import { growthDevelopmentWritePrivileges } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionalAssessment } from '../../../../hooks/useNutritionalAssessment';
+import { CardHeaderActions } from '../../../../ui/card-header-actions.component';
 
 import styles from './nutritional-assessment.scss';
 
@@ -25,7 +26,7 @@ interface NutritionalAssessmentProps {
 const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUuid }) => {
   const { t } = useTranslation('@sihsalus/esm-cred-app');
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
+  const canEdit = userHasAccess(growthDevelopmentWritePrivileges, session?.user);
   const { nutritionClassification, weight, height, lastMeasurementDate, isLoading, error } =
     useNutritionalAssessment(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionalAssessmentForm');
@@ -44,21 +45,26 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type="gray" size="sm">
-          {hasData ? (nutritionClassification ?? t('withData', 'Con datos')) : t('noData', 'Sin datos')}
-        </Tag>
-        {canEdit && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={Add}
-            onClick={() => handleAdd()}
-            iconDescription={t('add', 'Add')}
-            disabled={isFormLoading}
-          >
-            {t('add', 'Add')}
-          </Button>
-        )}
+        <CardHeaderActions
+          status={
+            <Tag type="gray" size="sm">
+              {hasData ? (nutritionClassification ?? t('withData', 'Con datos')) : t('noData', 'Sin datos')}
+            </Tag>
+          }
+          showAction={canEdit}
+          action={
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Add}
+              onClick={canEdit ? () => handleAdd() : undefined}
+              iconDescription={t('add', 'Add')}
+              disabled={!canEdit || isFormLoading}
+            >
+              {t('add', 'Add')}
+            </Button>
+          }
+        />
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

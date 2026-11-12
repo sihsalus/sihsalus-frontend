@@ -1,15 +1,15 @@
 import { Button } from '@carbon/react';
 import {
-  getUserFacingErrorMessage,
   getSessionStore,
+  getUserFacingErrorMessage,
+  type LoggedInUser,
   navigate,
   restBaseUrl,
   showModal,
   showSnackbar,
   useConnectivity,
-  useSession,
   userHasAccess,
-  type LoggedInUser,
+  useSession,
 } from '@openmrs/esm-framework';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,9 +17,9 @@ import { useSWRConfig } from 'swr';
 import type { ConfigObject } from '../config-schema';
 import { serviceQueuesPrivilege } from '../constants';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
-import { canEditServiceQueues } from '../permissions';
+import { canEditServiceQueues, canStartQueueVisit } from '../permissions';
 import type { QueueEntry } from '../types';
-import { type ObstetricCareMode, startObstetricCare } from './obstetric-care.resource';
+import { type ObstetricCareMode, ObstetricVisitClosedError, startObstetricCare } from './obstetric-care.resource';
 
 // These paths and privileges belong to the existing maternal chart dashboards.
 const careDashboards = {
@@ -68,7 +68,7 @@ export default function ObstetricCareActions({ queueEntry, mode, config }: Obste
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitting = useRef(false);
   const mounted = useRef(false);
-  const context = `${queueEntry.uuid}:${queueEntry.patient?.uuid}:${mode}`;
+  const context = `${queueEntry.uuid}:${queueEntry.patient?.uuid}:${queueEntry.visit?.uuid}:${queueEntry.queue?.uuid}:${mode}`;
   const currentContext = useRef(context);
   currentContext.current = context;
   useEffect(() => {
@@ -140,6 +140,29 @@ export default function ObstetricCareActions({ queueEntry, mode, config }: Obste
         return;
       }
       void mutateQueueEntries();
+      if (
+        error instanceof ObstetricVisitClosedError &&
+        canStartQueueVisit(getSessionStore().getState().session?.user)
+      ) {
+        await mutate(
+          (key) =>
+            typeof key === 'string' && key.startsWith(`${restBaseUrl}/visit?patient=${queueEntry.patient.uuid}&`),
+          undefined,
+          { revalidate: false },
+        );
+        if (!isCurrent() || !canStartQueueVisit(getSessionStore().getState().session?.user)) {
+          return;
+        }
+        const dispose = showModal('start-visit-dialog', {
+          patientUuid: queueEntry.patient.uuid,
+          visitType: 'new',
+          launchPatientChart: true,
+          newVisitOnly: true,
+          dashboardName: dashboard.path,
+          closeModal: () => dispose(),
+        });
+        return;
+      }
       showSnackbar({
         kind: 'error',
         title: t('obstetricCareUnavailable', 'No se pudo iniciar la atención obstétrica'),
@@ -149,7 +172,15 @@ export default function ObstetricCareActions({ queueEntry, mode, config }: Obste
             'obstetricCareRetry',
             'Actualice la cola y verifique que la consulta sigue activa y que el triaje ambulatorio está guardado.',
           ),
-          { logContext: 'Start obstetric queue care' },
+          {
+            codeMessages: {
+              OBSTETRIC_VISIT_CLOSED: t(
+                'obstetricVisitClosed',
+                'La consulta anterior está cerrada. Para continuar, un usuario autorizado debe iniciar una nueva consulta. La consulta anterior y la interconsulta se conservan.',
+              ),
+            },
+            logContext: 'Start obstetric queue care',
+          },
         ),
       });
     } finally {

@@ -4,7 +4,7 @@ import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
-import { credWellChildPrivilege } from '../constants';
+import { growthDevelopmentPrivilege } from '../constants';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -51,7 +51,7 @@ export const WellChildControl: React.FC<WellChildControlProps> = ({
   }
 
   return (
-    <RequirePrivilege privilege={credWellChildPrivilege}>
+    <RequirePrivilege privilege={growthDevelopmentPrivilege}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}

@@ -12,6 +12,7 @@ import { useFormProviderContext } from '../../../provider/form-provider';
 import { type FormFieldInputProps } from '../../../types';
 import { isTrue } from '../../../utils/boolean-utils';
 import { shouldUseInlineLayout } from '../../../utils/form-helper';
+import { getNumericFieldConstraints } from '../../../validators/form-validator';
 import FieldLabel from '../../field-label/field-label.component';
 import FieldValueView from '../../value/view/field-value-view.component';
 import styles from './number.scss';
@@ -39,17 +40,8 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
       : validatePlainNumberInput(value, constraints).parsedValue;
   }, []);
 
-  const max = getNumericValue(field.questionOptions.max);
-  const min = getNumericValue(field.questionOptions.min);
-  const inputConstraints = useMemo(
-    () => ({
-      integer: isTrue(field.questionOptions.disallowDecimals ?? false),
-      max,
-      min,
-      nonNegative: typeof min === 'number' && min >= 0,
-    }),
-    [field.questionOptions.disallowDecimals, max, min],
-  );
+  const inputConstraints = getNumericFieldConstraints(field);
+  const { min, max } = inputConstraints;
 
   const handleChange = useCallback(
     (_event: unknown, { value }: { value: string | number }) => {

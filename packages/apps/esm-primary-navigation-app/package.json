@@ -39,8 +39,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.90.0",
-    "@carbon/react": "^1.118.0",
+    "@carbon/icons-react": "^11.92.0",
+    "@carbon/react": "^1.120.0",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21"
@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@rspack/cli": "2.2.9",
+    "@rspack/cli": "2.3.1",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "*",
     "react": "^18.3.1",

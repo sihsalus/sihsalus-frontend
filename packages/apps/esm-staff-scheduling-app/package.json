@@ -40,7 +40,7 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.118.0",
+    "@carbon/react": "^1.120.0",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "dayjs": "1.x"
@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@rspack/cli": "2.2.9",
+    "@rspack/cli": "2.3.1",
     "@typescript/native": "npm:typescript@7.0.2",
     "openmrs": "workspace:*",
     "vite": "8.3.4",

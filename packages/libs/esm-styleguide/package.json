@@ -48,15 +48,15 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "dependencies": {
-    "@carbon/charts": "^1.27.21",
-    "@carbon/react": "^1.118.0",
+    "@carbon/charts": "^1.27.27",
+    "@carbon/react": "^1.120.0",
     "@internationalized/date": "^3.12.4",
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-routes": "workspace:*",
     "@react-aria/datepicker": "^3.17.1",
     "@react-aria/utils": "^3.34.1",
     "@react-stately/datepicker": "^3.17.1",
-    "d3": "^7.8.0",
+    "d3": "^7.9.2",
     "geopattern": "^1.2.3",
     "lodash-es": "^4.17.21",
     "react-aria-components": "^1.22.1"
@@ -72,17 +72,17 @@
     "@openmrs/esm-state": "workspace:*",
     "@openmrs/esm-translations": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
-    "@rspack/cli": "2.2.9",
-    "@rspack/core": "2.2.9",
+    "@rspack/cli": "2.3.1",
+    "@rspack/core": "2.3.1",
     "@typescript/native": "npm:typescript@7.0.2",
     "clean-webpack-plugin": "4.0.0",
     "cross-env": "^10.1.0",
     "css-loader": "7.1.5",
     "react-router-dom": "7.18.4",
-    "sass-embedded": "1.105.2",
-    "sass-loader": "17.0.1",
+    "sass-embedded": "1.108.0",
+    "sass-loader": "17.1.0",
     "vitest": "^5.0.5",
-    "webpack-bundle-analyzer": "5.4.0"
+    "webpack-bundle-analyzer": "5.4.2"
   },
   "peerDependencies": {
     "@openmrs/esm-api": "10.x",

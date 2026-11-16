@@ -63,13 +63,13 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.0.0",
-    "react-router-dom": "7.18.4",
+    "react-router-dom": "7.18.5",
     "rxjs": "^7.8.2",
     "sass-embedded": "1.105.2",
     "sass-loader": "17.0.1",
     "style-loader": "4.0.0",
     "swc-loader": "0.2.7",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   },
   "private": true
 }

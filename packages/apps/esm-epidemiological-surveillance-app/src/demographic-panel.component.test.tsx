@@ -88,11 +88,13 @@ vi.mock("@carbon/react", async (original) => ({
     titleText,
     items,
     selectedItems,
+    itemToString,
     onChange,
   }: {
     titleText: string;
     items: { uuid: string; conceptDisplay: string }[];
     selectedItems: { uuid: string }[];
+    itemToString: (item: { uuid: string; conceptDisplay: string }) => string;
     onChange: (value: {
       selectedItems: { uuid: string; conceptDisplay: string }[];
     }) => void;
@@ -113,7 +115,7 @@ vi.mock("@carbon/react", async (original) => ({
     >
       {items.map((item) => (
         <option key={item.uuid} value={item.uuid}>
-          {item.conceptDisplay}
+          {itemToString(item)}
         </option>
       ))}
     </select>
@@ -311,4 +313,32 @@ it("uses the same criterion pair for the title and first cell and displays custo
   expect(
     screen.getAllByRole("rowheader", { name: /Grupo personalizado/ }).length,
   ).toBeGreaterThan(0);
+});
+
+it("filters by event and diagnosis and shows other dimensions by their label", async () => {
+  vi.mocked(getDemographics).mockResolvedValue({ ...result, row: "ethnicity" });
+  render(
+    <DemographicPanel
+      catalogue={{
+        ...catalogue,
+        events: [
+          ...catalogue.events,
+          { ...catalogue.events[0], uuid: "event-2", conceptDisplay: "Other event" },
+        ],
+      }}
+    />,
+  );
+  expect(await screen.findByRole("rowheader", { name: "CHILDREN" })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(en.fields.eventUuid), {
+    target: { value: "event-2" },
+  });
+  fireEvent.change(screen.getByLabelText(en.reportDiagnosisType), {
+    target: { value: "PROBABLE" },
+  });
+  await waitFor(() =>
+    expect(getDemographics).toHaveBeenLastCalledWith(
+      expect.objectContaining({ event: "event-2", diagnosisType: "PROBABLE" }),
+      expect.any(AbortSignal),
+    ),
+  );
 });

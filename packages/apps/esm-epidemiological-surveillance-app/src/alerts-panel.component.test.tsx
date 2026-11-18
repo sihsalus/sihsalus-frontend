@@ -390,3 +390,39 @@ it.each(["IMMEDIATE", "OUTBREAK"] as const)("shows the original registering prof
   expect(screen.getByRole("columnheader", { name: "alertInbox.registeredBy" })).toBeInTheDocument();
   expect(es.alertInbox.reasons.IMMEDIATE_EVENT).toBe("Evento notificable");
 });
+it("refreshes on stream open and messages and announces the change", async () => {
+  let stream: { onopen: (() => void) | null; onmessage: (() => void) | null } | undefined;
+  class Stream {
+    onopen: (() => void) | null = null;
+    onmessage: (() => void) | null = null;
+    close = vi.fn();
+    constructor() {
+      stream = this;
+    }
+  }
+  vi.stubGlobal("EventSource", Stream);
+  const changed = vi.fn();
+  window.addEventListener("surveillance-alerts-changed", changed);
+  render(<AlertNotifications />);
+  await waitFor(() => expect(getAlerts).toHaveBeenCalled());
+  const calls = vi.mocked(getAlerts).mock.calls.length;
+  await act(async () => {
+    stream?.onopen?.();
+    stream?.onmessage?.();
+  });
+  await waitFor(() =>
+    expect(vi.mocked(getAlerts).mock.calls.length).toBeGreaterThan(calls),
+  );
+  expect(changed).toHaveBeenCalled();
+  window.removeEventListener("surveillance-alerts-changed", changed);
+});
+it("reports a failed attention and dismisses the later confirmation", async () => {
+  vi.mocked(attendAlert).mockRejectedValueOnce(new Error("rejected"));
+  render(<AlertsPanel />);
+  fireEvent.click(await screen.findByText("alertInbox.attend"));
+  expect(await screen.findByText("Safe error")).toBeInTheDocument();
+  fireEvent.click(await screen.findByText("alertInbox.attend"));
+  expect(await screen.findByText("alertInbox.attendedSuccess")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /close notification/i }));
+  expect(screen.queryByText("alertInbox.attendedSuccess")).not.toBeInTheDocument();
+});

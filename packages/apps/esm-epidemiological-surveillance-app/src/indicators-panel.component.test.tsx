@@ -86,3 +86,25 @@ it("retries failed calculations", async () => {
   fireEvent.click(await screen.findByText("retry"));
   await waitFor(() => expect(screen.getAllByText("25%")).toHaveLength(3));
 });
+
+it("recalculates when the event or the date range changes", async () => {
+  render(<IndicatorsPanel catalogue={catalogue} />);
+  await waitFor(() => expect(screen.getAllByText("25%")).toHaveLength(3));
+  const calls = vi.mocked(read).mock.calls.length;
+  fireEvent.change(screen.getByLabelText("fields.eventUuid"), {
+    target: { value: catalogue.events[0].uuid },
+  });
+  fireEvent.change(screen.getByLabelText("indicatorPanel.from"), {
+    target: { value: "05/01/2026" },
+  });
+  fireEvent.change(screen.getByLabelText("indicatorPanel.to"), {
+    target: { value: "31/01/2026" },
+  });
+  await waitFor(() =>
+    expect(vi.mocked(read).mock.calls.length).toBeGreaterThan(calls),
+  );
+  const url = String(vi.mocked(read).mock.calls.at(-1)?.[0]);
+  expect(url).toContain(catalogue.events[0].uuid);
+  expect(url).toContain("2026-01-05");
+  expect(url).toContain("2026-01-31");
+});

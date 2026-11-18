@@ -105,7 +105,6 @@ export function CaseForm({
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [result, setResult] = useState<CaseResult>();
-  const [queued, setQueued] = useState(false);
   const generation = useRef(0);
   const patientSearchGeneration = useRef(0);
   const [searchingPatients, setSearchingPatients] = useState(false);
@@ -405,7 +404,6 @@ export function CaseForm({
           selectedDiagnosisUuid,
         ),
       );
-      setQueued(false);
       setResult({
         uuid: saved.uuid,
         diagnosisConceptUuid: saved.diagnosisUuid,
@@ -497,19 +495,6 @@ export function CaseForm({
     );
   }
   if (result) return <CaseResultView result={result} />;
-  if (queued)
-    return (
-      <InlineNotification
-        kind="warning"
-        lowContrast
-        hideCloseButton
-        title={t("queuedTitle", "Pending synchronization")}
-        subtitle={t(
-          "queuedDescription",
-          "Saved on this device. Server validation and alert assessment will run after reconnection.",
-        )}
-      />
-    );
   const classifyLabObservation = (obs: FhirResource) =>
     classifyLaboratoryObservation(obs, m);
   const labResults = observations.filter(

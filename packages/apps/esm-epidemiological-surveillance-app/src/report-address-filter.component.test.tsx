@@ -76,3 +76,13 @@ it("does not overwrite manual choices with late defaults", async () => {
   expect(screen.getByLabelText("reportCenter")).toHaveValue("");
   expect(onChange).toHaveBeenLastCalledWith("departments", "DEPARTAMENTO");
 });
+it("reports failures loading location defaults and address levels", async () => {
+  vi.mocked(locationAddressDefaults).mockRejectedValueOnce(new Error("offline"));
+  vi.mocked(addressChildren).mockRejectedValue(new Error("offline"));
+  render(
+    <ReportAddressFilter locationUuid="session-location" onChange={vi.fn()} />,
+  );
+  expect(await screen.findByText("Error")).toBeInTheDocument();
+  await waitFor(() => expect(locationAddressDefaults).toHaveBeenCalled());
+  await waitFor(() => expect(addressChildren).toHaveBeenCalled());
+});

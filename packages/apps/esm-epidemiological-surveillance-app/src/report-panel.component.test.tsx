@@ -199,3 +199,72 @@ describe("report screen", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("report filters", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(addressChildren).mockResolvedValue([]);
+    vi.mocked(getReport).mockResolvedValue({
+      generatedAt: "2026-01-20T00:00:00Z",
+      eventUuid: "event",
+      from: "2026-01-01",
+      to: "2026-01-20",
+      period: "semana",
+      population: "CONFIRMADO",
+      diagnosisType: "CONFIRMADO",
+      zoneLevel: "CENTRO_POBLADO",
+      address: null,
+      total: 0,
+      historicalYears: [],
+      curve: [],
+      channel: [],
+      demographics: {},
+      warnings: ["CUSTOM_WARNING"],
+    } as never);
+  });
+  it("requests a new report for each filter and shows additional warnings", async () => {
+    render(
+      <ReportPanel
+        catalogue={{
+          ...catalogue,
+          events: [
+            ...catalogue.events,
+            { ...catalogue.events[0], uuid: "event-2", conceptDisplay: "Other event" },
+          ],
+        }}
+      />,
+    );
+    expect(await screen.findByText("alerts.CUSTOM_WARNING")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Symptom onset to"), {
+      target: { value: "10/11/2026" },
+    });
+    fireEvent.change(screen.getByLabelText("Period"), {
+      target: { value: "mes" },
+    });
+    fireEvent.change(screen.getByLabelText("Included cases"), {
+      target: { value: "PROBABLE" },
+    });
+    await waitFor(() =>
+      expect(getReport).toHaveBeenLastCalledWith(
+        "event",
+        expect.any(String),
+        "2026-11-10",
+        "mes",
+        expect.any(AbortSignal),
+        expect.objectContaining({ diagnosisType: "PROBABLE" }),
+      ),
+    );
+    fireEvent.change(screen.getByLabelText("Disease"), {
+      target: { value: "event-2" },
+    });
+    expect(screen.getByLabelText("Disease")).toHaveValue("event-2");
+    const calls = vi.mocked(getReport).mock.calls.length;
+    fireEvent.change(screen.getByLabelText("Symptom onset to"), {
+      target: { value: "15/01/2026" },
+    });
+    fireEvent.change(screen.getByLabelText("Symptom onset from"), {
+      target: { value: "" },
+    });
+    expect(vi.mocked(getReport).mock.calls.length).toBe(calls);
+  });
+});

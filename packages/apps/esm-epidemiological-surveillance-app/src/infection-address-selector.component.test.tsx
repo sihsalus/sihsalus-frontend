@@ -83,3 +83,11 @@ it("retries errors and shows empty results", async () => {
   fireEvent.click(screen.getByRole("button", { name: "retry" }));
   await screen.findByText("infectionNoResults");
 });
+it("does not submit the surrounding form when Enter is pressed in the search", () => {
+  render(<InfectionAddressSelector onChange={vi.fn()} />);
+  const search = screen.getByRole("searchbox");
+  const enter = fireEvent.keyDown(search, { key: "Enter" });
+  const other = fireEvent.keyDown(search, { key: "a" });
+  expect(enter).toBe(false);
+  expect(other).toBe(true);
+});

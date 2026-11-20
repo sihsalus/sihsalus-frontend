@@ -246,6 +246,30 @@ describe('EncounterFormProcessor', () => {
     expect(mockPrepareEncounter).not.toHaveBeenCalled();
   });
 
+  it.each([undefined, '', '   '])('blocks a missing encounter role (%s) before any side effects', async (role) => {
+    const processor = new EncounterFormProcessor({
+      uuid: 'form-uuid',
+      pages: [],
+    } as never);
+    mockGetMutableSessionProps.mockReturnValue({
+      encounterProvider: 'provider-uuid',
+      encounterRole: role,
+      encounterLocation: 'location-uuid',
+    });
+
+    await expect(processor.processSubmission({ formFields: [] } as never, new AbortController())).rejects.toMatchObject(
+      {
+        descriptor: expect.objectContaining({
+          title: 'Select the professional’s role in this encounter',
+        }),
+      },
+    );
+    expect(mockPreparePatientIdentifiers).not.toHaveBeenCalled();
+    expect(mockHasDuplicatePatientIdentifiers).not.toHaveBeenCalled();
+    expect(mockPrepareEncounter).not.toHaveBeenCalled();
+    expect(mockSaveEncounter).not.toHaveBeenCalled();
+  });
+
   it('runs the final pre-save callback with the prepared payload immediately before saving the encounter', async () => {
     const processor = new EncounterFormProcessor({
       uuid: 'form-uuid',

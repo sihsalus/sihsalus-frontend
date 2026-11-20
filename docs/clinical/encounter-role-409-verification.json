@@ -1,0 +1,99 @@
+{
+  "issue": "https://github.com/sihsalus/sihsalus/issues/409",
+  "date": "2026-10-23",
+  "baseSha": "5591deca357f0ba7b16ee01b582012eb0c163d4f",
+  "validatedCodeSha": "b21a531dfc62d3a95492fb2cfd43e8133a790136",
+  "environment": {
+    "node": "24.15.0",
+    "yarn": "4.18.1",
+    "vitest": "5.0.5"
+  },
+  "qltyReadOnlyEvidence": {
+    "frontendSha": "abeb72a3fe795336013961689ba3c095713b940f",
+    "account": "consulta.externa",
+    "activeProviderAssociations": 1,
+    "genericClinicianRolePresent": false,
+    "socialHistoryForm": {
+      "name": "CE-SOC-001-HISTORIA SOCIAL",
+      "version": "1.0.0",
+      "published": true,
+      "retired": false,
+      "encounterRoleQuestionPresent": false
+    },
+    "scope": "Metadatos y comprobación agregada de asociación de proveedor; sin consultas de pacientes ni escrituras clínicas."
+  },
+  "checks": [
+    {
+      "command": "corepack enable; yarn install --immutable",
+      "status": "PASSED",
+      "scope": "Instalación propia del worktree; sin node_modules compartido por symlink."
+    },
+    {
+      "command": "yarn workspace @sihsalus/esm-form-engine-lib test src/processors/encounter/encounter-form-processor.test.ts (processor original)",
+      "status": "FAILED",
+      "scope": "Fallo esperado de regresión: 3 casos de rol ausente/vacío aceptados por el código original; 9 casos existentes pasaron."
+    },
+    {
+      "command": "yarn workspace @sihsalus/esm-form-engine-lib lint / typescript / test / build",
+      "status": "PASSED",
+      "scope": "144 pruebas en 30 archivos; tipos y compilación correctos. Lint: 22 advertencias, sin errores. También cubierto por verify final."
+    },
+    {
+      "command": "yarn workspace @sihsalus/esm-form-builder-app test src/components/form-renderer/form-renderer.test.tsx",
+      "status": "PASSED",
+      "scope": "16 pruebas de vista previa. Se corrigió la consulta de rol introducida inicialmente en PreviewFormProcessor; se conservan las aserciones de ausencia de lecturas clínicas."
+    },
+    {
+      "command": "yarn verify",
+      "status": "PASSED",
+      "scope": "270 tareas de lint/tipos/build, 260 desde caché; fase de pruebas: 115 tareas, 104 desde caché. Resultado final posterior a corregir la vista previa y completar los tipos del fixture."
+    },
+    {
+      "command": "yarn verify:changed --base origin/main --head HEAD",
+      "status": "PASSED",
+      "scope": "63 tareas, 58 desde caché; motor, wrapper, Form Builder, Form Entry React y registro de pacientes."
+    },
+    {
+      "command": "yarn lint:all",
+      "status": "PASSED",
+      "scope": "5979 archivos; 923 advertencias y 6 informativos, sin errores."
+    },
+    {
+      "command": "yarn test:tooling",
+      "status": "PASSED",
+      "scope": "221 pruebas, sin fallos ni omisiones."
+    },
+    {
+      "command": "yarn typecheck:e2e",
+      "status": "PASSED",
+      "scope": "Comprobación de tipos; dependencias de offline-local preparadas con 10 tareas desde caché. No ejecuta recorridos clínicos remotos."
+    },
+    {
+      "command": "yarn validate:error-exposure --base origin/main --head HEAD",
+      "status": "PASSED",
+      "scope": "5 archivos fuente cambiados; 0 exposiciones en el alcance modificado."
+    },
+    {
+      "command": "yarn prettier --check packages/libs/esm-form-engine-lib/README.md docs/clinical/social-history-content-contract.md; git diff --check origin/main...HEAD",
+      "status": "PASSED",
+      "scope": "Documentación y espacios del diff."
+    },
+    {
+      "command": "Recorrido autenticado de guardado, reapertura y edición en QLTY",
+      "status": "BLOCKED",
+      "scope": "No hay cuenta/sesión E2E ni fixtures sintéticos coordinados configurados. Se solicitó el mecanismo local; no se probaron credenciales ni se crearon pacientes."
+    },
+    {
+      "command": "Publicación, merge o despliegue",
+      "status": "NOT RUN",
+      "scope": "No solicitados. El cambio está preparado en un worktree local separado."
+    }
+  ],
+  "remainingAcceptance": [
+    "Cuenta de pruebas y fixtures sintéticos coordinados en QLTY, con permisos de lectura y edición de historia social.",
+    "Usar un artefacto del código corregido; verificar SHA, catálogo y contexto antes de escribir.",
+    "Crear historia social, elegir rol y guardar; reabrir y editar conservando encuentro, visita y asociaciones de proveedores.",
+    "Comprobar ausencia de escrituras al omitir el rol, permisos restringidos, formulario CRED con rol explícito y vista previa del editor.",
+    "Conservar journal de fixtures propios y verificar limpieza; revisión humana del resultado antes de merge o despliegue."
+  ]
+}

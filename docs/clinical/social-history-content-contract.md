@@ -76,6 +76,18 @@ de `CE-SOC-001-HISTORIA SOCIAL` 1.0.0, incorporado en content 1.25.23.
 (Historia social). El UUID del esquema JSON es
 `f18f4320-690b-4c34-9b20-89a9bf7fec71`; no se utiliza como UUID REST.
 
+Desde la corrección local del reporte #409, el motor incorpora un selector
+obligatorio del rol del profesional cuando el esquema no contiene una pregunta
+`encounterRole`. Historia Social 1.0.0 tiene proveedor, fecha y ubicación, pero
+omite esa pregunta. El proveedor asociado al usuario no determina su rol en el
+encuentro. Se utiliza el catálogo existente, sin asignar una profesión por el
+nombre del usuario ni usar su primera fila como valor predeterminado. La falta
+del rol detiene el envío antes de cualquier escritura y conserva lo ingresado.
+El [contrato del motor](../../packages/libs/esm-form-engine-lib/README.md#encounter-role-selection)
+describe también la preservación de asociaciones al editar. Esta corrección no
+cambia la identidad ni la versión del formulario en el backend; requiere
+aceptación de guardado y reapertura con datos sintéticos en QLTY.
+
 La configuración `socialHistory.concepts` contiene Alcohol y Tabaco con sus
 respuestas Sí/No ya mapeadas, cigarrillos por día y duración del tabaquismo en
 años. Los dos valores numéricos conservan los conceptos existentes de la tabla

@@ -6,11 +6,12 @@ import {
   type FormProcessorContextProps,
   type ValueAndDisplay,
 } from '../types';
-import { gracefullySetSubmission, isPlainObject } from '../utils/common-utils';
+import { getResourceUuid, gracefullySetSubmission, isPlainObject } from '../utils/common-utils';
 
 type ResourceWithLabel = OpenmrsResource & { name?: string };
 type EncounterRoleEntry = {
   encounterRole?: ResourceWithLabel;
+  provider?: OpenmrsResource | string;
 };
 type EncounterRoleResource = OpenmrsResource & {
   encounterProviders?: EncounterRoleEntry[];
@@ -26,8 +27,18 @@ export const EncounterRoleAdapter: FormFieldValueAdapter = {
     context: FormProcessorContextProps,
   ): string | undefined {
     const encounter = sourceObject ?? context.domainObjectValue;
-    if (encounter) {
-      return getLatestEncounterRole(encounter)?.uuid;
+    if (hasEncounterProviders(encounter)) {
+      // Match EncounterProviderAdapter when a provider field exists. Otherwise
+      // only reuse the current provider's own role, never another professional's.
+      const providerEntry =
+        context.sessionMode === 'view' ||
+        context.sessionMode === 'embedded-view' ||
+        context.formFields?.some((field) => field.type === 'encounterProvider')
+          ? encounter.encounterProviders.at(-1)
+          : [...encounter.encounterProviders]
+              .reverse()
+              .find((entry) => getResourceUuid(entry.provider) === context.currentProvider?.uuid);
+      return getResourceUuid(providerEntry?.encounterRole);
     }
     return isDefaultEncounterRole(context.customDependencies?.defaultEncounterRole)
       ? context.customDependencies.defaultEncounterRole.uuid

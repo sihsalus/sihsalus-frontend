@@ -39,6 +39,8 @@
   "credControlInstructions": "Abra los formularios del control para revisar su número y la fecha de atención. Seleccione el examen físico u otro formulario que corresponda, guarde y revise la información registrada.",
   "credGrowthReference": "Las curvas utilizan referencias OMS según sexo, edad e indicador. La interpretación del gráfico es referencial; la evaluación clínica se registra en su formulario.",
   "credLoadingGrowth": "Cargando curvas de crecimiento…",
+  "credRecordInControl": "Registro en este control",
+  "credNoFormRecordInControl": "Sin registro en este control",
   "credRecentRecords": "Atenciones de crecimiento y desarrollo registradas",
   "credLoadingRecords": "Cargando atenciones registradas…",
   "credRecordedControlNumber": "Control {{number}}",

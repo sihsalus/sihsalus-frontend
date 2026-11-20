@@ -24,23 +24,7 @@
 }
 
 .tableToolbar {
-  width: 20%;
-  min-width: 12.5rem;
-}
-
-.search {
-  input {
-    padding: 0 layout.$spacing-10 !important;
-  }
-
-  :global(.cds--search-close:focus) {
-    outline: none;
-    outline-offset: 0;
-  }
-
-  :global(.cds--search-close:focus:before) {
-    background-color: none;
-  }
+  width: min(100%, 20rem);
 }
 
 .table tr:last-of-type {

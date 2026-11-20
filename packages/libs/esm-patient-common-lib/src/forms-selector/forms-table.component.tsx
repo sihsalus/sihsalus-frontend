@@ -32,6 +32,7 @@ interface FormsTableProps {
   }>;
   isTablet: boolean;
   handleSearch: (search: string) => void;
+  emptyRecordLabel?: string;
   handleFormOpen?: (form: Form, encounterUuid: string) => void;
 }
 
@@ -40,6 +41,7 @@ const FormsTable = ({
   tableRows,
   isTablet,
   handleSearch,
+  emptyRecordLabel,
   handleFormOpen,
 }: FormsTableProps): JSX.Element => {
   const { t } = useTranslation();
@@ -52,7 +54,6 @@ const FormsTable = ({
               <TableToolbar className={styles.tableToolbar}>
                 <TableToolbarContent>
                   <TableToolbarSearch
-                    className={styles.search}
                     expanded
                     onChange={(_, value) => handleSearch(value ?? '')}
                     placeholder={t('searchThisList', 'Buscar en esta lista')}
@@ -61,7 +62,7 @@ const FormsTable = ({
                 </TableToolbarContent>
               </TableToolbar>
             </div>
-            {rows.length > 0 && (
+            {rows.length > 0 ? (
               <Table aria-label="forms" {...getTableProps()} className={styles.table}>
                 <TableHead>
                   <TableRow>
@@ -98,13 +99,17 @@ const FormsTable = ({
                           </Link>
                         </TableCell>
                         <TableCell className={styles.editCell}>
-                          <label>{row.cells[1].value ?? t('never', 'Nunca')}</label>
+                          <label>{row.cells[1].value ?? emptyRecordLabel ?? t('never', 'Nunca')}</label>
                         </TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
+            ) : (
+              <p className={styles.emptyContainer} role="status">
+                {t('noResultsToDisplay', 'No hay resultados que mostrar')}
+              </p>
             )}
           </TableContainer>
         </>

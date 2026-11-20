@@ -20,7 +20,7 @@ const response = (results: unknown[]) => ({ data: { results } }) as ApiResponse;
 const form = {
   uuid: '00000000-0000-4000-8000-000000000057',
   name: 'Synthetic CRED follow-up',
-  display: 'Synthetic CRED follow-up',
+  display: 'Seguimiento CRED sintético',
   version: '1',
   published: true,
   retired: false,
@@ -204,4 +204,35 @@ it('preserves the saved-form state across a failed refresh and retry', async () 
   await userEvent.click(retry);
   expect(await screen.findByRole('button', { name: 'Cerrar formularios' })).toBeEnabled();
   expect(screen.getByText('Formularios completados: 1')).toBeVisible();
+});
+
+it('finds accented forms from an unaccented search and shows when there are no matches', async () => {
+  const user = userEvent.setup();
+  renderSelector();
+  await screen.findByRole('button', { name: form.display });
+  const search = screen.getByPlaceholderText('Buscar en esta lista');
+
+  await user.type(search, 'no existe');
+  expect(screen.getByRole('status')).toHaveTextContent('No hay resultados que mostrar');
+  expect(screen.queryByRole('button', { name: form.display })).not.toBeInTheDocument();
+
+  await user.clear(search);
+  await user.type(search, 'sintetico');
+  expect(screen.getByRole('button', { name: form.display })).toBeVisible();
+});
+
+it('shows a previous control as unrecorded in the current control', async () => {
+  readEncounters = async () => response([encounters[1]]);
+  readControlNumbers = async () => response([controlNumbers[1]]);
+  renderSelector();
+
+  expect(await screen.findByText('Registro en este control')).toBeVisible();
+  expect(screen.getByText('Sin registro en este control')).toBeVisible();
+  await openForm();
+  await waitFor(() =>
+    expect(launchWorkspace2).toHaveBeenCalledWith(
+      formEntryWorkspace,
+      expect.objectContaining({ encounterUuid: '' }),
+    ),
+  );
 });

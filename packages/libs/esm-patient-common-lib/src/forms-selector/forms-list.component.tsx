@@ -1,6 +1,5 @@
 import { DataTableSkeleton } from '@carbon/react';
 import { formatDatetime, ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
-import { debounce } from 'lodash-es';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,24 +11,26 @@ export type FormsListProps = {
   completedForms?: Array<CompletedFormInfo>;
   error?: Error;
   sectionName?: string;
+  recordLabels?: { header: string; empty: string };
   handleFormOpen: (form: Form, encounterUuid: string) => void;
 };
 
-const FormsList: React.FC<FormsListProps> = ({ completedForms, error, sectionName = 'forms', handleFormOpen }) => {
+const normalizeSearch = (value: string) => value.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+const FormsList: React.FC<FormsListProps> = ({ completedForms, error, sectionName = 'forms', recordLabels, handleFormOpen }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const isTablet = useLayoutType() === 'tablet';
 
-  const handleSearch = useMemo(() => debounce((searchTerm) => setSearchTerm(searchTerm), 300), []);
-
   const filteredForms = useMemo(() => {
-    if (!searchTerm) {
+    const query = normalizeSearch(searchTerm);
+    if (!query) {
       return completedForms;
     }
 
     return completedForms?.filter((formInfo) => {
       const formName = formInfo.form.display ?? formInfo.form.name;
-      return formName.toLowerCase().includes(searchTerm.toLowerCase());
+      return normalizeSearch(formName).includes(query);
     });
   }, [completedForms, searchTerm]);
 
@@ -40,11 +41,11 @@ const FormsList: React.FC<FormsListProps> = ({ completedForms, error, sectionNam
         key: 'formName',
       },
       {
-        header: t('lastCompleted', 'Última Vez Completado'),
+        header: recordLabels?.header ?? t('lastCompleted', 'Última Vez Completado'),
         key: 'lastCompleted',
       },
     ];
-  }, [t]);
+  }, [recordLabels?.header, t]);
 
   const tableRows = useMemo(
     () =>
@@ -82,7 +83,8 @@ const FormsList: React.FC<FormsListProps> = ({ completedForms, error, sectionNam
           tableHeaders={tableHeaders}
           tableRows={tableRows}
           isTablet={isTablet}
-          handleSearch={handleSearch}
+          handleSearch={setSearchTerm}
+          emptyRecordLabel={recordLabels?.empty}
           handleFormOpen={handleFormOpen}
         />
       </ResponsiveWrapper>
@@ -97,7 +99,8 @@ const FormsList: React.FC<FormsListProps> = ({ completedForms, error, sectionNam
           tableHeaders={tableHeaders}
           tableRows={tableRows}
           isTablet={isTablet}
-          handleSearch={handleSearch}
+          handleSearch={setSearchTerm}
+          emptyRecordLabel={recordLabels?.empty}
           handleFormOpen={handleFormOpen}
         />
       </ResponsiveWrapper>

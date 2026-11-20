@@ -17,6 +17,7 @@ export interface FormsSelectorWorkspaceAdditionalProps {
   controlNumber: number;
   title?: string;
   subtitle?: string;
+  recordLabels?: { header: string; empty: string };
   backWorkspace?: string | null;
   onComplete?: () => void;
   onFormLaunch: FormLaunchHandler; // Generic form launcher function
@@ -32,6 +33,7 @@ export default function FormsSelectorWorkspace({
   controlNumber,
   title,
   subtitle,
+  recordLabels,
   backWorkspace = 'wellchild-control-form',
   onComplete,
   onFormLaunch,
@@ -130,6 +132,7 @@ export default function FormsSelectorWorkspace({
             <FormsList
               completedForms={availableForms}
               handleFormOpen={handleFormOpen}
+              recordLabels={recordLabels}
               sectionName={t('availableForms', 'Formularios Disponibles')}
             />
           </div>

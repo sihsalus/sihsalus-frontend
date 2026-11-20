@@ -39,6 +39,8 @@
   "credControlInstructions": "Open the checkup forms to review the checkup number and care date. Select the physical examination or another appropriate form, save and review the recorded information.",
   "credGrowthReference": "Charts use WHO references for the patient's sex, age and indicator. Chart interpretation is a reference; record the clinical assessment in its form.",
   "credLoadingGrowth": "Loading growth charts…",
+  "credRecordInControl": "Record for this checkup",
+  "credNoFormRecordInControl": "No record for this checkup",
   "credRecentRecords": "Recorded growth and development care",
   "credLoadingRecords": "Loading recorded care…",
   "credRecordedControlNumber": "Checkup {{number}}",

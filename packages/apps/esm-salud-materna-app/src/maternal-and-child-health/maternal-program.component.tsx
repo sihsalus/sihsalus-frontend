@@ -1,5 +1,6 @@
-import { Button, Tile } from '@carbon/react';
+import { Button, InlineLoading, Tile } from '@carbon/react';
 import {
+  ArrowRight,
   Calendar,
   ChartLine,
   DocumentMultiple_01,
@@ -72,14 +73,14 @@ const MaternalEpisodeSummary: React.FC<{ patientUuid: string }> = ({ patientUuid
   const measurements = usePrenatalMeasurements(patientUuid);
   const error = pregnancy.error ?? measurements.error;
   if (error) return <ErrorState headerTitle={t('maternalOverview')} error={error} />;
-  if (pregnancy.isLoading || measurements.isLoading) return <p role="status">{t('loadingData')}</p>;
+  if (pregnancy.isLoading || measurements.isLoading) return <InlineLoading description={t('loadingData')} />;
   const latest = measurements.data[0];
   return (
     <div className={styles.recordGrid}>
-      <Tile>
+      <Tile className={styles.recordCard}>
         <div className={styles.recordHeading}>
-          <Calendar size={24} aria-hidden="true" />
-          <h5>{t('maternalPregnancyRecord')}</h5>
+          <Calendar aria-hidden="true" />
+          <h6>{t('maternalPregnancyRecord')}</h6>
         </div>
         <p>
           {pregnancy.currentPregnancyEncounter
@@ -87,10 +88,10 @@ const MaternalEpisodeSummary: React.FC<{ patientUuid: string }> = ({ patientUuid
             : t('maternalNoRecordedForms')}
         </p>
       </Tile>
-      <Tile>
+      <Tile className={styles.recordCard}>
         <div className={styles.recordHeading}>
-          <ChartLine size={24} aria-hidden="true" />
-          <h5>{t('maternalLatestMeasurement')}</h5>
+          <ChartLine aria-hidden="true" />
+          <h6>{t('maternalLatestMeasurement')}</h6>
         </div>
         <p>{latest ? formatDate(new Date(latest.date)) : t('maternalNoRecordedForms')}</p>
         {latest ? <p>{t('maternalRecordedWeek', { week: latest.gestationalWeek })}</p> : null}
@@ -229,42 +230,53 @@ const MaternalProgram: React.FC<Props> = ({ patient, patientUuid }) => {
     id: 'overview',
     labelKey: 'maternalOverview',
     icon: HealthCross,
-    content: panel(
-      <>
-        <p className={styles.help}>{t('maternalOverviewHelp')}</p>
-        <MotherChildRelationships
-          patientUuid={patientUuid}
-          patientRole="mother"
-          canView={canViewMaternalProgram(session) && delivery}
-          translationNamespace={namespace}
-        />
-        {prenatal ? <MaternalEpisodeSummary patientUuid={patientUuid} /> : null}
-        <div className={styles.overviewGrid}>
-          {hcmpSections.map(({ titleKey, icon: Icon, tabIds }) => {
-            const sectionTabs = tabs.filter(({ id }) => tabIds.some((tabId) => tabId === id));
-            return sectionTabs.length ? (
-              <section className={styles.stage} key={titleKey} aria-label={t(titleKey)}>
-                <div className={styles.recordHeading}>
-                  <Icon size={24} aria-hidden="true" />
-                  <h5>{t(titleKey)}</h5>
-                </div>
-                {sectionTabs.map(({ id, labelKey }) => (
-                  <button
-                    className={styles.stageLink}
-                    type="button"
-                    key={id}
-                    onClick={() => setSelectedTabId(id ?? 'overview')}
-                  >
-                    {t(labelKey)}
-                  </button>
-                ))}
-              </section>
-            ) : null;
-          })}
+    content: (
+      <div className={styles.overview}>
+        <div className={styles.overviewLayout}>
+          <section className={styles.overviewGroup} aria-label={t('maternalSectionsHeading')}>
+            <h5 className={styles.sectionTitle}>{t('maternalSectionsHeading')}</h5>
+            <div className={styles.overviewGrid}>
+              {hcmpSections.map(({ titleKey, icon: Icon, tabIds }) => {
+                const sectionTabs = tabs.filter(({ id }) => tabIds.some((tabId) => tabId === id));
+                return sectionTabs.length ? (
+                  <Tile className={styles.stage} key={titleKey} role="region" aria-label={t(titleKey)}>
+                    <div className={styles.recordHeading}>
+                      <Icon aria-hidden="true" />
+                      <h6>{t(titleKey)}</h6>
+                    </div>
+                    {sectionTabs.map(({ id, labelKey }) => (
+                      <Button
+                        className={styles.stageLink}
+                        kind="ghost"
+                        size="md"
+                        renderIcon={ArrowRight}
+                        key={id}
+                        onClick={() => setSelectedTabId(id ?? 'overview')}
+                      >
+                        {t(labelKey)}
+                      </Button>
+                    ))}
+                  </Tile>
+                ) : null;
+              })}
+            </div>
+          </section>
+          {prenatal || delivery ? (
+            <aside className={styles.overviewGroup} aria-label={t('maternalRecordsHeading')}>
+              <h5 className={styles.sectionTitle}>{t('maternalRecordsHeading')}</h5>
+              {prenatal ? <MaternalEpisodeSummary patientUuid={patientUuid} /> : null}
+              <MotherChildRelationships
+                patientUuid={patientUuid}
+                patientRole="mother"
+                canView={canViewMaternalProgram(session) && delivery}
+                translationNamespace={namespace}
+              />
+            </aside>
+          ) : null}
         </div>
         {related.length ? (
-          <section>
-            <h5>{t('maternalRelatedCare')}</h5>
+          <section className={styles.overviewGroup}>
+            <h5 className={styles.sectionTitle}>{t('maternalRelatedCare')}</h5>
             <div className={styles.relatedLinks}>
               {related.map(({ path, label }) => (
                 <Button
@@ -279,7 +291,7 @@ const MaternalProgram: React.FC<Props> = ({ patient, patientUuid }) => {
             </div>
           </section>
         ) : null}
-      </>,
+      </div>
     ),
   };
 
@@ -297,19 +309,19 @@ const MaternalProgram: React.FC<Props> = ({ patient, patientUuid }) => {
       mountActiveTabOnly
       headerActions={
         <>
+          {canRegisterMaternalForm(session) ? (
+            <Button kind="primary" size="sm" renderIcon={DocumentMultiple_01} onClick={() => launchForms({ patientUuid })}>
+              {t('maternalHealthForms')}
+            </Button>
+          ) : null}
           {canRead('app:hoja.clinica.visitas') ? (
             <Button
-              kind="tertiary"
+              kind="ghost"
               size="sm"
               renderIcon={Time}
               onClick={() => navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/chart/Visits` })}
             >
               {t('maternalPreviousVisits')}
-            </Button>
-          ) : null}
-          {canRegisterMaternalForm(session) ? (
-            <Button size="sm" renderIcon={DocumentMultiple_01} onClick={() => launchForms({ patientUuid })}>
-              {t('maternalHealthForms')}
             </Button>
           ) : null}
         </>

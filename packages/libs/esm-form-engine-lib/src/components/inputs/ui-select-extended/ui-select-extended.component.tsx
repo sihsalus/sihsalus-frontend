@@ -25,6 +25,8 @@ const toSelectItem = (item: OpenmrsResource): SelectItem => ({
   display: typeof item.display === 'string' ? item.display : undefined,
 });
 
+const normalizeRoleName = (name: string) => name.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
 const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>> = ({
   field,
   errors,
@@ -41,6 +43,13 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
   const [config, setConfig] = useState<Record<string, unknown>>({});
   const dataSourceDependentValue = useDataSourceDependentValue(field);
   const isSearchable = isTrue(field.questionOptions.isSearchable);
+  const dataSourceName = field.questionOptions.datasource?.name;
+  // The built-in encounter roles are a bounded catalog. Load it up front so
+  // users can choose a role without having to guess its exact name.
+  const usesRoleCatalog =
+    field.questionOptions.rendering === 'encounter-role' &&
+    (!dataSourceName || dataSourceName === 'encounter_role_datasource');
+  const usesRemoteSearch = isSearchable && !usesRoleCatalog;
   const {
     layoutType,
     sessionMode,
@@ -97,20 +106,18 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
   );
 
   useEffect(() => {
-    const dataSourceName = field.questionOptions?.datasource?.name;
     setConfig(
       dataSourceName
         ? field.questionOptions.datasource?.config
         : (getControlTemplate(field.questionOptions.rendering)?.datasource?.config ?? {}),
     );
     void getRegisteredDataSource(dataSourceName ?? field.questionOptions.rendering).then((ds) => setDataSource(ds));
-  }, [field.questionOptions?.datasource, field.questionOptions.rendering]);
+  }, [dataSourceName, field.questionOptions.datasource, field.questionOptions.rendering]);
 
   useEffect(() => {
     let ignore = false;
 
-    // If not searchable, preload the items
-    if (dataSource && !isSearchable) {
+    if (dataSource && !usesRemoteSearch) {
       setItems([]);
       setIsLoading(true);
 
@@ -134,17 +141,17 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
     return (): void => {
       ignore = true;
     };
-  }, [config, dataSource, dataSourceDependentValue, isSearchable]);
+  }, [config, dataSource, dataSourceDependentValue, usesRemoteSearch]);
 
   useEffect(() => {
-    if (dataSource && isSearchable && !isEmpty(searchTerm) && !searchTermHasMatchingItem(searchTerm)) {
+    if (dataSource && usesRemoteSearch && !isEmpty(searchTerm) && !searchTermHasMatchingItem(searchTerm)) {
       debouncedSearch(searchTerm, dataSource);
     }
-  }, [dataSource, debouncedSearch, isSearchable, searchTerm, searchTermHasMatchingItem]);
+  }, [dataSource, debouncedSearch, searchTerm, searchTermHasMatchingItem, usesRemoteSearch]);
 
   useEffect(() => {
     let ignore = false;
-    if (value && !isDirty && dataSource && isSearchable && !items.length) {
+    if (value && !isDirty && dataSource && usesRemoteSearch && !items.length) {
       // Search-based fields only load options after typing. Resolve an initial
       // value explicitly so encounter defaults are visible in create mode and
       // previously saved values remain visible in edit mode.
@@ -168,7 +175,7 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
     return (): void => {
       ignore = true;
     };
-  }, [dataSource, isDirty, isSearchable, items.length, value]);
+  }, [dataSource, isDirty, items.length, usesRemoteSearch, value]);
 
   if (isLoading) {
     return <DropdownSkeleton />;
@@ -191,6 +198,14 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
             items={items}
             itemToString={(item?: SelectItem | null) => item?.display ?? ''}
             selectedItem={selectedItem}
+            shouldFilterItem={
+              usesRoleCatalog && isSearchable
+                ? ({ item, inputValue }) =>
+                    !inputValue ||
+                    inputValue === selectedItem?.display ||
+                    normalizeRoleName(item.display ?? '').includes(normalizeRoleName(inputValue))
+                : undefined
+            }
             placeholder={isSearchable ? t('search', 'Search') + '...' : null}
             onChange={({ selectedItem }) => {
               isProcessingSelection.current = true;
@@ -208,7 +223,7 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
                 isProcessingSelection.current = false;
                 return;
               }
-              if (field.questionOptions.isSearchable) {
+              if (usesRemoteSearch) {
                 setSearchTerm(nextValue);
               }
             }}

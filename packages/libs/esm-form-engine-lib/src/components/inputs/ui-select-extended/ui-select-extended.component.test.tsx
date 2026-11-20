@@ -81,7 +81,7 @@ describe('UiSelectExtended', () => {
     // for the ComboBox to replace it.
     expect(await screen.findByRole('combobox')).toHaveValue('Consultorio actual');
   });
-  it('opens the role catalog without typing and preserves an explicit nursing selection', async () => {
+  it.each([false, true])('opens the role catalog and supports keyboard selection when isSearchable is %s', async (isSearchable) => {
     mockUseWatch.mockReturnValue(undefined as never);
     const roles = [
       { uuid: 'nurse', display: 'Enfermería Responsable' },
@@ -106,14 +106,24 @@ describe('UiSelectExtended', () => {
             label: 'Rol',
             type: 'encounterRole',
             meta: {},
-            questionOptions: { rendering: 'encounter-role', isSearchable: false },
+            questionOptions: { rendering: 'encounter-role', isSearchable },
           } as never
         }
       />,
     );
-    await waitFor(() => expect(fetchData).toHaveBeenCalled());
-    await userEvent.click(await screen.findByRole('button', { name: /open/i }));
-    await userEvent.click(await screen.findByText('Enfermería Responsable'));
+    const user = userEvent.setup();
+    await waitFor(() => expect(fetchData).toHaveBeenCalledWith(null, expect.any(Object)));
+    await user.click(await screen.findByRole('button', { name: /open/i }));
+    expect(screen.getByText('Enfermería Responsable')).toBeVisible();
+    expect(screen.getByText('Médico Responsable')).toBeVisible();
+
+    if (isSearchable) {
+      await user.type(screen.getByRole('combobox'), 'enfermeria');
+      expect(screen.queryByText('Médico Responsable')).not.toBeInTheDocument();
+    }
+
+    await user.click(screen.getByText('Enfermería Responsable'));
     expect(setFieldValue).toHaveBeenCalledWith('nurse');
+    expect(fetchData).toHaveBeenCalledTimes(1);
   });
 });

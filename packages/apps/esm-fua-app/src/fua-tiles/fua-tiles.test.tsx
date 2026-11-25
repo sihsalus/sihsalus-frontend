@@ -34,6 +34,7 @@ describe('AllFuaRequestsTile', () => {
   it('renders total count', () => {
     mockUseFuaRequests.mockReturnValue({
       fuaOrders: makeMockOrders(7),
+      hasLoadedRequests: true,
       isLoading: false,
       isError: null,
       mutate: vi.fn(),
@@ -111,6 +112,7 @@ describe('EnviadoFuaRequestsTile', () => {
   it('renders enviado count', () => {
     mockUseFuaRequests.mockReturnValue({
       fuaOrders: makeMockOrders(5),
+      hasLoadedRequests: true,
       isLoading: false,
       isError: null,
       mutate: vi.fn(),
@@ -124,6 +126,7 @@ describe('EnviadoFuaRequestsTile', () => {
   it('passes status ENVIADO to hook', () => {
     mockUseFuaRequests.mockReturnValue({
       fuaOrders: [],
+      hasLoadedRequests: true,
       isLoading: false,
       isError: null,
       mutate: vi.fn(),

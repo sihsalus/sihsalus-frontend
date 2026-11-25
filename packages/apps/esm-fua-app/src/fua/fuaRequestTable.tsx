@@ -2,6 +2,7 @@ import {
   Button,
   DataTable,
   DataTableSkeleton,
+  InlineNotification,
   Layer,
   Pagination,
   Select,
@@ -215,7 +216,7 @@ function getPatientCellValue(patientInfo?: FuaRequestPatientInfo) {
 const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' }) => {
   const { t } = useTranslation();
 
-  const { fuaOrders, isLoading, isValidating, mutate } = useFuaRequests({
+  const { fuaOrders, hasLoadedRequests, isError, isLoading, isValidating, mutate } = useFuaRequests({
     status: statusFilter !== 'all' ? statusFilter : null,
     excludeCanceled: true,
   });
@@ -329,6 +330,15 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
           },
         );
         const blob = await response.blob();
+        if ((await blob.slice(0, 5).text()) !== '%PDF-') {
+          showSnackbar({
+            kind: 'error',
+            title: t('errorDownloadingFua', 'Error al descargar FUA'),
+            subtitle: t('invalidFuaPdf', 'El archivo recibido no tiene formato PDF. Vuelva a descargar el FUA.'),
+          });
+          return;
+        }
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -395,8 +405,12 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     void exportFuasToExcel(filteredData);
   }, [filteredData]);
 
-  const handleRefresh = useCallback(() => {
-    mutate();
+  const handleRefresh = useCallback(async () => {
+    try {
+      await mutate();
+    } catch {
+      // SWR exposes revalidation failures through isError.
+    }
   }, [mutate]);
 
   const headers = [
@@ -426,12 +440,47 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     [results],
   );
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedRequests && !isError) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
   }
 
+  const loadNotice = (
+    <div className={styles.cachedError}>
+      <InlineNotification
+        hideCloseButton
+        kind="error"
+        lowContrast
+        role="alert"
+        title={
+          hasLoadedRequests
+            ? t('fuaRequestsRefreshError', 'No se pudieron actualizar las solicitudes FUA')
+            : t('fuaRequestsLoadError', 'No se pudieron cargar las solicitudes FUA')
+        }
+        subtitle={
+          hasLoadedRequests
+            ? t('visitsRefreshErrorCached', 'Se muestran los últimos datos disponibles. Intente actualizar nuevamente.')
+            : undefined
+        }
+      />
+    </div>
+  );
+
+  if (isError && !hasLoadedRequests) {
+    return (
+      <div className={styles.tableContainer} aria-busy={isValidating}>
+        {loadNotice}
+        <div className={styles.errorActions}>
+          <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
+            {isValidating ? t('refreshing', 'Actualizando...') : t('retry', 'Reintentar')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.tableContainer}>
+    <div className={styles.tableContainer} aria-busy={isValidating}>
+      {isError && loadNotice}
       <DataTable rows={rows} headers={headers} isSortable useZebraStyles size="sm">
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
           <TableContainer className={styles.tableContainer}>
@@ -554,7 +603,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                 })}
               </TableBody>
             </Table>
-            {rows.length === 0 ? (
+            {!isError && rows.length === 0 ? (
               <div className={styles.tileContainer}>
                 <Tile className={styles.tile}>
                   <div className={styles.tileContent}>

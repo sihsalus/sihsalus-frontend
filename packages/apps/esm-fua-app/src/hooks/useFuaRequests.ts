@@ -177,6 +177,7 @@ export function useFuaRequests(params: Partial<UseFuaRequestsParams> = useFuaReq
 
   return {
     fuaOrders: filteredOrders,
+    hasLoadedRequests: data !== undefined,
     isLoading,
     isError: error,
     mutate,

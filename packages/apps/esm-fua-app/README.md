@@ -11,6 +11,11 @@ Microfrontend para OpenMRS 3.x que implementa la UI del Formato Único de Atenci
 - Visor HTML del FUA (integrado con el microservicio generador).
 - Link de acceso desde el panel izquierdo de OpenMRS 3.
 
+En **FUAs solicitados**, un fallo de carga permite reintentar. Si falla una
+actualización, la tabla indica que está mostrando los últimos datos disponibles.
+**Descargar FUA** comprueba que la respuesta del generador empiece con la
+cabecera `%PDF-` antes de iniciar la descarga y solicitar el cambio de estado.
+
 ### Integridad de la acreditación SIS
 
 Una acreditación se considera completa únicamente cuando la visita conserva el

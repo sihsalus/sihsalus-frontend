@@ -159,6 +159,7 @@ describe('VisitTable FUA generation', () => {
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
     mockUseFuaRequests.mockReturnValue({
       fuaOrders: [],
+      hasLoadedRequests: true,
       isLoading: false,
       isError: null,
       mutate: vi.fn(),

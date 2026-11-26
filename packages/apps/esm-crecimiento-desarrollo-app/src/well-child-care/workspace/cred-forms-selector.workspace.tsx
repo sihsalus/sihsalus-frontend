@@ -17,7 +17,6 @@ import { growthDevelopmentWritePrivileges } from '../../constants';
 import { resolveCREDForm } from '../../hooks/useCREDFormLauncher';
 import { useCREDFormsForAgeGroup } from '../../hooks/useCREDFormsForAgeGroup';
 import useEncountersCRED, {
-  encounterMatchesFormIdentifier,
   findCREDFormEncounterForControl,
 } from '../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
@@ -91,18 +90,11 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const formsWithHistory = useMemo(
     () =>
       filteredAvailableForms.map((formInfo) => {
-        const associatedEncounters = (encounters ?? [])
-          .filter(
-            (encounter) => encounter.encounterDatetime && encounterMatchesFormIdentifier(encounter, formInfo.form.uuid),
-          )
-          .sort(
-            (first, second) =>
-              new Date(second.encounterDatetime ?? 0).getTime() - new Date(first.encounterDatetime ?? 0).getTime(),
-          )
-          .map((encounter) => ({
-            uuid: encounter.uuid,
-            encounterDatetime: encounter.encounterDatetime ?? '',
-          }));
+        const encounterUuid = findCREDFormEncounterForControl(encounters ?? [], formInfo.form.uuid, controlNumber);
+        const encounter = encounters?.find(({ uuid }) => uuid === encounterUuid);
+        const associatedEncounters = encounter?.encounterDatetime
+          ? [{ uuid: encounter.uuid, encounterDatetime: encounter.encounterDatetime }]
+          : [];
 
         return {
           ...formInfo,
@@ -112,7 +104,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
             : undefined,
         };
       }),
-    [encounters, filteredAvailableForms],
+    [controlNumber, encounters, filteredAvailableForms],
   );
   const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
     void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
@@ -213,6 +205,10 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
           closeWorkspace={closeWorkspace}
           title={title}
           subtitle={subtitle}
+          recordLabels={{
+            header: t('credRecordInControl', 'Registro en este control'),
+            empty: t('credNoFormRecordInControl', 'Sin registro en este control'),
+          }}
           backWorkspace={backWorkspace}
           onFormLaunch={launchForm}
           onComplete={handleComplete}

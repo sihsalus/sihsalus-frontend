@@ -15,9 +15,42 @@
   gap: layout.$spacing-03;
 }
 
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: layout.$spacing-06;
+}
+
+@container dashboard (min-width: 54rem) {
+  .summary {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.summaryGroup {
+  display: grid;
+  min-width: 0;
+  gap: layout.$spacing-04;
+}
+
+.summaryHeading {
+  @include type.type-style("heading-compact-02");
+}
+
+.contextHeading {
+  @include type.type-style("heading-compact-01");
+  margin-block-end: layout.$spacing-03;
+}
+
+.recordCard,
+.sectionCard {
+  border: 1px solid theme.$border-subtle-01;
+}
+
 .sectionCards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: layout.$spacing-04;
 }
 
@@ -33,13 +66,26 @@
   align-items: center;
   gap: layout.$spacing-03;
 
-  h5 {
+  h6 {
     @include type.type-style("heading-compact-01");
   }
 }
 
+.sectionHeading svg {
+  flex-shrink: 0;
+  color: theme.$icon-secondary;
+}
+
+.sectionAction {
+  margin-block-start: auto;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+}
+
 .description {
-  @include type.type-style("body-01");
+  @include type.type-style("body-compact-01");
   color: theme.$text-secondary;
 }
 

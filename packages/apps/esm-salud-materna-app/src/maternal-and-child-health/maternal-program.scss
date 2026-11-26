@@ -1,3 +1,4 @@
+@use "@carbon/styles/scss/theme";
 @use "@carbon/layout";
 @use "@carbon/type";
 @use "@openmrs/esm-styleguide/src/vars" as *;
@@ -10,11 +11,48 @@
   min-width: 0;
 }
 
+.overview {
+  display: grid;
+  gap: layout.$spacing-05;
+  min-width: 0;
+}
+
+.overviewLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: layout.$spacing-06;
+}
+
+@container dashboard (min-width: 54rem) {
+  .overviewLayout:has(> aside) {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.overviewGroup {
+  display: grid;
+  min-width: 0;
+  gap: layout.$spacing-04;
+}
+
 .overviewGrid,
 .recordGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-  gap: layout.$spacing-05;
+  gap: layout.$spacing-04;
+}
+
+.overviewGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(14rem, 45%)), 1fr));
+}
+
+.recordGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.recordCard {
+  border: 1px solid theme.$border-subtle-01;
+  @include type.type-style("body-compact-01");
 }
 
 .help {
@@ -22,6 +60,7 @@
   color: $text-02;
   margin: layout.$spacing-03 0;
 }
+
 .sectionTitle {
   @include type.type-style("heading-compact-02");
 }
@@ -30,6 +69,15 @@
   gap: layout.$spacing-03;
   align-items: center;
   margin-bottom: layout.$spacing-03;
+
+  svg {
+    flex-shrink: 0;
+    color: theme.$icon-secondary;
+  }
+
+  h6 {
+    @include type.type-style("heading-compact-01");
+  }
 }
 .recordDates {
   list-style: none;
@@ -43,26 +91,16 @@
   gap: layout.$spacing-03;
 }
 .stage {
-  border: 1px solid $ui-03;
-  background: $ui-01;
-  padding: layout.$spacing-05;
+  border: 1px solid theme.$border-subtle-01;
 }
+
 .stageLink {
-  @include type.type-style("body-compact-01");
-  display: block;
-  width: 100%;
-  text-align: start;
-  padding: layout.$spacing-04;
-  border: 0;
-  border-top: 1px solid $ui-03;
-  color: $interactive-01;
-  background: $ui-01;
-  cursor: pointer;
-  &:hover {
-    background: $ui-02;
-  }
-  &:focus-visible {
-    outline: 2px solid $interactive-01;
-    outline-offset: 2px;
-  }
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+}
+
+.stageLink + .stageLink {
+  border-block-start: 1px solid theme.$border-subtle-01;
 }

@@ -195,7 +195,7 @@ function IntegratedCredPatientDashboard({ patient, patientUuid }: { patient: fhi
         <div className={styles.actions}>
           <RequirePrivilege privilege={growthDevelopmentWritePrivileges} hideUnauthorized>
             <Button
-              kind="tertiary"
+              kind="primary"
               size="sm"
               renderIcon={DocumentMultiple_01}
               onClick={() => launchControl({ patientUuid })}

@@ -28,8 +28,8 @@ function RecentCREDRecords({ patientUuid }: { patientUuid: string }) {
   if (error) return <ErrorState error={error} headerTitle={title} />;
 
   return (
-    <Tile>
-      <h5>{title}</h5>
+    <Tile className={styles.recordCard}>
+      <h6 className={styles.contextHeading}>{title}</h6>
       {recentRecords.length ? (
         <ol className={styles.recordList}>
           {recentRecords.map(({ uuid, encounterDatetime, controlNumber }) => (
@@ -72,32 +72,42 @@ export default function IntegratedCredSummary({ patientUuid, sections, onNavigat
   );
 
   return (
-    <div className={styles.panel}>
-      <MotherChildRelationships
-        patientUuid={patientUuid}
-        patientRole="child"
-        canView={canViewRelationships}
-        translationNamespace="@sihsalus/esm-cred-app"
-      />
-      <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
-        <RecentCREDRecords patientUuid={patientUuid} />
-      </RequirePrivilege>
-      <div className={styles.sectionCards}>
-        {sections.map(({ id, labelKey, descriptionKey, icon: Icon }) => (
-          <Tile className={styles.sectionCard} key={id}>
-            <div className={styles.sectionHeading}>
-              <Icon aria-hidden="true" />
-              <h5>{t(labelKey)}</h5>
-            </div>
-            <p className={styles.description}>{t(descriptionKey)}</p>
-            <Button kind="ghost" size="sm" renderIcon={ArrowRight} onClick={() => onNavigate(id)}>
-              {t('credOpenSection', 'Abrir {{section}}', {
-                section: t(labelKey),
-              })}
-            </Button>
-          </Tile>
-        ))}
-      </div>
+    <div className={styles.summary}>
+      <section className={styles.summaryGroup} aria-label={t('credSectionsHeading')}>
+        <h5 className={styles.summaryHeading}>{t('credSectionsHeading')}</h5>
+        <div className={styles.sectionCards}>
+          {sections.map(({ id, labelKey, descriptionKey, icon: Icon }) => (
+            <Tile className={styles.sectionCard} key={id}>
+              <div className={styles.sectionHeading}>
+                <Icon aria-hidden="true" />
+                <h6>{t(labelKey)}</h6>
+              </div>
+              <p className={styles.description}>{t(descriptionKey)}</p>
+              <Button
+                className={styles.sectionAction}
+                kind="ghost"
+                size="md"
+                renderIcon={ArrowRight}
+                onClick={() => onNavigate(id)}
+              >
+                {t('credOpenSection', 'Abrir {{section}}', { section: t(labelKey) })}
+              </Button>
+            </Tile>
+          ))}
+        </div>
+      </section>
+      <aside className={styles.summaryGroup} aria-label={t('credRecordsHeading')}>
+        <h5 className={styles.summaryHeading}>{t('credRecordsHeading')}</h5>
+        <RequirePrivilege privilege={growthDevelopmentPrivilege} hideUnauthorized>
+          <RecentCREDRecords patientUuid={patientUuid} />
+        </RequirePrivilege>
+        <MotherChildRelationships
+          patientUuid={patientUuid}
+          patientRole="child"
+          canView={canViewRelationships}
+          translationNamespace="@sihsalus/esm-cred-app"
+        />
+      </aside>
     </div>
   );
 }
